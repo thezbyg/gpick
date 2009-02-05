@@ -41,7 +41,7 @@
 
 #include "Sampler.h"
 #include "Color.h"
-#include "Math.h"
+#include "MathUtil.h"
 #include "ColorNames.h"
 
 #include <iostream>

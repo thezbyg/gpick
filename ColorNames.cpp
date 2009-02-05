@@ -17,7 +17,7 @@
  */
 
 #include "ColorNames.h"
-#include "Math.h"
+#include "MathUtil.h"
 
 #include <math.h>
 #include <sstream>
