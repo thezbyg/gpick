@@ -24,12 +24,133 @@
 using namespace std;
 
 
-gint32 palette_export_gpl(Color* color, const gchar *name, void *userdata){
-	(*((ofstream*)userdata))<<gint32(color->rgb.red*255)<<"\t"
+gint32 palette_export_gpl_color(Color* color, const gchar *name, void* userdata){
+	(*(ofstream*)userdata)<<gint32(color->rgb.red*255)<<"\t"
 						<<gint32(color->rgb.green*255)<<"\t"
 						<<gint32(color->rgb.blue*255)<<"\t"<<name<<endl;
 	return 0;
 }
+
+gint32 palette_export_gpl(GtkWidget* palette, const gchar* filename, gboolean selected){
+	ofstream f(filename, ios::out | ios::trunc);
+	if (f.is_open()){
+
+		gchar* name = g_path_get_basename(filename);
+
+		f<<"GIMP Palette"<<endl;
+		f<<"Name: "<<name<<endl;
+		f<<"#"<<endl;
+
+		g_free(name);
+
+		if (selected)
+			palette_list_foreach_selected(palette, palette_export_gpl_color, &f);
+		else
+			palette_list_foreach(palette, palette_export_gpl_color, &f);
+		f.close();
+		return 0;
+	}
+	return -1;
+}
+
+
+
+gint32 palette_export_mtl_color(Color* color, const gchar *name, void* userdata){
+	(*(ofstream*)userdata)<<"newmtl "<<name<<endl;
+	(*(ofstream*)userdata)<<"Ns 90.000000"<<endl;
+	(*(ofstream*)userdata)<<"Ka 0.000000 0.000000 0.000000"<<endl;
+	(*(ofstream*)userdata)<<"Kd "<<color->rgb.red<<" "<<color->rgb.green<<" "<<color->rgb.blue<<endl;
+	(*(ofstream*)userdata)<<"Ks 0.500000 0.500000 0.500000"<<endl<<endl;
+	return 0;
+}
+
+
+
+gint32 palette_export_mtl(GtkWidget* palette, const gchar* filename, gboolean selected){
+	ofstream f(filename, ios::out | ios::trunc);
+	if (f.is_open()){
+		if (selected)
+			palette_list_foreach_selected(palette, palette_export_mtl_color, &f);
+		else
+			palette_list_foreach(palette, palette_export_mtl_color, &f);
+		f.close();
+		return 0;
+	}
+	return -1;
+}
+
+
+
+
+gint32 palette_export_ase_color(Color* color, const gchar *name, void* userdata){
+
+
+	glong name_u16_len=0;
+	gunichar2 *name_u16 = g_utf8_to_utf16(name, -1, 0, &name_u16_len, 0);
+	for (glong i=0; i<name_u16_len; ++i){
+		name_u16[i]=GINT16_FROM_BE(name_u16[i]);
+	}
+
+	guint16 color_entry=GINT16_FROM_BE(0x0001);
+	(*(ofstream*)userdata).write((char*)&color_entry, 2);
+
+	gint32 block_size = 2 + (name_u16_len + 1) * 2 + 4 + (3 * 4) + 2;
+	block_size=GINT32_FROM_BE(block_size);
+	(*(ofstream*)userdata).write((char*)&block_size, 4);
+
+	guint16 name_length=GINT16_FROM_BE(guint16(name_u16_len+1));
+	(*(ofstream*)userdata).write((char*)&name_length, 2);
+
+	(*(ofstream*)userdata).write((char*)name_u16, (name_u16_len+1)*2);
+
+	(*(ofstream*)userdata)<<"RGB ";
+
+	guint32 r=GINT32_FROM_BE(*((guint*)&color->rgb.red)),
+			g=GINT32_FROM_BE(*((guint*)&color->rgb.green)),
+			b=GINT32_FROM_BE(*((guint*)&color->rgb.blue));
+
+
+	(*(ofstream*)userdata).write((char*)&r, 4);
+	(*(ofstream*)userdata).write((char*)&g, 4);
+	(*(ofstream*)userdata).write((char*)&b, 4);
+
+	gint16 color_type = GINT16_FROM_BE(0);
+	(*(ofstream*)userdata).write((char*)&color_type, 2);
+
+	g_free(name_u16);
+
+	return 0;
+}
+
+gint32 palette_export_ase(GtkWidget* palette, const gchar* filename, gboolean selected){
+	ofstream f(filename, ios::out | ios::trunc | ios::binary);
+	if (f.is_open()){
+		f<<"ASEF";	//magic header
+		guint32 version=GINT32_FROM_BE(0x00010000);
+		f.write((char*)&version, 4);
+
+		guint32 blocks;
+		if (selected)
+			blocks=palette_list_get_selected_count(palette);
+		else
+			blocks=palette_list_get_count(palette);
+		blocks=GINT32_FROM_BE(blocks);
+		f.write((char*)&blocks, 4);
+
+		if (selected)
+			palette_list_foreach_selected(palette, palette_export_mtl_color, &f);
+		else
+			palette_list_foreach(palette, palette_export_ase_color, &f);
+
+		//guint16 terminator=0;
+		//f.write((char*)&terminator, 2);
+
+		f.close();
+		return 0;
+	}
+	return -1;
+}
+
 
 int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected){
 	GtkWidget *dialog;
@@ -42,31 +163,36 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 						  NULL);
 
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
-	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "GIMP palette *.gpl");
-	gtk_file_filter_add_pattern(filter, "*.gpl");
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	struct export_formats{
+		const gchar* name;
+		const gchar* pattern;
+		gint32 (*export_function)(GtkWidget* palette, const gchar* filename, gboolean selected);
+	};
+	struct export_formats formats[] = {
+			{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
+			{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
+			{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
+	};
+
+	for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
+		filter = gtk_file_filter_new();
+		gtk_file_filter_set_name(filter, formats[i].name);
+		gtk_file_filter_add_pattern(filter, formats[i].pattern);
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	}
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
 		gchar *filename;
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-		gchar* name = g_path_get_basename(filename);
-
-		ofstream f(filename, ios::out | ios::trunc);
-		if (f.is_open()){
-			f<<"GIMP Palette"<<endl;
-			f<<"Name: "<<name<<endl;
-			f<<"#"<<endl;
-
-			if (selected)
-				palette_list_foreach_selected(palette, palette_export_gpl, &f);
-			else
-				palette_list_foreach(palette, palette_export_gpl, &f);
-
-			f.close();
+		const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
+		for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
+			if (g_strcmp0(formats[i].name, format_name)==0){
+				formats[i].export_function(palette, filename, selected);
+			}
 		}
-		g_free(name);
+
 		g_free(filename);
 	}
 
