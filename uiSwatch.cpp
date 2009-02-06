@@ -28,7 +28,7 @@ G_DEFINE_TYPE (GtkSwatch, gtk_swatch, GTK_TYPE_DRAWING_AREA);
 static gboolean gtk_swatch_expose(GtkWidget *swatch, GdkEventExpose *event);
 
 enum {
-	ACTIVE_COLOR_CHANGED, LAST_SIGNAL
+	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, LAST_SIGNAL
 };
 
 static guint gtk_swatch_signals[LAST_SIGNAL] = { 0 };
@@ -71,6 +71,8 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
 	gtk_swatch_signals[ACTIVE_COLOR_CHANGED] = g_signal_new("active_color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkSwatchClass, active_color_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
+	gtk_swatch_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkSwatchClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 static void gtk_swatch_init(GtkSwatch *swatch) {
@@ -162,6 +164,7 @@ void gtk_swatch_set_active_color(GtkSwatch* swatch, Color* color) {
 	color_copy(color, &ns->color[ns->current_color]);
 
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
+	g_signal_emit(GTK_WIDGET(swatch), gtk_swatch_signals[COLOR_CHANGED], 0);
 }
 
 void gtk_swatch_set_main_color(GtkSwatch* swatch, guint index, Color* color) {

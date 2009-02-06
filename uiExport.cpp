@@ -23,13 +23,6 @@
 #include <string>
 using namespace std;
 
-/*
-GIMP Palette
-Name: Gold
-#
-252 252 128	Untitled
-252 252 128	Untitled
- */
 
 gint32 palette_export_gpl(Color* color, const gchar *name, void *userdata){
 	(*((ofstream*)userdata))<<gint32(color->rgb.red*255)<<"\t"

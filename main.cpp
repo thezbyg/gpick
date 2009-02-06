@@ -65,9 +65,6 @@ const gchar* program_authors[] = {"Albertas Vyšniauskas <thezbyg@gmail.com>", N
 
 typedef struct MainWindow{
 	GtkWidget *window;
-	//GtkWidget *text_rgb;
-	//GtkWidget *text_hsv;
-	//GtkWidget *color_widget;
 
 	GtkWidget *swatch_display;
 	GtkWidget *zoomed_display;
@@ -81,21 +78,14 @@ typedef struct MainWindow{
 	GtkWidget* green_line;
 	GtkWidget* blue_line;
 
-	GtkWidget* color_widget;
 	GtkWidget* color_name;
 
-	//Color swatch_color[6];
-	//int swatch_color_next;
-
-	//Color main_color;
-
 	ColorNames* cnames;
-
 	struct Sampler* sampler;
-
 	GKeyFile* settings;
 
-	//int oversampling;
+	gboolean add_to_palette;
+
 }MainWindow;
 
 static gboolean
@@ -113,6 +103,7 @@ destroy( GtkWidget *widget, gpointer data )
 
 	g_key_file_set_integer(window->settings, "Sampler", "Oversample", sampler_get_oversample(window->sampler));
 	g_key_file_set_integer(window->settings, "Sampler", "Falloff", sampler_get_falloff(window->sampler));
+	g_key_file_set_boolean(window->settings, "Sampler", "Add to palette", window->add_to_palette);
 
 	g_key_file_set_double(window->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(window->zoomed_display)));
 
@@ -132,6 +123,16 @@ gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_
 gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gdouble default_value) {
 	GError *error=NULL;
 	gdouble r=g_key_file_get_double(key_file, group_name, key, &error);
+	if (error){
+		g_error_free(error);
+		r=default_value;
+	}
+	return r;
+}
+
+gboolean g_key_file_get_boolean_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value) {
+	GError *error=NULL;
+	gboolean r=g_key_file_get_boolean(key_file, group_name, key, &error);
 	if (error){
 		g_error_free(error);
 		r=default_value;
@@ -186,8 +187,15 @@ on_swatch_active_color_changed( GtkWidget *widget, gint32 new_active_color, gpoi
 {
 	MainWindow* window=(MainWindow*)data;
 	updateDiplays(window);
-
 }
+
+static void
+on_swatch_color_changed( GtkWidget *widget, gpointer data )
+{
+	MainWindow* window=(MainWindow*)data;
+	updateDiplays(window);
+}
+
 
 static void
 on_swatch_menu_detach(GtkWidget *attach_widget, GtkMenu *menu)
@@ -286,6 +294,11 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			updateMainColor(window);
 			gtk_swatch_set_color_to_main(GTK_SWATCH(window->swatch_display));
 			updateDiplays(window);
+			if (window->add_to_palette){
+				Color c;
+				gtk_swatch_get_active_color(GTK_SWATCH(window->swatch_display), &c);
+				palette_list_add_entry(window->color_list, window->cnames, &c);
+			}
 			return TRUE;
 			break;
 
@@ -485,6 +498,29 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 	return FALSE;
 }
 
+
+static void on_popup_menu(GtkWidget *widget, gpointer user_data) {
+	GtkWidget *menu;
+	GtkWidget* item ;
+	gint32 button, event_time;
+	MainWindow* window=(MainWindow*)user_data;
+
+	Color c;
+	updateMainColor(window);
+	gtk_swatch_get_main_color(GTK_SWATCH(window->swatch_display), &c);
+
+	menu = palette_list_create_copy_menu(&c);
+
+    gtk_widget_show_all (GTK_WIDGET(menu));
+
+	button = 0;
+	event_time = gtk_get_current_event_time ();
+
+	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, palette_popup_menu_detach);
+	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL,
+				  button, event_time);
+}
+
 void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)) {
@@ -504,6 +540,11 @@ void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 
 
 	}	*/
+}
+
+
+void on_add_to_palette_changed(GtkWidget *widget, gpointer data) {
+	((MainWindow*)data)->add_to_palette = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 GtkWidget* create_falloff_type_list (void){
@@ -546,7 +587,7 @@ GtkWidget* create_falloff_type_list (void){
 
 
 	GtkIconTheme *icon_theme;
-	GdkPixbuf *pixbuf;
+	//GdkPixbuf *pixbuf;
 	icon_theme = gtk_icon_theme_get_default ();
 
 	gint icon_size;
@@ -594,7 +635,7 @@ void set_main_window_icon() {
 	GList *icons = 0;
 
 	GtkIconTheme *icon_theme;
-	GdkPixbuf *pixbuf;
+	//GdkPixbuf *pixbuf;
 	icon_theme = gtk_icon_theme_get_default();
 
 	gint sizes[] = { 16, 32, 48, 128 };
@@ -657,6 +698,7 @@ main(int argc, char **argv)
     g_signal_connect (G_OBJECT (window->window), "delete_event", G_CALLBACK (delete_event), NULL);
     g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
     g_signal_connect (G_OBJECT (window->window), "key_press_event", G_CALLBACK (on_key_up), window);
+    g_signal_connect (G_OBJECT (window->window), "popup-menu",     G_CALLBACK (on_popup_menu), window);
 
     GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame;
     int table_y;
@@ -682,6 +724,7 @@ main(int argc, char **argv)
 				gtk_container_add (GTK_CONTAINER(frame), widget);
 				//gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 				g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_swatch_active_color_changed), window);
+				g_signal_connect (G_OBJECT (widget), "color_changed", G_CALLBACK (on_swatch_color_changed), window);
 				g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), window);
 				gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(window->settings, "Swatch", "Active Color", 1));
 				window->swatch_display = widget;
@@ -805,6 +848,14 @@ main(int argc, char **argv)
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
+			//gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Add to palette:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+			widget = gtk_check_button_new_with_mnemonic ("_Add to palette immediately");
+			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_add_to_palette_changed), window);
+			//gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Add to palette", FALSE));
+			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+			table_y++;
+
 			/*widget = gtk_entry_new();
 			gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 			window->text_rgb = widget;
@@ -817,7 +868,7 @@ main(int argc, char **argv)
 	vbox = gtk_vbox_new(FALSE, 5);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Palette"));
 
-		widget = palette_list_new();
+		widget = palette_list_new(window->swatch_display);
 		window->color_list = widget;
 
 		g_signal_connect (G_OBJECT (widget), "popup-menu",     G_CALLBACK (on_palette_popup_menu), window);

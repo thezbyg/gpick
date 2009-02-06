@@ -22,8 +22,9 @@
 #include <gtk/gtk.h>
 #include "Color.h"
 #include "ColorNames.h"
+#include "uiSwatch.h"
 
-GtkWidget* palette_list_new();
+GtkWidget* palette_list_new(GtkWidget* swatch);
 void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* color);
 
 void palette_list_remove_all_entries(GtkWidget* widget);

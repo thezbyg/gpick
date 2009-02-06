@@ -36,7 +36,22 @@ void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new
 	-1);
 }
 
-GtkWidget* palette_list_new() {
+void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data) {
+	GtkTreeModel* model;
+	GtkTreeIter iter;
+
+	model=gtk_tree_view_get_model(tree_view);
+	gtk_tree_model_get_iter(model, &iter, path);
+
+	Color* c;
+	gtk_tree_model_get(model, &iter, 2, &c, -1);
+	gtk_swatch_set_active_color(GTK_SWATCH(user_data), c);
+
+
+}
+
+
+GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -86,6 +101,8 @@ GtkWidget* palette_list_new() {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
 
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
+
+	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated) , swatch);
 
 	return view;
 }
