@@ -130,6 +130,12 @@ gint32 palette_list_get_selected_count(GtkWidget* widget) {
 	return gtk_tree_selection_count_selected_rows(gtk_tree_view_get_selection(GTK_TREE_VIEW(widget)));
 }
 
+gint32 palette_list_get_count(GtkWidget* widget){
+	GtkTreeModel *store;
+	store=gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+	return gtk_tree_model_iter_n_children(store, NULL);
+}
+
 gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color) {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(widget) );
 	GtkListStore *store;
@@ -276,3 +282,59 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 
 	return menu;
 }
+
+gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata){
+	GtkTreeIter iter;
+	GtkListStore *store;
+	gboolean valid;
+
+	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
+    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+
+	Color* color;
+	gchar* color_name;
+
+    while (valid){
+
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &color, 3, &color_name, -1);
+		callback(color, color_name, userdata);
+		g_free(color_name);
+
+		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
+    }
+	return 0;
+}
+
+gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata){
+	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(widget) );
+	GtkListStore *store;
+	GtkTreeIter iter;
+
+	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
+
+	GList *list = gtk_tree_selection_get_selected_rows ( selection, 0 );
+	GList *i = list;
+
+	Color* color;
+	gchar* color_name;
+
+	while (i) {
+
+		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
+
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &color, 3, &color_name, -1);
+		callback(color, color_name, userdata);
+		g_free(color_name);
+
+		i = g_list_next(i);
+	}
+
+	g_list_foreach (list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free (list);
+	return 0;
+}
+
+
+
+
+

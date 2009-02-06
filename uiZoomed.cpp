@@ -177,8 +177,19 @@ void gtk_zoomed_update (GtkZoomed* zoomed) {
 }
 void gtk_zoomed_set_zoom (GtkZoomed* zoomed, gfloat zoom) {
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(zoomed);
-	ns->zoom=zoom;
+	if (zoom<2){
+		ns->zoom=2;
+	}else if (zoom>10){
+		ns->zoom=10;
+	}else{
+		ns->zoom=zoom;
+	}
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
+}
+
+gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed){
+	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(zoomed);
+	return ns->zoom;
 }
 
 static gboolean

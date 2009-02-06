@@ -31,6 +31,7 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 #include <glib.h>
+#include <glib/gstdio.h>
 #include <gdk/gdkkeysyms.h>
 
 #include "uiSwatch.h"
@@ -38,6 +39,7 @@
 #include "uiZoomed.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
+#include "uiExport.h"
 
 #include "Sampler.h"
 #include "Color.h"
@@ -112,7 +114,29 @@ destroy( GtkWidget *widget, gpointer data )
 	g_key_file_set_integer(window->settings, "Sampler", "Oversample", sampler_get_oversample(window->sampler));
 	g_key_file_set_integer(window->settings, "Sampler", "Falloff", sampler_get_falloff(window->sampler));
 
+	g_key_file_set_double(window->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(window->zoomed_display)));
+
     gtk_main_quit ();
+}
+
+gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gint default_value) {
+	GError *error=NULL;
+	gint r=g_key_file_get_integer(key_file, group_name, key, &error);
+	if (error){
+		g_error_free(error);
+		r=default_value;
+	}
+	return r;
+}
+
+gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gdouble default_value) {
+	GError *error=NULL;
+	gdouble r=g_key_file_get_double(key_file, group_name, key, &error);
+	if (error){
+		g_error_free(error);
+		r=default_value;
+	}
+	return r;
 }
 
 
@@ -131,8 +155,6 @@ updateMainColor( gpointer data )
 
 		gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
 	}
-
-
 
 	return TRUE;
 }
@@ -157,9 +179,6 @@ updateDiplays(MainWindow* window)
 	string color_name = color_names_get(window->cnames, &c);
 	gtk_entry_set_text(GTK_ENTRY(window->color_name), color_name.c_str());
 
-	/*char temp[128];
-	color_name_get(&c,temp);
-	gtk_entry_set_text(GTK_ENTRY(window->color_name), temp);*/
 }
 
 static void
@@ -378,6 +397,16 @@ static void palette_popup_menu_remove_selected(GtkWidget *widget, gpointer data)
 	palette_list_remove_selected_entries(window->color_list);
 }
 
+static void palette_popup_menu_export(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	show_palette_export_dialog(0, window->color_list, FALSE);
+}
+
+static void palette_popup_menu_export_selected(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	show_palette_export_dialog(0, window->color_list, TRUE);
+}
+
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
 	GtkWidget *menu;
 	GtkWidget* item ;
@@ -388,6 +417,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	menu = gtk_menu_new ();
 
 	gint32 selected_count = palette_list_get_selected_count(window->color_list);
+	gint32 total_count = palette_list_get_count(window->color_list);
 
 	Color c;
 	color_zero(&c);
@@ -400,6 +430,23 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
+    item = gtk_menu_item_new_with_image ("_Export all...", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_export),window);
+    gtk_widget_set_sensitive(item, (total_count >= 1));
+
+    item = gtk_menu_item_new_with_image ("Export _selected...", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_export_selected),window);
+    gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+    item = gtk_menu_item_new_with_image ("_Import...", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_export),window);
+    gtk_widget_set_sensitive(item, 0);
+
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
     item = gtk_menu_item_new_with_image ("_Remove", gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_remove_selected),window);
@@ -408,7 +455,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     item = gtk_menu_item_new_with_image ("Remove _all", gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_remove_all),window);
-
+    gtk_widget_set_sensitive(item, (total_count >= 1));
 
     gtk_widget_show_all (GTK_WIDGET(menu));
 
@@ -502,12 +549,15 @@ GtkWidget* create_falloff_type_list (void){
 	GdkPixbuf *pixbuf;
 	icon_theme = gtk_icon_theme_get_default ();
 
-	gtk_icon_theme_prepend_search_path(icon_theme, "../res/");
+	gint icon_size;
+	gtk_icon_size_lookup(GTK_ICON_SIZE_MENU, 0, &icon_size);
+
+	//gtk_icon_theme_prepend_search_path(icon_theme, "../res/");
 
 	for (guint32 i=0;i<sizeof(falloff_type_ids)/sizeof(gint32);++i){
 		GError *error = NULL;
 
-		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, falloff_types[i][0], 24, GtkIconLookupFlags(0), &error);
+		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, falloff_types[i][0], icon_size, GtkIconLookupFlags(0), &error);
 
 		if (error) g_error_free (error);
 
@@ -540,12 +590,41 @@ string build_config_path(const gchar *filename){
 	return s.str();
 }
 
+void set_main_window_icon() {
+	GList *icons = 0;
+
+	GtkIconTheme *icon_theme;
+	GdkPixbuf *pixbuf;
+	icon_theme = gtk_icon_theme_get_default();
+
+	gint sizes[] = { 16, 32, 48, 128 };
+
+	for (guint32 i = 0; i < sizeof(sizes) / sizeof(gint); ++i) {
+		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, "gpick-icon", sizes[i], GtkIconLookupFlags(0), 0);
+		if (pixbuf) {
+			icons = g_list_append(icons, pixbuf);
+		}
+	}
+
+	if (icons){
+		gtk_window_set_default_icon_list(icons);
+
+		g_list_foreach(icons, (GFunc)g_object_unref, NULL);
+		g_list_free(icons);
+	}
+}
+
+
 int
 main(int argc, char **argv)
 {
 	gtk_set_locale ();
 	gtk_init (&argc, &argv);
 	g_set_application_name(program_name);
+
+	GtkIconTheme *icon_theme;
+	icon_theme = gtk_icon_theme_get_default ();
+	gtk_icon_theme_prepend_search_path(icon_theme, "../res/");
 
 	//printf("%s %s %s\n", g_get_home_dir(), g_get_prgname(), g_get_user_config_dir() );
 
@@ -557,9 +636,10 @@ main(int argc, char **argv)
 	string config_file = build_config_path("settings");
 	if (!(g_key_file_load_from_file(window->settings, config_file.c_str(), G_KEY_FILE_KEEP_COMMENTS, 0))){
 		string config_path = build_config_path(NULL);
-		//g_mkdir(config_path.c_str(), S_IRWXU);
+		g_mkdir(config_path.c_str(), S_IRWXU);
 	}
 
+	set_main_window_icon();
 
 
 	window->sampler = sampler_new();
@@ -603,6 +683,7 @@ main(int argc, char **argv)
 				//gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 				g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_swatch_active_color_changed), window);
 				g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), window);
+				gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(window->settings, "Swatch", "Active Color", 1));
 				window->swatch_display = widget;
 
 			frame = gtk_frame_new("Zoomed area");
@@ -706,11 +787,13 @@ main(int argc, char **argv)
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Oversample:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			widget = gtk_hscale_new_with_range (0,16,1);
 			g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (on_oversample_value_changed), window);
+			gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Sampler", "Oversample", 0));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Falloff:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			widget = create_falloff_type_list();
+			gtk_combo_box_set_active(GTK_COMBO_BOX(widget), g_key_file_get_integer_with_default(window->settings, "Sampler", "Falloff", NONE));
 			g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (on_oversample_falloff_changed), window);
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
@@ -718,6 +801,7 @@ main(int argc, char **argv)
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Zoom:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			widget = gtk_hscale_new_with_range (2,10,0.5);
 			g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (on_zoom_value_changed), window);
+			gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
@@ -760,6 +844,8 @@ main(int argc, char **argv)
     gtk_color_selection_set_has_opacity_control (GTK_COLOR_SELECTION(widget), FALSE);
     gtk_box_pack_end (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
     window->color_widget = widget;*/
+
+
 
     updateDiplays(window);
 

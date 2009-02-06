@@ -32,7 +32,10 @@ void palette_list_remove_selected_entries(GtkWidget* widget);
 GtkWidget* palette_list_create_copy_menu (Color* color);
 
 gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color);
+gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata);
+gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata);
 
 gint32 palette_list_get_selected_count(GtkWidget* widget);
+gint32 palette_list_get_count(GtkWidget* widget);
 
 #endif /* UILISTPALETTE_H_ */
