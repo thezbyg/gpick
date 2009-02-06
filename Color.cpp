@@ -266,3 +266,60 @@ Color* color_new() {
 void color_destroy(Color *a) {
 	delete a;
 }
+
+void color_rgb_to_hsl(Color* a, Color* b) {
+	float min, max, delta, R, G, B;
+
+	min = min_float_3(a->rgb.red, a->rgb.green, a->rgb.blue);
+	max = max_float_3(a->rgb.red, a->rgb.green, a->rgb.blue);
+	delta = max - min;
+
+	b->hsl.lightness = (max + min) / 2;
+
+	if (delta == 0) {
+		b->hsl.hue = 0;
+		b->hsl.saturation = 0;
+	} else {
+		if (b->hsl.lightness < 0.5) {
+			b->hsl.saturation = delta / (max + min);
+		} else {
+			b->hsl.saturation = delta / (2 - max - min);
+		}
+
+		/*R = (((max - a->rgb.red) / 6) + (delta / 2)) / delta;
+		G = (((max - a->rgb.green) / 6) + (delta / 2)) / delta;
+		B = (((max - a->rgb.blue) / 6) + (delta / 2)) / delta;
+
+		if (a->rgb.red == max) {
+			b->hsl.hue = B - G;
+		} else if (a->rgb.green == max) {
+			b->hsl.hue = (1 / 3) + R - B;
+		} else if (a->rgb.blue == max) {
+			b->hsl.hue = (2 / 3) + G - R;
+		}
+
+		if (b->hsl.hue < 0)
+			b->hsl.hue += 1;
+		if (b->hsl.hue > 1)
+			b->hsl.hue -= 1;*/
+
+		if (a->rgb.red == max)
+			b->hsv.hue = (a->rgb.green - a->rgb.blue) / delta;
+		else if (a->rgb.green == max)
+			b->hsv.hue = 2.0f + (a->rgb.blue - a->rgb.red) / delta;
+		else if (a->rgb.blue == max)
+			b->hsv.hue = 4.0f + (a->rgb.red - a->rgb.green) / delta;
+
+		b->hsv.hue /= 6.0f;
+
+		if (b->hsv.hue < 0.0f)
+			b->hsv.hue += 1.0f;
+		if (b->hsv.hue >= 1.0f)
+			b->hsv.hue -= 1.0f;
+
+	}
+}
+
+
+
+

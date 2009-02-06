@@ -32,6 +32,11 @@ typedef struct Color{
 			float value;
 		}hsv;
 		struct{
+			float hue;
+			float saturation;
+			float lightness;
+		}hsl;
+		struct{
 			float x;
 			float y;
 			float z;
@@ -43,6 +48,9 @@ typedef struct Color{
 		}lab;
 	};
 }Color;
+
+void
+color_rgb_to_hsl(Color* a, Color* b);
 
 void
 color_rgb_to_hsv(Color* a, Color* b);

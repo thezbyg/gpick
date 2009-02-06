@@ -277,6 +277,9 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 	gchar* tmp;
 	menu = gtk_menu_new();
 
+	Color hsl;
+	color_rgb_to_hsl(color, &hsl);
+
 	stringstream s;
 
 	s.str("");
@@ -289,6 +292,14 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 
 	s.str("");
 	s<<dec<<"rgb("<< int(color->rgb.red * 255)<<", "<<int(color->rgb.green * 255)<<", "<<int(color->rgb.blue * 255)<<")";
+	tmp = g_strdup(s.str().c_str());
+	item = gtk_menu_item_new_with_image(tmp, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
+	g_object_set_data_full(G_OBJECT(item), "copy-value", tmp, palette_list_color_value_destroy);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+	s.str("");
+	s<<dec<<"hsl("<< int(hsl.hsl.hue*360)<<", "<<int(hsl.hsl.saturation*100)<<"%, "<<int(hsl.hsl.lightness*100)<<"%)";
 	tmp = g_strdup(s.str().c_str());
 	item = gtk_menu_item_new_with_image(tmp, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
