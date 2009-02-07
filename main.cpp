@@ -41,6 +41,7 @@
 #include "uiUtilities.h"
 #include "uiExport.h"
 #include "uiDialogMix.h"
+#include "uiDialogShades.h"
 
 #include "Sampler.h"
 #include "Color.h"
@@ -407,6 +408,10 @@ static void palette_popup_menu_mix(GtkWidget *widget, gpointer data) {
 	g_list_free(colors);
 }
 
+static void palette_popup_menu_shades(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	dialog_shades_show(GTK_WINDOW(window->window), window->color_list, window->settings);
+}
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
 	GtkWidget *menu;
@@ -435,6 +440,11 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_mix),window);
     gtk_widget_set_sensitive(item, (selected_count == 2));
+
+    item = gtk_menu_item_new_with_image ("Create _shades...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_shades),window);
+    gtk_widget_set_sensitive(item, (selected_count >= 1));
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 

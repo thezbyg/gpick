@@ -19,6 +19,8 @@
 #ifndef UIDIALOGSHADES_H_
 #define UIDIALOGSHADES_H_
 
+#include <gtk/gtk.h>
 
+void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
 
 #endif /* UIDIALOGSHADES_H_ */

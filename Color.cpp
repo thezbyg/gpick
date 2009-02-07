@@ -305,50 +305,51 @@ void color_rgb_to_hsl(Color* a, Color* b) {
 
 
 void color_hsl_to_rgb(Color* a, Color* b) {
-	if (a->hsl.saturation==0){
-		b->rgb.red = b->rgb.green = b->rgb.blue =  a->hsl.lightness;
-	}else{
-		float temp1, temp2, R, G, B;
+	if (a->hsl.saturation == 0) {
+		b->rgb.red = b->rgb.green = b->rgb.blue = a->hsl.lightness;
+	} else {
+		float q, p, R, G, B;
 
 		if (a->hsl.lightness < 0.5)
-			temp2 = a->hsl.lightness * (1.0 + a->hsl.saturation);
+			q = a->hsl.lightness * (1.0 + a->hsl.saturation);
 		else
-			temp2 = a->hsl.lightness + a->hsl.saturation - a->hsl.lightness * a->hsl.saturation;
+			q = a->hsl.lightness + a->hsl.saturation - a->hsl.lightness * a->hsl.saturation;
 
-		temp1 = 2 * a->hsl.lightness - temp2;
+		p = 2 * a->hsl.lightness - q;
 
-		R = a->hsl.hue+1/3;
-		if (R>1) R-=1;
+		R = a->hsl.hue+1/3.0;
 		G = a->hsl.hue;
-		B = a->hsl.hue-1/3;
+		B = a->hsl.hue-1/3.0;
+
+		if (R>1) R-=1;
 		if (B<0) B+=1;
 
 		if (6.0 * R < 1)
-			b->rgb.red = temp1 + (temp2 - temp1) * 6.0 * R;
+			b->rgb.red = p + (q - p) * 6.0 * R;
 		else if (2.0 * R < 1)
-			b->rgb.red = temp2;
+			b->rgb.red = q;
 		else if (3.0 * R < 2)
-			b->rgb.red = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - R) * 6.0;
+			b->rgb.red = p + (q - p) * ((2.0 / 3.0) - R) * 6.0;
 		else
-			b->rgb.red = temp1;
+			b->rgb.red = p;
 
 		if (6.0 * G < 1)
-			b->rgb.green = temp1 + (temp2 - temp1) * 6.0 * G;
+			b->rgb.green = p + (q - p) * 6.0 * G;
 		else if (2.0 * G < 1)
-			b->rgb.green = temp2;
+			b->rgb.green = q;
 		else if (3.0 * G < 2)
-			b->rgb.green = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - G) * 6.0;
+			b->rgb.green = p + (q - p) * ((2.0 / 3.0) - G) * 6.0;
 		else
-			b->rgb.green = temp1;
+			b->rgb.green = p;
 
 		if (6.0 * B < 1)
-			b->rgb.blue = temp1 + (temp2 - temp1) * 6.0 * B;
+			b->rgb.blue = p + (q - p) * 6.0 * B;
 		else if (2.0 * B < 1)
-			b->rgb.blue = temp2;
+			b->rgb.blue = q;
 		else if (3.0 * B < 2)
-			b->rgb.blue = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - B) * 6.0;
+			b->rgb.blue = p + (q - p) * ((2.0 / 3.0) - B) * 6.0;
 		else
-			b->rgb.blue = temp1;
+			b->rgb.blue = p;
 
 
 	}

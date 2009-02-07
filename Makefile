@@ -11,7 +11,7 @@ RES = windres
 
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
 uiColorComponent.cpp uiDialogShades.cpp uiListPalette.cpp \
-uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp
+uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp
 
 RESOURCES = 
 

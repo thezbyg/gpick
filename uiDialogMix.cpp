@@ -44,7 +44,7 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, 
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), g_key_file_get_integer_with_default(settings, "Mix Dialog", "Steps", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), g_key_file_get_integer_with_default(settings, "Mix Dialog", "Steps", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
