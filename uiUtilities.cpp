@@ -31,6 +31,12 @@ GtkWidget* gtk_label_aligned_new(gchar* text, gfloat xalign, gfloat yalign, gflo
 	return align;
 }
 
+GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale){
+	GtkWidget* align = gtk_alignment_new(xalign, yalign, xscale, yscale);
+	gtk_container_add(GTK_CONTAINER(align), widget);
+	return align;
+}
+
 gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gint default_value) {
 	GError *error=NULL;
 	gint r=g_key_file_get_integer(key_file, group_name, key, &error);
@@ -52,11 +58,21 @@ gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *grou
 }
 
 gboolean g_key_file_get_boolean_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value) {
-	GError *error=NULL;
-	gboolean r=g_key_file_get_boolean(key_file, group_name, key, &error);
-	if (error){
+	GError *error = NULL;
+	gboolean r = g_key_file_get_boolean(key_file, group_name, key, &error);
+	if (error) {
 		g_error_free(error);
-		r=default_value;
+		r = default_value;
+	}
+	return r;
+}
+
+gchar* g_key_file_get_string_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, const gchar *default_value) {
+	GError *error = NULL;
+	gchar* r = g_key_file_get_string(key_file, group_name, key, &error);
+	if (error) {
+		g_error_free(error);
+		r = g_strdup(default_value);
 	}
 	return r;
 }

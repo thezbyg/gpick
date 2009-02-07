@@ -17,6 +17,7 @@
  */
 
 #include "uiExport.h"
+#include "uiUtilities.h"
 #include "uiListPalette.h"
 
 #include <fstream>
@@ -39,6 +40,7 @@ gint32 palette_export_gpl(GtkWidget* palette, const gchar* filename, gboolean se
 
 		f<<"GIMP Palette"<<endl;
 		f<<"Name: "<<name<<endl;
+		f<<"Columns: 1"<<endl;
 		f<<"#"<<endl;
 
 		g_free(name);
@@ -152,7 +154,7 @@ gint32 palette_export_ase(GtkWidget* palette, const gchar* filename, gboolean se
 }
 
 
-int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected){
+int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected, GKeyFile* settings){
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
@@ -170,26 +172,49 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 		gint32 (*export_function)(GtkWidget* palette, const gchar* filename, gboolean selected);
 	};
 	struct export_formats formats[] = {
-			{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
-			{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
-			{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
+		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
+		{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
+		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
 	};
+
+
+	gchar* default_path=g_key_file_get_string_with_default(settings, "Export Dialog", "Path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	//gtk_file_chooser_set_filename (GTK_FILE_CHOOSER(dialog), default_filename);
+	g_free(default_path);
+
+	gchar* selected_filter=g_key_file_get_string_with_default(settings, "Export Dialog", "Filter", "*.gpl");
 
 	for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
 		filter = gtk_file_filter_new();
 		gtk_file_filter_set_name(filter, formats[i].name);
 		gtk_file_filter_add_pattern(filter, formats[i].pattern);
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+		if (g_strcmp0(formats[i].pattern, selected_filter)==0){
+			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+		}
 	}
+
+	g_free(selected_filter);
+
+
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
 		gchar *filename;
 		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
+		gchar *path;
+		path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+		g_key_file_set_string(settings, "Export Dialog", "Path", path);
+		g_free(path);
+
 		const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
 		for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
 			if (g_strcmp0(formats[i].name, format_name)==0){
 				formats[i].export_function(palette, filename, selected);
+
+				g_key_file_set_string(settings, "Export Dialog", "Filter", formats[i].pattern);
 			}
 		}
 

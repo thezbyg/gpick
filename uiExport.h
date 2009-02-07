@@ -21,6 +21,6 @@
 
 #include <gtk/gtk.h>
 
-int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected);
+int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected, GKeyFile* settings);
 
 #endif /* UIEXPORT_H_ */

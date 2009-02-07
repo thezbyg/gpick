@@ -113,7 +113,7 @@ gtk_color_component_new (GtkColorComponentComp component)
 
 	ns->component=component;
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget),204,25);
+	gtk_widget_set_size_request(GTK_WIDGET(widget),200,24);
 
 	return widget;
 }
@@ -247,14 +247,14 @@ gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event)
 
 	//cairo_new_path(cr);
 	cairo_set_source (cr, pattern);
-	cairo_rectangle (cr, 0, 0, 200, 16);
+	cairo_rectangle (cr, 0, 0, 200, 24);
 	cairo_fill (cr);
 	cairo_pattern_destroy(pattern);
 
 	//cairo_new_path(cr);
 	cairo_move_to(cr, 200*pointer_pos, 17);
-	cairo_line_to(cr, 200*pointer_pos+3, 22);
-	cairo_line_to(cr, 200*pointer_pos-3, 22);
+	cairo_line_to(cr, 200*pointer_pos+3, 25);
+	cairo_line_to(cr, 200*pointer_pos-3, 25);
 	cairo_set_source_rgb (cr, 1, 1, 1);
 	cairo_fill_preserve (cr);
 	cairo_set_source_rgb (cr, 0, 0, 0);
