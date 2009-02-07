@@ -105,6 +105,7 @@ destroy( GtkWidget *widget, gpointer data )
 	g_key_file_set_integer(window->settings, "Sampler", "Oversample", sampler_get_oversample(window->sampler));
 	g_key_file_set_integer(window->settings, "Sampler", "Falloff", sampler_get_falloff(window->sampler));
 	g_key_file_set_boolean(window->settings, "Sampler", "Add to palette", window->add_to_palette);
+	g_key_file_set_boolean(window->settings, "Sampler", "Rotate swatch after sample", window->rotate_swatch);
 
 	g_key_file_set_double(window->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(window->zoomed_display)));
 
