@@ -27,6 +27,8 @@
 GtkWidget* palette_list_new(GtkWidget* swatch);
 void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* color);
 
+void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Color* color);
+
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
 

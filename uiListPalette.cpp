@@ -229,6 +229,11 @@ void palette_list_remove_selected_entries(GtkWidget* widget) {
 }
 
 void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* color) {
+	string color_name = color_names_get(color_names, color);
+	palette_list_add_entry_name(widget, color_name.c_str(), color);
+}
+
+void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Color* color){
 	GtkTreeIter iter1;
 	GtkListStore *store;
 
@@ -244,20 +249,17 @@ void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* c
 	Color* c=color_new();
 	color_copy(color, c );
 
-	string color_name = color_names_get(color_names, color);
-
 	gtk_list_store_prepend(store, &iter1);
 	gtk_list_store_set(store, &iter1,
 		0, pixbuf,
 		1, hex_text,
 		2, c,
-		3, color_name.c_str(),
+		3, color_name,
 	-1);
 
 	g_free(hex_text);
 	g_object_unref (pixbuf);
 }
-
 
 
 

@@ -16,47 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "uiUtilities.h"
+#ifndef UIDIALOGMIX_H_
+#define UIDIALOGMIX_H_
 
-GtkWidget* gtk_menu_item_new_with_image(const gchar* label, GtkWidget *image) {
-	GtkWidget* menu_item = gtk_image_menu_item_new_with_mnemonic(label);
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image);
-	return menu_item;
-}
+#include <gtk/gtk.h>
 
-GtkWidget* gtk_label_aligned_new(gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale) {
-	GtkWidget* align = gtk_alignment_new(xalign, yalign, xscale, yscale);
-	GtkWidget* label = gtk_label_new(text);
-	gtk_container_add(GTK_CONTAINER(align), label);
-	return align;
-}
+#include "Color.h"
 
-gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gint default_value) {
-	GError *error=NULL;
-	gint r=g_key_file_get_integer(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
+void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, GKeyFile* settings);
 
-gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gdouble default_value) {
-	GError *error=NULL;
-	gdouble r=g_key_file_get_double(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
-
-gboolean g_key_file_get_boolean_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value) {
-	GError *error=NULL;
-	gboolean r=g_key_file_get_boolean(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
+#endif /* UIDIALOGMIX_H_ */

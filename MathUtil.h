@@ -36,6 +36,10 @@ max_int( int a, int b);
 float
 clamp_float( float x, float a, float b);
 
+float
+mix_float( float a, float b, float mix);
+
+
 int
 clamp_int( int x, int a, int b);
 
@@ -44,6 +48,8 @@ abs_int(int a);
 
 float
 abs_float(float a);
+
+
 
 typedef struct matrix3x3{
 	float m[3][3];

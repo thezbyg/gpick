@@ -140,3 +140,6 @@ vector2_dot(vector2* v1, vector2* v2)
 	return v1->x*v2->x + v1->y*v2->y;
 }
 
+float mix_float( float a, float b, float mix){
+	return a*(1-mix)+b*mix;
+}

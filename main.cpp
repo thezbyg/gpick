@@ -40,6 +40,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "uiExport.h"
+#include "uiDialogMix.h"
 
 #include "Sampler.h"
 #include "Color.h"
@@ -112,35 +113,7 @@ destroy( GtkWidget *widget, gpointer data )
     gtk_main_quit ();
 }
 
-gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gint default_value) {
-	GError *error=NULL;
-	gint r=g_key_file_get_integer(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
 
-gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gdouble default_value) {
-	GError *error=NULL;
-	gdouble r=g_key_file_get_double(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
-
-gboolean g_key_file_get_boolean_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value) {
-	GError *error=NULL;
-	gboolean r=g_key_file_get_boolean(key_file, group_name, key, &error);
-	if (error){
-		g_error_free(error);
-		r=default_value;
-	}
-	return r;
-}
 
 
 static gboolean
@@ -315,14 +288,7 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 	return FALSE;
 }
 
-GtkWidget*
-gtk_label_aligned_new(gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale)
-{
-	GtkWidget* align=gtk_alignment_new(xalign, yalign, xscale, yscale);
-	GtkWidget* label = gtk_label_new(text);
-	gtk_container_add(GTK_CONTAINER(align), label);
-	return align;
-}
+
 
 static void
 show_about_box(GtkWidget *widget, MainWindow* window)
@@ -426,6 +392,22 @@ static void palette_popup_menu_export_selected(GtkWidget *widget, gpointer data)
 	show_palette_export_dialog(0, window->color_list, TRUE);
 }
 
+gint32 palette_popup_menu_mix_list(Color* color, const gchar *name, void *userdata){
+	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
+	return 0;
+}
+
+static void palette_popup_menu_mix(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	GList* colors=NULL;
+	palette_list_foreach_selected(window->color_list, palette_popup_menu_mix_list, &colors);
+
+	dialog_mix_show(GTK_WINDOW(window->window), window->color_list, (Color*)g_list_nth_data(colors, 0), (Color*)g_list_nth_data(colors, 1) ,window->settings);
+
+	g_list_free(colors);
+}
+
+
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
 	GtkWidget *menu;
 	GtkWidget* item ;
@@ -446,6 +428,13 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	gtk_widget_set_sensitive(item, (selected_count == 1));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), palette_list_create_copy_menu(&c));
+
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+    item = gtk_menu_item_new_with_image ("_Mix colors...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_mix),window);
+    gtk_widget_set_sensitive(item, (selected_count == 2));
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
