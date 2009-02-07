@@ -268,7 +268,7 @@ void color_destroy(Color *a) {
 }
 
 void color_rgb_to_hsl(Color* a, Color* b) {
-	float min, max, delta, R, G, B;
+	float min, max, delta;
 
 	min = min_float_3(a->rgb.red, a->rgb.green, a->rgb.blue);
 	max = max_float_3(a->rgb.red, a->rgb.green, a->rgb.blue);
@@ -285,23 +285,6 @@ void color_rgb_to_hsl(Color* a, Color* b) {
 		} else {
 			b->hsl.saturation = delta / (2 - max - min);
 		}
-
-		/*R = (((max - a->rgb.red) / 6) + (delta / 2)) / delta;
-		G = (((max - a->rgb.green) / 6) + (delta / 2)) / delta;
-		B = (((max - a->rgb.blue) / 6) + (delta / 2)) / delta;
-
-		if (a->rgb.red == max) {
-			b->hsl.hue = B - G;
-		} else if (a->rgb.green == max) {
-			b->hsl.hue = (1 / 3) + R - B;
-		} else if (a->rgb.blue == max) {
-			b->hsl.hue = (2 / 3) + G - R;
-		}
-
-		if (b->hsl.hue < 0)
-			b->hsl.hue += 1;
-		if (b->hsl.hue > 1)
-			b->hsl.hue -= 1;*/
 
 		if (a->rgb.red == max)
 			b->hsv.hue = (a->rgb.green - a->rgb.blue) / delta;
@@ -320,6 +303,76 @@ void color_rgb_to_hsl(Color* a, Color* b) {
 	}
 }
 
+
+void color_hsl_to_rgb(Color* a, Color* b) {
+	if (a->hsl.saturation==0){
+		b->rgb.red = b->rgb.green = b->rgb.blue =  a->hsl.lightness;
+	}else{
+		float temp1, temp2, R, G, B;
+
+		if (a->hsl.lightness < 0.5)
+			temp2 = a->hsl.lightness * (1.0 + a->hsl.saturation);
+		else
+			temp2 = a->hsl.lightness + a->hsl.saturation - a->hsl.lightness * a->hsl.saturation;
+
+		temp1 = 2 * a->hsl.lightness - temp2;
+
+		R = a->hsl.hue+1/3;
+		if (R>1) R-=1;
+		G = a->hsl.hue;
+		B = a->hsl.hue-1/3;
+		if (B<0) B+=1;
+
+		if (6.0 * R < 1)
+			b->rgb.red = temp1 + (temp2 - temp1) * 6.0 * R;
+		else if (2.0 * R < 1)
+			b->rgb.red = temp2;
+		else if (3.0 * R < 2)
+			b->rgb.red = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - R) * 6.0;
+		else
+			b->rgb.red = temp1;
+
+		if (6.0 * G < 1)
+			b->rgb.green = temp1 + (temp2 - temp1) * 6.0 * G;
+		else if (2.0 * G < 1)
+			b->rgb.green = temp2;
+		else if (3.0 * G < 2)
+			b->rgb.green = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - G) * 6.0;
+		else
+			b->rgb.green = temp1;
+
+		if (6.0 * B < 1)
+			b->rgb.blue = temp1 + (temp2 - temp1) * 6.0 * B;
+		else if (2.0 * B < 1)
+			b->rgb.blue = temp2;
+		else if (3.0 * B < 2)
+			b->rgb.blue = temp1 + (temp2 - temp1) * ((2.0 / 3.0) - B) * 6.0;
+		else
+			b->rgb.blue = temp1;
+
+
+	}
+}
+
+void color_lab_to_lch(Color* a, Color* b) {
+	float H;
+	H = atan2(a->lab.b, a->lab.a);
+
+	if (H > 0)
+		H /= PI;
+	else
+		H = (2*PI - abs_float(H))/PI;
+
+	b->lch.L = a->lab.L;
+	b->lch.C = sqrt(a->lab.b * a->lab.b + a->lab.a * a->lab.a);
+	b->lch.h = H;
+}
+
+void color_rgb_to_lch(Color* a, Color* b){
+	Color c;
+	color_rgb_to_lab(a, &c);
+	color_lab_to_lch(&c, b);
+}
 
 
 

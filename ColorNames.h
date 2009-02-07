@@ -27,12 +27,19 @@
 using namespace std;
 
 typedef struct ColorNameEntry{
-	Color color;
 	string name;
 }ColorNameEntry;
 
+typedef struct ColorEntry{
+	Color color;
+	ColorNameEntry* name;
+}ColorEntry;
+
 typedef struct ColorNames{
-	list<ColorNameEntry*> color_list;
+	list<ColorNameEntry*> names;
+	list<ColorEntry*> colors[8][8][8];
+	void (*colorspace_convert)(Color* a, Color* b);
+	float (*colorspace_distance)(Color* a, Color* b);
 }ColorNames;
 
 ColorNames*

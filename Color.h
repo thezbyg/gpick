@@ -46,53 +46,43 @@ typedef struct Color{
 			float a;
 			float b;
 		}lab;
+		struct{
+			float L;
+			float C;
+			float h;
+		}lch;
 	};
 }Color;
 
-void
-color_rgb_to_hsl(Color* a, Color* b);
+void color_rgb_to_hsl(Color* a, Color* b);
+void color_hsl_to_rgb(Color* a, Color* b);
 
-void
-color_rgb_to_hsv(Color* a, Color* b);
+void color_rgb_to_hsv(Color* a, Color* b);
+void color_hsv_to_rgb(Color* a, Color* b);
 
-void
-color_hsv_to_rgb(Color* a, Color* b);
+void color_rgb_to_xyz(Color* a, Color* b);
+void color_xyz_to_rgb(Color* a, Color* b);
 
-void
-color_rgb_to_xyz(Color* a, Color* b);
+void color_xyz_to_lab(Color* a, Color* b);
+void color_rgb_to_lab(Color* a, Color* b);
 
-void
-color_xyz_to_rgb(Color* a, Color* b);
+void color_lab_to_lch(Color* a, Color* b);
+void color_rgb_to_lch(Color* a, Color* b);
 
-void
-color_xyz_to_lab(Color* a, Color* b);
+void color_copy(Color* a, Color* b);
 
-void
-color_rgb_to_lab(Color* a, Color* b);
+void color_add(Color* a, Color* b);
 
+void color_multiply(Color* a, float b);
 
-void
-color_copy(Color* a, Color* b);
+void color_zero(Color* a);
 
-void
-color_add(Color* a, Color* b);
+Color* color_new();
 
-void
-color_multiply(Color* a, float b);
+void color_destroy(Color* a);
 
-void
-color_zero(Color* a);
+void color_set(Color* a, float value);
 
-Color*
-color_new();
-
-void
-color_destroy(Color* a);
-
-void
-color_set(Color* a, float value);
-
-void
-color_get_contrasting(Color* a, Color* b);
+void color_get_contrasting(Color* a, Color* b);
 
 #endif /* COLOR_H_ */

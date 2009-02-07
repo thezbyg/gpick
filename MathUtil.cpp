@@ -55,6 +55,21 @@ min_float_3(float a, float b, float c)
 	}
 }
 
+float
+clamp_float( float x, float a, float b){
+	if (x<a) return a;
+	if (x>b) return b;
+	return x;
+}
+
+
+int
+clamp_int( int x, int a, int b){
+	if (x<a) return a;
+	if (x>b) return b;
+	return x;
+}
+
 int
 min_int( int a, int b)
 {

@@ -501,7 +501,7 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 
 static void on_popup_menu(GtkWidget *widget, gpointer user_data) {
 	GtkWidget *menu;
-	GtkWidget* item ;
+	//GtkWidget* item ;
 	gint32 button, event_time;
 	MainWindow* window=(MainWindow*)user_data;
 
