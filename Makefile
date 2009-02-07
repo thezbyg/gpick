@@ -10,7 +10,7 @@ LDOBJECTS = `pkg-config --libs gtk+-2.0`
 RES = windres
 
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
-uiColorComponent.cpp uiDialogShades.cpp uiListPalette.cpp \
+uiColorComponent.cpp uiDialogVariations.cpp uiListPalette.cpp \
 uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp
 
 RESOURCES = 

@@ -16,22 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "uiDialogShades.h"
+#include "uiDialogVariations.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
 
 
-gint32 dialog_shades_show_color_list(Color* color, const gchar *name, void *userdata){
+gint32 dialog_variations_show_color_list(Color* color, const gchar *name, void *userdata){
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
 	return 0;
 }
 
-void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
+void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
 	GtkWidget *widget, *table;
 	GtkWidget *range_lightness, *range_steps, *range_saturation;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Generate shades", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Variations", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
 			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT, NULL);
 
@@ -41,19 +41,19 @@ void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setting
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Lightness add:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_lightness = gtk_spin_button_new_with_range (-100,100,0.1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_lightness), g_key_file_get_double_with_default(settings, "Shades Dialog", "Lightness", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_lightness), g_key_file_get_double_with_default(settings, "Variations Dialog", "Lightness", 0));
 	gtk_table_attach(GTK_TABLE(table), range_lightness,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation add:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_saturation = gtk_spin_button_new_with_range (-100,100,0.1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_saturation), g_key_file_get_double_with_default(settings, "Shades Dialog", "Saturation", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_saturation), g_key_file_get_double_with_default(settings, "Variations Dialog", "Saturation", 0));
 	gtk_table_attach(GTK_TABLE(table), range_saturation,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_steps = gtk_spin_button_new_with_range (3,255,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_steps), g_key_file_get_integer_with_default(settings, "Shades Dialog", "Steps", 3));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_steps), g_key_file_get_integer_with_default(settings, "Variations Dialog", "Steps", 3));
 	gtk_table_attach(GTK_TABLE(table), range_steps,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
@@ -66,9 +66,9 @@ void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setting
 		gfloat lightness=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_lightness));
 		gfloat saturation=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_saturation));
 
-		g_key_file_set_integer(settings, "Shades Dialog", "Steps", steps);
-		g_key_file_set_double(settings, "Shades Dialog", "Lightness", lightness);
-		g_key_file_set_double(settings, "Shades Dialog", "Saturation", saturation);
+		g_key_file_set_integer(settings, "Variations Dialog", "Steps", steps);
+		g_key_file_set_double(settings, "Variations Dialog", "Lightness", lightness);
+		g_key_file_set_double(settings, "Variations Dialog", "Saturation", saturation);
 
 		lightness/=100;
 		saturation/=100;
@@ -77,7 +77,7 @@ void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setting
 		gint step_i;
 
 		GList *colors=NULL, *i;
-		palette_list_foreach_selected(palette, dialog_shades_show_color_list, &colors);
+		palette_list_foreach_selected(palette, dialog_variations_show_color_list, &colors);
 		i=colors;
 		while (i){
 

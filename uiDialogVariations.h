@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGSHADES_H_
-#define UIDIALOGSHADES_H_
+#ifndef UIDIALOGVARIATIONS_H_
+#define UIDIALOGVARIATIONS_H_
 
 #include <gtk/gtk.h>
 
-void dialog_shades_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
+void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
 
-#endif /* UIDIALOGSHADES_H_ */
+#endif /* UIDIALOGVARIATIONS_H_ */
