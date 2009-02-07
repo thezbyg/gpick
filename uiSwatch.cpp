@@ -319,24 +319,35 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 		vector2 a, b;
 		vector2_set(&a, 1, 0);
 		vector2_set(&b, event->x - 75, event->y - 75);
-		vector2_normalize(&b, &b);
+		gfloat distance = vector2_length(&b);
 
-		float angle = acos(vector2_dot(&a, &b));
-		if (b.y < 0)
-			angle = 2 * PI - angle;
-		angle += (PI/6) * 3;
+		if (distance>20){
+			vector2_normalize(&b, &b);
 
-		if (angle < 0)
-			angle += PI * 2;
-		if (angle > 2 * PI)
-			angle -= PI * 2;
+			float angle = acos(vector2_dot(&a, &b));
+			if (b.y < 0)
+				angle = 2 * PI - angle;
+			angle += (PI/6) * 3;
 
-		//printf("%f %d\n",angle,(int)floor(angle/((PI*2)/6)));
+			if (angle < 0)
+				angle += PI * 2;
+			if (angle > 2 * PI)
+				angle -= PI * 2;
 
-		ns->current_color = 1 + (int) floor(angle / ((PI*2) / 6));
+			//printf("%f %d\n",angle,(int)floor(angle/((PI*2)/6)));
 
-		g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
-		gtk_widget_queue_draw(GTK_WIDGET(widget));
+
+
+			ns->current_color = 1 + (int) floor(angle / ((PI*2) / 6));
+
+			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
+			gtk_widget_queue_draw(GTK_WIDGET(widget));
+
+		}else{
+
+			gdk_pointer_grab(widget->window, TRUE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
+
+		}
 
 
 	}
@@ -346,8 +357,12 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 static gboolean gtk_swatch_button_release(GtkWidget *widget, GdkEventButton *event) {
 	//GtkSwatchPrivate *ns=GTK_SWATCH_GET_PRIVATE(widget);
 
-	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)) {
+	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
+		//gtk_swatch_set_color_to_main(GTK_SWATCH(widget));
 
+	}else if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)) {
+		g_signal_emit_by_name(widget, "popup-menu");
 	}
+	gdk_pointer_ungrab(event->time);
 	return FALSE;
 }

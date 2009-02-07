@@ -85,6 +85,7 @@ typedef struct MainWindow{
 	GKeyFile* settings;
 
 	gboolean add_to_palette;
+	gboolean rotate_swatch;
 
 }MainWindow;
 
@@ -293,12 +294,16 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 		case GDK_space:
 			updateMainColor(window);
 			gtk_swatch_set_color_to_main(GTK_SWATCH(window->swatch_display));
-			updateDiplays(window);
+
 			if (window->add_to_palette){
 				Color c;
 				gtk_swatch_get_active_color(GTK_SWATCH(window->swatch_display), &c);
 				palette_list_add_entry(window->color_list, window->cnames, &c);
 			}
+			if (window->rotate_swatch){
+				gtk_swatch_move_active(GTK_SWATCH(window->swatch_display),1);
+			}
+			updateDiplays(window);
 			return TRUE;
 			break;
 
@@ -545,6 +550,9 @@ void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 
 void on_add_to_palette_changed(GtkWidget *widget, gpointer data) {
 	((MainWindow*)data)->add_to_palette = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+}
+void on_rotate_swatch_changed(GtkWidget *widget, gpointer data) {
+	((MainWindow*)data)->rotate_swatch = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 GtkWidget* create_falloff_type_list (void){
@@ -853,6 +861,13 @@ main(int argc, char **argv)
 			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_add_to_palette_changed), window);
 			//gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Add to palette", FALSE));
+			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+			table_y++;
+
+			widget = gtk_check_button_new_with_mnemonic ("_Rotate swatch after sample");
+			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_rotate_swatch_changed), window);
+			//gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Rotate swatch after sample", FALSE));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
