@@ -7,21 +7,30 @@ CPPFLAGS = $(CFLAGS)
 LD = g++
 LDFLAGS = -s -mwindows -fno-rtti -fno-exceptions 
 LDOBJECTS = `pkg-config --libs gtk+-2.0`
-RES = windres
 
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
 uiColorComponent.cpp uiDialogVariations.cpp uiListPalette.cpp \
-uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp
+uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp \
+uiExport.cpp
 
-RESOURCES = 
-
-OBJECTS = $(SOURCES:.cpp=.o) $(RESOURCES:.rc=.o)
 EXECUTABLE = bin/gpick
+OBJECTS = $(SOURCES:.cpp=.o)
+RESOURCES =
+
+ifeq ($(strip $(OS)),Windows_NT)
+	RES = windres
+	RESOURCE_FILES = res/resources.rc
+	RESOURCES = $(RESOURCE_FILES:.rc=.o)
+endif
+
 
 all: $(EXECUTABLE)
 
-$(EXECUTABLE): $(OBJECTS)
-	$(LD) $(LDFLAGS) $(OBJECTS) $(LDOBJECTS) -o $@
+$(EXECUTABLE): $(OBJECTS) $(RESOURCES)
+	$(LD) $(LDFLAGS) $(OBJECTS) $(RESOURCES) $(LDOBJECTS) -o $@
+
+%.o: %.rc
+	$(RES) $< $@
 
 .cpp.o:
 	$(CPP) $(CPPFLAGS) -o $@ $< 
@@ -29,11 +38,8 @@ $(EXECUTABLE): $(OBJECTS)
 .c.o:
 	$(CC) $(CFLAGS) -o $@ $< 
 
-resources.o: res/resources.rc
-	$(RES) $< $@
-
-
-.PHONY: clean
 clean:
-	\rm *.o
+	\rm -f $(OBJECTS)
+	\rm -f $(RESOURCES)
      
+.PHONY: all clean
