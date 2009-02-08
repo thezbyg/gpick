@@ -16,66 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MATHUTIL_H_
-#define MATHUTIL_H_
+#ifndef UIDIALOGGENERATE_H_
+#define UIDIALOGGENERATE_H_
 
-#define PI 3.14159265
+#include <gtk/gtk.h>
 
-float
-min_float_3(float a, float b, float c);
+void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
 
-float
-max_float_3(float a, float b, float c);
-
-int
-min_int( int a, int b);
-
-int
-max_int( int a, int b);
-
-float
-clamp_float( float x, float a, float b);
-
-float
-wrap_float ( float x);
-
-float
-mix_float( float a, float b, float mix);
-
-
-int
-clamp_int( int x, int a, int b);
-
-int
-abs_int(int a);
-
-float
-abs_float(float a);
-
-
-
-typedef struct matrix3x3{
-	float m[3][3];
-}matrix3x3;
-
-void
-matrix3x3_identity(matrix3x3* matrix);
-
-typedef struct vector2{
-	float x;
-	float y;
-}vector2;
-
-void
-vector2_set(vector2* v1, float x, float y);
-
-float
-vector2_length(vector2* v1);
-
-void
-vector2_normalize(vector2* v1, vector2* r);
-
-float
-vector2_dot(vector2* v1, vector2* v2);
-
-#endif /* MATHUTIL_H_ */
+#endif /* UIDIALOGGENERATE_H_ */

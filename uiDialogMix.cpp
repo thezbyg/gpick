@@ -22,7 +22,7 @@
 #include "MathUtil.h"
 
 void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, GKeyFile* settings) {
-	GtkWidget *widget, *table;
+	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Mix colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),

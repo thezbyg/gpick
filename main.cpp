@@ -42,6 +42,7 @@
 #include "uiExport.h"
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
+#include "uiDialogGenerate.h"
 
 #include "Sampler.h"
 #include "Color.h"
@@ -413,6 +414,12 @@ static void palette_popup_menu_variations(GtkWidget *widget, gpointer data) {
 	dialog_variations_show(GTK_WINDOW(window->window), window->color_list, window->settings);
 }
 
+static void palette_popup_menu_generate(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	dialog_generate_show(GTK_WINDOW(window->window), window->color_list, window->settings);
+}
+
+
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
 	GtkWidget *menu;
 	GtkWidget* item ;
@@ -445,6 +452,12 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_variations),window);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+    item = gtk_menu_item_new_with_image ("_Generate...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_generate),window);
+    gtk_widget_set_sensitive(item, (selected_count >= 1));
+
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 

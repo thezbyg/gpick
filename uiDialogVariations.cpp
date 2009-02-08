@@ -28,7 +28,7 @@ gint32 dialog_variations_show_color_list(Color* color, const gchar *name, void *
 }
 
 void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
-	GtkWidget *widget, *table, *toggle_multiplication;
+	GtkWidget *table, *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
 

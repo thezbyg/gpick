@@ -47,8 +47,8 @@ void color_names_strip_spaces(string& string_x, string& stripchars){
    if(string_x.empty()) return;
    if (stripchars.empty()) return;
 
-   int startIndex = string_x.find_first_not_of(stripchars);
-   int endIndex = string_x.find_last_not_of(stripchars);
+   size_t startIndex = string_x.find_first_not_of(stripchars);
+   size_t endIndex = string_x.find_last_not_of(stripchars);
 
    if ((startIndex==string::npos)||(endIndex==string::npos)){
 	   string_x.erase();
