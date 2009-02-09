@@ -154,6 +154,33 @@ gint32 palette_export_ase(GtkWidget* palette, const gchar* filename, gboolean se
 }
 
 
+
+gint32 palette_export_txt_color(Color* color, const gchar *name, void* userdata){
+	(*(ofstream*)userdata)<<color->rgb.red<<", "
+						<<color->rgb.green<<", "
+						<<color->rgb.blue<<", "<<name<<endl;
+	return 0;
+}
+
+gint32 palette_export_txt(GtkWidget* palette, const gchar* filename, gboolean selected){
+	ofstream f(filename, ios::out | ios::trunc);
+	if (f.is_open()){
+
+		gchar* name = g_path_get_basename(filename);
+
+		g_free(name);
+
+		if (selected)
+			palette_list_foreach_selected(palette, palette_export_txt_color, &f);
+		else
+			palette_list_foreach(palette, palette_export_txt_color, &f);
+		f.close();
+		return 0;
+	}
+	return -1;
+}
+
+
 int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected, GKeyFile* settings){
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
@@ -175,6 +202,7 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
 		{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
 		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
+		{ "Text file *.txt", "*.txt", palette_export_txt },
 	};
 
 

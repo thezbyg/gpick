@@ -3,7 +3,7 @@
 
 
 
-!define VERSION "0.0.17"
+!define VERSION "0.0.22"
 Name "GPick"
 OutFile "gpick-win32-${VERSION}-setup.exe"
 Caption "GPick v${VERSION} Setup"
@@ -43,11 +43,11 @@ AllowSkipFiles off
 Section "!Program Files" SecProgramFiles
 	SectionIn RO
 
-	SetOutPath "$INSTDIR\bin"
+	SetOutPath "$INSTDIR"
 	
 	File ..\bin\gpick.exe
 	
-	SetOutPath "$INSTDIR\res"
+	SetOutPath "$INSTDIR\share\gpick"
 	
 	File ..\res\colors0.txt
 	File ..\res\colors.txt
@@ -64,17 +64,17 @@ SectionEnd
 
 Section "Desktop Shortcut" SecDesktopShortcut
   SetOutPath "$INSTDIR"
-  CreateShortCut "$DESKTOP\GPick.lnk" "$INSTDIR\bin\gpick.exe" ""
+  CreateShortCut "$DESKTOP\GPick.lnk" "$INSTDIR\gpick.exe" ""
 SectionEnd
 
 Section "-Start Menu Shortcut" SecStartMenu
 
-  SetOutPath "$INSTDIR\bin"
+  SetOutPath "$INSTDIR"
   
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     
     CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
-    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\GPick.lnk" "$INSTDIR\bin\gpick.exe"
+    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\GPick.lnk" "$INSTDIR\gpick.exe"
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
   !insertmacro MUI_STARTMENU_WRITE_END
@@ -89,17 +89,17 @@ Section "Uninstall"
 
 Delete "$INSTDIR\Uninstall.exe"
 
-Delete "$INSTDIR\bin\gpick.exe"
-RMDir "$INSTDIR\bin"
+Delete "$INSTDIR\gpick.exe"
 
-Delete "$INSTDIR\res\colors0.txt"
-Delete "$INSTDIR\res\colors.txt"
-Delete "$INSTDIR\res\falloff-none.png"
-Delete "$INSTDIR\res\falloff-linear.png"
-Delete "$INSTDIR\res\falloff-quadratic.png"
-Delete "$INSTDIR\res\falloff-cubic.png"
-Delete "$INSTDIR\res\falloff-exponential.png"
-RMDir "$INSTDIR\res"
+Delete "$INSTDIR\share\gpick\colors0.txt"
+Delete "$INSTDIR\share\gpick\colors.txt"
+Delete "$INSTDIR\share\gpick\falloff-none.png"
+Delete "$INSTDIR\share\gpick\falloff-linear.png"
+Delete "$INSTDIR\share\gpick\falloff-quadratic.png"
+Delete "$INSTDIR\share\gpick\falloff-cubic.png"
+Delete "$INSTDIR\share\gpick\falloff-exponential.png"
+RMDir "$INSTDIR\share\gpick"
+RMDir "$INSTDIR\share"
 
 RMDir "$INSTDIR"
   

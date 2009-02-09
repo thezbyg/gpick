@@ -1,4 +1,10 @@
 
+prefix = /usr/local
+bindir = $(prefix)/bin
+datadir = $(prefix)/share
+INSTALL = install -c
+INSTALLDATA = install -c -m 644
+
 INCLUDES = -I.
 CC = gcc
 CFLAGS = $(INCLUDES) -MD -MP -MG -MMD -O3 -Wall -c -fmessage-length=0 `pkg-config --cflags gtk+-2.0`
@@ -24,6 +30,7 @@ ifeq ($(strip $(OS)),Windows_NT)
 	RESOURCES = $(RESOURCE_FILES:%.rc=$(OBJDIR)%.o)
 endif
 
+PHONY: all
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS) $(RESOURCES)
@@ -39,10 +46,22 @@ $(OBJDIR)%.o: %.cpp
 
 $(OBJDIR)%.o: %.c
 	$(CC) $(CFLAGS) -o $@ $< 
+     
+.PHONY: install
+install: all
+	$(INSTALL) bin/gpick $(bindir)/gpick
 
+	$(INSTALL) res/falloff-cubic.png -D $(datadir)/gpick/falloff-cubic.png
+	$(INSTALL) res/falloff-linear.png $(datadir)/gpick/falloff-linear.png
+	$(INSTALL) res/falloff-none.png $(datadir)/gpick/falloff-none.png
+	$(INSTALL) res/falloff-quadratic.png $(datadir)/gpick/falloff-quadratic.png
+	$(INSTALL) res/falloff-exponential.png $(datadir)/gpick/falloff-exponential.png
+	$(INSTALL) res/colors.txt $(datadir)/gpick/colors.txt
+	$(INSTALL) res/colors0.txt $(datadir)/gpick/colors0.txt
+	$(INSTALL) res/gpick-icon.png $(datadir)/gpick/gpick-icon.png
+
+.PHONY: clean
 clean:
 	\rm -f $(OBJECTS)
 	\rm -f $(RESOURCES)
 	\rm -f $(OBJECTS:%.o=%.d)
-     
-.PHONY: all clean

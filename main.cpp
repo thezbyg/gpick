@@ -652,6 +652,45 @@ string build_config_path(const gchar *filename){
 	return s.str();
 }
 
+
+gchar* get_data_dir(){
+	static gchar* data_dir=NULL;
+	if (data_dir) return data_dir;
+
+	GList *paths=NULL, *i=NULL;
+	gchar *tmp;
+
+	i=g_list_append(i, (gchar*)g_get_user_data_dir());
+	paths=i;
+
+	const gchar* const *datadirs = g_get_system_data_dirs();
+	for (gint datadirs_i=0; datadirs[datadirs_i];++datadirs_i){
+		i=g_list_append(i, (gchar*)datadirs[datadirs_i]);
+	}
+
+	i=paths;
+	struct stat sb;
+	while (i){
+		tmp = g_build_filename((gchar*)i->data, "gpick", NULL);
+		//cout<<tmp<<endl;
+		if (g_stat( tmp, &sb )==0){
+			data_dir=g_strdup(tmp);
+			g_free(tmp);
+			break;
+		}
+		g_free(tmp);
+		i=g_list_next(i);
+	}
+
+	g_list_free(paths);
+
+	return data_dir;
+}
+
+gchar* build_filename(const gchar* filename){
+	return g_build_filename(get_data_dir(), filename, NULL);
+}
+
 void set_main_window_icon() {
 	GList *icons = 0;
 
@@ -686,10 +725,9 @@ main(int argc, char **argv)
 
 	GtkIconTheme *icon_theme;
 	icon_theme = gtk_icon_theme_get_default ();
-	gtk_icon_theme_prepend_search_path(icon_theme, "../res/");
+	gtk_icon_theme_prepend_search_path(icon_theme, get_data_dir());
 
-	//printf("%s %s %s\n", g_get_home_dir(), g_get_prgname(), g_get_user_config_dir() );
-
+
 	MainWindow* window=new MainWindow;
 
 	window->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
@@ -706,8 +744,12 @@ main(int argc, char **argv)
 
 	window->sampler = sampler_new();
 	window->cnames = color_names_new();
-	color_names_load_from_file(window->cnames, "../res/colors.txt");
-	color_names_load_from_file(window->cnames, "../res/colors0.txt");
+	gchar* tmp;
+
+	color_names_load_from_file(window->cnames, tmp=build_filename("colors.txt"));
+	g_free(tmp);
+	color_names_load_from_file(window->cnames, tmp=build_filename("colors.txt0"));
+	g_free(tmp);
 
 	gtk_window_set_title(GTK_WINDOW(window->window), program_name);
 
