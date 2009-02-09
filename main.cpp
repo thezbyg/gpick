@@ -935,7 +935,6 @@ main(int argc, char **argv)
 	gtk_main ();
 
 	{
-
 		ofstream f(config_file.c_str(), ios::out | ios::trunc | ios::binary);
 		if (f.is_open()){
 			gsize size;
@@ -947,7 +946,9 @@ main(int argc, char **argv)
 		}
 	}
 
-
+	g_key_file_free(window->settings);
+	color_names_destroy(window->cnames);
+	sampler_destroy(window->sampler);
 	delete window;
 
 	return 0;

@@ -12,7 +12,7 @@ OBJDIR = obj/$(*F)
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
 uiColorComponent.cpp uiDialogVariations.cpp uiListPalette.cpp \
 uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp \
-uiExport.cpp
+uiExport.cpp uiDialogGenerate.cpp
 
 EXECUTABLE = bin/gpick
 OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)%.o)
