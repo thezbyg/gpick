@@ -147,3 +147,13 @@ float mix_float( float a, float b, float mix){
 float wrap_float(float x) {
 	return x-floor(x);
 }
+
+int
+wrap_int( int x, int a, int b){
+	if (x<a){
+		return b-(a-x)%(b-a);
+	}else if (x>=b){
+		return a+(x-b)%(b-a);
+	}
+	return x;
+}

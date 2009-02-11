@@ -33,6 +33,9 @@ min_int( int a, int b);
 int
 max_int( int a, int b);
 
+int
+wrap_int( int x, int a, int b);
+
 float
 clamp_float( float x, float a, float b);
 

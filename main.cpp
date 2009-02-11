@@ -684,6 +684,11 @@ gchar* get_data_dir(){
 
 	g_list_free(paths);
 
+	if (data_dir==NULL){
+		data_dir=g_strdup("");
+		return data_dir;
+	}
+
 	return data_dir;
 }
 
@@ -701,7 +706,7 @@ void set_main_window_icon() {
 	gint sizes[] = { 16, 32, 48, 128 };
 
 	for (guint32 i = 0; i < sizeof(sizes) / sizeof(gint); ++i) {
-		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, "gpick-icon", sizes[i], GtkIconLookupFlags(0), 0);
+		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, "gpick", sizes[i], GtkIconLookupFlags(0), 0);
 		if (pixbuf) {
 			icons = g_list_append(icons, pixbuf);
 		}
@@ -727,7 +732,8 @@ main(int argc, char **argv)
 	icon_theme = gtk_icon_theme_get_default ();
 	gtk_icon_theme_prepend_search_path(icon_theme, get_data_dir());
 
-
+
+
 	MainWindow* window=new MainWindow;
 
 	window->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);

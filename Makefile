@@ -50,15 +50,14 @@ $(OBJDIR)%.o: %.c
 .PHONY: install
 install: all
 	$(INSTALL) bin/gpick $(bindir)/gpick
-
-	$(INSTALL) res/falloff-cubic.png -D $(datadir)/gpick/falloff-cubic.png
-	$(INSTALL) res/falloff-linear.png $(datadir)/gpick/falloff-linear.png
-	$(INSTALL) res/falloff-none.png $(datadir)/gpick/falloff-none.png
-	$(INSTALL) res/falloff-quadratic.png $(datadir)/gpick/falloff-quadratic.png
-	$(INSTALL) res/falloff-exponential.png $(datadir)/gpick/falloff-exponential.png
-	$(INSTALL) res/colors.txt $(datadir)/gpick/colors.txt
-	$(INSTALL) res/colors0.txt $(datadir)/gpick/colors0.txt
-	$(INSTALL) res/gpick-icon.png $(datadir)/gpick/gpick-icon.png
+	$(INSTALLDATA) res/falloff-cubic.png -D $(datadir)/gpick/falloff-cubic.png
+	$(INSTALLDATA) res/falloff-linear.png $(datadir)/gpick/falloff-linear.png
+	$(INSTALLDATA) res/falloff-none.png $(datadir)/gpick/falloff-none.png
+	$(INSTALLDATA) res/falloff-quadratic.png $(datadir)/gpick/falloff-quadratic.png
+	$(INSTALLDATA) res/falloff-exponential.png $(datadir)/gpick/falloff-exponential.png
+	$(INSTALLDATA) res/colors.txt $(datadir)/gpick/colors.txt
+	$(INSTALLDATA) res/colors0.txt $(datadir)/gpick/colors0.txt
+	$(INSTALLDATA) res/gpick.png $(datadir)/icons/hicolor/48x48/apps/gpick.png
 
 .PHONY: clean
 clean:
