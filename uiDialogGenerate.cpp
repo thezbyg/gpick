@@ -121,7 +121,7 @@ gint32 dialog_generate_show_color_list(Color* color, const gchar *name, void *us
 	return 0;
 }
 
-void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings){
+void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random){
 	GtkWidget *table, *gen_type, *range_colors, *range_chaos;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Generate colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -140,6 +140,7 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Split-Complementary");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Rectangle (tetradic)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Square");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Neutral");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(gen_type), g_key_file_get_integer_with_default(settings, "Generate Dialog", "Type", 0));
 	gtk_table_attach(GTK_TABLE(table), gen_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
@@ -191,14 +192,14 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 				s.str("");
 
 				switch (type) {
-				case 0: //Complementary = one 180 degree turn
+				case 0: //Complementary = 180 degree turns
 					s << ((struct namedColor *) i->data)->name << " complementary " << step_i;
 					hue = wrap_float(hue + (PI) / (2 * PI));
 					break;
 
-				case 1: //Analogous = three 30 degree turns
+				case 1: //Analogous = 30 degree turns
 					s << ((struct namedColor *) i->data)->name << " analogous " << step_i;
-					hue = wrap_float(hue + (2 * PI / 10) / (2 * PI)); //+30*
+					hue = wrap_float(hue + (2 * PI / 12) / (2 * PI)); //+30*
 					break;
 
 				case 2: //Triadic = three 120 degree turns
@@ -228,10 +229,18 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					s << ((struct namedColor *) i->data)->name << " square " << step_i;
 					hue = wrap_float(hue + (PI/2) / (2 * PI));
 					break;
+
+				case 6: //Neutral = 15 degree turns
+					s << ((struct namedColor *) i->data)->name << " neutral " << step_i;
+					hue = wrap_float(hue + (2 * PI / 24) / (2 * PI)); //+15*
+					break;
 				}
 
 				hsl.hsl.hue = transform_hue(hue, TRUE);
 				hsl.hsl.lightness = initial_lighness*transform_lightness( transformed_hue, hue);
+
+				hsl.hsl.hue = wrap_float(hsl.hsl.hue + chaos*(random_get(random)-0x7FFFFFFF)/(gdouble)0x80000000);
+
 				color_hsl_to_rgb(&hsl, &r);
 				palette_list_add_entry_name(palette, s.str().c_str(), &r);
 

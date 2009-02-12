@@ -16,13 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGGENERATE_H_
-#define UIDIALOGGENERATE_H_
+#ifndef RANDOM_H_
+#define RANDOM_H_
 
-#include <gtk/gtk.h>
+struct Random {
+	unsigned long (*function)(struct Random* r, unsigned long seed_offset);
+	unsigned long *seed;
+	unsigned long seed_size;
+};
 
-#include "Random.h"
+struct Random* random_new(const char* random_function);
 
-void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random);
+unsigned long random_get(struct Random* r);
 
-#endif /* UIDIALOGGENERATE_H_ */
+void random_seed(struct Random* r, void* seed);
+
+void random_destroy(struct Random* r);
+
+
+#endif /* RANDOM_H_ */

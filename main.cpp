@@ -44,10 +44,12 @@
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
 
+
 #include "Sampler.h"
 #include "Color.h"
 #include "MathUtil.h"
 #include "ColorNames.h"
+#include "Random.h"
 
 #include <iostream>
 //#include <string>
@@ -86,6 +88,8 @@ typedef struct MainWindow{
 	ColorNames* cnames;
 	struct Sampler* sampler;
 	GKeyFile* settings;
+
+	Random* random;
 
 	gboolean add_to_palette;
 	gboolean rotate_swatch;
@@ -416,7 +420,7 @@ static void palette_popup_menu_variations(GtkWidget *widget, gpointer data) {
 
 static void palette_popup_menu_generate(GtkWidget *widget, gpointer data) {
 	MainWindow* window=(MainWindow*)data;
-	dialog_generate_show(GTK_WINDOW(window->window), window->color_list, window->settings);
+	dialog_generate_show(GTK_WINDOW(window->window), window->color_list, window->settings, window->random);
 }
 
 
@@ -750,6 +754,10 @@ main(int argc, char **argv)
 
 	window->sampler = sampler_new();
 	window->cnames = color_names_new();
+	window->random = random_new("SHR3");
+	gulong seed_value=time(0)|1;
+	random_seed(window->random, &seed_value);
+
 	gchar* tmp;
 
 	color_names_load_from_file(window->cnames, tmp=build_filename("colors.txt"));
@@ -993,7 +1001,7 @@ main(int argc, char **argv)
 			f.close();
 		}
 	}
-
+	random_destroy(window->random);
 	g_key_file_free(window->settings);
 	color_names_destroy(window->cnames);
 	sampler_destroy(window->sampler);
