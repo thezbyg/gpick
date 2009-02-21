@@ -308,7 +308,7 @@ show_about_box(GtkWidget *widget, MainWindow* window)
 		"authors", program_authors,
 		"copyright", "Copyrights © 2009, Albertas Vyšniauskas",
 		"license", license,
-		"website", "",
+		"website", "http://code.google.com/p/gpick/",
 		"website-label", "",
 		NULL
 	);
@@ -405,12 +405,7 @@ gint32 palette_popup_menu_mix_list(Color* color, const gchar *name, void *userda
 
 static void palette_popup_menu_mix(GtkWidget *widget, gpointer data) {
 	MainWindow* window=(MainWindow*)data;
-	GList* colors=NULL;
-	palette_list_foreach_selected(window->color_list, palette_popup_menu_mix_list, &colors);
-
-	dialog_mix_show(GTK_WINDOW(window->window), window->color_list, (Color*)g_list_nth_data(colors, 0), (Color*)g_list_nth_data(colors, 1) ,window->settings);
-
-	g_list_free(colors);
+	dialog_mix_show(GTK_WINDOW(window->window), window->color_list ,window->settings);
 }
 
 static void palette_popup_menu_variations(GtkWidget *widget, gpointer data) {
@@ -450,7 +445,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     item = gtk_menu_item_new_with_image ("_Mix colors...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_mix),window);
-    gtk_widget_set_sensitive(item, (selected_count == 2));
+    gtk_widget_set_sensitive(item, (selected_count >= 2));
 
     item = gtk_menu_item_new_with_image ("_Variations...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -767,10 +762,6 @@ main(int argc, char **argv)
 
 	gtk_window_set_title(GTK_WINDOW(window->window), program_name);
 
-	//gtk_window_set_keep_above (GTK_WINDOW (window->window), TRUE);
-	//gtk_window_set_resizable(GTK_WINDOW (window->window), FALSE);
-
-	//gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, TRUE);
 
     g_signal_connect (G_OBJECT (window->window), "delete_event", G_CALLBACK (delete_event), NULL);
     g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
@@ -925,28 +916,19 @@ main(int argc, char **argv)
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
-			//gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Add to palette:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			widget = gtk_check_button_new_with_mnemonic ("_Add to palette immediately");
 			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_add_to_palette_changed), window);
-			//gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Add to palette", FALSE));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
 			widget = gtk_check_button_new_with_mnemonic ("_Rotate swatch after sample");
 			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_rotate_swatch_changed), window);
-			//gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(window->settings, "Zoom", "Zoom", 2));
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Rotate swatch after sample", FALSE));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
 
-			/*widget = gtk_entry_new();
-			gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-			window->text_rgb = widget;
 
-			widget = gtk_entry_new();
-			gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-			window->text_hsv = widget;*/
 
 
 	vbox = gtk_vbox_new(FALSE, 5);
@@ -971,15 +953,6 @@ main(int argc, char **argv)
 	statusbar=gtk_statusbar_new();
 	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "press_space"), "Press SPACE to sample current color");
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
-
-
-
-
-    /*widget = gtk_color_selection_new();
-    gtk_color_selection_set_has_opacity_control (GTK_COLOR_SELECTION(widget), FALSE);
-    gtk_box_pack_end (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-    window->color_widget = widget;*/
-
 
 
     updateDiplays(window);

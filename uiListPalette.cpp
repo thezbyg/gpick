@@ -364,7 +364,31 @@ gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color
 	return 0;
 }
 
+gint32 palette_list_make_color_list_add(Color* color, const gchar *name, void *userdata){
+	struct NamedColor *c=new NamedColor;
+	c->color=color;
+	c->name=g_strdup(name);
+	*((GList**)userdata) = g_list_append(*((GList**)userdata), c);
+	return 0;
+}
+
+GList* palette_list_make_color_list(GtkWidget* widget){
+	GList* colors=NULL;
+	palette_list_foreach_selected(widget, palette_list_make_color_list_add, &colors);
+	return colors;
+}
 
 
+
+void palette_list_free_color_list(GList *colors){
+	GList *i;
+	i=colors;
+	while (i){
+		g_free(((struct NamedColor *)i->data)->name);
+		delete (struct NamedColor *)i->data;
+		i=g_list_next(i);
+	}
+	g_list_free(colors);
+}
 
 

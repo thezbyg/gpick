@@ -41,4 +41,14 @@ gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, 
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 
+
+
+struct NamedColor{
+	gchar* name;
+	Color* color;
+};
+
+GList* palette_list_make_color_list(GtkWidget* widget);
+void palette_list_free_color_list(GList *colors);
+
 #endif /* UILISTPALETTE_H_ */

@@ -226,27 +226,36 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 
 	g_free(selected_filter);
 
+	gboolean saved=FALSE;
 
+	while (!saved){
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+			gchar *filename;
+			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-		gchar *filename;
-		filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+			gchar *path;
+			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+			g_key_file_set_string(settings, "Export Dialog", "Path", path);
+			g_free(path);
 
-		gchar *path;
-		path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-		g_key_file_set_string(settings, "Export Dialog", "Path", path);
-		g_free(path);
-
-		const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
-		for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
-			if (g_strcmp0(formats[i].name, format_name)==0){
-				formats[i].export_function(palette, filename, selected);
-
-				g_key_file_set_string(settings, "Export Dialog", "Filter", formats[i].pattern);
+			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
+			for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
+				if (g_strcmp0(formats[i].name, format_name)==0){
+					if (formats[i].export_function(palette, filename, selected)==0){
+						saved=TRUE;
+					}else{
+						GtkWidget* message;
+						message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be exported");
+						gtk_window_set_title(GTK_WINDOW(dialog), "Export");
+						gtk_dialog_run(GTK_DIALOG(message));
+						gtk_widget_destroy(message);
+					}
+					g_key_file_set_string(settings, "Export Dialog", "Filter", formats[i].pattern);
+				}
 			}
-		}
 
-		g_free(filename);
+			g_free(filename);
+		}else break;
 	}
 
 	gtk_widget_destroy (dialog);

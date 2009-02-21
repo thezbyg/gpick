@@ -21,8 +21,6 @@
 
 #include <gtk/gtk.h>
 
-#include "Color.h"
-
-void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, GKeyFile* settings);
+void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
 
 #endif /* UIDIALOGMIX_H_ */

@@ -27,10 +27,7 @@
 #include <iostream>
 using namespace std;
 
-struct namedColor{
-	gchar* name;
-	Color* color;
-};
+
 
 
 float transform_lightness(float hue1, float hue2){
@@ -86,8 +83,6 @@ float transform_hue(float hue, gboolean forward){
 
 				new_hue= mix_float(value1, value2, mix);
 
-				//cout<<"Hue "<<hue<<" to "<<new_hue<<endl;
-
 				return new_hue;
 			}
 		}
@@ -100,25 +95,12 @@ float transform_hue(float hue, gboolean forward){
 		double n;
 		gfloat mix = modf(hue*(samples-1), &n);
 
-		//cout<<"transform_hue2 "<<hue<<" "<<hue*(samples-1)<<" "<<mix<<endl;
-
 		new_hue = mix_float(value1, value2, mix);
-
-		//cout<<"Hue2 "<<hue<<" to "<<new_hue<<endl;
 
 		return new_hue;
 	}
 	return 0;
 
-}
-
-gint32 dialog_generate_show_color_list(Color* color, const gchar *name, void *userdata){
-	struct namedColor *c=new namedColor;
-	c->color=color;
-	c->name=g_strdup(name);
-
-	*((GList**)userdata) = g_list_append(*((GList**)userdata), c);
-	return 0;
 }
 
 void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random){
@@ -178,10 +160,10 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 
 		stringstream s;
 		GList *colors=NULL, *i;
-		palette_list_foreach_selected(palette, dialog_generate_show_color_list, &colors);
+		colors=palette_list_make_color_list(palette);
 		i=colors;
 		while (i){
-			color_rgb_to_hsl(((struct namedColor *)i->data)->color, &hsl);
+			color_rgb_to_hsl(((struct NamedColor *)i->data)->color, &hsl);
 			float initial_hue=hsl.hsl.hue;
 			float initial_lighness=hsl.hsl.lightness;
 
@@ -193,22 +175,22 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 
 				switch (type) {
 				case 0: //Complementary = 180 degree turns
-					s << ((struct namedColor *) i->data)->name << " complementary " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " complementary " << step_i;
 					hue = wrap_float(hue + (PI) / (2 * PI));
 					break;
 
 				case 1: //Analogous = 30 degree turns
-					s << ((struct namedColor *) i->data)->name << " analogous " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " analogous " << step_i;
 					hue = wrap_float(hue + (2 * PI / 12) / (2 * PI)); //+30*
 					break;
 
 				case 2: //Triadic = three 120 degree turns
-					s << ((struct namedColor *) i->data)->name << " triadic " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " triadic " << step_i;
 					hue = wrap_float(hue + (2 * PI / 3) / (2 * PI)); //+120*
 					break;
 
 				case 3: //Split-Complementary = 150, 60, 150 degree turns
-					s << ((struct namedColor *) i->data)->name << " split-complementary " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " split-complementary " << step_i;
 					if (step_i % 3 == 1) {
 						hue = wrap_float(hue + (PI/3) / (2 * PI)); //+60*
 					} else {
@@ -217,7 +199,7 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					break;
 
 				case 4: //Rectangle (tetradic) = 60, 120 degree turns
-					s << ((struct namedColor *) i->data)->name << " rectangle " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " rectangle " << step_i;
 					if (step_i & 1) {
 						hue = wrap_float(hue + (2 * PI / 3) / (2 * PI)); //+120*
 					} else {
@@ -226,12 +208,12 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					break;
 
 				case 5: //Square = 90 degree turns
-					s << ((struct namedColor *) i->data)->name << " square " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " square " << step_i;
 					hue = wrap_float(hue + (PI/2) / (2 * PI));
 					break;
 
 				case 6: //Neutral = 15 degree turns
-					s << ((struct namedColor *) i->data)->name << " neutral " << step_i;
+					s << ((struct NamedColor *) i->data)->name << " neutral " << step_i;
 					hue = wrap_float(hue + (2 * PI / 24) / (2 * PI)); //+15*
 					break;
 				}
@@ -245,13 +227,11 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 				palette_list_add_entry_name(palette, s.str().c_str(), &r);
 
 			}
-
-			delete (struct namedColor *)i->data;
-
 			i=g_list_next(i);
 		}
 
-		g_list_free(colors);
+
+		palette_list_free_color_list(colors);
 
 	}
 	gtk_widget_destroy(dialog);

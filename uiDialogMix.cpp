@@ -21,7 +21,10 @@
 #include "uiUtilities.h"
 #include "MathUtil.h"
 
-void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, GKeyFile* settings) {
+#include <sstream>
+using namespace std;
+
+void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
@@ -62,60 +65,80 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, Color* a, Color* b, 
 		Color r;
 		gint step_i;
 
-		switch (type) {
-		case 0:
-			for (step_i = 0; step_i < steps; ++step_i) {
-				r.rgb.red = mix_float(a->rgb.red, b->rgb.red, step_i/(float)(steps-1));
-				r.rgb.green = mix_float(a->rgb.green, b->rgb.green, step_i/(float)(steps-1));
-				r.rgb.blue = mix_float(a->rgb.blue, b->rgb.blue, step_i/(float)(steps-1));
+		stringstream s;
+		s.precision(0);
+		s.setf(ios::fixed,ios::floatfield);
+		GList *colors=NULL, *i, *j;
+		colors=palette_list_make_color_list(palette);
+		i=colors;
 
-				palette_list_add_entry_name(palette, "mix" ,&r);
-			}
-			break;
+		while (i){
+			j=g_list_next(i);
+			while (j){
 
-		case 1:
-			{
-				Color a_hsv, b_hsv, r_hsv;
-				color_rgb_to_hsv(a, &a_hsv);
-				color_rgb_to_hsv(b, &b_hsv);
+				struct NamedColor *a=((struct NamedColor *) i->data);
+				struct NamedColor *b=((struct NamedColor *) j->data);
 
-				for (step_i = 0; step_i < steps; ++step_i) {
-					r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-					r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-					r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
+				switch (type) {
+				case 0:
+					for (step_i = 0; step_i < steps; ++step_i) {
+						r.rgb.red = mix_float(a->color->rgb.red, b->color->rgb.red, step_i/(float)(steps-1));
+						r.rgb.green = mix_float(a->color->rgb.green, b->color->rgb.green, step_i/(float)(steps-1));
+						r.rgb.blue = mix_float(a->color->rgb.blue, b->color->rgb.blue, step_i/(float)(steps-1));
 
-					color_hsv_to_rgb(&r_hsv, &r);
-					palette_list_add_entry_name(palette, "mix" ,&r);
+						s.str("");
+						s<<a->name <<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< b->name;
+						palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+					}
+					break;
+
+				case 1:
+					{
+						Color a_hsv, b_hsv, r_hsv;
+						color_rgb_to_hsv(a->color, &a_hsv);
+						color_rgb_to_hsv(b->color, &b_hsv);
+
+						for (step_i = 0; step_i < steps; ++step_i) {
+							r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
+							r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
+							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
+
+							color_hsv_to_rgb(&r_hsv, &r);
+							palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+						}
+					}
+					break;
+
+				case 2:
+					{
+						Color a_hsv, b_hsv, r_hsv;
+						color_rgb_to_hsv(a->color, &a_hsv);
+						color_rgb_to_hsv(b->color, &b_hsv);
+
+						if (a_hsv.hsv.hue>b_hsv.hsv.hue){
+							if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
+								a_hsv.hsv.hue-=1;
+						}else{
+							if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
+								b_hsv.hsv.hue-=1;
+						}
+						for (step_i = 0; step_i < steps; ++step_i) {
+							r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
+							r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
+							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
+
+							if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
+							color_hsv_to_rgb(&r_hsv, &r);
+							palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+						}
+					}
+					break;
 				}
+				j=g_list_next(j);
 			}
-			break;
-
-		case 2:
-			{
-				Color a_hsv, b_hsv, r_hsv;
-				color_rgb_to_hsv(a, &a_hsv);
-				color_rgb_to_hsv(b, &b_hsv);
-
-				if (a_hsv.hsv.hue>b_hsv.hsv.hue){
-					if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
-						a_hsv.hsv.hue-=1;
-				}else{
-					if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
-						b_hsv.hsv.hue-=1;
-				}
-				for (step_i = 0; step_i < steps; ++step_i) {
-					r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-					r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-					r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
-
-					if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
-					color_hsv_to_rgb(&r_hsv, &r);
-					palette_list_add_entry_name(palette, "mix" ,&r);
-				}
-			}
-			break;
+			i=g_list_next(i);
 		}
-
+		palette_list_free_color_list(colors);
 	}
 	gtk_widget_destroy(dialog);
 
