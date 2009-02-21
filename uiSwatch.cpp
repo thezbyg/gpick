@@ -28,7 +28,7 @@ G_DEFINE_TYPE (GtkSwatch, gtk_swatch, GTK_TYPE_DRAWING_AREA);
 static gboolean gtk_swatch_expose(GtkWidget *swatch, GdkEventExpose *event);
 
 enum {
-	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, LAST_SIGNAL
+	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, LAST_SIGNAL
 };
 
 static guint gtk_swatch_signals[LAST_SIGNAL] = { 0 };
@@ -73,10 +73,13 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
 
 	gtk_swatch_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkSwatchClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
+	gtk_swatch_signals[COLOR_ACTIVATED] = g_signal_new("color_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkSwatchClass, color_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 static void gtk_swatch_init(GtkSwatch *swatch) {
-	gtk_widget_add_events(GTK_WIDGET(swatch), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+	gtk_widget_add_events(GTK_WIDGET(swatch), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 }
 
 GtkWidget *
@@ -314,12 +317,18 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event) {
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
 
-	if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
+	vector2 a, b;
+	vector2_set(&a, 1, 0);
+	vector2_set(&b, event->x - 75, event->y - 75);
+	gfloat distance = vector2_length(&b);
 
-		vector2 a, b;
-		vector2_set(&a, 1, 0);
-		vector2_set(&b, event->x - 75, event->y - 75);
-		gfloat distance = vector2_length(&b);
+	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
+		if (distance>20){
+			g_signal_emit(widget, gtk_swatch_signals[COLOR_ACTIVATED], 0);
+		}
+	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
+
+
 
 		if (distance>20){
 			vector2_normalize(&b, &b);

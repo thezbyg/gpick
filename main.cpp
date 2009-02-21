@@ -200,8 +200,13 @@ static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item)
 		palette_list_add_entry(window->color_list, window->cnames, &c);
 	}
 }
-
-
+static void
+on_swatch_color_activated (GtkWidget *widget, gpointer item) {
+	MainWindow* window=(MainWindow*)item;
+	Color c;
+	gtk_swatch_get_active_color(GTK_SWATCH(widget), &c);
+	palette_list_add_entry(window->color_list, window->cnames, &c);
+}
 
 static gboolean
 on_swatch_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
@@ -793,6 +798,7 @@ main(int argc, char **argv)
 				//gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
 				g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_swatch_active_color_changed), window);
 				g_signal_connect (G_OBJECT (widget), "color_changed", G_CALLBACK (on_swatch_color_changed), window);
+				g_signal_connect (G_OBJECT (widget), "color_activated", G_CALLBACK (on_swatch_color_activated), window);
 				g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), window);
 				gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(window->settings, "Swatch", "Active Color", 1));
 				window->swatch_display = widget;

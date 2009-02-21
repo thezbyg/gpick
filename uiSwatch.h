@@ -50,6 +50,7 @@ typedef struct GtkSwatchClass
 	GtkDrawingAreaClass parent_class;
 	void  (* active_color_changed)(GtkWidget* widget, gint32 active_color, gpointer userdata);
 	void  (* color_changed)(GtkWidget* widget, gpointer userdata);
+	void  (* color_activated)(GtkWidget* widget, gpointer userdata);
 }GtkSwatchClass;
 
 GtkWidget* gtk_swatch_new (void);
