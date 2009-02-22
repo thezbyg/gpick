@@ -305,7 +305,7 @@ static void
 show_about_box(GtkWidget *widget, MainWindow* window)
 {
 
-	gchar* license = {
+	const gchar* license = {
 		#include "License.h"
 	};
 

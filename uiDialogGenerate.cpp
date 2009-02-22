@@ -219,7 +219,7 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 				}
 
 				hsl.hsl.hue = transform_hue(hue, TRUE);
-				hsl.hsl.lightness = initial_lighness*transform_lightness( transformed_hue, hue);
+				hsl.hsl.lightness = clamp_float(initial_lighness*transform_lightness( transformed_hue, hue),0,1);
 
 				hsl.hsl.hue = wrap_float(hsl.hsl.hue + chaos*(random_get(random)-0x7FFFFFFF)/(gdouble)0x80000000);
 
