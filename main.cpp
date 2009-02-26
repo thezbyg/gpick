@@ -108,6 +108,17 @@ destroy( GtkWidget *widget, gpointer data )
 	MainWindow* window=(MainWindow*)data;
 
 	g_key_file_set_integer(window->settings, "Swatch", "Active Color", gtk_swatch_get_active_index(GTK_SWATCH(window->swatch_display)));
+	{
+	gdouble color_list[3*6];
+	for (gint i=0; i<6; ++i){
+		Color c;
+		gtk_swatch_get_color(GTK_SWATCH(window->swatch_display), i, &c);
+		color_list[0+3*i]=c.rgb.red;
+		color_list[1+3*i]=c.rgb.green;
+		color_list[2+3*i]=c.rgb.blue;
+	}
+	g_key_file_set_double_list(window->settings, "Swatch", "Colors", color_list, sizeof(color_list)/sizeof(gdouble));
+	}
 
 	g_key_file_set_integer(window->settings, "Sampler", "Oversample", sampler_get_oversample(window->sampler));
 	g_key_file_set_integer(window->settings, "Sampler", "Falloff", sampler_get_falloff(window->sampler));
@@ -802,6 +813,22 @@ main(int argc, char **argv)
 				g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), window);
 				gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(window->settings, "Swatch", "Active Color", 1));
 				window->swatch_display = widget;
+
+				{
+					gsize size;
+					gdouble* color_list=g_key_file_get_double_list(window->settings, "Swatch", "Colors", &size, 0);
+					if (color_list){
+						Color c;
+						for (gsize i=0; i<size; i+=3){
+							c.rgb.red=color_list[i+0];
+							c.rgb.green=color_list[i+1];
+							c.rgb.blue=color_list[i+2];
+
+							gtk_swatch_set_color(GTK_SWATCH(window->swatch_display), i/3, &c);
+						}
+						g_free(color_list);
+					}
+				}
 
 			frame = gtk_frame_new("Zoomed area");
 			gtk_box_pack_start (GTK_BOX(vbox), frame, FALSE, FALSE, 0);
