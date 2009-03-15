@@ -33,6 +33,7 @@ void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
 
 GtkWidget* palette_list_create_copy_menu (Color* color);
+GtkWidget* palette_list_create_copy_menu_list (GList* colors);
 
 gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color);
 gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata);

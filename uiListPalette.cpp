@@ -262,8 +262,6 @@ void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Col
 }
 
 
-
-
 static void palette_list_menu_value_copy(GtkWidget *widget,  gpointer item) {
 	const gchar *text = (const gchar *)g_object_get_data(G_OBJECT(widget), "copy-value");
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
@@ -271,6 +269,88 @@ static void palette_list_menu_value_copy(GtkWidget *widget,  gpointer item) {
 
 void palette_list_color_value_destroy(gpointer data) {
 	g_free(data);
+}
+
+/*
+ * Color printing functions are temporary, we are going to add user configurable ones
+ */
+static string print_color_hex_rgb(Color* color){
+	stringstream s;
+	s.str("");
+	s<<hex<<"#"<< setfill('0')<<setw(2)<<int(color->rgb.red * 255)<<setw(2)<<int(color->rgb.green * 255)<<setw(2)<<int(color->rgb.blue * 255);
+	return s.str();
+}
+
+static string print_color_css_rgb(Color* color){
+	stringstream s;
+	s<<dec<<"rgb("<< int(color->rgb.red * 255)<<", "<<int(color->rgb.green * 255)<<", "<<int(color->rgb.blue * 255)<<")";
+	return s.str();
+}
+
+static string print_color_css_hsl(Color* color){
+	stringstream s;
+	s<<dec<<"hsl("<< int(color->hsl.hue*360)<<", "<<int(color->hsl.saturation*100)<<"%, "<<int(color->hsl.lightness*100)<<"%)";
+	return s.str();
+}
+
+/*
+ * This is also must be redone in the future, because all colors are converted to all posible text forms when we actualy need only one
+ */
+GtkWidget* palette_list_create_copy_menu_list (GList* colors){
+
+	struct{
+		gint is_hsl;
+		string (*print)(Color* color);
+	}entries[]={
+		{0, print_color_hex_rgb},
+		{0, print_color_css_rgb},
+		{1, print_color_css_hsl},
+	};
+
+	GtkWidget *menu;
+	GtkWidget* item;
+	gchar* tmp;
+	menu = gtk_menu_new();
+
+	for (guint i=0; i<sizeof(entries)/sizeof(entries[0]); ++i){
+
+
+
+		GList *colors_i;
+		stringstream s;
+		string menu_text;
+		string tmp_val;
+		gint first=1;
+
+		colors_i=colors;
+		while (colors_i){
+
+			if (entries[i].is_hsl){
+				Color hsl;
+				color_rgb_to_hsl(((struct NamedColor *)colors_i->data)->color, &hsl);
+				tmp_val=entries[i].print(&hsl);
+			}else{
+				tmp_val=entries[i].print(((struct NamedColor *)colors_i->data)->color);
+			}
+
+			if (first){
+				menu_text=tmp_val;
+				first=0;
+			}else s<<endl;
+			s<<tmp_val;
+
+			colors_i=g_list_next(colors_i);
+		}
+
+		tmp = g_strdup(s.str().c_str());
+		item = gtk_menu_item_new_with_image(menu_text.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
+		g_object_set_data_full(G_OBJECT(item), "copy-value", tmp, palette_list_color_value_destroy);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+	}
+
+	return menu;
 }
 
 GtkWidget* palette_list_create_copy_menu (Color* color) {
@@ -282,33 +362,23 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 	Color hsl;
 	color_rgb_to_hsl(color, &hsl);
 
-	stringstream s;
-
-	s.str("");
-	s<<hex<<"#"<< setfill('0')<<setw(2)<<int(color->rgb.red * 255)<<setw(2)<<int(color->rgb.green * 255)<<setw(2)<<int(color->rgb.blue * 255);
-	tmp = g_strdup(s.str().c_str());
+	tmp = g_strdup(print_color_hex_rgb(color).c_str());
 	item = gtk_menu_item_new_with_image(tmp, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
 	g_object_set_data_full(G_OBJECT(item), "copy-value", tmp, palette_list_color_value_destroy);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-	s.str("");
-	s<<dec<<"rgb("<< int(color->rgb.red * 255)<<", "<<int(color->rgb.green * 255)<<", "<<int(color->rgb.blue * 255)<<")";
-	tmp = g_strdup(s.str().c_str());
+	tmp = g_strdup(print_color_css_rgb(color).c_str());
 	item = gtk_menu_item_new_with_image(tmp, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
 	g_object_set_data_full(G_OBJECT(item), "copy-value", tmp, palette_list_color_value_destroy);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-	s.str("");
-	s<<dec<<"hsl("<< int(hsl.hsl.hue*360)<<", "<<int(hsl.hsl.saturation*100)<<"%, "<<int(hsl.hsl.lightness*100)<<"%)";
-	tmp = g_strdup(s.str().c_str());
+	tmp = g_strdup(print_color_css_hsl(&hsl).c_str());
 	item = gtk_menu_item_new_with_image(tmp, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_list_menu_value_copy), 0);
 	g_object_set_data_full(G_OBJECT(item), "copy-value", tmp, palette_list_color_value_destroy);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-
-
 
 	return menu;
 }

@@ -1,8 +1,10 @@
 
-prefix = /usr/local
+ifndef prefix
+	prefix = /usr/local
+endif
 bindir = $(prefix)/bin
 datadir = $(prefix)/share
-INSTALL = install -c
+INSTALL = install -c -m 755
 INSTALLDATA = install -c -m 644
 
 INCLUDES = -I.
@@ -11,7 +13,7 @@ CFLAGS = $(INCLUDES) -MD -MP -MG -MMD -O3 -Wall -c -fmessage-length=0 `pkg-confi
 CPP = g++
 CPPFLAGS = $(CFLAGS)
 LD = g++
-LDFLAGS = -s -mwindows -fno-rtti -fno-exceptions 
+LDFLAGS = $(USR_LDFLAGS) -s -fno-rtti -fno-exceptions 
 LDOBJECTS = `pkg-config --libs gtk+-2.0`
 OBJDIR = obj/$(*F)
 
@@ -28,6 +30,7 @@ ifeq ($(strip $(OS)),Windows_NT)
 	RES = windres
 	RESOURCE_FILES = res/resources.rc
 	RESOURCES = $(RESOURCE_FILES:%.rc=$(OBJDIR)%.o)
+	LDFLAGS += -mwindows
 endif
 
 PHONY: all

@@ -453,8 +453,13 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	gtk_widget_set_sensitive(item, (selected_count == 1));
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), palette_list_create_copy_menu(&c));
+	gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+	GList* colors=palette_list_make_color_list(widget);
+
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), palette_list_create_copy_menu_list(colors));
+
+	palette_list_free_color_list(colors);
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
