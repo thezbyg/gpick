@@ -342,7 +342,7 @@ createMenu(GtkMenuBar* menu_bar, MainWindow* window)
 
     item = gtk_menu_item_new_with_image ("E_xit", gtk_image_new_from_stock(GTK_STOCK_QUIT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect_swapped (G_OBJECT (item), "activate", G_CALLBACK (destroy),0);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (destroy), window);
 
 
     file_item = gtk_menu_item_new_with_mnemonic ("_File");
