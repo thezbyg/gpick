@@ -17,6 +17,9 @@ LDFLAGS = $(USR_LDFLAGS) -s -fno-rtti -fno-exceptions
 LDOBJECTS = `pkg-config --libs gtk+-2.0`
 OBJDIR = obj/$(*F)
 
+MKDIR = mkdir
+MAKEDIRS = bin obj
+
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
 uiColorComponent.cpp uiDialogVariations.cpp uiListPalette.cpp \
 uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp \
@@ -34,7 +37,10 @@ ifeq ($(strip $(OS)),Windows_NT)
 endif
 
 PHONY: all
-all: $(EXECUTABLE)
+all: $(MAKEDIRS) $(EXECUTABLE)
+
+$(MAKEDIRS):
+	$(MKDIR) $@
 
 $(EXECUTABLE): $(OBJECTS) $(RESOURCES)
 	$(LD) $(LDFLAGS) $(OBJECTS) $(RESOURCES) $(LDOBJECTS) -o $@
@@ -52,15 +58,15 @@ $(OBJDIR)%.o: %.c
      
 .PHONY: install
 install: all
-	$(INSTALL) bin/gpick $(bindir)/gpick
-	$(INSTALLDATA) res/falloff-cubic.png -D $(datadir)/gpick/falloff-cubic.png
-	$(INSTALLDATA) res/falloff-linear.png $(datadir)/gpick/falloff-linear.png
-	$(INSTALLDATA) res/falloff-none.png $(datadir)/gpick/falloff-none.png
-	$(INSTALLDATA) res/falloff-quadratic.png $(datadir)/gpick/falloff-quadratic.png
-	$(INSTALLDATA) res/falloff-exponential.png $(datadir)/gpick/falloff-exponential.png
-	$(INSTALLDATA) res/colors.txt $(datadir)/gpick/colors.txt
-	$(INSTALLDATA) res/colors0.txt $(datadir)/gpick/colors0.txt
-	$(INSTALLDATA) res/gpick.png $(datadir)/icons/hicolor/48x48/apps/gpick.png
+	$(INSTALL) bin/gpick $(DESTDIR)$(bindir)/gpick
+	$(INSTALLDATA) res/falloff-cubic.png -D $(DESTDIR)$(datadir)/gpick/falloff-cubic.png
+	$(INSTALLDATA) res/falloff-linear.png $(DESTDIR)$(datadir)/gpick/falloff-linear.png
+	$(INSTALLDATA) res/falloff-none.png $(DESTDIR)$(datadir)/gpick/falloff-none.png
+	$(INSTALLDATA) res/falloff-quadratic.png $(DESTDIR)$(datadir)/gpick/falloff-quadratic.png
+	$(INSTALLDATA) res/falloff-exponential.png $(DESTDIR)$(datadir)/gpick/falloff-exponential.png
+	$(INSTALLDATA) res/colors.txt $(DESTDIR)$(datadir)/gpick/colors.txt
+	$(INSTALLDATA) res/colors0.txt $(DESTDIR)$(datadir)/gpick/colors0.txt
+	$(INSTALLDATA) res/gpick.png $(DESTDIR)$(datadir)/icons/hicolor/48x48/apps/gpick.png
 
 .PHONY: clean
 clean:
