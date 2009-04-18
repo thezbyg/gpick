@@ -104,7 +104,7 @@ float transform_hue(float hue, gboolean forward){
 }
 
 void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random){
-	GtkWidget *table, *gen_type, *range_colors, *range_chaos;
+	GtkWidget *table, *gen_type, *range_colors, *range_chaos, *toggle_brightness_correction;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Generate colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
@@ -139,6 +139,11 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 	gtk_table_attach(GTK_TABLE(table), range_chaos,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
+	toggle_brightness_correction = gtk_check_button_new_with_mnemonic ("Brightness correction");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle_brightness_correction), g_key_file_get_boolean_with_default(settings, "Generate Dialog", "Brightness Correction", TRUE));
+	gtk_table_attach(GTK_TABLE(table), toggle_brightness_correction,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	table_y++;
+
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
@@ -148,11 +153,12 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 		gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(gen_type));
 		gint color_count=(gint)gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_colors));
 		gfloat chaos=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_chaos));
+		gboolean correction=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(toggle_brightness_correction));
 
 		g_key_file_set_integer(settings, "Generate Dialog", "Type", type);
 		g_key_file_set_integer(settings, "Generate Dialog", "Colors", color_count);
 		g_key_file_set_double(settings, "Generate Dialog", "Chaos", chaos);
-
+		g_key_file_set_boolean(settings, "Generate Dialog", "Brightness Correction", correction);
 
 		Color r, hsl;
 		float hue;
@@ -219,7 +225,11 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 				}
 
 				hsl.hsl.hue = transform_hue(hue, TRUE);
-				hsl.hsl.lightness = clamp_float(initial_lighness*transform_lightness( transformed_hue, hue),0,1);
+				if (correction){
+					hsl.hsl.lightness = clamp_float(initial_lighness*transform_lightness( transformed_hue, hue),0,1);
+				}else{
+					hsl.hsl.lightness = initial_lighness;
+				}
 
 				hsl.hsl.hue = wrap_float(hsl.hsl.hue + chaos*(random_get(random)-0x7FFFFFFF)/(gdouble)0x80000000);
 

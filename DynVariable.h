@@ -16,41 +16,35 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UILISTPALETTE_H_
-#define UILISTPALETTE_H_
+#ifndef DYNVARIABLE_H_
+#define DYNVARIABLE_H_
 
-#include <gtk/gtk.h>
-#include "Color.h"
-#include "ColorNames.h"
-#include "uiSwatch.h"
+struct dynvHandler;
 
 
-GtkWidget* palette_list_new(GtkWidget* swatch);
-void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* color);
-
-void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Color* color);
-
-void palette_list_remove_all_entries(GtkWidget* widget);
-void palette_list_remove_selected_entries(GtkWidget* widget);
-
-GtkWidget* palette_list_create_copy_menu (Color* color);
-GtkWidget* palette_list_create_copy_menu_list (GList* colors);
-
-gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color);
-gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata);
-gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata);
-
-gint32 palette_list_get_selected_count(GtkWidget* widget);
-gint32 palette_list_get_count(GtkWidget* widget);
-
-
-
-struct NamedColor{
-	gchar* name;
-	Color* color;
+struct dynvVariable{
+	char* name;
+	struct dynvHandler* handler;
+	void* value;
 };
 
-GList* palette_list_make_color_list(GtkWidget* widget);
-void palette_list_free_color_list(GList *colors);
+struct dynvHandler{
+	char* name;
+	unsigned long refcnt;
 
-#endif /* UILISTPALETTE_H_ */
+	int (*replace)(struct dynvHandlers* handlers, struct dynvVariable* variable, void* value);
+	int (*create)(struct dynvHandlers* handlers, struct dynvVariable* variable, void* value);
+	int (*destroy)(struct dynvHandlers* handlers, struct dynvVariable* variable);
+
+	int (*get)(struct dynvHandlers* handlers, struct dynvVariable* variable, void** value);
+
+	int (*serialize)(struct dynvHandlers* handlers, struct dynvVariable* variable);
+	int (*deserialize)(struct dynvHandlers* handlers, struct dynvVariable* variable);
+};
+
+struct dynvSystem{
+
+
+};
+
+#endif /* DYNVARIABLE_H_ */

@@ -14,16 +14,17 @@ CPP = g++
 CPPFLAGS = $(CFLAGS)
 LD = g++
 LDFLAGS = $(USR_LDFLAGS) -s -fno-rtti -fno-exceptions 
-LDOBJECTS = `pkg-config --libs gtk+-2.0`
+LDOBJECTS = `pkg-config --libs gtk+-2.0` -llua5.1
 OBJDIR = obj/$(*F)
 
 MKDIR = mkdir
-MAKEDIRS = bin obj
+MAKEDIRS = bin obj obj/res
 
 SOURCES=Color.cpp ColorNames.cpp main.cpp MathUtil.cpp Sampler.cpp \
 uiColorComponent.cpp uiDialogVariations.cpp uiListPalette.cpp \
 uiSwatch.cpp uiUtilities.cpp uiZoomed.cpp uiDialogMix.cpp \
-uiExport.cpp uiDialogGenerate.cpp Random.cpp
+uiExport.cpp uiDialogGenerate.cpp Random.cpp LuaSystem.cpp LuaExt.cpp \
+ColorObject.cpp FileFormat.cpp DynVariable.cpp
 
 EXECUTABLE = bin/gpick
 OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)%.o)
@@ -58,15 +59,15 @@ $(OBJDIR)%.o: %.c
      
 .PHONY: install
 install: all
-	$(INSTALL) bin/gpick $(DESTDIR)$(bindir)/gpick
+	$(INSTALL) bin/gpick -D $(DESTDIR)$(bindir)/gpick
 	$(INSTALLDATA) res/falloff-cubic.png -D $(DESTDIR)$(datadir)/gpick/falloff-cubic.png
-	$(INSTALLDATA) res/falloff-linear.png $(DESTDIR)$(datadir)/gpick/falloff-linear.png
-	$(INSTALLDATA) res/falloff-none.png $(DESTDIR)$(datadir)/gpick/falloff-none.png
-	$(INSTALLDATA) res/falloff-quadratic.png $(DESTDIR)$(datadir)/gpick/falloff-quadratic.png
-	$(INSTALLDATA) res/falloff-exponential.png $(DESTDIR)$(datadir)/gpick/falloff-exponential.png
-	$(INSTALLDATA) res/colors.txt $(DESTDIR)$(datadir)/gpick/colors.txt
-	$(INSTALLDATA) res/colors0.txt $(DESTDIR)$(datadir)/gpick/colors0.txt
-	$(INSTALLDATA) res/gpick.png $(DESTDIR)$(datadir)/icons/hicolor/48x48/apps/gpick.png
+	$(INSTALLDATA) res/falloff-linear.png -D $(DESTDIR)$(datadir)/gpick/falloff-linear.png
+	$(INSTALLDATA) res/falloff-none.png -D $(DESTDIR)$(datadir)/gpick/falloff-none.png
+	$(INSTALLDATA) res/falloff-quadratic.png -D $(DESTDIR)$(datadir)/gpick/falloff-quadratic.png
+	$(INSTALLDATA) res/falloff-exponential.png -D $(DESTDIR)$(datadir)/gpick/falloff-exponential.png
+	$(INSTALLDATA) res/colors.txt -D $(DESTDIR)$(datadir)/gpick/colors.txt
+	$(INSTALLDATA) res/colors0.txt -D $(DESTDIR)$(datadir)/gpick/colors0.txt
+	$(INSTALLDATA) res/gpick.png -D $(DESTDIR)$(datadir)/icons/hicolor/48x48/apps/gpick.png
 
 .PHONY: clean
 clean:

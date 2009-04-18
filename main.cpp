@@ -84,6 +84,7 @@ typedef struct MainWindow{
 	GtkWidget* blue_line;
 
 	GtkWidget* color_name;
+	GtkWidget* notebook;
 
 	ColorNames* cnames;
 	struct Sampler* sampler;
@@ -126,6 +127,8 @@ destroy( GtkWidget *widget, gpointer data )
 	g_key_file_set_boolean(window->settings, "Sampler", "Rotate swatch after sample", window->rotate_swatch);
 
 	g_key_file_set_double(window->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(window->zoomed_display)));
+
+	g_key_file_set_integer(window->settings, "Notebook", "Page", gtk_notebook_get_current_page(GTK_NOTEBOOK(window->notebook)));
 
     gtk_main_quit ();
 }
@@ -967,8 +970,6 @@ main(int argc, char **argv)
 			table_y++;
 
 
-
-
 	vbox = gtk_vbox_new(FALSE, 5);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Palette"));
 
@@ -985,13 +986,13 @@ main(int argc, char **argv)
 		gtk_container_add(GTK_CONTAINER(scrolled_window),window->color_list );
 		gtk_box_pack_start (GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 
-
-
+	window->notebook=notebook;
+	gtk_widget_show_all (window->notebook);
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(window->notebook), g_key_file_get_integer_with_default(window->settings, "Notebook", "Page", 0));
 
 	statusbar=gtk_statusbar_new();
 	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "press_space"), "Press SPACE to sample current color");
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
-
 
     updateDiplays(window);
 
