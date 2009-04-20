@@ -19,6 +19,7 @@
 #ifndef DYNVARIABLE_H_
 #define DYNVARIABLE_H_
 
+
 struct dynvHandler;
 
 
@@ -32,18 +33,17 @@ struct dynvHandler{
 	char* name;
 	unsigned long refcnt;
 
-	int (*replace)(struct dynvHandlers* handlers, struct dynvVariable* variable, void* value);
-	int (*create)(struct dynvHandlers* handlers, struct dynvVariable* variable, void* value);
-	int (*destroy)(struct dynvHandlers* handlers, struct dynvVariable* variable);
+	int (*replace)(struct dynvHandler* handler, struct dynvVariable* variable, void* value);
+	int (*create)(struct dynvHandler* handler, struct dynvVariable* variable, void* value);
+	int (*destroy)(struct dynvHandler* handler, struct dynvVariable* variable);
 
-	int (*get)(struct dynvHandlers* handlers, struct dynvVariable* variable, void** value);
+	int (*get)(struct dynvHandler* handler, struct dynvVariable* variable, void** value);
 
-	int (*serialize)(struct dynvHandlers* handlers, struct dynvVariable* variable);
-	int (*deserialize)(struct dynvHandlers* handlers, struct dynvVariable* variable);
+	int (*serialize)(struct dynvHandler* handler, struct dynvVariable* variable, void** data, unsigned long* size);
+	int (*deserialize)(struct dynvHandler* handler, struct dynvVariable* variable, void* data, unsigned long size);
 };
 
 struct dynvSystem{
-
 
 };
 

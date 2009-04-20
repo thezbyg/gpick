@@ -7,7 +7,7 @@ datadir = $(prefix)/share
 INSTALL = install -c -m 755
 INSTALLDATA = install -c -m 644
 
-INCLUDES = -I.
+INCLUDES = -I. -I/usr/include/lua5.1
 CC = gcc
 CFLAGS = $(INCLUDES) -MD -MP -MG -MMD -O3 -Wall -c -fmessage-length=0 `pkg-config --cflags gtk+-2.0`
 CPP = g++

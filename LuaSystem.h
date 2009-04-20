@@ -23,10 +23,10 @@ typedef struct luasys luasys;
 typedef struct luasys_callparam luasys_callparam;
 
 extern "C"{
-#include <lua5.1/lua.h>
-#include <lua5.1/lualib.h>
-#include <lua5.1/lauxlib.h>
-#include <lua5.1/luaconf.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+#include <luaconf.h>
 }
 
 struct LuaSystem{
