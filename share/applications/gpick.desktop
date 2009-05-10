@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=gpick
+Comment=Color picker
+Exec=gpick
+Icon=gpick
+StartupNotify=true
+MimeType=text/x-utility;
+Terminal=false
+Type=Application
+Categories=Utility;GTK;
+GenericName=gpick

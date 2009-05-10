@@ -20,7 +20,8 @@
 #define UIDIALOGVARIATIONS_H_
 
 #include <gtk/gtk.h>
+#include "ColorObject.h"
 
-void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings);
+void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings);
 
 #endif /* UIDIALOGVARIATIONS_H_ */

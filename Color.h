@@ -51,6 +51,18 @@ typedef struct Color{
 			float C;
 			float h;
 		}lch;
+		struct{
+			float c;
+			float m;
+			float y;
+			float k;
+		}cmyk;
+		struct{
+			float m1;
+			float m2;
+			float m3;
+			float m4;
+		}m;
 	};
 }Color;
 

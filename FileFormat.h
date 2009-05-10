@@ -19,6 +19,8 @@
 #ifndef FILEFORMAT_H_
 #define FILEFORMAT_H_
 
+#include "ColorObject.h"
 
+int palette_file_save(const char* filename, struct ColorList* color_list);
 
 #endif /* FILEFORMAT_H_ */

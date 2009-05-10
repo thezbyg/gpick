@@ -28,67 +28,6 @@ using namespace std;
 
 LUALIB_API int luaopen_luasys (lua_State *L);
 
-#define toproto(L,i) (clvalue(L->top+(i))->l.p)
-
-struct lua_compile_buffer{
-	char* data;
-	unsigned int used,size;
-};
-
-static int compile_writer(lua_State* L, const void* p, size_t size, void* u) {
-	struct lua_compile_buffer* cb = (struct lua_compile_buffer*) u;
-	if (size <= 0)
-		return 0;
-	if (cb->size - cb->used < size) {
-		char* newdata;
-		cb->size = cb->size + ((size / 4096) + 1) * 4096;
-		newdata = new char[cb->size];
-		if (cb->used)
-			memcpy(newdata, cb->data, cb->used);
-		memcpy(&newdata[cb->used], p, size);
-		cb->used += size;
-		if (cb->data)
-			delete[] cb->data;
-		cb->data = newdata;
-		return 0;
-	} else {
-		memcpy(&cb->data[cb->used], p, size);
-		cb->used += size;
-		return 0;
-	}
-	return 1;
-}
-
-#ifdef WIN32
-#define strdup _strdup
-#endif
-
-int compile(char* name, char* code, unsigned int size, char** out, unsigned int* osize, char** message) {
-	lua_State* L;
-	L = lua_open();
-	if (luaL_loadbuffer(L, code, size, name)) {
-		*message = strdup(lua_tostring(L,-1));
-		lua_close(L);
-		return 0;
-	}
-
-	struct lua_compile_buffer buf;
-	buf.size = 0;
-	buf.data = 0;
-	buf.used = 0;
-
-	if (lua_dump(L, compile_writer, &buf) == 0) {
-		if (buf.used) {
-			(*out) = new char[buf.used];
-			memcpy((*out), buf.data, buf.used);
-			*osize = buf.used;
-			delete[] buf.data;
-		}
-	}
-	lua_close(L);
-	return 1;
-}
-
 static const luaL_reg lualibs[] = {
   {"", luaopen_base},
   {LUA_LOADLIBNAME, luaopen_package},
@@ -104,7 +43,7 @@ static const luaL_reg lualibs[] = {
 };
 
 
-static int luasys_report(lua_State *L, int status, char** message) {
+int luasys_report(lua_State *L, int status, char** message) {
 	if (status && !lua_isnil(L, -1)) {
 		const char *msg = lua_tostring(L, -1);
 		if (msg == NULL)
@@ -179,14 +118,14 @@ int luasysDestroy(struct LuaSystem* lua){
 
 
 typedef struct luasysSmain {
-  const char* buf;
-  long size;
-  const char* file;
-  struct LuaSystem* lua;
-  int status;
+	const char* buf;
+	long size;
+	const char* file;
+	struct LuaSystem* lua;
+	int status;
 
-  luasys_callback callback;
-  void* userdata;
+	luasys_callback callback;
+	void* userdata;
 }luasysSmain;
 
 static void luasys_openstdlibs (lua_State *l) {

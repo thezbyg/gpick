@@ -19,6 +19,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorNames.h"
+#include "gtk/uiSwatch.h"
 
 #include <sstream>
 #include <iomanip>
@@ -32,8 +33,12 @@ void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new
 	gtk_tree_model_get_iter_from_string(model, &iter, path );
 
 	gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-		3, new_text,
+		2, new_text,
 	-1);
+	
+	struct ColorObject *color_object;
+	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
+	dynv_system_set(color_object->params, "string", "name", (void*)new_text);
 }
 
 void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data) {
@@ -43,9 +48,11 @@ void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTr
 	model=gtk_tree_view_get_model(tree_view);
 	gtk_tree_model_get_iter(model, &iter, path);
 
-	Color* c;
-	gtk_tree_model_get(model, &iter, 2, &c, -1);
-	gtk_swatch_set_active_color(GTK_SWATCH(user_data), c);
+	struct ColorObject *color_object;
+	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
+	Color c;
+	color_object_get_color(color_object, &c);
+	gtk_swatch_set_active_color(GTK_SWATCH(user_data), &c);
 
 
 }
@@ -64,15 +71,15 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view),1);
 
-	store = gtk_list_store_new (4, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_STRING);
+	store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "");
-	renderer = gtk_cell_renderer_pixbuf_new();
+	gtk_tree_view_column_set_title(col, "Color");
+	renderer = custom_cell_renderer_color_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, "pixbuf", 0);
+	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
 	col = gtk_tree_view_column_new();
@@ -84,8 +91,6 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 1);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
-	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
-	g_object_unref (GTK_TREE_MODEL(store));
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
@@ -93,10 +98,13 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 	gtk_tree_view_column_set_title(col, "Name");
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", 3);
+	gtk_tree_view_column_add_attribute(col, renderer, "text", 2);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 	g_object_set(renderer, "editable", TRUE, NULL);
 	g_signal_connect(renderer, "edited", (GCallback) palette_list_cell_edited, store);
+
+	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
+	g_object_unref (GTK_TREE_MODEL(store));
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
 
@@ -104,9 +112,12 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated) , swatch);
 
+	gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
+
 	return view;
 }
 
+/*
 static GdkPixbuf* palette_list_pixbuf_from_color(Color* c, gint32 width, gint32 height){
 	GdkPixmap* pixmap=gdk_pixmap_new (gdk_get_default_root_window(), width, height, -1);
 	cairo_t *cr;
@@ -124,6 +135,7 @@ static GdkPixbuf* palette_list_pixbuf_from_color(Color* c, gint32 width, gint32 
 
 	return pixbuf;
 }
+*/
 
 void palette_list_remove_all_entries(GtkWidget* widget) {
 	GtkTreeIter iter;
@@ -131,14 +143,14 @@ void palette_list_remove_all_entries(GtkWidget* widget) {
 	gboolean valid;
 
 	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
-    valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+	valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 
-    while (valid){
-    	Color* c;
-    	gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &c, -1);
-    	color_destroy(c);
+	while (valid){
+		struct ColorObject* c;
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &c, -1);
+		color_object_release(c);
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
-    }
+	}
 
 	gtk_list_store_clear(GTK_LIST_STORE(store));
 }
@@ -170,9 +182,10 @@ gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color) {
 	while (i) {
 		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*)i->data);
 
-		Color* c;
-		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &c, -1);
-		color_copy(c, color);
+		struct ColorObject* c;
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &c, -1);
+		color_object_get_color(c, color);
+		//color_copy(c, color);
 
 		i = g_list_next(i);
 	}
@@ -212,9 +225,9 @@ void palette_list_remove_selected_entries(GtkWidget* widget) {
 			gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, path);
 			gtk_tree_path_free(path);
 
-			Color* c;
-			gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &c, -1);
-			color_destroy(c);
+			struct ColorObject* c;
+			gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &c, -1);
+			color_object_release(c);
 
 			gtk_list_store_remove(GTK_LIST_STORE(store), &iter);
 		}
@@ -228,37 +241,43 @@ void palette_list_remove_selected_entries(GtkWidget* widget) {
 
 }
 
+/*
 void palette_list_add_entry(GtkWidget* widget, ColorNames* color_names, Color* color) {
 	string color_name = color_names_get(color_names, color);
 	palette_list_add_entry_name(widget, color_name.c_str(), color);
 }
+*/
 
-void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Color* color){
+void palette_list_add_entry(GtkWidget* widget, struct ColorObject* color_object){
 	GtkTreeIter iter1;
 	GtkListStore *store;
 
 	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 
-	GdkPixbuf* pixbuf = palette_list_pixbuf_from_color(color, 24,16);
+	//GdkPixbuf* pixbuf = palette_list_pixbuf_from_color(color, 24,16);
+
+	Color color;
+	color_object_get_color(color_object, &color);
 
 	stringstream s;
-	s<<int(color->rgb.red * 255)<<", "<<int(color->rgb.green * 255)<<", "<<int(color->rgb.blue * 255);
+	s<<int(color.rgb.red * 255)<<", "<<int(color.rgb.green * 255)<<", "<<int(color.rgb.blue * 255);
 
 	gchar* hex_text = g_strdup(s.str().c_str());//g_strdup_printf("%d %d %d", int(color->rgb.red*255), int(color->rgb.green*255), int(color->rgb.blue*255));
 
-	Color* c=color_new();
-	color_copy(color, c );
+	//Color* c=color_new();
+	//color_copy(color, c );
+	
+	const char* name=(const char*)dynv_system_get(color_object->params, "string", "name");
 
-	gtk_list_store_prepend(store, &iter1);
+	gtk_list_store_append(store, &iter1);
 	gtk_list_store_set(store, &iter1,
-		0, pixbuf,
+		0, color_object_ref(color_object),
 		1, hex_text,
-		2, c,
-		3, color_name,
+		2, name,
 	-1);
 
 	g_free(hex_text);
-	g_object_unref (pixbuf);
+	//g_object_unref (pixbuf);
 }
 
 
@@ -383,7 +402,7 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 	return menu;
 }
 
-gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata){
+gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata){
 	GtkTreeIter iter;
 	GtkListStore *store;
 	gboolean valid;
@@ -391,21 +410,18 @@ gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(Color* color, 
 	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
     valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 
-	Color* color;
-	gchar* color_name;
+	struct ColorObject* color_object;
+	//gchar* color_name;
 
     while (valid){
-
-		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &color, 3, &color_name, -1);
-		callback(color, color_name, userdata);
-		g_free(color_name);
-
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &color_object, -1);
+		callback(color_object, userdata);
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
     }
 	return 0;
 }
 
-gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color* color, const gchar *name, void *userdata), void *userdata){
+gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata){
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(widget) );
 	GtkListStore *store;
 	GtkTreeIter iter;
@@ -415,17 +431,13 @@ gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color
 	GList *list = gtk_tree_selection_get_selected_rows ( selection, 0 );
 	GList *i = list;
 
-	Color* color;
-	gchar* color_name;
+	struct ColorObject* color_object;
+	//gchar* color_name;
 
 	while (i) {
-
 		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
-
-		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 2, &color, 3, &color_name, -1);
-		callback(color, color_name, userdata);
-		g_free(color_name);
-
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &color_object, -1);
+		callback(color_object, userdata);
 		i = g_list_next(i);
 	}
 
@@ -434,9 +446,35 @@ gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(Color
 	return 0;
 }
 
-gint32 palette_list_make_color_list_add(Color* color, const gchar *name, void *userdata){
+gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata){
+	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(widget) );
+	GtkListStore *store;
+	GtkTreeIter iter;
+
+	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
+
+	GList *list = gtk_tree_selection_get_selected_rows ( selection, 0 );
+	GList *i = list;
+
+	struct ColorObject* color_object;
+	//gchar* color_name;
+
+	if (i) {
+		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
+		gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &color_object, -1);
+		callback(color_object, userdata);
+	}
+
+	g_list_foreach (list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free (list);
+	return 0;
+}
+
+
+#if 0
+gint32 palette_list_make_color_list_add(struct ColorObject* color_object, const gchar *name, void *userdata){
 	struct NamedColor *c=new NamedColor;
-	c->color=color;
+	c->color=color_object;
 	c->name=g_strdup(name);
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), c);
 	return 0;
@@ -447,9 +485,7 @@ GList* palette_list_make_color_list(GtkWidget* widget){
 	palette_list_foreach_selected(widget, palette_list_make_color_list_add, &colors);
 	return colors;
 }
-
-
-
+
 void palette_list_free_color_list(GList *colors){
 	GList *i;
 	i=colors;
@@ -460,5 +496,5 @@ void palette_list_free_color_list(GList *colors){
 	}
 	g_list_free(colors);
 }
-
+#endif
 

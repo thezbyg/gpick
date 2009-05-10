@@ -206,33 +206,37 @@ color_rgb_to_lab(Color* a, Color* b)
 void
 color_copy(Color* a, Color* b)
 {
-	b->rgb.red=a->rgb.red;
-	b->rgb.green=a->rgb.green;
-	b->rgb.blue=a->rgb.blue;
+	b->m.m1=a->m.m1;
+	b->m.m2=a->m.m2;
+	b->m.m3=a->m.m3;
+	b->m.m4=a->m.m4;
 }
 
 void
 color_add(Color* a, Color* b)
 {
-	a->rgb.red+=b->rgb.red;
-	a->rgb.green+=b->rgb.green;
-	a->rgb.blue+=b->rgb.blue;
+	a->m.m1+=b->m.m1;
+	a->m.m2+=b->m.m2;
+	a->m.m3+=b->m.m3;
+	a->m.m4+=b->m.m4;
 }
 
 void
 color_multiply(Color* a, float b)
 {
-	a->rgb.red*=b;
-	a->rgb.green*=b;
-	a->rgb.blue*=b;
+	a->m.m1*=b;
+	a->m.m2*=b;
+	a->m.m3*=b;
+	a->m.m4*=b;
 }
 
 void
 color_zero(Color* a)
 {
-	a->rgb.red=0;
-	a->rgb.green=0;
-	a->rgb.blue=0;
+	a->m.m1=0;
+	a->m.m2=0;
+	a->m.m3=0;
+	a->m.m4=0;
 }
 
 void

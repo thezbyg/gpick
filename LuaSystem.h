@@ -46,6 +46,8 @@ int luasysCall(struct LuaSystem* lua, const char* function);
 int luasysDump(struct LuaSystem* lua, unsigned char** data, unsigned long* size);
 int luasysFree(void* ptr);
 
+int luasys_report(lua_State *L, int status, char** message);
+
 typedef struct luasys_callparam{
 	void* param;
 	unsigned long type;

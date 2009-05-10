@@ -18,8 +18,8 @@
 
 #include "uiZoomed.h"
 
-#include "Color.h"
-#include "MathUtil.h"
+#include "../Color.h"
+#include "../MathUtil.h"
 
 #define GTK_ZOOMED_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
 

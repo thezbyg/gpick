@@ -19,7 +19,7 @@
 #include "uiDialogGenerate.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "Color.h"
+#include "ColorObject.h"
 #include "MathUtil.h"
 
 #include <math.h>
@@ -103,7 +103,7 @@ float transform_hue(float hue, gboolean forward){
 
 }
 
-void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random){
+void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, Random* random){
 	GtkWidget *table, *gen_type, *range_colors, *range_chaos, *toggle_brightness_correction;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Generate colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -165,38 +165,40 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 		gint step_i;
 
 		stringstream s;
-		GList *colors=NULL, *i;
-		colors=palette_list_make_color_list(palette);
-		i=colors;
-		while (i){
-			color_rgb_to_hsl(((struct NamedColor *)i->data)->color, &hsl);
+
+		for (ColorList::iter i=selected_color_list->colors.begin(); i!=selected_color_list->colors.end(); ++i){ 
+			Color in;
+			color_object_get_color(*i, &in);
+			color_rgb_to_hsl(&in, &hsl);
 			float initial_hue=hsl.hsl.hue;
 			float initial_lighness=hsl.hsl.lightness;
 
 			float transformed_hue=transform_hue(initial_hue, FALSE);
 			hue=transformed_hue;
+			
+			const char* name = (const char*)dynv_system_get((*i)->params, "string", "name");
 
 			for (step_i = 0; step_i < color_count; ++step_i) {
 				s.str("");
 
 				switch (type) {
 				case 0: //Complementary = 180 degree turns
-					s << ((struct NamedColor *) i->data)->name << " complementary " << step_i;
+					s << name << " complementary " << step_i;
 					hue = wrap_float(hue + (PI) / (2 * PI));
 					break;
 
 				case 1: //Analogous = 30 degree turns
-					s << ((struct NamedColor *) i->data)->name << " analogous " << step_i;
+					s << name << " analogous " << step_i;
 					hue = wrap_float(hue + (2 * PI / 12) / (2 * PI)); //+30*
 					break;
 
 				case 2: //Triadic = three 120 degree turns
-					s << ((struct NamedColor *) i->data)->name << " triadic " << step_i;
+					s << name << " triadic " << step_i;
 					hue = wrap_float(hue + (2 * PI / 3) / (2 * PI)); //+120*
 					break;
 
 				case 3: //Split-Complementary = 150, 60, 150 degree turns
-					s << ((struct NamedColor *) i->data)->name << " split-complementary " << step_i;
+					s << name << " split-complementary " << step_i;
 					if (step_i % 3 == 1) {
 						hue = wrap_float(hue + (PI/3) / (2 * PI)); //+60*
 					} else {
@@ -205,7 +207,7 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					break;
 
 				case 4: //Rectangle (tetradic) = 60, 120 degree turns
-					s << ((struct NamedColor *) i->data)->name << " rectangle " << step_i;
+					s << name << " rectangle " << step_i;
 					if (step_i & 1) {
 						hue = wrap_float(hue + (2 * PI / 3) / (2 * PI)); //+120*
 					} else {
@@ -214,16 +216,17 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					break;
 
 				case 5: //Square = 90 degree turns
-					s << ((struct NamedColor *) i->data)->name << " square " << step_i;
+					s << name << " square " << step_i;
 					hue = wrap_float(hue + (PI/2) / (2 * PI));
 					break;
 
 				case 6: //Neutral = 15 degree turns
-					s << ((struct NamedColor *) i->data)->name << " neutral " << step_i;
+					s << name << " neutral " << step_i;
 					hue = wrap_float(hue + (2 * PI / 24) / (2 * PI)); //+15*
 					break;
 				}
 
+				hue = wrap_float(hue + chaos*(((random_get(random)&0xFFFFFFFF)/(gdouble)0xFFFFFFFF)-0.5));
 				hsl.hsl.hue = transform_hue(hue, TRUE);
 				if (correction){
 					hsl.hsl.lightness = clamp_float(initial_lighness*transform_lightness( transformed_hue, hue),0,1);
@@ -231,18 +234,13 @@ void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* setti
 					hsl.hsl.lightness = initial_lighness;
 				}
 
-				hsl.hsl.hue = wrap_float(hsl.hsl.hue + chaos*(random_get(random)-0x7FFFFFFF)/(gdouble)0x80000000);
-
 				color_hsl_to_rgb(&hsl, &r);
-				palette_list_add_entry_name(palette, s.str().c_str(), &r);
-
+				
+				struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+				dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+				color_list_add_color_object(color_list, color_object);
 			}
-			i=g_list_next(i);
-		}
-
-
-		palette_list_free_color_list(colors);
-
+		}
 	}
 	gtk_widget_destroy(dialog);
 

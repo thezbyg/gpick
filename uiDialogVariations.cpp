@@ -24,7 +24,7 @@
 #include <sstream>
 using namespace std;
 
-void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
+void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings) {
 	GtkWidget *table, *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
@@ -95,13 +95,19 @@ void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* set
 		Color r, hsl;
 		gint step_i;
 
-		GList *colors=NULL, *i;
-		colors=palette_list_make_color_list(palette);
-		i=colors;
-		while (i){
-
-			for (step_i = 0; step_i < steps; ++step_i) {
-				color_rgb_to_hsl(((struct NamedColor*)i->data)->color, &hsl);
+		//GList *colors=NULL, *i;
+		//colors=palette_list_make_color_list(palette);
+		//i=colors;
+		//while (i){
+		
+		for (ColorList::iter i=selected_color_list->colors.begin(); i!=selected_color_list->colors.end(); ++i){ 
+			Color in;
+			color_object_get_color(*i, &in);
+			const char* name = (const char*)dynv_system_get((*i)->params, "string", "name");
+			
+			for (step_i = 0; step_i < steps; ++step_i) {				
+				
+				color_rgb_to_hsl(&in, &hsl);
 
 				if (multiplication){
 					hsl.hsl.saturation *= mix_float(saturation_from, saturation_to, (step_i / (float) (steps - 1)));
@@ -117,14 +123,19 @@ void dialog_variations_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* set
 				color_hsl_to_rgb(&hsl, &r);
 
 				s.str("");
-				s<<((struct NamedColor*)i->data)->name<<" variation "<<step_i;
-				palette_list_add_entry_name(palette, s.str().c_str(), &r);
+				s<<name<<" variation "<<step_i;
+				//palette_list_add_entry_name(palette, s.str().c_str(), &r);
+				//color_list_add_color(color_list, &r);
+				
+				struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+				dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+				color_list_add_color_object(color_list, color_object);
 			}
 
-			i=g_list_next(i);
+			//i=g_list_next(i);
 		}
 
-		palette_list_free_color_list(colors);
+		//palette_list_free_color_list(colors);
 
 	}
 	gtk_widget_destroy(dialog);

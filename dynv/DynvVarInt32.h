@@ -16,35 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVARIABLE_H_
-#define DYNVARIABLE_H_
+#ifndef DYNVVARINT32_H_
+#define DYNVVARINT32_H_
 
+#include "DynvSystem.h"
 
-struct dynvHandler;
+struct dynvHandler* dynv_var_int32_new();
 
-
-struct dynvVariable{
-	char* name;
-	struct dynvHandler* handler;
-	void* value;
-};
-
-struct dynvHandler{
-	char* name;
-	unsigned long refcnt;
-
-	int (*replace)(struct dynvHandler* handler, struct dynvVariable* variable, void* value);
-	int (*create)(struct dynvHandler* handler, struct dynvVariable* variable, void* value);
-	int (*destroy)(struct dynvHandler* handler, struct dynvVariable* variable);
-
-	int (*get)(struct dynvHandler* handler, struct dynvVariable* variable, void** value);
-
-	int (*serialize)(struct dynvHandler* handler, struct dynvVariable* variable, void** data, unsigned long* size);
-	int (*deserialize)(struct dynvHandler* handler, struct dynvVariable* variable, void* data, unsigned long size);
-};
-
-struct dynvSystem{
-
-};
-
-#endif /* DYNVARIABLE_H_ */
+#endif /* DYNVVARINT32_H_ */

@@ -21,7 +21,7 @@
 
 
 #include <gtk/gtk.h>
-#include "Color.h"
+#include "../Color.h"
 
 
 G_BEGIN_DECLS

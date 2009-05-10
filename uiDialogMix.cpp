@@ -24,7 +24,7 @@
 #include <sstream>
 using namespace std;
 
-void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) {
+void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings) {
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
@@ -68,35 +68,44 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) 
 		stringstream s;
 		s.precision(0);
 		s.setf(ios::fixed,ios::floatfield);
-		GList *colors=NULL, *i, *j;
+		/*GList *colors=NULL, *i, *j;
 		colors=palette_list_make_color_list(palette);
-		i=colors;
+		i=colors;*/
+		
+		Color a,b;
 
-		while (i){
-			j=g_list_next(i);
-			while (j){
-
-				struct NamedColor *a=((struct NamedColor *) i->data);
-				struct NamedColor *b=((struct NamedColor *) j->data);
+		ColorList::iter j;
+		for (ColorList::iter i=selected_color_list->colors.begin(); i!=selected_color_list->colors.end(); ++i){ 
+			color_object_get_color(*i, &a);
+			const char* name_a = (const char*)dynv_system_get((*i)->params, "string", "name");
+			j=i;
+			++j;
+			for (; j!=selected_color_list->colors.end(); ++j){ 
+			
+				color_object_get_color(*j, &b);
+				const char* name_b = (const char*)dynv_system_get((*j)->params, "string", "name");
 
 				switch (type) {
 				case 0:
 					for (step_i = 0; step_i < steps; ++step_i) {
-						r.rgb.red = mix_float(a->color->rgb.red, b->color->rgb.red, step_i/(float)(steps-1));
-						r.rgb.green = mix_float(a->color->rgb.green, b->color->rgb.green, step_i/(float)(steps-1));
-						r.rgb.blue = mix_float(a->color->rgb.blue, b->color->rgb.blue, step_i/(float)(steps-1));
+						r.rgb.red = mix_float(a.rgb.red, b.rgb.red, step_i/(float)(steps-1));
+						r.rgb.green = mix_float(a.rgb.green, b.rgb.green, step_i/(float)(steps-1));
+						r.rgb.blue = mix_float(a.rgb.blue, b.rgb.blue, step_i/(float)(steps-1));
 
 						s.str("");
-						s<<a->name <<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< b->name;
-						palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+						color_list_add_color_object(color_list, color_object);
 					}
 					break;
 
 				case 1:
 					{
 						Color a_hsv, b_hsv, r_hsv;
-						color_rgb_to_hsv(a->color, &a_hsv);
-						color_rgb_to_hsv(b->color, &b_hsv);
+						color_rgb_to_hsv(&a, &a_hsv);
+						color_rgb_to_hsv(&b, &b_hsv);
 
 						for (step_i = 0; step_i < steps; ++step_i) {
 							r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
@@ -104,7 +113,13 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) 
 							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
 
 							color_hsv_to_rgb(&r_hsv, &r);
-							palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+							
+							s.str("");
+							s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+							color_list_add_color_object(color_list, color_object);
 						}
 					}
 					break;
@@ -112,8 +127,8 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) 
 				case 2:
 					{
 						Color a_hsv, b_hsv, r_hsv;
-						color_rgb_to_hsv(a->color, &a_hsv);
-						color_rgb_to_hsv(b->color, &b_hsv);
+						color_rgb_to_hsv(&a, &a_hsv);
+						color_rgb_to_hsv(&b, &b_hsv);
 
 						if (a_hsv.hsv.hue>b_hsv.hsv.hue){
 							if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
@@ -128,17 +143,20 @@ void dialog_mix_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings) 
 							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
 
 							if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
-							color_hsv_to_rgb(&r_hsv, &r);
-							palette_list_add_entry_name(palette, s.str().c_str() ,&r);
+							color_hsv_to_rgb(&r_hsv, &r);							
+							
+							s.str("");
+							s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+							color_list_add_color_object(color_list, color_object);
 						}
 					}
 					break;
 				}
-				j=g_list_next(j);
 			}
-			i=g_list_next(i);
 		}
-		palette_list_free_color_list(colors);
 	}
 	gtk_widget_destroy(dialog);
 

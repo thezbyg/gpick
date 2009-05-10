@@ -16,5 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "DynVariable.h"
+#ifndef DYNVVARSTRING_H_
+#define DYNVVARSTRING_H_
 
+#include "DynvSystem.h"
+
+struct dynvHandler* dynv_var_string_new();
+
+#endif /* DYNVVARSTRING_H_ */

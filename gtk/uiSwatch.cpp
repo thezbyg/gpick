@@ -17,8 +17,8 @@
  */
 
 #include "uiSwatch.h"
-#include "Color.h"
-#include "MathUtil.h"
+#include "../Color.h"
+#include "../MathUtil.h"
 #include <math.h>
 
 #define GTK_SWATCH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_SWATCH, GtkSwatchPrivate))
@@ -79,7 +79,7 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
 }
 
 static void gtk_swatch_init(GtkSwatch *swatch) {
-	gtk_widget_add_events(GTK_WIDGET(swatch), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
+	gtk_widget_add_events(GTK_WIDGET(swatch), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 }
 
 GtkWidget *
@@ -92,6 +92,8 @@ gtk_swatch_new(void) {
 	for (gint32 i = 0; i < 7; ++i)
 		color_set(&ns->color[i], i/7.0);
 	ns->current_color = 1;
+	
+	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 
 	return widget;
 }
@@ -310,6 +312,10 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	cairo_set_matrix(cr, &matrix);
 
 	cairo_destroy(cr);
+	
+	if (GTK_WIDGET_HAS_FOCUS(widget)){
+		gtk_paint_focus(widget->style, widget->window, GTK_STATE_NORMAL, &event->area, widget, 0, 0, 0, 150, 150);
+	}
 
 	return FALSE;
 }
@@ -321,16 +327,21 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 	vector2_set(&a, 1, 0);
 	vector2_set(&b, event->x - 75, event->y - 75);
 	gfloat distance = vector2_length(&b);
+	
+	gtk_widget_grab_focus(widget);
 
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
-		if (distance>20){
+		if (distance>20 && distance<70){
 			g_signal_emit(widget, gtk_swatch_signals[COLOR_ACTIVATED], 0);
 		}
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
 
 
-
-		if (distance>20){
+		if (distance<20){
+			gdk_pointer_grab(widget->window, TRUE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
+		}else if (distance>70){
+			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
+		}else{
 			vector2_normalize(&b, &b);
 
 			float angle = acos(vector2_dot(&a, &b));
@@ -350,14 +361,9 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 			ns->current_color = 1 + (int) floor(angle / ((PI*2) / 6));
 
 			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
-			gtk_widget_queue_draw(GTK_WIDGET(widget));
-
-		}else{
-
-			gdk_pointer_grab(widget->window, TRUE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
-
+			
+			gtk_widget_queue_draw(GTK_WIDGET(widget));
 		}
-
 
 	}
 	return FALSE;

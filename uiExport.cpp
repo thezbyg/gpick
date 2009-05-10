@@ -25,14 +25,19 @@
 using namespace std;
 
 
-gint32 palette_export_gpl_color(Color* color, const gchar *name, void* userdata){
-	(*(ofstream*)userdata)<<gint32(color->rgb.red*255)<<"\t"
-						<<gint32(color->rgb.green*255)<<"\t"
-						<<gint32(color->rgb.blue*255)<<"\t"<<name<<endl;
+gint32 palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
+	Color color;
+	color_object_get_color(color_object, &color);
+	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
+	if (name==NULL) name="";
+	
+	(*(ofstream*)userdata)<<gint32(color.rgb.red*255)<<"\t"
+						<<gint32(color.rgb.green*255)<<"\t"
+						<<gint32(color.rgb.blue*255)<<"\t"<<name<<endl;
 	return 0;
 }
 
-gint32 palette_export_gpl(GtkWidget* palette, const gchar* filename, gboolean selected){
+gint32 palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -45,10 +50,10 @@ gint32 palette_export_gpl(GtkWidget* palette, const gchar* filename, gboolean se
 
 		g_free(name);
 
-		if (selected)
-			palette_list_foreach_selected(palette, palette_export_gpl_color, &f);
-		else
-			palette_list_foreach(palette, palette_export_gpl_color, &f);
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+			 palette_export_gpl_color(*i, &f);
+		}
+
 		f.close();
 		return 0;
 	}
@@ -57,24 +62,28 @@ gint32 palette_export_gpl(GtkWidget* palette, const gchar* filename, gboolean se
 
 
 
-gint32 palette_export_mtl_color(Color* color, const gchar *name, void* userdata){
+gint32 palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
+	Color color;
+	color_object_get_color(color_object, &color);
+	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
+	if (name==NULL) name="";
+	
 	(*(ofstream*)userdata)<<"newmtl "<<name<<endl;
 	(*(ofstream*)userdata)<<"Ns 90.000000"<<endl;
 	(*(ofstream*)userdata)<<"Ka 0.000000 0.000000 0.000000"<<endl;
-	(*(ofstream*)userdata)<<"Kd "<<color->rgb.red<<" "<<color->rgb.green<<" "<<color->rgb.blue<<endl;
+	(*(ofstream*)userdata)<<"Kd "<<color.rgb.red<<" "<<color.rgb.green<<" "<<color.rgb.blue<<endl;
 	(*(ofstream*)userdata)<<"Ks 0.500000 0.500000 0.500000"<<endl<<endl;
 	return 0;
 }
 
 
 
-gint32 palette_export_mtl(GtkWidget* palette, const gchar* filename, gboolean selected){
+gint32 palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
-		if (selected)
-			palette_list_foreach_selected(palette, palette_export_mtl_color, &f);
-		else
-			palette_list_foreach(palette, palette_export_mtl_color, &f);
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+			 palette_export_mtl_color(*i, &f);
+		}
 		f.close();
 		return 0;
 	}
@@ -84,9 +93,13 @@ gint32 palette_export_mtl(GtkWidget* palette, const gchar* filename, gboolean se
 
 
 
-gint32 palette_export_ase_color(Color* color, const gchar *name, void* userdata){
+gint32 palette_export_ase_color(struct ColorObject* color_object, void* userdata){
 
-
+	Color color;
+	color_object_get_color(color_object, &color);
+	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
+	if (name==NULL) name="";
+	
 	glong name_u16_len=0;
 	gunichar2 *name_u16 = g_utf8_to_utf16(name, -1, 0, &name_u16_len, 0);
 	for (glong i=0; i<name_u16_len; ++i){
@@ -107,9 +120,9 @@ gint32 palette_export_ase_color(Color* color, const gchar *name, void* userdata)
 
 	(*(ofstream*)userdata)<<"RGB ";
 
-	guint32 r=GINT32_FROM_BE(*((guint*)&color->rgb.red)),
-			g=GINT32_FROM_BE(*((guint*)&color->rgb.green)),
-			b=GINT32_FROM_BE(*((guint*)&color->rgb.blue));
+	guint32 r=GINT32_FROM_BE(*((guint*)&color.rgb.red)),
+			g=GINT32_FROM_BE(*((guint*)&color.rgb.green)),
+			b=GINT32_FROM_BE(*((guint*)&color.rgb.blue));
 
 
 	(*(ofstream*)userdata).write((char*)&r, 4);
@@ -124,25 +137,25 @@ gint32 palette_export_ase_color(Color* color, const gchar *name, void* userdata)
 	return 0;
 }
 
-gint32 palette_export_ase(GtkWidget* palette, const gchar* filename, gboolean selected){
+gint32 palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc | ios::binary);
 	if (f.is_open()){
 		f<<"ASEF";	//magic header
 		guint32 version=GINT32_FROM_BE(0x00010000);
 		f.write((char*)&version, 4);
 
-		guint32 blocks;
-		if (selected)
-			blocks=palette_list_get_selected_count(palette);
-		else
-			blocks=palette_list_get_count(palette);
+		guint32 blocks=color_list_get_count(color_list);
 		blocks=GINT32_FROM_BE(blocks);
 		f.write((char*)&blocks, 4);
 
-		if (selected)
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+			 palette_export_ase_color(*i, &f);
+		}
+
+		/*if (selected)
 			palette_list_foreach_selected(palette, palette_export_mtl_color, &f);
 		else
-			palette_list_foreach(palette, palette_export_ase_color, &f);
+			palette_list_foreach(palette, palette_export_ase_color, &f);*/
 
 		//guint16 terminator=0;
 		//f.write((char*)&terminator, 2);
@@ -155,33 +168,43 @@ gint32 palette_export_ase(GtkWidget* palette, const gchar* filename, gboolean se
 
 
 
-gint32 palette_export_txt_color(Color* color, const gchar *name, void* userdata){
-	(*(ofstream*)userdata)<<color->rgb.red<<", "
-						<<color->rgb.green<<", "
-						<<color->rgb.blue<<", "<<name<<endl;
+gint32 palette_export_txt_color(struct ColorObject* color_object, void* userdata){
+	Color color;
+	color_object_get_color(color_object, &color);
+	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
+	if (name==NULL) name="";
+	
+	(*(ofstream*)userdata)<<color.rgb.red<<", "
+						<<color.rgb.green<<", "
+						<<color.rgb.blue<<", "<<name<<endl;
 	return 0;
 }
 
-gint32 palette_export_txt(GtkWidget* palette, const gchar* filename, gboolean selected){
+gint32 palette_export_txt(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
 		gchar* name = g_path_get_basename(filename);
 
 		g_free(name);
+		
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+			 palette_export_txt_color(*i, &f);
+		}
 
-		if (selected)
+		/*if (selected)
 			palette_list_foreach_selected(palette, palette_export_txt_color, &f);
 		else
-			palette_list_foreach(palette, palette_export_txt_color, &f);
+			palette_list_foreach(palette, palette_export_txt_color, &f);*/
 		f.close();
 		return 0;
 	}
 	return -1;
 }
 
-
-int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean selected, GKeyFile* settings){
+int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, gboolean selected) {
+/*
+int show_palette_export_dialog(GtkWindow *parent, struct ColorList *color_list, struct ColorList *selected_color_list, gboolean selected, GKeyFile* settings){*/
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
@@ -196,7 +219,7 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 	struct export_formats{
 		const gchar* name;
 		const gchar* pattern;
-		gint32 (*export_function)(GtkWidget* palette, const gchar* filename, gboolean selected);
+		gint32 (*export_function)(struct ColorList *color_list, const gchar* filename, gboolean selected);
 	};
 	struct export_formats formats[] = {
 		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
@@ -241,7 +264,13 @@ int show_palette_export_dialog(GtkWindow *parent, GtkWidget* palette, gboolean s
 			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
 			for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
 				if (g_strcmp0(formats[i].name, format_name)==0){
-					if (formats[i].export_function(palette, filename, selected)==0){
+					struct ColorList *color_list_arg;
+					if (selected){
+						color_list_arg=selected_color_list;
+					}else{
+						color_list_arg=color_list;
+					}			
+					if (formats[i].export_function(color_list_arg, filename, selected)==0){
 						saved=TRUE;
 					}else{
 						GtkWidget* message;

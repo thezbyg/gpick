@@ -1,16 +1,14 @@
 
 !include "MUI2.nsh"
+!include "version.nsi"
 
-
-
-!define VERSION "0.0.22"
-Name "GPick"
-OutFile "gpick-win32-${VERSION}-setup.exe"
-Caption "GPick v${VERSION} Setup"
+Name "gpick"
+OutFile "gpick_${VERSION}_win32-setup.exe"
+Caption "gpick v${VERSION} Setup"
 SetCompressor /SOLID lzma
 SetCompressorDictSize 32
-InstallDir $PROGRAMFILES\GPick
-InstallDirRegKey HKLM "Software\GPick" ""
+InstallDir $PROGRAMFILES\gpick
+InstallDirRegKey HKLM "Software\gpick" ""
 RequestExecutionLevel admin
 
 Var MUI_TEMP
@@ -49,22 +47,23 @@ Section "!Program Files" SecProgramFiles
 	
 	SetOutPath "$INSTDIR\share\gpick"
 	
-	File ..\res\colors0.txt
-	File ..\res\colors.txt
-	File ..\res\falloff-none.png
-	File ..\res\falloff-linear.png
-	File ..\res\falloff-quadratic.png
-	File ..\res\falloff-cubic.png
-	File ..\res\falloff-exponential.png
+	File ..\share\gpick\colors0.txt
+	File ..\share\gpick\colors.txt
+	File ..\share\gpick\falloff-none.png
+	File ..\share\gpick\falloff-linear.png
+	File ..\share\gpick\falloff-quadratic.png
+	File ..\share\gpick\falloff-cubic.png
+	File ..\share\gpick\falloff-exponential.png
+	File ..\share\gpick\init.lua
 	
 	SetOutPath "$INSTDIR"
-	WriteRegStr HKLM "Software\GPick" "" $INSTDIR
+	WriteRegStr HKLM "Software\gpick" "" $INSTDIR
 	WriteUninstaller "$INSTDIR\Uninstall.exe"
 SectionEnd
 
 Section "Desktop Shortcut" SecDesktopShortcut
   SetOutPath "$INSTDIR"
-  CreateShortCut "$DESKTOP\GPick.lnk" "$INSTDIR\gpick.exe" ""
+  CreateShortCut "$DESKTOP\gpick.lnk" "$INSTDIR\gpick.exe" ""
 SectionEnd
 
 Section "-Start Menu Shortcut" SecStartMenu
@@ -74,7 +73,7 @@ Section "-Start Menu Shortcut" SecStartMenu
   !insertmacro MUI_STARTMENU_WRITE_BEGIN Application
     
     CreateDirectory "$SMPROGRAMS\$STARTMENU_FOLDER"
-    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\GPick.lnk" "$INSTDIR\gpick.exe"
+    CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\gpick.lnk" "$INSTDIR\gpick.exe"
     CreateShortCut "$SMPROGRAMS\$STARTMENU_FOLDER\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
   
   !insertmacro MUI_STARTMENU_WRITE_END
@@ -98,6 +97,7 @@ Delete "$INSTDIR\share\gpick\falloff-linear.png"
 Delete "$INSTDIR\share\gpick\falloff-quadratic.png"
 Delete "$INSTDIR\share\gpick\falloff-cubic.png"
 Delete "$INSTDIR\share\gpick\falloff-exponential.png"
+Delete "$INSTDIR\share\gpick\init.lua"
 RMDir "$INSTDIR\share\gpick"
 RMDir "$INSTDIR\share"
 
@@ -106,10 +106,10 @@ RMDir "$INSTDIR"
 
   !insertmacro MUI_STARTMENU_GETFOLDER Application $MUI_TEMP
   
-  Delete "$SMPROGRAMS\$MUI_TEMP\GPick.lnk"
+  Delete "$SMPROGRAMS\$MUI_TEMP\gpick.lnk"
   Delete "$SMPROGRAMS\$MUI_TEMP\Uninstall.lnk"
   
-  Delete "$DESKTOP\GPick.lnk"
+  Delete "$DESKTOP\gpick.lnk"
   
   ;Delete empty start menu parent diretories
   StrCpy $MUI_TEMP "$SMPROGRAMS\$MUI_TEMP"
@@ -124,6 +124,6 @@ RMDir "$INSTDIR"
     StrCmp $MUI_TEMP $SMPROGRAMS startMenuDeleteLoopDone startMenuDeleteLoop
   startMenuDeleteLoopDone:
 
-  DeleteRegKey /ifempty HKLM "Software\GPick"
+  DeleteRegKey /ifempty HKLM "Software\gpick"
 
 SectionEnd

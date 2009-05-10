@@ -23,6 +23,6 @@
 
 #include "Random.h"
 
-void dialog_generate_show(GtkWindow* parent, GtkWidget* palette, GKeyFile* settings, Random* random);
+void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, Random* random);
 
 #endif /* UIDIALOGGENERATE_H_ */
