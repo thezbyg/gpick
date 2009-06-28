@@ -30,8 +30,11 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, str
 	GtkWidget *range_saturation_from, *range_saturation_to;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Variations", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT, NULL);
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
 	table = gtk_table_new(4, 3, FALSE);
@@ -75,7 +78,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, str
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(range_steps));
 		gfloat lightness_from=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_lightness_from));
 		gfloat lightness_to=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_lightness_to));
@@ -129,7 +132,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, str
 				
 				struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 				dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-				color_list_add_color_object(color_list, color_object);
+				color_list_add_color_object(color_list, color_object, 1);
 			}
 
 			//i=g_list_next(i);

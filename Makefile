@@ -7,6 +7,8 @@ datadir = $(prefix)/share
 INSTALL = install -c -m 755
 INSTALLDATA = install -c -m 644
 
+VERSION = `cat Version.h | sed -e 's/"//g'`
+
 ifndef LUAPC
 LUAPC = lua5.1
 endif
@@ -95,6 +97,11 @@ install: all
 	$(INSTALLDATA) share/icons/hicolor/48x48/apps/gpick.png -D $(DESTDIR)$(datadir)/icons/hicolor/48x48/apps/gpick.png
 	$(INSTALLDATA) share/icons/hicolor/scalable/apps/gpick.svg -D $(DESTDIR)$(datadir)/icons/hicolor/scalable/apps/gpick.svg
 	$(INSTALLDATA) share/man/man1/gpick.1 -D $(DESTDIR)$(datadir)/man/man1/gpick.1
+
+tar:
+	\ln -f -n -s . gpick-$(VERSION)
+	\tar cfz gpick-$(VERSION)-src.tar.gz -h -X exclude_patterns --numeric-owner gpick-$(VERSION)
+	\rm -f gpick-$(VERSION)
 
 .PHONY: clean
 clean:

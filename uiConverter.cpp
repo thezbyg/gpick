@@ -45,7 +45,7 @@ static void converter_destroy_params(struct ConverterParams* data){
 }
 
 static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
-	color_list_add_color_object((struct ColorList *)userdata, color_object);
+	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
 	return 0;
 }
 
@@ -98,7 +98,7 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 	if (params->palette_widget){
 		palette_list_foreach_selected(params->palette_widget, color_list_selected, color_list);
 	}else{
-		color_list_add_color_object(color_list, params->color_object);
+		color_list_add_color_object(color_list, params->color_object, 1);
 	}
 
 	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
@@ -306,9 +306,12 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSystem* lua, struct ColorList *color_list ){
 	
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Converters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT, NULL);
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL);
 			
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
 	struct ConverterDialog params;
 	params.lua=lua;
 	params.color_list=color_list;
@@ -380,7 +383,7 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSyst
 	
 	gtk_window_set_default_size(GTK_WINDOW(dialog), 320, 240);
 	
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 	
 		GtkTreeIter iter;
 		GtkListStore *store;

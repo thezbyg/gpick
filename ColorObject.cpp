@@ -26,6 +26,8 @@ struct ColorObject* color_object_new(struct dynvHandlerMap* handler_map){
 	color_object->action=NULL;
 	color_object->refcnt=0;
 	color_object->selected=0;
+	color_object->position=~(uint32_t)0;
+	color_object->recalculate=1;
 	if (handler_map){
 		color_object->params=dynv_system_create(handler_map);
 	}else{
@@ -87,8 +89,10 @@ struct ColorList* color_list_new(struct dynvHandlerMap* handler_map){
 	color_list->on_delete=NULL;
 	color_list->on_clear=NULL;
 	color_list->on_delete_selected=NULL;
+	color_list->on_get_positions=NULL;
 	color_list->userdata=NULL;	
 	
+
 	return color_list;
 }
 
@@ -126,7 +130,7 @@ struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* co
 	struct ColorObject *color_object=color_object_new(handler_map);
 	if (handler_map) dynv_handler_map_release(handler_map);
 	color_object_set_color(color_object, color);
-	int r= color_list_add_color_object(color_list, color_object);
+	int r= color_list_add_color_object(color_list, color_object, 1);
 	if (r==0){
 		color_object_release(color_object);
 		return color_object;
@@ -136,9 +140,9 @@ struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* co
 	}	
 }
 
-int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object){
+int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object, int add_to_palette){
 	color_list->colors.push_back(color_object_ref(color_object));
-	if (color_list->on_insert) color_list->on_insert(color_list, color_object);
+	if (add_to_palette) if (color_list->on_insert) color_list->on_insert(color_list, color_object);
 	return 0;
 }
 
@@ -182,3 +186,14 @@ int color_list_remove_all(struct ColorList* color_list){
 unsigned long color_list_get_count(struct ColorList* color_list){
 	return color_list->colors.size();
 }
+
+int color_list_get_positions(struct ColorList* color_list){
+	ColorList::iter i;
+	for (i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+		(*i)->position=-1;
+	}
+	if (color_list->on_get_positions) color_list->on_get_positions(color_list);
+	return 0;
+}
+
+

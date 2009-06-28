@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #include <vector>
+#include <iostream>
 using namespace std;
 
 bool dynvKeyCompare::operator() (const char* const& x, const char* const& y) const
@@ -122,18 +123,18 @@ struct dynvHandler* dynv_handler_map_get_handler(struct dynvHandlerMap* handler_
 
 int dynv_handler_map_serialize(struct dynvHandlerMap* handler_map, struct dynvIO* io){
 	dynvHandlerMap::HandlerMap::iterator i;
-	unsigned long written, length;
-	unsigned long id=0;
+	uint32_t written, length;
+	uint32_t id=0;
 
-	unsigned long handler_count=handler_map->handlers.size();
-	handler_count=ULONG_TO_LE(handler_count);
+	uint32_t handler_count=handler_map->handlers.size();
+	handler_count=UINT32_TO_LE(handler_count);
 	dynv_io_write(io, &handler_count, 4, &written);
 
 	for (i=handler_map->handlers.begin(); i!=handler_map->handlers.end(); ++i){
 		struct dynvHandler* handler=(*i).second;
 
 		length=strlen(handler->name);
-		unsigned long length_le=ULONG_TO_LE(length);
+		uint32_t length_le=UINT32_TO_LE(length);
 
 		dynv_io_write(io, &length_le, 4, &written);
 		dynv_io_write(io, handler->name, length, &written);
@@ -145,26 +146,31 @@ int dynv_handler_map_serialize(struct dynvHandlerMap* handler_map, struct dynvIO
 }
 
 int dynv_handler_map_deserialize(struct dynvHandlerMap* handler_map, struct dynvIO* io, dynvHandlerMap::HandlerVec& handler_vec){
-	unsigned long read;
-	unsigned long handler_count;
-	unsigned long length;
+	uint32_t read;
+	uint32_t handler_count;
+	uint32_t length;
 	char* name;
 	struct dynvHandler* handler;
 
-	dynv_io_read(io, &handler_count, 4, &read);
-	handler_count=ULONG_TO_LE(handler_count);
+	if (dynv_io_read(io, &handler_count, 4, &read)==0){
+		if (read!=4) return -1;
+	}else return -1;
+
+	handler_count=UINT32_TO_LE(handler_count);
 
 	handler_vec.resize(handler_count);
 
-	for (unsigned long i=0; i!=handler_count; ++i){
+	for (uint32_t i=0; i!=handler_count; ++i){
 		dynv_io_read(io, &length, 4, &read);
-		length=ULONG_TO_LE(length);
+		length=UINT32_TO_LE(length);
 		name=new char [length+1];
 		dynv_io_read(io, name, length, &read);
 		name[length]=0;
 
 		handler=dynv_handler_map_get_handler(handler_map, name);
 		handler_vec[i]=handler;
+
+		//cout<<"Handler: "<< name<<endl;
 
 		delete [] name;
 	}
@@ -227,7 +233,7 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 	if (i==dynv_system->variables.end()){
 		if (handler==NULL) return 0;
 		variable=dynv_variable_create(variable_name, handler);
-		dynv_system->variables[variable_name]=variable;
+		dynv_system->variables[variable->name]=variable;
 		variable->handler->create(variable);
 		return variable;
 	}else{
@@ -235,7 +241,7 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 	}
 
 	if (variable->handler==handler){
-		return 0;
+		return variable;
 	}else{
 		if (handler->create!=NULL){
 			variable->handler->destroy(variable);
@@ -266,7 +272,7 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 	if (i==dynv_system->variables.end()){
 		if (handler==NULL) return -2;
 		variable=dynv_variable_create(variable_name, handler);
-		dynv_system->variables[variable_name]=variable;
+		dynv_system->variables[variable->name]=variable;
 		variable->handler->create(variable);
 		return variable->handler->set(variable, value);
 	}else{
@@ -361,22 +367,22 @@ struct dynvVariable* dynv_system_get_var(struct dynvSystem* dynv_system, const c
 int dynv_system_serialize(struct dynvSystem* dynv_system, struct dynvIO* io){
 
 	dynvSystem::VariableMap::iterator i;
-	unsigned long written, length, id;
+	uint32_t written, length, id;
 
-	unsigned long variable_count=dynv_system->variables.size();
-	variable_count=ULONG_TO_LE(variable_count);
+	uint32_t variable_count=dynv_system->variables.size();
+	variable_count=UINT32_TO_LE(variable_count);
 	dynv_io_write(io, &variable_count, 4, &written);
 
 	for (i=dynv_system->variables.begin(); i!=dynv_system->variables.end(); ++i){
 		struct dynvVariable* variable=(*i).second;
 
-		id=ULONG_TO_LE(variable->handler->id);
+		id=UINT32_TO_LE(variable->handler->id);
 		dynv_io_write(io, &id, 4, &written);
 
 		length=strlen(variable->name);
-		unsigned long length_le=ULONG_TO_LE(length);
+		uint32_t length_le=UINT32_TO_LE(length);
 
-		dynv_io_write(io, &length_le, 1, &written);
+		dynv_io_write(io, &length_le, 4, &written);
 		dynv_io_write(io, variable->name, length, &written);
 
 		variable->handler->serialize(variable, io);
@@ -387,41 +393,54 @@ int dynv_system_serialize(struct dynvSystem* dynv_system, struct dynvIO* io){
 
 int dynv_system_deserialize(struct dynvSystem* dynv_system, dynvHandlerMap::HandlerVec& handler_vec, struct dynvIO* io){
 
-	unsigned long read;
-	unsigned long variable_count, handler_id;
-	unsigned long length;
+	uint32_t read;
+	uint32_t variable_count, handler_id;
+	uint32_t length=0;
 	char* name;
 	struct dynvVariable* variable;
 
-	dynv_io_read(io, &variable_count, 4, &read);
-	variable_count=ULONG_TO_LE(variable_count);
+	if (dynv_io_read(io, &variable_count, 4, &read)==0){
+		if (read!=4) return -1;
+	}else return -1;
 
-	for (unsigned long i=0; i!=variable_count; ++i){
+	variable_count=UINT32_FROM_LE(variable_count);
+
+	for (uint32_t i=0; i!=variable_count; ++i){
 		dynv_io_read(io, &handler_id, 4, &read);
-		handler_id=ULONG_TO_LE(handler_id);
+		handler_id=UINT32_FROM_LE(handler_id);
 
-		if ((handler_id<handler_vec.size()) || (handler_vec[handler_id])){
+		if ((handler_id<handler_vec.size()) && (handler_vec[handler_id])){
 
 			dynv_io_read(io, &length, 4, &read);
-			length=ULONG_TO_LE(length);
+			length=UINT32_FROM_LE(length);
 			name=new char [length+1];
 			dynv_io_read(io, name, length, &read);
 			name[length]=0;
 
 			variable=dynv_system_add_empty(dynv_system, handler_vec[handler_id], name);
 			if (variable){
-				handler_vec[handler_id]->deserialize(variable, io);
+				//cout<<"Var: "<< name<<" "<<handler_id<<" "<<handler_vec[handler_id]->name<<endl;
+				if (handler_vec[handler_id]->deserialize(variable, io)!=0){
+					dynv_io_read(io, &length, 4, &read);
+					length=UINT32_FROM_LE(length);
+					dynv_io_seek(io, length, SEEK_CUR, 0);
+				}
+			}else{
+				//cout<<"Var: skipping val"<<endl;
+				dynv_io_read(io, &length, 4, &read);
+				length=UINT32_FROM_LE(length);
+				dynv_io_seek(io, length, SEEK_CUR, 0);
 			}
 			delete [] name;
 
 		}else{
 
 			dynv_io_read(io, &length, 4, &read);
-			length=ULONG_TO_LE(length);
+			length=UINT32_FROM_LE(length);
 			dynv_io_seek(io, length, SEEK_CUR, 0);
 
 			dynv_io_read(io, &length, 4, &read);
-			length=ULONG_TO_LE(length);
+			length=UINT32_FROM_LE(length);
 			dynv_io_seek(io, length, SEEK_CUR, 0);
 		}
 	}
@@ -429,15 +448,15 @@ int dynv_system_deserialize(struct dynvSystem* dynv_system, dynvHandlerMap::Hand
 }
 
 
-int dynv_io_write(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_written) {
+int dynv_io_write(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written) {
 	return io->write(io, data, size, data_written);
 }
 
-int dynv_io_read(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_read) {
+int dynv_io_read(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read) {
 	return io->read(io, data, size, data_read);
 }
 
-int dynv_io_seek(struct dynvIO* io, unsigned long offset, int type, unsigned long* position) {
+int dynv_io_seek(struct dynvIO* io, uint32_t offset, int type, uint32_t* position) {
 	return io->seek(io, offset, type, position);
 }
 

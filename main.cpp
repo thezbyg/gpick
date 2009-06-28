@@ -56,7 +56,7 @@
 #include "dynv/DynvVarColor.h"
 
 #include <iostream>
-//#include <string>
+#include <string>
 #include <fstream>
 #include <sstream>
 
@@ -90,6 +90,8 @@ typedef struct MainWindow{
 	GtkWidget* color_name;
 	GtkWidget* notebook;
 
+	GtkWidget* statusbar;
+
 	ColorNames* cnames;
 	struct Sampler* sampler;
 	struct ColorList* colors;
@@ -101,6 +103,8 @@ typedef struct MainWindow{
 
 	gboolean add_to_palette;
 	gboolean rotate_swatch;
+
+	string current_filename;
 
 }MainWindow;
 
@@ -216,7 +220,7 @@ static void on_swatch_menu_add_to_palette(GtkWidget *widget,  gpointer item) {
 	struct ColorObject *color_object=color_list_new_color_object(window->colors, &c);
 	string name=color_names_get(window->cnames, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
-	color_list_add_color_object(window->colors, color_object);
+	color_list_add_color_object(window->colors, color_object, 1);
 }
 
 static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item) {
@@ -230,7 +234,7 @@ static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item)
 		struct ColorObject *color_object=color_list_new_color_object(window->colors, &c);
 		string name=color_names_get(window->cnames, &c);
 		dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
-		color_list_add_color_object(window->colors, color_object);
+		color_list_add_color_object(window->colors, color_object, 1);
 	}
 }
 static void
@@ -244,7 +248,7 @@ on_swatch_color_activated (GtkWidget *widget, gpointer item) {
 	struct ColorObject *color_object=color_list_new_color_object(window->colors, &c);
 	string name=color_names_get(window->cnames, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
-	color_list_add_color_object(window->colors, color_object);
+	color_list_add_color_object(window->colors, color_object, 1);
 }
 
 static gboolean
@@ -298,7 +302,15 @@ on_swatch_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 
 
 
-
+gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	if (event->in){
+		gtk_statusbar_push(GTK_STATUSBAR(window->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(window->statusbar), "swatch_focused"), "Press SPACE to sample color under pointer");
+	}else{
+		gtk_statusbar_pop(GTK_STATUSBAR(window->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(window->statusbar), "swatch_focused"));
+	}
+	return FALSE;
+}
 
 
 gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -330,7 +342,7 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				struct ColorObject *color_object=color_list_new_color_object(window->colors, &c);
 				string name=color_names_get(window->cnames, &c);
 				dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
-				color_list_add_color_object(window->colors, color_object);
+				color_list_add_color_object(window->colors, color_object, 1);
 			}
 			if (window->rotate_swatch){
 				gtk_swatch_move_active(GTK_SWATCH(window->swatch_display),1);
@@ -396,14 +408,229 @@ show_dialog_converter(GtkWidget *widget, MainWindow* window){
 	return;
 }
 
-void
-createMenu(GtkMenuBar* menu_bar, MainWindow* window)
-{
+static void
+menu_file_new(GtkWidget *widget, MainWindow* window){
+	window->current_filename="";
+	palette_list_remove_all_entries(window->color_list);
+}
+
+static void
+menu_file_open(GtkWidget *widget, MainWindow* window){
+
+	GtkWidget *dialog;
+	GtkFileFilter *filter;
+	GKeyFile *settings=window->settings;
+
+	dialog = gtk_file_chooser_dialog_new ("Open File", GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+						  GTK_FILE_CHOOSER_ACTION_OPEN,
+						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+						  GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+						  NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
+	gchar* default_path=g_key_file_get_string_with_default(settings, "Open Dialog", "Path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	g_free(default_path);
+
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "gpick palette *.gpa");
+	gtk_file_filter_add_pattern(filter, "*.gpa");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	gboolean finished=FALSE;
+
+	while (!finished){
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+			gchar *filename;
+			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+			gchar *path;
+			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+			g_key_file_set_string(settings, "Open Dialog", "Path", path);
+			g_free(path);
+
+			palette_list_remove_all_entries(window->color_list);
+			window->current_filename="";
+
+			if (palette_file_load(filename, window->colors)==0){
+				window->current_filename=filename;
+				finished=TRUE;
+			}else{
+				GtkWidget* message;
+				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
+				gtk_window_set_title(GTK_WINDOW(dialog), "Open");
+				gtk_dialog_run(GTK_DIALOG(message));
+				gtk_widget_destroy(message);
+			}
+
+			g_free(filename);
+		}else break;
+	}
+
+	gtk_widget_destroy (dialog);
+
+}
+
+
+
+static void
+menu_file_save_as(GtkWidget *widget, MainWindow* window){
+
+	GtkWidget *dialog;
+	GtkFileFilter *filter;
+	GKeyFile *settings=window->settings;
+
+	dialog = gtk_file_chooser_dialog_new ("Save As", GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+						  GTK_FILE_CHOOSER_ACTION_SAVE,
+						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+						  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
+						  NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
+	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
+
+	gchar* default_path=g_key_file_get_string_with_default(settings, "Open Dialog", "Path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	g_free(default_path);
+
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "gpick palette *.gpa");
+	gtk_file_filter_add_pattern(filter, "*.gpa");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	gboolean finished=FALSE;
+
+	while (!finished){
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+			gchar *filename;
+			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+			gchar *path;
+			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+			g_key_file_set_string(settings, "Open Dialog", "Path", path);
+			g_free(path);
+
+			if (palette_file_save(filename, window->colors)==0){
+				window->current_filename=filename;
+				finished=TRUE;
+			}else{
+				GtkWidget* message;
+				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be saved");
+				gtk_window_set_title(GTK_WINDOW(dialog), "Open");
+				gtk_dialog_run(GTK_DIALOG(message));
+				gtk_widget_destroy(message);
+			}
+
+			g_free(filename);
+		}else break;
+	}
+
+	gtk_widget_destroy (dialog);
+}
+
+static void menu_file_save(GtkWidget *widget, MainWindow *window) {
+	if (window->current_filename == ""){
+		menu_file_save_as(widget, window);
+	}else{
+		if (palette_file_save(window->current_filename.c_str(), window->colors) == 0){
+
+		}else{
+
+		}
+	}
+}
+
+static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
+	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
+	return 0;
+}
+
+static void menu_file_export_all(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	dialog_export_show(GTK_WINDOW(window->window), window->colors, 0, window->settings, FALSE);
+}
+
+static void menu_file_import(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	dialog_import_show(GTK_WINDOW(window->window), window->colors, 0, window->settings);
+}
+
+static void menu_file_export(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	struct ColorList *color_list = color_list_new(NULL);
+	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
+	dialog_export_show(GTK_WINDOW(window->window), window->colors, color_list, window->settings, TRUE);
+	color_list_destroy(color_list);
+}
+static void menu_file_activate(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+
+	gint32 selected_count = palette_list_get_selected_count(window->color_list);
+	gint32 total_count = palette_list_get_count(window->color_list);
+
+	//GtkMenu* menu=GTK_MENU(gtk_menu_item_get_submenu(GTK_MENU_ITEM(widget)));
+
+	GtkWidget** widgets=(GtkWidget**)g_object_get_data(G_OBJECT(widget), "widgets");
+	gtk_widget_set_sensitive(widgets[0], (total_count >= 1));
+	gtk_widget_set_sensitive(widgets[1], (selected_count >= 1));
+}
+
+static void createMenu(GtkMenuBar *menu_bar, MainWindow *window, GtkAccelGroup *accel_group) {
 	GtkMenu* menu;
 	GtkWidget* item;
 	GtkWidget* file_item ;
 
     menu = GTK_MENU(gtk_menu_new ());
+
+    GtkWidget** widgets=(GtkWidget**)g_malloc(sizeof(GtkWidget*)*2);
+
+    item = gtk_menu_item_new_with_image ("_New", gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_new), window);
+    gtk_widget_add_accelerator (item, "activate", accel_group, GDK_n, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+    item = gtk_menu_item_new_with_image ("_Open file...", gtk_image_new_from_stock(GTK_STOCK_OPEN, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open), window);
+    gtk_widget_add_accelerator (item, "activate", accel_group, GDK_o, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+    item = gtk_menu_item_new_with_image ("_Save", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_save), window);
+    gtk_widget_add_accelerator (item, "activate", accel_group, GDK_s, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+    item = gtk_menu_item_new_with_image ("_Save As...", gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_save_as), window);
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+    item = gtk_image_menu_item_new_with_mnemonic ("Ex_port...");
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export_all),window);
+    widgets[0]=item;
+
+    //gtk_widget_set_sensitive(item, (total_count >= 1));
+
+    item = gtk_image_menu_item_new_with_mnemonic ("Expo_rt selected...");
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export),window);
+    widgets[1]=item;
+
+    //gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+    item = gtk_image_menu_item_new_with_mnemonic ("_Import...");
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_import),window);
+    //gtk_widget_set_sensitive(item, 0);
+
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
     item = gtk_menu_item_new_with_image ("E_xit", gtk_image_new_from_stock(GTK_STOCK_QUIT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -411,6 +638,8 @@ createMenu(GtkMenuBar* menu_bar, MainWindow* window)
 
 
     file_item = gtk_menu_item_new_with_mnemonic ("_File");
+    g_signal_connect (G_OBJECT (file_item), "activate", G_CALLBACK (menu_file_activate), window);
+    g_object_set_data_full(G_OBJECT(file_item), "widgets", widgets, (GDestroyNotify)g_free);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
@@ -462,10 +691,7 @@ color_component_change_value(GtkSpinButton *spinbutton, Color* c, gpointer data)
 
 //g_get_user_config_dir()
 
-gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
-	color_list_add_color_object((struct ColorList *)userdata, color_object);
-	return 0;
-}
+
 
 gint32 color_list_mark_selected(struct ColorObject* color_object, void *userdata){
 	color_object->selected=1;
@@ -487,18 +713,7 @@ static void palette_popup_menu_remove_selected(GtkWidget *widget, gpointer data)
 	color_list_remove_selected(window->colors);
 }
 
-static void palette_popup_menu_export(GtkWidget *widget, gpointer data) {
-	MainWindow* window=(MainWindow*)data;	
-	dialog_export_show(GTK_WINDOW(window->window), window->colors, 0, window->settings, FALSE);
-}
 
-static void palette_popup_menu_export_selected(GtkWidget *widget, gpointer data) {
-	MainWindow* window=(MainWindow*)data;	
-	struct ColorList *color_list = color_list_new(NULL);
-	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
-	dialog_export_show(GTK_WINDOW(window->window), window->colors, color_list, window->settings, TRUE);
-	color_list_destroy(color_list);
-}
 
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata){
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
@@ -556,7 +771,9 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	if (total_count>0){
 		struct ColorList *color_list = color_list_new(NULL);
 		palette_list_forfirst_selected(window->color_list, color_list_selected, color_list);
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (*color_list->colors.begin(), window->color_list, window->settings, window->lua));
+		if (color_list_get_count(color_list)!=0){
+			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (*color_list->colors.begin(), window->color_list, window->settings, window->lua));
+		}
 		color_list_destroy(color_list);
 	}
 
@@ -578,7 +795,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
 
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+/*	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
     item = gtk_menu_item_new_with_image ("_Export all...", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -593,7 +810,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     item = gtk_menu_item_new_with_image ("_Import...", gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_export),window);
-    gtk_widget_set_sensitive(item, 0);
+    gtk_widget_set_sensitive(item, 0);*/
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
@@ -859,6 +1076,17 @@ int color_list_on_clear(struct ColorList* color_list){
 	return 0;
 }
 
+gint32 callback_color_list_on_get_positions(struct ColorObject* color_object, void *userdata){
+	color_object->position=*((unsigned long*)userdata);
+	(*((unsigned long*)userdata))++;
+	return 0;
+}
+
+int color_list_on_get_positions(struct ColorList* color_list){
+	unsigned long item=0;
+	palette_list_foreach(((MainWindow*)color_list->userdata)->color_list, callback_color_list_on_get_positions, &item );
+	return 0;
+}
 
 int
 main(int argc, char **argv)
@@ -904,6 +1132,7 @@ main(int argc, char **argv)
 	window->colors->on_insert = color_list_on_insert;
 	window->colors->on_clear = color_list_on_clear;
 	window->colors->on_delete_selected = color_list_on_delete_selected;
+	window->colors->on_get_positions = color_list_on_get_positions;
 	window->colors->userdata = window;
 	dynv_handler_map_release(handler_map);
 	
@@ -951,8 +1180,12 @@ main(int argc, char **argv)
 
 
     g_signal_connect (G_OBJECT (window->window), "delete_event", G_CALLBACK (delete_event), NULL);
-    g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
+    g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
 
+    GtkAccelGroup *accel_group=gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(window->window), accel_group);
+
+    //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
     GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame;
     int table_y;
 
@@ -962,7 +1195,7 @@ main(int argc, char **argv)
 		GtkWidget* menu_bar;
 		menu_bar = gtk_menu_bar_new ();
 		gtk_box_pack_start (GTK_BOX(vbox_main), menu_bar, FALSE, FALSE, 0);
-		createMenu(GTK_MENU_BAR(menu_bar), window);
+		createMenu(GTK_MENU_BAR(menu_bar), window, accel_group);
 
     hbox = gtk_hbox_new(FALSE, 5);
     gtk_box_pack_start (GTK_BOX(vbox_main), hbox, TRUE, TRUE, 5);
@@ -975,7 +1208,11 @@ main(int argc, char **argv)
 
 				widget = gtk_swatch_new();
 				gtk_container_add (GTK_CONTAINER(frame), widget);
-			
+
+
+				g_signal_connect (G_OBJECT (widget), "focus-in-event", G_CALLBACK (on_swatch_focus_change), window);
+				g_signal_connect (G_OBJECT (widget), "focus-out-event", G_CALLBACK (on_swatch_focus_change), window);
+
 				g_signal_connect (G_OBJECT (widget), "key_press_event", G_CALLBACK (on_key_up), window);
 				g_signal_connect (G_OBJECT (widget), "popup-menu",     G_CALLBACK (on_popup_menu), window);
 				g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_swatch_active_color_changed), window);
@@ -1154,9 +1391,9 @@ main(int argc, char **argv)
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(window->notebook), g_key_file_get_integer_with_default(window->settings, "Notebook", "Page", 0));
 
 	statusbar=gtk_statusbar_new();
-	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "focus_swatch"), "Focus swatch area to begin picking");
-	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "press_space"), "Press SPACE to sample color under pointer");
+	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "focus_swatch"), "Click on swatch area to begin adding colors to palette");
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
+	window->statusbar=statusbar;
 
     updateDiplays(window);
 

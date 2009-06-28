@@ -280,7 +280,7 @@ void palette_list_add_entry(GtkWidget* widget, struct ColorObject* color_object)
 	//g_object_unref (pixbuf);
 }
 
-
+#if 0
 static void palette_list_menu_value_copy(GtkWidget *widget,  gpointer item) {
 	const gchar *text = (const gchar *)g_object_get_data(G_OBJECT(widget), "copy-value");
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
@@ -289,6 +289,7 @@ static void palette_list_menu_value_copy(GtkWidget *widget,  gpointer item) {
 void palette_list_color_value_destroy(gpointer data) {
 	g_free(data);
 }
+
 
 /*
  * Color printing functions are temporary, we are going to add user configurable ones
@@ -401,6 +402,7 @@ GtkWidget* palette_list_create_copy_menu (Color* color) {
 
 	return menu;
 }
+#endif
 
 gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata){
 	GtkTreeIter iter;

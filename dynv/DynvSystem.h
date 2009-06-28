@@ -25,18 +25,18 @@
 struct dynvHandler;
 
 struct dynvIO{
-	int (*write)(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_written);
-	int (*read)(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_read);
-	int (*seek)(struct dynvIO* io, unsigned long offset, int type, unsigned long* position);
+	int (*write)(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written);
+	int (*read)(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read);
+	int (*seek)(struct dynvIO* io, uint32_t offset, int type, uint32_t* position);
 	int (*free)(struct dynvIO* io);
 	int (*reset)(struct dynvIO* io);
 	
 	void* userdata;
 };
 
-int dynv_io_write(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_written);
-int dynv_io_read(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_read);
-int dynv_io_seek(struct dynvIO* io, unsigned long offset, int type, unsigned long* position);
+int dynv_io_write(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written);
+int dynv_io_read(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read);
+int dynv_io_seek(struct dynvIO* io, uint32_t offset, int type, uint32_t* position);
 int dynv_io_free(struct dynvIO* io);
 int dynv_io_reset(struct dynvIO* io);
 
@@ -50,7 +50,7 @@ struct dynvVariable{
 
 	struct dynvHandler* handler;
 	void* value;
-	long flags;
+	uint32_t flags;
 };
 
 #define DYNV_VARIABLE_TEMPORARY			1
@@ -58,7 +58,7 @@ struct dynvVariable{
 struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* handler);
 void dynv_variable_destroy(struct dynvVariable* variable);
 
-void dynv_variable_set_flags(struct dynvVariable* variable, long flags);
+void dynv_variable_set_flags(struct dynvVariable* variable, uint32_t flags);
 
 struct dynvHandler{
 	char* name;
@@ -72,7 +72,7 @@ struct dynvHandler{
 	int (*serialize)(struct dynvVariable* variable, struct dynvIO* io);
 	int (*deserialize)(struct dynvVariable* variable, struct dynvIO* io);
 
-	unsigned int id;
+	uint32_t id;
 };
 
 struct dynvHandler* dynv_handler_create(const char* name);
@@ -81,7 +81,7 @@ void dynv_handler_destroy(struct dynvHandler* handler);
 struct dynvHandlerMap{
 	typedef std::map<const char*, struct dynvHandler*, dynvKeyCompare> HandlerMap;
 	typedef std::vector<struct dynvHandler*> HandlerVec;
-	unsigned int refcnt;
+	uint32_t refcnt;
 	HandlerMap handlers;
 };
 
@@ -97,7 +97,7 @@ int dynv_handler_map_deserialize(struct dynvHandlerMap* handler_map, struct dynv
 
 struct dynvSystem{
 	typedef std::map<const char*, struct dynvVariable*, dynvKeyCompare> VariableMap;
-	unsigned int refcnt;
+	uint32_t refcnt;
 	VariableMap variables;
 	dynvHandlerMap* handler_map;
 };

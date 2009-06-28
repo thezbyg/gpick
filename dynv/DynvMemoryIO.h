@@ -22,6 +22,9 @@
 #include "DynvSystem.h"
 
 struct dynvIO* dynv_io_memory_new();
-int dynv_io_memory_get_data(struct dynvIO* io, char** data, unsigned long* size);
+int dynv_io_memory_get_data(struct dynvIO* io, char** data, uint32_t* size);
+int dynv_io_memory_set_data(struct dynvIO* io, char* data, uint32_t size);
+int dynv_io_memory_prepare_size(struct dynvIO* io, uint32_t size);
+void* dynv_io_memory_get_buffer(struct dynvIO* io);
 
 #endif /* DYNVMEMORYIO_H_ */

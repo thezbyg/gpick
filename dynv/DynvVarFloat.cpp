@@ -50,14 +50,14 @@ static int dynv_var_float_get(struct dynvVariable* variable, void** value){
 
 static int dynv_var_float_serialize(struct dynvVariable* variable, struct dynvIO* io){
 	if (!variable->value) return -1;
-	unsigned long written;
+	uint32_t written;
 
-	unsigned int length=4;
-	length=ULONG_TO_LE(length);
+	uint32_t length=4;
+	length=UINT32_TO_LE(length);
 
 	dynv_io_write(io, &length, 4, &written);
 
-	int value=ULONG_TO_LE(*((int*)variable->value));
+	uint32_t value=UINT32_TO_LE(*((uint32_t*)variable->value));
 	if (dynv_io_write(io, &value, 4, &written)==0){
 		if (written==4) return 0;
 	}
@@ -66,13 +66,13 @@ static int dynv_var_float_serialize(struct dynvVariable* variable, struct dynvIO
 
 static int dynv_var_float_deserialize(struct dynvVariable* variable, struct dynvIO* io){
 	if (!variable->value) return -1;
-	unsigned long read;
-	int value;
+	uint32_t read;
+	uint32_t value;
 	dynv_io_read(io, &value, 4, &read);
 
 	if (dynv_io_read(io, &value, 4, &read)==0){
 		if (read==4){
-			*((int*)variable->value)=ULONG_TO_LE(value);
+			*((uint32_t*)variable->value)=UINT32_FROM_LE(value);
 			return 0;
 		}
 	}

@@ -37,7 +37,7 @@ static int dynv_var_string_set(struct dynvVariable* variable, void* value){
 	if (variable->value){
 		delete [] (char*)variable->value;
 	}
-	unsigned long len=strlen((char*)value)+1;
+	uint32_t len=strlen((char*)value)+1;
 	variable->value=new char [len];
 	memcpy(variable->value, value, len);
 	return 0;
@@ -53,41 +53,44 @@ static int dynv_var_string_get(struct dynvVariable* variable, void** value){
 
 static int dynv_var_string_serialize(struct dynvVariable* variable, struct dynvIO* io){
 	if (!variable->value) return -1;
-	unsigned long written;
-	unsigned int length=strlen((char*)variable->value);
-	unsigned int length_le=ULONG_TO_LE(length);
+	uint32_t written;
+	uint32_t length=strlen((char*)variable->value);
+	uint32_t length_le=UINT32_TO_LE(length);
 
 	if (dynv_io_write(io, &length_le, 4, &written)==0){
 		if (written!=4) return -1;
-	}
+	}else return -1;
 
 	if (dynv_io_write(io, variable->value, length, &written)==0){
 		if (written!=length) return -1;
-	}
+	}else return -1;
 
 	return 0;
 }
 
 static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
-	unsigned long read;
-	unsigned int length;
+	if (variable->value){
+		delete [] (char*)variable->value;
+		variable->value=0;
+	}
+	uint32_t read;
+	uint32_t length;
 
 	if (dynv_io_read(io, &length, 4, &read)==0){
 		if (read!=4) return -1;
-	}
+	}else return -1;
 
-	length=ULONG_FROM_LE(length);
+	length=UINT32_FROM_LE(length);
 
 	variable->value=new char [length+1];
 
 	if (dynv_io_read(io, variable->value, length, &read)==0){
 		if (read!=length) return -1;
-	}
+	}else return -1;
 
 	((char*)variable->value)[length]=0;
 
-	return -1;
+	return 0;
 }
 
 struct dynvHandler* dynv_var_string_new(){

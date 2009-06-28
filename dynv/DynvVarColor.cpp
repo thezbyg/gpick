@@ -54,40 +54,41 @@ static int dynv_var_color_get(struct dynvVariable* variable, void** value){
 
 static int dynv_var_color_serialize(struct dynvVariable* variable, struct dynvIO* io){
 	if (!variable->value) return -1;
-	unsigned long written;
+	uint32_t written;
 
-	unsigned int length=16;
-	length=ULONG_TO_LE(length);
+	uint32_t length=16;
+	length=UINT32_TO_LE(length);
 
 	dynv_io_write(io, &length, 4, &written);
 
-	int value[4];
-	memcpy(&value, variable->value, 16);
-	value[0]=ULONG_TO_LE(value[0]);
-	value[1]=ULONG_TO_LE(value[1]);
-	value[2]=ULONG_TO_LE(value[2]);
-	value[3]=ULONG_TO_LE(value[3]);
+	uint32_t value[4];
+	memcpy(value, variable->value, 16);
+	value[0]=UINT32_TO_LE(value[0]);
+	value[1]=UINT32_TO_LE(value[1]);
+	value[2]=UINT32_TO_LE(value[2]);
+	value[3]=UINT32_TO_LE(value[3]);
 
 	if (dynv_io_write(io, value, 16, &written)==0){
-		if (written==16) return 0;
-	}
-	return -1;
+		if (written!=16) return -1;
+	}else return -1;
+	return 0;
 }
 
 static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynvIO* io){
 	if (!variable->value) return -1;
-	unsigned long read;
-	int length;
-	int value[4];
+
+	uint32_t read;
+	uint32_t length;
+	uint32_t value[4];
 	dynv_io_read(io, &length, 4, &read);
 
-	if (dynv_io_read(io, &value, 16, &read)==0){
+	if (dynv_io_read(io, value, 16, &read)==0){
 		if (read==16){
-			value[0]=ULONG_TO_LE(value[0]);
-			value[1]=ULONG_TO_LE(value[1]);
-			value[2]=ULONG_TO_LE(value[2]);
-			value[3]=ULONG_TO_LE(value[3]);
-			memcpy(variable->value, &value, 16);
+			value[0]=UINT32_FROM_LE(value[0]);
+			value[1]=UINT32_FROM_LE(value[1]);
+			value[2]=UINT32_FROM_LE(value[2]);
+			value[3]=UINT32_FROM_LE(value[3]);
+			memcpy(variable->value, value, 16);
 			return 0;
 		}
 	}

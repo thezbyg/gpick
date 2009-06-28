@@ -22,6 +22,8 @@
 
 #include <fstream>
 #include <string>
+#include <iostream>
+#include <sstream>
 using namespace std;
 
 
@@ -60,6 +62,73 @@ gint32 palette_export_gpl(struct ColorList *color_list, const gchar* filename, g
 	return -1;
 }
 
+static void strip_leading_trailing_chars(string& x, string& stripchars){
+   if (x.empty()) return;
+   if (stripchars.empty()) return;
+
+   size_t start = x.find_first_not_of(stripchars);
+   size_t end = x.find_last_not_of(stripchars);
+
+   if ((start==string::npos)||(end==string::npos)){
+	   x.erase();
+	   return;
+   }
+
+   x = x.substr(start, (end-start+ 1) );
+}
+
+gint32 palette_import_gpl(struct ColorList *color_list, const gchar* filename){
+	ifstream f(filename, ios::in);
+	if (f.is_open()){
+		int r=0;
+		string line;
+		getline(f, line);
+		if (f.good() && line=="GIMP Palette"){
+			do{
+				getline(f, line);
+			}while (f.good() && line!="#");
+
+			if (line=="#"){
+				int r,g,b;
+				Color c;
+				struct ColorObject* color_object;
+				string strip_chars=" \t";
+
+				for(;;){
+					getline(f, line);
+					if (!f.good()) break;
+					if (line[0]=='#') continue;
+
+					stringstream ss(line);
+
+					ss>>r>>g>>b;
+
+
+					getline(ss, line);
+					if (!f.good()) line="";
+					strip_leading_trailing_chars(line, strip_chars);
+
+					c.rgb.red=r/255.0;
+					c.rgb.green=g/255.0;
+					c.rgb.blue=b/255.0;
+					color_object=color_list_new_color_object(color_list, &c);
+					dynv_system_set(color_object->params, "string", "name", (void*)line.c_str());
+					color_list_add_color_object(color_list, color_object, TRUE);
+					color_object_release(color_object);
+				}
+
+
+
+			}else r=-1;
+
+
+		}else r=-1;
+
+		f.close();
+		return r;
+	}
+	return -1;
+}
 
 
 gint32 palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
@@ -203,16 +272,17 @@ gint32 palette_export_txt(struct ColorList *color_list, const gchar* filename, g
 }
 
 int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, gboolean selected) {
-/*
-int show_palette_export_dialog(GtkWindow *parent, struct ColorList *color_list, struct ColorList *selected_color_list, gboolean selected, GKeyFile* settings){*/
+
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
 	dialog = gtk_file_chooser_dialog_new ("Export",	parent,
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-						  GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+						  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
 						  NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
 
@@ -252,7 +322,7 @@ int show_palette_export_dialog(GtkWindow *parent, struct ColorList *color_list, 
 	gboolean saved=FALSE;
 
 	while (!saved){
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 			gchar *filename;
 			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 
@@ -290,3 +360,90 @@ int show_palette_export_dialog(GtkWindow *parent, struct ColorList *color_list, 
 	gtk_widget_destroy (dialog);
 	return 0;
 }
+
+
+
+int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings){
+	GtkWidget *dialog;
+
+	GtkFileFilter *filter;
+
+	dialog = gtk_file_chooser_dialog_new ("Import",	parent,
+						  GTK_FILE_CHOOSER_ACTION_OPEN,
+						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+						  GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+						  NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+
+	struct import_formats{
+		const gchar* name;
+		const gchar* pattern;
+		gint32 (*import_function)(struct ColorList *color_list, const gchar* filename);
+	};
+	struct import_formats formats[] = {
+		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_import_gpl },
+		/*{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
+		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
+		{ "Text file *.txt", "*.txt", palette_export_txt },*/
+	};
+
+
+	gchar* default_path=g_key_file_get_string_with_default(settings, "Import Dialog", "Path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	//gtk_file_chooser_set_filename (GTK_FILE_CHOOSER(dialog), default_filename);
+	g_free(default_path);
+
+	gchar* selected_filter=g_key_file_get_string_with_default(settings, "Import Dialog", "Filter", "*.gpl");
+
+	for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
+		filter = gtk_file_filter_new();
+		gtk_file_filter_set_name(filter, formats[i].name);
+		gtk_file_filter_add_pattern(filter, formats[i].pattern);
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+		if (g_strcmp0(formats[i].pattern, selected_filter)==0){
+			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+		}
+	}
+
+	g_free(selected_filter);
+
+	gboolean finished=FALSE;
+
+	while (!finished){
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+			gchar *filename;
+			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+
+			gchar *path;
+			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+			g_key_file_set_string(settings, "Import Dialog", "Path", path);
+			g_free(path);
+
+			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
+			for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
+				if (g_strcmp0(formats[i].name, format_name)==0){
+					struct ColorList *color_list_arg;
+					color_list_arg=color_list;
+					if (formats[i].import_function(color_list_arg, filename)==0){
+						finished=TRUE;
+					}else{
+						GtkWidget* message;
+						message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be imported");
+						gtk_window_set_title(GTK_WINDOW(dialog), "Import");
+						gtk_dialog_run(GTK_DIALOG(message));
+						gtk_widget_destroy(message);
+					}
+					g_key_file_set_string(settings, "Import Dialog", "Filter", formats[i].pattern);
+				}
+			}
+
+			g_free(filename);
+		}else break;
+	}
+
+	gtk_widget_destroy (dialog);
+	return 0;
+}
+

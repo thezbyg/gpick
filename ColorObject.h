@@ -36,9 +36,10 @@ struct ColorAction{
 };
 
 struct ColorObject{
-	unsigned long refcnt;
+	uint32_t refcnt;
 	struct dynvSystem* params;
 	std::list<struct ColorObject*> childs;	//color objects depending on current object
+	uint32_t position;
 
 	//Color color;
 	ColorAction* action;
@@ -63,6 +64,8 @@ struct ColorList{
 	int (*on_change)(struct ColorList* color_list, struct ColorObject* color_object);
 	int (*on_clear)(struct ColorList* color_list);
 
+	int (*on_get_positions)(struct ColorList* color_list);
+
 	void* userdata;
 };
 
@@ -70,10 +73,11 @@ struct ColorList* color_list_new(struct dynvHandlerMap* handler_map);
 void color_list_destroy(struct ColorList* color_list);
 struct ColorObject* color_list_new_color_object(struct ColorList* color_list, Color* color);
 struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* color);
-int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object);
+int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object, int add_to_palette);
 int color_list_remove_color_object(struct ColorList* color_list, struct ColorObject* color_object);
 int color_list_remove_selected(struct ColorList* color_list);
 int color_list_remove_all(struct ColorList* color_list);
 unsigned long color_list_get_count(struct ColorList* color_list);
+int color_list_get_positions(struct ColorList* color_list);
 
 #endif /* COLOROBJECT_H_ */

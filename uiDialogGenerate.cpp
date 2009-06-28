@@ -107,8 +107,11 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struc
 	GtkWidget *table, *gen_type, *range_colors, *range_chaos, *toggle_brightness_correction;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Generate colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT, NULL);
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
 	table = gtk_table_new(2, 2, FALSE);
@@ -149,7 +152,7 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struc
 
 
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(gen_type));
 		gint color_count=(gint)gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_colors));
 		gfloat chaos=gtk_spin_button_get_value(GTK_SPIN_BUTTON(range_chaos));
@@ -238,7 +241,7 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struc
 				
 				struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 				dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-				color_list_add_color_object(color_list, color_object);
+				color_list_add_color_object(color_list, color_object, 1);
 			}
 		}
 	}

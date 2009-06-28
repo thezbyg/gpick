@@ -1,0 +1,11 @@
+obj
+bin
+.*
+*.o
+*.d
+*.*~
+*.exe
+*.tar.gz
+Release
+Debug
+gpick-*/gpick-*

@@ -22,25 +22,27 @@
 
 struct dynvMemoryIO{
 	char* buffer;
-	unsigned long size;
-	unsigned long eof;
-	unsigned long position;
+	uint32_t size;
+	uint32_t eof;
+	uint32_t position;
 };
 
-static int dynv_io_memory_write(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_written) {
+static int dynv_io_memory_write(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written) {
 	struct dynvMemoryIO* mem_io = (struct dynvMemoryIO*) io->userdata;
 
-	unsigned long data_left = mem_io->size - mem_io->position;
+	uint32_t data_left = mem_io->size - mem_io->position;
 	if (data_left < size){ //buffer too small
-		unsigned long new_buf = mem_io->size + size + 4096;
+		uint32_t new_buf = mem_io->size + size + 4096;
 
 		//while (new_buf - mem_io->position < size)
 		//	new_buf *= 2;
 
 		char *nb;
 		if ((nb = new char[new_buf])){
-			memcpy(nb, mem_io->buffer, mem_io->position);
-			delete[] mem_io->buffer;
+			if (mem_io->buffer){
+				memcpy(nb, mem_io->buffer, mem_io->position);
+				delete[] mem_io->buffer;
+			}
 			mem_io->buffer = nb;
 			mem_io->size = new_buf;
 		}else{
@@ -56,38 +58,38 @@ static int dynv_io_memory_write(struct dynvIO* io, void* data, unsigned long siz
 	return 0;
 }
 
-static int dynv_io_memory_read(struct dynvIO* io, void* data, unsigned long size, unsigned long* data_read){
+static int dynv_io_memory_read(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read){
 	struct dynvMemoryIO* mem_io = (struct dynvMemoryIO*) io->userdata;
 
-	unsigned long data_left = mem_io->eof - mem_io->position;
-	if (data_left > size)
-		data_left = size;
-	memcpy(data, mem_io->buffer + mem_io->position, data_left);
-	mem_io->position += data_left;
+	uint32_t data_left = mem_io->eof - mem_io->position;
+	if (size > data_left)
+		size = data_left;
+	memcpy(data, mem_io->buffer + mem_io->position, size);
+	mem_io->position += size;
 	*data_read=size;
 	return 0;
 }
 
-static int dynv_io_memory_seek(struct dynvIO* io, unsigned long offset, int type, unsigned long* position){
+static int dynv_io_memory_seek(struct dynvIO* io, uint32_t offset, int type, uint32_t* position){
 	struct dynvMemoryIO* mem_io = (struct dynvMemoryIO*) io->userdata;
 
 	switch (type){
 	case SEEK_CUR:
 		mem_io->position+=offset;
 		if (mem_io->position>mem_io->eof) mem_io->position=mem_io->eof;
-		*position=mem_io->position;
+		if(position) *position=mem_io->position;
 		return 0;
 		break;
 	case SEEK_SET:
 		mem_io->position=offset;
 		if (mem_io->position>mem_io->eof) mem_io->position=mem_io->eof;
-		*position=mem_io->position;
+		if(position) *position=mem_io->position;
 		return 0;
 		break;
 	case SEEK_END:
 		mem_io->position=mem_io->eof-offset;
 		if (mem_io->position>mem_io->eof) mem_io->position=mem_io->eof;
-		*position=mem_io->position;
+		if(position) *position=mem_io->position;
 		return 0;
 		break;
 	}
@@ -128,7 +130,7 @@ struct dynvIO* dynv_io_memory_new(){
 	return io;
 }
 
-int dynv_io_memory_get_data(struct dynvIO* io, char** data, unsigned long* size){
+int dynv_io_memory_get_data(struct dynvIO* io, char** data, uint32_t* size){
 	struct dynvMemoryIO* mem_io=(struct dynvMemoryIO*)io->userdata;
 	if (!mem_io) return -1;
 	if (!mem_io->buffer) return -1;
@@ -137,3 +139,41 @@ int dynv_io_memory_get_data(struct dynvIO* io, char** data, unsigned long* size)
 	return 0;
 }
 
+int dynv_io_memory_set_data(struct dynvIO* io, char* data, uint32_t size){
+	struct dynvMemoryIO* mem_io=(struct dynvMemoryIO*)io->userdata;
+	if (!mem_io) return -1;
+	dynv_io_memory_reset(io);
+
+	uint32_t written;
+	dynv_io_memory_write(io, data, size, &written);
+	return 0;
+}
+
+int dynv_io_memory_prepare_size(struct dynvIO* io, uint32_t size){
+	struct dynvMemoryIO* mem_io=(struct dynvMemoryIO*)io->userdata;
+	if (!mem_io) return -1;
+
+	mem_io->eof=size;
+	mem_io->position=0;
+
+	if (mem_io->size<size){
+
+		char *nb;
+		if ((nb = new char[size])){
+			//memcpy(nb, mem_io->buffer, mem_io->position);
+			if (mem_io->buffer) delete[] mem_io->buffer;
+			mem_io->buffer = nb;
+			mem_io->size = size;
+			return 0;
+		}else{
+			return -1;
+		}
+	}
+	return 0;
+}
+
+void* dynv_io_memory_get_buffer(struct dynvIO* io){
+	struct dynvMemoryIO* mem_io=(struct dynvMemoryIO*)io->userdata;
+	if (!mem_io) return 0;
+	return mem_io->buffer;
+}

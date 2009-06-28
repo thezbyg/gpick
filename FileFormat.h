@@ -22,5 +22,6 @@
 #include "ColorObject.h"
 
 int palette_file_save(const char* filename, struct ColorList* color_list);
+int palette_file_load(const char* filename, struct ColorList* color_list);
 
 #endif /* FILEFORMAT_H_ */

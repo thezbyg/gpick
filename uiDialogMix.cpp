@@ -29,8 +29,11 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 	GtkWidget *mix_type, *mix_steps;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Mix colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_OK, GTK_RESPONSE_ACCEPT,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_REJECT, NULL);
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL);
+
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
 	table = gtk_table_new(2, 2, FALSE);
@@ -55,7 +58,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mix_steps));
 		gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(mix_type));
 
@@ -97,7 +100,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 
 						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-						color_list_add_color_object(color_list, color_object);
+						color_list_add_color_object(color_list, color_object, 1);
 					}
 					break;
 
@@ -119,7 +122,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 
 							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-							color_list_add_color_object(color_list, color_object);
+							color_list_add_color_object(color_list, color_object, 1);
 						}
 					}
 					break;
@@ -150,7 +153,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 
 							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-							color_list_add_color_object(color_list, color_object);
+							color_list_add_color_object(color_list, color_object, 1);
 						}
 					}
 					break;
