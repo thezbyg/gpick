@@ -19,6 +19,8 @@
 #ifndef COLOR_H_
 #define COLOR_H_
 
+#include "MathUtil.h"
+
 typedef struct Color{
 	union{
 		struct{
@@ -72,14 +74,14 @@ void color_hsl_to_rgb(Color* a, Color* b);
 void color_rgb_to_hsv(Color* a, Color* b);
 void color_hsv_to_rgb(Color* a, Color* b);
 
-void color_rgb_to_xyz(Color* a, Color* b);
-void color_xyz_to_rgb(Color* a, Color* b);
+void color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation);
+void color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted);
 
-void color_xyz_to_lab(Color* a, Color* b);
-void color_lab_to_xyz(Color* a, Color* b);
+void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white);
+void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white);
 
-void color_rgb_to_lab(Color* a, Color* b);
-void color_lab_to_rgb(Color* a, Color* b);
+void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation);
+void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted);
 
 void color_lab_to_lch(Color* a, Color* b);
 void color_rgb_to_lch(Color* a, Color* b);
@@ -101,5 +103,9 @@ void color_destroy(Color* a);
 void color_set(Color* a, float value);
 
 void color_get_contrasting(Color* a, Color* b);
+
+void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result);
+void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result);
+void color_xyz_chromatic_adaption(Color* a, Color* result, matrix3x3* adaption );
 
 #endif /* COLOR_H_ */

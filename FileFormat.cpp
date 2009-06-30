@@ -34,6 +34,7 @@ struct ChunkHeader{
 	uint64_t size;
 };
 
+#define CHUNK_TYPE_VERSION				"GPA version"
 #define CHUNK_TYPE_HANDLER_MAP			"handler_map"
 #define CHUNK_TYPE_COLOR_LIST			"color_list"
 #define CHUNK_TYPE_COLOR_POSITIONS		"color_positions"
@@ -120,8 +121,15 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 					color_object_release(*i);
 				}
 
+			}else if (strncmp(CHUNK_TYPE_VERSION, header.type, sizeof(header.type)) == 0){
+				dynv_io_memory_prepare_size(mem_io, header.size);
+				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
 
-
+				uint32_t read;
+				uint32_t version;
+				if (dynv_io_read(mem_io, &version, sizeof(uint32_t), &read)==0){
+					version=UINT32_FROM_LE(version);
+				}
 			}else{
 				file.seekg(header.size, ios_base::cur);
 				if (file.fail() || file.eof())
@@ -152,6 +160,11 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 
 		struct ChunkHeader header;
 
+		prepare_chunk_header(&header, CHUNK_TYPE_VERSION, 4);
+		file.write((char*)&header, sizeof(header));
+		uint32_t version=1*0x10000+0;
+		version=UINT32_TO_LE(version);
+		file.write((char*)&version, sizeof(uint32_t));
 
 		ofstream::pos_type handler_map_pos = file.tellp();
 		file.write((char*)&header, sizeof(header));

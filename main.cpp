@@ -1140,7 +1140,7 @@ main(int argc, char **argv)
 
 	color_names_load_from_file(window->cnames, tmp=build_filename("colors.txt"));
 	g_free(tmp);
-	color_names_load_from_file(window->cnames, tmp=build_filename("colors.txt0"));
+	color_names_load_from_file(window->cnames, tmp=build_filename("colors0.txt"));
 	g_free(tmp);
 	
 	
@@ -1420,8 +1420,6 @@ main(int argc, char **argv)
 			f.close();
 		}
 	}
-	
-	//palette_file_save("tmp.txt", window->colors);
 	
 	color_list_destroy(window->colors);
 	random_destroy(window->random);

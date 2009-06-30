@@ -258,6 +258,15 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 		uint16_t block_type;
 		uint32_t block_size;
 		int color_supported;
+
+	    matrix3x3 adaptation_matrix, working_space_matrix;
+	    vector3 d50, d65;
+	    vector3_set(&d50, 96.442, 100.000,  82.821);
+	    vector3_set(&d65, 95.047, 100.000, 108.883);
+	    color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+	    color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+	    matrix3x3_inverse(&working_space_matrix, &working_space_matrix);
+
 		for (uint32_t i=0; i<blocks; ++i){
 			f.read((char*)&block_type, 2);
 			block_type=UINT16_FROM_BE(block_type);
@@ -282,7 +291,6 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 
 					char colorspace[4];
 					f.read(colorspace, 4);
-
 					color_supported=0;
 
 					if (memcmp(colorspace, "RGB ", 4)==0){
@@ -329,7 +337,7 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 						color_supported=1;
 
 					}else if (memcmp(colorspace, "LAB ", 4)==0){
-						Color c2;
+						Color c2, c3;
 						uint32_t lab[3];
 						f.read((char*)&lab[0], 4);
 						f.read((char*)&lab[1], 4);
@@ -339,15 +347,19 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 						lab[1]=UINT32_FROM_BE(lab[1]);
 						lab[2]=UINT32_FROM_BE(lab[2]);
 
-						c2.lab.L=((float*)&lab[0])[0];
-						c2.lab.a=((float*)&lab[1])[0]/64;
-						c2.lab.b=((float*)&lab[2])[0]/64;
+						c2.lab.L=((float*)&lab[0])[0]*100;
+						c2.lab.a=((float*)&lab[1])[0];
+						c2.lab.b=((float*)&lab[2])[0];
 
-						//cout<<"Lab: "<<c2.lab.L<<" "<<c2.lab.a<<" "<<c2.lab.b<<endl;
+					    color_lab_to_xyz(&c2, &c3, &d50);
+						color_xyz_chromatic_adaption(&c3, &c3, &adaptation_matrix);
+					    color_xyz_to_rgb(&c3, &c, &working_space_matrix);
 
-						color_lab_to_rgb(&c2, &c);
+					    c.rgb.red=clamp_float(c.rgb.red, 0, 1);
+					    c.rgb.green=clamp_float(c.rgb.green, 0, 1);
+					    c.rgb.blue=clamp_float(c.rgb.blue, 0, 1);
 
-						color_supported=0; //reference white wrong
+						color_supported=1;
 
 					}
 					if (color_supported){

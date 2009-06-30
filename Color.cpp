@@ -20,6 +20,9 @@
 #include <math.h>
 #include "MathUtil.h"
 
+#include <iostream>
+using namespace std;
+
 void
 color_rgb_to_hsv(Color* a, Color* b)
 {
@@ -107,7 +110,7 @@ color_hsv_to_rgb(Color* a, Color* b)
 }
 
 void
-color_rgb_to_xyz(Color* a, Color* b)
+color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation)
 {
 	float R=a->rgb.red, G=a->rgb.green, B=a->rgb.blue;
 
@@ -129,19 +132,28 @@ color_rgb_to_xyz(Color* a, Color* b)
 		B=B/12.92;
 	}
 
-	b->xyz.x = R * 0.4124 + G * 0.3576 + B * 0.1805;
-	b->xyz.y = R * 0.2126 + G * 0.7152 + B * 0.0722;
-	b->xyz.z = R * 0.0193 + G * 0.1192 + B * 0.9505;
+	vector3 rgb;
+	rgb.x = R;
+	rgb.y = G;
+	rgb.z = B;
+
+	vector3_multiply_matrix3x3(&rgb, transformation, &rgb);
+
+	b->xyz.x = rgb.x;
+	b->xyz.y = rgb.y;
+	b->xyz.z = rgb.z;
 }
 
 void
-color_xyz_to_rgb(Color* a, Color* b)
+color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted)
 {
+	vector3 rgb;
 	float R,G,B;
 
-	R = a->xyz.x *  3.2406 + a->xyz.y * -1.5372 + a->xyz.z * -0.4986;
-	G = a->xyz.x * -0.9689 + a->xyz.y *  1.8758 + a->xyz.z *  0.0415;
-	B = a->xyz.x *  0.0557 + a->xyz.y * -0.2040 + a->xyz.z *  1.0570;
+	vector3_multiply_matrix3x3((vector3*)a, transformation_inverted, &rgb);
+	R=rgb.x;
+	G=rgb.y;
+	B=rgb.z;
 
 	if (R>0.0031308){
 		R=1.055*(pow(R,1/2.4))-0.055;
@@ -164,51 +176,22 @@ color_xyz_to_rgb(Color* a, Color* b)
 	b->rgb.blue=B;
 }
 
+
+
 void
-color_xyz_to_lab(Color* a, Color* b)
+color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation)
 {
-	float X,Y,Z;
-
-	X = a->xyz.x / 95.047f;
-	Y = a->xyz.y / 100.000f;
-	Z = a->xyz.z / 108.883f;
-
-	if (X>0.008856){
-		X=pow(X,1.0/3.0);
-	}else{
-		X=(7.787*X)+(16.0/116.0);
-	}
-	if (Y>0.008856){
-		Y=pow(Y,1.0/3.0);
-	}else{
-		Y=(7.787*Y)+(16.0/116.0);
-	}
-	if (Z>0.008856){
-		Z=pow(Z,1.0/3.0);
-	}else{
-		Z=(7.787*Z)+(16.0/116.0);
-	}
-
-	b->lab.L=(116*Y)-16;
-	b->lab.a=500*(X-Y);
-	b->lab.b=200*(Y-Z);
-
+	Color c;
+	color_rgb_to_xyz(a, &c, transformation);
+	color_xyz_to_lab(&c, b, reference_white);
 }
 
 void
-color_rgb_to_lab(Color* a, Color* b)
+color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted)
 {
 	Color c;
-	color_rgb_to_xyz(a, &c);
-	color_xyz_to_lab(&c, b);
-}
-
-void
-color_lab_to_rgb(Color* a, Color* b)
-{
-	Color c;
-	color_lab_to_xyz(a, &c);
-	color_xyz_to_rgb(&c, b);
+	color_lab_to_xyz(a, &c, reference_white);
+	color_xyz_to_rgb(&c, b, transformation_inverted);
 }
 
 void
@@ -251,7 +234,18 @@ void
 color_get_contrasting(Color* a, Color* b)
 {
 	Color t;
-	color_rgb_to_lab(a, &t);
+
+	static vector3 d65={
+		95.047, 100.000, 108.883,
+	};
+    static matrix3x3 transformation={{		//sRGB transformation matrix
+    	{0.4124564,  0.3575761,  0.1804375},
+		{0.2126729,  0.7151522,  0.0721750},
+		{0.0193339,  0.1191920,  0.9503041},
+    }};
+
+	color_rgb_to_lab(a, &t, &d65, &transformation);
+
 
 	if (t.lab.L>3){
 		t.hsv.value=0;
@@ -383,11 +377,50 @@ void color_lab_to_lch(Color* a, Color* b) {
 
 void color_rgb_to_lch(Color* a, Color* b){
 	Color c;
-	color_rgb_to_lab(a, &c);
+
+	static vector3 d65={
+		95.047, 100.000, 108.883,
+	};
+    static matrix3x3 transformation={{		//sRGB transformation matrix
+		{0.4124564,  0.3575761,  0.1804375},
+		{0.2126729,  0.7151522,  0.0721750},
+		{0.0193339,  0.1191920,  0.9503041}
+    }};
+
+	color_rgb_to_lab(a, &c, &d65, &transformation);
 	color_lab_to_lch(&c, b);
 }
 
-void color_lab_to_xyz(Color* a, Color* b) {
+void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
+	float X,Y,Z;
+
+	X = a->xyz.x / reference_white->x; //95.047f;
+	Y = a->xyz.y / reference_white->y; //100.000f;
+	Z = a->xyz.z / reference_white->z; //108.883f;
+
+	if (X>0.008856){
+		X=pow(X,1.0/3.0);
+	}else{
+		X=(7.787*X)+(16.0/116.0);
+	}
+	if (Y>0.008856){
+		Y=pow(Y,1.0/3.0);
+	}else{
+		Y=(7.787*Y)+(16.0/116.0);
+	}
+	if (Z>0.008856){
+		Z=pow(Z,1.0/3.0);
+	}else{
+		Z=(7.787*Z)+(16.0/116.0);
+	}
+
+	b->lab.L=(116*Y)-16;
+	b->lab.a=500*(X-Y);
+	b->lab.b=200*(Y-Z);
+
+}
+
+void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white) {
 	float x, y, z;
 
 	float fy = (a->lab.L + 16) / 116;
@@ -415,11 +448,83 @@ void color_lab_to_xyz(Color* a, Color* b) {
 		z=(116*fz-16)/K;
 	}
 
-	b->xyz.x = x * 95.047f;
-	b->xyz.y = y * 100.000f;
-	b->xyz.z = z * 108.883f;
+	b->xyz.x = x * reference_white->x; //95.047f;
+	b->xyz.y = y * reference_white->y; //100.000f;
+	b->xyz.z = z * reference_white->z; //108.883f;
 }
 
+void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result){
+	float Xr,Yr,Zr;
+	float Xg,Yg,Zg;
+	float Xb,Yb,Zb;
 
+	Xr=xr/yr;
+	Yr=1;
+	Zr=(1-xr-yr)/yr;
 
+	Xg=xg/yg;
+	Yg=1;
+	Zg=(1-xg-yg)/yg;
+
+	Xb=xb/yb;
+	Yb=1;
+	Zb=(1-xb-yb)/yb;
+
+	vector3 v;
+	v.x=reference_white->x;
+	v.y=reference_white->y;
+	v.z=reference_white->z;
+
+	matrix3x3 m_inv;
+	m_inv.m[0][0]=Xr; m_inv.m[1][0]=Yr; m_inv.m[2][0]=Zr;
+	m_inv.m[0][1]=Xg; m_inv.m[1][1]=Yg; m_inv.m[2][1]=Zg;
+	m_inv.m[0][2]=Xb; m_inv.m[1][2]=Yb; m_inv.m[2][2]=Zb;
+
+	matrix3x3_inverse(&m_inv, &m_inv);
+
+	vector3_multiply_matrix3x3(&v, &m_inv, &v);
+
+	result->m[0][0]=Xr*v.x;	result->m[1][0]=Yr*v.x;	result->m[2][0]=Zr*v.x;
+	result->m[0][1]=Xg*v.y;	result->m[1][1]=Yg*v.y;	result->m[2][1]=Zg*v.y;
+	result->m[0][2]=Xb*v.z;	result->m[1][2]=Yb*v.z;	result->m[2][2]=Zb*v.z;
+}
+
+void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result){
+
+	matrix3x3 Ma;
+	//Bradford matrix
+	Ma.m[0][0]= 0.8951; Ma.m[1][0]=-0.7502; Ma.m[2][0]= 0.0389;
+	Ma.m[0][1]= 0.2664; Ma.m[1][1]= 1.7135; Ma.m[2][1]=-0.0685;
+	Ma.m[0][2]=-0.1614; Ma.m[1][2]= 0.0367; Ma.m[2][2]= 1.0296;
+
+	matrix3x3 Ma_inv;
+	//Bradford inverted matrix
+	Ma_inv.m[0][0]= 0.986993; Ma_inv.m[1][0]= 0.432305; Ma_inv.m[2][0]=-0.008529;
+	Ma_inv.m[0][1]=-0.147054; Ma_inv.m[1][1]= 0.518360; Ma_inv.m[2][1]= 0.040043;
+	Ma_inv.m[0][2]= 0.159963; Ma_inv.m[1][2]= 0.049291; Ma_inv.m[2][2]= 0.968487;
+
+	vector3 Vs, Vd;
+	vector3_multiply_matrix3x3(source_reference_white, &Ma, &Vs);
+	vector3_multiply_matrix3x3(destination_reference_white, &Ma, &Vd);
+
+	matrix3x3 M;
+	matrix3x3_identity(&M);
+	M.m[0][0]=Vd.x / Vs.x;
+	M.m[1][1]=Vd.y / Vs.y;
+	M.m[2][2]=Vd.z / Vs.z;
+
+	matrix3x3_multiply(&Ma, &M, &M);
+	matrix3x3_multiply(&M, &Ma_inv, result);
+}
+
+void color_xyz_chromatic_adaption(Color* a, Color* result, matrix3x3* adaption ){
+	vector3 x;
+	x.x=a->xyz.x;
+	x.y=a->xyz.y;
+	x.z=a->xyz.z;
+	vector3_multiply_matrix3x3(&x, adaption, &x);
+	result->xyz.x=x.x;
+	result->xyz.y=x.y;
+	result->xyz.z=x.z;
+}
 
