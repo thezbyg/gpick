@@ -373,11 +373,19 @@ int dynv_system_serialize(struct dynvSystem* dynv_system, struct dynvIO* io){
 	variable_count=UINT32_TO_LE(variable_count);
 	dynv_io_write(io, &variable_count, 4, &written);
 
+	uint32_t handler_count=dynv_system->handler_map->handlers.size();
+
+	int_fast32_t handler_bytes;
+	if (handler_count<=0xFF) handler_bytes=1;
+	else if (handler_count<=0xFFFF) handler_bytes=2;
+	else if (handler_count<=0xFFFFFF) handler_bytes=3;
+	else handler_bytes=4;
+
 	for (i=dynv_system->variables.begin(); i!=dynv_system->variables.end(); ++i){
 		struct dynvVariable* variable=(*i).second;
 
 		id=UINT32_TO_LE(variable->handler->id);
-		dynv_io_write(io, &id, 4, &written);
+		dynv_io_write(io, &id, handler_bytes, &written);
 
 		length=strlen(variable->name);
 		uint32_t length_le=UINT32_TO_LE(length);
@@ -405,8 +413,15 @@ int dynv_system_deserialize(struct dynvSystem* dynv_system, dynvHandlerMap::Hand
 
 	variable_count=UINT32_FROM_LE(variable_count);
 
+	int_fast32_t handler_bytes;
+	if (handler_vec.size()<=0xFF) handler_bytes=1;
+	else if (handler_vec.size()<=0xFFFF) handler_bytes=2;
+	else if (handler_vec.size()<=0xFFFFFF) handler_bytes=3;
+	else handler_bytes=4;
+
 	for (uint32_t i=0; i!=variable_count; ++i){
-		dynv_io_read(io, &handler_id, 4, &read);
+		handler_id=0;
+		dynv_io_read(io, &handler_id, handler_bytes, &read);
 		handler_id=UINT32_FROM_LE(handler_id);
 
 		if ((handler_id<handler_vec.size()) && (handler_vec[handler_id])){

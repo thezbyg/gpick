@@ -19,6 +19,7 @@
 #include "uiExport.h"
 #include "uiUtilities.h"
 #include "uiListPalette.h"
+#include "Endian.h"
 
 #include <fstream>
 #include <string>
@@ -27,19 +28,19 @@
 using namespace std;
 
 
-gint32 palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
+int32_t palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
 	if (name==NULL) name="";
 	
-	(*(ofstream*)userdata)<<gint32(color.rgb.red*255)<<"\t"
-						<<gint32(color.rgb.green*255)<<"\t"
-						<<gint32(color.rgb.blue*255)<<"\t"<<name<<endl;
+	(*(ofstream*)userdata)<<int32_t(color.rgb.red*255)<<"\t"
+						<<int32_t(color.rgb.green*255)<<"\t"
+						<<int32_t(color.rgb.blue*255)<<"\t"<<name<<endl;
 	return 0;
 }
 
-gint32 palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -77,7 +78,7 @@ static void strip_leading_trailing_chars(string& x, string& stripchars){
    x = x.substr(start, (end-start+ 1) );
 }
 
-gint32 palette_import_gpl(struct ColorList *color_list, const gchar* filename){
+int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::in);
 	if (f.is_open()){
 		int r=0;
@@ -131,7 +132,7 @@ gint32 palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 }
 
 
-gint32 palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
+int32_t palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
@@ -147,7 +148,7 @@ gint32 palette_export_mtl_color(struct ColorObject* color_object, void* userdata
 
 
 
-gint32 palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
@@ -162,7 +163,7 @@ gint32 palette_export_mtl(struct ColorList *color_list, const gchar* filename, g
 
 
 
-gint32 palette_export_ase_color(struct ColorObject* color_object, void* userdata){
+int32_t palette_export_ase_color(struct ColorObject* color_object, void* userdata){
 
 	Color color;
 	color_object_get_color(color_object, &color);
@@ -172,33 +173,33 @@ gint32 palette_export_ase_color(struct ColorObject* color_object, void* userdata
 	glong name_u16_len=0;
 	gunichar2 *name_u16 = g_utf8_to_utf16(name, -1, 0, &name_u16_len, 0);
 	for (glong i=0; i<name_u16_len; ++i){
-		name_u16[i]=GINT16_FROM_BE(name_u16[i]);
+		name_u16[i]=UINT16_TO_BE(name_u16[i]);
 	}
 
-	guint16 color_entry=GINT16_FROM_BE(0x0001);
+	uint16_t color_entry=UINT16_TO_BE(0x0001);
 	(*(ofstream*)userdata).write((char*)&color_entry, 2);
 
-	gint32 block_size = 2 + (name_u16_len + 1) * 2 + 4 + (3 * 4) + 2;
-	block_size=GINT32_FROM_BE(block_size);
+	int32_t block_size = 2 + (name_u16_len + 1) * 2 + 4 + (3 * 4) + 2;	//name length + name (zero terminated and 2 bytes per char wide) + color name + 3 float values + color type
+	block_size=UINT32_TO_BE(block_size);
 	(*(ofstream*)userdata).write((char*)&block_size, 4);
 
-	guint16 name_length=GINT16_FROM_BE(guint16(name_u16_len+1));
+	uint16_t name_length=UINT16_TO_BE(uint16_t(name_u16_len+1));
 	(*(ofstream*)userdata).write((char*)&name_length, 2);
 
 	(*(ofstream*)userdata).write((char*)name_u16, (name_u16_len+1)*2);
 
 	(*(ofstream*)userdata)<<"RGB ";
 
-	guint32 r=GINT32_FROM_BE(*((guint*)&color.rgb.red)),
-			g=GINT32_FROM_BE(*((guint*)&color.rgb.green)),
-			b=GINT32_FROM_BE(*((guint*)&color.rgb.blue));
+	uint32_t r=UINT32_TO_BE(*((guint*)&color.rgb.red)),
+			g=UINT32_TO_BE(*((guint*)&color.rgb.green)),
+			b=UINT32_TO_BE(*((guint*)&color.rgb.blue));
 
 
 	(*(ofstream*)userdata).write((char*)&r, 4);
 	(*(ofstream*)userdata).write((char*)&g, 4);
 	(*(ofstream*)userdata).write((char*)&b, 4);
 
-	gint16 color_type = GINT16_FROM_BE(0);
+	int16_t color_type = UINT16_TO_BE(0);
 	(*(ofstream*)userdata).write((char*)&color_type, 2);
 
 	g_free(name_u16);
@@ -206,15 +207,15 @@ gint32 palette_export_ase_color(struct ColorObject* color_object, void* userdata
 	return 0;
 }
 
-gint32 palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc | ios::binary);
 	if (f.is_open()){
 		f<<"ASEF";	//magic header
-		guint32 version=GINT32_FROM_BE(0x00010000);
+		uint32_t version=UINT32_TO_BE(0x00010000);
 		f.write((char*)&version, 4);
 
-		guint32 blocks=color_list_get_count(color_list);
-		blocks=GINT32_FROM_BE(blocks);
+		uint32_t blocks=color_list_get_count(color_list);
+		blocks=UINT32_TO_BE(blocks);
 		f.write((char*)&blocks, 4);
 
 		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
@@ -226,7 +227,7 @@ gint32 palette_export_ase(struct ColorList *color_list, const gchar* filename, g
 		else
 			palette_list_foreach(palette, palette_export_ase_color, &f);*/
 
-		//guint16 terminator=0;
+		//uint16_t terminator=0;
 		//f.write((char*)&terminator, 2);
 
 		f.close();
@@ -236,8 +237,148 @@ gint32 palette_export_ase(struct ColorList *color_list, const gchar* filename, g
 }
 
 
+int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
+	ifstream f(filename, ios::binary);
+	if (f.is_open()){
+		char magic[4];
+		f.read(magic, 4);
+		if (memcmp(magic, "ASEF", 4)!=0){
+			f.close();
+			return -1;
+		}
 
-gint32 palette_export_txt_color(struct ColorObject* color_object, void* userdata){
+		uint32_t version;
+		f.read((char*)&version, 4);
+		version=UINT32_FROM_BE(version);
+
+		uint32_t blocks;
+		f.read((char*)&blocks, 4);
+		blocks=UINT32_FROM_BE(blocks);
+
+		uint16_t block_type;
+		uint32_t block_size;
+		int color_supported;
+		for (uint32_t i=0; i<blocks; ++i){
+			f.read((char*)&block_type, 2);
+			block_type=UINT16_FROM_BE(block_type);
+			f.read((char*)&block_size, 4);
+			block_size=UINT32_FROM_BE(block_size);
+
+			switch (block_type){
+			case 0x0001: //color block
+				{
+					uint16_t name_length;
+					f.read((char*)&name_length, 2);
+					name_length=UINT16_FROM_BE(name_length);
+
+					gunichar2 *name_u16=(gunichar2*)g_malloc(name_length*2);
+					f.read((char*)name_u16, name_length*2);
+					for (uint32_t j=0; j<name_length; ++j){
+						name_u16[j]=UINT16_FROM_BE(name_u16[j]);
+					}
+					gchar *name=g_utf16_to_utf8(name_u16, name_length, 0, 0, 0);
+
+					Color c;
+
+					char colorspace[4];
+					f.read(colorspace, 4);
+
+					color_supported=0;
+
+					if (memcmp(colorspace, "RGB ", 4)==0){
+						uint32_t rgb[3];
+						f.read((char*)&rgb[0], 4);
+						f.read((char*)&rgb[1], 4);
+						f.read((char*)&rgb[2], 4);
+
+						rgb[0]=UINT32_FROM_BE(rgb[0]);
+						rgb[1]=UINT32_FROM_BE(rgb[1]);
+						rgb[2]=UINT32_FROM_BE(rgb[2]);
+
+						c.rgb.red=((float*)&rgb[0])[0];
+						c.rgb.green=((float*)&rgb[1])[0];
+						c.rgb.blue=((float*)&rgb[2])[0];
+
+						color_supported=1;
+
+					}else if (memcmp(colorspace, "CMYK", 4)==0){
+						uint32_t cmyk[4];
+						f.read((char*)&cmyk[0], 4);
+						f.read((char*)&cmyk[1], 4);
+						f.read((char*)&cmyk[2], 4);
+						f.read((char*)&cmyk[3], 4);
+
+						cmyk[0]=UINT32_FROM_BE(cmyk[0]);
+						cmyk[1]=UINT32_FROM_BE(cmyk[1]);
+						cmyk[2]=UINT32_FROM_BE(cmyk[2]);
+						cmyk[3]=UINT32_FROM_BE(cmyk[3]);
+
+						c.cmyk.c=((float*)&cmyk[0])[0];
+						c.cmyk.m=((float*)&cmyk[1])[0];
+						c.cmyk.y=((float*)&cmyk[2])[0];
+						c.cmyk.k=((float*)&cmyk[3])[0];
+
+						color_supported=0; //no cmyk support
+
+					}else if (memcmp(colorspace, "Gray", 4)==0){
+						uint32_t gray;
+						f.read((char*)&gray, 4);
+						gray=UINT32_FROM_BE(gray);
+						c.rgb.red=c.rgb.green=c.rgb.blue=((float*)&gray)[0];
+
+						color_supported=1;
+
+					}else if (memcmp(colorspace, "LAB ", 4)==0){
+						Color c2;
+						uint32_t lab[3];
+						f.read((char*)&lab[0], 4);
+						f.read((char*)&lab[1], 4);
+						f.read((char*)&lab[2], 4);
+
+						lab[0]=UINT32_FROM_BE(lab[0]);
+						lab[1]=UINT32_FROM_BE(lab[1]);
+						lab[2]=UINT32_FROM_BE(lab[2]);
+
+						c2.lab.L=((float*)&lab[0])[0];
+						c2.lab.a=((float*)&lab[1])[0]/64;
+						c2.lab.b=((float*)&lab[2])[0]/64;
+
+						//cout<<"Lab: "<<c2.lab.L<<" "<<c2.lab.a<<" "<<c2.lab.b<<endl;
+
+						color_lab_to_rgb(&c2, &c);
+
+						color_supported=0; //reference white wrong
+
+					}
+					if (color_supported){
+
+						struct ColorObject* color_object;
+						color_object=color_list_new_color_object(color_list, &c);
+						dynv_system_set(color_object->params, "string", "name", name);
+						color_list_add_color_object(color_list, color_object, TRUE);
+						color_object_release(color_object);
+
+					}
+
+					uint16_t color_type;
+					f.read((char*)&color_type, 2);
+
+					g_free(name);
+				}
+				break;
+			default:
+				f.seekg(block_size, ios::cur);
+			}
+		}
+
+		f.close();
+		return 0;
+	}
+	return -1;
+}
+
+
+int32_t palette_export_txt_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
@@ -249,7 +390,7 @@ gint32 palette_export_txt_color(struct ColorObject* color_object, void* userdata
 	return 0;
 }
 
-gint32 palette_export_txt(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_txt(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -289,7 +430,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 	struct export_formats{
 		const gchar* name;
 		const gchar* pattern;
-		gint32 (*export_function)(struct ColorList *color_list, const gchar* filename, gboolean selected);
+		int32_t (*export_function)(struct ColorList *color_list, const gchar* filename, gboolean selected);
 	};
 	struct export_formats formats[] = {
 		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
@@ -379,12 +520,14 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct C
 	struct import_formats{
 		const gchar* name;
 		const gchar* pattern;
-		gint32 (*import_function)(struct ColorList *color_list, const gchar* filename);
+		int32_t (*import_function)(struct ColorList *color_list, const gchar* filename);
 	};
 	struct import_formats formats[] = {
 		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_import_gpl },
+		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_import_ase },
+
 		/*{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
-		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
+
 		{ "Text file *.txt", "*.txt", palette_export_txt },*/
 	};
 

@@ -204,6 +204,14 @@ color_rgb_to_lab(Color* a, Color* b)
 }
 
 void
+color_lab_to_rgb(Color* a, Color* b)
+{
+	Color c;
+	color_lab_to_xyz(a, &c);
+	color_xyz_to_rgb(&c, b);
+}
+
+void
 color_copy(Color* a, Color* b)
 {
 	b->m.m1=a->m.m1;
@@ -378,6 +386,40 @@ void color_rgb_to_lch(Color* a, Color* b){
 	color_rgb_to_lab(a, &c);
 	color_lab_to_lch(&c, b);
 }
+
+void color_lab_to_xyz(Color* a, Color* b) {
+	float x, y, z;
+
+	float fy = (a->lab.L + 16) / 116;
+	float fx = a->lab.a / 500 + fy;
+	float fz = fy - a->lab.b / 200;
+
+	float e=0.008856;
+	float K=903.3;
+
+	if (pow(fx, 3)>e){
+		x=pow(fx, 3);
+	}else{
+		x=(116*fx-16)/K;
+	}
+
+	if (a->lab.L > K*e){
+		y=pow((a->lab.L+16)/116, 3);
+	}else{
+		y=a->lab.L/K;
+	}
+
+	if (pow(fz, 3)>e){
+		z=pow(fz, 3);
+	}else{
+		z=(116*fz-16)/K;
+	}
+
+	b->xyz.x = x * 95.047f;
+	b->xyz.y = y * 100.000f;
+	b->xyz.z = z * 108.883f;
+}
+
 
 
 

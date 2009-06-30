@@ -76,10 +76,15 @@ void color_rgb_to_xyz(Color* a, Color* b);
 void color_xyz_to_rgb(Color* a, Color* b);
 
 void color_xyz_to_lab(Color* a, Color* b);
+void color_lab_to_xyz(Color* a, Color* b);
+
 void color_rgb_to_lab(Color* a, Color* b);
+void color_lab_to_rgb(Color* a, Color* b);
 
 void color_lab_to_lch(Color* a, Color* b);
 void color_rgb_to_lch(Color* a, Color* b);
+
+
 
 void color_copy(Color* a, Color* b);
 

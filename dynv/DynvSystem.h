@@ -22,6 +22,8 @@
 #include <map>
 #include <vector>
 
+#include <stdint.h>
+
 struct dynvHandler;
 
 struct dynvIO{

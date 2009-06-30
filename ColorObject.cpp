@@ -190,7 +190,7 @@ unsigned long color_list_get_count(struct ColorList* color_list){
 int color_list_get_positions(struct ColorList* color_list){
 	ColorList::iter i;
 	for (i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-		(*i)->position=-1;
+		(*i)->position=~(uint32_t)0;
 	}
 	if (color_list->on_get_positions) color_list->on_get_positions(color_list);
 	return 0;

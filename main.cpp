@@ -360,11 +360,11 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
 static void about_box_activate_url (GtkAboutDialog *about, const gchar *url,  gpointer data){
 
-    gchar *open[3];
+    char *open[3];
 
     if (g_find_program_in_path ("xdg-open"))
     {
-            open[0] = "xdg-open";
+            open[0] = (char*)"xdg-open";
     }
     else return;
 
@@ -1185,7 +1185,8 @@ main(int argc, char **argv)
     GtkAccelGroup *accel_group=gtk_accel_group_new();
     gtk_window_add_accel_group(GTK_WINDOW(window->window), accel_group);
 
-    //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
+    //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
+
     GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame;
     int table_y;
 
