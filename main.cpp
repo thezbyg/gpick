@@ -188,6 +188,21 @@ updateDiplays(MainWindow* window)
 
 }
 
+void updateProgramName(MainWindow* window){
+	string prg_name;
+	if (window->current_filename==""){
+		prg_name="New palette";
+	}else{
+		gchar* filename=g_path_get_basename(window->current_filename.c_str());
+		prg_name=filename;
+		g_free(filename);
+	}
+	prg_name+=" - ";
+	prg_name+=program_name;
+
+	gtk_window_set_title(GTK_WINDOW(window->window), prg_name.c_str());
+}
+
 static void
 on_swatch_active_color_changed( GtkWidget *widget, gint32 new_active_color, gpointer data )
 {
@@ -412,6 +427,7 @@ static void
 menu_file_new(GtkWidget *widget, MainWindow* window){
 	window->current_filename="";
 	palette_list_remove_all_entries(window->color_list);
+	updateProgramName(window);
 }
 
 static void
@@ -454,10 +470,13 @@ menu_file_open(GtkWidget *widget, MainWindow* window){
 			palette_list_remove_all_entries(window->color_list);
 			window->current_filename="";
 
+
 			if (palette_file_load(filename, window->colors)==0){
 				window->current_filename=filename;
+				updateProgramName(window);
 				finished=TRUE;
 			}else{
+				updateProgramName(window);
 				GtkWidget* message;
 				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
 				gtk_window_set_title(GTK_WINDOW(dialog), "Open");
@@ -516,6 +535,7 @@ menu_file_save_as(GtkWidget *widget, MainWindow* window){
 
 			if (palette_file_save(filename, window->colors)==0){
 				window->current_filename=filename;
+				updateProgramName(window);
 				finished=TRUE;
 			}else{
 				GtkWidget* message;
@@ -1174,10 +1194,7 @@ main(int argc, char **argv)
 		}
 	}
 
-
-
-	gtk_window_set_title(GTK_WINDOW(window->window), program_name);
-
+	updateProgramName(window);
 
     g_signal_connect (G_OBJECT (window->window), "delete_event", G_CALLBACK (delete_event), NULL);
     g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
