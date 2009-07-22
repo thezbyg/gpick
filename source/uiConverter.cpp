@@ -20,7 +20,6 @@
 #include "uiUtilities.h"
 #include "uiListPalette.h"
 
-#include "LuaSystem.h"
 #include "LuaExt.h"
 
 #include <string.h>
@@ -33,7 +32,7 @@ using namespace std;
 
 struct ConverterParams{
 	gchar* function_name;
-	struct LuaSystem* lua;
+	lua_State* L;
 	GtkWidget* palette_widget;
 	struct ColorObject* color_object;
 };
@@ -50,40 +49,37 @@ static gint32 color_list_selected(struct ColorObject* color_object, void *userda
 }
 
 
-static int converter_get_result(const gchar* function, struct ColorObject* color_object, struct LuaSystem* lua, gchar** result){
+static int converter_get_result(const gchar* function, struct ColorObject* color_object, lua_State *L, gchar** result){
 
+	if (L==NULL) return -1;
+	
 	size_t st;
 	int status;
-	int stack_top = lua_gettop(lua->l);
+	int stack_top = lua_gettop(L);
 	
-	lua_getglobal(lua->l, function);
-	if (lua_type(lua->l, 1)!=LUA_TNIL){
+	lua_getglobal(L, function);
+	if (lua_type(L, 1)!=LUA_TNIL){
 
-		lua_pushcolorobject (lua->l, color_object);
+		lua_pushcolorobject (L, color_object);
 	
-		status=lua_pcall(lua->l, 1, 1, 0);
+		status=lua_pcall(L, 1, 1, 0);
 		if (status==0){
-			if (lua_type(lua->l, 1)==LUA_TSTRING){
-				const char* converted = luaL_checklstring(lua->l,-1, &st);
+			if (lua_type(L, -1)==LUA_TSTRING){
+				const char* converted = luaL_checklstring(L,-1, &st);
 				*result = g_strdup(converted);
-				lua_settop(lua->l, stack_top);
+				lua_settop(L, stack_top);
 				return 0;
 			}else{
 				cerr<<"converter_get_result: returned not a string value \""<<function<<"\""<<endl;
 			}
 		}else{
-			char* message=0;
-			luasys_report(lua->l,status,&message);
-			if (message){
-				cerr<<"converter_get_result: "<<message<<endl;
-				free(message);
-			}
+			cerr<<"converter_get_result: "<<lua_tostring (L, -1)<<endl;
 		}
 	}else{
 		cerr<<"converter_get_result: no such function \""<<function<<"\""<<endl;
 	}
 	
-	lua_settop(lua->l, stack_top);	
+	lua_settop(L, stack_top);	
 	return -1;
 }
 
@@ -105,7 +101,7 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 	
 		gchar* converted;
 	
-		if (converter_get_result(params->function_name, *i, params->lua, &converted)==0){
+		if (converter_get_result(params->function_name, *i, params->L, &converted)==0){
 			if (first){
 				text<<converted;
 				first=FALSE;
@@ -122,16 +118,16 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 }
 
 
-static void converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct LuaSystem* lua){
+static void converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State *L){
 	GtkWidget* item;
 	gchar* converted;
 	
-	if (converter_get_result(function, color_object, lua, &converted)==0){
+	if (converter_get_result(function, color_object, L, &converted)==0){
 		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
 
 		struct ConverterParams* params=new struct ConverterParams;
-		params->lua=lua;
+		params->L=L;
 		params->function_name=g_strdup(function);
 		params->palette_widget=palette_widget;
 		params->color_object=color_object_ref(color_object);
@@ -143,7 +139,7 @@ static void converter_create_copy_menu_item (GtkWidget *menu, const gchar* funct
 	}																						
 }
 
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, struct LuaSystem* lua){
+GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *L){
 
 	GtkWidget *menu;
 	menu = gtk_menu_new();
@@ -156,7 +152,7 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 	gsize source_array_size;
 	if ((source_array = g_key_file_get_string_list(settings, "Converter", "Names", &source_array_size, 0))){
 		for (gsize i=0; i<source_array_size; ++i){
-			converter_create_copy_menu_item(menu, source_array[i], color_object, palette_widget, lua);		
+			converter_create_copy_menu_item(menu, source_array[i], color_object, palette_widget, L);		
 		}
 		g_strfreev(source_array);	
 	}
@@ -165,7 +161,7 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 }
 
 struct ConverterDialog{
-	struct LuaSystem *lua;
+	lua_State *L;
 	struct ColorList *color_list;
 	GtkListStore *store;
 	GtkWidget* list;
@@ -188,7 +184,7 @@ static void converter_cell_edited(GtkCellRendererText *cell, gchar *path, gchar 
 	struct ColorObject *color_object=color_list_new_color_object(params->color_list, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)"Test color");
 
-	if (converter_get_result(new_text, color_object, params->lua, &converted)==0) {
+	if (converter_get_result(new_text, color_object, params->L, &converted)==0) {
 		gtk_list_store_set(store, &iter1,
 			0, new_text,
 			1, converted,
@@ -303,7 +299,7 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	return view;
 }
 
-void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSystem* lua, struct ColorList *color_list ){
+void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, struct ColorList *color_list ){
 	
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Converters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -313,7 +309,7 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSyst
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	struct ConverterDialog params;
-	params.lua=lua;
+	params.L=L;
 	params.color_list=color_list;
 			
 	GtkWidget* vbox = gtk_vbox_new(0, 0);
@@ -358,7 +354,7 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSyst
 			
 				gtk_list_store_append(store, &iter1);
 				
-				if (converter_get_result(source_array[i], color_object, lua, &converted)==0) {
+				if (converter_get_result(source_array[i], color_object, L, &converted)==0) {
 					gtk_list_store_set(store, &iter1,
 						0, source_array[i],
 						1, converted,

@@ -21,6 +21,8 @@
 #include "uiListPalette.h"
 #include "Endian.h"
 
+#include <string.h>
+
 #include <fstream>
 #include <string>
 #include <iostream>

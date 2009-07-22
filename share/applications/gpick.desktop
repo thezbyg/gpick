@@ -9,5 +9,5 @@ StartupNotify=true
 MimeType=text/x-utility;
 Terminal=false
 Type=Application
-Categories=Utility;GTK;
+Categories=Graphics;GTK;
 GenericName=gpick

@@ -16,45 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUASYS_H_
-#define LUASYS_H_
+#include "Version.h"
 
-typedef struct luasys luasys;
-typedef struct luasys_callparam luasys_callparam;
+#define TO_STRING(x) #x
+#define T_(x) TO_STRING(x)
 
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
-}
+const char* gpick_build_version = T_(BUILD_VERSION);
+const char* gpick_build_revision = T_(BUILD_REVISION);
+const char* gpick_build_date = T_(BUILD_DATE);
+const char* gpick_build_time = T_(BUILD_TIME);
+const char* gpick_build_platform = T_(BUILD_PLATFORM);
 
-struct LuaSystem{
-	lua_State* l;
-};
-
-struct LuaSystem* luasysCreate();
-int luasysDestroy(struct LuaSystem* lua);
-
-int luasysClear(struct LuaSystem* lua);
-
-typedef int (*luasys_callback)(struct LuaSystem* lua, void* userdata);
-
-int luasysCompile(struct LuaSystem* lua, const char* name, const char* code, unsigned long size,luasys_callback callback=0,void* userdata=0);
-int luasysCall(struct LuaSystem* lua, const char* function);
-
-int luasysDump(struct LuaSystem* lua, unsigned char** data, unsigned long* size);
-int luasysFree(void* ptr);
-
-int luasys_report(lua_State *L, int status, char** message);
-
-typedef struct luasys_callparam{
-	void* param;
-	unsigned long type;
-}luasys_callparam;
-
-int luasysCallParams(struct LuaSystem* lua, const char* function,luasys_callparam* param,unsigned long params,luasys_callparam* param_ret,unsigned long params_ret,int silent_failure=0);
-
-void *luaL_checkuser(lua_State *L, int numArg);
-
-#endif /*LUASYS_H_*/

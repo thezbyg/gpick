@@ -21,10 +21,10 @@
 
 #include <gtk/gtk.h>
 #include "ColorObject.h"
-#include "LuaSystem.h"
+#include "LuaExt.h"
 
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, struct LuaSystem* lua);
+GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *lua);
 
-void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, struct LuaSystem* lua, struct ColorList *color_list);
+void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State* lua, struct ColorList *color_list);
 
 #endif /* UICONVERTER_H_ */

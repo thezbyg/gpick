@@ -236,7 +236,7 @@ color_get_contrasting(Color* a, Color* b)
 	Color t;
 
 	static vector3 d65={
-		95.047, 100.000, 108.883,
+		{{95.047, 100.000, 108.883}}
 	};
     static matrix3x3 transformation={{		//sRGB transformation matrix
     	{0.4124564,  0.3575761,  0.1804375},
@@ -379,7 +379,7 @@ void color_rgb_to_lch(Color* a, Color* b){
 	Color c;
 
 	static vector3 d65={
-		95.047, 100.000, 108.883,
+		{{95.047, 100.000, 108.883}}
 	};
     static matrix3x3 transformation={{		//sRGB transformation matrix
 		{0.4124564,  0.3575761,  0.1804375},

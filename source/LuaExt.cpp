@@ -2,6 +2,8 @@
 #include "LuaExt.h"
 #include <glib.h>
 
+#include <iostream>
+using namespace std;
 
 static int lua_newcolor (lua_State *L) {
 	Color *c = (Color*)lua_newuserdata(L, sizeof(Color));
@@ -194,14 +196,22 @@ int luaopen_colorobject (lua_State *L) {
 }
 
 
-int LuaExt_Colors(struct LuaSystem* lua, void* userdata){
-    lua_pushcfunction(lua->l, luaopen_color);
-    lua_pushstring(lua->l, 0);
-    lua_call(lua->l, 1, 0);
+int lua_ext_colors_openlib(lua_State *L){
+    int status;
+	
+	lua_pushcfunction(L, luaopen_color);
+    lua_pushstring(L, 0);
+    status = lua_pcall(L, 1, 0, 0);
+	if (status) {
+		cerr<<"LuaExt_Colors: "<<lua_tostring (L, -1)<<endl;
+	}
     
-	lua_pushcfunction(lua->l, luaopen_colorobject);
-    lua_pushstring(lua->l, 0);
-    lua_call(lua->l, 1, 0); 
+	lua_pushcfunction(L, luaopen_colorobject);
+    lua_pushstring(L, 0);
+    status = lua_pcall(L, 1, 0, 0);
+	if (status) {
+		cerr<<"LuaExt_Colors: "<<lua_tostring (L, -1)<<endl;
+	}
     return 0;
 }
 

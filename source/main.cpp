@@ -46,8 +46,9 @@
 #include "MathUtil.h"
 #include "ColorNames.h"
 #include "Random.h"
-#include "LuaSystem.h"
+//#include "LuaSystem.h"
 #include "LuaExt.h"
+#include "version/Version.h" 
 
 #include "dynv/DynvSystem.h"
 #include "dynv/DynvMemoryIO.h"
@@ -72,6 +73,7 @@ const gchar* program_name = "gpick";
 const gchar* program_authors[] = {"Albertas Vyšniauskas <thezbyg@gmail.com>", NULL };
 
 
+
 typedef struct MainWindow{
 	GtkWidget *window;
 
@@ -90,6 +92,11 @@ typedef struct MainWindow{
 	GtkWidget* color_name;
 	GtkWidget* notebook;
 
+	GtkWidget* expanderRGB;
+	GtkWidget* expanderHSV;
+	GtkWidget* expanderInfo;
+	GtkWidget* expanderMain;
+	
 	GtkWidget* statusbar;
 
 	ColorNames* cnames;
@@ -97,7 +104,9 @@ typedef struct MainWindow{
 	struct ColorList* colors;
 	struct dynvSystem* params;
 	GKeyFile* settings;
-	struct LuaSystem* lua;
+	//struct LuaSystem* lua;
+	
+	lua_State *lua;
 
 	Random* random;
 
@@ -107,6 +116,15 @@ typedef struct MainWindow{
 	string current_filename;
 
 }MainWindow;
+
+
+static gchar **commandline_filename=NULL; 
+static GOptionEntry commandline_entries[] =
+{
+  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, "Open palette file", NULL },
+  { NULL }
+};
+
 
 static gboolean
 delete_event( GtkWidget *widget, GdkEvent *event, gpointer data )
@@ -141,6 +159,10 @@ destroy( GtkWidget *widget, gpointer data )
 
 	g_key_file_set_integer(window->settings, "Notebook", "Page", gtk_notebook_get_current_page(GTK_NOTEBOOK(window->notebook)));
 
+	g_key_file_set_boolean(window->settings, "Expander", "RGB", gtk_expander_get_expanded(GTK_EXPANDER(window->expanderRGB)));
+	g_key_file_set_boolean(window->settings, "Expander", "Info", gtk_expander_get_expanded(GTK_EXPANDER(window->expanderInfo)));
+	g_key_file_set_boolean(window->settings, "Expander", "HSV", gtk_expander_get_expanded(GTK_EXPANDER(window->expanderHSV)));
+	
     gtk_main_quit ();
 }
 
@@ -397,11 +419,9 @@ show_about_box(GtkWidget *widget, MainWindow* window)
 	const gchar* license = {
 		#include "License.h"
 	};
-	const gchar* version = {
-		#include "Version.h" 
-		//" " __DATE__ " " __TIME__
-	};
-	
+
+	gchar* version=g_strjoin(".", gpick_build_version, gpick_build_revision, NULL);
+
 	gtk_about_dialog_set_url_hook(about_box_activate_url, NULL, NULL);
 
 	gtk_show_about_dialog (GTK_WINDOW(window->window),
@@ -414,6 +434,8 @@ show_about_box(GtkWidget *widget, MainWindow* window)
 		"comments", "Advanced color picker",
 		NULL
 	);
+
+	g_free(version);
 	return;
 }
 
@@ -599,6 +621,18 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 	gtk_widget_set_sensitive(widgets[1], (selected_count >= 1));
 }
 
+static void menu_view_minimal(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;
+	
+	if (GTK_WIDGET_VISIBLE(window->notebook)){
+		gtk_widget_hide(window->notebook);
+		g_key_file_set_boolean(window->settings, "View", "Minimal", TRUE);
+	}else{
+		gtk_widget_show(window->notebook);
+		g_key_file_set_boolean(window->settings, "View", "Minimal", FALSE);
+	}
+}
+
 static void createMenu(GtkMenuBar *menu_bar, MainWindow *window, GtkAccelGroup *accel_group) {
 	GtkMenu* menu;
 	GtkWidget* item;
@@ -672,6 +706,21 @@ static void createMenu(GtkMenuBar *menu_bar, MainWindow *window, GtkAccelGroup *
     file_item = gtk_menu_item_new_with_mnemonic ("_Edit");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
+	
+	
+    menu = GTK_MENU(gtk_menu_new ());
+
+    item = gtk_check_menu_item_new_with_mnemonic ("Minimal");
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_view_minimal), window);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), g_key_file_get_boolean_with_default(window->settings, "View", "Minimal", FALSE));
+	gtk_widget_add_accelerator (item, "activate", accel_group, GDK_m, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	
+    
+    file_item = gtk_menu_item_new_with_mnemonic ("_View");
+    gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
+		
 
     menu = GTK_MENU(gtk_menu_new ());
 
@@ -1003,10 +1052,10 @@ string build_config_path(const gchar *filename){
 	stringstream s;
 	s<<g_get_user_config_dir();
 	if (filename){
-		s<<"/.gpick/";
+		s<<"/gpick/";
 		s<<filename;
 	}else{
-		s<<"/.gpick";
+		s<<"/gpick";
 	}
 	return s.str();
 }
@@ -1119,7 +1168,16 @@ main(int argc, char **argv)
 	icon_theme = gtk_icon_theme_get_default ();
 	gtk_icon_theme_prepend_search_path(icon_theme, get_data_dir());
 
-
+	GError *error = NULL;
+	GOptionContext *context;
+	context = g_option_context_new ("- advanced color picker");
+	g_option_context_add_main_entries (context, commandline_entries, 0);
+	
+	g_option_context_add_group (context, gtk_get_option_group (TRUE));
+	if (!g_option_context_parse (context, &argc, &argv, &error)){
+		g_print ("option parsing failed: %s\n", error->message);
+		return -1;
+	}
 
 	MainWindow* window=new MainWindow;
 
@@ -1163,22 +1221,33 @@ main(int argc, char **argv)
 	color_names_load_from_file(window->cnames, tmp=build_filename("colors0.txt"));
 	g_free(tmp);
 	
-	
-	window->lua = luasysCreate();
-	tmp=build_filename("init.lua");
-	ifstream f(tmp, ios::binary);
-	if (f.is_open()){
-		f.seekg(0, ios::end);
-		ifstream::pos_type filesize = f.tellg();
-		f.seekg(0, ios::beg);
-		vector<char> bytes(filesize);
-		f.read(&bytes[0], filesize);
-		f.close();
+	{
+		lua_State *L= luaL_newstate();
+		luaL_openlibs(L);
+
+		gchar* tmp;
+		int status;
 		
-		luasysCompile(window->lua, "init", (const char*)&bytes.at(0), filesize, LuaExt_Colors, 0);
-	}else cout<<"Can't open lua init script file "<<tmp<<endl;
-	g_free(tmp);
-	
+		lua_ext_colors_openlib(L);
+		
+		gchar* lua_path=build_filename("?.lua");
+		lua_pushstring(L, "package");
+		lua_gettable(L, LUA_GLOBALSINDEX);
+		lua_pushstring(L, "path");
+		lua_pushstring(L, lua_path);
+		lua_settable(L, -3);
+		g_free(lua_path);
+		
+		tmp=build_filename("init.lua");
+		status = luaL_loadfile(L, tmp) || lua_pcall(L, 0, 0, 0);
+		if (status) {
+			cerr<<"init script load failed: "<<lua_tostring (L, -1)<<endl;
+		}
+		g_free(tmp);
+		
+		window->lua = L;
+	}
+		
 	{
 		gchar** source_array;
 		gsize source_array_size;
@@ -1213,7 +1282,7 @@ main(int argc, char **argv)
 		GtkWidget* menu_bar;
 		menu_bar = gtk_menu_bar_new ();
 		gtk_box_pack_start (GTK_BOX(vbox_main), menu_bar, FALSE, FALSE, 0);
-		createMenu(GTK_MENU_BAR(menu_bar), window, accel_group);
+		
 
     hbox = gtk_hbox_new(FALSE, 5);
     gtk_box_pack_start (GTK_BOX(vbox_main), hbox, TRUE, TRUE, 5);
@@ -1265,9 +1334,15 @@ main(int argc, char **argv)
 				//g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_active_color_changed), window);
 				window->zoomed_display = widget;
 
+	//window->expanderMain=gtk_expander_new("");
+	//gtk_expander_set_expanded(GTK_EXPANDER(window->expanderMain), g_key_file_get_boolean_with_default(window->settings, "Expander", "Main", FALSE));
+	//gtk_box_pack_start (GTK_BOX(hbox), window->expanderMain, TRUE, TRUE, 5);
+				
 	notebook = gtk_notebook_new();
+		
 	//gtk_notebook_set_show_border(GTK_NOTEBOOK(notebook), FALSE);
-
+				
+	//gtk_container_add(GTK_CONTAINER(window->expanderMain), notebook);
 	gtk_box_pack_start (GTK_BOX(hbox), notebook, TRUE, TRUE, 5);
 
     vbox = gtk_vbox_new(FALSE, 5);
@@ -1275,6 +1350,8 @@ main(int argc, char **argv)
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Information"));
 
 		expander=gtk_expander_new("HSV");
+		gtk_expander_set_expanded(GTK_EXPANDER(expander), g_key_file_get_boolean_with_default(window->settings, "Expander", "HSV", FALSE));
+		window->expanderHSV=expander;
 		gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 			table = gtk_table_new(3, 2, FALSE);
@@ -1303,6 +1380,8 @@ main(int argc, char **argv)
 				table_y++;
 
 		expander=gtk_expander_new("RGB");
+		gtk_expander_set_expanded(GTK_EXPANDER(expander), g_key_file_get_boolean_with_default(window->settings, "Expander", "RGB", FALSE));
+		window->expanderRGB=expander;
 		gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 			table = gtk_table_new(3, 2, FALSE);
@@ -1333,6 +1412,8 @@ main(int argc, char **argv)
 
 
 		expander=gtk_expander_new("Info");
+		gtk_expander_set_expanded(GTK_EXPANDER(expander), g_key_file_get_boolean_with_default(window->settings, "Expander", "Info", FALSE));
+		window->expanderInfo=expander;
 		gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 			table = gtk_table_new(3, 2, FALSE);
@@ -1412,15 +1493,34 @@ main(int argc, char **argv)
 	gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "focus_swatch"), "Click on swatch area to begin adding colors to palette");
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
 	window->statusbar=statusbar;
+	
+	createMenu(GTK_MENU_BAR(menu_bar), window, accel_group);
+	
+	gtk_widget_show_all(vbox_main);	
 
     updateDiplays(window);
-
-	if (argc > 1){
-		gtk_window_parse_geometry (GTK_WINDOW (window->window), argv[1]);
+	
+	if (g_key_file_get_boolean_with_default(window->settings, "View", "Minimal", FALSE)){
+		gtk_widget_hide(notebook);
 	}
+	
+	
 
+	/*if (argc > 1){
+		gtk_window_parse_geometry (GTK_WINDOW (window->window), argv[1]);
+	}*/
 
-	gtk_widget_show_all (window->window);
+	if (commandline_filename){
+		if (palette_file_load(commandline_filename[0], window->colors)==0){
+			window->current_filename=commandline_filename[0];
+			updateProgramName(window);
+		}
+	}
+	
+	GdkGeometry size_hints = { -1,-1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, GDK_GRAVITY_NORTH_WEST };
+	gtk_window_set_geometry_hints (GTK_WINDOW(window->window), window->window, &size_hints, GdkWindowHints(GDK_HINT_MIN_SIZE));
+
+	gtk_widget_show (window->window);
 
 	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColor, window, 0);
 
