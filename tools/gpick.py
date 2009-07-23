@@ -47,6 +47,8 @@ def GetSourceFiles(env, dir_exclude_pattern, file_exclude_pattern):
 def GetVersionInfo(env):
 	revision = os.popen('svnversion -n %s' % env.GetLaunchDir() ).read()
 	revision=revision.replace(':','.')
+	revision=revision.replace('P','')
+	revision=revision.replace('S','')
 	env.Replace(GPICK_BUILD_REVISION = revision,
 		GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),
 		GPICK_BUILD_TIME =  time.strftime ("%H:%M:%S"));		
