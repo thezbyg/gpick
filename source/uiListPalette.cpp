@@ -57,7 +57,6 @@ void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTr
 
 }
 
-
 GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	GtkListStore  		*store;
@@ -111,7 +110,7 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 
 	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated) , swatch);
-
+	
 	gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
 
 	return view;

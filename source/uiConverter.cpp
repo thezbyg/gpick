@@ -24,7 +24,9 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <fstream>
+#include <gdk/gdkkeysyms.h>
+
+#include <fstream>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -83,28 +85,26 @@ static int converter_get_result(const gchar* function, struct ColorObject* color
 	return -1;
 }
 
-static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
-	struct ConverterParams* params=(struct ConverterParams*)g_object_get_data(G_OBJECT(widget), "params");
-	
+void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L){
 	stringstream text(ios::out);
 
-	int first=TRUE;
+	int first=true;
 	
 	struct ColorList *color_list = color_list_new(NULL);
-	if (params->palette_widget){
-		palette_list_foreach_selected(params->palette_widget, color_list_selected, color_list);
+	if (palette_widget){
+		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
 	}else{
-		color_list_add_color_object(color_list, params->color_object, 1);
+		color_list_add_color_object(color_list, color_object, 1);
 	}
 
 	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 	
 		gchar* converted;
 	
-		if (converter_get_result(params->function_name, *i, params->L, &converted)==0){
+		if (converter_get_result(function, *i, L, &converted)==0){
 			if (first){
 				text<<converted;
-				first=FALSE;
+				first=false;
 			}else{
 				text<<endl<<converted;
 			}
@@ -114,12 +114,17 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 	
 	color_list_destroy(color_list);
 	
-	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text.str().c_str(), -1);
+	if (first!=true) gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text.str().c_str(), -1);	
+}
+
+static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
+	struct ConverterParams* params=(struct ConverterParams*)g_object_get_data(G_OBJECT(widget), "params");
+	converter_get_clipboard(params->function_name, params->color_object, params->palette_widget, params->L);
 }
 
 
-static void converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State *L){
-	GtkWidget* item;
+static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State *L){
+	GtkWidget* item=0;
 	gchar* converted;
 	
 	if (converter_get_result(function, color_object, L, &converted)==0){
@@ -133,10 +138,11 @@ static void converter_create_copy_menu_item (GtkWidget *menu, const gchar* funct
 		params->color_object=color_object_ref(color_object);
 
 		g_object_set_data_full(G_OBJECT(item), "params", params, (GDestroyNotify)converter_destroy_params);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		
 		g_free(converted);
-	}																						
+	}
+
+	return item;
 }
 
 GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *L){
@@ -144,18 +150,22 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 	GtkWidget *menu;
 	menu = gtk_menu_new();
 	
-	/*converter_create_copy_menu_item(menu, "color_web_hex", color_object, palette_widget, lua);
-	converter_create_copy_menu_item(menu, "color_css_rgb", color_object, palette_widget, lua);
-	converter_create_copy_menu_item(menu, "color_css_hsl", color_object, palette_widget, lua);*/
+	//GtkAccelGroup* accel_group=gtk_accel_group_new();
 	
 	gchar** source_array;
 	gsize source_array_size;
 	if ((source_array = g_key_file_get_string_list(settings, "Converter", "Names", &source_array_size, 0))){
 		for (gsize i=0; i<source_array_size; ++i){
-			converter_create_copy_menu_item(menu, source_array[i], color_object, palette_widget, L);		
+			GtkWidget* item=converter_create_copy_menu_item(menu, source_array[i], color_object, palette_widget, L);
+			/*if (!i){
+				gtk_widget_add_accelerator (item, "activate", accel_group, GDK_c, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+			}*/
+			if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);			
 		}
-		g_strfreev(source_array);	
+		g_strfreev(source_array);
 	}
+	//gtk_menu_set_accel_group (GTK_MENU(menu), accel_group);
+	//g_object_unref(G_OBJECT (accel_group));
 
 	return menu;
 }
@@ -163,18 +173,11 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 struct ConverterDialog{
 	lua_State *L;
 	struct ColorList *color_list;
-	GtkListStore *store;
 	GtkWidget* list;
+	GtkWidget* combo;
 };
 
-static void converter_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new_text, gpointer user_data) {
-	struct ConverterDialog* params=(struct ConverterDialog*)user_data;
-	
-	GtkTreeIter iter1;
-	GtkListStore *store=params->store;
-
-	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
-
+static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, const char* function_name, struct ConverterDialog* params) {
 	gchar* converted;
 	
 	Color c;
@@ -184,30 +187,50 @@ static void converter_cell_edited(GtkCellRendererText *cell, gchar *path, gchar 
 	struct ColorObject *color_object=color_list_new_color_object(params->color_list, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)"Test color");
 
-	if (converter_get_result(new_text, color_object, params->L, &converted)==0) {
-		gtk_list_store_set(store, &iter1,
-			0, new_text,
+	if (converter_get_result(function_name, color_object, params->L, &converted)==0) {
+		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
+			0, function_name,
 			1, converted,
 		-1);
 		g_free(converted);
 	}else{
-		gtk_list_store_set(store, &iter1,
-			0, new_text,
+		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
+			0, function_name,
 			1, "error",
 		-1);
 	}	
 	
 	color_object_release(color_object);
+}
 
+static void converter_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new_text, gpointer user_data) {
+	struct ConverterDialog* params=(struct ConverterDialog*)user_data;
+	
+	GtkTreeIter iter1;
+	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(params->list)));
+
+	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
+	
+	converter_update_row(GTK_TREE_MODEL(store), &iter1, new_text, params);
 }
 
 void converter_add(GtkToolButton *toolbutton, struct ConverterDialog* params){
-	GtkTreeIter iter1;
-	gtk_list_store_append(params->store, &iter1);
-	gtk_list_store_set(params->store, &iter1,
-		0, "edit me",
-		1, "error",
-	-1);
+   
+	GtkTreeIter combo_iter;
+	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(params->combo), &combo_iter)){
+
+		gchar* function_name;
+		
+		GtkTreeModel *combo_model = gtk_combo_box_get_model(GTK_COMBO_BOX(params->combo));
+		gtk_tree_model_get(combo_model, &combo_iter, 0, &function_name, -1);
+		
+		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(params->list));
+		GtkTreeIter iter1;
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
+		converter_update_row(model, &iter1, function_name, params);
+		
+		g_free(function_name);
+	}
 }
 
 void converter_remove_selected(GtkToolButton *toolbutton, struct ConverterDialog* params){
@@ -220,7 +243,7 @@ void converter_remove_selected(GtkToolButton *toolbutton, struct ConverterDialog
 		return;
 	}
 
-	store=params->store;
+	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(params->list)));;
 
 	GList *list = gtk_tree_selection_get_selected_rows ( selection, 0 );
 	GList *ref_list = NULL;
@@ -274,7 +297,6 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 	g_object_set(renderer, "editable", TRUE, NULL);
 	g_signal_connect(renderer, "edited", (GCallback) converter_cell_edited, params);
-	params->store=store;
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
@@ -299,6 +321,41 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	return view;
 }
 
+static GtkWidget* converter_dropdown_new(struct ConverterDialog* params) {
+	GtkWidget* combo = gtk_combo_box_new_text();
+	
+	lua_State* L=params->L;
+	if (L==NULL) return combo;
+	
+	int status;
+	int stack_top = lua_gettop(L);
+	lua_getglobal(L, "gpick_converters_get");
+	if (lua_type(L, 1)!=LUA_TNIL){
+		status=lua_pcall(L, 0, 1, 0);
+		if (status==0){
+			if (lua_type(L, -1)==LUA_TTABLE){
+				size_t st;
+				int table_index = lua_gettop(L);
+				
+				for (int i=1;;i++){
+					lua_pushinteger(L, i);
+					lua_gettable(L, table_index);
+					if (lua_isnil(L, -1)) break;
+					gtk_combo_box_append_text(GTK_COMBO_BOX(combo), lua_tostring(L, -1));
+					lua_pop(L, 1);
+				}
+				
+			}
+		}else{
+			cerr<<"gpick_converters_get: "<<lua_tostring (L, -1)<<endl;
+		}
+	}
+	lua_settop(L, stack_top);
+	
+	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
+	return combo;
+}
+
 void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, struct ColorList *color_list ){
 	
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Converters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -320,6 +377,10 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, 
 	
 		GtkToolItem *tool;
 	
+		tool = gtk_tool_item_new();
+		gtk_container_add(GTK_CONTAINER(tool), params.combo=converter_dropdown_new(&params));
+		gtk_toolbar_insert(GTK_TOOLBAR (toolbar),tool,-1);
+		
 		tool = gtk_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON),"Add");
 		g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(converter_add), &params);
 		gtk_toolbar_insert(GTK_TOOLBAR (toolbar),tool,-1);
@@ -333,44 +394,18 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, 
 	list = converter_list_new(&params);
 	gtk_box_pack_start(GTK_BOX(vbox), list, TRUE, TRUE, 0);
 	
+	
 		gchar** source_array;
 		gsize source_array_size;
 		if ((source_array = g_key_file_get_string_list(settings, "Converter", "Names", &source_array_size, 0))){
 			GtkTreeIter iter1;
-			GtkListStore *store;
+			GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 
-			store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
-			
-			gchar* converted;
-			
-			Color c;
-			c.rgb.red=0.75;
-			c.rgb.green=0.50;
-			c.rgb.blue=0.25;
-			struct ColorObject *color_object=color_list_new_color_object(color_list, &c);
-			dynv_system_set(color_object->params, "string", "name", (void*)"Test color");
-			
 			for (gsize i=0; i<source_array_size; ++i){
-			
-				gtk_list_store_append(store, &iter1);
-				
-				if (converter_get_result(source_array[i], color_object, L, &converted)==0) {
-					gtk_list_store_set(store, &iter1,
-						0, source_array[i],
-						1, converted,
-					-1);
-					g_free(converted);
-				}else{
-					gtk_list_store_set(store, &iter1,
-						0, source_array[i],
-						1, "error",
-					-1);
-				}			
-				
+				gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
+				converter_update_row(model, &iter1, source_array[i], &params);
 			}
 			g_strfreev(source_array);	
-			
-			color_object_release(color_object);
 		}
 	
 
@@ -408,7 +443,7 @@ void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, 
 			for (i=0; i<count; ++i){
 				if (name_array[i]) g_free(name_array[i]);
 			}
-			delete name_array;
+			delete [] name_array;
 		}else{
 			g_key_file_set_string_list(settings, "Converter", "Names", NULL, 0);
 		}

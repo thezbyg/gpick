@@ -258,6 +258,7 @@ static void on_swatch_menu_add_to_palette(GtkWidget *widget,  gpointer item) {
 	string name=color_names_get(window->cnames, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 	color_list_add_color_object(window->colors, color_object, 1);
+	color_object_release(color_object);
 }
 
 static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item) {
@@ -272,6 +273,7 @@ static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item)
 		string name=color_names_get(window->cnames, &c);
 		dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 		color_list_add_color_object(window->colors, color_object, 1);
+		color_object_release(color_object);
 	}
 }
 static void
@@ -286,14 +288,20 @@ on_swatch_color_activated (GtkWidget *widget, gpointer item) {
 	string name=color_names_get(window->cnames, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 	color_list_add_color_object(window->colors, color_object, 1);
+	color_object_release(color_object);
 }
 
 static gboolean
 on_swatch_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
+	static GtkWidget *menu=NULL;
+	if (menu) {
+		gtk_menu_detach(GTK_MENU(menu));
+		menu=NULL;
+	}
+	
 	MainWindow* window=(MainWindow*)data;
 
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		GtkWidget *menu;
 		GtkWidget* item ;
 		gint32 button, event_time;
 
@@ -350,12 +358,37 @@ gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointe
 }
 
 
+			
 gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	MainWindow* window=(MainWindow*)data;
 
 	switch(event->keyval)
 	{
+		case GDK_c:
+			if ((event->state&(GDK_CONTROL_MASK|GDK_SHIFT_MASK|GDK_MOD1_MASK))==GDK_CONTROL_MASK){
+								
+				Color c;
+				updateMainColor(window);
+				gtk_swatch_get_main_color(GTK_SWATCH(window->swatch_display), &c);
+
+				struct ColorObject* color_object;
+				color_object = color_list_new_color_object(window->colors, &c);
+				
+				gchar** source_array;
+				gsize source_array_size;
+				if ((source_array = g_key_file_get_string_list(window->settings, "Converter", "Names", &source_array_size, 0))){
+					if (source_array_size>0){	
+						converter_get_clipboard(source_array[0], color_object, 0, window->lua);
+					}					
+					g_strfreev(source_array);
+				}
+				color_object_release(color_object);
+				return TRUE;
+			}
+			return FALSE;
+			break;
+		
 		case GDK_Right:
 			gtk_swatch_move_active(GTK_SWATCH(window->swatch_display),1);
 			updateDiplays(window);
@@ -380,6 +413,7 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				string name=color_names_get(window->cnames, &c);
 				dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 				color_list_add_color_object(window->colors, color_object, 1);
+				color_object_release(color_object);
 			}
 			if (window->rotate_swatch){
 				gtk_swatch_move_active(GTK_SWATCH(window->swatch_display),1);
@@ -822,11 +856,22 @@ static void palette_popup_menu_generate(GtkWidget *widget, gpointer data) {
 
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
-	GtkWidget *menu;
+	static GtkWidget *menu=NULL;
+	if (menu) {
+		gtk_menu_detach(GTK_MENU(menu));
+		menu=NULL;
+	}
+	
 	GtkWidget* item ;
 	gint32 button, event_time;
 
 	MainWindow* window=(MainWindow*)ptr;
+	
+	/*GList* menus=gtk_menu_get_for_attach_widget(widget);
+	while (menus){
+		gtk_menu_detach(GTK_MENU(menus->data));
+		menus = g_list_next(menus);
+	}*/
 
 	menu = gtk_menu_new ();
 
@@ -921,9 +966,42 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 	return FALSE;
 }
 
+static gboolean on_palette_list_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
+{
+	MainWindow* window=(MainWindow*)data;
+
+	switch(event->keyval)
+	{
+		case GDK_c:
+			if ((event->state&(GDK_CONTROL_MASK|GDK_SHIFT_MASK|GDK_MOD1_MASK))==GDK_CONTROL_MASK){
+				
+				gchar** source_array;
+				gsize source_array_size;
+				if ((source_array = g_key_file_get_string_list(window->settings, "Converter", "Names", &source_array_size, 0))){
+					if (source_array_size>0){					
+						converter_get_clipboard(source_array[0], 0, window->color_list, window->lua);
+					}					
+					g_strfreev(source_array);
+				}
+				return TRUE;
+			}
+			return FALSE;
+			break;
+			
+		default:
+			return FALSE;
+		break;
+	}
+	return FALSE;
+}
 
 static void on_popup_menu(GtkWidget *widget, gpointer user_data) {
-	GtkWidget *menu;
+	static GtkWidget *menu=NULL;
+	if (menu) {
+		gtk_menu_detach(GTK_MENU(menu));
+		menu=NULL;
+	}
+	
 	//GtkWidget* item ;
 	gint32 button, event_time;
 	MainWindow* window=(MainWindow*)user_data;
@@ -1048,8 +1126,8 @@ GtkWidget* create_falloff_type_list (void){
 	return widget;
 }
 
-string build_config_path(const gchar *filename){
-	stringstream s;
+gchar* build_config_path(const gchar *filename){
+	/*stringstream s;
 	s<<g_get_user_config_dir();
 	if (filename){
 		s<<"/gpick/";
@@ -1057,7 +1135,12 @@ string build_config_path(const gchar *filename){
 	}else{
 		s<<"/gpick";
 	}
-	return s.str();
+	return s.str();*/
+	
+	if (filename)
+		return g_build_filename(g_get_user_config_dir(), "gpick", filename, NULL);
+	else
+		return g_build_filename(g_get_user_config_dir(), "gpick", NULL);	
 }
 
 
@@ -1068,7 +1151,7 @@ gchar* get_data_dir(){
 	GList *paths=NULL, *i=NULL;
 	gchar *tmp;
 
-	i=g_list_append(i, (gchar*)g_strdup("share"));
+	i=g_list_append(i, (gchar*)"share");
 	paths=i;
 	
 	i=g_list_append(i, (gchar*)g_get_user_data_dir());
@@ -1082,7 +1165,7 @@ gchar* get_data_dir(){
 	struct stat sb;
 	while (i){
 		tmp = g_build_filename((gchar*)i->data, "gpick", NULL);
-		//cout<<tmp<<endl;
+
 		if (g_stat( tmp, &sb )==0){
 			data_dir=g_strdup(tmp);
 			g_free(tmp);
@@ -1184,11 +1267,13 @@ main(int argc, char **argv)
 	window->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
 	window->settings = g_key_file_new();
-	string config_file = build_config_path("settings");
-	if (!(g_key_file_load_from_file(window->settings, config_file.c_str(), G_KEY_FILE_KEEP_COMMENTS, 0))){
-		string config_path = build_config_path(NULL);
-		g_mkdir(config_path.c_str(), S_IRWXU);
+	gchar* config_file = build_config_path("settings");
+	if (!(g_key_file_load_from_file(window->settings, config_file, G_KEY_FILE_KEEP_COMMENTS, 0))){
+		g_free(config_file);
+		config_file = build_config_path(NULL);
+		g_mkdir(config_file, S_IRWXU);
 	}
+	g_free(config_file);
 	
 	set_main_window_icon();
 
@@ -1230,13 +1315,20 @@ main(int argc, char **argv)
 		
 		lua_ext_colors_openlib(L);
 		
-		gchar* lua_path=build_filename("?.lua");
+		gchar* lua_root_path = build_filename("?.lua");
+		gchar* lua_user_path = build_config_path("?.lua");
+		
+		gchar* lua_path = g_strjoin(";", lua_root_path, lua_user_path, (void*)0);
+		
 		lua_pushstring(L, "package");
 		lua_gettable(L, LUA_GLOBALSINDEX);
 		lua_pushstring(L, "path");
 		lua_pushstring(L, lua_path);
 		lua_settable(L, -3);
+		
 		g_free(lua_path);
+		g_free(lua_root_path);
+		g_free(lua_user_path);
 		
 		tmp=build_filename("init.lua");
 		status = luaL_loadfile(L, tmp) || lua_pcall(L, 0, 0, 0);
@@ -1270,6 +1362,7 @@ main(int argc, char **argv)
 
     GtkAccelGroup *accel_group=gtk_accel_group_new();
     gtk_window_add_accel_group(GTK_WINDOW(window->window), accel_group);
+	g_object_unref(G_OBJECT (accel_group));
 
     //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
 
@@ -1306,6 +1399,7 @@ main(int argc, char **argv)
 				g_signal_connect (G_OBJECT (widget), "color_changed", G_CALLBACK (on_swatch_color_changed), window);
 				g_signal_connect (G_OBJECT (widget), "color_activated", G_CALLBACK (on_swatch_color_activated), window);
 				g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), window);
+
 				gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(window->settings, "Swatch", "Active Color", 1));
 				window->swatch_display = widget;
 
@@ -1477,6 +1571,7 @@ main(int argc, char **argv)
 
 		g_signal_connect (G_OBJECT (widget), "popup-menu",     G_CALLBACK (on_palette_popup_menu), window);
 		g_signal_connect (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_palette_button_press), window);
+		g_signal_connect (G_OBJECT (widget), "key_press_event", G_CALLBACK (on_palette_list_key_press), window);
 
 		GtkWidget *scrolled_window;
 		scrolled_window=gtk_scrolled_window_new (0,0);
@@ -1524,10 +1619,13 @@ main(int argc, char **argv)
 
 	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColor, window, 0);
 
+	
+	
 	gtk_main ();
-
+	
 	{
-		ofstream f(config_file.c_str(), ios::out | ios::trunc | ios::binary);
+		config_file = build_config_path("settings");
+		ofstream f(config_file, ios::out | ios::trunc | ios::binary);
 		if (f.is_open()){
 			gsize size;
 			gchar* data=g_key_file_to_data(window->settings, &size, 0);
@@ -1536,6 +1634,7 @@ main(int argc, char **argv)
 			g_free(data);
 			f.close();
 		}
+		g_free(config_file);
 	}
 	
 	color_list_destroy(window->colors);
@@ -1544,7 +1643,12 @@ main(int argc, char **argv)
 	color_names_destroy(window->cnames);
 	sampler_destroy(window->sampler);
 	dynv_system_release(window->params);
+	lua_close(window->lua);
 	delete window;
+	
+	g_option_context_free(context);
+	
+	if (get_data_dir()) g_free(get_data_dir());
 
 	return 0;
 }

@@ -23,5 +23,3 @@ executable = local_env.Program(
 	source = [sources, objects])
 	
 Return('executable')
-
-#local_env.Install('../../bin', source = [executable])

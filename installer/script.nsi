@@ -1,6 +1,6 @@
 
 !include "MUI2.nsh"
-!include "version.nsi"
+!include "../build/version.nsi"
 
 Name "gpick"
 OutFile "gpick_${VERSION}_win32-setup.exe"

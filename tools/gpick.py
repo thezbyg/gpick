@@ -5,7 +5,10 @@ import time
 import SCons
 import re
 import string
+
+from SCons.Script import *
 from SCons.Script.SConscript import SConsEnvironment
+
 
 SConsEnvironment.Chmod = SCons.Action.ActionFactory(os.chmod, lambda dest, mode: 'Chmod("%s", 0%o)' % (dest, mode))
 
@@ -50,3 +53,12 @@ def GetVersionInfo(env):
 
 def RegexEscape(str):
 	return str.replace('\\', '\\\\')
+
+def WriteNsisVersion(target, source, env):
+	for t in target:
+		for s in source:
+			file = open(str(t),"w")
+			file.writelines('!define VERSION "' + str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION']) + '"')
+			file.close()
+	return 0
+

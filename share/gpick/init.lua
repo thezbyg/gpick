@@ -1,11 +1,7 @@
 
-function round(number)
-	if number-math.floor(number)>=0.5 then
-		return math.ceil(number);
-	else
-		return math.floor(number);
-	end;
-end;
+require('helpers')
+suggest('user_init')
+
 
 function color_web_hex(color_object)
 	local c = color_object:get_color();
@@ -26,4 +22,13 @@ end;
 function color_css_rgb(color_object)
 	local c = color_object:get_color();
 	return 'rgb(' .. string.format('%d, %d, %d', round(c:red()*255), round(c:green()*255), round(c:blue()*255)) .. ')';
+end;
+
+function gpick_converters_get()
+	local converters = {};
+	table.insert(converters, 'color_web_hex');
+	table.insert(converters, 'color_web_hex_3_digit');
+	table.insert(converters, 'color_css_hsl');
+	table.insert(converters, 'color_css_rgb');
+	return converters;
 end;
