@@ -17,7 +17,7 @@ def CheckPKG(context, name):
 
 conf = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG })
 
-if conf.CheckPKG('gtk+-2.0 >= 2.16.0'):
+if conf.CheckPKG('gtk+-2.0 >= 2.12.0'):
 	env.Append(GTK_PC='gtk+-2.0');
 else:
 	Exit(1)
