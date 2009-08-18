@@ -1,6 +1,6 @@
 
 !include "MUI2.nsh"
-!include "../build/version.nsi"
+!include ..\build\version.nsi
 
 Name "gpick"
 OutFile "gpick_${VERSION}_win32-setup.exe"
@@ -43,7 +43,7 @@ Section "!Program Files" SecProgramFiles
 
 	SetOutPath "$INSTDIR"
 	
-	File ..\bin\gpick.exe
+	File ..\build\source\gpick.exe
 	
 	SetOutPath "$INSTDIR\share\gpick"
 	
@@ -55,6 +55,7 @@ Section "!Program Files" SecProgramFiles
 	File ..\share\gpick\falloff-cubic.png
 	File ..\share\gpick\falloff-exponential.png
 	File ..\share\gpick\init.lua
+	File ..\share\gpick\helpers.lua
 	
 	SetOutPath "$INSTDIR"
 	WriteRegStr HKLM "Software\gpick" "" $INSTDIR
@@ -98,6 +99,7 @@ Delete "$INSTDIR\share\gpick\falloff-quadratic.png"
 Delete "$INSTDIR\share\gpick\falloff-cubic.png"
 Delete "$INSTDIR\share\gpick\falloff-exponential.png"
 Delete "$INSTDIR\share\gpick\init.lua"
+Delete "$INSTDIR\share\gpick\helpers.lua"
 RMDir "$INSTDIR\share\gpick"
 RMDir "$INSTDIR\share"
 

@@ -24,20 +24,12 @@
 #include "Color.h"
 #include "ColorNames.h"
 
-
-
 GtkWidget* palette_list_new(GtkWidget* swatch);
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
-
-//void palette_list_add_entry_name(GtkWidget* widget, const gchar* color_name, Color* color);
 
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
 
-//GtkWidget* palette_list_create_copy_menu (Color* color);
-//GtkWidget* palette_list_create_copy_menu_list (GList* colors);
-
-//gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color);
 gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
 gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
 gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
@@ -45,14 +37,5 @@ gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorOb
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 
-
-
-struct NamedColor{
-	gchar* name;
-	Color* color;
-};
-
-GList* palette_list_make_color_list(GtkWidget* widget);
-void palette_list_free_color_list(GList *colors);
 
 #endif /* UILISTPALETTE_H_ */
