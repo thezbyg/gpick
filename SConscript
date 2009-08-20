@@ -14,23 +14,24 @@ def CheckPKG(context, name):
 	context.Result( ret )
 	return ret
 
+if not env.GetOption('clean'):
+	conf = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG })
 
-conf = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG })
-
-if conf.CheckPKG('gtk+-2.0 >= 2.12.0'):
-	env.Append(GTK_PC='gtk+-2.0');
-else:
-	Exit(1)
-
-if conf.CheckPKG('lua >= 5.1'):
-	env.Append(LUA_PC='lua');
-else:
-	if conf.CheckPKG('lua5.1 >= 5.1'):
-		env.Append(LUA_PC='lua5.1');
+	if conf.CheckPKG('gtk+-2.0 >= 2.12.0'):
+		env.Append(GTK_PC='gtk+-2.0');
 	else:
 		Exit(1)
 
-env = conf.Finish()
+	if conf.CheckPKG('lua >= 5.1'):
+		env.Append(LUA_PC='lua');
+	else:
+		if conf.CheckPKG('lua5.1 >= 5.1'):
+			env.Append(LUA_PC='lua5.1');
+		else:
+			Exit(1)
+			
+	env = conf.Finish()
+
 
 Decider('MD5-timestamp')
 

@@ -6,8 +6,9 @@ import sys
 Import('*')
 local_env = env.Clone()
 
-local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
-local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+if not local_env.GetOption('clean'):
+	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
+	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
 
 sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('gtk/*.cpp')
 
