@@ -354,7 +354,7 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 						c2.lab.b=((float*)&lab[2])[0];
 
 					    color_lab_to_xyz(&c2, &c3, &d50);
-						color_xyz_chromatic_adaption(&c3, &c3, &adaptation_matrix);
+						color_xyz_chromatic_adaptation(&c3, &c3, &adaptation_matrix);
 					    color_xyz_to_rgb(&c3, &c, &working_space_matrix);
 
 					    c.rgb.red=clamp_float(c.rgb.red, 0, 1);

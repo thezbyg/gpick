@@ -42,7 +42,7 @@
 
 #include "FileFormat.h"
 #include "Sampler.h"
-#include "ColorObject.h"
+#include "ColorList.h"
 #include "MathUtil.h"
 #include "ColorNames.h"
 #include "Random.h"
@@ -1274,6 +1274,18 @@ main(int argc, char **argv)
 		g_mkdir(config_file, S_IRWXU);
 	}
 	g_free(config_file);
+	
+	//check if user has user_init.lua file, if not, the create empty file
+	gchar *user_init_file = build_config_path("user_init.lua");
+	FILE *user_init = fopen(user_init_file, "r");
+	if (user_init){
+		fclose(user_init);
+	}else{
+		user_init = fopen(user_init_file, "w");
+		fclose(user_init);
+	}
+	g_free(user_init_file);
+	
 	
 	set_main_window_icon();
 

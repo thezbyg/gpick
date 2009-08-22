@@ -517,12 +517,12 @@ void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vect
 	matrix3x3_multiply(&M, &Ma_inv, result);
 }
 
-void color_xyz_chromatic_adaption(Color* a, Color* result, matrix3x3* adaption ){
+void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptation ){
 	vector3 x;
 	x.x=a->xyz.x;
 	x.y=a->xyz.y;
 	x.z=a->xyz.z;
-	vector3_multiply_matrix3x3(&x, adaption, &x);
+	vector3_multiply_matrix3x3(&x, adaptation, &x);
 	result->xyz.x=x.x;
 	result->xyz.y=x.y;
 	result->xyz.z=x.z;

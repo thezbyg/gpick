@@ -16,25 +16,38 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UILISTPALETTE_H_
-#define UILISTPALETTE_H_
+#ifndef COLORLIST_H_
+#define COLORLIST_H_
 
-#include <gtk/gtk.h>
-#include "Color.h"
-#include "ColorNames.h"
+#include "ColorObject.h"
+#include "dynv/DynvSystem.h"
+#include <list>
 
-GtkWidget* palette_list_new(GtkWidget* swatch);
-void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
+struct ColorList{
+	std::list<struct ColorObject*> colors;
+	typedef std::list<struct ColorObject*>::iterator iter;
+	struct dynvSystem* params;
 
-void palette_list_remove_all_entries(GtkWidget* widget);
-void palette_list_remove_selected_entries(GtkWidget* widget);
+	int (*on_insert)(struct ColorList* color_list, struct ColorObject* color_object);
+	int (*on_delete)(struct ColorList* color_list, struct ColorObject* color_object);
+	int (*on_delete_selected)(struct ColorList* color_list);
+	int (*on_change)(struct ColorList* color_list, struct ColorObject* color_object);
+	int (*on_clear)(struct ColorList* color_list);
 
-gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
+	int (*on_get_positions)(struct ColorList* color_list);
 
-gint32 palette_list_get_selected_count(GtkWidget* widget);
-gint32 palette_list_get_count(GtkWidget* widget);
+	void* userdata;
+};
 
+struct ColorList* color_list_new(struct dynvHandlerMap* handler_map);
+void color_list_destroy(struct ColorList* color_list);
+struct ColorObject* color_list_new_color_object(struct ColorList* color_list, Color* color);
+struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* color);
+int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object, int add_to_palette);
+int color_list_remove_color_object(struct ColorList* color_list, struct ColorObject* color_object);
+int color_list_remove_selected(struct ColorList* color_list);
+int color_list_remove_all(struct ColorList* color_list);
+unsigned long color_list_get_count(struct ColorList* color_list);
+int color_list_get_positions(struct ColorList* color_list);
 
-#endif /* UILISTPALETTE_H_ */
+#endif /* COLORLIST_H_ */

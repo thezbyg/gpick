@@ -20,6 +20,7 @@
 #include "uiUtilities.h"
 #include "ColorNames.h"
 #include "gtk/uiSwatch.h"
+#include "gtk/ColorCell.h"
 
 #include <sstream>
 #include <iomanip>

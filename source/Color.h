@@ -106,6 +106,6 @@ void color_get_contrasting(Color* a, Color* b);
 
 void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result);
 void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result);
-void color_xyz_chromatic_adaption(Color* a, Color* result, matrix3x3* adaption );
+void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptation );
 
 #endif /* COLOR_H_ */

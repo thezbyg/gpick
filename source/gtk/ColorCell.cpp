@@ -69,6 +69,9 @@ static void custom_cell_renderer_color_init(CustomCellRendererColor *cellrendere
 	GTK_CELL_RENDERER(cellrenderercolor)->mode = GTK_CELL_RENDERER_MODE_INERT;
 	GTK_CELL_RENDERER(cellrenderercolor)->xpad = 2;
 	GTK_CELL_RENDERER(cellrenderercolor)->ypad = 2;
+	cellrenderercolor->width=32;
+	cellrenderercolor->height=16;
+	cellrenderercolor->color=0;
 }
 
 static void custom_cell_renderer_color_class_init(CustomCellRendererColorClass *klass) {
@@ -121,21 +124,25 @@ static void custom_cell_renderer_color_set_property(GObject *object, guint param
 }
 
 GtkCellRenderer *
-custom_cell_renderer_color_new(void) {
+custom_cell_renderer_color_new() {
 	return (GtkCellRenderer *) g_object_new(CUSTOM_TYPE_CELL_RENDERER_COLOR, NULL);
 }
 
-
-#define FIXED_WIDTH   32
-#define FIXED_HEIGHT  16
+void custom_cell_renderer_color_set_size(GtkCellRenderer *cell,  gint width, gint height){
+	CustomCellRendererColor *cellcolor=CUSTOM_CELL_RENDERER_COLOR(cell);
+	cellcolor->width=width;
+	cellcolor->height=height;
+}
 
 static void custom_cell_renderer_color_get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width,
 		gint *height) {
+	CustomCellRendererColor *cellcolor=CUSTOM_CELL_RENDERER_COLOR(cell);
+			
 	gint calc_width;
 	gint calc_height;
 
-	calc_width = (gint) cell->xpad * 2 + FIXED_WIDTH;
-	calc_height = (gint) cell->ypad * 2 + FIXED_HEIGHT;
+	calc_width = (gint) cell->xpad * 2 + cellcolor->width;
+	calc_height = (gint) cell->ypad * 2 + cellcolor->height;
 
 	if (width)
 		*width = calc_width;

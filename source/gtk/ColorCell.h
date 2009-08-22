@@ -34,8 +34,10 @@ typedef struct _CustomCellRendererColorClass CustomCellRendererColorClass;
 
 struct _CustomCellRendererColor
 {
-GtkCellRenderer	parent;
-struct ColorObject*	color;
+	GtkCellRenderer	parent;
+	struct ColorObject*	color;
+	int width;
+	int height;
 };
 
 struct _CustomCellRendererColorClass
@@ -45,5 +47,8 @@ GtkCellRendererClass  parent_class;
 
 GType custom_cell_renderer_color_get_type (void);
 GtkCellRenderer *custom_cell_renderer_color_new (void);
+
+void custom_cell_renderer_color_set_size(GtkCellRenderer *cell,  gint width, gint height);
+
 
 #endif /* COLORCELL_H_ */

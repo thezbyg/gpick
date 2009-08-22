@@ -19,7 +19,7 @@
 #include "uiDialogGenerate.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "ColorObject.h"
+#include "ColorList.h"
 #include "MathUtil.h"
 
 #include <math.h>

@@ -20,7 +20,7 @@
 #define UICONVERTER_H_
 
 #include <gtk/gtk.h>
-#include "ColorObject.h"
+#include "ColorList.h"
 #include "LuaExt.h"
 
 GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *lua);
