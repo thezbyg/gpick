@@ -21,10 +21,145 @@
 #include "uiUtilities.h"
 #include "MathUtil.h"
 
+#include <stdbool.h>
 #include <sstream>
 using namespace std;
 
+struct Arguments{
+	GtkWidget *mix_type;
+	GtkWidget *mix_steps;
+	
+	struct ColorList *color_list;
+	struct ColorList *selected_color_list;
+	struct ColorList *preview_color_list;
+	
+	GKeyFile* settings;
+};
+
+static void calc( struct Arguments *args, bool preview, int limit){
+	
+	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->mix_steps));
+	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
+
+	if (!preview){
+		g_key_file_set_integer(args->settings, "Mix Dialog", "Type", type);
+		g_key_file_set_integer(args->settings, "Mix Dialog", "Steps", steps);
+	}
+	
+	Color r;
+	gint step_i;
+
+	stringstream s;
+	s.precision(0);
+	s.setf(ios::fixed,ios::floatfield);
+
+	Color a,b;
+	
+	struct ColorList *color_list;
+	if (preview) 
+		color_list = args->preview_color_list;
+	else
+		color_list = args->color_list;
+
+	ColorList::iter j;
+	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){ 
+	
+		color_object_get_color(*i, &a);
+		const char* name_a = (const char*)dynv_system_get((*i)->params, "string", "name");
+		j=i;
+		++j;
+		for (; j!=args->selected_color_list->colors.end(); ++j){ 
+			
+			if (preview){
+				if (limit<=0) return;
+				limit--;
+			}
+		
+			color_object_get_color(*j, &b);
+			const char* name_b = (const char*)dynv_system_get((*j)->params, "string", "name");
+
+			switch (type) {
+			case 0:
+				for (step_i = 0; step_i < steps; ++step_i) {
+					r.rgb.red = mix_float(a.rgb.red, b.rgb.red, step_i/(float)(steps-1));
+					r.rgb.green = mix_float(a.rgb.green, b.rgb.green, step_i/(float)(steps-1));
+					r.rgb.blue = mix_float(a.rgb.blue, b.rgb.blue, step_i/(float)(steps-1));
+
+					s.str("");
+					s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+					dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+					color_list_add_color_object(color_list, color_object, 1);
+				}
+				break;
+
+			case 1:
+				{
+					Color a_hsv, b_hsv, r_hsv;
+					color_rgb_to_hsv(&a, &a_hsv);
+					color_rgb_to_hsv(&b, &b_hsv);
+
+					for (step_i = 0; step_i < steps; ++step_i) {
+						r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
+						r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
+						r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
+
+						color_hsv_to_rgb(&r_hsv, &r);
+						
+						s.str("");
+						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+						color_list_add_color_object(color_list, color_object, 1);
+					}
+				}
+				break;
+
+			case 2:
+				{
+					Color a_hsv, b_hsv, r_hsv;
+					color_rgb_to_hsv(&a, &a_hsv);
+					color_rgb_to_hsv(&b, &b_hsv);
+
+					if (a_hsv.hsv.hue>b_hsv.hsv.hue){
+						if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
+							a_hsv.hsv.hue-=1;
+					}else{
+						if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
+							b_hsv.hsv.hue-=1;
+					}
+					for (step_i = 0; step_i < steps; ++step_i) {
+						r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
+						r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
+						r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
+
+						if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
+						color_hsv_to_rgb(&r_hsv, &r);							
+						
+						s.str("");
+						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+						color_list_add_color_object(color_list, color_object, 1);
+					}
+				}
+				break;
+			}
+		}
+	}
+}
+
+static void update(GtkWidget *widget, struct Arguments *args ){
+	color_list_remove_all(args->preview_color_list);
+	calc(args, true, 100);
+}
+
 void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings) {
+	struct Arguments args;
+	
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
@@ -32,11 +167,14 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
+	
+	gtk_window_set_default_size(GTK_WINDOW(dialog), g_key_file_get_integer_with_default(settings, "Mix Dialog", "Width", -1), 
+		g_key_file_get_integer_with_default(settings, "Mix Dialog", "Height", -1));
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
-	table = gtk_table_new(2, 2, FALSE);
+	table = gtk_table_new(3, 2, FALSE);
 	table_y=0;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
@@ -47,120 +185,41 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct Col
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), g_key_file_get_integer_with_default(settings, "Mix Dialog", "Type", 0));
 	gtk_table_attach(GTK_TABLE(table), mix_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
+	args.mix_type = mix_type;
+	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), &args);
+	
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), g_key_file_get_integer_with_default(settings, "Mix Dialog", "Steps", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-
-
+	args.mix_steps = mix_steps;
+	g_signal_connect (G_OBJECT (mix_steps), "value-changed", G_CALLBACK (update), &args);
+	
+	GtkWidget* preview_expander;
+	struct ColorList* preview_color_list=NULL;
+	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(g_key_file_get_boolean_with_default(settings, "Preview", "Show", true), color_list, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	table_y++;
+	
+	args.color_list = color_list;
+	args.selected_color_list = selected_color_list;
+	args.preview_color_list = preview_color_list;
+	args.settings = settings;
+	
+	update(0, &args);
+	
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-		gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mix_steps));
-		gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(mix_type));
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(&args, false, 0);
 
-		g_key_file_set_integer(settings, "Mix Dialog", "Type", type);
-		g_key_file_set_integer(settings, "Mix Dialog", "Steps", steps);
-
-		Color r;
-		gint step_i;
-
-		stringstream s;
-		s.precision(0);
-		s.setf(ios::fixed,ios::floatfield);
-		/*GList *colors=NULL, *i, *j;
-		colors=palette_list_make_color_list(palette);
-		i=colors;*/
-		
-		Color a,b;
-
-		ColorList::iter j;
-		for (ColorList::iter i=selected_color_list->colors.begin(); i!=selected_color_list->colors.end(); ++i){ 
-			color_object_get_color(*i, &a);
-			const char* name_a = (const char*)dynv_system_get((*i)->params, "string", "name");
-			j=i;
-			++j;
-			for (; j!=selected_color_list->colors.end(); ++j){ 
-			
-				color_object_get_color(*j, &b);
-				const char* name_b = (const char*)dynv_system_get((*j)->params, "string", "name");
-
-				switch (type) {
-				case 0:
-					for (step_i = 0; step_i < steps; ++step_i) {
-						r.rgb.red = mix_float(a.rgb.red, b.rgb.red, step_i/(float)(steps-1));
-						r.rgb.green = mix_float(a.rgb.green, b.rgb.green, step_i/(float)(steps-1));
-						r.rgb.blue = mix_float(a.rgb.blue, b.rgb.blue, step_i/(float)(steps-1));
-
-						s.str("");
-						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
-
-						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-						color_list_add_color_object(color_list, color_object, 1);
-					}
-					break;
-
-				case 1:
-					{
-						Color a_hsv, b_hsv, r_hsv;
-						color_rgb_to_hsv(&a, &a_hsv);
-						color_rgb_to_hsv(&b, &b_hsv);
-
-						for (step_i = 0; step_i < steps; ++step_i) {
-							r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-							r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
-
-							color_hsv_to_rgb(&r_hsv, &r);
-							
-							s.str("");
-							s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
-
-							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-							color_list_add_color_object(color_list, color_object, 1);
-						}
-					}
-					break;
-
-				case 2:
-					{
-						Color a_hsv, b_hsv, r_hsv;
-						color_rgb_to_hsv(&a, &a_hsv);
-						color_rgb_to_hsv(&b, &b_hsv);
-
-						if (a_hsv.hsv.hue>b_hsv.hsv.hue){
-							if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
-								a_hsv.hsv.hue-=1;
-						}else{
-							if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
-								b_hsv.hsv.hue-=1;
-						}
-						for (step_i = 0; step_i < steps; ++step_i) {
-							r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-							r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-							r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
-
-							if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
-							color_hsv_to_rgb(&r_hsv, &r);							
-							
-							s.str("");
-							s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
-
-							struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-							dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
-							color_list_add_color_object(color_list, color_object, 1);
-						}
-					}
-					break;
-				}
-			}
-		}
-	}
+	gint width, height;
+	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+	g_key_file_set_integer(settings, "Mix Dialog", "Width", width);
+	g_key_file_set_integer(settings, "Mix Dialog", "Height", height);
+	g_key_file_set_boolean(settings, "Preview", "Show", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
+	
 	gtk_widget_destroy(dialog);
 
 }

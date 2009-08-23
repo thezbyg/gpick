@@ -20,11 +20,13 @@
 #define UILISTPALETTE_H_
 
 #include <gtk/gtk.h>
-#include "Color.h"
-#include "ColorNames.h"
+#include "ColorObject.h"
+#include "ColorList.h"
 
 GtkWidget* palette_list_new(GtkWidget* swatch);
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
+
+GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);
 
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);

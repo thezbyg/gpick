@@ -58,6 +58,69 @@ static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path
 
 }
 
+static int palette_list_preview_on_insert(struct ColorList* color_list, struct ColorObject* color_object){
+	palette_list_add_entry(GTK_WIDGET(color_list->userdata), color_object);
+	return 0;
+}
+
+static int palette_list_preview_on_clear(struct ColorList* color_list){
+	palette_list_remove_all_entries(GTK_WIDGET(color_list->userdata));
+	return 0;
+}
+
+GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
+	GtkListStore  		*store;
+	GtkCellRenderer     *renderer;
+	GtkTreeViewColumn   *col;
+	GtkWidget           *view;
+
+	view = gtk_tree_view_new ();
+
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 0);
+	
+	store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
+	
+	col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+	gtk_tree_view_column_set_resizable(col, 0);
+	renderer = custom_cell_renderer_color_new();
+	custom_cell_renderer_color_set_size(renderer, 16, 16);
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	
+	
+	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
+	g_object_unref (GTK_TREE_MODEL(store));
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
+	
+	if (out_color_list) {
+		struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(color_list->params);
+		struct ColorList* cl=color_list_new(handler_map);
+		dynv_handler_map_release(handler_map);
+		
+		cl->userdata=view;
+		cl->on_insert=palette_list_preview_on_insert;
+		cl->on_clear=palette_list_preview_on_clear;
+		*out_color_list=cl;
+		
+	}
+	
+	GtkWidget *scrolled_window;
+	scrolled_window=gtk_scrolled_window_new (0,0);
+	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
+	gtk_container_add(GTK_CONTAINER(scrolled_window), view);
+	
+	GtkWidget *expander=gtk_expander_new("Preview");
+	gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
+	gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
+
+	return expander;
+}
+
 GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	GtkListStore  		*store;
@@ -67,9 +130,7 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	view = gtk_tree_view_new ();
 
-
-
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view),1);
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 1);
 
 	store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
 
@@ -90,7 +151,6 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 1);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
-
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
