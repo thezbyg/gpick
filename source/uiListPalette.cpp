@@ -19,7 +19,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorNames.h"
-#include "gtk/uiSwatch.h"
+#include "gtk/Swatch.h"
 #include "gtk/ColorCell.h"
 
 #include <sstream>

@@ -20,20 +20,11 @@
 #define COLOROBJECT_H_
 
 #include "Color.h"
+#include "ColorAction.h"
 #include "dynv/DynvSystem.h"
 #include <list>
 
-
-struct ColorAction;
 struct ColorObject;
-
-struct ColorAction{
-	struct dynvSystem* params;
-	std::list<struct ColorObject*> parents;	//color objects which change current action results
-
-	//callback
-	//userdata
-};
 
 struct ColorObject{
 	uint32_t refcnt;
@@ -42,7 +33,7 @@ struct ColorObject{
 	uint32_t position;
 
 	//Color color;
-	ColorAction* action;
+	struct ColorAction* action;
 	int recalculate;
 	int selected;
 };

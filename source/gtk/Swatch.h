@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UISWATCH_H_
-#define UISWATCH_H_
+#ifndef SWATCH_H_
+#define SWATCH_H_
 
 
 #include <gtk/gtk.h>
@@ -75,4 +75,4 @@ GType gtk_swatch_get_type(void);
 G_END_DECLS
 
 
-#endif /* UISWATCH_H_ */
+#endif /* SWATCH_H_ */

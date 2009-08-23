@@ -28,10 +28,10 @@
 #include <glib/gstdio.h>
 #include <gdk/gdkkeysyms.h>
 
-#include "gtk/uiSwatch.h"
-#include "gtk/uiZoomed.h"
+#include "gtk/Swatch.h"
+#include "gtk/Zoomed.h"
+#include "gtk/ColorComponent.h"
 
-#include "uiColorComponent.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "uiExport.h"
@@ -112,6 +112,7 @@ typedef struct MainWindow{
 
 	gboolean add_to_palette;
 	gboolean rotate_swatch;
+	gboolean copy_to_clipboard;
 
 	string current_filename;
 
@@ -119,9 +120,11 @@ typedef struct MainWindow{
 
 
 static gchar **commandline_filename=NULL; 
+static gchar *commandline_geometry=NULL; 
 static GOptionEntry commandline_entries[] =
 {
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, "Open palette file", NULL },
+  { "geometry",	'g', 0, 		G_OPTION_ARG_STRING,			&commandline_geometry, "Window geometry", "GEOMETRY" },
+  { G_OPTION_REMAINING, 0, 0, 	G_OPTION_ARG_FILENAME_ARRAY, 	&commandline_filename, NULL, "[FILE...]" },
   { NULL }
 };
 
@@ -130,6 +133,18 @@ static gboolean
 delete_event( GtkWidget *widget, GdkEvent *event, gpointer data )
 {
     return FALSE;
+}
+
+static gboolean
+on_window_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data){
+	MainWindow* window=(MainWindow*)data;
+
+	if (GTK_WIDGET_VISIBLE(window->notebook)){
+		g_key_file_set_integer(window->settings, "Window", "Width", event->width);
+		g_key_file_set_integer(window->settings, "Window", "Height", event->height);
+	}
+	
+	return FALSE;
 }
 
 static void
@@ -153,6 +168,7 @@ destroy( GtkWidget *widget, gpointer data )
 	g_key_file_set_integer(window->settings, "Sampler", "Oversample", sampler_get_oversample(window->sampler));
 	g_key_file_set_integer(window->settings, "Sampler", "Falloff", sampler_get_falloff(window->sampler));
 	g_key_file_set_boolean(window->settings, "Sampler", "Add to palette", window->add_to_palette);
+	g_key_file_set_boolean(window->settings, "Sampler", "Copy to clipboard", window->copy_to_clipboard);
 	g_key_file_set_boolean(window->settings, "Sampler", "Rotate swatch after sample", window->rotate_swatch);
 
 	g_key_file_set_double(window->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(window->zoomed_display)));
@@ -415,6 +431,25 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				color_list_add_color_object(window->colors, color_object, 1);
 				color_object_release(color_object);
 			}
+			
+			if (window->copy_to_clipboard){
+				Color c;
+				gtk_swatch_get_active_color(GTK_SWATCH(window->swatch_display), &c);
+				
+				struct ColorObject* color_object;
+				color_object = color_list_new_color_object(window->colors, &c);
+				
+				gchar** source_array;
+				gsize source_array_size;
+				if ((source_array = g_key_file_get_string_list(window->settings, "Converter", "Names", &source_array_size, 0))){
+					if (source_array_size>0){	
+						converter_get_clipboard(source_array[0], color_object, 0, window->lua);
+					}					
+					g_strfreev(source_array);
+				}
+				color_object_release(color_object);
+			}
+			
 			if (window->rotate_swatch){
 				gtk_swatch_move_active(GTK_SWATCH(window->swatch_display),1);
 			}
@@ -661,7 +696,12 @@ static void menu_view_minimal(GtkWidget *widget, gpointer data) {
 	if (GTK_WIDGET_VISIBLE(window->notebook)){
 		gtk_widget_hide(window->notebook);
 		g_key_file_set_boolean(window->settings, "View", "Minimal", TRUE);
+		
+		gtk_window_resize(GTK_WINDOW(window->window), 1, 1);		//shrink to min size
+		
 	}else{
+		gtk_window_resize(GTK_WINDOW(window->window), g_key_file_get_integer_with_default(window->settings, "Window", "Width", 1), g_key_file_get_integer_with_default(window->settings, "Window", "Height", 1));
+		
 		gtk_widget_show(window->notebook);
 		g_key_file_set_boolean(window->settings, "View", "Minimal", FALSE);
 	}
@@ -1050,6 +1090,11 @@ void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 void on_add_to_palette_changed(GtkWidget *widget, gpointer data) {
 	((MainWindow*)data)->add_to_palette = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
+
+void on_copy_to_clipboard_changed(GtkWidget *widget, gpointer data) {
+	((MainWindow*)data)->copy_to_clipboard = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+}
+
 void on_rotate_swatch_changed(GtkWidget *widget, gpointer data) {
 	((MainWindow*)data)->rotate_swatch = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
@@ -1371,7 +1416,8 @@ main(int argc, char **argv)
 
     g_signal_connect (G_OBJECT (window->window), "delete_event", G_CALLBACK (delete_event), NULL);
     g_signal_connect (G_OBJECT (window->window), "destroy",      G_CALLBACK (destroy), window);
-
+	g_signal_connect (G_OBJECT (window->window), "configure-event",      G_CALLBACK (on_window_configure), window);
+	
     GtkAccelGroup *accel_group=gtk_accel_group_new();
     gtk_window_add_accel_group(GTK_WINDOW(window->window), accel_group);
 	g_object_unref(G_OBJECT (accel_group));
@@ -1537,7 +1583,7 @@ main(int argc, char **argv)
 	vbox = gtk_vbox_new(FALSE, 5);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Settings"));
 
-		table = gtk_table_new(3, 2, FALSE);
+		table = gtk_table_new(6, 2, FALSE);
 		table_y=0;
 		gtk_box_pack_start (GTK_BOX(vbox), table, FALSE, FALSE, 0);
 
@@ -1567,13 +1613,18 @@ main(int argc, char **argv)
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Add to palette", FALSE));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
+			
+			widget = gtk_check_button_new_with_mnemonic ("_Copy to clipboard immediately");
+			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_copy_to_clipboard_changed), window);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Copy to clipboard", FALSE));
+			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+			table_y++;
 
 			widget = gtk_check_button_new_with_mnemonic ("_Rotate swatch after sample");
 			g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_rotate_swatch_changed), window);
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(window->settings, "Sampler", "Rotate swatch after sample", FALSE));
 			gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			table_y++;
-
 
 	vbox = gtk_vbox_new(FALSE, 5);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Palette"));
@@ -1607,16 +1658,10 @@ main(int argc, char **argv)
 
     updateDiplays(window);
 	
-	if (g_key_file_get_boolean_with_default(window->settings, "View", "Minimal", FALSE)){
+	if (g_key_file_get_boolean_with_default(window->settings, "View", "Minimal", false)){
 		gtk_widget_hide(notebook);
 	}
 	
-	
-
-	/*if (argc > 1){
-		gtk_window_parse_geometry (GTK_WINDOW (window->window), argv[1]);
-	}*/
-
 	if (commandline_filename){
 		if (palette_file_load(commandline_filename[0], window->colors)==0){
 			window->current_filename=commandline_filename[0];
@@ -1624,9 +1669,17 @@ main(int argc, char **argv)
 		}
 	}
 	
-	GdkGeometry size_hints = { -1,-1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, GDK_GRAVITY_NORTH_WEST };
-	gtk_window_set_geometry_hints (GTK_WINDOW(window->window), window->window, &size_hints, GdkWindowHints(GDK_HINT_MIN_SIZE));
-
+	/*if (g_key_file_get_boolean_with_default(window->settings, "View", "Minimal", false)==false){
+		gtk_window_resize(GTK_WINDOW(window->window), g_key_file_get_integer_with_default(window->settings, "Window", "Width", 1), g_key_file_get_integer_with_default(window->settings, "Window", "Height", 1));
+	}*/
+	
+	//GdkGeometry size_hints = { -1,-1, 0, 0, 0, 0, 0, 0, 0.0, 0.0, GDK_GRAVITY_CENTER };
+	//gtk_window_set_geometry_hints (GTK_WINDOW(window->window), window->window, &size_hints, GdkWindowHints(GDK_HINT_WIN_GRAVITY));
+	
+	if (commandline_geometry){
+		gtk_window_parse_geometry (GTK_WINDOW (window->window), (const gchar*)commandline_geometry);
+	}
+	
 	gtk_widget_show (window->window);
 
 	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColor, window, 0);

@@ -16,13 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UICOLORCOMPONENT_H_
-#define UICOLORCOMPONENT_H_
-
+#ifndef COLORCOMPONENT_H_
+#define COLORCOMPONENT_H_
 
 #include <gtk/gtk.h>
-#include "Color.h"
-
+#include "../Color.h"
 
 G_BEGIN_DECLS
 

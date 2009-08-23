@@ -16,13 +16,19 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGGENERATE_H_
-#define UIDIALOGGENERATE_H_
+#ifndef COLORACTION_H_
+#define COLORACTION_H_
 
-#include <gtk/gtk.h>
-#include "ColorList.h"
-#include "Random.h"
+#include "ColorObject.h"
+#include "dynv/DynvSystem.h"
+#include <list>
 
-void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, Random* random);
+struct ColorAction{
+	struct dynvSystem* params;
+	std::list<struct ColorObject*> parents;	//color objects which change current action results
 
-#endif /* UIDIALOGGENERATE_H_ */
+	//callback
+	//userdata
+};
+
+#endif /* COLORACTION_H_ */

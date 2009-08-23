@@ -16,10 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "uiZoomed.h"
+#include "Zoomed.h"
 
 #include "../Color.h"
 #include "../MathUtil.h"
+
+#include <algorithm>
+using namespace std;
 
 #define GTK_ZOOMED_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
 
@@ -107,7 +110,7 @@ GtkWidget *
 gtk_zoomed_new () {
 	GtkWidget* widget=(GtkWidget*)g_object_new (GTK_TYPE_ZOOMED, NULL);
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
-	gtk_widget_set_size_request(GTK_WIDGET(widget),150,150);
+	gtk_widget_set_size_request(GTK_WIDGET(widget),150+widget->style->xthickness*2,150+widget->style->ythickness*2);
 
 	ns->zoom=2;
 	ns->pixbuf=0;
@@ -195,20 +198,30 @@ gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed){
 static gboolean
 gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event)
 {
+
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
 	if (ns->pixbuf){
+		
+		gint pixbuf_x = max(event->area.x-widget->style->xthickness, 0);
+		gint pixbuf_y = max(event->area.y-widget->style->ythickness, 0);
+
+		gint pixbuf_width = min(150-pixbuf_x, 150);
+		gint pixbuf_height = min(150-pixbuf_y, 150);
+		
 		gdk_draw_pixbuf(widget->window,
 					  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
 					  ns->pixbuf,
-					  event->area.x, event->area.y,
-					  event->area.x, event->area.y,
-					  event->area.width, event->area.height,
+					  pixbuf_x, pixbuf_y,
+					  pixbuf_x+widget->style->xthickness, pixbuf_y+widget->style->ythickness,
+					  pixbuf_width, pixbuf_height,
 					  GDK_RGB_DITHER_NONE, 0, 0);
 	}
 
 	cairo_t *cr;
 	cr = gdk_cairo_create (widget->window);
-
+	
+	cairo_translate(cr, widget->style->xthickness, widget->style->ythickness);
+	
 	//cairo_set_source_rgb(cr, 1,1,1);
 	/*cairo_move_to(cr, ns->point.x, ns->point.y);
 	cairo_line_to(cr, ns->point.x+5, ns->point.y+5);
@@ -225,7 +238,9 @@ gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event)
 
 	cairo_destroy (cr);
 
-
+	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
+	
+	
 	/*GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
 
 	GdkGC *dc = gdk_gc_new(widget);

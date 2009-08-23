@@ -16,13 +16,51 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGGENERATE_H_
-#define UIDIALOGGENERATE_H_
+#ifndef ZOOMED_H_
+#define ZOOMED_H_
+
 
 #include <gtk/gtk.h>
-#include "ColorList.h"
-#include "Random.h"
+#include "../Color.h"
 
-void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, Random* random);
 
-#endif /* UIDIALOGGENERATE_H_ */
+G_BEGIN_DECLS
+
+#define GTK_TYPE_ZOOMED		(gtk_zoomed_get_type ())
+#define GTK_ZOOMED(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_ZOOMED, GtkZoomed))
+#define GTK_ZOOMED_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_ZOOMED, GtkZoomedClass))
+#define GTK_IS_ZOOMED(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_ZOOMED))
+#define GTK_IS_ZOOMED_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_ZOOMED))
+#define GTK_ZOOMED_GET_CLASS	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_ZOOMED, GtkZoomedClass))
+
+typedef struct GtkZoomed			GtkZoomed;
+typedef struct GtkZoomedClass		GtkZoomedClass;
+
+typedef gpointer GtkZoomedObject;
+
+typedef struct GtkZoomed
+{
+	GtkDrawingArea parent;
+
+	/* < private > */
+}GtkZoomed;
+
+typedef struct GtkZoomedClass
+{
+	GtkDrawingAreaClass parent_class;
+	void  (* color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
+}GtkZoomedClass;
+
+
+GtkWidget* gtk_zoomed_new ();
+
+void gtk_zoomed_set_zoom (GtkZoomed* zoomed, gfloat zoom);
+gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed);
+
+void gtk_zoomed_update (GtkZoomed* zoomed);
+
+GType gtk_zoomed_get_type(void);
+
+G_END_DECLS
+
+#endif /* ZOOMED_H_ */

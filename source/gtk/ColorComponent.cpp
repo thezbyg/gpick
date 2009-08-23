@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "uiColorComponent.h"
-#include "uiUtilities.h"
+#include "ColorComponent.h"
+#include "../uiUtilities.h"
 
-#include "Color.h"
-#include "MathUtil.h"
+#include "../Color.h"
+#include "../MathUtil.h"
 #include <math.h>
 #include <string.h>
 

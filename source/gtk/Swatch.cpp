@@ -16,7 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "uiSwatch.h"
+#include "Swatch.h"
 #include "../Color.h"
 #include "../MathUtil.h"
 #include <math.h>
@@ -87,7 +87,7 @@ gtk_swatch_new(void) {
 	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_SWATCH, NULL);
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget), 150, 150);
+	gtk_widget_set_size_request(GTK_WIDGET(widget),150+widget->style->xthickness*2,150+widget->style->ythickness*2);
 
 	for (gint32 i = 0; i < 7; ++i)
 		color_set(&ns->color[i], i/7.0);
@@ -189,68 +189,32 @@ static void gtk_swatch_draw_hexagon(cairo_t *cr, float x, float y, float radius)
 }
 
 static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
+	
+	GtkStateType state;
+	
+	if (GTK_WIDGET_HAS_FOCUS (widget))
+		state = GTK_STATE_SELECTED;
+	else
+		state = GTK_STATE_ACTIVE;
+
+	
 	cairo_t *cr;
 
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+	
+	gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
 
-	/* get a cairo_t */
 	cr = gdk_cairo_create(widget->window);
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
 
-	//const char* label[]={"1", "2", "3", "4", "5", "6"};
-
 	cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 	cairo_set_font_size(cr, 12);
 
-	//int edges=ns->colors;
-
-#if 0
-
 	cairo_matrix_t matrix;
 	cairo_get_matrix(cr, &matrix);
-
-	//cairo_rotate(cr, PI*2/edges/4);
-
-	int dimension_x=int(floor(sqrt(ns->colors+1)));
-	int dimension_y=int(ceil((ns->colors+1)/float(dimension_x)));
-
-	cairo_translate(cr, 30, 30);
-
-	int color_index=0;
-
-	for (int y=0;y<4;++y) {
-		if (color_index>ns->colors) break;
-		for (int x=0;x<3;++x)
-		{
-			gtk_swatch_draw_ngon2(cr, x, y, 30.0, 6, &ns->color[color_index], 1);
-			color_index++;
-			if (color_index>ns->colors) break;
-		}
-	}
-
-	/*for (int r=1;r<=2;++r)
-	 for (int i=0;i<edges*r;++i)
-	 {
-	 gtk_swatch_draw_ngon2(cr, 20, i, r, edges, &ns->color[i], 1);
-	 //cairo_rotate(cr, PI*2/(edges*r));
-
-
-	 Color c;
-	 color_get_contrasting(&ns->color[i], &c);
-	 cairo_text_extents_t extends;
-	 cairo_text_extents(cr,label[i],&extends);
-	 cairo_set_source_rgb (cr, c.rgb.red, c.rgb.green, c.rgb.blue);
-	 cairo_move_to(cr, 64*cos((180/edges)/(180/PI))*cos(i*(2*PI)/edges)-extends.width/2,  64*cos((180/edges)/(180/PI))*sin(i*(2*PI)/edges)+extends.height/2);
-	 cairo_show_text(cr, label[i]);
-	 }*/
-	cairo_set_matrix(cr, &matrix);
-#endif
-
-	cairo_matrix_t matrix;
-	cairo_get_matrix(cr, &matrix);
-	cairo_translate(cr, 75, 75);
+	cairo_translate(cr, 75+widget->style->xthickness, 75+widget->style->ythickness);
 
 	int edges = 6;
 
@@ -314,7 +278,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	cairo_destroy(cr);
 	
 	if (GTK_WIDGET_HAS_FOCUS(widget)){
-		gtk_paint_focus(widget->style, widget->window, GTK_STATE_NORMAL, &event->area, widget, 0, 0, 0, 150, 150);
+		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
 	}
 
 	return FALSE;
@@ -325,7 +289,7 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 
 	vector2 a, b;
 	vector2_set(&a, 1, 0);
-	vector2_set(&b, event->x - 75, event->y - 75);
+	vector2_set(&b, event->x - 75 - widget->style->xthickness, event->y - 75 - widget->style->ythickness);
 	gfloat distance = vector2_length(&b);
 	
 	gtk_widget_grab_focus(widget);
