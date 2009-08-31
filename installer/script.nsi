@@ -49,11 +49,12 @@ Section "!Program Files" SecProgramFiles
 	
 	File ..\share\gpick\colors0.txt
 	File ..\share\gpick\colors.txt
-	File ..\share\gpick\falloff-none.png
-	File ..\share\gpick\falloff-linear.png
-	File ..\share\gpick\falloff-quadratic.png
-	File ..\share\gpick\falloff-cubic.png
-	File ..\share\gpick\falloff-exponential.png
+	File ..\share\gpick\gpick-falloff-none.png
+	File ..\share\gpick\gpick-falloff-linear.png
+	File ..\share\gpick\gpick-falloff-quadratic.png
+	File ..\share\gpick\gpick-falloff-cubic.png
+	File ..\share\gpick\gpick-falloff-exponential.png
+	File ..\share\icons\hicolor\48x48\apps\gpick.png
 	File ..\share\gpick\init.lua
 	File ..\share\gpick\helpers.lua
 	
@@ -93,11 +94,12 @@ Delete "$INSTDIR\gpick.exe"
 
 Delete "$INSTDIR\share\gpick\colors0.txt"
 Delete "$INSTDIR\share\gpick\colors.txt"
-Delete "$INSTDIR\share\gpick\falloff-none.png"
-Delete "$INSTDIR\share\gpick\falloff-linear.png"
-Delete "$INSTDIR\share\gpick\falloff-quadratic.png"
-Delete "$INSTDIR\share\gpick\falloff-cubic.png"
-Delete "$INSTDIR\share\gpick\falloff-exponential.png"
+Delete "$INSTDIR\share\gpick\gpick-falloff-none.png"
+Delete "$INSTDIR\share\gpick\gpick-falloff-linear.png"
+Delete "$INSTDIR\share\gpick\gpick-falloff-quadratic.png"
+Delete "$INSTDIR\share\gpick\gpick-falloff-cubic.png"
+Delete "$INSTDIR\share\gpick\gpick-falloff-exponential.png"
+Delete "$INSTDIR\share\gpick\gpick.png"
 Delete "$INSTDIR\share\gpick\init.lua"
 Delete "$INSTDIR\share\gpick\helpers.lua"
 RMDir "$INSTDIR\share\gpick"

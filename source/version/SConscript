@@ -13,7 +13,7 @@ local_env.Append (CPPDEFINES = ['BUILD_TIME="%s"'%(env['GPICK_BUILD_TIME']),
 				'BUILD_VERSION="%s"'%(env['GPICK_BUILD_VERSION']),
 ])
 
-
 sources = local_env.Glob('*.cpp')
 objects = local_env.Object([sources])
+
 Return('objects')

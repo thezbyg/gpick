@@ -5,17 +5,36 @@ import time
 import SCons
 import re
 import string
+import sys
+import glob
 
 from SCons.Script import *
 from SCons.Script.SConscript import SConsEnvironment
 
+import SCons.Script.SConscript
+import SCons.SConf
+import SCons.Conftest
 
-SConsEnvironment.Chmod = SCons.Action.ActionFactory(os.chmod, lambda dest, mode: 'Chmod("%s", 0%o)' % (dest, mode))
+def ConfirmLibs(conf, env, libs):
+	for evar, args in libs.iteritems():
+		found = False
+		for name, version in args['checks'].iteritems():
+			if conf.CheckPKG(name + ' ' + version):
+				env[evar]=name
+				found = True;
+				break
+		if not found:
+			if 'required' in args:
+				if not args['required']==False:
+					env.Exit(1)
+			else:
+				env.Exit(1)
+
 
 def InstallPerm(env, dir, source, perm):
 	obj = env.Install(dir, source)
 	for i in obj:
-		env.AddPostAction(i, env.Chmod(str(i), perm))
+		env.AddPostAction(i, Chmod(i, perm))
 	return dir
 
 SConsEnvironment.InstallPerm = InstallPerm
@@ -63,4 +82,13 @@ def WriteNsisVersion(target, source, env):
 			file.writelines('!define VERSION "' + str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION']) + '"')
 			file.close()
 	return 0
+
+def Glob(path):
+	files = []
+	for f in glob.glob(os.path.join(path, '*')):
+		if os.path.isdir(str(f)):
+			files.append(Glob(str(f)));
+		else:
+			files.append(str(f));
+	return files
 

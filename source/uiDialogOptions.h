@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef UIDIALOGOPTIONS_H_
+#define UIDIALOGOPTIONS_H_
 
 #include <gtk/gtk.h>
 
-int main_show_window(GtkWidget* window, GKeyFile* settings);
+void dialog_options_show(GtkWindow* parent, GKeyFile* settings);
 
-#endif /* MAIN_H_ */
+#endif /* UIDIALOGOPTIONS_H_ */

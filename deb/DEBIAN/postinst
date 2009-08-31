@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+if [ "$1" = "configure" ] && which update-desktop-database >/dev/null 2>&1 ; then
+	update-desktop-database -q
+fi

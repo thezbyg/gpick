@@ -9,11 +9,13 @@ local_env = env.Clone()
 if not local_env.GetOption('clean'):
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	local_env.ParseConfig('pkg-config --libs $UNIQUE_PC')
 
 sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('gtk/*.cpp')
 
 objects = []
 objects.append(SConscript(['version/SConscript'], exports='env'))
+objects.append(SConscript(['unique/SConscript'], exports='env'))
 
 if sys.platform=='win32' or sys.platform=='win64':
 	objects.append(SConscript(['winres/SConscript'], exports='env'))

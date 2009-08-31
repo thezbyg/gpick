@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import os
+import sys
+import shutil
+import glob
+
+import tools.gpick
+
+Import('*')
+
+DEBNAME = "gpick"
+DEBVERSION = str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+"-1"
+DEBMAINT = "Albertas Vyšniauskas <thezbyg@gmail.com>"
+DEBARCH = env['DEBARCH']
+DEBDEPENDS = "libgtk2.0-0 (>= 2.12), libc6 (>= 2.7), liblua5.1-0 (>= 5.1), libcairo2 (>=1.6), libglib2.0-0 (>=2.16), libunique-1.0 (>=1.0)"
+DEBPRIORITY = "optional"
+DEBSECTION = "graphics"
+DEBDESC = "Advanced color picker"
+DEBDESCLONG = """ gpick is a program used to pick colors
+ from anythere on the screen, mix them to
+ get new colors, generate shades and tints
+ and export palettes to common file formats
+ or simply copy them to the clipboard
+"""
+
+DEBPACKAGEFILE = '%s-%s_%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
+
+CONTROL_TEMPLATE = """Package: %s
+Version: %s
+Section: %s
+Priority: %s
+Architecture: %s
+Depends: %s
+Installed-Size: %s
+Maintainer: %s
+Description: %s
+%s
+"""
+
+DEBCONTROLDIR = os.path.join(DEBNAME, "DEBIAN")
+DEBCONTROLFILE = os.path.join(DEBCONTROLDIR, "control")
+DEBINSTALLDIR = os.path.join('deb' , DEBNAME, 'usr')
+
+env['DESTDIR'] = DEBINSTALLDIR	#redirect install location
+
+def debian_write_control(target=None, source=None, env=None):
+	installed_size = 0
+	for i in source:
+		installed_size += os.stat(str(i))[6]
+	control_info = CONTROL_TEMPLATE % (
+		DEBNAME, DEBVERSION, DEBSECTION, DEBPRIORITY, DEBARCH,
+		DEBDEPENDS, str(installed_size), DEBMAINT, DEBDESC, DEBDESCLONG)
+	f = open(str(target[0]), 'w')
+	f.write(control_info)
+	f.close()
+	return None
+
+env.Append(BUILDERS = {'DebianPackage' : Builder(action = "fakeroot dpkg-deb -b %s %s" % ("$SOURCE", "$TARGET") )})
+env.Append(BUILDERS = {'DebianControl' : Builder(action = debian_write_control)})
+
+
+env.Alias(target="debian", source=[
+	env.Alias('install'),
+	env.Install(dir=DEBCONTROLDIR, source=[env.Glob("DEBIAN/*")]),
+	env.DebianControl(source = tools.gpick.Glob(os.path.join(DEBNAME, 'usr')), target = DEBCONTROLFILE),
+	env.DebianPackage(source = env.Dir(DEBNAME), target = os.path.join('.', DEBPACKAGEFILE))
+])
+
+

@@ -16,11 +16,37 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#include "DynvVarPtr.h"
+#include "../Endian.h"
 
-#include <gtk/gtk.h>
+static int dynv_var_ptr_create(struct dynvVariable* variable){
+	variable->value = 0;
+	return 0;
+}
 
-int main_show_window(GtkWidget* window, GKeyFile* settings);
+static int dynv_var_ptr_destroy(struct dynvVariable* variable){
+	return 0;
+}
 
-#endif /* MAIN_H_ */
+static int dynv_var_ptr_set(struct dynvVariable* variable, void* value){
+	variable->value = value;
+	return 0;
+}
+
+static int dynv_var_ptr_get(struct dynvVariable* variable, void** value){
+	*value = variable->value;
+	return 0;
+}
+
+struct dynvHandler* dynv_var_ptr_new(){
+	struct dynvHandler* handler=dynv_handler_create("ptr");
+
+	handler->create=dynv_var_ptr_create;
+	handler->destroy=dynv_var_ptr_destroy;
+	handler->set=dynv_var_ptr_set;
+	handler->get=dynv_var_ptr_get;
+	handler->serialize=0;
+	handler->deserialize=0;
+
+	return handler;
+}

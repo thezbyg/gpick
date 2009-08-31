@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef DYNVVARPTR_H_
+#define DYNVVARPTR_H_
 
-#include <gtk/gtk.h>
+#include "DynvSystem.h"
 
-int main_show_window(GtkWidget* window, GKeyFile* settings);
+struct dynvHandler* dynv_var_ptr_new();
 
-#endif /* MAIN_H_ */
+#endif /* DYNVVARPTR_H_ */
