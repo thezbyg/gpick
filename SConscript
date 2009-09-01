@@ -1,4 +1,4 @@
-#!/usr/bin/env pythonimport osimport stringimport sysimport tools.gpickenv = Environment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = tools.gpick.WriteNsisVersion, suffix = ".nsi")})vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))vars.Add('DESTDIR', 'Directory to install under', '/usr/local')vars.Add('DEBARCH', 'Debian package architecture', 'i386')vars.Update(env)v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))v.Add('GPICK_BUILD_VERSION', '', '0.0')
+#!/usr/bin/env pythonimport osimport stringimport sysimport tools.gpickenv = Environment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = tools.gpick.WriteNsisVersion, suffix = ".nsi")})vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))vars.Add('DESTDIR', 'Directory to install under', '/usr/local')vars.Add('DEBARCH', 'Debian package architecture', 'i386')vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)vars.Update(env)v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
 
 tools.gpick.GetVersionInfo(env)
@@ -16,12 +16,18 @@ def CheckPKG(context, name):
 
 if not env.GetOption('clean'):
 	conf = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG })
+	
+	libs = {
+		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
+		'LUA_PC': 			{'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
+	}
+	
+	if env['WITH_UNIQUE']==True:
+		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
+	else:
+		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76-1'}}
 
-	tools.gpick.ConfirmLibs(conf, env, {
-		'GTK_PC': 		{'checks':{'gtk+-2.0':'>= 2.12.0'}},
-		'LUA_PC': 		{'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
-		'UNIQUE_PC': 		{'checks':{'unique-1.0':'>= 1.0.8'}},
-		})
+	tools.gpick.ConfirmLibs(conf, env, libs)
 	
 	env = conf.Finish()
 

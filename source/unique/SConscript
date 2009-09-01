@@ -8,9 +8,18 @@ local_env = env.Clone()
 
 if not local_env.GetOption('clean'):
 	local_env.ParseConfig('pkg-config --cflags $GTK_PC')
-	local_env.ParseConfig('pkg-config --cflags $UNIQUE_PC')
+	if 'UNIQUE_PC' in local_env:
+		local_env.ParseConfig('pkg-config --cflags $UNIQUE_PC')
+	if 'DBUSGLIB_PC' in local_env:
+		local_env.ParseConfig('pkg-config --cflags $DBUSGLIB_PC')
 
-sources = local_env.Glob('*.cpp')
+sources = []
+
+if 'UNIQUE_PC' in local_env:
+	sources.append('Unique.cpp')
+	
+if 'DBUSGLIB_PC' in local_env:
+	sources.append('UniqueDBus.cpp')
 
 objects = local_env.Object(source = [sources])
 
