@@ -194,9 +194,7 @@ destroy( GtkWidget *widget, gpointer data )
 
 
 
-static gboolean
-updateMainColor( gpointer data )
-{
+static gboolean updateMainColorTimer( gpointer data ){
 	MainWindow* window=(MainWindow*)data;
 
 	if (gtk_window_is_active(GTK_WINDOW(window->window))){
@@ -213,6 +211,15 @@ updateMainColor( gpointer data )
 	return TRUE;
 }
 
+static gboolean updateMainColor( gpointer data ){
+	MainWindow* window=(MainWindow*)data;
+
+	Color c;
+	sampler_get_color_sample(window->gs->sampler, &c);
+	gtk_swatch_set_main_color(GTK_SWATCH(window->swatch_display), &c);	gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
+	
+	return TRUE;
+}
 
 void
 updateDiplays(MainWindow* window)
@@ -383,6 +390,7 @@ gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointe
 }
 
 
+
 			
 gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
@@ -471,6 +479,11 @@ gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 		break;
 	}
 	return FALSE;
+}
+
+int main_pick_color(GlobalState* gs, GdkEventKey *event){
+	MainWindow* window=(MainWindow*)dynv_system_get(gs->params, "ptr", "MainWindowStruct");
+	return on_key_up(0, event, window);
 }
 
 static void about_box_activate_url (GtkAboutDialog *about, const gchar *url,  gpointer data){
@@ -1330,6 +1343,8 @@ int main(int argc, char **argv){
 	window->gs->colors->on_delete_selected = color_list_on_delete_selected;
 	window->gs->colors->on_get_positions = color_list_on_get_positions;
 	window->gs->colors->userdata = window;
+	
+	dynv_system_set(window->gs->params, "ptr", "MainWindowStruct", window);
 
 	window->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
@@ -1633,7 +1648,7 @@ int main(int argc, char **argv){
 	
 	//gtk_status_icon_set_visible (statusIcon, TRUE);
 
-	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColor, window, 0);
+	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColorTimer, window, 0);
 
 	
 

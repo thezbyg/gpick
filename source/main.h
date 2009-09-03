@@ -20,7 +20,9 @@
 #define MAIN_H_
 
 #include <gtk/gtk.h>
+#include "GlobalState.h"
 
 int main_show_window(GtkWidget* window, GKeyFile* settings);
+int main_pick_color(GlobalState* gs, GdkEventKey *event);
 
 #endif /* MAIN_H_ */

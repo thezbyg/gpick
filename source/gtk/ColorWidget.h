@@ -16,18 +16,45 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UICONVERTER_H_
-#define UICONVERTER_H_
+#ifndef COLORWIDGET_H_
+#define COLORWIDGET_H_
+
 
 #include <gtk/gtk.h>
-#include "ColorList.h"
-#include "LuaExt.h"
+#include "../Color.h"
 
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *lua);
 
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L);
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L, gchar** text);
+G_BEGIN_DECLS
 
-void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State* lua, struct ColorList *color_list);
+#define GTK_TYPE_COLOR		(gtk_color_get_type ())
+#define GTK_COLOR(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_COLOR, GtkColor))
+#define GTK_COLOR_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_COLOR, GtkColorClass))
+#define GTK_IS_COLOR(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_COLOR))
+#define GTK_IS_COLOR_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_COLOR))
+#define GTK_COLOR_GET_CLASS	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_COLOR, GtkColorClass))
 
-#endif /* UICONVERTER_H_ */
+typedef struct GtkColor			GtkColor;
+typedef struct GtkColorClass		GtkColorClass;
+
+typedef gpointer GtkColorObject;
+
+typedef struct GtkColor
+{
+	GtkDrawingArea parent;
+
+	/* < private > */
+}GtkColor;
+
+typedef struct GtkColorClass
+{
+	GtkDrawingAreaClass parent_class;
+}GtkColorClass;
+
+GtkWidget* gtk_color_new (void);
+void gtk_color_set_color(GtkColor* swatch, Color* color, gchar* text);
+GType gtk_color_get_type(void);
+
+G_END_DECLS
+
+
+#endif /* COLORWIDGET_H_ */

@@ -19,18 +19,24 @@
 #include "uiStatusIcon.h"
 #include "uiUtilities.h"
 #include "gtk/Zoomed.h"
+#include "gtk/ColorWidget.h"
 #include "main.h"
 #include "uiConverter.h"
+#include <gdk/gdkkeysyms.h>
 
 struct uiStatusIcon{
 	GtkWidget* parent;
 	GtkWidget* fake_window;
 	GtkWidget* window;
 	GtkWidget* zoomed;
+	//GtkWidget* color_code;
+	GtkWidget* color_widget;
 	
 	GtkStatusIcon* status_icon;
 	
 	GlobalState* gs;
+	
+	bool release_mode;
 };
 
 static void status_icon_popup_detach(GtkWidget *attach_widget, GtkMenu *menu){
@@ -109,6 +115,36 @@ static gboolean status_icon_motion_notify(GtkWidget *widget, GdkEventMotion *eve
 	gtk_window_move(GTK_WINDOW(si->window), x, y );
 	gtk_zoomed_update(GTK_ZOOMED(si->zoomed));
 	
+	
+	
+	Color c;
+	sampler_get_color_sample(si->gs->sampler, &c);
+		
+	
+		
+	struct ColorObject* color_object;
+	color_object = color_list_new_color_object(si->gs->colors, &c);
+		
+	gchar* text = 0;
+	gchar** source_array;
+	gsize source_array_size;
+	if ((source_array = g_key_file_get_string_list(si->gs->settings, "Converter", "Names", &source_array_size, 0))){
+		if (source_array_size>0){	
+			 converter_get_text(source_array[0], color_object, 0, si->gs->lua, &text);
+		}					
+		g_strfreev(source_array);
+	}
+	color_object_release(color_object);
+	
+	gtk_color_set_color(GTK_COLOR(si->color_widget), &c, text);
+	
+	if (text){
+		//gtk_label_set_text(GTK_LABEL(si->color_code), text);
+		g_free(text);
+	}else{
+		//gtk_label_set_text(GTK_LABEL(si->color_code), "");
+	}
+	
 	return TRUE;
 }
 
@@ -132,11 +168,14 @@ static gboolean status_icon_scroll_event(GtkWidget *widget, GdkEventScroll *even
 static void status_icon_activate(GtkWidget *widget, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
 	
+	si->release_mode = true;
+	
+	GdkCursor* cursor;
+	cursor = gdk_cursor_new(GDK_TCROSS);
+	
 	gtk_zoomed_set_zoom(GTK_ZOOMED(si->zoomed), g_key_file_get_double_with_default(si->gs->settings, "Zoom", "Zoom", 2));
 	
 	gtk_widget_show(si->fake_window);
-	gdk_pointer_grab(si->fake_window->window, FALSE, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, GDK_CURRENT_TIME);
-	
 	GdkEventMotion event;
 	
 
@@ -150,51 +189,78 @@ static void status_icon_activate(GtkWidget *widget, gpointer user_data){
 	status_icon_motion_notify(si->window, &event, si);
 	gtk_widget_show(si->window);
 	
-	GdkCursor* cursor;
-	cursor = gdk_cursor_new(GDK_TCROSS);
-	gdk_window_set_cursor(si->fake_window->window, cursor);
+
+	//gdk_window_set_cursor(si->fake_window->window, cursor);
+	
+	
+	gdk_pointer_grab(si->fake_window->window, FALSE, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, cursor, GDK_CURRENT_TIME);
+	gdk_keyboard_grab(si->fake_window->window, FALSE, GDK_CURRENT_TIME);
+	
 	gdk_cursor_destroy(cursor);
-
 }
-
 
 
 static gboolean status_icon_button_release(GtkWidget *widget, GdkEventButton *event, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
 	
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
-	
-		Color c;
-		sampler_get_color_sample(si->gs->sampler, &c);
+		if (si->release_mode){
+			Color c;
+			sampler_get_color_sample(si->gs->sampler, &c);
 		
-		struct ColorObject* color_object;
-		color_object = color_list_new_color_object(si->gs->colors, &c);
+			struct ColorObject* color_object;
+			color_object = color_list_new_color_object(si->gs->colors, &c);
 		
-		gchar** source_array;
-		gsize source_array_size;
-		if ((source_array = g_key_file_get_string_list(si->gs->settings, "Converter", "Names", &source_array_size, 0))){
-			if (source_array_size>0){	
-				converter_get_clipboard(source_array[0], color_object, 0, si->gs->lua);
-			}					
-			g_strfreev(source_array);
+			gchar** source_array;
+			gsize source_array_size;
+			if ((source_array = g_key_file_get_string_list(si->gs->settings, "Converter", "Names", &source_array_size, 0))){
+				if (source_array_size>0){	
+					converter_get_clipboard(source_array[0], color_object, 0, si->gs->lua);
+				}					
+				g_strfreev(source_array);
+			}
+			color_object_release(color_object);
 		}
-		color_object_release(color_object);
-	
-		gdk_pointer_ungrab(GDK_CURRENT_TIME);
 		
+		gdk_pointer_ungrab(GDK_CURRENT_TIME);
+		gdk_keyboard_ungrab(GDK_CURRENT_TIME);
+	
 		gtk_widget_hide(si->fake_window);
 		gtk_widget_hide(si->window);
-		
-		g_key_file_set_double(si->gs->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(si->zoomed)));
 	
+		g_key_file_set_double(si->gs->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(si->zoomed)));
 	}
 	
 }
 
 
+
+static gboolean status_icon_key_up (GtkWidget *widget, GdkEventKey *event, gpointer user_data){
+	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
+	
+	GdkEventButton event2;
+	
+	switch(event->keyval){
+	case GDK_Escape:
+		event2.type = GDK_BUTTON_RELEASE;
+		event2.button = 1;
+		status_icon_button_release(widget, &event2, user_data);
+		return TRUE;
+		break;
+	default:
+		if (main_pick_color(si->gs, event)){
+			si->release_mode = false;	//key pressed and color picked, disable copy on mouse button release
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
 void status_icon_set_visible(struct uiStatusIcon* si, bool visible){
 	if (visible==false){
 		gdk_pointer_ungrab(GDK_CURRENT_TIME);
+		gdk_keyboard_ungrab(GDK_CURRENT_TIME);
+		
 		gtk_widget_hide(si->fake_window);
 		gtk_widget_hide(si->window);
 	}
@@ -219,9 +285,26 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs){
 	gtk_window_set_decorated(GTK_WINDOW(si->window), FALSE);
 	gtk_widget_set_size_request(si->window, -1, -1);
 	
+	GtkWidget* vbox = gtk_vbox_new(0, 0);
+	gtk_container_add (GTK_CONTAINER(si->window), vbox);
+	gtk_widget_show(vbox);
+	
 	si->zoomed = gtk_zoomed_new();
-	gtk_container_add (GTK_CONTAINER(si->window), si->zoomed);
 	gtk_widget_show(si->zoomed);
+	gtk_box_pack_start(GTK_BOX(vbox), si->zoomed, FALSE, FALSE, 0);
+	
+	si->color_widget = gtk_color_new();
+	gtk_widget_show(si->color_widget);
+	gtk_box_pack_start(GTK_BOX(vbox), si->color_widget, TRUE, TRUE, 0);
+	
+	
+	/*GtkWidget* hbox = gtk_hbox_new(0, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
+	gtk_widget_show(hbox);
+
+	si->color_code = gtk_label_new("");
+	gtk_widget_show(si->color_code);
+	gtk_box_pack_start(GTK_BOX(hbox), si->color_code, FALSE, TRUE, 0);*/
 	
 	
 	GtkStatusIcon *status_icon = gtk_status_icon_new();
@@ -233,8 +316,8 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs){
 	g_signal_connect(G_OBJECT(si->fake_window), "motion-notify-event", G_CALLBACK(status_icon_motion_notify), si);
 	g_signal_connect(G_OBJECT(si->fake_window), "scroll_event", G_CALLBACK(status_icon_scroll_event), si);
 	g_signal_connect(G_OBJECT(si->fake_window), "button-release-event", G_CALLBACK(status_icon_button_release), si);
+	g_signal_connect(G_OBJECT(si->fake_window), "key_press_event", G_CALLBACK (status_icon_key_up), si);
 
-	
 	si->status_icon = status_icon;
 	
 	//gtk_status_icon_set_visible (statusIcon, TRUE);

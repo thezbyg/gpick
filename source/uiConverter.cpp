@@ -85,6 +85,43 @@ static int converter_get_result(const gchar* function, struct ColorObject* color
 	return -1;
 }
 
+void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L, gchar** out_text){
+	stringstream text(ios::out);
+
+	int first=true;
+	
+	struct ColorList *color_list = color_list_new(NULL);
+	if (palette_widget){
+		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
+	}else{
+		color_list_add_color_object(color_list, color_object, 1);
+	}
+
+	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+	
+		gchar* converted;
+	
+		if (converter_get_result(function, *i, L, &converted)==0){
+			if (first){
+				text<<converted;
+				first=false;
+			}else{
+				text<<endl<<converted;
+			}
+			g_free(converted);
+		}
+	}
+	
+	color_list_destroy(color_list);
+	
+	if (first!=true){
+		*out_text = g_strdup(text.str().c_str());
+	}else{
+		*out_text = 0;
+	}
+}
+
+
 void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L){
 	stringstream text(ios::out);
 
