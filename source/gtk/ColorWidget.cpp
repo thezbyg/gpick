@@ -117,7 +117,7 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 		cairo_text_extents(cr, ns->text, &extends);
 	
 		cairo_set_source_rgb(cr, ns->text_color.rgb.red, ns->text_color.rgb.green, ns->text_color.rgb.blue);
-		cairo_move_to(cr, widget->style->xthickness, widget->allocation.height/2 + extends.height/2);
+		cairo_move_to(cr, widget->style->xthickness, (widget->allocation.height + extends.height)/2);
 		cairo_show_text(cr, ns->text);
 	}
 	

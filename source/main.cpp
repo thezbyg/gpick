@@ -26,6 +26,7 @@
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
 #include "gtk/ColorComponent.h"
+#include "gtk/ColorWidget.h"
 
 #include "uiListPalette.h"
 #include "uiUtilities.h"
@@ -56,7 +57,8 @@ typedef struct MainWindow{
 	GtkWidget *swatch_display;
 	GtkWidget *zoomed_display;
 	GtkWidget *color_list;
-
+	GtkWidget *color_code;
+	
 	GtkWidget* hue_line;
 	GtkWidget* saturation_line;
 	GtkWidget* value_line;
@@ -194,30 +196,42 @@ destroy( GtkWidget *widget, gpointer data )
 
 
 
-static gboolean updateMainColorTimer( gpointer data ){
-	MainWindow* window=(MainWindow*)data;
 
-	if (gtk_window_is_active(GTK_WINDOW(window->window))){
-
-		Color c;
-		sampler_get_color_sample(window->gs->sampler, &c);
-		//sample_color(&c);
-
-		gtk_swatch_set_main_color(GTK_SWATCH(window->swatch_display), &c);
-
-		gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
-	}
-
-	return TRUE;
-}
 
 static gboolean updateMainColor( gpointer data ){
 	MainWindow* window=(MainWindow*)data;
 
 	Color c;
 	sampler_get_color_sample(window->gs->sampler, &c);
+	
+	
+	gchar* text = 0;
+	struct ColorObject* color_object;
+	color_object = color_list_new_color_object(window->gs->colors, &c);
+	
+	gchar** source_array;
+	gsize source_array_size;
+	if ((source_array = g_key_file_get_string_list(window->gs->settings, "Converter", "Names", &source_array_size, 0))){
+		if (source_array_size>0){	
+			converter_get_text(source_array[0], color_object, 0, window->gs->lua, &text);
+		}					
+		g_strfreev(source_array);
+	}
+	color_object_release(color_object);
+	
+	gtk_color_set_color(GTK_COLOR(window->color_code), &c, text);
+	if (text) g_free(text);
+	
 	gtk_swatch_set_main_color(GTK_SWATCH(window->swatch_display), &c);	gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
 	
+	return TRUE;
+}
+
+static gboolean updateMainColorTimer( gpointer data ){
+	MainWindow* window=(MainWindow*)data;
+	if (gtk_window_is_active(GTK_WINDOW(window->window))){
+		updateMainColor(window);
+	}
 	return TRUE;
 }
 
@@ -1379,7 +1393,7 @@ int main(int argc, char **argv){
 
     //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
 
-    GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame;
+    GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame,*vbox2;
     int table_y;
 
     GtkWidget* vbox_main = gtk_vbox_new(FALSE, 0);
@@ -1433,13 +1447,18 @@ int main(int argc, char **argv){
 				}
 
 			frame = gtk_frame_new("Zoomed area");
-			gtk_box_pack_start (GTK_BOX(vbox), frame, FALSE, FALSE, 0);
+			gtk_box_pack_start (GTK_BOX(vbox), frame, FALSE, FALSE, 5);
 
-				widget = gtk_zoomed_new();
-				gtk_container_add (GTK_CONTAINER(frame), widget);
-				//gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
-				//g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_active_color_changed), window);
-				window->zoomed_display = widget;
+				vbox2 = gtk_vbox_new(FALSE, 0);
+				gtk_container_add (GTK_CONTAINER(frame), vbox2);
+				
+					window->zoomed_display = gtk_zoomed_new();
+					gtk_box_pack_start (GTK_BOX(vbox2), window->zoomed_display, FALSE, FALSE, 0);
+
+					window->color_code = gtk_color_new();
+					gtk_box_pack_start (GTK_BOX(vbox2), window->color_code, TRUE, TRUE, 0);	
+					
+
 
 	//window->expanderMain=gtk_expander_new("");
 	//gtk_expander_set_expanded(GTK_EXPANDER(window->expanderMain), g_key_file_get_boolean_with_default(window->gs->settings, "Expander", "Main", FALSE));
