@@ -17,9 +17,10 @@ sources = []
 
 if 'UNIQUE_PC' in local_env:
 	sources.append('Unique.cpp')
-	
-if 'DBUSGLIB_PC' in local_env:
+elif 'DBUSGLIB_PC' in local_env:
 	sources.append('UniqueDBus.cpp')
+else:
+	sources.append('UniqueDummy.cpp')
 
 objects = local_env.Object(source = [sources])
 

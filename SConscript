@@ -1,4 +1,22 @@
-#!/usr/bin/env pythonimport osimport stringimport sysimport tools.gpickenv = Environment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = tools.gpick.WriteNsisVersion, suffix = ".nsi")})vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))vars.Add('DESTDIR', 'Directory to install under', '/usr/local')vars.Add('DEBARCH', 'Debian package architecture', 'i386')vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)vars.Update(env)v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))v.Add('GPICK_BUILD_VERSION', '', '0.0')
+#!/usr/bin/env python
+
+import os
+import string
+import sys
+
+import tools.gpick
+
+env = Environment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = tools.gpick.WriteNsisVersion, suffix = ".nsi")})
+
+vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
+vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
+vars.Add('DEBARCH', 'Debian package architecture', 'i386')
+vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)
+vars.Add('WITH_DBUSGLIB', 'Compile with DBus support', True)
+vars.Update(env)
+
+v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
+v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
 
 tools.gpick.GetVersionInfo(env)
@@ -24,7 +42,7 @@ if not env.GetOption('clean'):
 	
 	if env['WITH_UNIQUE']==True:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
-	else:
+	elif env['WITH_DBUSGLIB']==True:
 		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76-1'}}
 
 	tools.gpick.ConfirmLibs(conf, env, libs)
@@ -74,7 +92,7 @@ env.Alias(target="nsis", source=[
 env.Alias(target="tar", source=[
 	env.Append(TARFLAGS = ['-z']),
 	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'/,"']),
-	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', tools.gpick.GetSourceFiles(env, "("+tools.gpick.RegexEscape(os.sep)+r"\.)|("+tools.gpick.RegexEscape(os.sep)+r"\.svn$)|(^"+tools.gpick.RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)"))
+	env.Tar('gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', tools.gpick.GetSourceFiles(env, "("+tools.gpick.RegexEscape(os.sep)+r"\.)|("+tools.gpick.RegexEscape(os.sep)+r"\.svn$)|(^"+tools.gpick.RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)"))
 ])
 
 
