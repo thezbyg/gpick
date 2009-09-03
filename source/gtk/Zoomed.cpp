@@ -208,7 +208,8 @@ gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event)
 		gint pixbuf_width = min(150-pixbuf_x, 150);
 		gint pixbuf_height = min(150-pixbuf_y, 150);
 		
-		gdk_draw_pixbuf(widget->window,
+		if (pixbuf_width>0 && pixbuf_height>0)
+			gdk_draw_pixbuf(widget->window,
 					  widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
 					  ns->pixbuf,
 					  pixbuf_x, pixbuf_y,
