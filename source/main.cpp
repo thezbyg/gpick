@@ -34,6 +34,7 @@
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
+#include "uiDialogGenerateScheme.h"
 #include "uiDialogOptions.h"
 #include "uiConverter.h"
 #include "uiStatusIcon.h"
@@ -195,7 +196,23 @@ destroy( GtkWidget *widget, gpointer data )
 
 
 
-
+char* main_get_color_text(GlobalState* gs, Color* color){
+	char* text = 0;
+	struct ColorObject* color_object;
+	color_object = color_list_new_color_object(gs->colors, color);
+	
+	gchar** source_array;
+	gsize source_array_size;
+	if ((source_array = g_key_file_get_string_list(gs->settings, "Converter", "Names", &source_array_size, 0))){
+		if (source_array_size>0){	
+			converter_get_text(source_array[0], color_object, 0, gs->lua, &text);
+		}					
+		g_strfreev(source_array);
+	}
+	color_object_release(color_object);
+	
+	return text;
+}
 
 
 static gboolean updateMainColor( gpointer data ){
@@ -204,7 +221,9 @@ static gboolean updateMainColor( gpointer data ){
 	Color c;
 	sampler_get_color_sample(window->gs->sampler, &c);
 	
+	gchar* text = main_get_color_text(window->gs, &c);
 	
+	/*
 	gchar* text = 0;
 	struct ColorObject* color_object;
 	color_object = color_list_new_color_object(window->gs->colors, &c);
@@ -217,12 +236,13 @@ static gboolean updateMainColor( gpointer data ){
 		}					
 		g_strfreev(source_array);
 	}
-	color_object_release(color_object);
+	color_object_release(color_object);*/
 	
 	gtk_color_set_color(GTK_COLOR(window->color_code), &c, text);
 	if (text) g_free(text);
 	
-	gtk_swatch_set_main_color(GTK_SWATCH(window->swatch_display), &c);	gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
+	gtk_swatch_set_main_color(GTK_SWATCH(window->swatch_display), &c);
+	gtk_zoomed_update(GTK_ZOOMED(window->zoomed_display));
 	
 	return TRUE;
 }
@@ -947,6 +967,13 @@ static void palette_popup_menu_generate(GtkWidget *widget, gpointer data) {
 	color_list_destroy(color_list);
 }
 
+static void palette_popup_menu_generate_scheme(GtkWidget *widget, gpointer data) {
+	MainWindow* window=(MainWindow*)data;	
+	struct ColorList *color_list = color_list_new(NULL);
+	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
+	dialog_generate_scheme_show(GTK_WINDOW(window->window), color_list, window->gs);
+	color_list_destroy(color_list);
+}
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, gpointer ptr) {
 	static GtkWidget *menu=NULL;
@@ -1000,6 +1027,12 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_generate),window);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
+    
+    item = gtk_menu_item_new_with_image ("_Generate scheme...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_generate_scheme),window);
+    gtk_widget_set_sensitive(item, (selected_count <= 1));
+    
 
 
 /*	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());

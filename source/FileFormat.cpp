@@ -38,6 +38,7 @@ struct ChunkHeader{
 #define CHUNK_TYPE_HANDLER_MAP			"handler_map"
 #define CHUNK_TYPE_COLOR_LIST			"color_list"
 #define CHUNK_TYPE_COLOR_POSITIONS		"color_positions"
+#define CHUNK_TYPE_COLOR_ACTIONS		"color_actions"
 
 static int prepare_chunk_header(struct ChunkHeader* header, const char* type, uint64_t size){
 	size_t len=strlen(type);

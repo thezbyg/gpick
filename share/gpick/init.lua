@@ -69,5 +69,13 @@ function gpick_converters_get()
 	table.insert(converters, 'color_css_border_right_color_hex');
 	table.insert(converters, 'color_css_border_bottom_color_hex');
 	table.insert(converters, 'color_css_border_left_hex');
+	
+	if gpick_user_converters_get~=nil then
+		local user_converters = {};
+		user_converters = gpick_user_converters_get(); 
+		for k,v in pairs(user_converters) do table.insert(converters, v) end
+	end;
+	
+
 	return converters;
 end;

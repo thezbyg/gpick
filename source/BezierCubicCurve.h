@@ -16,76 +16,37 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MATHUTIL_H_
-#define MATHUTIL_H_
+#ifndef BEZIERCUBICCURVE_H_
+#define BEZIERCUBICCURVE_H_
 
-#define PI 3.14159265
+namespace math{
+template<typename PT, typename T>
+class BezierCubicCurve{
+public:
 
-float min_float_3(float a, float b, float c);
-
-float max_float_3(float a, float b, float c);
-
-int min_int(int a, int b);
-
-int max_int(int a, int b);
-
-int wrap_int(int x, int a, int b);
-
-float clamp_float(float x, float a, float b);
-
-float wrap_float(float x);
-
-float mix_float(float a, float b, float mix);
-
-int clamp_int(int x, int a, int b);
-
-int abs_int(int a);
-
-float abs_float(float a);
-
-double mix_double(double a, double b, double mix);
-
-
-typedef struct matrix3x3{
-	double m[3][3];
-}matrix3x3;
-
-void matrix3x3_identity(matrix3x3* matrix);
-void matrix3x3_multiply(matrix3x3* matrix1, matrix3x3* matrix2, matrix3x3* result);
-double matrix3x3_determinant(matrix3x3* matrix);
-int matrix3x3_inverse(matrix3x3* matrix, matrix3x3* result);
-void matrix3x3_transpose(matrix3x3* matrix, matrix3x3* result);
-
-typedef struct vector2{
-	float x;
-	float y;
-}vector2;
-
-void vector2_set(vector2* v1, float x, float y);
-
-float vector2_length(vector2* v1);
-
-void vector2_normalize(vector2* v1, vector2* r);
-
-float vector2_dot(vector2* v1, vector2* v2);
-
-
-typedef struct vector3{
-	union{
-		struct{
-			float x;
-			float y;
-			float z;
-		};
-		float m[3];
+	BezierCubicCurve(const PT &p0_, const PT &p1_, const PT &p2_, const PT &p3_):p0(p0_),p1(p1_),p2(p2_),p3(p3_){
 	};
-}vector3;
+	
+	PT operator() (const T &t){
+		T t2 = 1-t;		
+		return p0*(t2*t2*t2) + p1*(3*(t2*t2)*t) + p2*(3*t2*t*t) + p3*(t*t*t);
+	};
+	
+	BezierCubicCurve& operator= (const BezierCubicCurve& curve){
+		p0 = curve.p0;
+		p1 = curve.p1;
+		p2 = curve.p2;
+		p3 = curve.p3;			
+		return *this;
+	};
+	
+	PT p0;
+	PT p1;
+	PT p2;
+	PT p3;
+};
 
-void vector3_set(vector3* vector, float x, float y, float z);
-void vector3_copy(vector3* vector, vector3* result);
 
-float vector3_length(vector3* vector);
+}
 
-void vector3_multiply_matrix3x3(vector3* vector, matrix3x3* matrix, vector3* result );
-
-#endif /* MATHUTIL_H_ */
+#endif /* BEZIERCUBICCURVE_H_ */

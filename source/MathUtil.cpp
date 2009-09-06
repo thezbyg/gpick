@@ -219,6 +219,10 @@ float mix_float(float a, float b, float mix) {
 	return a * (1 - mix) + b * mix;
 }
 
+double mix_double(double a, double b, double mix){
+	return a * (1 - mix) + b * mix;
+}
+
 float wrap_float(float x) {
 	return x - floor(x);
 }

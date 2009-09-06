@@ -29,18 +29,20 @@ struct ColorObject;
 struct ColorObject{
 	uint32_t refcnt;
 	struct dynvSystem* params;
-	std::list<struct ColorObject*> childs;	//color objects depending on current object
+	struct ColorList* childs;	//color objects depending on current object
 	uint32_t position;
 
 	//Color color;
 	struct ColorAction* action;
 	int recalculate;
 	int selected;
+	int visited;
 };
 
 struct ColorObject* color_object_new(struct dynvHandlerMap* handler_map);
 int color_object_release(struct ColorObject* color_object);
 struct ColorObject* color_object_ref(struct ColorObject* color_object);
+
 int color_object_get_color(struct ColorObject* color_object, Color* color);
 int color_object_set_color(struct ColorObject* color_object, Color* color);
 

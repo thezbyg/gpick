@@ -20,3 +20,37 @@
 
 using namespace std;
 
+struct ColorAction* color_action_new(struct dynvHandlerMap* handler_map, const char* name){
+	struct ColorAction* color_action = new struct ColorAction;
+	
+	color_action->refcnt = 0;
+	
+	if (handler_map){
+		color_action->params=dynv_system_create(handler_map);
+		
+		dynv_system_set(color_action->params, "string", "name", (char*)name);
+	}else{
+		color_action->params=NULL;
+	}
+	
+
+	return color_action;
+}
+
+int color_action_release(struct ColorAction* color_action){
+	if (color_action->refcnt){
+		color_action->refcnt--;
+		return -1;
+	}else{
+		if (color_action->params) 
+			dynv_system_release(color_action->params);
+		delete color_action;
+		return 0;
+	}
+}
+
+struct ColorAction* color_action_ref(struct ColorAction* color_action){
+	color_action->refcnt++;
+	return color_action;
+}
+

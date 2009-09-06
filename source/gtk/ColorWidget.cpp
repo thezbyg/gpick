@@ -26,6 +26,12 @@
 G_DEFINE_TYPE (GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
 
 static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event);
+static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *event);
+static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event);
+
+static void gtk_color_finalize(GObject *color_obj);
+
+static GtkWindowClass *parent_class = NULL;
 
 enum {
 	LAST_SIGNAL,
@@ -39,21 +45,32 @@ typedef struct GtkColorPrivate {
 	Color color;
 	Color text_color;
 	gchar* text;
+	
+	bool rounded_rectangle;
+	bool h_center;
 } GtkColorPrivate;
 
 static void gtk_color_class_init(GtkColorClass *color_class) {
 	GObjectClass *obj_class;
 	GtkWidgetClass *widget_class;
+	
+	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(color_class));
 
 	obj_class = G_OBJECT_CLASS(color_class);
 	widget_class = GTK_WIDGET_CLASS(color_class);
 
 	widget_class->expose_event = gtk_color_expose;
+	widget_class->button_release_event = gtk_color_button_release;
+	widget_class->button_press_event = gtk_color_button_press;
+	
+	obj_class->finalize = gtk_color_finalize;
+	
 	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
 }
 
-static void gtk_color_init(GtkColor *swatch) {
-	//gtk_widget_add_events(GTK_WIDGET(swatch), GDK_FOCUS_CHANGE_MASK);
+static void gtk_color_init(GtkColor *color) {
+	gtk_widget_add_events (GTK_WIDGET (color),
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK);
 }
 
 GtkWidget* gtk_color_new(void) {
@@ -64,12 +81,30 @@ GtkWidget* gtk_color_new(void) {
 
 	color_set(&ns->color, 0);
 	ns->text = 0;
+	ns->rounded_rectangle = false;
+	ns->h_center = false;
 
-	//GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
+	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 
 	return widget;
 }
 
+
+static void gtk_color_finalize(GObject *color_obj){
+	
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(color_obj);
+	if (ns->text){
+		g_free(ns->text);
+		ns->text = 0;
+	}
+	
+	G_OBJECT_CLASS(parent_class)->finalize (color_obj);
+}
+
+void gtk_color_get_color(GtkColor* widget, Color* color){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	color_copy(&ns->color, color);
+}
 
 void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text) {
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
@@ -84,49 +119,112 @@ void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text) {
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 
+void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	ns->rounded_rectangle = rounded_rectangle;
+	
+	if (ns->rounded_rectangle)
+		gtk_widget_set_size_request(GTK_WIDGET(widget), 32+GTK_WIDGET(widget)->style->xthickness*2, 48+GTK_WIDGET(widget)->style->ythickness*2);
+
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+
+void gtk_color_set_hcenter(GtkColor* widget, bool hcenter){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	ns->h_center = hcenter;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+
+
+static void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width, double height, double roundness){
+	
+	double strength = 0.3;
+	
+	cairo_move_to(cr, x+roundness, y);
+	cairo_line_to(cr, x+width-roundness, y);
+	cairo_curve_to(cr, x+width-roundness*strength, y, x+width, y+roundness*strength, x+width, y+roundness);
+	cairo_line_to(cr, x+width, y+height-roundness);
+	cairo_curve_to(cr, x+width, y+height-roundness*strength, x+width-roundness*strength, y+height, x+width-roundness, y+height);
+	cairo_line_to(cr, x+roundness, y+height);
+	cairo_curve_to(cr, x+roundness*strength, y+height, x, y+height-roundness*strength, x, y+height-roundness);
+	cairo_line_to(cr, x, y+roundness);
+	cairo_curve_to(cr, x, y+roundness*strength, x+roundness*strength, y, x+roundness, y);
+	cairo_close_path (cr);
+
+}
+
 static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 	
 	GtkStateType state;
 	
-	/*if (GTK_WIDGET_HAS_FOCUS (widget))
+	if (GTK_WIDGET_HAS_FOCUS (widget))
 		state = GTK_STATE_SELECTED;
 	else
-		state = GTK_STATE_ACTIVE;*/
+		state = GTK_STATE_ACTIVE;
 
 	
 	cairo_t *cr;
 
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	
-	//gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
-
 	cr = gdk_cairo_create(widget->window);
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
-
-	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
-	cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
-	cairo_fill(cr);
+	
+	if (ns->rounded_rectangle){
+	
+		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness, 
+			widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, 20);
+			
+		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
+		cairo_fill_preserve(cr);
+		
+		if (GTK_WIDGET_HAS_FOCUS(widget)){
+			cairo_set_source_rgb(cr, widget->style->fg[GTK_STATE_NORMAL].red/65536.0, widget->style->fg[GTK_STATE_NORMAL].green/65536.0, widget->style->fg[GTK_STATE_NORMAL].blue/65536.0);
+			cairo_set_line_width(cr, 3);
+		}else{
+			cairo_set_source_rgb(cr, 0, 0, 0);
+			cairo_set_line_width(cr, 1);
+		}
+		
+		cairo_stroke(cr);
+		
+	}else{
+		cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
+		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
+		cairo_fill(cr);
+	}
 	
 	if (ns->text){
 		cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 14);
 	
-		cairo_text_extents_t extends;
-		cairo_text_extents(cr, ns->text, &extends);
+		cairo_text_extents_t extents;
+		cairo_text_extents(cr, ns->text, &extents);
 	
 		cairo_set_source_rgb(cr, ns->text_color.rgb.red, ns->text_color.rgb.green, ns->text_color.rgb.blue);
-		cairo_move_to(cr, widget->style->xthickness, (widget->allocation.height + extends.height)/2);
+		if (ns->h_center)
+			cairo_move_to(cr, widget->allocation.width/2 - (extents.width/2 + extents.x_bearing), widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
+		else
+			cairo_move_to(cr, widget->style->xthickness, widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
 		cairo_show_text(cr, ns->text);
 	}
 	
 	cairo_destroy(cr);
 	
-	/*if (GTK_WIDGET_HAS_FOCUS(widget)){
-		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
-	}*/
 
+	return FALSE;
+}
+
+
+static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *event){
+	gtk_widget_grab_focus(widget);
+	return FALSE;
+}
+
+static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event){
+	gtk_widget_grab_focus(widget);
 	return FALSE;
 }
 

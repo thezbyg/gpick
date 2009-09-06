@@ -16,24 +16,54 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORACTION_H_
-#define COLORACTION_H_
+#ifndef VECTOR2_H_
+#define VECTOR2_H_
 
-#include "ColorList.h"
-#include "dynv/DynvSystem.h"
+namespace math{
 
-struct ColorAction{
-	uint32_t refcnt;
+template<typename T>
+class Vec2{
+public:
+	Vec2(){
+		x = y = 0;
+	};
+
+	Vec2(const T &x_, const T &y_){
+		x = x_;
+		y = y_;
+	};
 	
-	struct dynvSystem* params;
-	struct ColorList* parents; //color objects which change current action results
-
-	int (*on_apply)(struct ColorAction* color_action, struct ColorObject* color_object);
-
-	void* userdata;
+	Vec2& operator= (const Vec2& v){
+    	x = v.x;
+    	y = v.y;
+    	return *this;	
+	};
+	
+	Vec2 operator* (const Vec2& v){
+    	Vec2 r;
+    	r.x = x * v.x;
+    	r.y = y * v.y;  		
+    	return r;	
+	};
+	
+	Vec2 operator* (const double& v){
+    	Vec2 r;
+    	r.x = x * v;
+    	r.y = y * v;  		
+    	return r;	
+	};
+	
+	Vec2 operator+ (const Vec2& v){
+    	Vec2 r;
+    	r.x = x + v.x;
+    	r.y = y + v.y;  		
+    	return r;	
+	};
+	
+	T x;
+	T y;
 };
 
-struct ColorAction* color_action_new(struct dynvHandlerMap* handler_map, const char* name);
-void color_action_destroy(struct ColorAction* color_action);
+}
 
-#endif /* COLORACTION_H_ */
+#endif /* VECTOR2_H_ */

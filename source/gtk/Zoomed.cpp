@@ -31,6 +31,10 @@ G_DEFINE_TYPE (GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA);
 static gboolean
 gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event);
 
+static void gtk_zoomed_finalize(GObject *zoomed_obj);
+
+static GtkWindowClass *parent_class = NULL;
+
 /*
 static gboolean
 gtk_zoomed_button_release (GtkWidget *widget, GdkEventButton *event);
@@ -59,7 +63,6 @@ typedef struct GtkZoomedPrivate
 	gfloat zoom;
 
 	GdkPixbuf *pixbuf;
-	GdkImage *image;
 
 	vector2 point;
 
@@ -74,12 +77,16 @@ gtk_zoomed_class_init (GtkZoomedClass *zoomed_class)
 	obj_class = G_OBJECT_CLASS (zoomed_class);
 	widget_class = GTK_WIDGET_CLASS (zoomed_class);
 
+	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(zoomed_class));
+	
 	/* GtkWidget signals */
 
 	widget_class->expose_event = gtk_zoomed_expose;
 	/*widget_class->button_release_event = gtk_zoomed_button_release;
 	widget_class->button_press_event = gtk_zoomed_button_press;
 	widget_class->motion_notify_event = gtk_zoomed_motion_notify;*/
+
+	obj_class->finalize = gtk_zoomed_finalize;
 
 	g_type_class_add_private (obj_class, sizeof (GtkZoomedPrivate));
 
@@ -114,11 +121,21 @@ gtk_zoomed_new () {
 
 	ns->zoom=2;
 	ns->pixbuf=0;
-	ns->image=0;
 	ns->point.x=0;
 	ns->point.y=0;
 
 	return widget;
+}
+
+static void gtk_zoomed_finalize(GObject *zoomed_obj){
+	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed_obj);
+
+	if (ns->pixbuf){
+		g_object_unref (ns->pixbuf);
+		ns->pixbuf = 0;
+	}
+	
+	G_OBJECT_CLASS(parent_class)->finalize (zoomed_obj);
 }
 
 void gtk_zoomed_update (GtkZoomed* zoomed) {
