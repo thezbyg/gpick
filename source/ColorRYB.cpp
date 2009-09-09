@@ -89,9 +89,9 @@ void color_rybhue_to_rgb(double hue, Color* color){
 		new bezier(	point(19.0, 0.0), point(22.0, 0.9), point(33.0, 0.9), point(36.0, 0.0) )
 	);
 	
-	color->rgb.red = bezier_eval_at_x(red, hue*36, 0.001),
-	color->rgb.green = bezier_eval_at_x(green, hue*36, 0.001),
-	color->rgb.blue = bezier_eval_at_x(blue, hue*36, 0.001);
+	color->rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
+	color->rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
+	color->rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
 }
 
 double color_ryb_transform_lightness(double hue1, double hue2){

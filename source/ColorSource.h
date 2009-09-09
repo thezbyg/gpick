@@ -15,19 +15,33 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef UISTATUSICON_H_
-#define UISTATUSICON_H_
 
-#include "ColorSource.h"
-#include "GlobalState.h"
-#include <gtk/gtk.h>
+#ifndef COLORSOURCE_H_
+#define COLORSOURCE_H_
 
-struct uiStatusIcon;
+#include "ColorObject.h"
 
-struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSource* color_source);
-void status_icon_set_visible(struct uiStatusIcon* si, bool visible);
-void status_icon_destroy(struct uiStatusIcon* si);
+typedef struct ColorSource{
+	int (*set_color)(ColorSource *source, ColorObject *color);
+	int (*get_color)(ColorSource *source, ColorObject **color);
+	
+	int (*activate)(ColorSource *source);
+	int (*deactivate)(ColorSource *source);
+	
+	int (*init)(ColorSource *source);
+	int (*destroy)(ColorSource *source);
+	
+	void* userdata;
+}ColorSource;
 
+int color_source_init(ColorSource* source);
 
-#endif /* UISTATUSICON_H_ */
+int color_source_activate(ColorSource *source);
+int color_source_deactivate(ColorSource *source);
+
+int color_source_set_color(ColorSource *source, ColorObject *color);
+int color_source_get_color(ColorSource *source, ColorObject *color);
+
+int color_source_destroy(ColorSource* source);
+
+#endif /* COLORSOURCE_H_ */

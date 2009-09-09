@@ -18,9 +18,8 @@
 
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "ColorNames.h"
-#include "gtk/Swatch.h"
 #include "gtk/ColorCell.h"
+#include "ColorSource.h"
 
 #include <sstream>
 #include <iomanip>
@@ -43,6 +42,8 @@ static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gch
 }
 
 static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data) {
+	GlobalState* gs=(GlobalState*)user_data;
+	
 	GtkTreeModel* model;
 	GtkTreeIter iter;
 
@@ -51,11 +52,9 @@ static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path
 
 	struct ColorObject *color_object;
 	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
-	Color c;
-	color_object_get_color(color_object, &c);
-	gtk_swatch_set_active_color(GTK_SWATCH(user_data), &c);
-
-
+	
+	ColorSource* color_source=(ColorSource*)dynv_system_get(gs->params, "ptr", "CurrentColorSource");
+	color_source_set_color(color_source, color_object);
 }
 
 static int palette_list_preview_on_insert(struct ColorList* color_list, struct ColorObject* color_object){
@@ -121,7 +120,7 @@ GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list,
 	return expander;
 }
 
-GtkWidget* palette_list_new(GtkWidget* swatch) {
+GtkWidget* palette_list_new(GlobalState* gs){
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -170,7 +169,7 @@ GtkWidget* palette_list_new(GtkWidget* swatch) {
 
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 
-	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated) , swatch);
+	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated) , gs);
 	
 	gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
 

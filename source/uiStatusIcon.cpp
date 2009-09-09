@@ -21,6 +21,7 @@
 #include "gtk/Zoomed.h"
 #include "gtk/ColorWidget.h"
 #include "main.h"
+#include "ColorPicker.h"
 #include "uiConverter.h"
 #include <gdk/gdkkeysyms.h>
 
@@ -33,6 +34,8 @@ struct uiStatusIcon{
 	GtkWidget* color_widget;
 	
 	GtkStatusIcon* status_icon;
+	
+	ColorSource *color_source;
 	
 	GlobalState* gs;
 	
@@ -248,7 +251,7 @@ static gboolean status_icon_key_up (GtkWidget *widget, GdkEventKey *event, gpoin
 		return TRUE;
 		break;
 	default:
-		if (main_pick_color(si->gs, event)){
+		if (color_picker_key_up(si->color_source, event)){
 			si->release_mode = false;	//key pressed and color picked, disable copy on mouse button release
 			return TRUE;
 		}
@@ -267,7 +270,7 @@ void status_icon_set_visible(struct uiStatusIcon* si, bool visible){
 	gtk_status_icon_set_visible (si->status_icon, visible);
 }
 
-struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs){
+struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSource* color_source){
 	struct uiStatusIcon *si = new struct uiStatusIcon;
 	
 	si->gs = gs;
@@ -319,6 +322,7 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs){
 	g_signal_connect(G_OBJECT(si->fake_window), "key_press_event", G_CALLBACK (status_icon_key_up), si);
 
 	si->status_icon = status_icon;
+	si->color_source = color_source;
 	
 	//gtk_status_icon_set_visible (statusIcon, TRUE);
 	return si;
@@ -332,5 +336,4 @@ void status_icon_destroy(struct uiStatusIcon* si){
 	delete si;
 
 }
-
 

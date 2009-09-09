@@ -34,7 +34,7 @@ static void gtk_color_finalize(GObject *color_obj);
 static GtkWindowClass *parent_class = NULL;
 
 enum {
-	LAST_SIGNAL,
+	ACTIVATED, LAST_SIGNAL,
 };
 
 static guint gtk_color_signals[LAST_SIGNAL] = { };
@@ -66,11 +66,14 @@ static void gtk_color_class_init(GtkColorClass *color_class) {
 	obj_class->finalize = gtk_color_finalize;
 	
 	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
+	
+	gtk_color_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkColorClass, activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 static void gtk_color_init(GtkColor *color) {
 	gtk_widget_add_events (GTK_WIDGET (color),
-			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK);
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_2BUTTON_PRESS);
 }
 
 GtkWidget* gtk_color_new(void) {
@@ -225,6 +228,11 @@ static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *even
 
 static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event){
 	gtk_widget_grab_focus(widget);
+	
+	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
+		g_signal_emit(widget, gtk_color_signals[ACTIVATED], 0);
+	}
+	
 	return FALSE;
 }
 

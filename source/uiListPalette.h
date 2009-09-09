@@ -22,8 +22,10 @@
 #include <gtk/gtk.h>
 #include "ColorObject.h"
 #include "ColorList.h"
+#include "GlobalState.h"
 
-GtkWidget* palette_list_new(GtkWidget* swatch);
+
+GtkWidget* palette_list_new(GlobalState* gs);
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
 
 GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);

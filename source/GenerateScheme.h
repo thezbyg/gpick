@@ -16,13 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGGENERATESCHEME_H_
-#define UIDIALOGGENERATESCHEME_H_
+#ifndef GENERATESCHEME_H_
+#define GENERATESCHEME_H_
 
-#include <gtk/gtk.h>
-#include "ColorList.h"
+#include "ColorSource.h"
 #include "GlobalState.h"
 
-void dialog_generate_scheme_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs);
+#include <gtk/gtk.h>
 
-#endif /* UIDIALOGGENERATESCHEME_H_ */
+ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **widget);
+
+#endif /* GENERATESCHEME_H_ */

@@ -15,19 +15,41 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef UISTATUSICON_H_
-#define UISTATUSICON_H_
 
 #include "ColorSource.h"
-#include "GlobalState.h"
-#include <gtk/gtk.h>
 
-struct uiStatusIcon;
+int color_source_init(ColorSource* source){
+	source->set_color = 0;
+	source->get_color = 0;
+	source->activate = 0;
+	source->deactivate = 0;
+	source->destroy = 0;
+	source->userdata = 0;
+	return 0;
+}
 
-struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSource* color_source);
-void status_icon_set_visible(struct uiStatusIcon* si, bool visible);
-void status_icon_destroy(struct uiStatusIcon* si);
+int color_source_activate(ColorSource *source){
+	if (source->activate) return source->activate(source);
+	return -1;
+}
 
+int color_source_deactivate(ColorSource *source){
+	if (source->deactivate) return source->deactivate(source);
+	return -1;
+}
 
-#endif /* UISTATUSICON_H_ */
+int color_source_set_color(ColorSource *source, ColorObject *color){
+	if (source->set_color) return source->set_color(source, color);
+	return -1;
+}
+
+int color_source_get_color(ColorSource *source, ColorObject **color){
+	if (source->get_color) return source->get_color(source, color);
+	return -1;
+}
+
+int color_source_destroy(ColorSource* source){
+	if (source->destroy) return source->destroy(source);
+	delete source;
+	return 0;
+}
