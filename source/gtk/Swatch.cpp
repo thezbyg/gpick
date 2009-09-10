@@ -37,6 +37,32 @@ static gboolean gtk_swatch_button_release(GtkWidget *swatch, GdkEventButton *eve
 
 static gboolean gtk_swatch_button_press(GtkWidget *node_system, GdkEventButton *event);
 
+enum {
+	TARGET_STRING,
+	TARGET_ROOTWIN,
+	TARGET_COLOR,
+};
+
+static GtkTargetEntry target_list[] = {
+	{ (char*)"application/x-color", 0, TARGET_COLOR },
+	{ (char*)"text/plain", 0, TARGET_STRING },
+	{ (char*)"STRING",     0, TARGET_STRING },
+	{ (char*)"application/x-rootwin-drop", 0, TARGET_ROOTWIN }
+};
+
+static guint n_targets = G_N_ELEMENTS (target_list);
+
+static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time, gpointer data);
+static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint t, gpointer user_data);
+static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, gpointer user_data);
+static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data);
+
+static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
+static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data);
+static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
+static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
+
+
 /*
  static gboolean
  gtk_swatch_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
@@ -94,6 +120,19 @@ gtk_swatch_new(void) {
 	ns->current_color = 1;
 	
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
+	
+	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), target_list, n_targets, GDK_ACTION_COPY);
+	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, target_list, n_targets,	GDK_ACTION_COPY);
+	
+	g_signal_connect (widget, "drag-data-received", G_CALLBACK(drag_data_received), NULL);
+	g_signal_connect (widget, "drag-leave", G_CALLBACK (drag_leave), NULL);
+	g_signal_connect (widget, "drag-motion", G_CALLBACK (drag_motion), NULL);
+	g_signal_connect (widget, "drag-drop", G_CALLBACK (drag_drop), NULL);
+	
+	g_signal_connect (widget, "drag-data-get", G_CALLBACK (drag_data_get), NULL);
+	g_signal_connect (widget, "drag-data-delete", G_CALLBACK (drag_data_delete), NULL);
+	g_signal_connect (widget, "drag-begin", G_CALLBACK (drag_begin), NULL);
+	g_signal_connect (widget, "drag-end", G_CALLBACK (drag_end), NULL);
 
 	return widget;
 }
@@ -284,51 +323,58 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	return FALSE;
 }
 
-static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event) {
-	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
-
+static int swatch_get_color_by_position(gint x, gint y){
 	vector2 a, b;
 	vector2_set(&a, 1, 0);
-	vector2_set(&b, event->x - 75 - widget->style->xthickness, event->y - 75 - widget->style->ythickness);
-	gfloat distance = vector2_length(&b);
+	vector2_set(&b, x - 75, y - 75);
+	float distance = vector2_length(&b);
 	
+	if (distance<20){			//center color
+		return 0;
+	}else if (distance>70){		//outside
+		return -1;			
+	}else{
+		vector2_normalize(&b, &b);
+
+		float angle = acos(vector2_dot(&a, &b));
+		if (b.y < 0)
+			angle = 2 * PI - angle;
+		angle += (PI/6) * 3;
+
+		if (angle < 0)
+			angle += PI * 2;
+		if (angle > 2 * PI)
+			angle -= PI * 2;
+		
+		return 1 + (int) floor(angle / ((PI*2) / 6));
+	}
+}
+
+static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event) {
+	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+	
+	int new_color = swatch_get_color_by_position(event->x - widget->style->xthickness, event->y - widget->style->ythickness);
+
 	gtk_widget_grab_focus(widget);
 
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
-		if (distance>20 && distance<70){
+		if (new_color>0){
 			g_signal_emit(widget, gtk_swatch_signals[COLOR_ACTIVATED], 0);
 		}
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
-
-
-		if (distance<20){
-			gdk_pointer_grab(widget->window, TRUE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
-		}else if (distance>70){
+		if (new_color==0){
+			gdk_pointer_grab(widget->window, FALSE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
+		}else if (new_color<0){
 			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
 		}else{
-			vector2_normalize(&b, &b);
+			if (new_color != ns->current_color){
+				ns->current_color = new_color;
 
-			float angle = acos(vector2_dot(&a, &b));
-			if (b.y < 0)
-				angle = 2 * PI - angle;
-			angle += (PI/6) * 3;
-
-			if (angle < 0)
-				angle += PI * 2;
-			if (angle > 2 * PI)
-				angle -= PI * 2;
-
-			//printf("%f %d\n",angle,(int)floor(angle/((PI*2)/6)));
-
-
-
-			ns->current_color = 1 + (int) floor(angle / ((PI*2) / 6));
-
-			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
-			
-			gtk_widget_queue_draw(GTK_WIDGET(widget));
+				g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
+				
+				gtk_widget_queue_draw(GTK_WIDGET(widget));
+			}
 		}
-
 	}
 	return FALSE;
 }
@@ -345,3 +391,167 @@ static gboolean gtk_swatch_button_release(GtkWidget *widget, GdkEventButton *eve
 	gdk_pointer_ungrab(event->time);
 	return FALSE;
 }
+
+static int hex2dec(char h){
+	if (h>='0' && h<='9'){
+		return h-'0';
+	}else if (h>='a' && h<='f'){
+		return h-'a'+10;
+	}else if (h>='A' && h<='F'){
+		return h-'A'+10;
+	}
+	return -1;
+}
+
+static void parse_hex6digit(char* str, Color* c){
+
+	int red = hex2dec(str[1])<<4 | hex2dec(str[2]);
+	int green = hex2dec(str[3])<<4 | hex2dec(str[4]);
+	int blue = hex2dec(str[5])<<4 | hex2dec(str[6]);
+	
+	c->rgb.red = red/255.0;
+	c->rgb.green = green/255.0;
+	c->rgb.blue = blue/255.0;	
+}
+
+static void parse_hex3digit(char* str, Color* c){
+
+	int red = hex2dec(str[1]);
+	int green = hex2dec(str[2]);
+	int blue = hex2dec(str[3]);
+	
+	c->rgb.red = red/15.0;
+	c->rgb.green = green/15.0;
+	c->rgb.blue = blue/15.0;	
+}
+
+static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time, gpointer data){
+	bool success = false;
+
+	if ((selection_data != NULL) && (selection_data->length >= 0)){
+		
+		int new_color = swatch_get_color_by_position(x - widget->style->xthickness, y - widget->style->ythickness);
+		if (new_color>0) {
+
+			context->action = GDK_ACTION_COPY;
+
+			switch (target_type){
+			case TARGET_STRING:
+				{
+					gchar* data = (gchar*)selection_data->data;
+					if (data[selection_data->length]!=0) break;	//not null terminated
+					
+					Color color;
+					GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+					
+					if (g_regex_match_simple("^#[\\dabcdef]{6}$", data, GRegexCompileFlags(G_REGEX_MULTILINE | G_REGEX_CASELESS), G_REGEX_MATCH_NOTEMPTY)){
+						parse_hex6digit( data, &color);					
+						color_copy(&color, &ns->color[new_color]);
+						gtk_widget_queue_draw(widget);					
+					}else if (g_regex_match_simple("^#[\\dabcdef]{3}$", data, GRegexCompileFlags(G_REGEX_MULTILINE | G_REGEX_CASELESS), G_REGEX_MATCH_NOTEMPTY)){
+						parse_hex3digit( data, &color);
+						color_copy(&color, &ns->color[new_color]);
+						gtk_widget_queue_draw(widget);	
+					}
+				}
+				success = true;
+				break;
+				
+			case TARGET_COLOR:
+				{
+					guint16* data = (guint16*)selection_data->data;
+
+					Color color;
+					GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+
+					color.rgb.red = data[0] / (double)0xFFFF;
+					color.rgb.green = data[1] / (double)0xFFFF;				
+					color.rgb.blue = data[2] / (double)0xFFFF;
+
+					
+					color_copy(&color, &ns->color[new_color]);
+					gtk_widget_queue_draw(widget);	
+				}
+				success = true;
+				break;	
+				
+			default:
+				g_assert_not_reached ();
+			}
+		}
+	}
+	gtk_drag_finish (context, success, false, time);
+}
+
+
+static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint t, gpointer user_data){
+	return  FALSE;
+}
+
+
+static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, gpointer user_data){
+}
+
+
+static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data){
+	
+	GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
+	
+	if (target != GDK_NONE){
+		gtk_drag_get_data(widget, context, target, time);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+
+
+
+static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
+}
+
+static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data){
+
+	g_assert (selection_data != NULL);
+	
+	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+	Color color;
+	color_copy(&ns->color[ns->current_color], &color);
+	
+	switch (target_type){
+	case TARGET_STRING:
+		{
+			char text[8];
+			snprintf(text, 8, "#%02x%02x%02x", int(color.rgb.red*255), int(color.rgb.green*255), int(color.rgb.blue*255));
+			gtk_selection_data_set_text(selection_data, text, 8);
+		}
+		break;
+		
+	case TARGET_COLOR:
+		{
+			guint16 data_color[4];
+
+			data_color[0] = int(color.rgb.red * 0xFFFF);
+			data_color[1] = int(color.rgb.green * 0xFFFF);
+			data_color[2] = int(color.rgb.blue * 0xFFFF);
+			data_color[3] = 0xffff;
+			
+			gtk_selection_data_set (selection_data, gdk_atom_intern ("application/x-color", TRUE), 16, (guchar *)data_color, 8);
+		}
+		break;
+
+	case TARGET_ROOTWIN:
+		g_print ("Dropped on the root window!\n");
+		break;
+
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
+}
+
+static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
+}
+

@@ -43,7 +43,7 @@ if not env.GetOption('clean'):
 	if env['WITH_UNIQUE']==True:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
 	elif env['WITH_DBUSGLIB']==True:
-		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76-1'}}
+		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76'}}
 
 	tools.gpick.ConfirmLibs(conf, env, libs)
 	

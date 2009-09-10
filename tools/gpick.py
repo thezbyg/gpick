@@ -7,6 +7,7 @@ import re
 import string
 import sys
 import glob
+import subprocess
 
 from SCons.Script import *
 from SCons.Script.SConscript import SConsEnvironment
@@ -64,13 +65,20 @@ def GetSourceFiles(env, dir_exclude_pattern, file_exclude_pattern):
 	return files
 	
 def GetVersionInfo(env):
-	revision = os.popen('svnversion -n %s' % env.GetLaunchDir() ).read()
-	revision=revision.replace(':','.')
-	revision=revision.replace('P','')
-	revision=revision.replace('S','')
+	try:
+		svn_revision = subprocess.Popen(['svnversion', '-n',  env.GetLaunchDir()], shell=False, stdout=subprocess.PIPE).communicate()[0]
+		svn_revision = str(svn_revision)
+		if svn_revision=="exported":
+			svn_revision="0"
+		svn_revision=svn_revision.replace(':','.')
+		svn_revision=svn_revision.rstrip('PSM')
+		revision=svn_revision;
+	except OSError, e:
+		revision = '0'
+
 	env.Replace(GPICK_BUILD_REVISION = revision,
 		GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),
-		GPICK_BUILD_TIME =  time.strftime ("%H:%M:%S"));		
+		GPICK_BUILD_TIME =  time.strftime ("%H:%M:%S"));	
 
 def RegexEscape(str):
 	return str.replace('\\', '\\\\')
