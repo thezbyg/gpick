@@ -17,6 +17,7 @@
  */
 
 #include "ColorPicker.h"
+#include "DragDrop.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -566,6 +567,31 @@ static int source_deactivate(struct Arguments *args){
 	return 0;
 }
 
+
+static struct ColorObject* get_color_object(struct DragDrop* dd){
+	struct Arguments* args=(struct Arguments*)dd->userdata;
+	Color c;
+	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
+	struct ColorObject* colorobject = color_object_new(dd->handler_map);
+	color_object_set_color(colorobject, &c);
+	return colorobject;	
+}
+
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y){
+	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
+	Color c;
+	color_object_get_color(colorobject, &c);
+	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &c);
+	return 0;
+}
+
+static bool test_at(struct DragDrop* dd, int x, int y){
+	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
+	if (color_index>0) return true;
+	return false;
+}
+
+
 ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args=new struct Arguments;
 
@@ -602,6 +628,18 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 
 			gtk_swatch_set_active_index(GTK_SWATCH(widget), g_key_file_get_integer_with_default(args->gs->settings, "Swatch", "Active Color", 1));
 			args->swatch_display = widget;
+			
+			gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+			gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+
+			struct DragDrop dd;
+			dd.userdata = args;
+			dd.get_color_object = get_color_object;
+			dd.set_color_object_at = set_color_object_at;
+			dd.test_at = test_at;
+			dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+			
+			dragdrop_widget_attach(widget, &dd);
 
 			{
 				gsize size;

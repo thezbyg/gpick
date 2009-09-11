@@ -17,6 +17,7 @@
  */
 
 #include "GenerateScheme.h"
+#include "DragDrop.h"
 
 #include "uiUtilities.h"
 #include "uiConverter.h"
@@ -257,6 +258,20 @@ static int source_deactivate(struct Arguments *args){
 	return 0;
 }
 
+static struct ColorObject* get_color_object(struct DragDrop* dd){
+	struct Arguments* args=(struct Arguments*)dd->userdata;
+	Color c;
+	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
+	struct ColorObject* colorobject = color_object_new(dd->handler_map);
+	color_object_set_color(colorobject, &c);
+	return colorobject;	
+}
+
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y){
+	
+	
+}
+
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args=new struct Arguments;
 
@@ -275,6 +290,12 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	args->color_previews = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, TRUE, TRUE, 5);
 	
+	struct DragDrop dd;
+	dd.userdata = args;
+	dd.get_color_object = get_color_object;
+	dd.set_color_object_at = set_color_object_at;
+	dd.test_at = 0;
+	
 	for (int i=0; i<5; ++i){
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
@@ -285,6 +306,12 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 		
 		g_signal_connect (G_OBJECT(widget), "button-press-event", G_CALLBACK (on_color_button_press), args);
 		g_signal_connect (G_OBJECT(widget), "activated", G_CALLBACK (on_color_activate), args);
+			
+		gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+		gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+		
+		dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+		dragdrop_widget_attach(widget, &dd);
 	}
 
 	gint table_y;

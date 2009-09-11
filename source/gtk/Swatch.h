@@ -70,6 +70,8 @@ void gtk_swatch_get_active_color(GtkSwatch* swatch, Color* color);
 
 void gtk_swatch_set_color_count(GtkSwatch* swatch, gint32 colors);
 
+gint gtk_swatch_get_color_at(GtkSwatch* swatch, gint x, gint y);
+
 GType gtk_swatch_get_type(void);
 
 G_END_DECLS

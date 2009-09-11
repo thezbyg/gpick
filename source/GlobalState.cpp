@@ -73,7 +73,7 @@ int global_state_init(GlobalState *gs){
 	}
 	g_free(config_file);
 	
-	//check if user has user_init.lua file, if not, the create empty file
+	//check if user has user_init.lua file, if not, then create empty file
 	gchar *user_init_file = build_config_path("user_init.lua");
 	FILE *user_init = fopen(user_init_file, "r");
 	if (user_init){
