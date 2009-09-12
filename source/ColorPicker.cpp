@@ -633,13 +633,15 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 
 			struct DragDrop dd;
+			dragdrop_init(&dd);
+			
 			dd.userdata = args;
 			dd.get_color_object = get_color_object;
 			dd.set_color_object_at = set_color_object_at;
 			dd.test_at = test_at;
 			dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
 			
-			dragdrop_widget_attach(widget, &dd);
+			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 			{
 				gsize size;

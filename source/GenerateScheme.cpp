@@ -291,11 +291,12 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, TRUE, TRUE, 5);
 	
 	struct DragDrop dd;
+	dragdrop_init(&dd);
+	
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
-	dd.test_at = 0;
-	
+
 	for (int i=0; i<5; ++i){
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
@@ -311,7 +312,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 		gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 		
 		dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
-		dragdrop_widget_attach(widget, &dd);
+		dragdrop_widget_attach(widget, DRAGDROP_SOURCE, &dd);
 	}
 
 	gint table_y;

@@ -66,6 +66,9 @@ typedef struct MainWindow{
 
 	char* current_filename;
 
+	gint x, y;
+	gint width, height;
+
 }MainWindow;
 
 
@@ -94,7 +97,7 @@ delete_event( GtkWidget *widget, GdkEvent *event, gpointer data ){
 
 gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event, gpointer data){
 	MainWindow* window=(MainWindow*)data;
-
+	
 	if (g_key_file_get_boolean_with_default(window->gs->settings, "Window", "Minimize to tray", false)){
 	
 		if (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED){
@@ -113,25 +116,22 @@ gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event, gp
 static gboolean
 on_window_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data){
 	MainWindow* window=(MainWindow*)data;
+	
 
 	if (GTK_WIDGET_VISIBLE(widget)){
-	
-		if (gdk_window_get_state(widget->window) & GDK_WINDOW_STATE_MAXIMIZED) {
+		
+		if (gdk_window_get_state(widget->window) & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_ICONIFIED)) {
 			return FALSE;
 		}
 		
 		gint x, y;
 		gtk_window_get_position(GTK_WINDOW(widget), &x, &y);
-
-		g_key_file_set_integer(window->gs->settings, "Window", "X", x);
-		g_key_file_set_integer(window->gs->settings, "Window", "Y", y);
-
-		//if (GTK_WIDGET_VISIBLE(window->notebook)){
-			g_key_file_set_integer(window->gs->settings, "Window", "Width", event->width);
-			g_key_file_set_integer(window->gs->settings, "Window", "Height", event->height);
-		//}
-	
-	
+		
+		window->x = x;
+		window->y = y;	
+		window->width = event->width;
+		window->height = event->height;	
+		
 	}else return FALSE;
 	
 	return FALSE;
@@ -148,6 +148,11 @@ destroy( GtkWidget *widget, gpointer data )
 	for (int i=0; i<2; ++i){
 		color_source_destroy(window->color_source[i]);
 	}
+	
+	g_key_file_set_integer(window->gs->settings, "Window", "X", window->x);
+	g_key_file_set_integer(window->gs->settings, "Window", "Y", window->y);
+	g_key_file_set_integer(window->gs->settings, "Window", "Width", window->width);
+	g_key_file_set_integer(window->gs->settings, "Window", "Height", window->height);
 	
     gtk_main_quit ();
 }
