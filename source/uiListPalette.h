@@ -32,6 +32,7 @@ GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list,
 
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
+int palette_list_remove_entry(GtkWidget* widget, struct ColorObject *color_object);
 
 gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
 gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);

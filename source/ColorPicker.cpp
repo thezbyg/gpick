@@ -577,7 +577,7 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 	return colorobject;	
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y){
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
 	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
 	Color c;
 	color_object_get_color(colorobject, &c);
@@ -633,7 +633,7 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 
 			struct DragDrop dd;
-			dragdrop_init(&dd);
+			dragdrop_init(&dd, gs);
 			
 			dd.userdata = args;
 			dd.get_color_object = get_color_object;

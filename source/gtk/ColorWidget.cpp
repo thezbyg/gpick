@@ -28,6 +28,7 @@ G_DEFINE_TYPE (GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
 static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event);
 static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *event);
 static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event);
+static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition);
 
 static void gtk_color_finalize(GObject *color_obj);
 
@@ -62,6 +63,7 @@ static void gtk_color_class_init(GtkColorClass *color_class) {
 	widget_class->expose_event = gtk_color_expose;
 	widget_class->button_release_event = gtk_color_button_release;
 	widget_class->button_press_event = gtk_color_button_press;
+	widget_class->size_request = gtk_color_size_request;
 	
 	obj_class->finalize = gtk_color_finalize;
 	
@@ -80,7 +82,7 @@ GtkWidget* gtk_color_new(void) {
 	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR, NULL);
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget), 16+widget->style->xthickness*2, 16+widget->style->ythickness*2);
+	//gtk_widget_set_size_request(GTK_WIDGET(widget), 16+widget->style->xthickness*2, 16+widget->style->ythickness*2);
 
 	color_set(&ns->color, 0);
 	ns->text = 0;
@@ -92,6 +94,20 @@ GtkWidget* gtk_color_new(void) {
 	return widget;
 }
 
+static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	
+	gint width = 32+widget->style->xthickness*2;
+	gint height = 16+widget->style->ythickness*2;
+	
+	if (ns->rounded_rectangle){
+		width += 20;
+		height += 20;
+	}
+	
+	requisition->width = width;
+	requisition->height = height;
+}
 
 static void gtk_color_finalize(GObject *color_obj){
 	
@@ -126,8 +142,8 @@ void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	ns->rounded_rectangle = rounded_rectangle;
 	
-	if (ns->rounded_rectangle)
-		gtk_widget_set_size_request(GTK_WIDGET(widget), 32+GTK_WIDGET(widget)->style->xthickness*2, 48+GTK_WIDGET(widget)->style->ythickness*2);
+	//if (ns->rounded_rectangle)
+	//	gtk_widget_set_size_request(GTK_WIDGET(widget), 32+GTK_WIDGET(widget)->style->xthickness*2, 48+GTK_WIDGET(widget)->style->ythickness*2);
 
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }

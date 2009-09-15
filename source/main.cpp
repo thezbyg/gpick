@@ -756,6 +756,11 @@ int color_list_on_delete_selected(struct ColorList* color_list){
 	return 0;
 }
 
+int color_list_on_delete(struct ColorList* color_list, struct ColorObject* color_object){
+	palette_list_remove_entry(((MainWindow*)color_list->userdata)->color_list, color_object);
+	return 0;
+}
+
 int color_list_on_clear(struct ColorList* color_list){
 	palette_list_remove_all_entries(((MainWindow*)color_list->userdata)->color_list);
 	return 0;
@@ -870,6 +875,7 @@ int main(int argc, char **argv){
 	window->gs->colors->on_clear = color_list_on_clear;
 	window->gs->colors->on_delete_selected = color_list_on_delete_selected;
 	window->gs->colors->on_get_positions = color_list_on_get_positions;
+	window->gs->colors->on_delete = color_list_on_delete;
 	window->gs->colors->userdata = window;
 	
 	dynv_system_set(window->gs->params, "ptr", "MainWindowStruct", window);

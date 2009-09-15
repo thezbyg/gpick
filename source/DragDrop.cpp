@@ -17,6 +17,8 @@
  */
 
 #include "DragDrop.h"
+#include "gtk/ColorWidget.h"
+#include "main.h"
 
 #include <string.h>
 
@@ -49,7 +51,7 @@ static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_d
 
 static void drag_destroy(GtkWidget *widget, gpointer user_data);
 
-int dragdrop_init(struct DragDrop* dd){
+int dragdrop_init(struct DragDrop* dd, GlobalState *gs){
 	dd->get_color_object = 0;
 	dd->set_color_object_at = 0;
 	dd->test_at = 0;
@@ -58,7 +60,10 @@ int dragdrop_init(struct DragDrop* dd){
 	dd->data_delete = 0;
 	
 	dd->handler_map = 0;
+	dd->color_object = 0;
 	dd->widget = 0;
+	dd->gs = gs;
+	dd->dragwidget = 0;
 	
 	GtkWidget* widget;
 	void* userdata;
@@ -156,7 +161,7 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 			{
 				struct ColorObject* color_object;
 				memcpy(&color_object, selection_data->data, sizeof(struct ColorObject*));
-				dd->set_color_object_at(dd, color_object, x, y);
+				dd->set_color_object_at(dd, color_object, x, y, context->action & GDK_ACTION_MOVE );
 				color_object_release(color_object);
 			}
 			success = true;
@@ -173,11 +178,14 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 					parse_hex6digit( data, &color);					
 				}else if (g_regex_match_simple("^#[\\dabcdef]{3}$", data, GRegexCompileFlags(G_REGEX_MULTILINE | G_REGEX_CASELESS), G_REGEX_MATCH_NOTEMPTY)){
 					parse_hex3digit( data, &color);
+				}else{
+					gtk_drag_finish (context, false, false, time);
+					return;
 				}
 				
 				struct ColorObject* color_object = color_object_new(dd->handler_map);
 				color_object_set_color(color_object, &color);
-				dd->set_color_object_at(dd, color_object, x, y);
+				dd->set_color_object_at(dd, color_object, x, y, context->action & GDK_ACTION_MOVE );
 				color_object_release(color_object);
 			}
 			success = true;
@@ -195,7 +203,7 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 
 				struct ColorObject* color_object = color_object_new(dd->handler_map);
 				color_object_set_color(color_object, &color);
-				dd->set_color_object_at(dd, color_object, x, y);
+				dd->set_color_object_at(dd, color_object, x, y, context->action & GDK_ACTION_MOVE );
 				color_object_release(color_object);
 			}
 			success = true;
@@ -273,8 +281,8 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 	}
 	
 	if (!success){
-		struct ColorObject* color_object = dd->get_color_object(dd);
-	
+		
+		struct ColorObject* color_object = dd->color_object;
 		if (!color_object) return;
 		Color color;
 	
@@ -286,9 +294,15 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 		case TARGET_STRING:
 			{
 				color_object_get_color(color_object, &color);
-				char text[8];
-				snprintf(text, 8, "#%02x%02x%02x", int(color.rgb.red*255), int(color.rgb.green*255), int(color.rgb.blue*255));
-				gtk_selection_data_set_text(selection_data, text, 8);
+				//char text[8];
+				//snprintf(text, 8, "#%02x%02x%02x", int(color.rgb.red*255), int(color.rgb.green*255), int(color.rgb.blue*255));
+				
+				char* text = main_get_color_text(dd->gs, &color);
+				//gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
+				gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
+				g_free(text);
+				
+				//gtk_selection_data_set_text(selection_data, text, 8);
 			}
 			color_object_release(color_object);
 			break;
@@ -323,10 +337,41 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
 	struct DragDrop *dd = (struct DragDrop*)user_data;
 	
+	struct ColorObject* color_object = dd->get_color_object(dd);
+	if (color_object){
+		dd->color_object = color_object_ref(color_object);
+		
+		GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
+		GtkWidget* colorwidget = gtk_color_new();
+		gtk_container_add(GTK_CONTAINER(dragwindow), colorwidget);
+		gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24); 
+		
+		Color color;
+		color_object_get_color(color_object, &color);
+		
+		char* text = main_get_color_text(dd->gs, &color);
+		gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
+		g_free(text);
+		
+		gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
+		gtk_widget_show_all(dragwindow);
+		
+		dd->dragwidget = dragwindow;
+	}
 }
 
 static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
 	struct DragDrop *dd = (struct DragDrop*)user_data;
+	
+	if (dd->color_object){
+		color_object_release(dd->color_object);
+		dd->color_object = 0;
+	}
+	
+	if (dd->dragwidget){
+		gtk_widget_destroy(dd->dragwidget);
+		dd->dragwidget = 0;
+	}
 	
 }
 

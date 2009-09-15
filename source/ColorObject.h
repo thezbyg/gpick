@@ -46,6 +46,6 @@ struct ColorObject* color_object_ref(struct ColorObject* color_object);
 int color_object_get_color(struct ColorObject* color_object, Color* color);
 int color_object_set_color(struct ColorObject* color_object, Color* color);
 
-
+struct ColorObject* color_object_copy(struct ColorObject* color_object);
 
 #endif /* COLOROBJECT_H_ */

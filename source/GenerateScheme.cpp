@@ -267,7 +267,7 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 	return colorobject;	
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y){
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
 	
 	
 }
@@ -291,7 +291,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, TRUE, TRUE, 5);
 	
 	struct DragDrop dd;
-	dragdrop_init(&dd);
+	dragdrop_init(&dd, gs);
 	
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;

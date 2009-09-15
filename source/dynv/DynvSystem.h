@@ -120,7 +120,7 @@ struct dynvVariable* dynv_system_get_var(struct dynvSystem* dynv_system, const c
 int dynv_system_remove(struct dynvSystem* dynv_system, const char* variable_name);
 int dynv_system_remove_all(struct dynvSystem* dynv_system);
 
-
+struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system);
 
 
 int dynv_system_serialize(struct dynvSystem* dynv_system, struct dynvIO* io);

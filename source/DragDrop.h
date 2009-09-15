@@ -21,6 +21,7 @@
 
 #include <gtk/gtk.h>
 #include "ColorObject.h"
+#include "GlobalState.h"
 
 enum DragDropFlags{
 	DRAGDROP_SOURCE = 1<<1,
@@ -32,16 +33,19 @@ struct DragDrop{
 	void* userdata;
 	
 	struct ColorObject* (*get_color_object)(struct DragDrop* dd);
-	int (*set_color_object_at)(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y);
+	int (*set_color_object_at)(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move);
 	bool (*test_at)(struct DragDrop* dd, int x, int y);
 	bool (*data_received)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_get)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_delete)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
 		
+	struct ColorObject* color_object;
 	struct dynvHandlerMap* handler_map;
+	GtkWidget* dragwidget;
+	GlobalState *gs;
 };
 
-int dragdrop_init(struct DragDrop* dd);
+int dragdrop_init(struct DragDrop* dd, GlobalState *gs);
 int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, struct DragDrop *dd);
 
 

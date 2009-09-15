@@ -484,3 +484,31 @@ int dynv_io_reset(struct dynvIO* io) {
 	if (io->reset) return io->reset(io);
 	return -1;
 }
+
+struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system){
+	
+	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(dynv_system);
+	struct dynvSystem* new_dynv = dynv_system_create(handler_map);
+	dynv_handler_map_release(handler_map);
+	
+	void* value;
+	struct dynvVariable *variable, *new_variable;
+	struct dynvHandler* handler;
+	
+	dynvSystem::VariableMap::iterator i;
+	for (i=dynv_system->variables.begin(); i!=dynv_system->variables.end(); ++i){
+		
+		variable = (*i).second;
+		handler = (*i).second->handler;
+		
+		if (handler->get(variable, &value)==0){
+			new_variable = dynv_variable_create(variable->name, handler);
+			new_dynv->variables[new_variable->name] = new_variable;
+			new_variable->handler->create(new_variable);
+			new_variable->handler->set(new_variable, value);
+		}
+	}
+	
+	return new_dynv;
+}
+

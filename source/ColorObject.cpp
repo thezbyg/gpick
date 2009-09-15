@@ -77,3 +77,14 @@ int color_object_set_color(struct ColorObject* color_object, Color* color){
 	return -1;
 }
 
+struct ColorObject* color_object_copy(struct ColorObject* color_object){
+	struct ColorObject* new_color_object = color_object_new(0);
+	new_color_object->params = dynv_system_copy(color_object->params);
+	
+	new_color_object->recalculate = color_object->recalculate;
+	new_color_object->selected = color_object->selected;
+	new_color_object->visited = color_object->visited;
+	
+	return new_color_object;
+}
+
