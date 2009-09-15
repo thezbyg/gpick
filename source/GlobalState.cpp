@@ -25,7 +25,7 @@
 #include "dynv/DynvVarInt32.h"
 #include "dynv/DynvVarColor.h"
 #include "dynv/DynvVarPtr.h"
-
+#include "dynv/DynvVarFloat.h"
 #include <stdlib.h>
 #include <glib/gstdio.h>
 
@@ -106,6 +106,7 @@ int global_state_init(GlobalState *gs){
 	dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
 	dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
 	dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
+	dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
 	gs->params = dynv_system_create(handler_map);
 	
 	//create color list / callbacks must be defined elsewhere

@@ -59,9 +59,7 @@ double bezier_eval_at_x(list<bezier*>& channel, double x, double delta){
 	return 0;
 }
 
-void color_rybhue_to_rgb(double hue, Color* color){
-	list<bezier*> red, green, blue;
-	
+static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<bezier*> &blue){
 	red.push_back(
 		new bezier(	point(0.0, 1.0), point(1.0, 1.0), point(13.0, 1.0), point(14.0, 1.0) )
 	);
@@ -88,6 +86,42 @@ void color_rybhue_to_rgb(double hue, Color* color){
 	blue.push_back(
 		new bezier(	point(19.0, 0.0), point(22.0, 0.9), point(33.0, 0.9), point(36.0, 0.0) )
 	);
+}
+
+int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue){
+	list<bezier*> red, green, blue;
+	color_get_ryb_curves(red, green, blue);
+	
+	double hue = rgb_hue;
+	double d;
+	
+	double delta = 1/3600.0;
+	
+	Color color, color2;
+	for (int limit=100; limit>0; --limit){
+		color.rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
+		color.rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
+		color.rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
+	
+		color_rgb_to_hsv(&color, &color2);
+		
+		d = rgb_hue - color2.hsv.hue;
+		if (fabs(d)<delta){
+			*ryb_hue = hue;
+			return 0;
+		}
+		
+		hue += d/2;
+		if (hue>1) hue=1;
+		else if (hue<0) hue=0;		
+	}
+	*ryb_hue = hue;
+	return -1;
+}
+
+void color_rybhue_to_rgb(double hue, Color* color){
+	list<bezier*> red, green, blue;
+	color_get_ryb_curves(red, green, blue);
 	
 	color->rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
 	color->rgb.green = bezier_eval_at_x(green, hue*36, 0.01),

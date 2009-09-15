@@ -43,6 +43,7 @@ struct DragDrop{
 	struct dynvHandlerMap* handler_map;
 	GtkWidget* dragwidget;
 	GlobalState *gs;
+	void* userdata2;
 };
 
 int dragdrop_init(struct DragDrop* dd, GlobalState *gs);

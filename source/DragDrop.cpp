@@ -224,7 +224,12 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 	struct DragDrop *dd = (struct DragDrop*)user_data;
 	
 	if (!dd->test_at){
-		gdk_drag_status(context, context->action, time);
+		GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
+		if (target){
+			gdk_drag_status(context, context->action, time);
+		}else{
+			gdk_drag_status(context, GdkDragAction(0), time);
+		}
 		return TRUE;
 	}
 
@@ -238,7 +243,7 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 	}else{
 		gdk_drag_status(context, GdkDragAction(0), time);
 	}
-	return  TRUE;
+	return TRUE;
 }
 
 

@@ -74,8 +74,7 @@ static void gtk_color_class_init(GtkColorClass *color_class) {
 }
 
 static void gtk_color_init(GtkColor *color) {
-	gtk_widget_add_events (GTK_WIDGET (color),
-			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_2BUTTON_PRESS);
+	gtk_widget_add_events (GTK_WIDGET (color), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_2BUTTON_PRESS);
 }
 
 GtkWidget* gtk_color_new(void) {

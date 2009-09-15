@@ -49,6 +49,7 @@ struct Arguments{
 	GtkWidget *color_previews;
 	
 	GtkWidget *colors[5];
+	float color_hue[5];
 	int colors_visible;
 	
 	GlobalState* gs;
@@ -114,6 +115,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 		color_hsl_to_rgb(&hsl, &r);
 		
 		struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+		dynv_system_set(color_object->params, "float", "hue", (void*)&hue);
 		color_list_add_color_object(color_list, color_object, 1);
 		
 		hue = wrap_float(hue + (scheme_types[type].turn[step_i%scheme_types[type].turn_types]) / (360.0) 
@@ -139,6 +141,8 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 			
 			text = main_get_color_text(args->gs, &color);
 			
+			args->color_hue[j] = *(float*)dynv_system_get((*i)->params, "float", "hue");
+	
 			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text);
 			if (text) g_free(text);
 			++j;
@@ -268,8 +272,34 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+	struct Arguments* args=(struct Arguments*)dd->userdata;
+	Color c;
+	color_object_get_color(colorobject, &c);
 	
+	double hue;
+	double saturation;
+	double lightness;
 	
+	//hue = 0;
+	
+	Color hsl, hsl_results;
+	color_rgb_to_hsl(&c, &hsl);
+	color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
+	color_rybhue_to_rgb(hue, &c);
+	color_rgb_to_hsl(&c, &hsl_results);
+	
+	saturation = hsl.hsl.saturation * 1/hsl_results.hsl.saturation;
+	lightness = hsl.hsl.lightness - hsl_results.hsl.lightness;
+	
+	hue *= 360.0;
+	saturation *= 100.0;
+	lightness *= 100.0;
+	
+	gtk_range_set_value(GTK_RANGE(args->hue), hue);
+	gtk_range_set_value(GTK_RANGE(args->saturation), saturation);
+	gtk_range_set_value(GTK_RANGE(args->lightness), lightness);
+	
+	return 0;
 }
 
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
@@ -312,7 +342,13 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 		gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 		
 		dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
-		dragdrop_widget_attach(widget, DRAGDROP_SOURCE, &dd);
+		
+		dd.userdata2 = (void*)i;
+		if (i==0){
+			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+		}else{
+			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+		}
 	}
 
 	gint table_y;
