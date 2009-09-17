@@ -868,6 +868,7 @@ int main(int argc, char **argv){
 
 	
 	window->current_filename = 0;
+	window->current_color_source = 0;
 
 	window->gs = new GlobalState;
 	global_state_init(window->gs);
@@ -971,7 +972,7 @@ int main(int argc, char **argv){
 	//gtk_widget_show_all (window->notebook);
 	
 	{
-		window->current_color_source = 0;
+		
 		int page = g_key_file_get_integer_with_default(window->gs->settings, "Notebook", "Page", 0);
 		
 		if (page>1) page=1;
