@@ -16,11 +16,78 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGOPTIONS_H_
-#define UIDIALOGOPTIONS_H_
+#ifndef RECT2_H_
+#define RECT2_H_
 
-#include <gtk/gtk.h>
+namespace math{
+template<typename T>
+class Rect2{
+public:
+	Rect2(){
+		empty=true;
+	};
+	Rect2(const T &x1_, const T &y1_, const T &x2_, const T &y2_):x1(x1_),y1(y1_),x2(x2_),y2(y2_){
+		empty=false;
+	};
+	
+	const Rect2 operator=(const Rect2 &rect){
+		x1 = rect.x1;
+		y1 = rect.y1;
+		x2 = rect.x2;
+		y2 = rect.y2;
+		empty = rect.empty;
+		return *this;
+	};
+	
+	const Rect2 operator+(const Rect2 &rect) const{
 
-void dialog_options_show(GtkWindow* parent, GKeyFile* settings);
+		if (rect.empty) return *this;
+		if (empty) return rect;
+		
+		Rect2 r;
+			
+		if (x1 < rect.x1) r.x1 = x1;
+		else r.x1 = rect.x1;
+		if (y1 < rect.y1) r.y1 = y1;
+		else r.y1 = rect.y1;
 
-#endif /* UIDIALOGOPTIONS_H_ */
+		if (x2 > rect.x2) r.x2 = x2;
+		else r.x2 = rect.x2;
+		if (y2 > rect.y2) r.y2 = y2;
+		else r.y2 = rect.y2;
+		
+		return r;
+	};
+	
+	const Rect2 operator+=(const Rect2 &rect){
+		*this=*this+rect;
+		return *this;
+	};
+	
+	
+	bool isEmpty(){
+		return empty;
+	};
+	
+	T& getX(){
+		return x1;
+	};
+	T& getY(){
+		return y1;
+	};
+	T getWidth(){
+		return x2-x1;
+	};
+	T getHeight(){
+		return y2-y1;
+	};
+	
+private:
+	bool empty;
+	T x1, y1, x2, y2;
+};
+
+
+}
+
+#endif /* RECT2_H_ */

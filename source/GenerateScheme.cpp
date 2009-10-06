@@ -256,25 +256,9 @@ static int source_get_color(struct Arguments *args, ColorObject** color){
 	return 0;
 }
 
-static int source_deactivate(struct Arguments *args){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, true);
-	return 0;
-}
-
-static struct ColorObject* get_color_object(struct DragDrop* dd){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+static int source_set_color(struct Arguments *args, ColorObject* color){
 	Color c;
-	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
-	struct ColorObject* colorobject = color_object_new(dd->handler_map);
-	color_object_set_color(colorobject, &c);
-	return colorobject;	
-}
-
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
-	Color c;
-	color_object_get_color(colorobject, &c);
+	color_object_get_color(color, &c);
 	
 	double hue;
 	double saturation;
@@ -302,12 +286,34 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 	return 0;
 }
 
+static int source_deactivate(struct Arguments *args){
+	color_list_remove_all(args->preview_color_list);
+	calc(args, true, true);
+	return 0;
+}
+
+static struct ColorObject* get_color_object(struct DragDrop* dd){
+	struct Arguments* args=(struct Arguments*)dd->userdata;
+	Color c;
+	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
+	struct ColorObject* colorobject = color_object_new(dd->handler_map);
+	color_object_set_color(colorobject, &c);
+	return colorobject;	
+}
+
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+	struct Arguments* args=(struct Arguments*)dd->userdata;
+	source_set_color(args, colorobject);
+	return 0;
+}
+
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args=new struct Arguments;
 
 	color_source_init(&args->source);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
+	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	
 	GtkWidget *table, *vbox, *hbox, *widget;
@@ -356,14 +362,14 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_box_pack_start(GTK_BOX(vbox), table, FALSE, FALSE, 5);
 	table_y=0;
 		
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hue:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hue:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->hue = gtk_hscale_new_with_range(0, 360, 1);
 	gtk_range_set_value(GTK_RANGE(args->hue), g_key_file_get_double_with_default(gs->settings, "Generate Scheme Dialog", "Hue", 180));
 	g_signal_connect (G_OBJECT (args->hue), "value-changed", G_CALLBACK (update), args);
 	gtk_table_attach(GTK_TABLE(table), args->hue,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->saturation = gtk_hscale_new_with_range(0, 120, 1);
 	gtk_range_set_value(GTK_RANGE(args->saturation), g_key_file_get_double_with_default(gs->settings, "Generate Scheme Dialog", "Saturation", 100));
 	g_signal_connect (G_OBJECT (args->saturation), "value-changed", G_CALLBACK (update), args);
@@ -371,7 +377,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_table_attach(GTK_TABLE(table), args->saturation,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Lightness:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Lightness:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->lightness = gtk_hscale_new_with_range(-50, 80, 1);
 	gtk_range_set_value(GTK_RANGE(args->lightness), g_key_file_get_double_with_default(gs->settings, "Generate Scheme Dialog", "Lightness", 0));
 	g_signal_connect (G_OBJECT (args->lightness), "value-changed", G_CALLBACK (update), args);
@@ -380,7 +386,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	table_y++;
 
 	//table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->gen_type = gtk_combo_box_new_text();
 	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Complementary");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Analogous");

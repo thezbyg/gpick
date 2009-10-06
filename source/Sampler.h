@@ -21,6 +21,9 @@
 #define SAMPLER_H_
 
 #include "Color.h"
+#include "Rect2.h"
+#include "Vector2.h"
+#include "ScreenReader.h"
 
 enum SamplerFalloff{
 	NONE,
@@ -30,20 +33,18 @@ enum SamplerFalloff{
 	EXPONENTIAL,
 };
 
-struct Sampler{
-	int oversample;
-	enum SamplerFalloff falloff;
-	float (*falloff_fnc)(float distance);
-};
+struct Sampler;
 
-struct Sampler* sampler_new();
+struct Sampler* sampler_new(struct ScreenReader* screen_reader);
 void sampler_set_falloff(struct Sampler *sampler, enum SamplerFalloff falloff);
 void sampler_set_oversample(struct Sampler *sampler, int oversample);
 
 enum SamplerFalloff sampler_get_falloff(struct Sampler *sampler);
 int sampler_get_oversample(struct Sampler *sampler);
 
-int sampler_get_color_sample(struct Sampler *sampler, Color* color);
 void sampler_destroy(struct Sampler *sampler);
+
+int sampler_get_color_sample(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Vec2<int>& offset, Color* color);
+void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect);
 
 #endif /* SAMPLER_H_ */

@@ -22,7 +22,8 @@
 
 #include <gtk/gtk.h>
 #include "../Color.h"
-
+#include "../Rect2.h"
+#include "../Vector2.h"
 
 G_BEGIN_DECLS
 
@@ -57,7 +58,8 @@ GtkWidget* gtk_zoomed_new ();
 void gtk_zoomed_set_zoom (GtkZoomed* zoomed, gfloat zoom);
 gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed);
 
-void gtk_zoomed_update (GtkZoomed* zoomed);
+void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Vec2<int>& offset, GdkPixbuf* pixbuf);
+void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect);
 
 GType gtk_zoomed_get_type(void);
 

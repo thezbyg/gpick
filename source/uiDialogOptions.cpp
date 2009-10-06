@@ -23,7 +23,8 @@
 struct Arguments{
 	GtkWidget *minimize_to_tray;
 	GtkWidget *close_to_tray;
-	GtkWidget *start_in_tray;
+	GtkWidget *start_in_tray;
+	GtkWidget *refresh_rate;
 	GKeyFile* settings;
 };
 
@@ -32,11 +33,13 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	gboolean minimize_to_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->minimize_to_tray));
 	gboolean close_to_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->close_to_tray));
 	gboolean start_in_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray));
+	gdouble refresh_rate=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate));
 
 	if (!preview){
 		g_key_file_set_boolean(args->settings, "Window", "Minimize to tray", minimize_to_tray);
 		g_key_file_set_boolean(args->settings, "Window", "Close to tray", close_to_tray);
 		g_key_file_set_boolean(args->settings, "Window", "Start in tray", start_in_tray);	
+		g_key_file_set_double(args->settings, "Sampler", "Refresh rate", refresh_rate);
 	}
 }
 
@@ -67,17 +70,24 @@ void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 
 	args.minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Minimize to tray", false));
-	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	
 	args.close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Close to tray", false));
-	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	args.start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Start in tray", false));
-	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	table_y++;
+	
+	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new("_Refresh rate:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	args.refresh_rate = widget = gtk_spin_button_new_with_range(1, 60, 1);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args.refresh_rate), g_key_file_get_double_with_default(args.settings, "Sampler", "Refresh rate", 30));
+	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hz",0,0.5,0,0),2,3,table_y,table_y+1,GTK_FILL,GTK_FILL,5,0);
 	table_y++;
 
 

@@ -16,11 +16,51 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGOPTIONS_H_
-#define UIDIALOGOPTIONS_H_
 
-#include <gtk/gtk.h>
+#include "ScreenReader.h"
+#include "Rect2.h"
 
-void dialog_options_show(GtkWindow* parent, GKeyFile* settings);
 
-#endif /* UIDIALOGOPTIONS_H_ */
+using namespace math;
+
+struct ScreenReader{
+	GdkPixbuf* pixbuf;
+	Rect2<int> read_area;
+};
+
+struct ScreenReader* screen_reader_new(){
+	struct ScreenReader* screen = new struct ScreenReader;
+	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 75, 75);
+	return screen;
+}
+
+void screen_reader_destroy(struct ScreenReader *screen) {
+	if (screen->pixbuf) g_object_unref(screen->pixbuf);
+	delete screen;
+}
+
+void screen_reader_add_rect(struct ScreenReader *screen, Rect2<int>& rect){
+	screen->read_area += rect;
+}
+
+void screen_reader_reset_rect(struct ScreenReader *screen){
+	screen->read_area = Rect2<int>();
+}
+
+void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update_rect){
+	GdkWindow* root_window = gdk_get_default_root_window();
+	GdkColormap* colormap = gdk_colormap_get_system();
+	
+	int left = screen->read_area.getX();
+	int top = screen->read_area.getY();
+	int width = screen->read_area.getWidth();
+	int height = screen->read_area.getHeight();
+
+	gdk_pixbuf_get_from_drawable(screen->pixbuf, root_window, colormap, left, top, 0, 0, width, height);
+	*update_rect = screen->read_area;
+}
+
+GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen){
+	return screen->pixbuf;
+}
+

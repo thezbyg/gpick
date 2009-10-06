@@ -31,6 +31,7 @@
 typedef struct GlobalState{
 	ColorNames* color_names;
 	struct Sampler* sampler;
+	struct ScreenReader* screen_reader;
 	struct ColorList* colors;
 	struct dynvSystem* params;
 	GKeyFile* settings;

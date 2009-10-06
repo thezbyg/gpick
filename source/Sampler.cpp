@@ -22,35 +22,45 @@
 #include <math.h>
 #include <gdk/gdk.h>
 
+using namespace math;
 
-float sampler_falloff_none(float distance) {
+struct Sampler{
+	int oversample;
+	enum SamplerFalloff falloff;
+	float (*falloff_fnc)(float distance);
+	struct ScreenReader* screen_reader;
+};
+
+static float sampler_falloff_none(float distance) {
 	return 1;
 }
 
-float sampler_falloff_linear(float distance) {
+static float sampler_falloff_linear(float distance) {
 	return 1-distance;
 }
 
-float sampler_falloff_quadratic(float distance) {
+static float sampler_falloff_quadratic(float distance) {
 	return 1-(distance*distance);
 }
 
-float sampler_falloff_cubic(float distance) {
+static float sampler_falloff_cubic(float distance) {
 	return 1-(distance*distance*distance);
 }
 
-float sampler_falloff_exponential(float distance) {
+static float sampler_falloff_exponential(float distance) {
 	return 1/exp(5*distance*distance);
 }
 
-struct Sampler* sampler_new() {
+struct Sampler* sampler_new(struct ScreenReader* screen_reader) {
 	struct Sampler* sampler = new struct Sampler;
 	sampler->oversample=0;
 	sampler_set_falloff(sampler, NONE);
+	sampler->screen_reader = screen_reader;
 	return sampler;
 }
 
 void sampler_destroy(struct Sampler *sampler) {
+	//g_object_unref (sampler->pixbuf);
 	delete sampler;
 }
 
@@ -82,26 +92,41 @@ void sampler_set_oversample(struct Sampler *sampler, int oversample) {
 	sampler->oversample = oversample;
 }
 
-int sampler_get_color_sample(struct Sampler *sampler, Color* color) {
+static void get_pixel(GdkPixbuf *pixbuf, int x, int y, Color* color){
+	int rowstride;
+	guchar *pixels, *p;
+
+	rowstride = gdk_pixbuf_get_rowstride(pixbuf);
+	pixels = gdk_pixbuf_get_pixels(pixbuf);
+	p = pixels + y * rowstride + x * 3;
+
+	color->rgb.red = p[0]/255.0;
+	color->rgb.green = p[1]/255.0;
+	color->rgb.blue = p[2]/255.0;
+}
+
+
+int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<int>& screen_size, Vec2<int>& offset, Color* color) {
 	Color sample;
 	Color result;
 	float divider = 0;
 
 	color_zero(&result);
 
-	GdkWindow* root_window;
-	GdkImage* section;
+	GdkPixbuf* pixbuf = screen_reader_get_pixbuf(sampler->screen_reader);
+
+
+	//GdkWindow* root_window;
+	//GdkImage* section;
 	GdkModifierType state;
 
-	root_window = gdk_get_default_root_window();
+	//root_window = gdk_get_default_root_window();
 
-	int x, y;
+	int x=pointer.x, y=pointer.y;
+	int width=screen_size.x, height=screen_size.y;
 
-	gdk_window_get_pointer(root_window, &x, &y, &state);
-
-	int width, height;
-
-	gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+	//gdk_window_get_pointer(root_window, &x, &y, &state);
+	//gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
 
 	int left, right, top, bottom;
 
@@ -112,17 +137,23 @@ int sampler_get_color_sample(struct Sampler *sampler, Color* color) {
 	width = right - left;
 	height = bottom - top;
 
-	section = gdk_drawable_get_image (root_window, left, top, width, height);
+	//GdkColormap* colormap=gdk_colormap_get_system();
+
+	//section = gdk_drawable_get_image (root_window, left, top, width, height);
+
+	//GdkPixbuf* pixbuf = gdk_pixbuf_get_from_drawable(sampler->pixbuf, root_window, colormap, left, top, 0, 0, width, height);
+
+
 
 	guint32 color_value;
-	GdkColor gdk_color;
+	//GdkColor gdk_color;
 
 	int center_x=x-left;
 	int center_y=y-top;
 
-	GdkColormap* colormap=gdk_colormap_get_system();
 
-	float max_distance = sqrt(2*pow(sampler->oversample, 2));
+
+	float max_distance = 1/sqrt(2*pow(sampler->oversample, 2));
 
 	for (int x=-sampler->oversample; x<=sampler->oversample; ++x){
 		for (int y=-sampler->oversample; y<=sampler->oversample; ++y){
@@ -130,16 +161,18 @@ int sampler_get_color_sample(struct Sampler *sampler, Color* color) {
 			if ((center_x+x<0) || (center_y+y<0)) continue;
 			if ((center_x+x>=width) || (center_y+y>=height)) continue;
 
-			color_value = gdk_image_get_pixel(section, center_x+x, center_y+y);
-			gdk_colormap_query_color(colormap, color_value, &gdk_color);
+			//color_value = gdk_image_get_pixel(section, center_x+x, center_y+y);
+			//gdk_colormap_query_color(colormap, color_value, &gdk_color);
 
-			sample.rgb.red=gdk_color.red/(float)0xFFFF;
+			get_pixel(pixbuf, offset.x + center_x+x, offset.y + center_y+y, &sample);
+
+			/*sample.rgb.red=gdk_color.red/(float)0xFFFF;
 			sample.rgb.green=gdk_color.green/(float)0xFFFF;
-			sample.rgb.blue=gdk_color.blue/(float)0xFFFF;
+			sample.rgb.blue=gdk_color.blue/(float)0xFFFF;*/
 
 			float f;
 			if (sampler->oversample){
-				f = sampler->falloff_fnc(sqrt(x * x + y * y) / max_distance);
+				f = sampler->falloff_fnc(sqrt(x * x + y * y) * max_distance);
 			}else{
 				f = 1;
 			}
@@ -154,16 +187,37 @@ int sampler_get_color_sample(struct Sampler *sampler, Color* color) {
 
 	color_copy(&result, color);
 
-	g_object_unref (section);
+	//g_object_unref (section);
+
 
 	return 0;
 }
 
-enum SamplerFalloff sampler_get_falloff(struct Sampler *sampler)
-{
+enum SamplerFalloff sampler_get_falloff(struct Sampler *sampler){
 	return sampler->falloff;
 }
+
 int sampler_get_oversample(struct Sampler *sampler) {
 	return sampler->oversample;
+}
+
+
+void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect){
+
+
+	int x=pointer.x, y=pointer.y;
+	int width=screen_size.x, height=screen_size.y;
+
+	int left, right, top, bottom;
+
+	left = max_int(0, x - sampler->oversample);
+	right = min_int(width, x + sampler->oversample + 1);
+	top = max_int(0, y - sampler->oversample);
+	bottom = min_int(height, y + sampler->oversample + 1);
+	width = right - left;
+	height = bottom - top;
+
+	*rect = math::Rect2<int>(left, top, right, bottom);
+
 }
 

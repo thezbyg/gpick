@@ -18,7 +18,7 @@
 
 #include "GlobalState.h"
 #include "Paths.h"
-
+#include "ScreenReader.h"
 
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
@@ -55,6 +55,7 @@ int global_state_term(GlobalState *gs){
 	g_key_file_free(gs->settings);
 	color_names_destroy(gs->color_names);
 	sampler_destroy(gs->sampler);
+	screen_reader_destroy(gs->screen_reader);
 	dynv_system_release(gs->params);
 	lua_close(gs->lua);
 	
@@ -84,8 +85,9 @@ int global_state_init(GlobalState *gs){
 	}
 	g_free(user_init_file);
 
+	gs->screen_reader = screen_reader_new();
 
-	gs->sampler = sampler_new();
+	gs->sampler = sampler_new(gs->screen_reader);
 	//create and seed random generator
 	gs->random = random_new("SHR3");
 	gulong seed_value=time(0)|1;

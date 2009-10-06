@@ -25,6 +25,8 @@
 #include "uiConverter.h"
 #include <gdk/gdkkeysyms.h>
 
+using namespace math;
+
 struct uiStatusIcon{
 	GtkWidget* parent;
 	GtkWidget* fake_window;
@@ -41,6 +43,44 @@ struct uiStatusIcon{
 	
 	bool release_mode;
 };
+
+static void status_icon_get_color_sample(struct uiStatusIcon *status_icon, bool updateWidgets, Color* c){
+
+	GdkWindow* root_window;
+	GdkModifierType state;
+	
+	root_window = gdk_get_default_root_window();
+	int x, y;
+	int width, height;
+	gdk_window_get_pointer(root_window, &x, &y, &state);
+	gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+	
+	Vec2<int> pointer(x,y);
+	Vec2<int> window_size(width, height);
+	
+	screen_reader_reset_rect(status_icon->gs->screen_reader);
+	Rect2<int> sampler_rect, zoomed_rect, final_rect;
+
+	sampler_get_screen_rect(status_icon->gs->sampler, pointer, window_size, &sampler_rect);
+	screen_reader_add_rect(status_icon->gs->screen_reader, sampler_rect);
+
+	if (updateWidgets){
+		gtk_zoomed_get_screen_rect(GTK_ZOOMED(status_icon->zoomed), pointer, window_size, &zoomed_rect);
+		screen_reader_add_rect(status_icon->gs->screen_reader, zoomed_rect);
+	}
+		
+	screen_reader_update_pixbuf(status_icon->gs->screen_reader, &final_rect);
+	
+	Vec2<int> offset;
+	
+	offset = Vec2<int>(sampler_rect.getX()-final_rect.getX(), sampler_rect.getY()-final_rect.getY());
+	sampler_get_color_sample(status_icon->gs->sampler, pointer, window_size, offset, c);
+	
+	if (updateWidgets){
+		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
+		gtk_zoomed_update(GTK_ZOOMED(status_icon->zoomed), pointer, window_size, offset, screen_reader_get_pixbuf(status_icon->gs->screen_reader));
+	}
+}
 
 static void status_icon_popup_detach(GtkWidget *attach_widget, GtkMenu *menu){
 	gtk_widget_destroy(GTK_WIDGET(menu));	
@@ -116,13 +156,13 @@ static gboolean status_icon_motion_notify(GtkWidget *widget, GdkEventMotion *eve
 	}
 	
 	gtk_window_move(GTK_WINDOW(si->window), x, y );
-	gtk_zoomed_update(GTK_ZOOMED(si->zoomed));
+	//TODO: gtk_zoomed_update(GTK_ZOOMED(si->zoomed));
 	
 	
 	
 	Color c;
-	sampler_get_color_sample(si->gs->sampler, &c);
-		
+	//sampler_get_color_sample(si->gs->sampler, &c);
+	status_icon_get_color_sample(si, true, &c);
 	
 		
 	struct ColorObject* color_object;
@@ -209,7 +249,8 @@ static gboolean status_icon_button_release(GtkWidget *widget, GdkEventButton *ev
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
 		if (si->release_mode){
 			Color c;
-			sampler_get_color_sample(si->gs->sampler, &c);
+			//sampler_get_color_sample(si->gs->sampler, &c);
+			status_icon_get_color_sample(si, false, &c);
 		
 			struct ColorObject* color_object;
 			color_object = color_list_new_color_object(si->gs->colors, &c);

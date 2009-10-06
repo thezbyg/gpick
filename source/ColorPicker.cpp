@@ -34,6 +34,7 @@
 #include <sstream>
 #include <iostream>
 using namespace std;
+using namespace math;
 
 struct Arguments{
 	ColorSource source;
@@ -64,6 +65,7 @@ struct Arguments{
 	gboolean rotate_swatch;
 	gboolean copy_to_clipboard;
 	gboolean active;
+	guint timeout_source_id;
 	
 	GlobalState* gs;
 	
@@ -75,9 +77,35 @@ static void popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu){
 
 static gboolean updateMainColor( gpointer data ){
 	struct Arguments* args=(struct Arguments*)data;
+	
+	GdkWindow* root_window;
+	GdkModifierType state;
+	
+	root_window = gdk_get_default_root_window();
+	int x, y;
+	int width, height;
+	gdk_window_get_pointer(root_window, &x, &y, &state);
+	gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+	
+	Vec2<int> pointer(x,y);
+	Vec2<int> window_size(width, height);
+	
+	screen_reader_reset_rect(args->gs->screen_reader);
+	Rect2<int> sampler_rect, zoomed_rect, final_rect;
 
+	sampler_get_screen_rect(args->gs->sampler, pointer, window_size, &sampler_rect);
+	screen_reader_add_rect(args->gs->screen_reader, sampler_rect);
+
+	gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed_display), pointer, window_size, &zoomed_rect);
+	screen_reader_add_rect(args->gs->screen_reader, zoomed_rect);
+
+	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
+	
+	Vec2<int> offset;
+	
+	offset = Vec2<int>(sampler_rect.getX()-final_rect.getX(), sampler_rect.getY()-final_rect.getY());
 	Color c;
-	sampler_get_color_sample(args->gs->sampler, &c);
+	sampler_get_color_sample(args->gs->sampler, pointer, window_size, offset, &c);
 	
 	gchar* text = main_get_color_text(args->gs, &c);
 	
@@ -85,7 +113,10 @@ static gboolean updateMainColor( gpointer data ){
 	if (text) g_free(text);
 	
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
-	gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display));
+	
+	
+	offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
+	gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, window_size, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
 	
 	return TRUE;
 }
@@ -555,15 +586,24 @@ static int source_set_color(struct Arguments *args, ColorObject* color){
 	return 0;
 }
 
+static void timer_destroy(struct Arguments *args){
+	args->timeout_source_id = 0;
+}
 
 static int source_activate(struct Arguments *args){
 	args->active = true;
-	g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 66, updateMainColorTimer, args, 0);
+	
+	if (args->timeout_source_id) g_source_remove(args->timeout_source_id);
+		
+		
+	gdouble refresh_rate = g_key_file_get_double_with_default(args->gs->settings, "Sampler", "Refresh rate", 30);
+	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, updateMainColorTimer, args, (GDestroyNotify)timer_destroy);
+	
 	return 0;
 }
 
 static int source_deactivate(struct Arguments *args){
-	args->active =false;
+	args->active = false;
 	return 0;
 }
 
@@ -604,8 +644,9 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	
 	args->active = false;
 	args->gs = gs;
+	args->timeout_source_id = 0;
 	
-	GtkWidget *vbox, *hbox, *hbox2, *widget, *expander, *table, *main_hbox;
+	GtkWidget *vbox, *hbox, *hbox2, *widget, *expander, *table, *main_hbox, *scrolled;
 	int table_y;
 	
 	main_hbox = gtk_hbox_new(FALSE, 5);
@@ -665,10 +706,15 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			args->zoomed_display = gtk_zoomed_new();
 			gtk_box_pack_start (GTK_BOX(vbox), args->zoomed_display, FALSE, FALSE, 0);
 			
-				
+		
+		scrolled = gtk_scrolled_window_new(0, 0);
+		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+		gtk_box_pack_start (GTK_BOX(main_hbox), scrolled, TRUE, TRUE, 0);
+			
 		vbox = gtk_vbox_new(FALSE, 5);
-		gtk_box_pack_start (GTK_BOX(main_hbox), vbox, FALSE, FALSE, 0);
-		//gtk_notebook_append_page(GTK_NOTEBOOK(notebook),vbox,gtk_label_new("Information"));
+		//gtk_box_pack_start (GTK_BOX(main_hbox), vbox, FALSE, FALSE, 0);
+		//gtk_container_add(GTK_CONTAINER(scrolled), vbox);
+		gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), vbox);
 
 			expander=gtk_expander_new("Settings");
 			gtk_expander_set_expanded(GTK_EXPANDER(expander), g_key_file_get_boolean_with_default(args->gs->settings, "Expander", "Settings", FALSE));
@@ -680,22 +726,22 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			//gtk_box_pack_start (GTK_BOX(vbox), table, FALSE, FALSE, 0);
 			gtk_container_add(GTK_CONTAINER(expander), table);
 
-				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Oversample:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Oversample:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 				widget = gtk_hscale_new_with_range (0,16,1);
 				g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (on_oversample_value_changed), args);
 				gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(args->gs->settings, "Sampler", "Oversample", 0));
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
 
-				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Falloff:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Falloff:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 				widget = create_falloff_type_list();
 				gtk_combo_box_set_active(GTK_COMBO_BOX(widget), g_key_file_get_integer_with_default(args->gs->settings, "Sampler", "Falloff", NONE));
 				g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (on_oversample_falloff_changed), args);
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
 
-				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Zoom:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-				widget = gtk_hscale_new_with_range (2,10,0.5);
+				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Zoom:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+				widget = gtk_hscale_new_with_range (2, 15, 0.5);
 				g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (on_zoom_value_changed), args);
 				gtk_range_set_value(GTK_RANGE(widget), g_key_file_get_double_with_default(args->gs->settings, "Zoom", "Zoom", 2));
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -728,21 +774,21 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 				table_y=0;
 				gtk_container_add(GTK_CONTAINER(expander), table);
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hue:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hue:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(hue);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					args->hue_line = widget;
 					table_y++;
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(saturation);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					args->saturation_line = widget;
 					table_y++;
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Value:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Value:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(value);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -759,21 +805,21 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 				gtk_container_add(GTK_CONTAINER(expander), table);
 
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Red:",0,0,0,0) ,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Red:",0,0.5,0,0) ,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(red);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					args->red_line = widget;
 					table_y++;
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Green:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Green:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(green);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					args->green_line = widget;
 					table_y++;
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Blue",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Blue",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_color_component_new(blue);
 					g_signal_connect (G_OBJECT (widget), "color-changed", G_CALLBACK (color_component_change_value), args);
 					gtk_table_attach(GTK_TABLE(table), gtk_widget_aligned_new(widget,1,0,0,0),1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -790,7 +836,7 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 				table_y=0;
 				gtk_container_add(GTK_CONTAINER(expander), table);
 
-					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color name:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color name:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_entry_new();
 					gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					gtk_editable_set_editable(GTK_EDITABLE(widget), FALSE);

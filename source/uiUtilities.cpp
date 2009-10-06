@@ -31,6 +31,14 @@ GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign, gfloat yalign
 	return align;
 }
 
+GtkWidget* gtk_label_mnemonic_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale) {
+	GtkWidget* align = gtk_alignment_new(xalign, yalign, xscale, yscale);
+	GtkWidget* label = gtk_label_new("");
+	gtk_label_set_text_with_mnemonic(GTK_LABEL(label), text);
+	gtk_container_add(GTK_CONTAINER(align), label);
+	return align;
+}
+
 GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale){
 	GtkWidget* align = gtk_alignment_new(xalign, yalign, xscale, yscale);
 	gtk_container_add(GTK_CONTAINER(align), widget);

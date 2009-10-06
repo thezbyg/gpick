@@ -16,11 +16,24 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGOPTIONS_H_
-#define UIDIALOGOPTIONS_H_
 
-#include <gtk/gtk.h>
+#ifndef SCREENREADER_H_
+#define SCREENREADER_H_
 
-void dialog_options_show(GtkWindow* parent, GKeyFile* settings);
+#include <gdk/gdk.h>
+#include "Rect2.h"
 
-#endif /* UIDIALOGOPTIONS_H_ */
+struct ScreenReader;
+
+struct ScreenReader* screen_reader_new();
+
+void screen_reader_reset_rect(struct ScreenReader *screen);
+
+void screen_reader_add_rect(struct ScreenReader *screen, math::Rect2<int>& rect);
+
+void screen_reader_update_pixbuf(struct ScreenReader *screen, math::Rect2<int>* update_rect);
+GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen);
+
+void screen_reader_destroy(struct ScreenReader *screen);
+
+#endif /* SCREENREADER_H_ */
