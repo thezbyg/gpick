@@ -95,7 +95,7 @@ def Glob(path):
 	files = []
 	for f in glob.glob(os.path.join(path, '*')):
 		if os.path.isdir(str(f)):
-			files.append(Glob(str(f)));
+			files.extend(Glob(str(f)));
 		else:
 			files.append(str(f));
 	return files

@@ -53,7 +53,8 @@ env['DESTDIR'] = DEBINSTALLDIR	#redirect install location
 
 def debian_write_control(target=None, source=None, env=None):
 	installed_size = 0
-	for i in source:
+	files = tools.gpick.Glob(os.path.join('build', 'deb', DEBNAME, 'usr'))
+	for i in files:
 		installed_size += os.stat(str(i))[6]
 	installed_size = math.ceil(installed_size/1024)
 	
@@ -70,9 +71,8 @@ env.Append(BUILDERS = {'DebianControl' : Builder(action = debian_write_control)}
 
 
 env.Alias(target="debian", source=[
-	env.Alias('install'),
 	env.Install(dir=DEBCONTROLDIR, source=[env.Glob("DEBIAN/*")]),
-	env.DebianControl(source = tools.gpick.Glob(os.path.join(DEBNAME, 'usr')), target = DEBCONTROLFILE),
+	env.DebianControl(source = env.Alias('install'), target = DEBCONTROLFILE),
 	env.DebianPackage(source = env.Dir(DEBNAME), target = os.path.join('.', DEBPACKAGEFILE))
 ])
 
