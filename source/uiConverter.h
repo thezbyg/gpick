@@ -20,14 +20,8 @@
 #define UICONVERTER_H_
 
 #include <gtk/gtk.h>
-#include "ColorList.h"
-#include "LuaExt.h"
+#include "GlobalState.h"
 
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *lua);
-
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L);
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L, gchar** text);
-
-void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State* lua, struct ColorList *color_list);
+void dialog_converter_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* UICONVERTER_H_ */

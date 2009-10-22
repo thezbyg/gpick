@@ -30,9 +30,9 @@ static int lua_newcolor (lua_State *L) {
 	return 1;
 }
 
-Color *lua_checkcolor (lua_State *L) {
-	void *ud = luaL_checkudata(L, 1, "color");
-	luaL_argcheck(L, ud != NULL, 1, "`color' expected");
+Color *lua_checkcolor (lua_State *L, int index) {
+	void *ud = luaL_checkudata(L, index, "color");
+	luaL_argcheck(L, ud != NULL, index, "`color' expected");
 	return (Color *)ud;
 }
 
@@ -45,60 +45,87 @@ int lua_pushcolor (lua_State *L, Color* color) {
 }
 
 static int lua_color2string (lua_State *L) {
-	Color *c = lua_checkcolor(L);
+	Color *c = lua_checkcolor(L, 1);
 	lua_pushfstring(L, "color(%f, %f, %f)", c->rgb.red, c->rgb.green, c->rgb.blue);
 	return 1;
 }
 
+static int lua_color_rgb (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
+		c->rgb.red=luaL_checknumber(L, 2);	
+		c->rgb.green=luaL_checknumber(L, 3);
+		c->rgb.blue=luaL_checknumber(L, 4);
+	}
+	lua_pushnumber(L, c->rgb.red);
+	lua_pushnumber(L, c->rgb.green);
+	lua_pushnumber(L, c->rgb.blue);
+	return 3;
+}
+
 static int lua_color_red (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->rgb.red=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->rgb.red=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->rgb.red);
 	return 1;
 }
 
 static int lua_color_green (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->rgb.green=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->rgb.green=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->rgb.green);
 	return 1;
 }
 
 static int lua_color_blue (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->rgb.blue=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->rgb.blue=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->rgb.blue);
 	return 1;
 }
 
+
+static int lua_color_hsl (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
+		c->hsl.hue=luaL_checknumber(L, 2);	
+		c->hsl.saturation=luaL_checknumber(L, 3);
+		c->hsl.lightness=luaL_checknumber(L, 4);
+	}
+	lua_pushnumber(L, c->hsl.hue);
+	lua_pushnumber(L, c->hsl.saturation);
+	lua_pushnumber(L, c->hsl.lightness);
+	return 3;
+}
+
 static int lua_color_hue (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->hsl.hue=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->hsl.hue=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->hsl.hue);
 	return 1;
 }
 
 static int lua_color_saturation (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->hsl.saturation=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->hsl.saturation=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->hsl.saturation);
 	return 1;
 }
 
 static int lua_color_lightness (lua_State *L) {
-	Color *c = lua_checkcolor(L);
-	if (lua_type(L, 1)==LUA_TNUMBER){
-		c->hsl.lightness=luaL_checknumber(L, 1);
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->hsl.lightness=luaL_checknumber(L, 2);
 	}
 	lua_pushnumber(L, c->hsl.lightness);
 	return 1;
@@ -106,7 +133,7 @@ static int lua_color_lightness (lua_State *L) {
 
 
 static int lua_color_rgb_to_hsl (lua_State *L) {
-	Color *c = lua_checkcolor(L);
+	Color *c = lua_checkcolor(L, 1);
 	Color c2;
 	color_rgb_to_hsl(c, &c2);
 	lua_pushcolor(L, &c2);
@@ -114,7 +141,7 @@ static int lua_color_rgb_to_hsl (lua_State *L) {
 }
 
 static int lua_color_hsl_to_rgb (lua_State *L) {
-	Color *c = lua_checkcolor(L);
+	Color *c = lua_checkcolor(L, 1);
 	Color c2;
 	color_hsl_to_rgb(c, &c2);
 	lua_pushcolor(L, &c2);
@@ -131,10 +158,12 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"red",			lua_color_red},
 	{"green",		lua_color_green},
 	{"blue",		lua_color_blue},
+	{"rgb",			lua_color_rgb},
 	
 	{"hue",			lua_color_hue},
 	{"saturation",	lua_color_saturation},
 	{"lightness",	lua_color_lightness},
+	{"hsl",			lua_color_hsl},
 	
 	{"rgb_to_hsl",	lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",	lua_color_hsl_to_rgb},
@@ -188,6 +217,13 @@ int lua_colorobject_get_color(lua_State *L) {
 	return 1;
 }
 
+int lua_colorobject_set_color(lua_State *L) {
+	struct ColorObject** color_object=lua_checkcolorobject(L, 1);
+	Color *c = lua_checkcolor(L, 2);
+	color_object_set_color(*color_object, c);
+	return 0;
+}
+
 static const struct luaL_reg lua_colorobjectlib_f [] = {
 	{"new", lua_newcolorobject},
 	{NULL, NULL}
@@ -195,6 +231,7 @@ static const struct luaL_reg lua_colorobjectlib_f [] = {
 
 static const struct luaL_reg lua_colorobjectlib_m [] = {
 	{"get_color", lua_colorobject_get_color},
+	{"set_color", lua_colorobject_set_color},
 	{NULL, NULL}
 };
 

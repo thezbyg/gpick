@@ -24,7 +24,8 @@ struct Arguments{
 	GtkWidget *minimize_to_tray;
 	GtkWidget *close_to_tray;
 	GtkWidget *start_in_tray;
-	GtkWidget *refresh_rate;
+	GtkWidget *refresh_rate;
+
 	GKeyFile* settings;
 };
 
@@ -43,7 +44,8 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	}
 }
 
-
+
+
 void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 	struct Arguments args;
 	

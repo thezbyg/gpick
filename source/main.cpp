@@ -21,6 +21,7 @@
 
 #include "GlobalState.h"
 #include "Paths.h"
+#include "Converter.h"
 #include "unique/Unique.h"
 
 #include "GenerateScheme.h"
@@ -45,6 +46,12 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <map>
+#include <iostream>
+using namespace std;
 
 const gchar* program_name = "gpick";
 const gchar* program_authors[] = {"Albertas Vyšniauskas <thezbyg@gmail.com>", NULL };
@@ -59,7 +66,8 @@ typedef struct MainWindow{
 	GtkWidget *color_list;
 	GtkWidget* notebook;
 	GtkWidget* statusbar;
-
+	GtkWidget* hpaned;
+	
 	uiStatusIcon* statusIcon;
 
 	GlobalState* gs;
@@ -144,6 +152,8 @@ destroy( GtkWidget *widget, gpointer data )
 
 	g_key_file_set_integer(window->gs->settings, "Notebook", "Page", gtk_notebook_get_current_page(GTK_NOTEBOOK(window->notebook)));
 	
+	g_key_file_set_integer(window->gs->settings, "Window", "Paned position", gtk_paned_get_position(GTK_PANED(window->hpaned)));
+	
 	if (window->current_color_source) color_source_deactivate(window->current_color_source);
 	for (int i=0; i<2; ++i){
 		color_source_destroy(window->color_source[i]);
@@ -167,19 +177,96 @@ static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *pa
 	dynv_system_set(window->gs->params, "ptr", "CurrentColorSource", window->current_color_source);
 }
 
-char* main_get_color_text(GlobalState* gs, Color* color){
+int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
+	
+	struct ColorObject* color_object;
+	
+	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+
+	typedef multimap<float, struct ColorObject*, greater<float> > ValidConverters;
+	ValidConverters valid_converters;
+	
+	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+	
+	if (converter){
+		if (converter->deserialize_available){
+			color_object = color_list_new_color_object(gs->colors, color);
+			float quality;
+			if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality)==0){
+				if (quality>0){
+					valid_converters.insert(make_pair(quality, color_object));
+				}else{
+					color_object_release(color_object);
+				}
+			}else{
+				color_object_release(color_object);
+			}
+		}
+	}
+	
+	uint32_t table_size;
+	Converter **converter_table;
+	if ((converter_table = converters_get_all_type(converters, CONVERTERS_ARRAY_TYPE_PASTE, &table_size))){
+		for (uint32_t i=0; i!=table_size; ++i){
+			converter = converter_table[i];
+			if (converter->deserialize_available){
+				color_object = color_list_new_color_object(gs->colors, color);
+				float quality;
+				if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality)==0){
+					if (quality>0){
+						valid_converters.insert(make_pair(quality, color_object));
+					}else{
+						color_object_release(color_object);
+					}
+				}else{
+					color_object_release(color_object);
+				}
+			}
+		}		
+	}
+	
+	bool first = true;
+	
+	for (ValidConverters::iterator i=valid_converters.begin(); i!=valid_converters.end(); ++i){
+		if (first){
+			first = false;
+			color_object_get_color((*i).second, color);
+		}
+		//cout << (*i).first << endl;
+		color_object_release((*i).second);
+	}
+	
+	if (first){
+		return -1;
+	}else{
+		return 0;
+	}
+}
+
+char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type){
 	char* text = 0;
 	struct ColorObject* color_object;
 	color_object = color_list_new_color_object(gs->colors, color);
+	Converter *converter;
+	Converter **converter_array;
 	
-	gchar** source_array;
-	gsize source_array_size;
-	if ((source_array = g_key_file_get_string_list(gs->settings, "Converter", "Names", &source_array_size, 0))){
-		if (source_array_size>0){	
-			converter_get_text(source_array[0], color_object, 0, gs->lua, &text);
-		}					
-		g_strfreev(source_array);
+	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	
+	switch (text_type){
+	case COLOR_TEXT_TYPE_DISPLAY:
+		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+		if (converter){
+			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+		}
+		break;
+	case COLOR_TEXT_TYPE_COPY:
+		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+		if (converter){
+			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+		}
+		break;
 	}
+	
 	color_object_release(color_object);
 	
 	return text;
@@ -251,29 +338,25 @@ show_about_box(GtkWidget *widget, MainWindow* window)
 	return;
 }
 
-static void
-show_dialog_converter(GtkWidget *widget, MainWindow* window){
-	dialog_converter_show(GTK_WINDOW(window->window), window->gs->settings, window->gs->lua, window->gs->colors);
+static void show_dialog_converter(GtkWidget *widget, MainWindow* window){
+	dialog_converter_show(GTK_WINDOW(window->window), window->gs);
 	return;
 }
 
-static void
-show_dialog_options(GtkWidget *widget, MainWindow* window){
+static void show_dialog_options(GtkWidget *widget, MainWindow* window){
 	dialog_options_show(GTK_WINDOW(window->window), window->gs->settings);
 	return;
 }
 
 
-static void
-menu_file_new(GtkWidget *widget, MainWindow* window){
+static void menu_file_new(GtkWidget *widget, MainWindow* window){
 	if (window->current_filename) g_free(window->current_filename);
 	window->current_filename=0;
 	palette_list_remove_all_entries(window->color_list);
 	updateProgramName(window);
 }
 
-static void
-menu_file_open(GtkWidget *widget, MainWindow* window){
+static void menu_file_open(GtkWidget *widget, MainWindow* window){
 
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
@@ -538,6 +621,119 @@ static void createMenu(GtkMenuBar *menu_bar, MainWindow *window, GtkAccelGroup *
 }
 
 
+typedef struct CopyMenuItem{
+	gchar* function_name;
+	struct ColorObject* color_object;
+	GlobalState* gs;
+	GtkWidget* palette_widget;
+}CopyMenuItem;
+
+static void converter_destroy_params(CopyMenuItem* args){
+	color_object_release(args->color_object);
+	g_free(args->function_name);
+	delete args;
+}
+/*
+static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
+	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
+	return 0;
+}*/
+
+
+
+static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
+	CopyMenuItem* itemdata=(CopyMenuItem*)g_object_get_data(G_OBJECT(widget), "item_data");
+	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->params);
+}
+
+
+static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs){
+	GtkWidget* item=0;
+	gchar* converted;
+	
+	if (converters_color_serialize((Converters*)dynv_system_get(gs->params, "ptr", "Converters"), function, color_object, &converted)==0){
+		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
+
+		CopyMenuItem* itemdata=new CopyMenuItem;
+		itemdata->function_name=g_strdup(function);
+		itemdata->palette_widget=palette_widget;
+		itemdata->color_object=color_object_ref(color_object);
+		itemdata->gs = gs;
+		
+		g_object_set_data_full(G_OBJECT(item), "item_data", itemdata, (GDestroyNotify)converter_destroy_params);
+		
+		g_free(converted);
+	}
+
+	return item;
+}
+
+GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs){
+	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	
+	GtkWidget *menu;
+	menu = gtk_menu_new();
+	
+	uint32_t converter_table_size = 0;
+	Converter** converter_table = converters_get_all_type(converters, CONVERTERS_ARRAY_TYPE_COPY, &converter_table_size);
+	
+	for (uint32_t i=0; i<converter_table_size; ++i){
+		GtkWidget* item=converter_create_copy_menu_item(menu, converter_table[i]->function_name, color_object, palette_widget, gs);
+		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);		
+	}
+	
+	return menu;
+}
+
+
+void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params, gchar** out_text){
+	stringstream text(ios::out);
+
+	int first=true;
+	
+	struct ColorList *color_list = color_list_new(NULL);
+	if (palette_widget){
+		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
+	}else{
+		color_list_add_color_object(color_list, color_object, 1);
+	}
+	
+	Converters* converters = (Converters*)dynv_system_get(params, "ptr", "Converters");
+	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+	
+		gchar* converted;
+	
+		if (converters_color_serialize((Converters*)dynv_system_get(params, "ptr", "Converters"), function, *i, &converted)==0){
+			if (first){
+				text<<converted;
+				first=false;
+			}else{
+				text<<endl<<converted;
+			}
+			g_free(converted);
+		}
+	}
+	
+	color_list_destroy(color_list);
+	
+	if (first!=true){
+		*out_text = g_strdup(text.str().c_str());
+	}else{
+		*out_text = 0;
+	}
+}
+
+
+void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params){
+	gchar* text;
+	converter_get_text(function, color_object, palette_widget, params, &text);
+	if (text){
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
+		g_free(text);
+	}
+}
+
 gint32 color_list_mark_selected(struct ColorObject* color_object, void *userdata){
 	color_object->selected=1;
 	return 0;
@@ -627,7 +823,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 		struct ColorList *color_list = color_list_new(NULL);
 		palette_list_forfirst_selected(window->color_list, color_list_selected, color_list);
 		if (color_list_get_count(color_list)!=0){
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (*color_list->colors.begin(), window->color_list, window->gs->settings, window->gs->lua));
+			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (*color_list->colors.begin(), window->color_list, window->gs));
 		}
 		color_list_destroy(color_list);
 	}
@@ -699,15 +895,13 @@ static gboolean on_palette_list_key_press (GtkWidget *widget, GdkEventKey *event
 		case GDK_c:
 			if ((event->state&(GDK_CONTROL_MASK|GDK_SHIFT_MASK|GDK_MOD1_MASK))==GDK_CONTROL_MASK){
 				
-				gchar** source_array;
-				gsize source_array_size;
-				if ((source_array = g_key_file_get_string_list(window->gs->settings, "Converter", "Names", &source_array_size, 0))){
-					if (source_array_size>0){					
-						converter_get_clipboard(source_array[0], 0, window->color_list, window->gs->lua);
-					}					
-					g_strfreev(source_array);
+				Converters *converters = (Converters*)dynv_system_get(window->gs->params, "ptr", "Converters");
+				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+				if (converter){
+					converter_get_clipboard(converter->function_name, 0, window->color_list, window->gs->params);
 				}
-				return TRUE;
+
+				return true;
 			}
 			return FALSE;
 			break;
@@ -880,25 +1074,10 @@ int main(int argc, char **argv){
 	window->gs->colors->userdata = window;
 	
 	dynv_system_set(window->gs->params, "ptr", "MainWindowStruct", window);
-
+	
 	window->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 
 	set_main_window_icon();
-
-	{
-		gchar** source_array;
-		gsize source_array_size;
-		if ((source_array = g_key_file_get_string_list(window->gs->settings, "Converter", "Names", &source_array_size, 0))){
-			g_strfreev(source_array);	
-		}else{
-			const char* name_array[]={
-				"color_web_hex",
-				"color_css_rgb",
-				"color_css_hsl",
-			};
-			g_key_file_set_string_list(window->gs->settings, "Converter", "Names", name_array, sizeof(name_array)/sizeof(name_array[0]));
-		}
-	}
 
 	updateProgramName(window);
 
@@ -968,7 +1147,9 @@ int main(int argc, char **argv){
 		gtk_paned_pack2(GTK_PANED(hpaned), scrolled_window, TRUE, FALSE);
 		gtk_widget_show(scrolled_window);
 
-	window->notebook=notebook;
+	window->hpaned = hpaned;
+
+	window->notebook = notebook;
 	//gtk_widget_show_all (window->notebook);
 	
 	{
@@ -1018,6 +1199,8 @@ int main(int argc, char **argv){
 	window->statusIcon = status_icon_new(window->window, window->gs, window->color_source[0]);
 	
 	gtk_widget_realize(window->window);
+	
+	gtk_paned_set_position(GTK_PANED(hpaned), g_key_file_get_integer_with_default(window->gs->settings, "Window", "Paned position", -1) );
 	
 	if (g_key_file_get_boolean_with_default(window->gs->settings, "Window", "Start in tray", false)){
 		status_icon_set_visible (window->statusIcon, true);

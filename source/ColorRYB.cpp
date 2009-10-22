@@ -60,7 +60,30 @@ double bezier_eval_at_x(list<bezier*>& channel, double x, double delta){
 }
 
 static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<bezier*> &blue){
-	red.push_back(
+	static bezier red_v[]={
+		bezier(	point(0.0, 1.0), point(1.0, 1.0), point(13.0, 1.0), point(14.0, 1.0) ),
+		bezier(	point(14.0, 1.0), point(16.0, 0.6405), point(16.9, 0.0), point(21.0, 0.0) ),
+		bezier(	point(21.0, 0.0), point(28.0, 0.0), point(33.0, 1.0), point(36.0, 1.0) )
+	};
+	static bezier green_v[]={
+		bezier(	point(0.0, 0.0), point(4.0, 0.4), point(13.0, 1.0), point(14.0, 1.0) ),
+		bezier(	point(14.0, 1.0), point(14.85, 1.0), point(17.05, 0.9525), point(19.0, 0.7) ),
+		bezier(	point(19.0, 0.7), point(24.0, 0.05), point(31.0, 0.0), point(36.0, 0.0) )
+	};
+	static bezier blue_v[]={
+		bezier(	point(0.0, 0.0), point(1.0, 0.0), point(18.0, 0.0), point(19.0, 0.0) ),
+		bezier(	point(19.0, 0.0), point(22.0, 0.9), point(33.0, 0.9), point(36.0, 0.0) )
+	};
+	for (int i=0; i<sizeof(red_v)/sizeof(bezier); ++i){
+		red.push_back(&red_v[i]);
+	}
+	for (int i=0; i<sizeof(green_v)/sizeof(bezier); ++i){
+		green.push_back(&green_v[i]);
+	}
+	for (int i=0; i<sizeof(blue_v)/sizeof(bezier); ++i){
+		blue.push_back(&blue_v[i]);
+	}
+	/*red.push_back(
 		new bezier(	point(0.0, 1.0), point(1.0, 1.0), point(13.0, 1.0), point(14.0, 1.0) )
 	);
 	red.push_back(
@@ -85,7 +108,7 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 	);
 	blue.push_back(
 		new bezier(	point(19.0, 0.0), point(22.0, 0.9), point(33.0, 0.9), point(36.0, 0.0) )
-	);
+	);*/
 }
 
 int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue){

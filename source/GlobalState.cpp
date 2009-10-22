@@ -19,6 +19,8 @@
 #include "GlobalState.h"
 #include "Paths.h"
 #include "ScreenReader.h"
+#include "Converter.h"
+#include "uiUtilities.h"
 
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
@@ -50,6 +52,8 @@ int global_state_term(GlobalState *gs){
 	g_free(config_file);
 	
 	//destroy color list, random generator and other systems
+	converters_term((Converters*)dynv_system_get(gs->params, "ptr", "Converters"));
+	
 	color_list_destroy(gs->colors);
 	random_destroy(gs->random);
 	g_key_file_free(gs->settings);
@@ -148,6 +152,80 @@ int global_state_init(GlobalState *gs){
 	g_free(tmp);
 	
 	gs->lua = L;
+	dynv_system_set(gs->params, "ptr", "lua_State", L);
+	
+	//create converter system
+	Converters* converters = converters_init(gs->params);
+	
+	gchar** source_array;
+	gsize source_array_size;
+	if ((source_array = g_key_file_get_string_list(gs->settings, "Converter", "Names", &source_array_size, 0))){
+		gboolean* copy_array;	
+		gsize copy_array_size=0;
+		gboolean* paste_array;	
+		gsize paste_array_size=0;
+		copy_array = g_key_file_get_boolean_list(gs->settings, "Converter", "Copy", &copy_array_size, 0);
+		paste_array = g_key_file_get_boolean_list(gs->settings, "Converter", "Paste", &paste_array_size, 0);
+
+		gsize source_array_i = 0;
+		Converter* converter;
+		
+		if (copy_array_size>0 || paste_array_size>0){
+						
+			while (source_array_i<source_array_size){
+				converter = converters_get(converters, source_array[source_array_i]);
+				if (converter){
+					if (source_array_i<copy_array_size) converter->copy = converter->serialize_available & copy_array[source_array_i];
+					if (source_array_i<paste_array_size) converter->paste = converter->deserialize_available & paste_array[source_array_i];
+				}
+				++source_array_i;
+			}
+		}else{
+			while (source_array_i<source_array_size){
+				converter = converters_get(converters, source_array[source_array_i]);
+				if (converter){
+					converter->copy = converter->serialize_available;
+					converter->paste = converter->deserialize_available;
+				}
+				++source_array_i;
+			}
+		}
+		
+		if (copy_array) g_free(copy_array);
+		if (paste_array) g_free(paste_array);
+		
+		converters_reorder(converters, (const char**)source_array, source_array_size);
+		g_strfreev(source_array);
+
+	}else{
+		//Initialize default values
+
+		const char* name_array[]={
+			"color_web_hex",
+			"color_css_rgb",
+			"color_css_hsl",
+		};
+		
+		source_array_size = sizeof(name_array)/sizeof(name_array[0]);
+		gsize source_array_i = 0;
+		Converter* converter;
+		
+		while (source_array_i<source_array_size){
+			converter = converters_get(converters, name_array[source_array_i]);
+			if (converter){
+				converter->copy = converter->serialize_available;
+				converter->paste = converter->deserialize_available;
+			}
+			++source_array_i;
+		}
+		
+		converters_reorder(converters, name_array, source_array_size);
+	}
+	
+	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
+	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
+	
+	converters_set_display(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")));
 	
 	return 0;
 }

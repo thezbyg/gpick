@@ -302,7 +302,7 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 				//char text[8];
 				//snprintf(text, 8, "#%02x%02x%02x", int(color.rgb.red*255), int(color.rgb.green*255), int(color.rgb.blue*255));
 				
-				char* text = main_get_color_text(dd->gs, &color);
+				char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_COPY);
 				//gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
 				gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
 				g_free(text);
@@ -354,7 +354,7 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 		Color color;
 		color_object_get_color(color_object, &color);
 		
-		char* text = main_get_color_text(dd->gs, &color);
+		char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
 		gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
 		g_free(text);
 		

@@ -17,300 +17,124 @@
  */
 
 #include "uiConverter.h"
+
+#include "Converter.h"
 #include "uiUtilities.h"
-#include "uiListPalette.h"
 
-#include "LuaExt.h"
-
-#include <string.h>
-#include <stdlib.h>
-#include <gdk/gdkkeysyms.h>
-
-#include <fstream>
-#include <string>
-#include <sstream>
 #include <iostream>
 using namespace std;
 
-struct ConverterParams{
-	gchar* function_name;
-	lua_State* L;
-	GtkWidget* palette_widget;
-	struct ColorObject* color_object;
-};
+typedef enum{
+	CONVERTERLIST_HUMAN_NAME = 0,
+	CONVERTERLIST_EXAMPLE,
+	CONVERTERLIST_CONVERTER_PTR,
+	CONVERTERLIST_COPY,
+	CONVERTERLIST_COPY_ENABLED,
+	CONVERTERLIST_PASTE,
+	CONVERTERLIST_PASTE_ENABLED,
+	CONVERTERLIST_N_COLUMNS
+}ConverterListColumns;
 
-static void converter_destroy_params(struct ConverterParams* data){
-	color_object_release(data->color_object);
-	g_free(data->function_name);
-	delete data;
-}
-
-static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
-	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
-	return 0;
-}
-
-
-static int converter_get_result(const gchar* function, struct ColorObject* color_object, lua_State *L, gchar** result){
-
-	if (L==NULL) return -1;
-	
-	size_t st;
-	int status;
-	int stack_top = lua_gettop(L);
-	
-	lua_getglobal(L, function);
-	if (lua_type(L, 1)!=LUA_TNIL){
-
-		lua_pushcolorobject (L, color_object);
-	
-		status=lua_pcall(L, 1, 1, 0);
-		if (status==0){
-			if (lua_type(L, -1)==LUA_TSTRING){
-				const char* converted = luaL_checklstring(L,-1, &st);
-				*result = g_strdup(converted);
-				lua_settop(L, stack_top);
-				return 0;
-			}else{
-				cerr<<"converter_get_result: returned not a string value \""<<function<<"\""<<endl;
-			}
-		}else{
-			cerr<<"converter_get_result: "<<lua_tostring (L, -1)<<endl;
-		}
-	}else{
-		cerr<<"converter_get_result: no such function \""<<function<<"\""<<endl;
-	}
-	
-	lua_settop(L, stack_top);	
-	return -1;
-}
-
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L, gchar** out_text){
-	stringstream text(ios::out);
-
-	int first=true;
-	
-	struct ColorList *color_list = color_list_new(NULL);
-	if (palette_widget){
-		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
-	}else{
-		color_list_add_color_object(color_list, color_object, 1);
-	}
-
-	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-	
-		gchar* converted;
-	
-		if (converter_get_result(function, *i, L, &converted)==0){
-			if (first){
-				text<<converted;
-				first=false;
-			}else{
-				text<<endl<<converted;
-			}
-			g_free(converted);
-		}
-	}
-	
-	color_list_destroy(color_list);
-	
-	if (first!=true){
-		*out_text = g_strdup(text.str().c_str());
-	}else{
-		*out_text = 0;
-	}
-}
-
-
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State* L){
-	stringstream text(ios::out);
-
-	int first=true;
-	
-	struct ColorList *color_list = color_list_new(NULL);
-	if (palette_widget){
-		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
-	}else{
-		color_list_add_color_object(color_list, color_object, 1);
-	}
-
-	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-	
-		gchar* converted;
-	
-		if (converter_get_result(function, *i, L, &converted)==0){
-			if (first){
-				text<<converted;
-				first=false;
-			}else{
-				text<<endl<<converted;
-			}
-			g_free(converted);
-		}
-	}
-	
-	color_list_destroy(color_list);
-	
-	if (first!=true) gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text.str().c_str(), -1);	
-}
-
-static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
-	struct ConverterParams* params=(struct ConverterParams*)g_object_get_data(G_OBJECT(widget), "params");
-	converter_get_clipboard(params->function_name, params->color_object, params->palette_widget, params->L);
-}
-
-
-static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, lua_State *L){
-	GtkWidget* item=0;
-	gchar* converted;
-	
-	if (converter_get_result(function, color_object, L, &converted)==0){
-		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
-
-		struct ConverterParams* params=new struct ConverterParams;
-		params->L=L;
-		params->function_name=g_strdup(function);
-		params->palette_widget=palette_widget;
-		params->color_object=color_object_ref(color_object);
-
-		g_object_set_data_full(G_OBJECT(item), "params", params, (GDestroyNotify)converter_destroy_params);
-		
-		g_free(converted);
-	}
-
-	return item;
-}
-
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GKeyFile* settings, lua_State *L){
-
-	GtkWidget *menu;
-	menu = gtk_menu_new();
-	
-	//GtkAccelGroup* accel_group=gtk_accel_group_new();
-	
-	gchar** source_array;
-	gsize source_array_size;
-	if ((source_array = g_key_file_get_string_list(settings, "Converter", "Names", &source_array_size, 0))){
-		for (gsize i=0; i<source_array_size; ++i){
-			GtkWidget* item=converter_create_copy_menu_item(menu, source_array[i], color_object, palette_widget, L);
-			/*if (!i){
-				gtk_widget_add_accelerator (item, "activate", accel_group, GDK_c, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-			}*/
-			if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);			
-		}
-		g_strfreev(source_array);
-	}
-	//gtk_menu_set_accel_group (GTK_MENU(menu), accel_group);
-	//g_object_unref(G_OBJECT (accel_group));
-
-	return menu;
-}
-
-struct ConverterDialog{
-	lua_State *L;
-	struct ColorList *color_list;
+struct Arguments{
 	GtkWidget* list;
 	GtkWidget* combo;
+	GlobalState *gs;
 };
 
-static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, const char* function_name, struct ConverterDialog* params) {
+static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Converter *converter, struct Arguments *args) {
 	gchar* converted;
 	
 	Color c;
 	c.rgb.red=0.75;
 	c.rgb.green=0.50;
 	c.rgb.blue=0.25;
-	struct ColorObject *color_object=color_list_new_color_object(params->color_list, &c);
+	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)"Test color");
-
-	if (converter_get_result(function_name, color_object, params->L, &converted)==0) {
+	
+	if (converters_color_serialize((Converters*)dynv_system_get(args->gs->params, "ptr", "Converters"), converter->function_name, color_object, &converted)==0) {
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
-			0, function_name,
-			1, converted,
+			CONVERTERLIST_HUMAN_NAME, converter->human_readable,
+			CONVERTERLIST_EXAMPLE, converted,
+			CONVERTERLIST_CONVERTER_PTR, converter,
+			CONVERTERLIST_COPY, converter->copy,
+			CONVERTERLIST_COPY_ENABLED, converter->serialize_available,
+			CONVERTERLIST_PASTE, converter->paste,
+			CONVERTERLIST_PASTE_ENABLED, converter->deserialize_available,
 		-1);
 		g_free(converted);
 	}else{
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
-			0, function_name,
-			1, "error",
+			CONVERTERLIST_HUMAN_NAME, converter->human_readable,
+			CONVERTERLIST_EXAMPLE, "error",
+			CONVERTERLIST_CONVERTER_PTR, converter,
+			CONVERTERLIST_COPY, converter->copy,
+			CONVERTERLIST_COPY_ENABLED, converter->serialize_available,
+			CONVERTERLIST_PASTE, converter->paste,
+			CONVERTERLIST_PASTE_ENABLED, converter->deserialize_available,
 		-1);
 	}	
 	
 	color_object_release(color_object);
 }
 
-static void converter_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new_text, gpointer user_data) {
-	struct ConverterDialog* params=(struct ConverterDialog*)user_data;
-	
+
+
+static void copy_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Arguments *args) {
 	GtkTreeIter iter1;
-	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(params->list)));
-
+	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(args->list)));
 	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
+	gboolean value;
+	gtk_tree_model_get(GTK_TREE_MODEL(store), &iter1, CONVERTERLIST_COPY, &value, -1);
+	gtk_list_store_set(store, &iter1, CONVERTERLIST_COPY, !value, -1);
+}
+
+static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Arguments *args) {
+	GtkTreeIter iter1;
+	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(args->list)));
+	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
+	gboolean value;
+	gtk_tree_model_get(GTK_TREE_MODEL(store), &iter1, CONVERTERLIST_PASTE, &value, -1);	
+	gtk_list_store_set(store, &iter1, CONVERTERLIST_PASTE, !value, -1);
+}
+
+static void cell_data_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, int item){
 	
-	converter_update_row(GTK_TREE_MODEL(store), &iter1, new_text, params);
+	Converter *converter;
+	gtk_tree_model_get(tree_model, iter, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
+	
+	switch (item){
+	case 0:
+		gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(cell), converter->serialize_available);
+		gtk_cell_renderer_toggle_set_active(GTK_CELL_RENDERER_TOGGLE(cell), converter->copy);
+		break;
+	case 1:
+		gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(cell), converter->deserialize_available);
+		gtk_cell_renderer_toggle_set_active(GTK_CELL_RENDERER_TOGGLE(cell), converter->paste);
+		break;
+	}
+	
 }
 
-void converter_add(GtkToolButton *toolbutton, struct ConverterDialog* params){
-   
-	GtkTreeIter combo_iter;
-	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(params->combo), &combo_iter)){
+static GtkWidget* converter_dropdown_new(struct Arguments *args){
+	
+	GtkListStore  		*store;
+	GtkCellRenderer     *renderer;
+	GtkTreeViewColumn   *col;
+	GtkWidget			*combo;
 
-		gchar* function_name;
-		
-		GtkTreeModel *combo_model = gtk_combo_box_get_model(GTK_COMBO_BOX(params->combo));
-		gtk_tree_model_get(combo_model, &combo_iter, 0, &function_name, -1);
-		
-		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(params->list));
-		GtkTreeIter iter1;
-		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-		converter_update_row(model, &iter1, function_name, params);
-		
-		g_free(function_name);
-	}
+	store = gtk_list_store_new (CONVERTERLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	
+	renderer = gtk_cell_renderer_text_new();
+    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", CONVERTERLIST_HUMAN_NAME, NULL);
+	
+	g_object_unref (store);
+	
+	return combo;
 }
 
-void converter_remove_selected(GtkToolButton *toolbutton, struct ConverterDialog* params){
-
-	GtkTreeSelection *selection = gtk_tree_view_get_selection (GTK_TREE_VIEW(params->list));
-	GtkListStore *store;
-	GtkTreeIter iter;
-
-	if (gtk_tree_selection_count_selected_rows(selection) == 0){
-		return;
-	}
-
-	store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(params->list)));;
-
-	GList *list = gtk_tree_selection_get_selected_rows ( selection, 0 );
-	GList *ref_list = NULL;
-
-	GList *i = list;
-	while (i) {
-		ref_list = g_list_prepend(ref_list, gtk_tree_row_reference_new(GTK_TREE_MODEL(store), (GtkTreePath*) (i->data)));
-		i = g_list_next(i);
-	}
-
-	i = ref_list;
-	GtkTreePath *path;
-	while (i) {
-		path = gtk_tree_row_reference_get_path((GtkTreeRowReference*) i->data);
-		if (path) {
-			gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, path);
-			gtk_tree_path_free(path);
-			gtk_list_store_remove(GTK_LIST_STORE(store), &iter);
-		}
-		i = g_list_next(i);
-	}
-	g_list_foreach (ref_list, (GFunc)gtk_tree_row_reference_free, NULL);
-	g_list_free (ref_list);
-
-	g_list_foreach (list, (GFunc)gtk_tree_path_free, NULL);
-	g_list_free (list);
-}
-
-
-static GtkWidget* converter_list_new(struct ConverterDialog* params) {
+static GtkWidget* converter_list_new(struct Arguments *args){
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -318,11 +142,11 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	GtkWidget           *view;
 
 	view = gtk_tree_view_new ();
-	params->list=view;
+	args->list=view;
 
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view),1);
 
-	store = gtk_list_store_new (2, G_TYPE_STRING, G_TYPE_STRING);
+	store = gtk_list_store_new (CONVERTERLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
@@ -330,10 +154,8 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	gtk_tree_view_column_set_title(col, "Function name");
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", 0);
+	gtk_tree_view_column_add_attribute(col, renderer, "text", CONVERTERLIST_HUMAN_NAME);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
-	g_object_set(renderer, "editable", TRUE, NULL);
-	g_signal_connect(renderer, "edited", (GCallback) converter_cell_edited, params);
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
@@ -341,151 +163,185 @@ static GtkWidget* converter_list_new(struct ConverterDialog* params) {
 	gtk_tree_view_column_set_title(col, "Example");
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", 1);
+	gtk_tree_view_column_add_attribute(col, renderer, "text", CONVERTERLIST_EXAMPLE);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	
+	
+	col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+	gtk_tree_view_column_set_title(col, "Copy");
+	renderer = gtk_cell_renderer_toggle_new();
+	gtk_tree_view_column_pack_start(col, renderer, false);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	g_signal_connect(renderer, "toggled", (GCallback) copy_toggled_cb, args);
+	gtk_tree_view_column_set_attributes(col, renderer, "active", CONVERTERLIST_COPY, "activatable", CONVERTERLIST_COPY_ENABLED, (void*)0);
+	//gtk_tree_view_column_set_cell_data_func(col, renderer, (GtkTreeCellDataFunc)cell_data_cb, (void*)0, 0);
+	
+	col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+	gtk_tree_view_column_set_title(col, "Paste");
+	renderer = gtk_cell_renderer_toggle_new();
+	gtk_tree_view_column_pack_start(col, renderer, false);
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	g_signal_connect(renderer, "toggled", (GCallback) paste_toggled_cb, args);
+	gtk_tree_view_column_set_attributes(col, renderer, "active", CONVERTERLIST_PASTE, "activatable", CONVERTERLIST_PASTE_ENABLED, (void*)0);
+	//gtk_tree_view_column_set_cell_data_func(col, renderer, (GtkTreeCellDataFunc)cell_data_cb, (void*)1, 0);
+	
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
 	g_object_unref (GTK_TREE_MODEL(store));
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
-
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-
-	//g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(converter_row_activated) , 0);
-	
 	gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
 
 	return view;
 }
 
-static GtkWidget* converter_dropdown_new(struct ConverterDialog* params) {
-	GtkWidget* combo = gtk_combo_box_new_text();
-	
-	lua_State* L=params->L;
-	if (L==NULL) return combo;
-	
-	int status;
-	int stack_top = lua_gettop(L);
-	lua_getglobal(L, "gpick_converters_get");
-	if (lua_type(L, 1)!=LUA_TNIL){
-		status=lua_pcall(L, 0, 1, 0);
-		if (status==0){
-			if (lua_type(L, -1)==LUA_TTABLE){
-				size_t st;
-				int table_index = lua_gettop(L);
-				
-				for (int i=1;;i++){
-					lua_pushinteger(L, i);
-					lua_gettable(L, table_index);
-					if (lua_isnil(L, -1)) break;
-					gtk_combo_box_append_text(GTK_COMBO_BOX(combo), lua_tostring(L, -1));
-					lua_pop(L, 1);
-				}
-				
-			}
-		}else{
-			cerr<<"gpick_converters_get: "<<lua_tostring (L, -1)<<endl;
-		}
-	}
-	lua_settop(L, stack_top);
-	
-	gtk_combo_box_set_active(GTK_COMBO_BOX(combo), 0);
-	return combo;
-}
+void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 
-void dialog_converter_show(GtkWindow* parent, GKeyFile* settings, lua_State *L, struct ColorList *color_list ){
-	
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Converters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
 			
+	gtk_window_set_default_size(GTK_WINDOW(dialog), g_key_file_get_integer_with_default(gs->settings, "Converter Dialog", "Width", -1), 
+		g_key_file_get_integer_with_default(gs->settings, "Converter Dialog", "Height", -1));
+	
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	struct ConverterDialog params;
-	params.L=L;
-	params.color_list=color_list;
-			
-	GtkWidget* vbox = gtk_vbox_new(0, 0);
-	
-	GtkWidget* toolbar;
-	toolbar = gtk_toolbar_new ();
-	gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, TRUE, 0);
-	
-		GtkToolItem *tool;
-	
-		tool = gtk_tool_item_new();
-		gtk_container_add(GTK_CONTAINER(tool), params.combo=converter_dropdown_new(&params));
-		gtk_toolbar_insert(GTK_TOOLBAR (toolbar),tool,-1);
-		
-		tool = gtk_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON),"Add");
-		g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(converter_add), &params);
-		gtk_toolbar_insert(GTK_TOOLBAR (toolbar),tool,-1);
-	
-		tool = gtk_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_BUTTON),"Remove");
-		g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(converter_remove_selected), &params);
-		gtk_toolbar_insert(GTK_TOOLBAR (toolbar),tool,-1);
-		
-	
-	GtkWidget* list;
-	list = converter_list_new(&params);
-	gtk_box_pack_start(GTK_BOX(vbox), list, TRUE, TRUE, 0);
-	
-	
-		gchar** source_array;
-		gsize source_array_size;
-		if ((source_array = g_key_file_get_string_list(settings, "Converter", "Names", &source_array_size, 0))){
-			GtkTreeIter iter1;
-			GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(list));
+	struct Arguments args;
+	args.gs = gs;
 
-			for (gsize i=0; i<source_array_size; ++i){
-				gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-				converter_update_row(model, &iter1, source_array[i], &params);
-			}
-			g_strfreev(source_array);	
-		}
+	GtkWidget* vbox = gtk_vbox_new(false, 5);
+
+	GtkWidget *list;
+	list = converter_list_new(&args);
 	
+	GtkWidget *scrolled = gtk_scrolled_window_new(0, 0);
+	gtk_container_add(GTK_CONTAINER(scrolled), list);
+	
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_box_pack_start (GTK_BOX(vbox), scrolled, true, true, 0);
+	
+	//gtk_box_pack_start(GTK_BOX(vbox), list, true, true, 0);
+	
+	GtkWidget* hbox = gtk_hbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
+	
+	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Displays:",0,0.5,0,0), false, false, 0);
+	GtkWidget *display = converter_dropdown_new(&args);
+	gtk_box_pack_start(GTK_BOX(hbox), display, true, true, 0);
+	
+	
+	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	
+	Converter **converter_table;
+	uint32_t total_converters, converter_i;
+	converter_table = converters_get_all(converters, &total_converters);
+	
+	GtkTreeIter iter1;
+	GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(list));
+	
+	GtkTreeIter iter2;
+	GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(display));
+	
+	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+	bool display_converter_found = false;
+	
+	converter_i = 0;
+	while (converter_i<total_converters){
+		
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
+		converter_update_row(model, &iter1, converter_table[converter_i], &args);
+		
+		gtk_list_store_append(GTK_LIST_STORE(model2), &iter2);
+		converter_update_row(model2, &iter2, converter_table[converter_i], &args);
+		
+		if (converter == converter_table[converter_i]){
+			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(display), &iter2);
+			display_converter_found = true;
+		}
+		
+		++converter_i;
+	}
+	
+	if (!display_converter_found){
+		gtk_combo_box_set_active(GTK_COMBO_BOX(display), 0);
+	}
+	
+	delete [] converter_table;
 
 	gtk_widget_show_all(vbox);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
+	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
 	
-	gtk_window_set_default_size(GTK_WINDOW(dialog), 320, 240);
+	//gtk_window_set_default_size(GTK_WINDOW(dialog), 450, 240);
 	
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 	
 		GtkTreeIter iter;
 		GtkListStore *store;
 		gboolean valid;
+		
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(display), &iter2)){
+			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
+			converters_set_display(converters, converter);
+			g_key_file_set_string(gs->settings, "Converter", "Display", converter->function_name);
+		}
 
-		store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
+		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 		
 		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
 		if (count>0){
 			gchar** name_array = new gchar*[count];
+			gboolean* copy_array = new gboolean[count];	
+			gboolean* paste_array = new gboolean[count];			
 			unsigned int i=0;
 
 			while (valid){
 				gchar* function_name;
-				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, 0, &function_name, -1);
+				Converter* converter;
+				gboolean copy, paste;
+				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, CONVERTERLIST_CONVERTER_PTR, &converter, CONVERTERLIST_COPY, &copy, CONVERTERLIST_PASTE, &paste, -1);
 			
-				name_array[i]=function_name;
+				name_array[i]=converter->function_name;
+				copy_array[i]=copy;
+				paste_array[i]=paste;
+				
+				converter->copy = copy;
+				converter->paste = paste;
 			
 				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 				++i;
 			}
+			
+			converters_reorder(converters, (const char**)name_array, count);
 		
-			g_key_file_set_string_list(settings, "Converter", "Names", name_array, count);
-		
-			for (i=0; i<count; ++i){
-				if (name_array[i]) g_free(name_array[i]);
-			}
+			g_key_file_set_string_list(gs->settings, "Converter", "Names", name_array, count);
+			g_key_file_set_boolean_list(gs->settings, "Converter", "Copy", copy_array, count);	
+			g_key_file_set_boolean_list(gs->settings, "Converter", "Paste", paste_array, count);
+			
 			delete [] name_array;
+			delete [] copy_array;
+			delete [] paste_array;		
 		}else{
-			g_key_file_set_string_list(settings, "Converter", "Names", NULL, 0);
+			converters_reorder(converters, 0, 0);
+						
+			g_key_file_set_string_list(gs->settings, "Converter", "Names", NULL, 0);
+			g_key_file_set_boolean_list(gs->settings, "Converter", "Copy", NULL, 0);
+			g_key_file_set_boolean_list(gs->settings, "Converter", "Paste", NULL, 0);	
 		}
+		
+		
+		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
+		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 	
 	}
+	gint width, height;
+	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+	g_key_file_set_integer(gs->settings, "Converter Dialog", "Width", width);
+	g_key_file_set_integer(gs->settings, "Converter Dialog", "Height", height);
 	
 	gtk_widget_destroy(dialog);
 }

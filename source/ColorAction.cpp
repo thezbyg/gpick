@@ -53,4 +53,3 @@ struct ColorAction* color_action_ref(struct ColorAction* color_action){
 	color_action->refcnt++;
 	return color_action;
 }
-

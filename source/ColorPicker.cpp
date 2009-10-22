@@ -18,6 +18,7 @@
 
 #include "ColorPicker.h"
 #include "DragDrop.h"
+#include "Converter.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -26,7 +27,6 @@
 #include "main.h"
 
 #include "uiUtilities.h"
-#include "uiConverter.h"
 
 #include <gdk/gdkkeysyms.h>
 
@@ -107,7 +107,7 @@ static gboolean updateMainColor( gpointer data ){
 	Color c;
 	sampler_get_color_sample(args->gs->sampler, pointer, window_size, offset, &c);
 	
-	gchar* text = main_get_color_text(args->gs, &c);
+	gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
 	
 	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text);
 	if (text) g_free(text);
@@ -243,7 +243,7 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 	    
 	    struct ColorObject* color_object;
 	    color_object = color_list_new_color_object(args->gs->colors, &c);
-	    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs->settings, args->gs->lua));
+	    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
 		color_object_release(color_object);
 
 	    gtk_widget_show_all (GTK_WIDGET(menu));
@@ -297,14 +297,12 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				struct ColorObject* color_object;
 				color_object = color_list_new_color_object(args->gs->colors, &c);
 				
-				gchar** source_array;
-				gsize source_array_size;
-				if ((source_array = g_key_file_get_string_list(args->gs->settings, "Converter", "Names", &source_array_size, 0))){
-					if (source_array_size>0){	
-						converter_get_clipboard(source_array[0], color_object, 0, args->gs->lua);
-					}					
-					g_strfreev(source_array);
+				Converters *converters = (Converters*)dynv_system_get(args->gs->params, "ptr", "Converters");
+				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+				if (converter){
+					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
 				}
+
 				color_object_release(color_object);
 				return TRUE;
 			}
@@ -349,7 +347,7 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				gsize source_array_size;
 				if ((source_array = g_key_file_get_string_list(args->gs->settings, "Converter", "Names", &source_array_size, 0))){
 					if (source_array_size>0){	
-						converter_get_clipboard(source_array[0], color_object, 0, args->gs->lua);
+						converter_get_clipboard(source_array[0], color_object, 0, args->gs->params);
 					}					
 					g_strfreev(source_array);
 				}
@@ -440,7 +438,7 @@ static void on_popup_menu(GtkWidget *widget, gpointer user_data) {
 
     struct ColorObject* color_object;
     color_object = color_list_new_color_object(args->gs->colors, &c);
-    menu = converter_create_copy_menu (color_object, 0, args->gs->settings, args->gs->lua);
+    menu = converter_create_copy_menu (color_object, 0, args->gs);
 	color_object_release(color_object);
 
     gtk_widget_show_all (GTK_WIDGET(menu));
@@ -649,13 +647,13 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	GtkWidget *vbox, *hbox, *hbox2, *widget, *expander, *table, *main_hbox, *scrolled;
 	int table_y;
 	
-	main_hbox = gtk_hbox_new(FALSE, 5);
+	main_hbox = gtk_hbox_new(false, 5);
 	
-		vbox = gtk_vbox_new(FALSE, 5);
-		gtk_box_pack_start (GTK_BOX(main_hbox), vbox, FALSE, FALSE, 5);
+		vbox = gtk_vbox_new(false, 5);
+		gtk_box_pack_start (GTK_BOX(main_hbox), vbox, false, false, 0);
 	
 			widget = gtk_swatch_new();
-			gtk_box_pack_start (GTK_BOX(vbox), widget, FALSE, FALSE, 0);
+			gtk_box_pack_start (GTK_BOX(vbox), widget, false, false, 0);
 	
 			g_signal_connect (G_OBJECT (widget), "focus-in-event", G_CALLBACK (on_swatch_focus_change), args);
 			g_signal_connect (G_OBJECT (widget), "focus-out-event", G_CALLBACK (on_swatch_focus_change), args);
@@ -701,17 +699,17 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			}
 			
 			args->color_code = gtk_color_new();
-			gtk_box_pack_start (GTK_BOX(vbox), args->color_code, FALSE, TRUE, 0);	
+			gtk_box_pack_start (GTK_BOX(vbox), args->color_code, false, true, 0);	
 			
 			args->zoomed_display = gtk_zoomed_new();
-			gtk_box_pack_start (GTK_BOX(vbox), args->zoomed_display, FALSE, FALSE, 0);
+			gtk_box_pack_start (GTK_BOX(vbox), args->zoomed_display, false, false, 0);
 			
 		
 		scrolled = gtk_scrolled_window_new(0, 0);
 		gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-		gtk_box_pack_start (GTK_BOX(main_hbox), scrolled, TRUE, TRUE, 0);
+		gtk_box_pack_start (GTK_BOX(main_hbox), scrolled, true, true, 0);
 			
-		vbox = gtk_vbox_new(FALSE, 5);
+		vbox = gtk_vbox_new(false, 5);
 		//gtk_box_pack_start (GTK_BOX(main_hbox), vbox, FALSE, FALSE, 0);
 		//gtk_container_add(GTK_CONTAINER(scrolled), vbox);
 		gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), vbox);

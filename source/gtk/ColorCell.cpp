@@ -200,7 +200,8 @@ static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable
 	gtk_paint_box(widget->style, window, GTK_STATE_NORMAL, GTK_SHADOW_IN, NULL, widget, "trough", cell_area->x + x_offset + cell->xpad, cell_area->y + y_offset
 			+ cell->ypad, width - 1, height - 1);
 
-
+
+
 	 gtk_paint_box (widget->style,
 	 window,
 	 state, GTK_SHADOW_OUT,

@@ -15,13 +15,46 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+#ifndef CONVERTER_H_
+#define CONVERTER_H_
 
-#ifndef UIDIALOGVARIATIONS_H_
-#define UIDIALOGVARIATIONS_H_
+#include "dynv/DynvSystem.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-#include <gtk/gtk.h>
-#include "ColorList.h"
+class Converters;
 
-void dialog_variations_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings);
+enum ConvertersArrayType{
+	CONVERTERS_ARRAY_TYPE_COPY,
+	CONVERTERS_ARRAY_TYPE_PASTE,
+	CONVERTERS_ARRAY_TYPE_DISPLAY,
+};
 
-#endif /* UIDIALOGVARIATIONS_H_ */
+typedef struct Converter{
+	char* function_name;
+	char* human_readable;
+	bool copy, serialize_available;
+	bool paste, deserialize_available;
+	bool display;
+}Converter;
+
+Converters* converters_init(struct dynvSystem* params);
+int converters_term(Converters *converters);
+
+Converter* converters_get(Converters *converters, const char* name);
+//Converter** converters_get_all(Converters *converters, const char** priority_names, uint32_t priority_names_size);
+
+int converters_set_display(Converters *converters, Converter* converter);
+
+Converter* converters_get_first(Converters *converters, ConvertersArrayType type);
+Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size);
+Converter** converters_get_all(Converters *converters, uint32_t *size);
+
+int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, char** result);
+int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality);
+
+int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type);
+int converters_reorder(Converters *converters, const char** priority_names, uint32_t priority_names_size);
+
+#endif /* CONVERTER_H_ */

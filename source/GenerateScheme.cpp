@@ -20,7 +20,6 @@
 #include "DragDrop.h"
 
 #include "uiUtilities.h"
-#include "uiConverter.h"
 #include "ColorList.h"
 #include "MathUtil.h"
 #include "ColorRYB.h"
@@ -56,7 +55,7 @@ struct Arguments{
 	struct ColorList *preview_color_list;
 };
 
-
+static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint32_t color_index);
 
 static void calc( struct Arguments *args, bool preview, bool save_settings){
 
@@ -68,7 +67,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	double saturation = gtk_range_get_value(GTK_RANGE(args->saturation));
 	double lightness = gtk_range_get_value(GTK_RANGE(args->lightness));
 	
-	if  (save_settings){
+	if (save_settings){
 		g_key_file_set_integer(args->gs->settings, "Generate Scheme Dialog", "Type", type);
 		g_key_file_set_double(args->gs->settings, "Generate Scheme Dialog", "Hue", hue);
 		g_key_file_set_double(args->gs->settings, "Generate Scheme Dialog", "Saturation", saturation);
@@ -103,7 +102,8 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	};
 	
 	float chaos = 0;
-	
+	float hue_offset = 0;
+	float hue_step;
 
 	for (step_i = 0; step_i <= scheme_types[type].colors; ++step_i) {
 
@@ -115,11 +115,16 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 		color_hsl_to_rgb(&hsl, &r);
 		
 		struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-		dynv_system_set(color_object->params, "float", "hue", (void*)&hue);
+		dynv_system_set(color_object->params, "float", "hue_offset", (void*)&hue_offset);
 		color_list_add_color_object(color_list, color_object, 1);
+		color_object_release(color_object);
 		
-		hue = wrap_float(hue + (scheme_types[type].turn[step_i%scheme_types[type].turn_types]) / (360.0) 
-			+ chaos*(((random_get(args->gs->random)&0xFFFFFFFF)/(gdouble)0xFFFFFFFF)-0.5) );
+		hue_step = (scheme_types[type].turn[step_i%scheme_types[type].turn_types]) / (360.0) 
+			+ chaos*(((random_get(args->gs->random)&0xFFFFFFFF)/(gdouble)0xFFFFFFFF)-0.5);
+		
+		hue = wrap_float(hue + hue_step);
+		
+		hue_offset = wrap_float(hue_offset + hue_step);
 
 	}
 	
@@ -139,9 +144,9 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 		for (ColorList::iter i = color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			color_object_get_color(*i, &color);
 			
-			text = main_get_color_text(args->gs, &color);
+			text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
 			
-			args->color_hue[j] = *(float*)dynv_system_get((*i)->params, "float", "hue");
+			args->color_hue[j] = *(float*)dynv_system_get((*i)->params, "float", "hue_offset");
 	
 			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text);
 			if (text) g_free(text);
@@ -161,6 +166,60 @@ static void on_color_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu) 
 	gtk_widget_destroy(GTK_WIDGET(menu));
 }
 
+
+static void on_color_edit(GtkWidget *widget,  gpointer item) {
+	struct Arguments* args=(struct Arguments*)item;
+	
+	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	Color c;
+	gtk_color_get_color(GTK_COLOR(color_widget), &c);
+	gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
+	
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit color", GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+			GTK_STOCK_OK, GTK_RESPONSE_OK,
+			NULL);
+			
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	
+	GtkWidget* vbox = gtk_vbox_new(false, 5);
+	
+	GtkWidget* hbox = gtk_hbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
+	
+	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Color:",0,0.5,0,0), false, false, 0);
+	
+	GtkWidget* entry = gtk_entry_new();
+	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
+	
+	gtk_entry_set_text(GTK_ENTRY(entry), text);
+	g_free(text);
+	
+	
+	
+	gtk_widget_show_all(vbox);
+	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
+	
+	//gtk_window_set_default_size(GTK_WINDOW(dialog), 320, 240);
+	
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		if (main_get_color_from_text(args->gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &c)==0){
+			struct ColorObject* color_object;
+			color_object = color_list_new_color_object(args->gs->colors, &c);
+			
+			for (int i=0; i<args->colors_visible; ++i){
+				if (args->colors[i]==color_widget){
+					set_rgb_color(args, color_object, i);
+					break;
+				}
+			}
+			
+			color_object_release(color_object);
+		}		
+	}
+	gtk_widget_destroy(dialog);	
+}
+	
 static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 	Color c;
@@ -174,12 +233,29 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
-static void on_color_activate(GtkWidget *widget,  gpointer item) {
+static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 	Color c;
 	
+	for (int i=0; i<args->colors_visible; ++i){
+		gtk_color_get_color(GTK_COLOR(args->colors[i]), &c);
+		
+		struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
+		string name=color_names_get(args->gs->color_names, &c);
+		dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
+		color_list_add_color_object(args->gs->colors, color_object, 1);
+		color_object_release(color_object);
+	}		
+
+}
+
+
+static void on_color_activate(GtkWidget *widget,  gpointer item) {
+	struct Arguments* args=(struct Arguments*)item;
+	Color c;
+
 	gtk_color_get_color(GTK_COLOR(widget), &c);
-				
+			
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 	string name=color_names_get(args->gs->color_names, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
@@ -187,14 +263,14 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
-
 static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {
 	static GtkWidget *menu=NULL;
 	if (menu) {
 		gtk_menu_detach(GTK_MENU(menu));
 		menu=NULL;
 	}
-		if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
+	
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
 	
 		GtkWidget* item ;
 		gint32 button, event_time;
@@ -204,6 +280,11 @@ static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event,
 	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);
+		
+	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
@@ -216,8 +297,15 @@ static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event,
 
 		struct ColorObject* color_object;
 		color_object = color_list_new_color_object(args->gs->colors, &c);
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs->settings, args->gs->lua));
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
 		color_object_release(color_object);
+		
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+			
+		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);
 		
 		gtk_widget_show_all (GTK_WIDGET(menu));
 
@@ -256,34 +344,41 @@ static int source_get_color(struct Arguments *args, ColorObject** color){
 	return 0;
 }
 
-static int source_set_color(struct Arguments *args, ColorObject* color){
+static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint32_t color_index){
 	Color c;
 	color_object_get_color(color, &c);
 	
 	double hue;
 	double saturation;
 	double lightness;
-	
-	//hue = 0;
-	
+	double shifted_hue;
+
 	Color hsl, hsl_results;
 	color_rgb_to_hsl(&c, &hsl);
 	color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
+	
+	shifted_hue = wrap_float(hue - args->color_hue[color_index]);
+	
 	color_rybhue_to_rgb(hue, &c);
 	color_rgb_to_hsl(&c, &hsl_results);
 	
 	saturation = hsl.hsl.saturation * 1/hsl_results.hsl.saturation;
 	lightness = hsl.hsl.lightness - hsl_results.hsl.lightness;
 	
-	hue *= 360.0;
+	shifted_hue *= 360.0;
 	saturation *= 100.0;
 	lightness *= 100.0;
 	
-	gtk_range_set_value(GTK_RANGE(args->hue), hue);
+	gtk_range_set_value(GTK_RANGE(args->hue), shifted_hue);
 	gtk_range_set_value(GTK_RANGE(args->saturation), saturation);
 	gtk_range_set_value(GTK_RANGE(args->lightness), lightness);
 	
 	return 0;
+}
+	
+	
+static int source_set_color(struct Arguments *args, struct ColorObject* color){
+	return set_rgb_color(args, color, 0);
 }
 
 static int source_deactivate(struct Arguments *args){
@@ -303,7 +398,7 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
 	struct Arguments* args=(struct Arguments*)dd->userdata;
-	source_set_color(args, colorobject);
+	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
 	return 0;
 }
 
@@ -350,11 +445,11 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 		dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
 		
 		dd.userdata2 = (void*)i;
-		if (i==0){
+		//if (i==0){
 			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-		}else{
+		/*}else{
 			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
-		}
+		}*/
 	}
 
 	gint table_y;

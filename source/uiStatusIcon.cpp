@@ -22,7 +22,7 @@
 #include "gtk/ColorWidget.h"
 #include "main.h"
 #include "ColorPicker.h"
-#include "uiConverter.h"
+#include "Converter.h"
 #include <gdk/gdkkeysyms.h>
 
 using namespace math;
@@ -169,14 +169,13 @@ static gboolean status_icon_motion_notify(GtkWidget *widget, GdkEventMotion *eve
 	color_object = color_list_new_color_object(si->gs->colors, &c);
 		
 	gchar* text = 0;
-	gchar** source_array;
-	gsize source_array_size;
-	if ((source_array = g_key_file_get_string_list(si->gs->settings, "Converter", "Names", &source_array_size, 0))){
-		if (source_array_size>0){	
-			 converter_get_text(source_array[0], color_object, 0, si->gs->lua, &text);
-		}					
-		g_strfreev(source_array);
+	
+	Converters *converters = (Converters*)dynv_system_get(si->gs->params, "ptr", "Converters");
+	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+	if (converter){
+		converter_get_text(converter->function_name, color_object, 0, si->gs->params, &text);
 	}
+	
 	color_object_release(color_object);
 	
 	gtk_color_set_color(GTK_COLOR(si->color_widget), &c, text);
@@ -255,14 +254,12 @@ static gboolean status_icon_button_release(GtkWidget *widget, GdkEventButton *ev
 			struct ColorObject* color_object;
 			color_object = color_list_new_color_object(si->gs->colors, &c);
 		
-			gchar** source_array;
-			gsize source_array_size;
-			if ((source_array = g_key_file_get_string_list(si->gs->settings, "Converter", "Names", &source_array_size, 0))){
-				if (source_array_size>0){	
-					converter_get_clipboard(source_array[0], color_object, 0, si->gs->lua);
-				}					
-				g_strfreev(source_array);
+			Converters *converters = (Converters*)dynv_system_get(si->gs->params, "ptr", "Converters");
+			Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+			if (converter){
+				converter_get_clipboard(converter->function_name, color_object, 0, si->gs->params);
 			}
+
 			color_object_release(color_object);
 		}
 		

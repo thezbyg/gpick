@@ -68,7 +68,8 @@ gchar* build_filename(const gchar* filename){
 		return g_build_filename(get_data_dir(), NULL);
 }
 
-gchar* build_config_path(const gchar *filename){
+gchar* build_config_path(const gchar *filename){
+
 	if (filename)
 		return g_build_filename(g_get_user_config_dir(), "gpick", filename, NULL);
 	else

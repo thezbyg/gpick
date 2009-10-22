@@ -25,6 +25,17 @@
 
 int main_show_window(GtkWidget* window, GKeyFile* settings);
 
-char* main_get_color_text(GlobalState* gs, Color* color);
+enum ColorTextType{
+	COLOR_TEXT_TYPE_DISPLAY,
+	COLOR_TEXT_TYPE_COPY
+};
+
+char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
+int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
+
+GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
+void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
+void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
+
 
 #endif /* MAIN_H_ */
