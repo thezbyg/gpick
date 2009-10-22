@@ -343,14 +343,12 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				struct ColorObject* color_object;
 				color_object = color_list_new_color_object(args->gs->colors, &c);
 				
-				gchar** source_array;
-				gsize source_array_size;
-				if ((source_array = g_key_file_get_string_list(args->gs->settings, "Converter", "Names", &source_array_size, 0))){
-					if (source_array_size>0){	
-						converter_get_clipboard(source_array[0], color_object, 0, args->gs->params);
-					}					
-					g_strfreev(source_array);
+				Converters *converters = (Converters*)dynv_system_get(args->gs->params, "ptr", "Converters");
+				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+				if (converter){
+					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
 				}
+				
 				color_object_release(color_object);
 			}
 			

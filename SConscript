@@ -92,7 +92,7 @@ env.Alias(target="nsis", source=[
 env.Alias(target="tar", source=[
 	env.Append(TARFLAGS = ['-z']),
 	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'/,"']),
-	env.Tar('gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', tools.gpick.GetSourceFiles(env, "("+tools.gpick.RegexEscape(os.sep)+r"\.)|("+tools.gpick.RegexEscape(os.sep)+r"\.svn$)|(^"+tools.gpick.RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)"))
+	env.Tar('gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', tools.gpick.GetSourceFiles(env, "("+tools.gpick.RegexEscape(os.sep)+r"\.)|("+tools.gpick.RegexEscape(os.sep)+r"\.svn$)|(^"+tools.gpick.RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
 ])
 
 
