@@ -174,11 +174,7 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 				
 				Color color;
 				
-				if (g_regex_match_simple("^#[\\dabcdef]{6}$", data, GRegexCompileFlags(G_REGEX_MULTILINE | G_REGEX_CASELESS), G_REGEX_MATCH_NOTEMPTY)){
-					parse_hex6digit( data, &color);					
-				}else if (g_regex_match_simple("^#[\\dabcdef]{3}$", data, GRegexCompileFlags(G_REGEX_MULTILINE | G_REGEX_CASELESS), G_REGEX_MATCH_NOTEMPTY)){
-					parse_hex3digit( data, &color);
-				}else{
+				if (main_get_color_from_text(dd->gs, data, &color)!=0){
 					gtk_drag_finish (context, false, false, time);
 					return;
 				}

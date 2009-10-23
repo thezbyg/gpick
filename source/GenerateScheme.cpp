@@ -167,6 +167,33 @@ static void on_color_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu) 
 }
 
 
+static void on_color_paste(GtkWidget *widget,  gpointer item) {
+	struct Arguments* args=(struct Arguments*)item;
+	
+	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	Color c;
+	
+	gchar* text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+	if (text){
+	
+		if (main_get_color_from_text(args->gs, (char*)text, &c)==0){
+			struct ColorObject* color_object;
+			color_object = color_list_new_color_object(args->gs->colors, &c);
+			
+			for (int i=0; i<args->colors_visible; ++i){
+				if (args->colors[i]==color_widget){
+					set_rgb_color(args, color_object, i);
+					break;
+				}
+			}
+			
+			color_object_release(color_object);
+		}
+		
+		g_free(text);
+	}
+}
+
 static void on_color_edit(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 	
@@ -306,6 +333,15 @@ static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event,
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
+		
+		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);	
+		
+		if (!gtk_clipboard_wait_is_text_available(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD))){
+			gtk_widget_set_sensitive(item, false);
+		}
 		
 		gtk_widget_show_all (GTK_WIDGET(menu));
 
