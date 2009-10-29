@@ -16,28 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef COPYPASTE_H_
+#define COPYPASTE_H_
 
-#include <gtk/gtk.h>
+#include "ColorObject.h"
 #include "GlobalState.h"
-#include "Color.h"
 
-int main_show_window(GtkWidget* window, GKeyFile* settings);
+int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs);
+int copypaste_get_color_object(struct ColorObject** color_object, GlobalState* gs);
+int copypaste_is_color_object_available(GlobalState* gs);
 
-enum ColorTextType{
-	COLOR_TEXT_TYPE_DISPLAY,
-	COLOR_TEXT_TYPE_COPY,
-	COLOR_TEXT_TYPE_COLOR_LIST,
-};
-
-char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
-int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
-int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object);
-
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
-
-
-#endif /* MAIN_H_ */
+#endif /* COPYPASTE_H_ */

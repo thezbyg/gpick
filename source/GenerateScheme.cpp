@@ -24,6 +24,8 @@
 #include "MathUtil.h"
 #include "ColorRYB.h"
 #include "gtk/ColorWidget.h"
+#include "uiColorInput.h"
+#include "CopyPaste.h"
 
 #include "main.h"
 
@@ -173,7 +175,18 @@ static void on_color_paste(GtkWidget *widget,  gpointer item) {
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
 	Color c;
 	
-	gchar* text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+	struct ColorObject* color_object;
+	if (copypaste_get_color_object(&color_object, args->gs)==0){
+		for (int i=0; i<args->colors_visible; ++i){
+			if (args->colors[i]==color_widget){
+				set_rgb_color(args, color_object, i);
+				break;
+			}
+		}
+		color_object_release(color_object);
+	}
+	
+	/*gchar* text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
 	if (text){
 	
 		if (main_get_color_from_text(args->gs, (char*)text, &c)==0){
@@ -191,61 +204,35 @@ static void on_color_paste(GtkWidget *widget,  gpointer item) {
 		}
 		
 		g_free(text);
-	}
+	}*/
 }
+
 
 static void on_color_edit(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 	
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	
 	Color c;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
+	struct ColorObject* color_object = color_list_new_color_object(args->gs->colors, &c);
+	struct ColorObject* new_color_object = 0;
 	
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit color", GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
-			
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	
-	GtkWidget* vbox = gtk_vbox_new(false, 5);
-	
-	GtkWidget* hbox = gtk_hbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
-	
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Color:",0,0.5,0,0), false, false, 0);
-	
-	GtkWidget* entry = gtk_entry_new();
-	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
-	
-	gtk_entry_set_text(GTK_ENTRY(entry), text);
-	g_free(text);
-	
-	
-	
-	gtk_widget_show_all(vbox);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
-	
-	//gtk_window_set_default_size(GTK_WINDOW(dialog), 320, 240);
-	
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-		if (main_get_color_from_text(args->gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &c)==0){
-			struct ColorObject* color_object;
-			color_object = color_list_new_color_object(args->gs->colors, &c);
-			
-			for (int i=0; i<args->colors_visible; ++i){
-				if (args->colors[i]==color_widget){
-					set_rgb_color(args, color_object, i);
-					break;
-				}
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object )==0){
+		
+		for (int i=0; i<args->colors_visible; ++i){
+			if (args->colors[i]==color_widget){
+				set_rgb_color(args, new_color_object, i);
+				break;
 			}
-			
-			color_object_release(color_object);
-		}		
+		}
+		
+		color_object_release(new_color_object);
 	}
-	gtk_widget_destroy(dialog);	
+	
+	color_object_release(color_object);
 }
+
 	
 static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
@@ -337,9 +324,9 @@ static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event,
 		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);	
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);
 		
-		if (!gtk_clipboard_wait_is_text_available(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD))){
+		if (copypaste_is_color_object_available(args->gs)!=0){
 			gtk_widget_set_sensitive(item, false);
 		}
 		

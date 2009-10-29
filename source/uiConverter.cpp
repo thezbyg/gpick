@@ -115,21 +115,25 @@ static void cell_data_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, 
 	
 }
 
-static GtkWidget* converter_dropdown_new(struct Arguments *args){
+static GtkWidget* converter_dropdown_new(struct Arguments *args, GtkTreeModel *model){
 	
-	GtkListStore  		*store;
+	GtkListStore  		*store = 0;
 	GtkCellRenderer     *renderer;
 	GtkTreeViewColumn   *col;
 	GtkWidget			*combo;
-
-	store = gtk_list_store_new (CONVERTERLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
-	combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	
+	if (model){
+		combo = gtk_combo_box_new_with_model(model);
+	}else{
+		store = gtk_list_store_new (CONVERTERLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
+		combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	}
 	
 	renderer = gtk_cell_renderer_text_new();
     gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
 	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", CONVERTERLIST_HUMAN_NAME, NULL);
 	
-	g_object_unref (store);
+	if (store) g_object_unref (store);
 	
 	return combo;
 }
@@ -224,15 +228,23 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_box_pack_start (GTK_BOX(vbox), scrolled, true, true, 0);
 	
-	//gtk_box_pack_start(GTK_BOX(vbox), list, true, true, 0);
+	gint table_y;
+	GtkWidget* table = gtk_table_new(5, 2, false);
+	gtk_box_pack_start(GTK_BOX(vbox), table, false, false, 0);
+	table_y=0;
 	
-	GtkWidget* hbox = gtk_hbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
+
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Displays:",0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	GtkWidget *display = converter_dropdown_new(&args, 0);
+	GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(display));
+	gtk_table_attach(GTK_TABLE(table), display, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
+	table_y++;
 	
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Displays:",0,0.5,0,0), false, false, 0);
-	GtkWidget *display = converter_dropdown_new(&args);
-	gtk_box_pack_start(GTK_BOX(hbox), display, true, true, 0);
-	
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color list:",0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	GtkWidget *color_list = converter_dropdown_new(&args, model2);
+	gtk_table_attach(GTK_TABLE(table), color_list, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
+	table_y++;
+
 	
 	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
 	
@@ -244,10 +256,12 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	
 	GtkTreeIter iter2;
-	GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(display));
+	
 	
 	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	bool display_converter_found = false;
+	Converter *list_converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+	bool color_list_converter_found = false;
 	
 	converter_i = 0;
 	while (converter_i<total_converters){
@@ -258,16 +272,26 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 		gtk_list_store_append(GTK_LIST_STORE(model2), &iter2);
 		converter_update_row(model2, &iter2, converter_table[converter_i], &args);
 		
+		
+		
 		if (converter == converter_table[converter_i]){
 			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(display), &iter2);
 			display_converter_found = true;
 		}
+		
+		if (list_converter == converter_table[converter_i]){
+			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(color_list), &iter2);
+			color_list_converter_found = true;
+		}	
 		
 		++converter_i;
 	}
 	
 	if (!display_converter_found){
 		gtk_combo_box_set_active(GTK_COMBO_BOX(display), 0);
+	}
+	if (!color_list_converter_found){
+		gtk_combo_box_set_active(GTK_COMBO_BOX(color_list), 0);
 	}
 	
 	delete [] converter_table;
@@ -285,9 +309,15 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 		
 		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(display), &iter2)){
 			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
-			converters_set_display(converters, converter);
+			converters_set(converters, converter, CONVERTERS_ARRAY_TYPE_DISPLAY);
 			g_key_file_set_string(gs->settings, "Converter", "Display", converter->function_name);
 		}
+		
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(color_list), &iter2)){
+			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
+			converters_set(converters, converter, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+			g_key_file_set_string(gs->settings, "Converter", "Color List", converter->function_name);
+		}	
 
 		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);

@@ -27,6 +27,7 @@
 #include "main.h"
 
 #include "uiUtilities.h"
+#include "uiColorInput.h"
 
 #include <gdk/gdkkeysyms.h>
 
@@ -70,6 +71,8 @@ struct Arguments{
 	GlobalState* gs;
 	
 };
+
+static int source_set_color(struct Arguments *args, ColorObject* color);
 
 static void popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu){
 	gtk_widget_destroy(GTK_WIDGET(menu));
@@ -196,7 +199,7 @@ static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item)
 	}
 }
 
-static void on_swatch_color_activated (GtkWidget *widget, gpointer item) {
+static void on_swatch_color_activated(GtkWidget *widget, gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(widget), &c);
@@ -207,6 +210,23 @@ static void on_swatch_color_activated (GtkWidget *widget, gpointer item) {
 	string name=color_names_get(args->gs->color_names, &c);
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
+	color_object_release(color_object);
+}
+
+static void on_swatch_color_edit(GtkWidget *widget, gpointer item) {
+	struct Arguments* args=(struct Arguments*)item;
+
+	Color c;
+	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
+
+	struct ColorObject* color_object = color_list_new_color_object(args->gs->colors, &c);
+	struct ColorObject* new_color_object = 0;
+
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->swatch_display)), args->gs, color_object, &new_color_object )==0){
+		source_set_color(args, new_color_object);
+		color_object_release(new_color_object);
+	}
+	
 	color_object_release(color_object);
 }
 
@@ -230,13 +250,13 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 
 	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_to_palette),args);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_to_palette), args);
 
 	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_all_to_palette),args);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_all_to_palette), args);
 
-	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+	    gtk_menu_shell_append (GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	    item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -245,6 +265,13 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 	    color_object = color_list_new_color_object(args->gs->colors, &c);
 	    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
 		color_object_release(color_object);
+		
+		gtk_menu_shell_append (GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+
+		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_color_edit), args);
+		
 
 	    gtk_widget_show_all (GTK_WIDGET(menu));
 

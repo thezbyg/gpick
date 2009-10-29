@@ -53,9 +53,9 @@ static int lua_color2string (lua_State *L) {
 static int lua_color_rgb (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
-		c->rgb.red=luaL_checknumber(L, 2);	
-		c->rgb.green=luaL_checknumber(L, 3);
-		c->rgb.blue=luaL_checknumber(L, 4);
+		c->rgb.red = luaL_checknumber(L, 2);	
+		c->rgb.green = luaL_checknumber(L, 3);
+		c->rgb.blue = luaL_checknumber(L, 4);
 	}
 	lua_pushnumber(L, c->rgb.red);
 	lua_pushnumber(L, c->rgb.green);
@@ -94,9 +94,9 @@ static int lua_color_blue (lua_State *L) {
 static int lua_color_hsl (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
-		c->hsl.hue=luaL_checknumber(L, 2);	
-		c->hsl.saturation=luaL_checknumber(L, 3);
-		c->hsl.lightness=luaL_checknumber(L, 4);
+		c->hsl.hue = luaL_checknumber(L, 2);	
+		c->hsl.saturation = luaL_checknumber(L, 3);
+		c->hsl.lightness = luaL_checknumber(L, 4);
 	}
 	lua_pushnumber(L, c->hsl.hue);
 	lua_pushnumber(L, c->hsl.saturation);

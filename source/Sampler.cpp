@@ -88,7 +88,7 @@ void sampler_set_falloff(struct Sampler *sampler, enum SamplerFalloff falloff) {
 	}
 }
 
-void sampler_set_oversample(struct Sampler *sampler, int oversample) {
+void sampler_set_oversample(struct Sampler *sampler, int oversample){
 	sampler->oversample = oversample;
 }
 

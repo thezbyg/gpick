@@ -225,7 +225,9 @@ int global_state_init(GlobalState *gs){
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 	
-	converters_set_display(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")));
+	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
+	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Color List", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+	
 	
 	return 0;
 }

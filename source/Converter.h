@@ -29,6 +29,7 @@ enum ConvertersArrayType{
 	CONVERTERS_ARRAY_TYPE_COPY,
 	CONVERTERS_ARRAY_TYPE_PASTE,
 	CONVERTERS_ARRAY_TYPE_DISPLAY,
+	CONVERTERS_ARRAY_TYPE_COLOR_LIST,
 };
 
 typedef struct Converter{
@@ -36,7 +37,6 @@ typedef struct Converter{
 	char* human_readable;
 	bool copy, serialize_available;
 	bool paste, deserialize_available;
-	bool display;
 }Converter;
 
 Converters* converters_init(struct dynvSystem* params);
@@ -45,7 +45,7 @@ int converters_term(Converters *converters);
 Converter* converters_get(Converters *converters, const char* name);
 //Converter** converters_get_all(Converters *converters, const char** priority_names, uint32_t priority_names_size);
 
-int converters_set_display(Converters *converters, Converter* converter);
+int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type);
 
 Converter* converters_get_first(Converters *converters, ConvertersArrayType type);
 Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size);

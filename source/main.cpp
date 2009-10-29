@@ -177,9 +177,9 @@ static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *pa
 	dynv_system_set(window->gs->params, "ptr", "CurrentColorSource", window->current_color_source);
 }
 
-int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
-	
+int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object){
 	struct ColorObject* color_object;
+	Color dummy_color;
 	
 	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
 
@@ -190,7 +190,7 @@ int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
 	
 	if (converter){
 		if (converter->deserialize_available){
-			color_object = color_list_new_color_object(gs->colors, color);
+			color_object = color_list_new_color_object(gs->colors, &dummy_color);
 			float quality;
 			if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality)==0){
 				if (quality>0){
@@ -210,7 +210,7 @@ int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
 		for (uint32_t i=0; i!=table_size; ++i){
 			converter = converter_table[i];
 			if (converter->deserialize_available){
-				color_object = color_list_new_color_object(gs->colors, color);
+				color_object = color_list_new_color_object(gs->colors, &dummy_color);
 				float quality;
 				if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality)==0){
 					if (quality>0){
@@ -230,10 +230,10 @@ int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
 	for (ValidConverters::iterator i=valid_converters.begin(); i!=valid_converters.end(); ++i){
 		if (first){
 			first = false;
-			color_object_get_color((*i).second, color);
+			*output_color_object = (*i).second;
+		}else{
+			color_object_release((*i).second);
 		}
-		//cout << (*i).first << endl;
-		color_object_release((*i).second);
 	}
 	
 	if (first){
@@ -241,6 +241,16 @@ int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
 	}else{
 		return 0;
 	}
+}
+
+int main_get_color_from_text(GlobalState* gs, char* text, Color* color){
+	struct ColorObject* color_object = 0;
+	if (main_get_color_object_from_text(gs, text, &color_object)==0){
+		color_object_get_color(color_object, color);
+		color_object_release(color_object);
+		return 0;
+	}
+	return -1;
 }
 
 char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type){
@@ -261,6 +271,12 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 		break;
 	case COLOR_TEXT_TYPE_COPY:
 		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+		if (converter){
+			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+		}
+		break;
+	case COLOR_TEXT_TYPE_COLOR_LIST:
+		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
 		if (converter){
 			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
 		}

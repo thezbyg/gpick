@@ -54,6 +54,7 @@ public:
 	vector<Converter*> copy_converters;
 	vector<Converter*> paste_converters;
 	Converter* display_converter;
+	Converter* color_list_converter;
 	lua_State *L;
 	~Converters();
 };
@@ -287,6 +288,9 @@ Converter* converters_get_first(Converters *converters, ConvertersArrayType type
 	case CONVERTERS_ARRAY_TYPE_DISPLAY:
 		return converters->display_converter;
 		break;
+	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
+		return converters->color_list_converter;
+		break;
 	}
 	return 0;
 }
@@ -309,6 +313,10 @@ Converter** converters_get_all_type(Converters *converters, ConvertersArrayType 
 		*size = 1;
 		return &converters->display_converter;
 		break;
+	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
+		*size = 1;
+		return &converters->color_list_converter;
+		break;	
 	}
 	return 0;
 }
@@ -394,7 +402,16 @@ int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type){
 
 
 
-int converters_set_display(Converters *converters, Converter* converter){
-	converters->display_converter = converter;
+int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type){
+	switch (type){
+	case CONVERTERS_ARRAY_TYPE_DISPLAY:
+		converters->display_converter = converter;
+		break;
+	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
+		converters->color_list_converter = converter;
+		break;
+	default:
+		return -1;
+	}
 	return 0;
 }

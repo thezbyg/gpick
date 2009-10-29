@@ -161,7 +161,6 @@ void gtk_swatch_set_active_index(GtkSwatch* swatch, guint32 index) {
 void gtk_swatch_set_active_color(GtkSwatch* swatch, Color* color) {
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(swatch);
 	color_copy(color, &ns->color[ns->current_color]);
-
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 	g_signal_emit(GTK_WIDGET(swatch), gtk_swatch_signals[COLOR_CHANGED], 0);
 }
@@ -201,7 +200,11 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
 	
 	gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
-
+	
+	if (GTK_WIDGET_HAS_FOCUS(widget)){
+		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
+	}
+	
 	cr = gdk_cairo_create(widget->window);
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
@@ -275,9 +278,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 
 	cairo_destroy(cr);
 	
-	if (GTK_WIDGET_HAS_FOCUS(widget)){
-		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
-	}
+
 
 	return FALSE;
 }

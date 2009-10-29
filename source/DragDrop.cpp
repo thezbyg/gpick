@@ -109,41 +109,6 @@ int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, struct DragDr
 	return 0;
 }
 
-
-
-static int hex2dec(char h){
-	if (h>='0' && h<='9'){
-		return h-'0';
-	}else if (h>='a' && h<='f'){
-		return h-'a'+10;
-	}else if (h>='A' && h<='F'){
-		return h-'A'+10;
-	}
-	return -1;
-}
-
-static void parse_hex6digit(char* str, Color* c){
-
-	int red = hex2dec(str[1])<<4 | hex2dec(str[2]);
-	int green = hex2dec(str[3])<<4 | hex2dec(str[4]);
-	int blue = hex2dec(str[5])<<4 | hex2dec(str[6]);
-	
-	c->rgb.red = red/255.0;
-	c->rgb.green = green/255.0;
-	c->rgb.blue = blue/255.0;	
-}
-
-static void parse_hex3digit(char* str, Color* c){
-
-	int red = hex2dec(str[1]);
-	int green = hex2dec(str[2]);
-	int blue = hex2dec(str[3]);
-	
-	c->rgb.red = red/15.0;
-	c->rgb.green = green/15.0;
-	c->rgb.blue = blue/15.0;	
-}
-
 static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data){
 	bool success = false;
 
@@ -295,15 +260,11 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 		case TARGET_STRING:
 			{
 				color_object_get_color(color_object, &color);
-				//char text[8];
-				//snprintf(text, 8, "#%02x%02x%02x", int(color.rgb.red*255), int(color.rgb.green*255), int(color.rgb.blue*255));
-				
 				char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_COPY);
-				//gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
-				gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
-				g_free(text);
-				
-				//gtk_selection_data_set_text(selection_data, text, 8);
+				if (text){
+					gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
+					g_free(text);
+				}
 			}
 			color_object_release(color_object);
 			break;
