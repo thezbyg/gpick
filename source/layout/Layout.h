@@ -15,27 +15,32 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+ 
+#ifndef LAYOUT_H_
+#define LAYOUT_H_
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
+#include "../dynv/DynvSystem.h"
+#include <stdbool.h>
+#include <stdint.h>
 
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
+#include "Box.h"
+
+namespace layout{
+
+class Layouts;
+
+typedef struct Layout{
+	char* name;
+	char* human_readable;
+}Layout;
+
+Layouts* layouts_init(struct dynvSystem* params);
+int layouts_term(Layouts *layouts);
+
+Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
+
+Box* layouts_get(Layouts *layouts, const char* name);
+
 }
 
-#include "Color.h"
-#include "ColorObject.h"
-
-int lua_ext_colors_openlib(lua_State *lua);
-
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
-
-int lua_pushcolor (lua_State *L, Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
-
-
-#endif /* LUAEXT_H_ */
+#endif /* LAYOUT_H_ */

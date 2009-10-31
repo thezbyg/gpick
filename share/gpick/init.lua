@@ -4,6 +4,7 @@ gpick.converters = {};
 gpick.user = {};
 
 require('helpers')
+require('layouts')
 suggest('user_init')
 
 gpick.serialize_web_hex = function (color_object)

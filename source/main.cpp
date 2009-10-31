@@ -26,6 +26,7 @@
 
 #include "GenerateScheme.h"
 #include "ColorPicker.h"
+#include "LayoutPreview.h"
 
 #include "uiListPalette.h"
 #include "uiUtilities.h"
@@ -60,7 +61,7 @@ const gchar* program_authors[] = {"Albertas Vyšniauskas <thezbyg@gmail.com>", N
 typedef struct MainWindow{
 	GtkWidget *window;
 	
-	ColorSource *color_source[2];
+	ColorSource *color_source[3];
 	ColorSource *current_color_source;
 	
 	GtkWidget *color_list;
@@ -145,18 +146,19 @@ on_window_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data){
 	return FALSE;
 }
 
-static void
-destroy( GtkWidget *widget, gpointer data )
-{
+static void destroy( GtkWidget *widget, gpointer data ){
 	MainWindow* window=(MainWindow*)data;
 
 	g_key_file_set_integer(window->gs->settings, "Notebook", "Page", gtk_notebook_get_current_page(GTK_NOTEBOOK(window->notebook)));
-	
 	g_key_file_set_integer(window->gs->settings, "Window", "Paned position", gtk_paned_get_position(GTK_PANED(window->hpaned)));
 	
-	if (window->current_color_source) color_source_deactivate(window->current_color_source);
-	for (int i=0; i<2; ++i){
+	if (window->current_color_source){
+		color_source_deactivate(window->current_color_source);
+		window->current_color_source = 0;
+	}
+	for (int i=0; i<3; ++i){
 		color_source_destroy(window->color_source[i]);
+		window->color_source[i] = 0;
 	}
 	
 	g_key_file_set_integer(window->gs->settings, "Window", "X", window->x);
@@ -171,9 +173,12 @@ static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *pa
 	MainWindow* window=(MainWindow*)data;
 	
 	if (window->current_color_source) color_source_deactivate(window->current_color_source);	
+	
+	if (page_num<0 || page_num>2) return;
+	if (!window->color_source[page_num]) return;
+
 	color_source_activate(window->color_source[page_num]);
 	window->current_color_source = window->color_source[page_num];
-	
 	dynv_system_set(window->gs->params, "ptr", "CurrentColorSource", window->current_color_source);
 }
 
@@ -781,7 +786,7 @@ static void palette_popup_menu_mix(GtkWidget *widget, gpointer data) {
 	MainWindow* window=(MainWindow*)data;	
 	struct ColorList *color_list = color_list_new(NULL);
 	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
-	dialog_mix_show(GTK_WINDOW(window->window), window->gs->colors, color_list, window->gs->settings);
+	dialog_mix_show(GTK_WINDOW(window->window), color_list, window->gs);
 	color_list_destroy(color_list);
 }
 
@@ -794,7 +799,7 @@ static void palette_popup_menu_variations(GtkWidget *widget, gpointer data) {
 	
 	struct ColorList *color_list = color_list_new(handler_map);
 	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
-	dialog_variations_show(GTK_WINDOW(window->window), window->gs->colors, color_list, window->gs->settings);
+	dialog_variations_show(GTK_WINDOW(window->window), color_list, window->gs);
 	color_list_destroy(color_list);
 	
 	dynv_handler_map_release(handler_map);
@@ -804,7 +809,7 @@ static void palette_popup_menu_generate(GtkWidget *widget, gpointer data) {
 	MainWindow* window=(MainWindow*)data;	
 	struct ColorList *color_list = color_list_new(NULL);
 	palette_list_foreach_selected(window->color_list, color_list_selected, color_list);
-	dialog_generate_show(GTK_WINDOW(window->window), window->gs->colors, color_list, window->gs->settings, window->gs->random);
+	dialog_generate_show(GTK_WINDOW(window->window), color_list, window->gs);
 	color_list_destroy(color_list);
 }
 
@@ -1145,7 +1150,10 @@ int main(int argc, char **argv){
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Scheme generation"));
 		gtk_widget_show(widget);
 		
-
+		window->color_source[2] = layout_preview_new(window->gs, &widget);
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Layout preview"));
+		gtk_widget_show(widget);
+		
 		widget = palette_list_new(window->gs);
 		window->color_list = widget;
 		gtk_widget_show(widget);
@@ -1172,7 +1180,7 @@ int main(int argc, char **argv){
 		
 		int page = g_key_file_get_integer_with_default(window->gs->settings, "Notebook", "Page", 0);
 		
-		if (page>1) page=1;
+		if (page>2) page=2;
 		else if (page<0) page=0;
 		
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(window->notebook), page);

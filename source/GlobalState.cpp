@@ -22,6 +22,9 @@
 #include "Converter.h"
 #include "uiUtilities.h"
 
+#include "layout/LuaBindings.h"
+#include "layout/Layout.h"
+
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
 #include "dynv/DynvVarInt32.h"
@@ -30,7 +33,6 @@
 #include "dynv/DynvVarFloat.h"
 #include <stdlib.h>
 #include <glib/gstdio.h>
-
 
 #include <fstream>
 #include <iostream>
@@ -51,9 +53,13 @@ int global_state_term(GlobalState *gs){
 	}
 	g_free(config_file);
 	
-	//destroy color list, random generator and other systems
+	//destroy converter system
 	converters_term((Converters*)dynv_system_get(gs->params, "ptr", "Converters"));
 	
+	//destroy layout system
+	layout::layouts_term((layout::Layouts*)dynv_system_get(gs->params, "ptr", "Layouts"));
+	
+	//destroy color list, random generator and other systems
 	color_list_destroy(gs->colors);
 	random_destroy(gs->random);
 	g_key_file_free(gs->settings);
@@ -128,6 +134,7 @@ int global_state_init(GlobalState *gs){
 
 	int status;
 	lua_ext_colors_openlib(L);
+	layout::lua_ext_layout_openlib(L);
 	
 	gchar* lua_root_path = build_filename("?.lua");
 	gchar* lua_user_path = build_config_path("?.lua");
@@ -228,6 +235,9 @@ int global_state_init(GlobalState *gs){
 	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
 	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Color List", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
 	
+	
+	//create layout system
+	layout::Layouts* layout = layout::layouts_init(gs->params);
 	
 	return 0;
 }

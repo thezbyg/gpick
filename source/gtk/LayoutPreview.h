@@ -16,26 +16,50 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
-
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
-}
-
-#include "Color.h"
-#include "ColorObject.h"
-
-int lua_ext_colors_openlib(lua_State *lua);
-
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
-
-int lua_pushcolor (lua_State *L, Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
+#ifndef GTK_LAYOUTPREVIEW_H_
+#define GTK_LAYOUTPREVIEW_H_
 
 
-#endif /* LUAEXT_H_ */
+#include <gtk/gtk.h>
+#include "../ColorObject.h"
+#include "../layout/Box.h"
+
+G_BEGIN_DECLS
+
+#define GTK_TYPE_LAYOUT_PREVIEW				(gtk_layout_preview_get_type ())
+#define GTK_LAYOUT_PREVIEW(obj)				(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_LAYOUT_PREVIEW, GtkLayoutPreview))
+#define GTK_LAYOUT_PREVIEW_CLASS(obj)		(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_LAYOUT_PREVIEW, GtkLayoutPreviewClass))
+#define GTK_IS_LAYOUT_PREVIEW(obj)			(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_LAYOUT_PREVIEW))
+#define GTK_IS_LAYOUT_PREVIEW_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_LAYOUT_PREVIEW))
+#define GTK_LAYOUT_PREVIEW_GET_CLASS		(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_LAYOUT_PREVIEW, GtkLayoutPreviewClass))
+
+typedef struct GtkLayoutPreview				GtkLayoutPreview;
+typedef struct GtkLayoutPreviewClass		GtkLayoutPreviewClass;
+
+typedef gpointer GtkLayoutPreviewObject;
+
+typedef struct GtkLayoutPreview
+{
+	GtkDrawingArea parent;
+
+	/* < private > */
+}GtkLayoutPreview;
+
+typedef struct GtkLayoutPreviewClass
+{
+	GtkDrawingAreaClass parent_class;
+	
+	void  (* active_color_changed)(GtkWidget* widget, gint32 active_color, gpointer userdata);
+	void  (* color_changed)(GtkWidget* widget, gpointer userdata);
+	void  (* color_activated)(GtkWidget* widget, gpointer userdata);
+}GtkLayoutPreviewClass;
+
+GtkWidget* gtk_layout_preview_new(void);
+GType gtk_layout_preview_get_type(void);
+
+int gtk_layout_preview_set_box(GtkLayoutPreview* widget, layout::Box* box);
+
+G_END_DECLS
+
+
+#endif /* GTK_LAYOUTPREVIEW_H_ */

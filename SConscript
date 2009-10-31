@@ -13,6 +13,7 @@ vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
 vars.Add('DEBARCH', 'Debian package architecture', 'i386')
 vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)
 vars.Add('WITH_DBUSGLIB', 'Compile with DBus support', True)
+vars.Add('DEBUG', 'Compile with debug information', False)
 vars.Update(env)
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
@@ -63,8 +64,9 @@ env.Replace(
 	ARCOMSTR = "Linking static ==> $TARGET",
 	TARCOMSTR = "Archiving ==> $TARGET"
 	)
-
-env.Append(LINKFLAGS=['-s'])
+	
+if env['DEBUG']==False:
+	env.Append(LINKFLAGS=['-s'])
 
 executable = SConscript(['source/SConscript'], exports='env')
 

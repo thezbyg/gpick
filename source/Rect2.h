@@ -64,21 +64,30 @@ public:
 		return *this;
 	};
 	
+	const Rect2 impose(const Rect2 &rect){
+		x1 = rect.x1 + x1 * rect.getWidth();
+		y1 = rect.y1 + y1 * rect.getHeight();
+		
+		x2 = rect.x1 + x2 * rect.getWidth();
+		y2 = rect.y1 + y2 * rect.getHeight();
+		
+		return *this;
+	}
 	
-	bool isEmpty(){
+	bool isEmpty() const{
 		return empty;
 	};
 	
-	T& getX(){
+	const T& getX() const{
 		return x1;
 	};
-	T& getY(){
+	const T& getY() const{
 		return y1;
 	};
-	T getWidth(){
+	T getWidth() const{
 		return x2-x1;
 	};
-	T getHeight(){
+	T getHeight() const{
 		return y2-y1;
 	};
 	

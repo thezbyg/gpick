@@ -21,6 +21,7 @@
 #include "gtk/ColorCell.h"
 #include "ColorSource.h"
 #include "DragDrop.h"
+#include "GlobalState.h"
 #include "main.h"
 
 #include <sstream>
@@ -33,6 +34,8 @@ struct Arguments{
 	
 	GlobalState* gs;
 };
+
+static void destroy_arguments(gpointer data);
 
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, struct ColorObject* color_object, struct Arguments* args){
 	Color color;
@@ -87,7 +90,11 @@ static int palette_list_preview_on_clear(struct ColorList* color_list){
 	return 0;
 }
 
-GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
+	
+	struct Arguments* args = new struct Arguments;
+	args->gs = gs;
+	
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
 	GtkTreeViewColumn   *col;
@@ -136,6 +143,8 @@ GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list,
 	GtkWidget *expander=gtk_expander_new("Preview");
 	gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
 	gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
+	
+	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);	
 
 	return expander;
 }

@@ -16,26 +16,70 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
+#ifndef LAYOUT_BOX_H_
+#define LAYOUT_BOX_H_
 
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
+#include "../Color.h"
+#include "../Rect2.h"
+
+#include <gtk/gtk.h>
+
+#include <string>
+#include <list>
+
+namespace layout{
+
+class Box;
+
+class Group{
+public:
+	std::string group;
+	std::list<Box*> child;
+};
+	
+class Box{
+public:
+	uint32_t refcnt;
+
+	std::string name;
+	Group* group;
+	
+	math::Rect2<float> rect;
+
+	std::list<Box*> child;
+	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	void DrawChildren(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	void AddChild(Box* box);
+
+	Box(const char* name, float x, float y, float width, float height);
+	virtual ~Box();
+
+	Box* ref();
+	bool unref();
+};
+
+class Text:public Box{
+public:
+	std::string text;
+	Color text_color;
+	float font_size;
+
+	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	Text(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
+	};
+};
+
+class Fill:public Box{
+public:
+	Color background_color;
+
+	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	Fill(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
+	};
+};
+
+
+
 }
 
-#include "Color.h"
-#include "ColorObject.h"
-
-int lua_ext_colors_openlib(lua_State *lua);
-
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
-
-int lua_pushcolor (lua_State *L, Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
-
-
-#endif /* LUAEXT_H_ */
+#endif /* LAYOUT_BOX_H_ */

@@ -16,26 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
+#ifndef LAYOUTPREVIEW_H_
+#define LAYOUTPREVIEW_H_
 
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
-}
+#include "ColorSource.h"
+#include "GlobalState.h"
 
-#include "Color.h"
-#include "ColorObject.h"
+#include <gtk/gtk.h>
 
-int lua_ext_colors_openlib(lua_State *lua);
+ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **widget);
 
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
-
-int lua_pushcolor (lua_State *L, Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
-
-
-#endif /* LUAEXT_H_ */
+#endif /* LAYOUTPREVIEW_H_ */

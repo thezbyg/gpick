@@ -21,8 +21,8 @@
 
 #include <gtk/gtk.h>
 #include "ColorList.h"
-#include "Random.h"
+#include "GlobalState.h"
 
-void dialog_generate_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, Random* random);
+void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs);
 
 #endif /* UIDIALOGGENERATE_H_ */

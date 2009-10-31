@@ -28,7 +28,7 @@
 GtkWidget* palette_list_new(GlobalState* gs);
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
 
-GtkWidget* palette_list_preview_new(bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);
 
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);

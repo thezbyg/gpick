@@ -33,6 +33,11 @@ public:
 		y = y_;
 	};
 	
+	Vec2(T &x_, T &y_){
+		x = x_;
+		y = y_;
+	};
+	
 	Vec2& operator= (const Vec2& v){
     	x = v.x;
     	y = v.y;

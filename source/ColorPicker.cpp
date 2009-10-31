@@ -65,7 +65,7 @@ struct Arguments{
 	gboolean add_to_palette;
 	gboolean rotate_swatch;
 	gboolean copy_to_clipboard;
-	gboolean active;
+	//gboolean active;
 	guint timeout_source_id;
 	
 	GlobalState* gs;
@@ -126,11 +126,7 @@ static gboolean updateMainColor( gpointer data ){
 
 static gboolean updateMainColorTimer( gpointer data ){
 	struct Arguments* args=(struct Arguments*)data;
-	
-	if (args->active){
-		updateMainColor(args);
-	}else return FALSE;	//returnning FALSE destroys timer
-	return TRUE;
+	updateMainColor(args);
 }
 
 
@@ -609,24 +605,24 @@ static int source_set_color(struct Arguments *args, ColorObject* color){
 	return 0;
 }
 
-static void timer_destroy(struct Arguments *args){
-	args->timeout_source_id = 0;
-}
-
 static int source_activate(struct Arguments *args){
-	args->active = true;
-	
-	if (args->timeout_source_id) g_source_remove(args->timeout_source_id);
-		
-		
+
+	if (args->timeout_source_id) {
+		g_source_remove(args->timeout_source_id);
+		args->timeout_source_id = 0;
+	}		
+
 	gdouble refresh_rate = g_key_file_get_double_with_default(args->gs->settings, "Sampler", "Refresh rate", 30);
-	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, updateMainColorTimer, args, (GDestroyNotify)timer_destroy);
+	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, updateMainColorTimer, args, (GDestroyNotify)NULL);
 	
 	return 0;
 }
 
 static int source_deactivate(struct Arguments *args){
-	args->active = false;
+	if (args->timeout_source_id){
+		g_source_remove(args->timeout_source_id);
+		args->timeout_source_id = 0;
+	}
 	return 0;
 }
 
@@ -665,7 +661,6 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;	
 	
-	args->active = false;
 	args->gs = gs;
 	args->timeout_source_id = 0;
 	

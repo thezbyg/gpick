@@ -21,7 +21,8 @@
 
 #include <gtk/gtk.h>
 #include "ColorList.h"
+#include "GlobalState.h"
 
-void dialog_mix_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings);
+void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs);
 
 #endif /* UIDIALOGMIX_H_ */

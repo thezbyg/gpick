@@ -14,11 +14,13 @@ if not local_env.GetOption('clean'):
 	if local_env.has_key('DBUSGLIB_PC'):
 		local_env.ParseConfig('pkg-config --libs $DBUSGLIB_PC')
 
-sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('gtk/*.cpp')
+sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp')
 
 objects = []
 objects.append(SConscript(['version/SConscript'], exports='env'))
 objects.append(SConscript(['unique/SConscript'], exports='env'))
+objects.append(SConscript(['gtk/SConscript'], exports='env'))
+objects.append(SConscript(['layout/SConscript'], exports='env'))
 
 if sys.platform=='win32' or sys.platform=='win64':
 	objects.append(SConscript(['winres/SConscript'], exports='env'))
