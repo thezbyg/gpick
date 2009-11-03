@@ -15,32 +15,47 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
 
-#include "../dynv/DynvSystem.h"
-#include <stdbool.h>
-#include <stdint.h>
+#ifndef LAYOUT_STYLE_H_
+#define LAYOUT_STYLE_H_
 
-#include "System.h"
+#include "../Color.h"
+
+#include "ReferenceCounter.h"
+#include "Box.h"
+
+#include <string>
+#include <list>
 
 namespace layout{
 
-class Layouts;
+class Box; 
+	
+class Style:public ReferenceCounter{
+public:
+	std::string style_name;
+	
+	Color background_color;
 
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-}Layout;
+	Color text_color;
+	float font_size;
 
-Layouts* layouts_init(struct dynvSystem* params);
-int layouts_term(Layouts *layouts);
+	bool dirty;
 
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
+	bool highlight;
+	Box* selected_box;
 
-System* layouts_get(Layouts *layouts, const char* name);
+	bool IsDirty();
+	void SetDirty(bool dirty);
+
+	bool GetHighlight();
+	Box* GetBox();
+	void SetState(bool highlight, Box *box);
+
+	Style(const char* name, Color* bg_color, Color* text_color, float font_size);
+	virtual ~Style();
+};
 
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+#endif /* LAYOUT_STYLE_H_ */

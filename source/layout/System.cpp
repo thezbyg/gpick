@@ -15,32 +15,47 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
-
-#include "../dynv/DynvSystem.h"
-#include <stdbool.h>
-#include <stdint.h>
 
 #include "System.h"
 
+using namespace std;
+
 namespace layout{
-
-class Layouts;
-
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-}Layout;
-
-Layouts* layouts_init(struct dynvSystem* params);
-int layouts_term(Layouts *layouts);
-
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
-
-System* layouts_get(Layouts *layouts, const char* name);
-
+	
+System::System(){
+	box = 0;
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+System::~System(){
+	for (list<Style*>::iterator i=styles.begin(); i!=styles.end(); i++){
+		Style::unref(*i);
+	}
+	styles.clear();
+	Box::unref(box);
+}
+
+void System::Draw(cairo_t *cr, const math::Rect2<float>& parent_rect ){
+	if (!box) return;
+	box->Draw(cr, parent_rect);	
+}
+
+void System::AddStyle(Style *_style){
+	styles.push_back(static_cast<Style*>(_style->ref()));	
+}
+
+void System::SetBox(Box *_box){
+	if (box){
+		Box::unref(box);
+		box = 0;
+	}
+	box = static_cast<Box*>(_box->ref());
+}
+
+Box* System::GetBoxAt(const math::Vec2<float>& point){
+	if (box)
+		return box->GetBoxAt(point);
+	else
+		return 0;
+}
+
+}

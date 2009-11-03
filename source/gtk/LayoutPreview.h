@@ -22,7 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "../ColorObject.h"
-#include "../layout/Box.h"
+#include "../layout/System.h"
 
 G_BEGIN_DECLS
 
@@ -57,7 +57,14 @@ typedef struct GtkLayoutPreviewClass
 GtkWidget* gtk_layout_preview_new(void);
 GType gtk_layout_preview_get_type(void);
 
-int gtk_layout_preview_set_box(GtkLayoutPreview* widget, layout::Box* box);
+int gtk_layout_preview_set_system(GtkLayoutPreview* widget, layout::System* system);
+
+int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdouble x, gdouble y);
+int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble y);
+
+int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color);
+int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color);
+bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
 
 G_END_DECLS
 

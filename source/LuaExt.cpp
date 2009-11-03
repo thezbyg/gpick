@@ -26,7 +26,13 @@ static int lua_newcolor (lua_State *L) {
 	Color *c = (Color*)lua_newuserdata(L, sizeof(Color));
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);
-	color_zero(c);
+	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
+		c->rgb.red = luaL_checknumber(L, 2);	
+		c->rgb.green = luaL_checknumber(L, 3);
+		c->rgb.blue = luaL_checknumber(L, 4);
+	}else{
+		color_zero(c);
+	}
 	return 1;
 }
 

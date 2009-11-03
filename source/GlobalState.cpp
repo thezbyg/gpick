@@ -232,9 +232,11 @@ int global_state_init(GlobalState *gs){
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 	
-	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
-	converters_set(converters, converters_get(converters, g_key_file_get_string_with_default(gs->settings, "Converter", "Color List", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
-	
+	gchar* temp;
+	converters_set(converters, converters_get(converters, temp = g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
+	g_free(temp);
+	converters_set(converters, converters_get(converters, temp =  g_key_file_get_string_with_default(gs->settings, "Converter", "Color List", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+	g_free(temp);
 	
 	//create layout system
 	layout::Layouts* layout = layout::layouts_init(gs->params);

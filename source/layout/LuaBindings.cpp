@@ -18,12 +18,61 @@
  
 #include "LuaBindings.h"
 #include "Box.h"
+#include "System.h"
 
 #include <typeinfo>
 #include <iostream>
 using namespace std;
 
 namespace layout{
+
+static int lua_lstyle_new (lua_State *L) {
+	Style** c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
+	luaL_getmetatable(L, "layout_style");
+	lua_setmetatable(L, -2);
+	
+	size_t st;
+	const char* name = luaL_checklstring(L, 2, &st);
+	Color* background_color = lua_checkcolor(L, 3);
+	Color* text_color = lua_checkcolor(L, 4);
+	double font_size = luaL_checknumber(L, 5);
+	
+	Style *e = new Style(name, background_color, text_color, font_size);
+	*c = static_cast<Style*>(e);
+	
+	return 1;
+}
+
+Style* lua_checklstyle (lua_State *L, int index) {
+	Style** c = static_cast<Style**>(luaL_checkudata(L, index, "layout_style"));
+	luaL_argcheck(L, c != NULL, index, "`layout_style' expected");
+	return *c;
+}
+
+int lua_pushlstyle (lua_State *L, Style* style) {
+	Style** c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
+	luaL_getmetatable(L, "layout_style");
+	lua_setmetatable(L, -2);
+	*c = style;
+	return 1;
+}
+
+int lua_lstyle_gc (lua_State *L) {
+	Style* style = lua_checklstyle(L, 1);
+	Style::unref(style);
+	return 0;
+}
+
+static const struct luaL_reg lua_lstylelib_f [] = {
+	{"new", lua_lstyle_new},
+	{NULL, NULL}
+};
+
+static const struct luaL_reg lua_lstylelib_m [] = {
+	{NULL, NULL}
+};
+
+	
 
 static int lua_new_box (lua_State *L) {
 	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
@@ -54,10 +103,10 @@ static int lua_new_fill (lua_State *L) {
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
 	
-	Color* background_color = lua_checkcolor(L, 7);
+	Style* style = lua_checklstyle(L, 7);
 	
 	Fill *e = new Fill(name, x, y, w, h);
-	color_copy(background_color, &e->background_color);
+	e->SetStyle(style);
 	*c = static_cast<Box*>(e);
 	
 	return 1;
@@ -75,40 +124,44 @@ static int lua_new_text (lua_State *L) {
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
 	
-	Color* text_color = lua_checkcolor(L, 7);
+	Style* style = lua_checklstyle(L, 7);
 	
-	double font_size = luaL_checknumber(L, 8);
-	
-	const char* text = luaL_checklstring(L, 9, &st);
+	const char* text = luaL_checklstring(L, 8, &st);
 	
 	Text *e = new Text(name, x, y, w, h);
-	color_copy(text_color, &e->text_color);
-	e->font_size = font_size;
+	e->SetStyle(style);
 	e->text = text;
-	
 	*c = static_cast<Box*>(e);
 	
 	return 1;
 }
 
 Box* lua_checklbox (lua_State *L, int index) {
-	Box** c = (Box**)luaL_checkudata(L, index, "layout");
+	Box** c = static_cast<Box**>(luaL_checkudata(L, index, "layout"));
 	luaL_argcheck(L, c != NULL, index, "`layout' expected");
 	return *c;
 }
 
 int lua_pushlbox (lua_State *L, Box* box) {
-	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
+	Box** c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	*c = box;
+	*c = static_cast<Box*>(box->ref());
 	return 1;
 }
 
 int lua_add (lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
 	Box* box2 = lua_checklbox(L, 2);	
-	box->AddChild(box2);
+	box->AddChild(static_cast<Box*>(box2->ref()));
+	lua_pushlbox(L, box);
+	return 1;
+}
+
+
+int lua_gclbox (lua_State *L) {
+	Box* box = lua_checklbox(L, 1);
+	Box::unref(box);
 	return 0;
 }
 
@@ -125,6 +178,44 @@ static const struct luaL_reg lua_lboxlib_m [] = {
 };
 
 
+
+
+System* lua_checklsystem (lua_State *L, int index) {
+	System** c = static_cast<System**>(luaL_checkudata(L, index, "layout_system"));
+	luaL_argcheck(L, c != NULL, index, "`layout_system' expected");
+	return *c;
+}
+
+int lua_pushlsystem (lua_State *L, System* system) {
+	System** c = static_cast<System**>(lua_newuserdata(L, sizeof(System*)));
+	luaL_getmetatable(L, "layout_system");
+	lua_setmetatable(L, -2);
+	*c = static_cast<System*>(system);
+	return 1;
+}
+
+
+int lua_lsystem_addstyle (lua_State *L) {
+	System* system = lua_checklsystem(L, 1);
+	Style* style = lua_checklstyle(L, 2);	
+	system->AddStyle(style);
+	return 0;
+}
+
+int lua_lsystem_setbox (lua_State *L) {
+	System* system = lua_checklsystem(L, 1);
+	Box* box = lua_checklbox(L, 2);	
+	system->SetBox(box);
+	return 0;
+}
+
+static const struct luaL_reg lua_systemlib_m [] = {
+	{"addstyle", lua_lsystem_addstyle},
+	{"setbox", lua_lsystem_setbox},
+	{NULL, NULL}
+};
+
+
 int luaopen_lbox (lua_State *L) {
 	luaL_newmetatable(L, "layout");
 
@@ -132,12 +223,36 @@ int luaopen_lbox (lua_State *L) {
 	lua_pushvalue(L, -2);  /* pushes the metatable */
 	lua_settable(L, -3);  /* metatable.__index = metatable */
 
-	/*lua_pushstring(L, "__gc");
+	lua_pushstring(L, "__gc");
 	lua_pushcfunction(L, lua_gclbox);
-	lua_settable(L, -3);*/
+	lua_settable(L, -3);
 	
 	luaL_openlib(L, NULL, lua_lboxlib_m, 0);
 	luaL_openlib(L, "layout", lua_lboxlib_f, 0);
+	
+	
+	luaL_newmetatable(L, "layout_style");
+
+	lua_pushstring(L, "__index");
+	lua_pushvalue(L, -2);  /* pushes the metatable */
+	lua_settable(L, -3);  /* metatable.__index = metatable */
+
+	lua_pushstring(L, "__gc");
+	lua_pushcfunction(L, lua_lstyle_gc);
+	lua_settable(L, -3);
+	
+	luaL_openlib(L, NULL, lua_lstylelib_m, 0);
+	luaL_openlib(L, "layout_style", lua_lstylelib_f, 0);
+	
+	
+	
+	luaL_newmetatable(L, "layout_system");
+
+	lua_pushstring(L, "__index");
+	lua_pushvalue(L, -2);  /* pushes the metatable */
+	lua_settable(L, -3);  /* metatable.__index = metatable */
+
+	luaL_openlib(L, NULL, lua_systemlib_m, 0);
 		
 	return 1;
 }

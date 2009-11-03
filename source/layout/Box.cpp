@@ -18,11 +18,22 @@
 
 #include "Box.h"
 
+#include <typeinfo>
+#include <iostream>
 using namespace std;
 using namespace math;
 
 namespace layout{
 
+void Box::SetStyle(Style *_style){
+	if (style){
+		unref(style);
+		style=0;
+	}
+	if (_style){
+		style = static_cast<Style*>(_style->ref());
+	}
+}
 	
 void Box::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 	/*Rect2<float> draw_rect = rect;
@@ -49,29 +60,36 @@ void Box::AddChild(Box* box){
 }
 
 Box::Box(const char* _name, float x, float y, float width, float height){
-	group = 0;
+	style = 0;
 	name = _name;
 	rect = Rect2<float>(x, y, x+width, y+height);
-	refcnt = 0;
+
 }
 
 Box::~Box(){
+	SetStyle(0);
 	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
-		delete (*i);
+		unref(*i);
 	}
 }
 
-Box* Box::ref(){
-	refcnt++;
-	return this;
-}
-
-bool Box::unref(){
-	if (refcnt){
-		refcnt--;
-		return false;
+Box* Box::GetBoxAt(const Vec2<float>& point){
+	if (rect.isInside(point.x, point.y)){
+		Vec2<float> transformed_point = Vec2<float>((point.x-rect.getX()) / rect.getWidth(), (point.y-rect.getY()) / rect.getHeight());
+		
+		Box* r;
+		for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+			if (r = (*i)->GetBoxAt(transformed_point)){
+				return r;
+			}
+		}
+		
+		if (typeid(*this)==typeid(Box))		//do not match Box, because it is invisible
+			return 0;
+		else
+			return this;
 	}else{
-		return true;
+		return 0;
 	}
 }
 
@@ -81,16 +99,23 @@ void Text::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 	
 	if (text!=""){
 		//cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr, font_size * draw_rect.getHeight());
+		cairo_set_font_size(cr, style->font_size * draw_rect.getHeight());
 	
 		cairo_text_extents_t extents;
 		cairo_text_extents(cr, text.c_str(), &extents);
 	
-		cairo_set_source_rgb(cr, text_color.rgb.red, text_color.rgb.green, text_color.rgb.blue);
+		cairo_set_source_rgb(cr, style->text_color.rgb.red, style->text_color.rgb.green, style->text_color.rgb.blue);
 
 		cairo_move_to(cr, draw_rect.getX() + draw_rect.getWidth()/2 - (extents.width/2 + extents.x_bearing), draw_rect.getY() + draw_rect.getHeight()/2 - (extents.height/2 + extents.y_bearing));
 
 		cairo_show_text(cr, text.c_str());
+		
+		if (style->GetBox() == this){
+			cairo_rectangle(cr, draw_rect.getX()+1, draw_rect.getY()+1, draw_rect.getWidth()-2, draw_rect.getHeight()-2);
+			cairo_set_source_rgb(cr, 1, 1, 1);
+			cairo_set_line_width(cr, 2);
+			cairo_stroke(cr);
+		}
 	}
 	
 	DrawChildren(cr, parent_rect);
@@ -100,9 +125,16 @@ void Fill::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 	Rect2<float> draw_rect = rect;
 	draw_rect.impose( parent_rect );
 	
-	cairo_set_source_rgb(cr, background_color.rgb.red, background_color.rgb.green, background_color.rgb.blue);
+	cairo_set_source_rgb(cr, style->background_color.rgb.red, style->background_color.rgb.green, style->background_color.rgb.blue);
 	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
 	cairo_fill(cr);
+	
+	if (style->GetBox() == this){
+		cairo_rectangle(cr, draw_rect.getX()+1, draw_rect.getY()+1, draw_rect.getWidth()-2, draw_rect.getHeight()-2);
+		cairo_set_source_rgb(cr, 1, 1, 1);
+		cairo_set_line_width(cr, 2);
+		cairo_stroke(cr);
+	}
 	
 	DrawChildren(cr, parent_rect);
 }

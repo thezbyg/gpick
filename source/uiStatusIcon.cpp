@@ -352,8 +352,11 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSo
 	gtk_status_icon_set_visible (status_icon, FALSE);
 	gtk_status_icon_set_from_icon_name(status_icon, "gpick");
 	g_signal_connect(G_OBJECT(status_icon), "popup-menu", G_CALLBACK(status_icon_popup), si);
-	g_signal_connect(G_OBJECT(status_icon), "activate", G_CALLBACK(status_icon_activate), si);
 	
+#ifndef WIN32
+	g_signal_connect(G_OBJECT(status_icon), "activate", G_CALLBACK(status_icon_activate), si);
+#endif
+
 	g_signal_connect(G_OBJECT(si->fake_window), "motion-notify-event", G_CALLBACK(status_icon_motion_notify), si);
 	g_signal_connect(G_OBJECT(si->fake_window), "scroll_event", G_CALLBACK(status_icon_scroll_event), si);
 	g_signal_connect(G_OBJECT(si->fake_window), "button-release-event", G_CALLBACK(status_icon_button_release), si);

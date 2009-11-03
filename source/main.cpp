@@ -1134,6 +1134,7 @@ int main(int argc, char **argv){
     
 	notebook = gtk_notebook_new();
 	g_signal_connect (G_OBJECT (notebook), "switch-page", G_CALLBACK (on_window_notebook_switch), window);
+	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 	
 	//gtk_box_pack_start (GTK_BOX(hbox), notebook, FALSE, TRUE, 5); 
 	gtk_paned_pack1(GTK_PANED(hpaned), notebook, FALSE, FALSE);

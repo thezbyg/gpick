@@ -15,32 +15,55 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
 
-#include "../dynv/DynvSystem.h"
-#include <stdbool.h>
-#include <stdint.h>
+#include "Box.h"
 
-#include "System.h"
+
+#include <iostream>
+using namespace std;
+using namespace math;
 
 namespace layout{
 
-class Layouts;
-
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-}Layout;
-
-Layouts* layouts_init(struct dynvSystem* params);
-int layouts_term(Layouts *layouts);
-
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
-
-System* layouts_get(Layouts *layouts, const char* name);
+	
+Style::Style(const char* _name, Color* _bg_color, Color* _text_color, float _font_size){
+	style_name = _name;
+	color_copy(_bg_color, &background_color);
+	color_copy(_text_color, &text_color);
+	font_size = _font_size;
+	
+	dirty = true;
+	highlight = false;
+	selected_box = 0;
+}
+	
+Style::~Style(){
 
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+bool Style::IsDirty(){
+	return dirty;
+}
+
+void Style::SetDirty(bool _dirty){
+	dirty = _dirty;
+}
+
+bool Style::GetHighlight(){
+	return highlight;
+}
+
+Box* Style::GetBox(){
+	return selected_box;
+}
+
+void Style::SetState(bool _highlight, Box *box){
+	selected_box = box;
+	highlight = _highlight;
+}
+
+
+
+
+}
+

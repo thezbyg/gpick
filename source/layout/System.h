@@ -16,31 +16,40 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
+#ifndef LAYOUT_SYSTEM_H_
+#define LAYOUT_SYSTEM_H_
 
-#include "../dynv/DynvSystem.h"
+#include "../Rect2.h"
+#include "../Vector2.h"
+#include "Box.h"
+#include "Style.h"
+#include "ReferenceCounter.h"
+
+#include <gtk/gtk.h>
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "System.h"
+#include <list>
+#include <string>
 
 namespace layout{
 
-class Layouts;
+class System:public ReferenceCounter{
+public:
+	std::list<Style*> styles;
+	Box* box;
 
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-}Layout;
+	System();
+	virtual ~System();
 
-Layouts* layouts_init(struct dynvSystem* params);
-int layouts_term(Layouts *layouts);
+	void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
 
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
+	Box* GetBoxAt(const math::Vec2<float>& point);
 
-System* layouts_get(Layouts *layouts, const char* name);
+	void AddStyle(Style *style);
+	void SetBox(Box *box);
+
+};
 
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+#endif /* LAYOUT_SYSTEM_H_ */

@@ -15,32 +15,26 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
 
-#include "../dynv/DynvSystem.h"
-#include <stdbool.h>
+#ifndef LAYOUT_REFERENCECOUNTER_H_
+#define LAYOUT_REFERENCECOUNTER_H_
+
 #include <stdint.h>
-
-#include "System.h"
+#include <stdbool.h>
 
 namespace layout{
 
-class Layouts;
+class ReferenceCounter{
+protected:
+	uint32_t refcnt;
+public:
+	ReferenceCounter();
+	virtual ~ReferenceCounter();
 
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-}Layout;
-
-Layouts* layouts_init(struct dynvSystem* params);
-int layouts_term(Layouts *layouts);
-
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
-
-System* layouts_get(Layouts *layouts, const char* name);
+	ReferenceCounter* ref();
+	static bool unref(ReferenceCounter* rc);
+};
 
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+#endif /* LAYOUT_REFERENCECOUNTER_H_ */

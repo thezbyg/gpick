@@ -130,11 +130,11 @@ int layouts_term(Layouts *layouts){
 }
 
 Layout** layouts_get_all(Layouts *layouts, uint32_t *size){
-	*size = layouts->layouts.size();
-	return &layouts->layouts[0];
+	*size = layouts->all_layouts.size();
+	return &layouts->all_layouts[0];
 }
 
-Box* layouts_get(Layouts *layouts, const char* name){
+System* layouts_get(Layouts *layouts, const char* name){
 	Layouts::LayoutMap::iterator i;
 	i=layouts->layouts.find(name);
 	if (i!=layouts->layouts.end()){
@@ -160,15 +160,21 @@ Box* layouts_get(Layouts *layouts, const char* name){
 			
 			if (!lua_isnil(L, -1)){
 				
-				if ((status=lua_pcall(L, 0, 1, 0))==0){
+				System *layout_system = new System;
+				lua_pushlsystem(L, layout_system);
+				
+				if ((status=lua_pcall(L, 1, 1, 0))==0){
 					
-					Box* box = lua_checklbox(L, -1);
+					if (!lua_isnil(L, -1)){
+						lua_settop(L, stack_top);
+						return layout_system;	
+					}
 					
-					lua_settop(L, stack_top);
-					return box;
 				}else{
 					cerr<<"layouts.build: "<<lua_tostring (L, -1)<<endl;
 				}
+				
+				delete layout_system;
 			}			
 		}
 		lua_settop(L, stack_top);

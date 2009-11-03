@@ -97,24 +97,6 @@ static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Argu
 	gtk_list_store_set(store, &iter1, CONVERTERLIST_PASTE, !value, -1);
 }
 
-static void cell_data_cb(GtkTreeViewColumn *tree_column, GtkCellRenderer *cell, GtkTreeModel *tree_model, GtkTreeIter *iter, int item){
-	
-	Converter *converter;
-	gtk_tree_model_get(tree_model, iter, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
-	
-	switch (item){
-	case 0:
-		gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(cell), converter->serialize_available);
-		gtk_cell_renderer_toggle_set_active(GTK_CELL_RENDERER_TOGGLE(cell), converter->copy);
-		break;
-	case 1:
-		gtk_cell_renderer_toggle_set_activatable(GTK_CELL_RENDERER_TOGGLE(cell), converter->deserialize_available);
-		gtk_cell_renderer_toggle_set_active(GTK_CELL_RENDERER_TOGGLE(cell), converter->paste);
-		break;
-	}
-	
-}
-
 static GtkWidget* converter_dropdown_new(struct Arguments *args, GtkTreeModel *model){
 	
 	GtkListStore  		*store = 0;
@@ -179,8 +161,7 @@ static GtkWidget* converter_list_new(struct Arguments *args){
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 	g_signal_connect(renderer, "toggled", (GCallback) copy_toggled_cb, args);
 	gtk_tree_view_column_set_attributes(col, renderer, "active", CONVERTERLIST_COPY, "activatable", CONVERTERLIST_COPY_ENABLED, (void*)0);
-	//gtk_tree_view_column_set_cell_data_func(col, renderer, (GtkTreeCellDataFunc)cell_data_cb, (void*)0, 0);
-	
+
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 	gtk_tree_view_column_set_title(col, "Paste");
@@ -189,8 +170,7 @@ static GtkWidget* converter_list_new(struct Arguments *args){
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 	g_signal_connect(renderer, "toggled", (GCallback) paste_toggled_cb, args);
 	gtk_tree_view_column_set_attributes(col, renderer, "active", CONVERTERLIST_PASTE, "activatable", CONVERTERLIST_PASTE_ENABLED, (void*)0);
-	//gtk_tree_view_column_set_cell_data_func(col, renderer, (GtkTreeCellDataFunc)cell_data_cb, (void*)1, 0);
-	
+
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
 	g_object_unref (GTK_TREE_MODEL(store));

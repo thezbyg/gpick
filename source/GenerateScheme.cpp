@@ -185,26 +185,6 @@ static void on_color_paste(GtkWidget *widget,  gpointer item) {
 		}
 		color_object_release(color_object);
 	}
-	
-	/*gchar* text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-	
-		if (main_get_color_from_text(args->gs, (char*)text, &c)==0){
-			struct ColorObject* color_object;
-			color_object = color_list_new_color_object(args->gs->colors, &c);
-			
-			for (int i=0; i<args->colors_visible; ++i){
-				if (args->colors[i]==color_widget){
-					set_rgb_color(args, color_object, i);
-					break;
-				}
-			}
-			
-			color_object_release(color_object);
-		}
-		
-		g_free(text);
-	}*/
 }
 
 

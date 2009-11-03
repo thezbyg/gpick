@@ -17,10 +17,11 @@
  */
 
 #include "LayoutPreview.h"
-#include "../layout/Box.h"
+#include "../layout/System.h"
 #include "../Rect2.h"
 
 #include <list>
+#include <typeinfo>
 using namespace std;
 using namespace math;
 using namespace layout;
@@ -44,7 +45,10 @@ static guint gtk_layout_preview_signals[LAST_SIGNAL] = { 0 };
 typedef struct GtkLayoutPreviewPrivate GtkLayoutPreviewPrivate;
 
 typedef struct GtkLayoutPreviewPrivate{
-	Box* box;
+	System* system;
+	Rect2<float> area;
+	Style* selected_style;
+	Box* selected_box;
 }GtkLayoutPreviewPrivate;
 
 
@@ -69,52 +73,64 @@ static void gtk_layout_preview_init(GtkLayoutPreview *layout_preview){
 	gtk_widget_add_events(GTK_WIDGET(layout_preview), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 }
 
+static void gtk_layout_preview_destroy(GtkLayoutPreview *widget){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (ns->system) System::unref(ns->system);
+}
+
 GtkWidget* gtk_layout_preview_new(void){
 	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_LAYOUT_PREVIEW, NULL);
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
-
+	
+	ns->area = Rect2<float>(0, 0, 1, 1);
+	ns->selected_style = 0;
+	ns->selected_box = 0;
+	ns->system = 0;
+	
+	g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK (gtk_layout_preview_destroy), NULL);
 	
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 	return widget;
 }
 
-static void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width, double height, double roundness){
-	
-	double strength = 0.3;
-	
-	cairo_move_to(cr, x+roundness, y);
-	cairo_line_to(cr, x+width-roundness, y);
-	cairo_curve_to(cr, x+width-roundness*strength, y, x+width, y+roundness*strength, x+width, y+roundness);
-	cairo_line_to(cr, x+width, y+height-roundness);
-	cairo_curve_to(cr, x+width, y+height-roundness*strength, x+width-roundness*strength, y+height, x+width-roundness, y+height);
-	cairo_line_to(cr, x+roundness, y+height);
-	cairo_curve_to(cr, x+roundness*strength, y+height, x, y+height-roundness*strength, x, y+height-roundness);
-	cairo_line_to(cr, x, y+roundness);
-	cairo_curve_to(cr, x, y+roundness*strength, x+roundness*strength, y, x+roundness, y);
-	cairo_close_path (cr);
 
+
+static bool set_selected_box(GtkLayoutPreviewPrivate *ns, Box* box){
+	bool changed = false;
+	
+	if (box && box->style){
+		if (ns->selected_style) ns->selected_style->SetState(false, 0);
+		ns->selected_style = box->style;
+		ns->selected_style->SetState(true, box);
+		if (ns->selected_box != box) changed=true;
+		
+		ns->selected_box = box;
+	}else{
+		if (ns->selected_style){
+			ns->selected_style->SetState(false, 0);
+			changed = true;
+		}
+		ns->selected_style = 0;
+		ns->selected_box = 0;
+	}
+	return changed;
 }
 
 static gboolean gtk_layout_preview_expose(GtkWidget *widget, GdkEventExpose *event){
-	
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	
 	cairo_t *cr;
 	cr = gdk_cairo_create(widget->window);
 	
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
 	
-	if (ns->box){
-		Rect2<float> area = Rect2<float>(0, 0, 640, 480);
-		
-		ns->box->Draw(cr, area);	
-		
+	
+	if (ns->system && ns->system->box){
+		ns->area = Rect2<float>(0, 0, 1, 1);
+		ns->system->box->Draw(cr, ns->area);	
 	}
-	
-	//cairo_set_source_rgb(cr, 0, ns->color[0].rgb.green, ns->color[0].rgb.blue);
-	//cairo_rounded_rectangle(cr, 0, 0, 400, 400, 10);
-	//cairo_fill(cr);
-	
+
 	cairo_destroy(cr);
 	
 	return true;
@@ -124,13 +140,112 @@ static gboolean gtk_layout_preview_button_release(GtkWidget *layout_preview, Gdk
 	return true;
 }
 
-static gboolean gtk_layout_preview_button_press(GtkWidget *layout_preview, GdkEventButton *event){
-	return true;
-}
-
-int gtk_layout_preview_set_box(GtkLayoutPreview* widget, layout::Box* box){
+static gboolean gtk_layout_preview_button_press(GtkWidget *widget, GdkEventButton *event){
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
 	
-	ns->box = box;
+	if (ns->system){
+
+		Vec2<float> point = Vec2<float>((event->x-ns->area.getX()) / ns->area.getWidth(), (event->y-ns->area.getY()) / ns->area.getHeight());
+	
+		if (set_selected_box(ns, ns->system->GetBoxAt(point))){
+			gtk_widget_queue_draw(GTK_WIDGET(widget));
+		}
+	}
+	
+	return false;
+}
+
+int gtk_layout_preview_set_system(GtkLayoutPreview* widget, System* system){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (ns->system){
+		System::unref(ns->system);
+	}
+	if (system){
+		ns->system = static_cast<System*>(system->ref());
+		if (ns->system->box)
+			gtk_widget_set_size_request(GTK_WIDGET(widget), ns->system->box->rect.getWidth(), ns->system->box->rect.getHeight());
+	}else ns->system = 0;
 	return 0;
 }
+
+
+
+int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdouble x, gdouble y){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (!ns->system) return -1;
+	
+	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
+	Box* box = ns->system->GetBoxAt(point);
+	if (box && box->style){
+		if (typeid(*box)==typeid(Fill)){
+			color_copy(color, &box->style->background_color);
+		}else if (typeid(*box)==typeid(Text)){
+			color_copy(color, &box->style->text_color);	
+		}
+		gtk_widget_queue_draw(GTK_WIDGET(widget));
+		return 0;
+	}
+
+	return -1;
+}
+
+
+
+int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble y){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (!ns->system) return -1;
+	
+	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
+	Box* box;
+	if (set_selected_box(ns, box = ns->system->GetBoxAt(point))){
+		gtk_widget_queue_draw(GTK_WIDGET(widget));
+		
+		return (box)?(0):(-1);
+	}
+	return -1;
+}
+
+int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+
+	if (ns->system && ns->selected_style){
+		Box* box = ns->selected_box;
+		
+		if (typeid(*box)==typeid(Fill)){
+			color_copy(&box->style->background_color, color);
+		}else if (typeid(*box)==typeid(Text)){
+			color_copy(&box->style->text_color, color);	
+		}
+		
+		return 0;
+		
+	}
+	return -1;	
+}
+
+
+int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	
+	if (ns->system && ns->selected_style){
+		Box* box = ns->selected_box;
+		
+		if (typeid(*box)==typeid(Fill)){
+			color_copy(color, &box->style->background_color);
+		}else if (typeid(*box)==typeid(Text)){
+			color_copy(color, &box->style->text_color);	
+		}
+		gtk_widget_queue_draw(GTK_WIDGET(widget));
+		return 0;
+	}
+	return -1;	
+}
+
+bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (ns->system && ns->selected_style && ns->selected_box){
+		return true;
+	}
+	return false;
+}
+

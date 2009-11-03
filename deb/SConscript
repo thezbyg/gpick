@@ -31,7 +31,7 @@ if env['WITH_UNIQUE']==True:
 else:
 	DEBDEPENDS += ', libdbus-glib-1-2 (>=0.76-1)'
 
-DEBPACKAGEFILE = '%s-%s_%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
+DEBPACKAGEFILE = '%s_%s_%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
 
 CONTROL_TEMPLATE = """Package: %s
 Version: %s

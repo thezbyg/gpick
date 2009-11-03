@@ -74,6 +74,13 @@ public:
 		return *this;
 	}
 	
+	bool isInside(const T &x, const T &y){
+		if (x<x1 || x>x2 || y<y1 || y>y2)
+			return false;
+		else
+			return true;	
+	}
+	
 	bool isEmpty() const{
 		return empty;
 	};

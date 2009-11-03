@@ -21,6 +21,10 @@
 
 #include "../Color.h"
 #include "../Rect2.h"
+#include "../Vector2.h"
+
+#include "ReferenceCounter.h"
+#include "Style.h"
 
 #include <gtk/gtk.h>
 
@@ -29,20 +33,10 @@
 
 namespace layout{
 
-class Box;
-
-class Group{
+class Box: public ReferenceCounter{
 public:
-	std::string group;
-	std::list<Box*> child;
-};
-	
-class Box{
-public:
-	uint32_t refcnt;
-
 	std::string name;
-	Group* group;
+	Style *style;
 	
 	math::Rect2<float> rect;
 
@@ -51,18 +45,18 @@ public:
 	void DrawChildren(cairo_t *cr, const math::Rect2<float>& parent_rect );
 	void AddChild(Box* box);
 
+	void SetStyle(Style *style);
+
+	Box* GetBoxAt(const math::Vec2<float>& point);
+
 	Box(const char* name, float x, float y, float width, float height);
 	virtual ~Box();
 
-	Box* ref();
-	bool unref();
 };
 
 class Text:public Box{
 public:
 	std::string text;
-	Color text_color;
-	float font_size;
 
 	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
 	Text(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
@@ -71,8 +65,6 @@ public:
 
 class Fill:public Box{
 public:
-	Color background_color;
-
 	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
 	Fill(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
 	};

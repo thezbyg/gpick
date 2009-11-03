@@ -21,6 +21,7 @@
 
 #include "../LuaExt.h"
 #include "Box.h"
+#include "System.h"
 
 namespace layout{
 
@@ -28,6 +29,9 @@ int lua_ext_layout_openlib(lua_State *L);
 
 Box* lua_checklbox (lua_State *L, int index);
 int lua_pushlbox (lua_State *L, Box* box);
+	
+System* lua_checklsystem (lua_State *L, int index);
+int lua_pushlsystem (lua_State *L, System* system);
 
 }
 
