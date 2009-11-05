@@ -339,15 +339,6 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSo
 	gtk_box_pack_start(GTK_BOX(vbox), si->color_widget, TRUE, TRUE, 0);
 	
 	
-	/*GtkWidget* hbox = gtk_hbox_new(0, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, TRUE, 0);
-	gtk_widget_show(hbox);
-
-	si->color_code = gtk_label_new("");
-	gtk_widget_show(si->color_code);
-	gtk_box_pack_start(GTK_BOX(hbox), si->color_code, FALSE, TRUE, 0);*/
-	
-	
 	GtkStatusIcon *status_icon = gtk_status_icon_new();
 	gtk_status_icon_set_visible (status_icon, FALSE);
 	gtk_status_icon_set_from_icon_name(status_icon, "gpick");
@@ -365,7 +356,6 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSo
 	si->status_icon = status_icon;
 	si->color_source = color_source;
 	
-	//gtk_status_icon_set_visible (statusIcon, TRUE);
 	return si;
 }
 

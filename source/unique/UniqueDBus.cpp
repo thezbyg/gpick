@@ -114,7 +114,7 @@ static int register_factory (void){
 
 
 int unique_term(){
-	g_object_unref(proxy);
+	if (proxy) g_object_unref(proxy);
 	return 0;
 }
 

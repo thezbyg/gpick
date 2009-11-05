@@ -25,6 +25,7 @@ struct Arguments{
 	GtkWidget *close_to_tray;
 	GtkWidget *start_in_tray;
 	GtkWidget *refresh_rate;
+	GtkWidget *single_instance;
 
 	GKeyFile* settings;
 };
@@ -34,12 +35,14 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	gboolean minimize_to_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->minimize_to_tray));
 	gboolean close_to_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->close_to_tray));
 	gboolean start_in_tray=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray));
+	gboolean single_instance=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance));
 	gdouble refresh_rate=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate));
 
 	if (!preview){
 		g_key_file_set_boolean(args->settings, "Window", "Minimize to tray", minimize_to_tray);
 		g_key_file_set_boolean(args->settings, "Window", "Close to tray", close_to_tray);
-		g_key_file_set_boolean(args->settings, "Window", "Start in tray", start_in_tray);	
+		g_key_file_set_boolean(args->settings, "Window", "Start in tray", start_in_tray);
+		g_key_file_set_boolean(args->settings, "Program", "Single instance", single_instance);
 		g_key_file_set_double(args->settings, "Sampler", "Refresh rate", refresh_rate);
 	}
 }
@@ -82,6 +85,11 @@ void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 
 	args.start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Start in tray", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	table_y++;
+	
+	args.single_instance = widget = gtk_check_button_new_with_mnemonic ("_Single instance");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Program", "Single instance", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	

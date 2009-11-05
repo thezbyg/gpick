@@ -54,7 +54,7 @@ int unique_init(int (*unique_callback)(void* user_data), void* user_data){
 }
 
 int unique_term(){
-	g_object_unref(unique_app);
+	if (unique_app) g_object_unref(unique_app);
 	return 0;
 }
 

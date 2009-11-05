@@ -308,10 +308,12 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	struct Arguments* args=(struct Arguments*)data;
 
+	guint modifiers = gtk_accelerator_get_default_mod_mask();
+
 	switch(event->keyval)
 	{
 		case GDK_c:
-			if ((event->state&(GDK_CONTROL_MASK|GDK_SHIFT_MASK|GDK_MOD1_MASK))==GDK_CONTROL_MASK){
+			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 								
 				Color c;
 				updateMainColor(args);

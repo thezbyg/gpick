@@ -19,8 +19,9 @@
 #ifndef UNIQUE_H_
 #define UNIQUE_H_
 
+typedef int (*unique_cb_t)(void* user_data);
 
-int unique_init(int (*unique_callback)(void* user_data), void* user_data);
+int unique_init(unique_cb_t unique_cb, void* user_data);
 int unique_term();
 
 #endif /* UNIQUE_H_ */
