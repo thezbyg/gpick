@@ -17,12 +17,13 @@
  */
 
 #include "uiStatusIcon.h"
-#include "uiUtilities.h"
 #include "gtk/Zoomed.h"
 #include "gtk/ColorWidget.h"
+#include "uiUtilities.h"
 #include "main.h"
 #include "ColorPicker.h"
 #include "Converter.h"
+#include "DynvHelpers.h"
 #include <gdk/gdkkeysyms.h>
 
 using namespace math;
@@ -98,7 +99,9 @@ static void status_icon_show_parent(GtkWidget *widget, gpointer user_data){
 	gtk_widget_hide(si->window);
 	status_icon_set_visible(si, false);
 	
-	main_show_window(si->parent, si->gs->settings);
+	struct dynvSystem *params = dynv_get_dynv(si->gs->params, "gpick.main");
+	main_show_window(si->parent, params);
+	dynv_system_release(params);
 }
 
 
@@ -215,7 +218,7 @@ static void status_icon_activate(GtkWidget *widget, gpointer user_data){
 	GdkCursor* cursor;
 	cursor = gdk_cursor_new(GDK_TCROSS);
 	
-	gtk_zoomed_set_zoom(GTK_ZOOMED(si->zoomed), g_key_file_get_double_with_default(si->gs->settings, "Zoom", "Zoom", 2));
+	gtk_zoomed_set_zoom(GTK_ZOOMED(si->zoomed), dynv_get_float_wd(si->gs->params, "gpick.picker.zoom", 2));
 	
 	gtk_widget_show(si->fake_window);
 	GdkEventMotion event;
@@ -269,9 +272,8 @@ static gboolean status_icon_button_release(GtkWidget *widget, GdkEventButton *ev
 		gtk_widget_hide(si->fake_window);
 		gtk_widget_hide(si->window);
 	
-		g_key_file_set_double(si->gs->settings, "Zoom", "Zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(si->zoomed)));
+		dynv_set_float(si->gs->params, "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(si->zoomed)));
 	}
-	
 }
 
 

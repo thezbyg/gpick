@@ -20,6 +20,7 @@
 #include "uiUtilities.h"
 #include "uiListPalette.h"
 #include "Endian.h"
+#include "DynvHelpers.h"
 
 #include <string.h>
 
@@ -30,7 +31,7 @@
 using namespace std;
 
 
-int32_t palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
+static int32_t palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
@@ -42,7 +43,7 @@ int32_t palette_export_gpl_color(struct ColorObject* color_object, void* userdat
 	return 0;
 }
 
-int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
+static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -80,7 +81,7 @@ static void strip_leading_trailing_chars(string& x, string& stripchars){
    x = x.substr(start, (end-start+ 1) );
 }
 
-int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
+static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::in);
 	if (f.is_open()){
 		int r=0;
@@ -134,7 +135,7 @@ int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 }
 
 
-int32_t palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
+static int32_t palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
@@ -150,7 +151,7 @@ int32_t palette_export_mtl_color(struct ColorObject* color_object, void* userdat
 
 
 
-int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
+static int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
@@ -165,7 +166,7 @@ int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, 
 
 
 
-int32_t palette_export_ase_color(struct ColorObject* color_object, void* userdata){
+static int32_t palette_export_ase_color(struct ColorObject* color_object, void* userdata){
 
 	Color color;
 	color_object_get_color(color_object, &color);
@@ -209,7 +210,7 @@ int32_t palette_export_ase_color(struct ColorObject* color_object, void* userdat
 	return 0;
 }
 
-int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
+static int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc | ios::binary);
 	if (f.is_open()){
 		f<<"ASEF";	//magic header
@@ -239,7 +240,7 @@ int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, 
 }
 
 
-int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
+static int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::binary);
 	if (f.is_open()){
 		char magic[4];
@@ -392,7 +393,7 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 }
 
 
-int32_t palette_export_txt_color(struct ColorObject* color_object, void* userdata){
+static int32_t palette_export_txt_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
 	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
@@ -404,7 +405,7 @@ int32_t palette_export_txt_color(struct ColorObject* color_object, void* userdat
 	return 0;
 }
 
-int32_t palette_export_txt(struct ColorList *color_list, const gchar* filename, gboolean selected){
+static int32_t palette_export_txt(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -426,8 +427,8 @@ int32_t palette_export_txt(struct ColorList *color_list, const gchar* filename, 
 	return -1;
 }
 
-int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, gboolean selected) {
-
+int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list, gboolean selected, GlobalState *gs){
+	
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
@@ -453,13 +454,11 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 		{ "Text file *.txt", "*.txt", palette_export_txt },
 	};
 
-
-	gchar* default_path=g_key_file_get_string_with_default(settings, "Export Dialog", "Path", "");
+	
+	const char* default_path = dynv_get_string_wd(gs->params, "gpick.export.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	//gtk_file_chooser_set_filename (GTK_FILE_CHOOSER(dialog), default_filename);
-	g_free(default_path);
 
-	gchar* selected_filter=g_key_file_get_string_with_default(settings, "Export Dialog", "Filter", "*.gpl");
+	const char* selected_filter = dynv_get_string_wd(gs->params, "gpick.export.filter", "*.gpl");
 
 	for (gint i = 0; i != sizeof(formats) / sizeof(struct export_formats); ++i) {
 		filter = gtk_file_filter_new();
@@ -472,8 +471,6 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 		}
 	}
 
-	g_free(selected_filter);
-
 	gboolean saved=FALSE;
 
 	while (!saved){
@@ -483,7 +480,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 
 			gchar *path;
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			g_key_file_set_string(settings, "Export Dialog", "Path", path);
+			dynv_set_string(gs->params, "gpick.import.path", path);
 			g_free(path);
 
 			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
@@ -491,9 +488,9 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 				if (g_strcmp0(formats[i].name, format_name)==0){
 					struct ColorList *color_list_arg;
 					if (selected){
-						color_list_arg=selected_color_list;
+						color_list_arg = selected_color_list;
 					}else{
-						color_list_arg=color_list;
+						color_list_arg = gs->colors;
 					}			
 					if (formats[i].export_function(color_list_arg, filename, selected)==0){
 						saved=TRUE;
@@ -504,7 +501,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 						gtk_dialog_run(GTK_DIALOG(message));
 						gtk_widget_destroy(message);
 					}
-					g_key_file_set_string(settings, "Export Dialog", "Filter", formats[i].pattern);
+					dynv_set_string(gs->params, "gpick.export.filter", formats[i].pattern);
 				}
 			}
 
@@ -517,8 +514,8 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct C
 }
 
 
+int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState *gs){
 
-int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings){
 	GtkWidget *dialog;
 
 	GtkFileFilter *filter;
@@ -545,13 +542,12 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct C
 		{ "Text file *.txt", "*.txt", palette_export_txt },*/
 	};
 
+	
 
-	gchar* default_path=g_key_file_get_string_with_default(settings, "Import Dialog", "Path", "");
+	const char* default_path = dynv_get_string_wd(gs->params, "gpick.import.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	//gtk_file_chooser_set_filename (GTK_FILE_CHOOSER(dialog), default_filename);
-	g_free(default_path);
 
-	gchar* selected_filter=g_key_file_get_string_with_default(settings, "Import Dialog", "Filter", "*.gpl");
+	const char* selected_filter = dynv_get_string_wd(gs->params, "gpick.import.filter", "*.gpl");
 
 	for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
 		filter = gtk_file_filter_new();
@@ -564,8 +560,6 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct C
 		}
 	}
 
-	g_free(selected_filter);
-
 	gboolean finished=FALSE;
 
 	while (!finished){
@@ -575,14 +569,14 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct C
 
 			gchar *path;
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			g_key_file_set_string(settings, "Import Dialog", "Path", path);
+			dynv_set_string(gs->params, "gpick.import.path", path);
 			g_free(path);
 
 			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
 			for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
 				if (g_strcmp0(formats[i].name, format_name)==0){
 					struct ColorList *color_list_arg;
-					color_list_arg=color_list;
+					color_list_arg = gs->colors;
 					if (formats[i].import_function(color_list_arg, filename)==0){
 						finished=TRUE;
 					}else{
@@ -592,7 +586,7 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct C
 						gtk_dialog_run(GTK_DIALOG(message));
 						gtk_widget_destroy(message);
 					}
-					g_key_file_set_string(settings, "Import Dialog", "Filter", formats[i].pattern);
+					dynv_set_string(gs->params, "gpick.import.filter", formats[i].pattern);
 				}
 			}
 

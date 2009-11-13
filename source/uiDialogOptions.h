@@ -20,7 +20,8 @@
 #define UIDIALOGOPTIONS_H_
 
 #include <gtk/gtk.h>
+#include "GlobalState.h"
 
-void dialog_options_show(GtkWindow* parent, GKeyFile* settings);
+void dialog_options_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* UIDIALOGOPTIONS_H_ */

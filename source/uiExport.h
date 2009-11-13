@@ -20,13 +20,11 @@
 #define UIEXPORT_H_
 
 #include <gtk/gtk.h>
-#include "ColorList.h"
+#include "GlobalState.h"
 
-int dialog_export_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings, gboolean selected);
+int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list, gboolean selected, GlobalState *gs);
 
-int dialog_import_show(GtkWindow* parent, struct ColorList *color_list, struct ColorList *selected_color_list, GKeyFile* settings);
+int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState *gs);
 
-/*
-int show_palette_export_dialog(GtkWindow *parent, struct ColorList *color_list, struct ColorList *selected_color_list, gboolean selected, GKeyFile* settings);*/
 
 #endif /* UIEXPORT_H_ */

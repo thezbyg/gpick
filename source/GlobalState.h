@@ -19,8 +19,6 @@
 #ifndef GLOBALSTATE_H_
 #define GLOBALSTATE_H_
 
-#include <gtk/gtk.h>
-
 #include "Sampler.h"
 #include "ColorNames.h"
 #include "Random.h"
@@ -34,7 +32,6 @@ typedef struct GlobalState{
 	struct ScreenReader* screen_reader;
 	struct ColorList* colors;
 	struct dynvSystem* params;
-	GKeyFile* settings;
 	lua_State *lua;
 	Random* random;
 }GlobalState;

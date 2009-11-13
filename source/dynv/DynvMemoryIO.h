@@ -19,7 +19,7 @@
 #ifndef DYNVMEMORYIO_H_
 #define DYNVMEMORYIO_H_
 
-#include "DynvSystem.h"
+#include "DynvIO.h"
 
 struct dynvIO* dynv_io_memory_new();
 int dynv_io_memory_get_data(struct dynvIO* io, char** data, uint32_t* size);

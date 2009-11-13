@@ -19,6 +19,7 @@
 #include "uiDialogOptions.h"
 #include "uiUtilities.h"
 
+#include "DynvHelpers.h"
 
 struct Arguments{
 	GtkWidget *minimize_to_tray;
@@ -27,7 +28,8 @@ struct Arguments{
 	GtkWidget *refresh_rate;
 	GtkWidget *single_instance;
 
-	GKeyFile* settings;
+	struct dynvSystem *params;
+	GlobalState* gs;
 };
 
 static void calc( struct Arguments *args, bool preview, int limit){
@@ -39,21 +41,22 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	gdouble refresh_rate=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate));
 
 	if (!preview){
-		g_key_file_set_boolean(args->settings, "Window", "Minimize to tray", minimize_to_tray);
-		g_key_file_set_boolean(args->settings, "Window", "Close to tray", close_to_tray);
-		g_key_file_set_boolean(args->settings, "Window", "Start in tray", start_in_tray);
-		g_key_file_set_boolean(args->settings, "Program", "Single instance", single_instance);
-		g_key_file_set_double(args->settings, "Sampler", "Refresh rate", refresh_rate);
+		dynv_set_bool(args->params, "main.minimize_to_tray", minimize_to_tray);
+		dynv_set_bool(args->params, "main.close_to_tray", close_to_tray);
+		dynv_set_bool(args->params, "main.start_in_tray", start_in_tray);
+		dynv_set_bool(args->params, "main.single_instance", single_instance);
+		dynv_set_float(args->params, "picker.refresh_rate", refresh_rate);
 	}
 }
 
 
 
-void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
-	struct Arguments args;
-	
-	args.settings = settings;
-	
+void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
+	struct Arguments *args = new struct Arguments;
+
+	args->gs = gs;
+	args->params = dynv_get_dynv(args->gs->params, "gpick");
+
 	GtkWidget *table, *widget;
 
 
@@ -61,9 +64,9 @@ void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
-	
-	gtk_window_set_default_size(GTK_WINDOW(dialog), g_key_file_get_integer_with_default(settings, "Options Dialog", "Width", -1), 
-		g_key_file_get_integer_with_default(settings, "Options Dialog", "Height", -1));
+
+	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "options.window.width", -1),
+		dynv_get_int32_wd(args->params, "options.window.height", -1));
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -73,29 +76,29 @@ void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 	table_y=0;
 
 
-	args.minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to tray");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Minimize to tray", false));
-	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	table_y++;
-	
-	args.close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to tray");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Close to tray", false));
+	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to tray");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.minimize_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
-	args.start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in tray");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Window", "Start in tray", false));
+	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to tray");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.close_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	
-	args.single_instance = widget = gtk_check_button_new_with_mnemonic ("_Single instance");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), g_key_file_get_boolean_with_default(settings, "Program", "Single instance", false));
+
+	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in tray");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.start_in_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	
+
+	args->single_instance = widget = gtk_check_button_new_with_mnemonic ("_Single instance");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.single_instance", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	table_y++;
+
 	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new("_Refresh rate:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	args.refresh_rate = widget = gtk_spin_button_new_with_range(1, 60, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args.refresh_rate), g_key_file_get_double_with_default(args.settings, "Sampler", "Refresh rate", 30));
+	args->refresh_rate = widget = gtk_spin_button_new_with_range(1, 60, 1);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->refresh_rate), dynv_get_float_wd(args->params, "picker.refresh_rate", 30));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hz",0,0.5,0,0),2,3,table_y,table_y+1,GTK_FILL,GTK_FILL,5,0);
 	table_y++;
@@ -104,15 +107,19 @@ void dialog_options_show(GtkWindow* parent, GKeyFile* settings) {
 
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
-	
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(&args, false, 0);
+
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	g_key_file_set_integer(settings, "Options Dialog", "Width", width);
-	g_key_file_set_integer(settings, "Options Dialog", "Height", height);
-	
-	
+
+	dynv_set_int32(args->params, "options.window.width", width);
+	dynv_set_int32(args->params, "options.window.height", height);
+
+	dynv_system_release(args->params);
+
 	gtk_widget_destroy(dialog);
+
+	delete args;
 
 }

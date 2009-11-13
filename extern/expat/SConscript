@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+
+from tools.gpick import *
+
+Import('*')
+local_env = env.Clone()
+
+local_env.Append (
+	CPPDEFINES = ['HAVE_EXPAT_CONFIG_H'],
+	CPPPATH = ['.']
+	)
+
+sources = local_env.Glob('lib/*.c')
+
+executable = local_env.StaticLibrary(
+	'expat',
+	source = [sources])
+
+library = GpickLibrary(executable);
+library.include_dirs = ['#extern/expat/lib']
+env.DefineLibrary('expat', library)
+	
+Return('executable')

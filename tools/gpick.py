@@ -10,39 +10,12 @@ import glob
 import subprocess
 
 from SCons.Script import *
+from SCons.Util import *
 from SCons.Script.SConscript import SConsEnvironment
 
 import SCons.Script.SConscript
 import SCons.SConf
 import SCons.Conftest
-
-def ConfirmLibs(conf, env, libs):
-	for evar, args in libs.iteritems():
-		found = False
-		for name, version in args['checks'].iteritems():
-			if conf.CheckPKG(name + ' ' + version):
-				env[evar]=name
-				found = True;
-				break
-		if not found:
-			if 'required' in args:
-				if not args['required']==False:
-					env.Exit(1)
-			else:
-				env.Exit(1)
-
-
-def InstallPerm(env, dir, source, perm):
-	obj = env.Install(dir, source)
-	for i in obj:
-		env.AddPostAction(i, Chmod(i, perm))
-	return dir
-
-SConsEnvironment.InstallPerm = InstallPerm
-
-SConsEnvironment.InstallProgram = lambda env, dir, source: InstallPerm(env, dir, source, 0755)
-SConsEnvironment.InstallData = lambda env, dir, source: InstallPerm(env, dir, source, 0644)
-
 
 def MatchFiles (files, path, repath, dir_exclude_pattern,  file_exclude_pattern):
 
@@ -56,29 +29,82 @@ def MatchFiles (files, path, repath, dir_exclude_pattern,  file_exclude_pattern)
 			if not file_exclude_pattern.search(filename):
 				files.append (fullname)
 
-	
-def GetSourceFiles(env, dir_exclude_pattern, file_exclude_pattern):
-	dir_exclude_prog = re.compile(dir_exclude_pattern)
-	file_exclude_prog = re.compile(file_exclude_pattern)
-	files = []
-	MatchFiles(files, env.GetLaunchDir(), os.sep, dir_exclude_prog, file_exclude_prog)
-	return files
-	
-def GetVersionInfo(env):
-	try:
-		svn_revision = subprocess.Popen(['svnversion', '-n',  env.GetLaunchDir()], shell=False, stdout=subprocess.PIPE).communicate()[0]
-		svn_revision = str(svn_revision)
-		if svn_revision=="exported":
-			svn_revision="0"
-		svn_revision=svn_revision.replace(':','.')
-		svn_revision=svn_revision.rstrip('PSM')
-		revision=svn_revision;
-	except OSError, e:
-		revision = '0'
+def CheckPKG(context, name):
+	context.Message( 'Checking for %s... ' % name )
+	ret = context.TryAction('pkg-config --exists "%s"' % name)[0]
+	context.Result( ret )
+	return ret
 
-	env.Replace(GPICK_BUILD_REVISION = revision,
-		GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),
-		GPICK_BUILD_TIME =  time.strftime ("%H:%M:%S"));	
+class GpickLibrary(NodeList):
+	include_dirs = []
+
+class GpickEnvironment(SConsEnvironment):
+	
+	extern_libs = {}
+
+	def DefineLibrary(self, library_name, library):
+		self.extern_libs[library_name] = library
+		
+	def UseLibrary(self, library_name):
+		lib = self.extern_libs[library_name]
+		
+		for i in lib:
+			lib_include_path = os.path.split(i.path)[0]
+			self.AppendUnique(LIBS = [library_name], LIBPATH = ['#' + lib_include_path])
+			
+		self.AppendUnique(CPPPATH = lib.include_dirs)
+		
+		return lib
+
+	def ConfirmLibs(self, conf, libs):
+		
+		conf.AddTests({ 'CheckPKG' : CheckPKG })
+		
+		for evar, args in libs.iteritems():
+			found = False
+			for name, version in args['checks'].iteritems():
+				if conf.CheckPKG(name + ' ' + version):
+					self[evar]=name
+					found = True;
+					break
+			if not found:
+				if 'required' in args:
+					if not args['required']==False:
+						self.Exit(1)
+				else:
+					self.Exit(1)
+
+	def InstallPerm(self, dir, source, perm):
+		obj = self.Install(dir, source)
+		for i in obj:
+			self.AddPostAction(i, Chmod(i, perm))
+		return dir
+
+	InstallProgram = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0755)
+	InstallData = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0644)
+
+	def GetSourceFiles(self, dir_exclude_pattern, file_exclude_pattern):
+		dir_exclude_prog = re.compile(dir_exclude_pattern)
+		file_exclude_prog = re.compile(file_exclude_pattern)
+		files = []
+		MatchFiles(files, self.GetLaunchDir(), os.sep, dir_exclude_prog, file_exclude_prog)
+		return files
+
+	def GetVersionInfo(self):
+		try:
+			svn_revision = subprocess.Popen(['svnversion', '-n',  self.GetLaunchDir()], shell=False, stdout=subprocess.PIPE).communicate()[0]
+			svn_revision = str(svn_revision)
+			if svn_revision=="exported":
+				svn_revision="0"
+			svn_revision=svn_revision.replace(':','.')
+			svn_revision=svn_revision.rstrip('PSM')
+			revision=svn_revision;
+		except OSError, e:
+			revision = '0'
+
+		self.Replace(GPICK_BUILD_REVISION = revision,
+			GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),
+			GPICK_BUILD_TIME =  time.strftime ("%H:%M:%S"));	
 
 def RegexEscape(str):
 	return str.replace('\\', '\\\\')
@@ -99,4 +125,5 @@ def Glob(path):
 		else:
 			files.append(str(f));
 	return files
+
 

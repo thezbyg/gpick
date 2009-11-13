@@ -37,7 +37,7 @@ gpick.layouts['std_layout_webpage_1'] = {
 			button = layout_style:new("button", color:new(0.3, 0.3, 0.3), color:new(0.8, 0.8, 0.8), 1.0),
 			footer = layout_style:new("footer", color:new(0.1, 0.1, 0.1), color:new(0.7, 0.7, 0.7), 0.8),
 		};
-		for i,v in ipairs(styles) do
+		for i,v in pairs(styles) do
 			layout_system:addstyle(v);
 		end;
 		
@@ -59,7 +59,7 @@ gpick.layouts['std_layout_menu_1'] = {
 			menu = layout_style:new("menu", color:new(0.7, 0.7, 0.7), color:new(1.0, 1.0, 1.0), 0.5),
 			button = layout_style:new("button", color:new(0.3, 0.3, 0.3), color:new(0.8, 0.8, 0.8), 1.0),
 		};
-		for i,v in ipairs(styles) do
+		for i,v in pairs(styles) do
 			layout_system:addstyle(v);
 		end;
 		

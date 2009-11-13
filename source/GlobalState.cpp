@@ -20,7 +20,6 @@
 #include "Paths.h"
 #include "ScreenReader.h"
 #include "Converter.h"
-#include "uiUtilities.h"
 
 #include "layout/LuaBindings.h"
 #include "layout/Layout.h"
@@ -31,6 +30,12 @@
 #include "dynv/DynvVarColor.h"
 #include "dynv/DynvVarPtr.h"
 #include "dynv/DynvVarFloat.h"
+#include "dynv/DynvVarDynv.h"
+#include "dynv/DynvVarBool.h"
+#include "dynv/DynvXml.h"
+
+#include "DynvHelpers.h"
+
 #include <stdlib.h>
 #include <glib/gstdio.h>
 
@@ -39,17 +44,15 @@
 using namespace std;
 
 int global_state_term(GlobalState *gs){
-
+	
 	//write settings to file
-	gchar* config_file = build_config_path("settings");
-	ofstream f(config_file, ios::out | ios::trunc | ios::binary);
-	if (f.is_open()){
-		gsize size;
-		gchar* data=g_key_file_to_data(gs->settings, &size, 0);
-
-		f.write(data, size);
-		g_free(data);
-		f.close();
+	gchar* config_file = build_config_path("settings.xml");
+	ofstream params_file(config_file);
+	if (params_file.is_open()){
+		params_file << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
+		dynv_xml_serialize(gs->params, params_file);
+		params_file << "</root>" << endl;
+		params_file.close();
 	}
 	g_free(config_file);
 	
@@ -62,7 +65,6 @@ int global_state_term(GlobalState *gs){
 	//destroy color list, random generator and other systems
 	color_list_destroy(gs->colors);
 	random_destroy(gs->random);
-	g_key_file_free(gs->settings);
 	color_names_destroy(gs->color_names);
 	sampler_destroy(gs->sampler);
 	screen_reader_destroy(gs->screen_reader);
@@ -74,16 +76,6 @@ int global_state_term(GlobalState *gs){
 
 int global_state_init(GlobalState *gs){
 
-	//create and load settings
-	gs->settings = g_key_file_new();
-	gchar* config_file = build_config_path("settings");
-	if (!(g_key_file_load_from_file(gs->settings, config_file, G_KEY_FILE_KEEP_COMMENTS, 0))){
-		g_free(config_file);
-		config_file = build_config_path(NULL);
-		g_mkdir(config_file, S_IRWXU);
-	}
-	g_free(config_file);
-	
 	//check if user has user_init.lua file, if not, then create empty file
 	gchar *user_init_file = build_config_path("user_init.lua");
 	FILE *user_init = fopen(user_init_file, "r");
@@ -119,7 +111,17 @@ int global_state_init(GlobalState *gs){
 	dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
 	dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
 	dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
+	dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
+	dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
 	gs->params = dynv_system_create(handler_map);
+	
+	gchar* config_file = build_config_path("settings.xml");
+	ifstream params_file(config_file);
+	if (params_file.is_open()){
+		dynv_xml_deserialize(gs->params, params_file);
+		params_file.close();
+	}
+	g_free(config_file);
 	
 	//create color list / callbacks must be defined elsewhere
 	gs->colors = color_list_new(handler_map);
@@ -164,16 +166,22 @@ int global_state_init(GlobalState *gs){
 	//create converter system
 	Converters* converters = converters_init(gs->params);
 	
-	gchar** source_array;
-	gsize source_array_size;
-	if ((source_array = g_key_file_get_string_list(gs->settings, "Converter", "Names", &source_array_size, 0))){
-		gboolean* copy_array;	
-		gsize copy_array_size=0;
-		gboolean* paste_array;	
-		gsize paste_array_size=0;
-		copy_array = g_key_file_get_boolean_list(gs->settings, "Converter", "Copy", &copy_array_size, 0);
-		paste_array = g_key_file_get_boolean_list(gs->settings, "Converter", "Paste", &paste_array_size, 0);
 
+	
+	
+
+	char** source_array;
+	uint32_t source_array_size;
+	
+	if ((source_array = (char**)dynv_get_string_array_wd(gs->params, "gpick.converters.names", 0, 0, &source_array_size))){
+		bool* copy_array;	
+		uint32_t copy_array_size=0;
+		bool* paste_array;	
+		uint32_t paste_array_size=0;
+		
+		copy_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.copy", 0, 0, &copy_array_size);
+		paste_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.paste", 0, 0, &paste_array_size);
+		
 		gsize source_array_i = 0;
 		Converter* converter;
 		
@@ -198,11 +206,12 @@ int global_state_init(GlobalState *gs){
 			}
 		}
 		
-		if (copy_array) g_free(copy_array);
-		if (paste_array) g_free(paste_array);
+		if (copy_array) delete [] copy_array;
+		if (paste_array) delete [] paste_array;
 		
 		converters_reorder(converters, (const char**)source_array, source_array_size);
-		g_strfreev(source_array);
+		
+		if (source_array) delete [] source_array;
 
 	}else{
 		//Initialize default values
@@ -232,11 +241,8 @@ int global_state_init(GlobalState *gs){
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
 	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 	
-	gchar* temp;
-	converters_set(converters, converters_get(converters, temp = g_key_file_get_string_with_default(gs->settings, "Converter", "Display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
-	g_free(temp);
-	converters_set(converters, converters_get(converters, temp =  g_key_file_get_string_with_default(gs->settings, "Converter", "Color List", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
-	g_free(temp);
+	converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
+	converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.color_list", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
 	
 	//create layout system
 	layout::Layouts* layout = layout::layouts_init(gs->params);

@@ -17,7 +17,12 @@
  */
 
 #include "DynvVarInt32.h"
+#include "DynvVariable.h"
+#include "DynvIO.h"
 #include "../Endian.h"
+
+#include <sstream>
+using namespace std;
 
 static int dynv_var_int32_create(struct dynvVariable* variable){
 	if ((variable->value=new int32_t)){
@@ -34,7 +39,7 @@ static int dynv_var_int32_destroy(struct dynvVariable* variable){
 	return -1;
 }
 
-static int dynv_var_int32_set(struct dynvVariable* variable, void* value){
+static int dynv_var_int32_set(struct dynvVariable* variable, void* value, bool deref){
 	if (!variable->value) return -1;
 	*((int32_t*)variable->value)=*((int32_t*)value);
 	return 0;
@@ -42,7 +47,7 @@ static int dynv_var_int32_set(struct dynvVariable* variable, void* value){
 
 static int dynv_var_int32_get(struct dynvVariable* variable, void** value){
 	if (variable->value){
-		*value=variable->value;
+		*value = variable->value;
 		return 0;
 	}
 	return -1;
@@ -79,6 +84,24 @@ static int dynv_var_int32_deserialize(struct dynvVariable* variable, struct dynv
 	return -1;
 }
 
+static int serialize_xml(struct dynvVariable* variable, ostream& out){
+	if (variable->value){
+		out << *(int32_t*)variable->value;
+	}
+	return 0;
+}
+
+static int deserialize_xml(struct dynvVariable* variable, const char *data){
+	stringstream ss(stringstream::in);
+	ss.str(data);
+	int32_t v;
+	ss >> v;
+	
+	*((int32_t*)variable->value) = v;
+	
+	return 0;
+}
+
 struct dynvHandler* dynv_var_int32_new(){
 	struct dynvHandler* handler=dynv_handler_create("int32");
 
@@ -88,6 +111,11 @@ struct dynvHandler* dynv_var_int32_new(){
 	handler->get=dynv_var_int32_get;
 	handler->serialize=dynv_var_int32_serialize;
 	handler->deserialize=dynv_var_int32_deserialize;
-
+	
+	handler->serialize_xml = serialize_xml;
+	handler->deserialize_xml = deserialize_xml;
+	
+	handler->data_size = sizeof(int32_t*);
+	
 	return handler;
 }

@@ -20,6 +20,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
+#include "DynvHelpers.h"
 
 #include <stdbool.h>
 #include <sstream>
@@ -32,6 +33,7 @@ struct Arguments{
 	struct ColorList *selected_color_list;
 	struct ColorList *preview_color_list;
 	
+	struct dynvSystem *params;
 	GlobalState* gs;
 };
 
@@ -41,8 +43,8 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
 
 	if (!preview){
-		g_key_file_set_integer(args->gs->settings, "Mix Dialog", "Type", type);
-		g_key_file_set_integer(args->gs->settings, "Mix Dialog", "Steps", steps);
+		dynv_set_int32(args->params, "type", type);
+		dynv_set_int32(args->params, "steps", steps);
 	}
 	
 	Color r;
@@ -158,8 +160,9 @@ static void update(GtkWidget *widget, struct Arguments *args ){
 }
 
 void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs) {
-	struct Arguments args;
-	args.gs = gs;
+	struct Arguments *args = new struct Arguments;
+	args->gs = gs;
+	args->params = dynv_get_dynv(args->gs->params, "gpick.mix");
 	
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
@@ -169,8 +172,8 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
 	
-	gtk_window_set_default_size(GTK_WINDOW(dialog), g_key_file_get_integer_with_default(gs->settings, "Mix Dialog", "Width", -1), 
-		g_key_file_get_integer_with_default(gs->settings, "Mix Dialog", "Height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
+		dynv_get_int32_wd(args->params, "window.height", -1));	
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -183,43 +186,45 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "RGB");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV shortest hue distance");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), g_key_file_get_integer_with_default(gs->settings, "Mix Dialog", "Type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_table_attach(GTK_TABLE(table), mix_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.mix_type = mix_type;
-	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), &args);
+	args->mix_type = mix_type;
+	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), args);
 	
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), g_key_file_get_integer_with_default(gs->settings, "Mix Dialog", "Steps", 3));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.mix_steps = mix_steps;
-	g_signal_connect (G_OBJECT (mix_steps), "value-changed", G_CALLBACK (update), &args);
+	args->mix_steps = mix_steps;
+	g_signal_connect (G_OBJECT (mix_steps), "value-changed", G_CALLBACK (update), args);
 	
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, g_key_file_get_boolean_with_default(gs->settings, "Preview", "Show", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 	
 
-	args.selected_color_list = selected_color_list;
-	args.preview_color_list = preview_color_list;
+	args->selected_color_list = selected_color_list;
+	args->preview_color_list = preview_color_list;
 	
-	update(0, &args);
+	update(0, args);
 	
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(&args, false, 0);
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	g_key_file_set_integer(gs->settings, "Mix Dialog", "Width", width);
-	g_key_file_set_integer(gs->settings, "Mix Dialog", "Height", height);
-	g_key_file_set_boolean(gs->settings, "Preview", "Show", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
+	dynv_set_int32(args->params, "window.width", width);
+	dynv_set_int32(args->params, "window.height", height);
+	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
 	
 	gtk_widget_destroy(dialog);
-
+	
+	dynv_system_release(args->params);
+	delete args;
 }

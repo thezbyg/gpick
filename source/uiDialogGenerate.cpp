@@ -20,6 +20,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
+#include "DynvHelpers.h"
 
 #include <math.h>
 #include <sstream>
@@ -36,6 +37,7 @@ struct Arguments{
 	struct ColorList *selected_color_list;
 	struct ColorList *preview_color_list;
 	
+	struct dynvSystem *params;
 	GlobalState* gs;
 };
 
@@ -120,10 +122,10 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	gboolean correction=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_brightness_correction));
 
 	if (!preview){
-		g_key_file_set_integer(args->gs->settings, "Generate Dialog", "Type", type);
-		g_key_file_set_integer(args->gs->settings, "Generate Dialog", "Colors", color_count);
-		g_key_file_set_double(args->gs->settings, "Generate Dialog", "Chaos", chaos);
-		g_key_file_set_boolean(args->gs->settings, "Generate Dialog", "Brightness Correction", correction);
+		dynv_set_int32(args->params, "type", type);
+		dynv_set_int32(args->params, "colors", color_count);
+		dynv_set_float(args->params, "chaos", chaos);
+		dynv_set_bool(args->params, "brightness_correction", correction);
 	}
 	
 	Color r, hsl;
@@ -228,8 +230,9 @@ static void update(GtkWidget *widget, struct Arguments *args ){
 }
 
 void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs){
-	struct Arguments args;
-	args.gs = gs;
+	struct Arguments *args = new struct Arguments;
+	args->gs = gs;
+	args->params = dynv_get_dynv(args->gs->params, "gpick.generate");
 	
 	GtkWidget *table, *gen_type, *range_colors, *range_chaos, *toggle_brightness_correction;
 
@@ -238,15 +241,15 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_li
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
 	
-	gtk_window_set_default_size(GTK_WINDOW(dialog), g_key_file_get_integer_with_default(gs->settings, "Generate Dialog", "Width", -1), 
-		g_key_file_get_integer_with_default(gs->settings, "Generate Dialog", "Height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
+		dynv_get_int32_wd(args->params, "window.height", -1));	
 	
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
 	table = gtk_table_new(4, 2, FALSE);
 	table_y=0;
-
+	
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	gen_type = gtk_combo_box_new_text();
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Complementary");
@@ -256,58 +259,59 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_li
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Rectangle (tetradic)");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Square");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(gen_type), "Neutral");
-	gtk_combo_box_set_active(GTK_COMBO_BOX(gen_type), g_key_file_get_integer_with_default(gs->settings, "Generate Dialog", "Type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(gen_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_table_attach(GTK_TABLE(table), gen_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.gen_type = gen_type;
-	g_signal_connect (G_OBJECT (gen_type), "changed", G_CALLBACK (update), &args);
+	args->gen_type = gen_type;
+	g_signal_connect(G_OBJECT(gen_type), "changed", G_CALLBACK (update), args);
 	
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Colors:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_colors = gtk_spin_button_new_with_range (1,25,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_colors), g_key_file_get_integer_with_default(gs->settings, "Generate Dialog", "Colors", 1));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_colors), dynv_get_int32_wd(args->params, "colors", 1));
 	gtk_table_attach(GTK_TABLE(table), range_colors,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.range_colors = range_colors;
-	g_signal_connect (G_OBJECT (range_colors), "value-changed", G_CALLBACK (update), &args);
+	args->range_colors = range_colors;
+	g_signal_connect(G_OBJECT (range_colors), "value-changed", G_CALLBACK (update), args);
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Chaos:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_chaos = gtk_spin_button_new_with_range (0,1,0.001);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_chaos), g_key_file_get_double_with_default(gs->settings, "Generate Dialog", "Chaos", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_chaos), dynv_get_float_wd(args->params, "chaos", 0));
 	gtk_table_attach(GTK_TABLE(table), range_chaos,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.range_chaos = range_chaos;
-	g_signal_connect (G_OBJECT (range_chaos), "value-changed", G_CALLBACK (update), &args);
+	args->range_chaos = range_chaos;
+	g_signal_connect (G_OBJECT (range_chaos), "value-changed", G_CALLBACK (update), args);
 
 	toggle_brightness_correction = gtk_check_button_new_with_mnemonic ("Brightness correction");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle_brightness_correction), g_key_file_get_boolean_with_default(gs->settings, "Generate Dialog", "Brightness Correction", TRUE));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle_brightness_correction), dynv_get_bool_wd(args->params, "brightness_correction", true));
 	gtk_table_attach(GTK_TABLE(table), toggle_brightness_correction,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
-	args.toggle_brightness_correction = toggle_brightness_correction;
-	g_signal_connect (G_OBJECT (toggle_brightness_correction), "toggled", G_CALLBACK (update), &args);
+	args->toggle_brightness_correction = toggle_brightness_correction;
+	g_signal_connect (G_OBJECT (toggle_brightness_correction), "toggled", G_CALLBACK (update), args);
 	
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, g_key_file_get_boolean_with_default(gs->settings, "Preview", "Show", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 	
-	args.selected_color_list = selected_color_list;
-	args.preview_color_list = preview_color_list;
+	args->selected_color_list = selected_color_list;
+	args->preview_color_list = preview_color_list;
 
-	update(0, &args);
+	update(0, args);
 
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(&args, false, 0);
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 	
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	g_key_file_set_integer(gs->settings, "Generate Dialog", "Width", width);
-	g_key_file_set_integer(gs->settings, "Generate Dialog", "Height", height);
-	
-	g_key_file_set_boolean(gs->settings, "Preview", "Show", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
-	
-	gtk_widget_destroy(dialog);
+	dynv_set_int32(args->params, "window.width", width);
+	dynv_set_int32(args->params, "window.height", height);
+	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
 
+	gtk_widget_destroy(dialog);
+	
+	dynv_system_release(args->params);
+	delete args;
 }

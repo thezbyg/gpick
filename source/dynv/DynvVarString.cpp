@@ -17,8 +17,12 @@
  */
 
 #include "DynvVarString.h"
+#include "DynvVariable.h"
+#include "DynvIO.h"
 #include "../Endian.h"
 #include <string.h>
+
+using namespace std;
 
 static int dynv_var_string_create(struct dynvVariable* variable){
 	variable->value=0;
@@ -33,10 +37,12 @@ static int dynv_var_string_destroy(struct dynvVariable* variable){
 	return -1;
 }
 
-static int dynv_var_string_set(struct dynvVariable* variable, void* value){
+static int dynv_var_string_set(struct dynvVariable* variable, void* value, bool deref){
 	if (variable->value){
 		delete [] (char*)variable->value;
 	}
+	if (deref) value = *(void**)value;
+	
 	uint32_t len=strlen((char*)value)+1;
 	variable->value=new char [len];
 	memcpy(variable->value, value, len);
@@ -93,6 +99,24 @@ static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dyn
 	return 0;
 }
 
+static int serialize_xml(struct dynvVariable* variable, ostream& out){
+	if (variable->value){
+		out << (char*)variable->value;
+	}
+	return 0;
+}
+
+static int deserialize_xml(struct dynvVariable* variable, const char *data){
+	if (variable->value){
+		delete [] (char*)variable->value;
+		variable->value=0;
+	}
+	uint32_t len=strlen(data)+1;
+	variable->value=new char [len];
+	memcpy(variable->value, data, len);
+	return 0;
+}
+
 struct dynvHandler* dynv_var_string_new(){
 	struct dynvHandler* handler=dynv_handler_create("string");
 
@@ -102,6 +126,11 @@ struct dynvHandler* dynv_var_string_new(){
 	handler->get=dynv_var_string_get;
 	handler->serialize=dynv_var_string_serialize;
 	handler->deserialize=dynv_var_string_deserialize;
-
+	
+	handler->serialize_xml=serialize_xml;
+	handler->deserialize_xml=deserialize_xml;
+	
+	handler->data_size = sizeof(char*);
+	
 	return handler;
 }

@@ -19,85 +19,20 @@
 #ifndef DYNVSYSTEM_H_
 #define DYNVSYSTEM_H_
 
+#include "DynvHandler.h"
+
 #include <map>
 #include <vector>
+#include <ostream>
+#include <istream>
 
 #include <stdint.h>
 
-struct dynvHandler;
-
-struct dynvIO{
-	int (*write)(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written);
-	int (*read)(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read);
-	int (*seek)(struct dynvIO* io, uint32_t offset, int type, uint32_t* position);
-	int (*free)(struct dynvIO* io);
-	int (*reset)(struct dynvIO* io);
-	
-	void* userdata;
-};
-
-int dynv_io_write(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_written);
-int dynv_io_read(struct dynvIO* io, void* data, uint32_t size, uint32_t* data_read);
-int dynv_io_seek(struct dynvIO* io, uint32_t offset, int type, uint32_t* position);
-int dynv_io_free(struct dynvIO* io);
-int dynv_io_reset(struct dynvIO* io);
-
-class dynvKeyCompare{
-public:
-	bool operator() (const char* const& x, const char* const& y) const;
-};
-
-struct dynvVariable{
-	char* name;
-
-	struct dynvHandler* handler;
-	void* value;
-	uint32_t flags;
-};
-
-#define DYNV_VARIABLE_TEMPORARY			1
-
-struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* handler);
-void dynv_variable_destroy(struct dynvVariable* variable);
-
-void dynv_variable_set_flags(struct dynvVariable* variable, uint32_t flags);
-
-struct dynvHandler{
-	char* name;
-
-	int (*set)(struct dynvVariable* variable, void* value);
-	int (*create)(struct dynvVariable* variable);
-	int (*destroy)(struct dynvVariable* variable);
-
-	int (*get)(struct dynvVariable* variable, void** value);
-
-	int (*serialize)(struct dynvVariable* variable, struct dynvIO* io);
-	int (*deserialize)(struct dynvVariable* variable, struct dynvIO* io);
-
-	uint32_t id;
-};
-
-struct dynvHandler* dynv_handler_create(const char* name);
-void dynv_handler_destroy(struct dynvHandler* handler);
-
-struct dynvHandlerMap{
-	typedef std::map<const char*, struct dynvHandler*, dynvKeyCompare> HandlerMap;
-	typedef std::vector<struct dynvHandler*> HandlerVec;
-	uint32_t refcnt;
-	HandlerMap handlers;
-};
-
-struct dynvHandlerMap* dynv_handler_map_create();
-int dynv_handler_map_release(struct dynvHandlerMap* handler_map);
-struct dynvHandlerMap* dynv_handler_map_ref(struct dynvHandlerMap* handler_map);
-
-int dynv_handler_map_add_handler(struct dynvHandlerMap* handler_map, struct dynvHandler* handler);
-struct dynvHandler* dynv_handler_map_get_handler(struct dynvHandlerMap* handler_map, const char* handler_name);
-
-int dynv_handler_map_serialize(struct dynvHandlerMap* handler_map, struct dynvIO* io);
-int dynv_handler_map_deserialize(struct dynvHandlerMap* handler_map, struct dynvIO* io, dynvHandlerMap::HandlerVec& handler_vec);
-
 struct dynvSystem{
+	class dynvKeyCompare{
+	public:
+		bool operator() (const char* const& x, const char* const& y) const;
+	};
 	typedef std::map<const char*, struct dynvVariable*, dynvKeyCompare> VariableMap;
 	uint32_t refcnt;
 	VariableMap variables;
@@ -112,8 +47,12 @@ struct dynvHandlerMap* dynv_system_get_handler_map(struct dynvSystem* dynv_syste
 void dynv_system_set_handler_map(struct dynvSystem* dynv_system, struct dynvHandlerMap* handler_map);
 
 int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, void* value);
-struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name);
+struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struct dynvHandler* handler, const char* variable_name);
 void* dynv_system_get(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name);
+void* dynv_system_get_r(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, int* error);
+
+int dynv_system_set_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, void** values, uint32_t count, uint32_t data_size);
+void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, uint32_t *count, uint32_t data_size, int* error);
 
 struct dynvVariable* dynv_system_get_var(struct dynvSystem* dynv_system, const char* variable_name);
 
@@ -125,5 +64,12 @@ struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system);
 
 int dynv_system_serialize(struct dynvSystem* dynv_system, struct dynvIO* io);
 int dynv_system_deserialize(struct dynvSystem* dynv_system, dynvHandlerMap::HandlerVec& handler_vec, struct dynvIO* io);
+
+
+int dynv_set(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, const void* value);
+void* dynv_get(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, int* error);
+
+void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, uint32_t *count, int* error);
+int dynv_set_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, const void** values, uint32_t count);
 
 #endif /* DYNVSYSTEM_H_ */

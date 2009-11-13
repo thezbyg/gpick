@@ -17,8 +17,13 @@
  */
 
 #include "DynvVarColor.h"
+#include "DynvVariable.h"
+#include "DynvIO.h"
 #include "../Endian.h"
 #include <string.h>
+
+#include <sstream>
+using namespace std;
 
 static int dynv_var_color_create(struct dynvVariable* variable){
 	if ((variable->value=new float[4])){
@@ -35,7 +40,7 @@ static int dynv_var_color_destroy(struct dynvVariable* variable){
 	return -1;
 }
 
-static int dynv_var_color_set(struct dynvVariable* variable, void* value){
+static int dynv_var_color_set(struct dynvVariable* variable, void* value, bool deref){
 	if (!variable->value) return -1;
 	((float*)variable->value)[0]=((float*)value)[0];
 	((float*)variable->value)[1]=((float*)value)[1];
@@ -95,6 +100,23 @@ static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynv
 	return -1;
 }
 
+static int serialize_xml(struct dynvVariable* variable, ostream& out){
+	if (variable->value){
+		float* color = (float*)variable->value;
+		out << color[0] <<" "<< color[1] <<" "<< color[2] <<" "<< color[3];
+	}
+	return 0;
+}
+
+static int deserialize_xml(struct dynvVariable* variable, const char *data){
+	stringstream ss(stringstream::in);
+	ss.str(data);
+	float c[4];
+	ss >> c[0] >> c[1] >> c[2] >> c[3];
+	dynv_var_color_set(variable, c, false);
+	return 0;
+}
+
 struct dynvHandler* dynv_var_color_new(){
 	struct dynvHandler* handler=dynv_handler_create("color");
 
@@ -104,6 +126,11 @@ struct dynvHandler* dynv_var_color_new(){
 	handler->get=dynv_var_color_get;
 	handler->serialize=dynv_var_color_serialize;
 	handler->deserialize=dynv_var_color_deserialize;
-
+	
+	handler->serialize_xml=serialize_xml;
+	handler->deserialize_xml=deserialize_xml;
+	
+	handler->data_size = sizeof(float*);
+	
 	return handler;
 }

@@ -3,6 +3,8 @@
 import os
 import sys
 
+from tools.gpick import *
+
 Import('*')
 local_env = env.Clone()
 
@@ -29,5 +31,7 @@ if sys.platform=='win32' or sys.platform=='win64':
 executable = local_env.Program(
 	'gpick',
 	source = [sources, objects])
-	
+
+Depends(executable, local_env.UseLibrary('expat'))
+
 Return('executable')

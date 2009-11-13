@@ -17,6 +17,8 @@
  */
 
 #include "DynvVarPtr.h"
+#include "DynvVariable.h"
+#include "DynvIO.h"
 #include "../Endian.h"
 
 static int dynv_var_ptr_create(struct dynvVariable* variable){
@@ -28,7 +30,7 @@ static int dynv_var_ptr_destroy(struct dynvVariable* variable){
 	return 0;
 }
 
-static int dynv_var_ptr_set(struct dynvVariable* variable, void* value){
+static int dynv_var_ptr_set(struct dynvVariable* variable, void* value, bool deref){
 	variable->value = value;
 	return 0;
 }
@@ -47,6 +49,8 @@ struct dynvHandler* dynv_var_ptr_new(){
 	handler->get=dynv_var_ptr_get;
 	handler->serialize=0;
 	handler->deserialize=0;
+	
+	handler->data_size = sizeof(void*);
 
 	return handler;
 }

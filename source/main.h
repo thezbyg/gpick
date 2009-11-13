@@ -23,7 +23,7 @@
 #include "GlobalState.h"
 #include "Color.h"
 
-int main_show_window(GtkWidget* window, GKeyFile* settings);
+int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
 
 enum ColorTextType{
 	COLOR_TEXT_TYPE_DISPLAY,

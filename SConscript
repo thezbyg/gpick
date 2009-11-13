@@ -4,9 +4,9 @@ import os
 import string
 import sys
 
-import tools.gpick
+from tools.gpick import *
 
-env = Environment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = tools.gpick.WriteNsisVersion, suffix = ".nsi")})
+env = GpickEnvironment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = WriteNsisVersion, suffix = ".nsi")})
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
@@ -20,21 +20,16 @@ v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
 
-tools.gpick.GetVersionInfo(env)
+env.GetVersionInfo()
 
 try:
 	umask = os.umask(022)
 except OSError:     # ignore on systems that don't support umask
 	pass
 
-def CheckPKG(context, name):
-	context.Message( 'Checking for %s... ' % name )
-	ret = context.TryAction('pkg-config --exists "%s"' % name)[0]
-	context.Result( ret )
-	return ret
 
 if not env.GetOption('clean'):
-	conf = Configure(env, custom_tests = { 'CheckPKG' : CheckPKG })
+	conf = Configure(env)
 	
 	libs = {
 		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
@@ -46,7 +41,7 @@ if not env.GetOption('clean'):
 	elif env['WITH_DBUSGLIB']==True:
 		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76'}}
 
-	tools.gpick.ConfirmLibs(conf, env, libs)
+	env.ConfirmLibs(conf, libs)
 	
 	env = conf.Finish()
 
@@ -68,7 +63,10 @@ env.Replace(
 if env['DEBUG']==False:
 	env.Append(LINKFLAGS=['-s'])
 
+extern_libs = SConscript(['extern/SConscript'], exports='env')
+
 executable = SConscript(['source/SConscript'], exports='env')
+
 
 env.Alias(target="build", source=[
 	executable
@@ -94,9 +92,8 @@ env.Alias(target="nsis", source=[
 env.Alias(target="tar", source=[
 	env.Append(TARFLAGS = ['-z']),
 	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick-'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'/,"']),
-	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', tools.gpick.GetSourceFiles(env, "("+tools.gpick.RegexEscape(os.sep)+r"\.)|("+tools.gpick.RegexEscape(os.sep)+r"\.svn$)|(^"+tools.gpick.RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
+	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
 ])
-
 
 
 env.Default(executable)

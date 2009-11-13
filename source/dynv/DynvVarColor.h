@@ -19,7 +19,7 @@
 #ifndef DYNVVARCOLOR_H_
 #define DYNVVARCOLOR_H_
 
-#include "DynvSystem.h"
+#include "DynvHandler.h"
 
 struct dynvHandler* dynv_var_color_new();
 

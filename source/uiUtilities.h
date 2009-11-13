@@ -27,10 +27,4 @@ GtkWidget* gtk_label_mnemonic_aligned_new(const gchar* text, gfloat xalign, gflo
 
 GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
 
-
-gint g_key_file_get_integer_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gint default_value);
-gdouble g_key_file_get_double_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gdouble default_value);
-gboolean g_key_file_get_boolean_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, gboolean default_value);
-gchar* g_key_file_get_string_with_default(GKeyFile *key_file, const gchar *group_name, const gchar *key, const gchar *default_value);
-
 #endif /* UIUTILITIES_H_ */
