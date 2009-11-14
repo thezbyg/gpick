@@ -18,7 +18,7 @@
 
 #include "Box.h"
 
-
+#include <string>
 #include <iostream>
 using namespace std;
 using namespace math;
@@ -26,10 +26,31 @@ using namespace math;
 namespace layout{
 
 	
-Style::Style(const char* _name, Color* _bg_color, Color* _text_color, float _font_size){
-	style_name = _name;
-	color_copy(_bg_color, &background_color);
-	color_copy(_text_color, &text_color);
+Style::Style(const char* _name, Color* _color, float _font_size){
+	string name = string(_name);
+	
+	size_t pos = name.find(":");
+	if (pos != string::npos){
+		ident_name = name.substr(0, pos);
+		human_name = name.substr(pos+1);
+	}else{
+		ident_name = name;
+		human_name = name;
+	}
+	
+	style_type = TYPE_UNKNOWN;
+	
+	if ((pos = ident_name.rfind("_")) != string::npos){
+		string flags = ident_name.substr(pos);
+		
+		if (flags.find("t") != string::npos){
+			style_type = TYPE_COLOR;
+		}else if (flags.find("b") != string::npos){
+			style_type = TYPE_BACKGROUND;
+		}
+	}
+		
+	color_copy(_color, &color);
 	font_size = _font_size;
 	
 	dirty = true;

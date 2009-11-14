@@ -177,11 +177,13 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
 	Box* box = ns->system->GetBoxAt(point);
 	if (box && box->style){
-		if (typeid(*box)==typeid(Fill)){
+		color_copy(color, &box->style->color);
+		
+		/*if (typeid(*box)==typeid(Fill)){
 			color_copy(color, &box->style->background_color);
 		}else if (typeid(*box)==typeid(Text)){
 			color_copy(color, &box->style->text_color);	
-		}
+		}*/
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}
@@ -211,11 +213,13 @@ int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color)
 	if (ns->system && ns->selected_style){
 		Box* box = ns->selected_box;
 		
-		if (typeid(*box)==typeid(Fill)){
+		color_copy(&box->style->color, color);
+		
+		/*if (typeid(*box)==typeid(Fill)){
 			color_copy(&box->style->background_color, color);
 		}else if (typeid(*box)==typeid(Text)){
 			color_copy(&box->style->text_color, color);	
-		}
+		}*/
 		
 		return 0;
 		
@@ -230,11 +234,13 @@ int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color)
 	if (ns->system && ns->selected_style){
 		Box* box = ns->selected_box;
 		
-		if (typeid(*box)==typeid(Fill)){
+		color_copy(color, &box->style->color);
+		
+		/*if (typeid(*box)==typeid(Fill)){
 			color_copy(color, &box->style->background_color);
 		}else if (typeid(*box)==typeid(Text)){
 			color_copy(color, &box->style->text_color);	
-		}
+		}*/
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}

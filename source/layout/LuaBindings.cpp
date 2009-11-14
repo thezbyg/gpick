@@ -27,17 +27,17 @@ using namespace std;
 namespace layout{
 
 static int lua_lstyle_new (lua_State *L) {
+
+	size_t st;
+	const char* name = luaL_checklstring(L, 2, &st);
+	Color* color = lua_checkcolor(L, 3);
+	double font_size = luaL_optnumber(L, 4, 1.0);
+	
 	Style** c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
 	luaL_getmetatable(L, "layout_style");
 	lua_setmetatable(L, -2);
 	
-	size_t st;
-	const char* name = luaL_checklstring(L, 2, &st);
-	Color* background_color = lua_checkcolor(L, 3);
-	Color* text_color = lua_checkcolor(L, 4);
-	double font_size = luaL_checknumber(L, 5);
-	
-	Style *e = new Style(name, background_color, text_color, font_size);
+	Style *e = new Style(name, color, font_size);
 	*c = static_cast<Style*>(e);
 	
 	return 1;
@@ -75,10 +75,7 @@ static const struct luaL_reg lua_lstylelib_m [] = {
 	
 
 static int lua_new_box (lua_State *L) {
-	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
-	luaL_getmetatable(L, "layout");
-	lua_setmetatable(L, -2);
-	
+
 	size_t st;
 	const char* name = luaL_checklstring(L, 2, &st);
 	double x = luaL_checknumber(L, 3);
@@ -86,16 +83,16 @@ static int lua_new_box (lua_State *L) {
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
 	
+	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
+	luaL_getmetatable(L, "layout");
+	lua_setmetatable(L, -2);
+	
 	Box *e = new Box(name, x, y, w, h);
 	*c = static_cast<Box*>(e);
 	return 1;
 }
 
 static int lua_new_fill (lua_State *L) {
-	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
-	luaL_getmetatable(L, "layout");
-	lua_setmetatable(L, -2);
-	
 	size_t st;
 	const char* name = luaL_checklstring(L, 2, &st);
 	double x = luaL_checknumber(L, 3);
@@ -105,6 +102,10 @@ static int lua_new_fill (lua_State *L) {
 	
 	Style* style = lua_checklstyle(L, 7);
 	
+	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
+	luaL_getmetatable(L, "layout");
+	lua_setmetatable(L, -2);
+	
 	Fill *e = new Fill(name, x, y, w, h);
 	e->SetStyle(style);
 	*c = static_cast<Box*>(e);
@@ -113,10 +114,7 @@ static int lua_new_fill (lua_State *L) {
 }
 
 static int lua_new_text (lua_State *L) {
-	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
-	luaL_getmetatable(L, "layout");
-	lua_setmetatable(L, -2);
-	
+
 	size_t st;
 	const char* name = luaL_checklstring(L, 2, &st);
 	double x = luaL_checknumber(L, 3);
@@ -127,6 +125,10 @@ static int lua_new_text (lua_State *L) {
 	Style* style = lua_checklstyle(L, 7);
 	
 	const char* text = luaL_checklstring(L, 8, &st);
+	
+	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
+	luaL_getmetatable(L, "layout");
+	lua_setmetatable(L, -2);
 	
 	Text *e = new Text(name, x, y, w, h);
 	e->SetStyle(style);

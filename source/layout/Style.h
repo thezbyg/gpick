@@ -33,12 +33,18 @@ class Box;
 	
 class Style:public ReferenceCounter{
 public:
-	std::string style_name;
-	
-	Color background_color;
+	std::string ident_name;
+	std::string human_name;
 
-	Color text_color;
+	Color color;
 	float font_size;
+
+	enum{
+		TYPE_UNKNOWN = 0,
+		TYPE_COLOR,
+		TYPE_BACKGROUND,
+		TYPE_BORDER,
+	}style_type;
 
 	bool dirty;
 
@@ -52,7 +58,7 @@ public:
 	Box* GetBox();
 	void SetState(bool highlight, Box *box);
 
-	Style(const char* name, Color* bg_color, Color* text_color, float font_size);
+	Style(const char* name, Color* color, float font_size);
 	virtual ~Style();
 };
 
