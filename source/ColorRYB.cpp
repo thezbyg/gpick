@@ -26,6 +26,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <list>
+#include <iostream>
 using namespace std;
 
 typedef math::Vec2<double> point;
@@ -72,7 +73,7 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 	};
 	static bezier blue_v[]={
 		bezier(	point(0.0, 0.0), point(1.0, 0.0), point(18.0, 0.0), point(19.0, 0.0) ),
-		bezier(	point(19.0, 0.0), point(22.0, 0.9), point(33.0, 0.9), point(36.0, 0.0) )
+		bezier(	point(19.0, 0.0), point(22.0, 1.0), point(33.0, 1.0), point(36.0, 0.0) )
 	};
 	for (int i=0; i<sizeof(red_v)/sizeof(bezier); ++i){
 		red.push_back(&red_v[i]);
@@ -141,6 +142,45 @@ int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue){
 	*ryb_hue = hue;
 	return -1;
 }
+
+double color_rybhue_to_rgbhue_f(double hue){
+	if (hue>=4.0/6.0 && hue<=6.0/6.0){
+		return ((285.12*hue*hue)-(81.252*hue)+155.18)/360.0;
+	}else if (hue>=0.0/6.0 && hue<=1.0/6.0){
+		return ((-544.32*hue*hue)+(301.896*hue))/360.0;
+	}else if (hue>=1.0/6.0 && hue<=3.0/6.0){
+		return ((609.12*hue*hue)-(153.72*hue)+45.166)/360.0;
+	}else if (hue>=3.0/6.0 && hue<=4.0/6.0){
+		return ((-1088.64*hue*hue)+(1916.46*hue)-567.45)/360.0;
+	}
+	return 0;
+}
+
+int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue){
+	
+	double hue = rgb_hue;
+	double d;
+	
+	double delta = 1/3600.0;
+	
+	Color color, color2;
+	for (int limit=100; limit>0; --limit){
+
+		d = rgb_hue - color_rybhue_to_rgbhue_f(hue);
+		if (fabs(d)<delta){
+			*ryb_hue = hue;
+			return 0;
+		}
+		
+		hue += d/2;
+		if (hue>1) hue=1;
+		else if (hue<0) hue=0;	
+		
+	}
+	*ryb_hue = hue;
+	return -1;
+}
+
 
 void color_rybhue_to_rgb(double hue, Color* color){
 	list<bezier*> red, green, blue;

@@ -26,7 +26,11 @@
 
 double color_ryb_transform_lightness(double hue1, double hue2);
 double color_ryb_transform_hue(double hue, bool forward);
+
 void color_rybhue_to_rgb(double hue, Color* color);
 int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue);
+
+double color_rybhue_to_rgbhue_f(double hue);
+int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue);
 
 #endif /* COLORRYB_H_ */

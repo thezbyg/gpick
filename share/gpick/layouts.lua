@@ -64,12 +64,15 @@ gpick.layouts['std_layout_webpage_1'] = {
 		return 1;
 	end; };
 	
---[[gpick.layouts['std_layout_menu_1'] = {
+gpick.layouts['std_layout_menu_1'] = {
 	human_readable = 'Menu',
 	build = function (layout_system)
 		local styles = {
-			menu = layout_style:new("menu", color:new(0.7, 0.7, 0.7), color:new(1.0, 1.0, 1.0), 0.5),
-			button = layout_style:new("button", color:new(0.3, 0.3, 0.3), color:new(0.8, 0.8, 0.8), 1.0),
+			menu = layout_style:new("menu_b", color:new(0.7, 0.7, 0.7)),
+			button = layout_style:new("navitem_b", color:new(0.3, 0.3, 0.3)),
+			button_hover = layout_style:new("navitem_bh", color:new(0.3, 0.3, 0.3)),
+			button_text = layout_style:new("navitem_t", color:new(0.8, 0.8, 0.8), 1.0),
+			button_text_hover = layout_style:new("navitem_th", color:new(0.8, 0.8, 0.8), 1.0),
 		};
 		for i,v in pairs(styles) do
 			layout_system:addstyle(v);
@@ -78,10 +81,10 @@ gpick.layouts['std_layout_webpage_1'] = {
 		local root = layout:new_box("root", 0, 0, 300, 400);
 		layout_system:setbox(root);
 		
-		root:add(layouts.add_buttons(layout:new_fill("menu", 0, 0, 1, 1, styles['menu']), 8, 1, { styles['button'] }, 0.1));
+		root:add(layouts.add_buttons(layout:new_fill("menu", 0, 0, 1, 1, styles['menu']), 8, 1, { styles['button'], styles['button'], styles['button_hover'] }, { styles['button_text'], styles['button_text'], styles['button_text_hover'] }, 0.1));
 		
 		return 1;
-	end; };]]--
+	end; };
 
 gpick.layouts_get = function()
 	local layouts = {};

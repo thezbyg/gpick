@@ -38,12 +38,16 @@
 #include <iostream>
 using namespace std;
 
+#define MAX_COLOR_WIDGETS		6
+
 struct Arguments{
 	ColorSource source;
 
 	GtkWidget* main;
 
 	GtkWidget *gen_type;
+	GtkWidget *wheel_type;
+	
 	//GtkWidget *range_chaos;
 	//GtkWidget *toggle_brightness_correction;
 
@@ -53,8 +57,8 @@ struct Arguments{
 
 	GtkWidget *color_previews;
 
-	GtkWidget *colors[5];
-	float color_hue[5];
+	GtkWidget *colors[MAX_COLOR_WIDGETS];
+	float color_hue[MAX_COLOR_WIDGETS];
 	int colors_visible;
 
 	struct dynvSystem *params;
@@ -63,12 +67,76 @@ struct Arguments{
 	struct ColorList *preview_color_list;
 };
 
+typedef struct SchemeType{
+	const char *name;
+	int32_t colors;
+	int32_t turn_types;
+	double turn[4];
+}SchemeType;
+
+const SchemeType scheme_types[]={
+	{"Complementary", 1, 1, {180}},
+	{"Analogous", 5, 1, {30}},
+	{"Triadic", 2, 1, {120}},
+	{"Split-Complementary", 2, 2, {150, 60}},
+	{"Rectangle (tetradic)", 3, 2, {60, 120}},
+	{"Square", 3, 1, {90}},
+	{"Neutral", 5, 1, {15}},
+	{"Clash", 2, 2, {90, 180}},
+	{"Five-Tone", 4, 4, {115, 40, 50, 40}},
+	{"Six-Tone", 5, 2, {30, 90}},
+};
+
+typedef struct ColorWheelType{
+	const char *name;
+	void (*hue_to_hsl)(double hue, Color* hsl);
+	void (*rgbhue_to_hue)(double rgbhue, double *hue);
+}ColorWheelType;
+
+static void rgb_hue2hue(double hue, Color* hsl){
+	hsl->hsl.hue = hue;
+	hsl->hsl.saturation = 1;
+	hsl->hsl.lightness = 0.5;
+}
+
+static void rgb_rgbhue2hue(double rgbhue, double *hue){
+	*hue = rgbhue;
+}
+
+static void ryb1_hue2hue(double hue, Color* hsl){
+	Color c;
+	color_rybhue_to_rgb(hue, &c);
+	color_rgb_to_hsl(&c, hsl);
+}
+
+static void ryb1_rgbhue2hue(double rgbhue, double *hue){
+	color_rgbhue_to_rybhue(rgbhue, hue);
+}
+
+static void ryb2_hue2hue(double hue, Color* hsl){
+	hsl->hsl.hue = color_rybhue_to_rgbhue_f(hue);
+	hsl->hsl.saturation = 1;
+	hsl->hsl.lightness = 0.5;
+}
+
+static void ryb2_rgbhue2hue(double rgbhue, double *hue){
+	color_rgbhue_to_rybhue_f(rgbhue, hue);
+}
+
+const ColorWheelType color_wheel_types[]={
+	{"RGB", rgb_hue2hue, rgb_rgbhue2hue},
+	{"RYB v1", ryb1_hue2hue, ryb1_rgbhue2hue},
+	{"RYB v2", ryb2_hue2hue, ryb2_rgbhue2hue},
+};
+
 static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(struct Arguments *args, struct ColorObject* color, GtkWidget* color_widget);
 
 static void calc( struct Arguments *args, bool preview, bool save_settings){
 
-	gint type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
+	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
+	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
+	
 	//gfloat chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
 	//gboolean correction = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_brightness_correction));
 
@@ -78,6 +146,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 
 	if (save_settings){
 		dynv_set_int32(args->params, "type", type);
+		dynv_set_int32(args->params, "wheel_type", wheel_type);
 		dynv_set_float(args->params, "hue", hue);
 		dynv_set_float(args->params, "saturation", saturation);
 		dynv_set_float(args->params, "lightness", lightness);
@@ -96,19 +165,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	else
 		color_list = args->gs->colors;
 
-	struct {
-		int32_t colors;
-		int32_t turn_types;
-		double turn[2];
-	}scheme_types[]={
-		{1, 1, {180}},
-		{4, 1, {30}},
-		{2, 1, {120}},
-		{2, 2, {150, 60}},
-		{3, 2, {60, 120}},
-		{3, 1, {90}},
-		{4, 1, {15}},
-	};
+	const ColorWheelType *wheel = &color_wheel_types[wheel_type];
 
 	float chaos = 0;
 	float hue_offset = 0;
@@ -116,9 +173,12 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 
 	for (step_i = 0; step_i <= scheme_types[type].colors; ++step_i) {
 
-		color_rybhue_to_rgb(hue, &r);
-
-		color_rgb_to_hsl(&r, &hsl);
+		wheel->hue_to_hsl(hue, &hsl);
+		
+		//color_rybhue_to_rgb(hue, &r);
+		//color_rybhue_to_rgb_f(hue*360, &r);
+		//color_rgb_to_hsl(&r, &hsl);
+		
 		hsl.hsl.lightness = clamp_float(hsl.hsl.lightness + lightness, 0, 1);
 		hsl.hsl.saturation = clamp_float(hsl.hsl.saturation * saturation, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
@@ -140,7 +200,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	if (preview){
 
 		uint32_t total_colors = scheme_types[type].colors+1;
-		if (total_colors>5) total_colors=5;
+		if (total_colors>MAX_COLOR_WIDGETS) total_colors=MAX_COLOR_WIDGETS;
 
 		for (int i=args->colors_visible; i>total_colors; --i)
 			gtk_widget_hide(args->colors[i-1]);
@@ -422,12 +482,20 @@ static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint
 
 	Color hsl, hsl_results;
 	color_rgb_to_hsl(&c, &hsl);
-	color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
+	
+	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
+	const ColorWheelType *wheel = &color_wheel_types[wheel_type];
+	
+	wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
+	
+	//color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
 
 	shifted_hue = wrap_float(hue - args->color_hue[color_index]);
 
-	color_rybhue_to_rgb(hue, &c);
-	color_rgb_to_hsl(&c, &hsl_results);
+	wheel->hue_to_hsl(hue, &hsl_results);
+	
+	//color_rybhue_to_rgb(hue, &c);
+	//color_rgb_to_hsl(&c, &hsl_results);
 
 	saturation = hsl.hsl.saturation * 1/hsl_results.hsl.saturation;
 	lightness = hsl.hsl.lightness - hsl_results.hsl.lightness;
@@ -497,7 +565,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
 
-	for (int i=0; i<5; ++i){
+	for (int i=0; i<MAX_COLOR_WIDGETS; ++i){
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
 		gtk_color_set_hcenter(GTK_COLOR(widget), true);
@@ -528,7 +596,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	args->hue = gtk_hscale_new_with_range(0, 360, 1);
 	gtk_range_set_value(GTK_RANGE(args->hue), dynv_get_float_wd(args->params, "hue", 180));
 	g_signal_connect (G_OBJECT (args->hue), "value-changed", G_CALLBACK (update), args);
-	gtk_table_attach(GTK_TABLE(table), args->hue,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), args->hue,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
@@ -536,7 +604,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_range_set_value(GTK_RANGE(args->saturation), dynv_get_float_wd(args->params, "saturation", 100));
 	g_signal_connect (G_OBJECT (args->saturation), "value-changed", G_CALLBACK (update), args);
 	g_signal_connect (G_OBJECT (args->saturation), "format-value", G_CALLBACK (format_saturation_value_cb), args);
-	gtk_table_attach(GTK_TABLE(table), args->saturation,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), args->saturation,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Lightness:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
@@ -544,32 +612,37 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_range_set_value(GTK_RANGE(args->lightness), dynv_get_float_wd(args->params, "lightness", 0));
 	g_signal_connect (G_OBJECT (args->lightness), "value-changed", G_CALLBACK (update), args);
 	g_signal_connect (G_OBJECT (args->lightness), "format-value", G_CALLBACK (format_lightness_value_cb), args);
-	gtk_table_attach(GTK_TABLE(table), args->lightness,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), args->lightness,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	//table_y=0;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->gen_type = gtk_combo_box_new_text();
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Complementary");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Analogous");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Triadic");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Split-Complementary");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Rectangle (tetradic)");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Square");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), "Neutral");
+	for (uint32_t i=0; i<sizeof(scheme_types)/sizeof(SchemeType); i++){
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), scheme_types[i].name);
+	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
-	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK (update), args);
-	gtk_table_attach(GTK_TABLE(table), args->gen_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,0);
+	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK(update), args);
+	gtk_table_attach(GTK_TABLE(table), args->gen_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color wheel:",0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	args->wheel_type = gtk_combo_box_new_text();
+	for (uint32_t i=0; i<sizeof(color_wheel_types)/sizeof(ColorWheelType); i++){
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->wheel_type), color_wheel_types[i].name);
+	}
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), dynv_get_int32_wd(args->params, "wheel_type", 0));
+	g_signal_connect (G_OBJECT (args->wheel_type), "changed", G_CALLBACK(update), args);
+	gtk_table_attach(GTK_TABLE(table), args->wheel_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,0);
+
 	table_y++;
-
-
+	
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->colors->params);
 	struct ColorList* preview_color_list=color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 
 
 	args->preview_color_list = preview_color_list;
-	args->colors_visible = 5;
+	args->colors_visible = MAX_COLOR_WIDGETS;
 	args->gs = gs;
 
 	gtk_widget_show_all(vbox);

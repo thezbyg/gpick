@@ -50,6 +50,7 @@ struct Arguments{
 	System* layout_system;
 	Layouts* layouts;
 
+	string last_filename;
 	struct dynvSystem *params;
 	GlobalState *gs;
 };
@@ -71,6 +72,41 @@ static void style_cell_edited_cb(GtkCellRendererText *cell, gchar *path, gchar *
 	GtkTreeIter iter1;
 	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
 	gtk_list_store_set(store, &iter1, STYLELIST_CSS_SELECTOR, new_text, -1);
+}
+
+static void load_colors(struct Arguments* args){
+	if (args->layout_system){
+		
+		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
+		string ident_selector;
+	
+	
+		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i!=args->layout_system->styles.end(); i++){
+
+			ident_selector = (*i)->ident_name + ".color";
+			const Color *color = dynv_get_color_wd(assignments_params, ident_selector.c_str(), 0);
+			
+			if (color){
+				color_copy((Color*)color, &(*i)->color);
+			}
+		}
+		
+		dynv_system_release(assignments_params);
+	}	
+}
+
+static void save_colors(struct Arguments* args){
+	if (args->layout_system){
+		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
+		string ident_selector;
+		
+		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i!=args->layout_system->styles.end(); i++){
+			ident_selector = (*i)->ident_name + ".color";
+			dynv_set_color(assignments_params, ident_selector.c_str(), &(*i)->color);
+		}
+		
+		dynv_system_release(assignments_params);
+	}
 }
 
 static GtkWidget* style_list_new(struct Arguments *args){
@@ -198,6 +234,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, struct Arguments* args) {
 }
 
 static int source_destroy(struct Arguments *args){
+	save_colors(args);
 	if (args->layout_system) System::unref(args->layout_system);
 	args->layout_system = 0;
 	gtk_widget_destroy(args->main);
@@ -384,6 +421,8 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struc
 	return FALSE;
 }
 
+
+
 static void layout_changed_cb(GtkWidget *widget, struct Arguments* args) {
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)) {
@@ -392,6 +431,8 @@ static void layout_changed_cb(GtkWidget *widget, struct Arguments* args) {
 		Layout* layout;
 		gtk_tree_model_get(model, &iter, LAYOUTLIST_PTR, &layout, -1);
 
+		save_colors(args);
+
 		System* layout_system = layouts_get(args->layouts, layout->name);
 		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout), layout_system);
 		if (args->layout_system) System::unref(args->layout_system);
@@ -399,7 +440,7 @@ static void layout_changed_cb(GtkWidget *widget, struct Arguments* args) {
 
 		dynv_set_string(args->params, "layout_name", layout->name);
 		
-		
+		load_colors(args);
 	}
 }
 
@@ -461,6 +502,21 @@ static int save_css_file(const char* filename, struct Arguments* args){
 }
 
 static void export_css_cb(GtkWidget *widget, struct Arguments* args){
+	
+	if (!args->last_filename.empty()){
+		
+		if (save_css_file(args->last_filename.c_str(), args)==0){
+
+		}else{
+			GtkWidget* message;
+			message=gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(widget)), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be saved");
+			gtk_dialog_run(GTK_DIALOG(message));
+			gtk_widget_destroy(message);
+		}
+		
+		return;
+	}
+	
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
@@ -497,6 +553,7 @@ static void export_css_cb(GtkWidget *widget, struct Arguments* args){
 
 			if (save_css_file(filename, args)==0){
 
+				args->last_filename = filename;
 				finished = true;
 			}else{
 				GtkWidget* message;
@@ -513,6 +570,11 @@ static void export_css_cb(GtkWidget *widget, struct Arguments* args){
 	gtk_widget_destroy (dialog);
 }
 
+static void export_css_as_cb(GtkWidget *widget, struct Arguments* args){
+	args->last_filename="";
+	export_css_cb(widget, args);
+}
+
 static GtkWidget* attach_label(GtkWidget *widget, const char *label){
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(label, 0, 0.5, 0, 0), false, true, 0);
@@ -522,6 +584,7 @@ static GtkWidget* attach_label(GtkWidget *widget, const char *label){
 
 ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args = new struct Arguments;
+	args->last_filename="";
 
 	args->params = dynv_get_dynv(gs->params, "gpick.layout_preview");
 
@@ -562,7 +625,8 @@ ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
 		
-	tool = gtk_menu_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_BUTTON), "Export CSS");
+	tool = gtk_menu_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_BUTTON), "Export CSS File");
+	gtk_tool_item_set_tooltip_text(tool, "Export CSS file");
 	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(export_css_cb), args);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
 	
@@ -570,9 +634,15 @@ ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	GtkWidget* item;
 
 	menu = gtk_menu_new ();
-	item = gtk_menu_item_new_with_mnemonic ("_Assign CSS selectors");
+	
+	item = gtk_menu_item_new_with_image("_Export CSS File As...", gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (export_css_as_cb), args);
+	
+	item = gtk_menu_item_new_with_mnemonic("_Assign CSS Selectors...");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (assign_css_selectors_cb), args);
+	
 	gtk_widget_show_all(menu);
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(tool), menu);
 	
