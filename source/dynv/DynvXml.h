@@ -25,5 +25,6 @@
 
 int dynv_xml_serialize(struct dynvSystem* dynv_system, std::ostream& out);
 int dynv_xml_deserialize(struct dynvSystem* dynv_system, std::istream& in);
+int dynv_xml_escape(const char* data, std::ostream& out);
 
 #endif /* DYNVXML_H_ */

@@ -20,6 +20,7 @@
 #include "DragDrop.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "CopyPaste.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -227,6 +228,15 @@ static void on_swatch_color_edit(GtkWidget *widget, gpointer item) {
 	color_object_release(color_object);
 }
 
+
+static void paste_cb(GtkWidget *widget, struct Arguments* args) {
+	struct ColorObject* color_object;
+	if (copypaste_get_color_object(&color_object, args->gs)==0){
+		source_set_color(args, color_object);
+		color_object_release(color_object);
+	}
+}
+
 static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
 	static GtkWidget *menu=NULL;
 	if (menu) {
@@ -269,6 +279,13 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_color_edit), args);
 
+		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
+
+		if (copypaste_is_color_object_available(args->gs)!=0){
+			gtk_widget_set_sensitive(item, false);
+		}
 
 	    gtk_widget_show_all (GTK_WIDGET(menu));
 
@@ -413,7 +430,6 @@ static void color_component_change_value(GtkSpinButton *spinbutton, Color* c, gp
 	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display),c);
 	updateDiplays(args);
 }
-
 
 
 

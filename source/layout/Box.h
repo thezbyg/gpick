@@ -37,6 +37,7 @@ class Box: public ReferenceCounter{
 public:
 	std::string name;
 	Style *style;
+	bool helper_only;
 	
 	math::Rect2<float> rect;
 

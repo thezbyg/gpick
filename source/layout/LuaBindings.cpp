@@ -63,12 +63,27 @@ int lua_lstyle_gc (lua_State *L) {
 	return 0;
 }
 
+int lua_lstyle_humanname (lua_State *L) {
+	Style *style = lua_checklstyle(L, 1);
+	if (lua_type(L, 2)==LUA_TSTRING){
+		size_t st;
+		const char* name = luaL_checklstring(L, 2, &st);
+		style->human_name = name;
+		return 0;
+	}else{
+		lua_pushstring(L, style->human_name.c_str());
+		return 1;
+	}
+}
+
+
 static const struct luaL_reg lua_lstylelib_f [] = {
 	{"new", lua_lstyle_new},
 	{NULL, NULL}
 };
 
 static const struct luaL_reg lua_lstylelib_m [] = {
+	{"humanname", lua_lstyle_humanname},
 	{NULL, NULL}
 };
 
@@ -122,8 +137,10 @@ static int lua_new_text (lua_State *L) {
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
 	
-	Style* style = lua_checklstyle(L, 7);
-	
+	Style* style = 0;
+	if (lua_type(L, 7)!=LUA_TNIL){
+		style = lua_checklstyle(L, 7);
+	}
 	const char* text = luaL_checklstring(L, 8, &st);
 	
 	Box** c = (Box**)lua_newuserdata(L, sizeof(Box*));
@@ -131,7 +148,7 @@ static int lua_new_text (lua_State *L) {
 	lua_setmetatable(L, -2);
 	
 	Text *e = new Text(name, x, y, w, h);
-	e->SetStyle(style);
+	if (style) e->SetStyle(style);
 	e->text = text;
 	*c = static_cast<Box*>(e);
 	
@@ -160,6 +177,21 @@ int lua_add (lua_State *L) {
 	return 1;
 }
 
+int lua_box_helper_only (lua_State *L) {
+	Box* box = lua_checklbox(L, 1);
+	if (lua_type(L, 2)==LUA_TBOOLEAN){
+		int v = lua_toboolean(L, 2);
+		if (v){
+			box->helper_only = true;
+		}else{
+			box->helper_only = false;	
+		}
+		return 0;
+	}else{
+		lua_pushboolean(L, box->helper_only);
+		return 1;
+	}
+}
 
 int lua_gclbox (lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
@@ -176,6 +208,7 @@ static const struct luaL_reg lua_lboxlib_f [] = {
 
 static const struct luaL_reg lua_lboxlib_m [] = {
 	{"add", lua_add},
+	{"helper_only", lua_box_helper_only},
 	{NULL, NULL}
 };
 

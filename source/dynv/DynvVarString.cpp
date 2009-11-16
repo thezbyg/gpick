@@ -19,6 +19,7 @@
 #include "DynvVarString.h"
 #include "DynvVariable.h"
 #include "DynvIO.h"
+#include "DynvXml.h"
 #include "../Endian.h"
 #include <string.h>
 
@@ -101,7 +102,8 @@ static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dyn
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
 	if (variable->value){
-		out << (char*)variable->value;
+		//out << (char*)variable->value;
+		dynv_xml_escape((char*)variable->value, out);
 	}
 	return 0;
 }

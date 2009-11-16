@@ -245,3 +245,35 @@ int dynv_xml_deserialize(struct dynvSystem* dynv_system, istream& in){
 	XML_ParserFree(p);
 	return 0;
 }
+
+int dynv_xml_escape(const char* data, std::ostream& out){
+	
+	char* i = const_cast<char *>(data);
+	char* last_esc = i;
+	for (;;){
+		switch (*i){
+		case '&':
+			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
+			out << "&amp;";
+			last_esc = i+1;
+			break;
+        case '<':
+			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
+			out << "&lt;";
+			last_esc = i+1;
+			break;
+        case '>':
+			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
+			out << "&gt;";
+			last_esc = i+1;
+			break;
+		case 0:
+			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
+			return 0;
+			break;
+		}
+		
+		++i;
+	}
+	return 0;
+}
