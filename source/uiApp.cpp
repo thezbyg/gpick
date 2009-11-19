@@ -48,7 +48,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
-#include <fstream>
 #include <string>
 #include <sstream>
 #include <map>
@@ -923,11 +922,11 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params){
 	gint x, y;
 	gint width, height;
 
-	x = dynv_get_int32_wd(main_params, "window.x", 0);
-	y = dynv_get_int32_wd(main_params, "window.y", 0);
+	x = dynv_get_int32_wd(main_params, "window.x", -1);
+	y = dynv_get_int32_wd(main_params, "window.y", -1);
 
-	width = dynv_get_int32_wd(main_params, "window.width", 0);
-	height = dynv_get_int32_wd(main_params, "window.height", 0);
+	width = dynv_get_int32_wd(main_params, "window.width", -1);
+	height = dynv_get_int32_wd(main_params, "window.height", -1);
 
 	if (x<0 || y<0 || x>gdk_screen_width() || y>gdk_screen_height()){
 		gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
@@ -937,7 +936,8 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params){
 		gtk_window_move(GTK_WINDOW(window), x, y);
 	}
 
-	gtk_window_resize(GTK_WINDOW(window), width, height);
+	if (width>0 && height>0)
+		gtk_window_resize(GTK_WINDOW(window), width, height);
 
 	gtk_widget_show(window);
 	return 0;

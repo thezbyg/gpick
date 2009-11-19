@@ -91,6 +91,15 @@ int global_state_term(GlobalState *gs){
 
 int global_state_init(GlobalState *gs, GlobalStateLevel level){
 
+	//Create configuration directory if it doesn't exit
+	struct stat st;
+	gchar* config_dir = build_config_path(NULL);
+	if (g_stat(config_dir, &st)!=0){
+		g_mkdir(config_dir, S_IRWXU);
+	}
+	g_free(config_dir);
+	
+	
 	if ((level & GLOBALSTATE_SCRIPTING) && !(gs->loaded_levels & GLOBALSTATE_SCRIPTING)){
 		//check if user has user_init.lua file, if not, then create empty file
 		gchar *user_init_file = build_config_path("user_init.lua");
@@ -99,7 +108,10 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 			fclose(user_init);
 		}else{
 			user_init = fopen(user_init_file, "w");
-			fclose(user_init);
+			if (user_init){
+				
+				fclose(user_init);
+			}
 		}
 		g_free(user_init_file);
 	}
