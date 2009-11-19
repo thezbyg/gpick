@@ -16,9 +16,34 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef UIAPP_H_
+#define UIAPP_H_
+
+#include <gtk/gtk.h>
+#include "GlobalState.h"
+#include "Color.h"
+
+int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
+
+enum ColorTextType{
+	COLOR_TEXT_TYPE_DISPLAY,
+	COLOR_TEXT_TYPE_COPY,
+	COLOR_TEXT_TYPE_COLOR_LIST,
+};
+
+char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
+int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
+int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object);
+
+GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
+void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
+void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
 
 
+struct Arguments* app_create_main();
+int app_load_file(struct Arguments *args, const char *filename);
+int app_run(struct Arguments *args);
+int app_parse_geometry(struct Arguments *args, const char *geometry);
 
-#endif /* MAIN_H_ */
+
+#endif /* UIAPP_H_ */

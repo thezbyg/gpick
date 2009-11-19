@@ -19,26 +19,20 @@
 #ifndef GLOBALSTATE_H_
 #define GLOBALSTATE_H_
 
-#include "Sampler.h"
-#include "ColorNames.h"
-#include "Random.h"
-#include "dynv/DynvSystem.h"
-#include "ColorList.h"
-#include "LuaExt.h"
+typedef struct GlobalState GlobalState;
 
-typedef struct GlobalState{
-	ColorNames* color_names;
-	struct Sampler* sampler;
-	struct ScreenReader* screen_reader;
-	struct ColorList* colors;
-	struct dynvSystem* params;
-	lua_State *lua;
-	Random* random;
-}GlobalState;
+enum GlobalStateLevel{
+	GLOBALSTATE_CONFIGURATION = 1,
+	GLOBALSTATE_SCRIPTING = 2,
+	GLOBALSTATE_COLOR_LIST = 4,
+	GLOBALSTATE_CONVERTERS = 8,
+	GLOBALSTATE_COLOR_NAMES = 16,
+	GLOBALSTATE_OTHER = 32,
+	GLOBALSTATE_ALL = 0xffffffff,
+};
 
-
-int global_state_init(GlobalState *gs);
+int global_state_init(GlobalState *gs, GlobalStateLevel level);
 int global_state_term(GlobalState *gs);
-
+GlobalState *global_state_create();
 
 #endif /* GLOBALSTATE_H_ */

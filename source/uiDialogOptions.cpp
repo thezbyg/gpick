@@ -18,6 +18,7 @@
 
 #include "uiDialogOptions.h"
 #include "uiUtilities.h"
+#include "GlobalStateStruct.h"
 
 #include "DynvHelpers.h"
 

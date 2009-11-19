@@ -21,6 +21,7 @@
 #include "Converter.h"
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
+#include "GlobalStateStruct.h"
 
 #include <iostream>
 using namespace std;

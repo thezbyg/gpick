@@ -18,7 +18,7 @@
 
 #include "DragDrop.h"
 #include "gtk/ColorWidget.h"
-#include "main.h"
+#include "uiApp.h"
 
 #include <string.h>
 

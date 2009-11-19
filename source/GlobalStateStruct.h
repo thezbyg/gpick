@@ -16,9 +16,28 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef GLOBALSTATESTRUCT_H_
+#define GLOBALSTATESTRUCT_H_
 
+#include "GlobalState.h"
 
+#include "Sampler.h"
+#include "ColorNames.h"
+#include "Random.h"
+#include "dynv/DynvSystem.h"
+#include "ColorList.h"
+#include "LuaExt.h"
 
-#endif /* MAIN_H_ */
+typedef struct GlobalState{
+	GlobalStateLevel loaded_levels;
+	
+	ColorNames* color_names;
+	struct Sampler* sampler;
+	struct ScreenReader* screen_reader;
+	struct ColorList* colors;
+	struct dynvSystem* params;
+	lua_State *lua;
+	Random* random;
+}GlobalState;
+
+#endif /* GLOBALSTATESTRUCT_H_ */

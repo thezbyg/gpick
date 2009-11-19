@@ -21,6 +21,7 @@
 #include "uiUtilities.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
+#include "GlobalStateStruct.h"
 
 #include <sstream>
 using namespace std;

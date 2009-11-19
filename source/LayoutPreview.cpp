@@ -20,10 +20,11 @@
 #include "DragDrop.h"
 #include "uiColorInput.h"
 #include "CopyPaste.h"
-#include "main.h"
+#include "uiApp.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 
+#include "GlobalStateStruct.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"

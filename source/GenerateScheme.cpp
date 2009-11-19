@@ -19,6 +19,7 @@
 #include "GenerateScheme.h"
 #include "DragDrop.h"
 
+#include "GlobalStateStruct.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
@@ -29,7 +30,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 
-#include "main.h"
+#include "uiApp.h"
 
 #include <gdk/gdkkeysyms.h>
 

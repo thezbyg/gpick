@@ -17,6 +17,7 @@
  */
 
 #include "GlobalState.h"
+#include "GlobalStateStruct.h"
 #include "Paths.h"
 #include "ScreenReader.h"
 #include "Converter.h"
@@ -42,6 +43,20 @@
 #include <fstream>
 #include <iostream>
 using namespace std;
+
+GlobalState* global_state_create(){
+	GlobalState *gs = new GlobalState;
+	gs->params = 0;
+	gs->lua = 0;
+	gs->loaded_levels = GlobalStateLevel(0);
+	gs->random = 0;
+	return gs;
+}
+
+int global_state_destroy(GlobalState* gs){
+	delete gs;
+	return 0;
+}
 
 int global_state_term(GlobalState *gs){
 	
@@ -74,178 +89,207 @@ int global_state_term(GlobalState *gs){
 	return 0;
 }
 
-int global_state_init(GlobalState *gs){
+int global_state_init(GlobalState *gs, GlobalStateLevel level){
 
-	//check if user has user_init.lua file, if not, then create empty file
-	gchar *user_init_file = build_config_path("user_init.lua");
-	FILE *user_init = fopen(user_init_file, "r");
-	if (user_init){
-		fclose(user_init);
-	}else{
-		user_init = fopen(user_init_file, "w");
-		fclose(user_init);
-	}
-	g_free(user_init_file);
-
-	gs->screen_reader = screen_reader_new();
-
-	gs->sampler = sampler_new(gs->screen_reader);
-	//create and seed random generator
-	gs->random = random_new("SHR3");
-	gulong seed_value=time(0)|1;
-	random_seed(gs->random, &seed_value);
-	
-	//create and load color names
-	gs->color_names = color_names_new();
-	gchar* tmp;
-	color_names_load_from_file(gs->color_names, tmp=build_filename("colors.txt"));
-	g_free(tmp);
-	color_names_load_from_file(gs->color_names, tmp=build_filename("colors0.txt"));
-	g_free(tmp);
-	
-	
-	//create dynamic parameter system
-	struct dynvHandlerMap* handler_map=dynv_handler_map_create();
-	dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
-	dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
-	gs->params = dynv_system_create(handler_map);
-	
-	gchar* config_file = build_config_path("settings.xml");
-	ifstream params_file(config_file);
-	if (params_file.is_open()){
-		dynv_xml_deserialize(gs->params, params_file);
-		params_file.close();
-	}
-	g_free(config_file);
-	
-	//create color list / callbacks must be defined elsewhere
-	gs->colors = color_list_new(handler_map);
-
-	
-	dynv_handler_map_release(handler_map);
-	
-	
-	//create and load lua state
-	lua_State *L= luaL_newstate();
-	luaL_openlibs(L);
-
-	int status;
-	lua_ext_colors_openlib(L);
-	layout::lua_ext_layout_openlib(L);
-	
-	gchar* lua_root_path = build_filename("?.lua");
-	gchar* lua_user_path = build_config_path("?.lua");
-	
-	gchar* lua_path = g_strjoin(";", lua_root_path, lua_user_path, (void*)0);
-	
-	lua_pushstring(L, "package");
-	lua_gettable(L, LUA_GLOBALSINDEX);
-	lua_pushstring(L, "path");
-	lua_pushstring(L, lua_path);
-	lua_settable(L, -3);
-	
-	g_free(lua_path);
-	g_free(lua_root_path);
-	g_free(lua_user_path);
-	
-	tmp=build_filename("init.lua");
-	status = luaL_loadfile(L, tmp) || lua_pcall(L, 0, 0, 0);
-	if (status) {
-		cerr<<"init script load failed: "<<lua_tostring (L, -1)<<endl;
-	}
-	g_free(tmp);
-	
-	gs->lua = L;
-	dynv_system_set(gs->params, "ptr", "lua_State", L);
-	
-	//create converter system
-	Converters* converters = converters_init(gs->params);
-	
-
-	
-	
-
-	char** source_array;
-	uint32_t source_array_size;
-	
-	if ((source_array = (char**)dynv_get_string_array_wd(gs->params, "gpick.converters.names", 0, 0, &source_array_size))){
-		bool* copy_array;	
-		uint32_t copy_array_size=0;
-		bool* paste_array;	
-		uint32_t paste_array_size=0;
-		
-		copy_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.copy", 0, 0, &copy_array_size);
-		paste_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.paste", 0, 0, &paste_array_size);
-		
-		gsize source_array_i = 0;
-		Converter* converter;
-		
-		if (copy_array_size>0 || paste_array_size>0){
-						
-			while (source_array_i<source_array_size){
-				converter = converters_get(converters, source_array[source_array_i]);
-				if (converter){
-					if (source_array_i<copy_array_size) converter->copy = converter->serialize_available & copy_array[source_array_i];
-					if (source_array_i<paste_array_size) converter->paste = converter->deserialize_available & paste_array[source_array_i];
-				}
-				++source_array_i;
-			}
+	if ((level & GLOBALSTATE_SCRIPTING) && !(gs->loaded_levels & GLOBALSTATE_SCRIPTING)){
+		//check if user has user_init.lua file, if not, then create empty file
+		gchar *user_init_file = build_config_path("user_init.lua");
+		FILE *user_init = fopen(user_init_file, "r");
+		if (user_init){
+			fclose(user_init);
 		}else{
+			user_init = fopen(user_init_file, "w");
+			fclose(user_init);
+		}
+		g_free(user_init_file);
+	}
+
+	if ((level & GLOBALSTATE_OTHER) && !(gs->loaded_levels & GLOBALSTATE_OTHER)){
+		gs->screen_reader = screen_reader_new();
+
+		gs->sampler = sampler_new(gs->screen_reader);
+		//create and seed random generator
+		gs->random = random_new("SHR3");
+		gulong seed_value=time(0)|1;
+		random_seed(gs->random, &seed_value);
+	}
+	
+	if ((level & GLOBALSTATE_COLOR_NAMES) && !(gs->loaded_levels & GLOBALSTATE_COLOR_NAMES)){
+		//create and load color names
+		gs->color_names = color_names_new();
+		gchar* tmp;
+		color_names_load_from_file(gs->color_names, tmp=build_filename("colors.txt"));
+		g_free(tmp);
+		color_names_load_from_file(gs->color_names, tmp=build_filename("colors0.txt"));
+		g_free(tmp);
+		
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_COLOR_NAMES);
+	}
+	
+	if ((level & GLOBALSTATE_CONFIGURATION) && !(gs->loaded_levels & GLOBALSTATE_CONFIGURATION)){
+		//create dynamic parameter system
+		struct dynvHandlerMap* handler_map = dynv_handler_map_create();
+		dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
+		gs->params = dynv_system_create(handler_map);
+		dynv_handler_map_release(handler_map);
+		
+		gchar* config_file = build_config_path("settings.xml");
+		ifstream params_file(config_file);
+		if (params_file.is_open()){
+			dynv_xml_deserialize(gs->params, params_file);
+			params_file.close();
+		}
+		g_free(config_file);
+		
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_CONFIGURATION);
+	}
+	
+	if ((level & GLOBALSTATE_COLOR_LIST) && !(gs->loaded_levels & GLOBALSTATE_COLOR_LIST)){
+		//create color list / callbacks must be defined elsewhere
+		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(gs->params);
+		
+		gs->colors = color_list_new(handler_map);
+		
+		dynv_handler_map_release(handler_map);
+	
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_COLOR_LIST);
+	}
+		
+		
+	if ((level & GLOBALSTATE_SCRIPTING) && !(gs->loaded_levels & GLOBALSTATE_SCRIPTING)){
+		//create and load lua state
+		lua_State *L= luaL_newstate();
+		luaL_openlibs(L);
+
+		int status;
+		char *tmp;
+		lua_ext_colors_openlib(L);
+		layout::lua_ext_layout_openlib(L);
+		
+		gchar* lua_root_path = build_filename("?.lua");
+		gchar* lua_user_path = build_config_path("?.lua");
+		
+		gchar* lua_path = g_strjoin(";", lua_root_path, lua_user_path, (void*)0);
+		
+		lua_pushstring(L, "package");
+		lua_gettable(L, LUA_GLOBALSINDEX);
+		lua_pushstring(L, "path");
+		lua_pushstring(L, lua_path);
+		lua_settable(L, -3);
+		
+		g_free(lua_path);
+		g_free(lua_root_path);
+		g_free(lua_user_path);
+		
+		tmp = build_filename("init.lua");
+		status = luaL_loadfile(L, tmp) || lua_pcall(L, 0, 0, 0);
+		if (status) {
+			cerr<<"init script load failed: "<<lua_tostring (L, -1)<<endl;
+		}
+		g_free(tmp);
+		
+		gs->lua = L;
+		dynv_system_set(gs->params, "ptr", "lua_State", L);
+		
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_SCRIPTING);
+	}
+	
+	if ((level & GLOBALSTATE_CONVERTERS) && !(gs->loaded_levels & GLOBALSTATE_CONVERTERS)){
+		//create converter system
+		Converters* converters = converters_init(gs->params);
+		
+		char** source_array;
+		uint32_t source_array_size;
+		
+		if ((source_array = (char**)dynv_get_string_array_wd(gs->params, "gpick.converters.names", 0, 0, &source_array_size))){
+			bool* copy_array;	
+			uint32_t copy_array_size=0;
+			bool* paste_array;	
+			uint32_t paste_array_size=0;
+			
+			copy_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.copy", 0, 0, &copy_array_size);
+			paste_array = dynv_get_bool_array_wd(gs->params, "gpick.converters.paste", 0, 0, &paste_array_size);
+			
+			gsize source_array_i = 0;
+			Converter* converter;
+			
+			if (copy_array_size>0 || paste_array_size>0){
+							
+				while (source_array_i<source_array_size){
+					converter = converters_get(converters, source_array[source_array_i]);
+					if (converter){
+						if (source_array_i<copy_array_size) converter->copy = converter->serialize_available & copy_array[source_array_i];
+						if (source_array_i<paste_array_size) converter->paste = converter->deserialize_available & paste_array[source_array_i];
+					}
+					++source_array_i;
+				}
+			}else{
+				while (source_array_i<source_array_size){
+					converter = converters_get(converters, source_array[source_array_i]);
+					if (converter){
+						converter->copy = converter->serialize_available;
+						converter->paste = converter->deserialize_available;
+					}
+					++source_array_i;
+				}
+			}
+			
+			if (copy_array) delete [] copy_array;
+			if (paste_array) delete [] paste_array;
+			
+			converters_reorder(converters, (const char**)source_array, source_array_size);
+			
+			if (source_array) delete [] source_array;
+
+		}else{
+			//Initialize default values
+
+			const char* name_array[]={
+				"color_web_hex",
+				"color_css_rgb",
+				"color_css_hsl",
+			};
+			
+			source_array_size = sizeof(name_array)/sizeof(name_array[0]);
+			gsize source_array_i = 0;
+			Converter* converter;
+			
 			while (source_array_i<source_array_size){
-				converter = converters_get(converters, source_array[source_array_i]);
+				converter = converters_get(converters, name_array[source_array_i]);
 				if (converter){
 					converter->copy = converter->serialize_available;
 					converter->paste = converter->deserialize_available;
 				}
 				++source_array_i;
 			}
+			
+			converters_reorder(converters, name_array, source_array_size);
 		}
 		
-		if (copy_array) delete [] copy_array;
-		if (paste_array) delete [] paste_array;
+		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
+		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 		
-		converters_reorder(converters, (const char**)source_array, source_array_size);
+		converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
+		converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.color_list", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
 		
-		if (source_array) delete [] source_array;
-
-	}else{
-		//Initialize default values
-
-		const char* name_array[]={
-			"color_web_hex",
-			"color_css_rgb",
-			"color_css_hsl",
-		};
-		
-		source_array_size = sizeof(name_array)/sizeof(name_array[0]);
-		gsize source_array_i = 0;
-		Converter* converter;
-		
-		while (source_array_i<source_array_size){
-			converter = converters_get(converters, name_array[source_array_i]);
-			if (converter){
-				converter->copy = converter->serialize_available;
-				converter->paste = converter->deserialize_available;
-			}
-			++source_array_i;
-		}
-		
-		converters_reorder(converters, name_array, source_array_size);
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_CONVERTERS);
 	}
 	
-	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
-	converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
 	
-	converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
-	converters_set(converters, converters_get(converters, dynv_get_string_wd(gs->params, "gpick.converters.color_list", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+	if ((level & GLOBALSTATE_OTHER) && !(gs->loaded_levels & GLOBALSTATE_OTHER)){
+		//create layout system
+		layout::Layouts* layout = layout::layouts_init(gs->params);
+	}
 	
-	//create layout system
-	layout::Layouts* layout = layout::layouts_init(gs->params);
+	if (level & GLOBALSTATE_OTHER){
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_OTHER);
+	}
 	
 	return 0;
 }

@@ -16,6 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "GlobalStateStruct.h"
 #include "ColorPicker.h"
 #include "DragDrop.h"
 #include "Converter.h"
@@ -26,8 +27,8 @@
 #include "gtk/Zoomed.h"
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
-#include "main.h"
 
+#include "uiApp.h"
 #include "uiUtilities.h"
 #include "uiColorInput.h"
 
@@ -63,6 +64,7 @@ struct Arguments{
 	GtkWidget* blue_line;
 
 	GtkWidget* color_name;
+	GtkWidget* statusbar;
 
 	gboolean add_to_palette;
 	gboolean rotate_swatch;
@@ -309,12 +311,11 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
 	struct Arguments* args=(struct Arguments*)data;
 
-	GtkStatusbar* statusbar=(GtkStatusbar*)dynv_system_get(args->gs->params, "ptr", "StatusBar");
 
 	if (event->in){
-		gtk_statusbar_push(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "swatch_focused"), "Press SPACE to sample color under pointer");
+		gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"), "Press SPACE to sample color under pointer");
 	}else{
-		gtk_statusbar_pop(GTK_STATUSBAR(statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusbar), "swatch_focused"));
+		gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"));
 	}
 	return FALSE;
 }
@@ -634,10 +635,15 @@ static int source_activate(struct Arguments *args){
 	float refresh_rate = dynv_get_float_wd(args->params, "refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
 
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"), "Click on swatch area to begin adding colors to palette");
+	
 	return 0;
 }
 
 static int source_deactivate(struct Arguments *args){
+	
+	gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"));
+	
 	if (args->timeout_source_id){
 		g_source_remove(args->timeout_source_id);
 		args->timeout_source_id = 0;
@@ -677,6 +683,7 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args=new struct Arguments;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.picker");
+	args->statusbar = (GtkWidget*)dynv_system_get(gs->params, "ptr", "StatusBar");
 
 	color_source_init(&args->source);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;

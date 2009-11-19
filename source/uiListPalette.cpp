@@ -22,7 +22,8 @@
 #include "ColorSource.h"
 #include "DragDrop.h"
 #include "GlobalState.h"
-#include "main.h"
+#include "uiApp.h"
+#include "GlobalStateStruct.h"
 
 #include <sstream>
 #include <iomanip>

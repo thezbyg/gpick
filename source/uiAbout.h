@@ -16,9 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MAIN_H_
-#define MAIN_H_
+#ifndef UIDIALOGABOUT_H_
+#define UIDIALOGABOUT_H_
 
+#include <gtk/gtk.h>
 
+void show_about_box(GtkWidget *widget);
 
-#endif /* MAIN_H_ */
+extern const gchar* program_name;
+
+#endif /* UIDIALOGABOUT_H_ */

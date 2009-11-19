@@ -16,8 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "GlobalStateStruct.h"
 #include "CopyPaste.h"
-#include "main.h"
+#include "uiApp.h"
 
 #include <string.h>
 

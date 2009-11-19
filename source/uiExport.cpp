@@ -21,6 +21,7 @@
 #include "uiListPalette.h"
 #include "Endian.h"
 #include "DynvHelpers.h"
+#include "GlobalStateStruct.h"
 
 #include <string.h>
 

@@ -18,8 +18,9 @@
 
 #include "uiColorInput.h"
 #include "Converter.h"
-#include "main.h"
+#include "uiApp.h"
 #include "uiUtilities.h"
+#include "GlobalStateStruct.h"
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object){
 	
