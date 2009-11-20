@@ -57,6 +57,7 @@ Section "!Program Files" SecProgramFiles
 	File ..\share\icons\hicolor\48x48\apps\gpick.png
 	File ..\share\gpick\init.lua
 	File ..\share\gpick\helpers.lua
+	File ..\share\gpick\layouts.lua
 	
 	SetOutPath "$INSTDIR"
 	WriteRegStr HKLM "Software\gpick" "" $INSTDIR
@@ -102,6 +103,7 @@ Delete "$INSTDIR\share\gpick\gpick-falloff-exponential.png"
 Delete "$INSTDIR\share\gpick\gpick.png"
 Delete "$INSTDIR\share\gpick\init.lua"
 Delete "$INSTDIR\share\gpick\helpers.lua"
+Delete "$INSTDIR\share\gpick\layouts.lua"
 RMDir "$INSTDIR\share\gpick"
 RMDir "$INSTDIR\share"
 
