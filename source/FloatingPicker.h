@@ -16,17 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORPICKER_H_
-#define COLORPICKER_H_
+#ifndef FLOATINGPICKER_H_
+#define FLOATINGPICKER_H_
 
-#include "FloatingPicker.h"
 #include "ColorSource.h"
 #include "GlobalState.h"
-
 #include <gtk/gtk.h>
 
-ColorSource* color_picker_new(GlobalState* gs, GtkWidget **widget);
-int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
-void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
+typedef struct Arguments* FloatingPicker;
 
-#endif /* COLORPICKER_H_ */
+FloatingPicker floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source);
+
+void floating_picker_free(FloatingPicker fp);
+
+void floating_picker_activate(FloatingPicker fp, bool hide_on_mouse_release);
+void floating_picker_deactivate(FloatingPicker fp);
+
+#endif /* FLOATINGPICKER_H_ */

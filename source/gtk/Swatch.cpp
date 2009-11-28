@@ -32,7 +32,7 @@ static gboolean gtk_swatch_button_press(GtkWidget *swatch, GdkEventButton *event
 static int swatch_get_color_by_position(gint x, gint y);
 
 enum {
-	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, LAST_SIGNAL
+	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, CENTER_ACTIVATED, LAST_SIGNAL
 };
 
 static guint gtk_swatch_signals[LAST_SIGNAL] = { 0 };
@@ -71,6 +71,10 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
 
 	gtk_swatch_signals[COLOR_ACTIVATED] = g_signal_new("color_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkSwatchClass, color_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+			
+	gtk_swatch_signals[CENTER_ACTIVATED] = g_signal_new("center_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkSwatchClass, center_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
 }
 
 static void gtk_swatch_init(GtkSwatch *swatch) {
@@ -323,7 +327,8 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 		}
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
 		if (new_color==0){
-			gdk_pointer_grab(widget->window, FALSE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, NULL, event->time);
+			//gdk_pointer_grab(widget->window, FALSE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), NULL, NULL, event->time);
+			g_signal_emit(widget, gtk_swatch_signals[CENTER_ACTIVATED], 0);
 		}else if (new_color<0){
 			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
 		}else{

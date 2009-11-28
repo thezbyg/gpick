@@ -19,13 +19,13 @@
 #ifndef UISTATUSICON_H_
 #define UISTATUSICON_H_
 
-#include "ColorSource.h"
+#include "FloatingPicker.h"
 #include "GlobalState.h"
 #include <gtk/gtk.h>
 
 struct uiStatusIcon;
 
-struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, ColorSource* color_source);
+struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, FloatingPicker floating_picker);
 void status_icon_set_visible(struct uiStatusIcon* si, bool visible);
 void status_icon_destroy(struct uiStatusIcon* si);
 

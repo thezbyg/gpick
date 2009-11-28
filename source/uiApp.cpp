@@ -66,6 +66,7 @@ struct Arguments{
 	GtkWidget* hpaned;
 
 	uiStatusIcon* statusIcon;
+	FloatingPicker floating_picker;
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -151,6 +152,8 @@ static void destroy( GtkWidget *widget, struct Arguments *args){
 	dynv_set_int32(args->params, "window.width", args->width);
 	dynv_set_int32(args->params, "window.height", args->height);
 
+	floating_picker_free(args->floating_picker);
+	
     gtk_main_quit ();
 }
 
@@ -493,6 +496,10 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 	GtkWidget** widgets=(GtkWidget**)g_object_get_data(G_OBJECT(widget), "widgets");
 	gtk_widget_set_sensitive(widgets[0], (total_count >= 1));
 	gtk_widget_set_sensitive(widgets[1], (selected_count >= 1));
+}
+
+static void floating_picker_show_cb(GtkWidget *widget, struct Arguments* args) {
+	floating_picker_activate(args->floating_picker, false);
 }
 
 static void show_about_box_cb(GtkWidget *widget, struct Arguments* args) {
@@ -1059,8 +1066,9 @@ struct Arguments* app_create_main(){
 
 	gtk_widget_show_all(vbox_main);
 
-
 		args->color_source[0] = color_picker_new(args->gs, &widget);
+		args->floating_picker = floating_picker_new(args->window, args->gs, args->color_source[0]);
+		color_picker_set_floating_picker(args->color_source[0], args->floating_picker);
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Color picker"));
 		gtk_widget_show(widget);
 
@@ -1104,12 +1112,24 @@ struct Arguments* app_create_main(){
 
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
 	args->statusbar=statusbar;
+	
+	GtkWidget *button = gtk_button_new();
+	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
+    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
+    gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_set_tooltip_text(button, "Pick colors");
+	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
+	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
+	gtk_widget_show_all(button);
+	
 	gtk_widget_show(statusbar);
 
 	createMenu(GTK_MENU_BAR(menu_bar), args, accel_group);
 	gtk_widget_show_all(menu_bar);
+	
+	
 
-	args->statusIcon = status_icon_new(args->window, args->gs, args->color_source[0]);
+	args->statusIcon = status_icon_new(args->window, args->gs, args->floating_picker);
 	
 	return args;
 }

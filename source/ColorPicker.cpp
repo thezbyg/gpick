@@ -22,6 +22,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "CopyPaste.h"
+#include "FloatingPicker.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -71,6 +72,8 @@ struct Arguments{
 	gboolean copy_to_clipboard;
 	//gboolean active;
 	guint timeout_source_id;
+	
+	FloatingPicker floating_picker;
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -211,6 +214,13 @@ static void on_swatch_color_activated(GtkWidget *widget, gpointer item) {
 	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
+}
+
+static void on_swatch_center_activated(GtkWidget *widget, gpointer item) {
+	struct Arguments* args=(struct Arguments*)item;
+	
+	floating_picker_activate(args->floating_picker, true);
+	
 }
 
 static void on_swatch_color_edit(GtkWidget *widget, gpointer item) {
@@ -678,12 +688,17 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 	return false;
 }
 
+void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker){
+	struct Arguments* args = (struct Arguments*)color_source;
+	args->floating_picker = floating_picker;
+}
 
 ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 	struct Arguments* args=new struct Arguments;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.picker");
 	args->statusbar = (GtkWidget*)dynv_system_get(gs->params, "ptr", "StatusBar");
+	args->floating_picker = 0;
 
 	color_source_init(&args->source);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -714,6 +729,7 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			g_signal_connect (G_OBJECT (widget), "active_color_changed", G_CALLBACK (on_swatch_active_color_changed), args);
 			g_signal_connect (G_OBJECT (widget), "color_changed", G_CALLBACK (on_swatch_color_changed), args);
 			g_signal_connect (G_OBJECT (widget), "color_activated", G_CALLBACK (on_swatch_color_activated), args);
+			g_signal_connect (G_OBJECT (widget), "center_activated", G_CALLBACK (on_swatch_center_activated), args);
 			g_signal_connect_after (G_OBJECT (widget), "button-press-event",G_CALLBACK (on_swatch_button_press), args);
 
 
