@@ -528,3 +528,38 @@ void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptati
 	result->xyz.z=x.z;
 }
 
+void color_rgb_to_cmy(Color* a, Color* b){
+	b->cmy.c = 1 - a->rgb.red;
+	b->cmy.m = 1 - a->rgb.green;
+	b->cmy.y = 1 - a->rgb.blue;
+}
+
+void color_cmy_to_rgb(Color* a, Color* b){
+	b->rgb.red = 1 - a->cmy.c;
+	b->rgb.green = 1 - a->cmy.m;
+	b->rgb.blue = 1 - a->cmy.y;
+}
+
+void color_cmy_to_cmyk(Color* a, Color* b){
+	float k = 1;
+	
+	if (a->cmy.c < k) k = a->cmy.c;
+	if (a->cmy.m < k) k = a->cmy.m;
+	if (a->cmy.y < k) k = a->cmy.y;
+	
+	if (k == 1){
+		b->cmyk.c = b->cmyk.m = b->cmyk.y = 0;
+	}else{
+		b->cmyk.c = (a->cmy.c - k) / (1 - k);
+		b->cmyk.m = (a->cmy.m - k) / (1 - k);
+		b->cmyk.y = (a->cmy.y - k) / (1 - k);
+	}
+	b->cmyk.k = k;
+}
+
+void color_cmyk_to_cmy(Color* a, Color* b){
+	b->cmy.c = (a->cmyk.c * (1 - a->cmyk.k) + a->cmyk.k);
+	b->cmy.m = (a->cmyk.m * (1 - a->cmyk.k) + a->cmyk.k);
+	b->cmy.y = (a->cmyk.y * (1 - a->cmyk.k) + a->cmyk.k);	
+}
+

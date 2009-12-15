@@ -138,6 +138,57 @@ static int lua_color_lightness (lua_State *L) {
 }
 
 
+static int lua_color_cmyk (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER  && lua_type(L, 5)==LUA_TNUMBER ){
+		c->cmyk.c = luaL_checknumber(L, 2);	
+		c->cmyk.m = luaL_checknumber(L, 3);
+		c->cmyk.y = luaL_checknumber(L, 4);
+		c->cmyk.k = luaL_checknumber(L, 5);	
+	}
+	lua_pushnumber(L, c->cmyk.c);
+	lua_pushnumber(L, c->cmyk.m);
+	lua_pushnumber(L, c->cmyk.y);
+	lua_pushnumber(L, c->cmyk.k);
+	return 4;
+}
+
+static int lua_color_cyan (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->cmyk.c = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->cmyk.c);
+	return 1;
+}
+
+static int lua_color_magenta (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->cmyk.m = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->cmyk.m);
+	return 1;
+}
+
+static int lua_color_yellow (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->cmyk.y = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->cmyk.y);
+	return 1;
+}
+
+static int lua_color_key_black (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->cmyk.k = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->cmyk.k);
+	return 1;
+}
+
 static int lua_color_rgb_to_hsl (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	Color c2;
@@ -150,6 +201,16 @@ static int lua_color_hsl_to_rgb (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	Color c2;
 	color_hsl_to_rgb(c, &c2);
+	lua_pushcolor(L, &c2);
+	return 1;
+}
+
+
+static int lua_color_rgb_to_cmyk (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	Color c2, c3;
+	color_rgb_to_cmy(c, &c3);
+	color_cmy_to_cmyk(&c3, &c2);
 	lua_pushcolor(L, &c2);
 	return 1;
 }
@@ -171,9 +232,15 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"lightness",	lua_color_lightness},
 	{"hsl",			lua_color_hsl},
 	
+	{"cyan",		lua_color_cyan},
+	{"magenta",		lua_color_magenta},
+	{"yellow",		lua_color_yellow},	
+	{"key_black",	lua_color_key_black},
+	{"cmyk",		lua_color_cmyk},
+	
 	{"rgb_to_hsl",	lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",	lua_color_hsl_to_rgb},
-	
+	{"rgb_to_cmyk",	lua_color_rgb_to_cmyk},
 	{NULL, NULL}
 };
 

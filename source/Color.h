@@ -57,6 +57,11 @@ typedef struct Color{
 			float c;
 			float m;
 			float y;
+		}cmy;
+		struct{
+			float c;
+			float m;
+			float y;
 			float k;
 		}cmyk;
 		struct{
@@ -85,6 +90,12 @@ void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* t
 
 void color_lab_to_lch(Color* a, Color* b);
 void color_rgb_to_lch(Color* a, Color* b);
+
+void color_rgb_to_cmy(Color* a, Color* b);
+void color_cmy_to_rgb(Color* a, Color* b);
+
+void color_cmy_to_cmyk(Color* a, Color* b);
+void color_cmyk_to_cmy(Color* a, Color* b);
 
 
 
