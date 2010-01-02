@@ -323,7 +323,7 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 
 
 	if (event->in){
-		gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"), "Press SPACE to sample color under pointer");
+		gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"), "Press Spacebar to sample color under mouse pointer");
 	}else{
 		gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"));
 	}

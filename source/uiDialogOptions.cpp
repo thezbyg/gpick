@@ -77,17 +77,17 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 
 
-	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to tray");
+	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to system tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.minimize_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
-	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to tray");
+	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to system tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.close_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
-	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in tray");
+	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in system tray");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.start_in_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;

@@ -45,7 +45,7 @@ void show_about_box(GtkWidget *widget){
 	gchar* version=g_strjoin(".", gpick_build_version, gpick_build_revision, NULL);
 	
 	const char *license = {
-"Copyright \xc2\xa9 2009, Albertas Vyšniauskas\n"
+"Copyright \xc2\xa9 2009-2010, Albertas Vyšniauskas\n"
 "\n"
 "All rights reserved.\n"
 "\n"
