@@ -404,6 +404,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struc
 		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
+		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
 		if (copypaste_is_color_object_available(args->gs)!=0){
 			gtk_widget_set_sensitive(item, false);

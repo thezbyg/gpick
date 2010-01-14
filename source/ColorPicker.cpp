@@ -89,14 +89,15 @@ static void popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu){
 static gboolean updateMainColor( gpointer data ){
 	struct Arguments* args=(struct Arguments*)data;
 
-	GdkWindow* root_window;
+	GdkScreen *screen;
 	GdkModifierType state;
-
-	root_window = gdk_get_default_root_window();
+	
 	int x, y;
 	int width, height;
-	gdk_window_get_pointer(root_window, &x, &y, &state);
-	gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+	
+	gdk_display_get_pointer(gdk_display_get_default(), &screen, &x, &y, &state);
+	width = gdk_screen_get_width(screen);
+	height = gdk_screen_get_height(screen);
 
 	Vec2<int> pointer(x,y);
 	Vec2<int> window_size(width, height);
@@ -105,10 +106,10 @@ static gboolean updateMainColor( gpointer data ){
 	Rect2<int> sampler_rect, zoomed_rect, final_rect;
 
 	sampler_get_screen_rect(args->gs->sampler, pointer, window_size, &sampler_rect);
-	screen_reader_add_rect(args->gs->screen_reader, sampler_rect);
+	screen_reader_add_rect(args->gs->screen_reader, screen, sampler_rect);
 
 	gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed_display), pointer, window_size, &zoomed_rect);
-	screen_reader_add_rect(args->gs->screen_reader, zoomed_rect);
+	screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
 
 	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
 
@@ -255,10 +256,12 @@ static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event
 		gtk_menu_detach(GTK_MENU(menu));
 		menu=NULL;
 	}
+	
+	int color_index = gtk_swatch_get_color_at(GTK_SWATCH(widget), event->x, event->y);
 
 	struct Arguments* args=(struct Arguments*)data;
 
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS && color_index>0){
 		GtkWidget* item ;
 		gint32 button, event_time;
 

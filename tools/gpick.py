@@ -50,9 +50,9 @@ class GpickEnvironment(SConsEnvironment):
 		
 		for i in lib:
 			lib_include_path = os.path.split(i.path)[0]
-			self.AppendUnique(LIBS = [library_name], LIBPATH = ['#' + lib_include_path])
+			self.PrependUnique(LIBS = [library_name], LIBPATH = ['#' + lib_include_path])
 			
-		self.AppendUnique(CPPPATH = lib.include_dirs)
+		self.PrependUnique(CPPPATH = lib.include_dirs)
 		
 		return lib
 

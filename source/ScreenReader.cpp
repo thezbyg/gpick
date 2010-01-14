@@ -24,13 +24,15 @@
 using namespace math;
 
 struct ScreenReader{
-	GdkPixbuf* pixbuf;
+	GdkPixbuf *pixbuf;
+	GdkScreen *screen;
 	Rect2<int> read_area;
 };
 
 struct ScreenReader* screen_reader_new(){
 	struct ScreenReader* screen = new struct ScreenReader;
 	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 75, 75);
+	screen->screen = NULL;
 	return screen;
 }
 
@@ -39,17 +41,25 @@ void screen_reader_destroy(struct ScreenReader *screen) {
 	delete screen;
 }
 
-void screen_reader_add_rect(struct ScreenReader *screen, Rect2<int>& rect){
-	screen->read_area += rect;
+void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, Rect2<int>& rect){
+	if (screen->screen && (screen->screen == gdk_screen)){
+		screen->read_area += rect;
+	}else{
+		screen->read_area += rect;
+		screen->screen = gdk_screen;
+	}
 }
 
 void screen_reader_reset_rect(struct ScreenReader *screen){
 	screen->read_area = Rect2<int>();
+	screen->screen = NULL;
 }
 
 void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update_rect){
-	GdkWindow* root_window = gdk_get_default_root_window();
-	GdkColormap* colormap = gdk_colormap_get_system();
+	if (!screen->screen) return;
+	
+	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
+	GdkColormap* colormap = gdk_screen_get_system_colormap(screen->screen);
 	
 	int left = screen->read_area.getX();
 	int top = screen->read_area.getY();

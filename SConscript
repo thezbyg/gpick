@@ -14,11 +14,19 @@ vars.Add('DEBARCH', 'Debian package architecture', 'i386')
 vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)
 vars.Add('WITH_DBUSGLIB', 'Compile with DBus support', True)
 vars.Add('DEBUG', 'Compile with debug information', False)
+vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Update(env)
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
+
+if env['BUILD_TARGET'] == "":
+	env['BUILD_TARGET'] == sys.platform
+
+if env['BUILD_TARGET'] == 'win32':
+	if sys.platform != 'win32':
+		env.Tool('crossmingw', toolpath = ['tools'])
 
 env.GetVersionInfo()
 

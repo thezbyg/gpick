@@ -28,7 +28,7 @@ struct ScreenReader* screen_reader_new();
 
 void screen_reader_reset_rect(struct ScreenReader *screen);
 
-void screen_reader_add_rect(struct ScreenReader *screen, math::Rect2<int>& rect);
+void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, math::Rect2<int>& rect);
 
 void screen_reader_update_pixbuf(struct ScreenReader *screen, math::Rect2<int>* update_rect);
 GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen);

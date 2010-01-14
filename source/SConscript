@@ -24,9 +24,11 @@ objects.append(SConscript(['unique/SConscript'], exports='env'))
 objects.append(SConscript(['gtk/SConscript'], exports='env'))
 objects.append(SConscript(['layout/SConscript'], exports='env'))
 
-if sys.platform=='win32' or sys.platform=='win64':
-	objects.append(SConscript(['winres/SConscript'], exports='env'))
+if local_env['BUILD_TARGET'] == 'win32':
 	local_env.Append(LINKFLAGS = '-mwindows')
+	objects.append(SConscript(['winres/SConscript'], exports='env'))
+elif local_env['BUILD_TARGET'] == 'linux2':
+	local_env.Append(LIBS=['rt'])
 
 executable = local_env.Program(
 	'gpick',

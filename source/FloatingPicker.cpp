@@ -33,10 +33,12 @@ using namespace math;
 
 struct Arguments{
 	GtkWidget* parent;
-	GtkWidget* fake_window;
+
 	GtkWidget* window;
 	GtkWidget* zoomed;
 	GtkWidget* color_widget;
+	
+	guint timeout_source_id;
 	
 	ColorSource *color_source;
 	
@@ -46,15 +48,16 @@ struct Arguments{
 };
 
 static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* c){
-
-	GdkWindow* root_window;
+	
+	GdkScreen *screen;
 	GdkModifierType state;
 	
-	root_window = gdk_get_default_root_window();
 	int x, y;
 	int width, height;
-	gdk_window_get_pointer(root_window, &x, &y, &state);
-	gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+
+	gdk_display_get_pointer(gdk_display_get_default(), &screen, &x, &y, &state);
+	width = gdk_screen_get_width(screen);
+	height = gdk_screen_get_height(screen);
 	
 	Vec2<int> pointer(x,y);
 	Vec2<int> window_size(width, height);
@@ -63,11 +66,11 @@ static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* 
 	Rect2<int> sampler_rect, zoomed_rect, final_rect;
 
 	sampler_get_screen_rect(args->gs->sampler, pointer, window_size, &sampler_rect);
-	screen_reader_add_rect(args->gs->screen_reader, sampler_rect);
+	screen_reader_add_rect(args->gs->screen_reader, screen, sampler_rect);
 
 	if (updateWidgets){
 		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed), pointer, window_size, &zoomed_rect);
-		screen_reader_add_rect(args->gs->screen_reader, zoomed_rect);
+		screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
 	}
 		
 	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
@@ -83,37 +86,44 @@ static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* 
 	}
 }
 
-static gboolean motion_notify_cb(GtkWidget *widget, GdkEventMotion *event, struct Arguments *args){
 
-	gint x = event->x_root;
-	gint y = event->y_root;
+
+static gboolean update_display(struct Arguments *args){
+	
+	GdkScreen *screen;
+	GdkModifierType state;
+	
+	int x, y;
+	int width, height;
+	
+	gdk_display_get_pointer(gdk_display_get_default(), &screen, &x, &y, &state);
+	width = gdk_screen_get_width(screen);
+	height = gdk_screen_get_height(screen);
 	
 	gint sx, sy;
-	
 	gtk_window_get_size(GTK_WINDOW(args->window), &sx, &sy);
 	
-	if (x+sx+sx/2 > gdk_screen_width()){
+	if (x+sx+sx/2 > width){
 		x -= sx + sx/2;
 	}else{
 		x += sx/2;
 	}
 	
-	if (y+sy+sy/2 > gdk_screen_height()){
+	if (y+sy+sy/2 > height){
 		y -= sy + sy/2;
 	}else{
 		y += sy/2;
 	}
 	
+	if (gtk_window_get_screen(GTK_WINDOW(args->window)) != screen){
+		gtk_window_set_screen(GTK_WINDOW(args->window), screen);
+	}	
 	gtk_window_move(GTK_WINDOW(args->window), x, y );
-	//TODO: gtk_zoomed_update(GTK_ZOOMED(si->zoomed));
-	
-	
+
 	
 	Color c;
-	//sampler_get_color_sample(si->gs->sampler, &c);
 	get_color_sample(args, true, &c);
 	
-		
 	struct ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->colors, &c);
 		
@@ -129,17 +139,14 @@ static gboolean motion_notify_cb(GtkWidget *widget, GdkEventMotion *event, struc
 	
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text);
 	
-	if (text){
-		//gtk_label_set_text(GTK_LABEL(si->color_code), text);
-		g_free(text);
-	}else{
-		//gtk_label_set_text(GTK_LABEL(si->color_code), "");
-	}
-	
-	return TRUE;
+	if (text) g_free(text);
+
+	return true;
 }
 
 void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release){
+	
+#ifndef WIN32			//Pointer grabbing in Windows is broken, disabling floating picker for now
 
 	args->release_mode = hide_on_mouse_release;
 	
@@ -148,27 +155,23 @@ void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release
 	
 	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->params, "gpick.picker.zoom", 2));
 	
-	gtk_widget_show(args->fake_window);
-	GdkEventMotion event;
+	update_display(args);
 	
-
-	GdkWindow* root_window = gdk_get_default_root_window();
-	GdkModifierType state;
-	gint x, y;
-	gdk_window_get_pointer(root_window, &x, &y, &state);
-	
-	event.x_root = x;
-	event.y_root = y;
-	motion_notify_cb(args->window, &event, args);
 	gtk_widget_show(args->window);
 	
 
 	//gdk_window_set_cursor(si->fake_window->window, cursor);
 	
-	gdk_pointer_grab(args->fake_window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, cursor, GDK_CURRENT_TIME);
-	gdk_keyboard_grab(args->fake_window->window, false, GDK_CURRENT_TIME);
+	gdk_pointer_grab(args->window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK	), NULL, cursor, GDK_CURRENT_TIME);
+	gdk_keyboard_grab(args->window->window, false, GDK_CURRENT_TIME);
 	
+	float refresh_rate = dynv_get_float_wd(args->gs->params, "gpick.picker.refresh_rate", 30);
+	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)NULL);
+
 	gdk_cursor_destroy(cursor);
+	
+#endif
+
 }
 
 void floating_picker_deactivate(struct Arguments *args){
@@ -176,7 +179,9 @@ void floating_picker_deactivate(struct Arguments *args){
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
 	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	
-	gtk_widget_hide(args->fake_window);
+	g_source_remove(args->timeout_source_id);
+	args->timeout_source_id = 0;
+	
 	gtk_widget_hide(args->window);
 	
 }
@@ -218,12 +223,8 @@ static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, stru
 			color_object_release(color_object);
 		}
 		
-		gdk_pointer_ungrab(GDK_CURRENT_TIME);
-		gdk_keyboard_ungrab(GDK_CURRENT_TIME);
-	
-		gtk_widget_hide(args->fake_window);
-		gtk_widget_hide(args->window);
-	
+		floating_picker_deactivate(args);
+		
 		dynv_set_float(args->gs->params, "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
 	}
 }
@@ -257,13 +258,8 @@ struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorS
 	
 	args->gs = gs;
 	args->parent = gtk_widget_get_toplevel(parent);
-	args->fake_window = gtk_window_new(GTK_WINDOW_POPUP);
-	
-	gtk_window_set_skip_pager_hint(GTK_WINDOW(args->fake_window), true);
-	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(args->fake_window), true);
-	gtk_window_set_decorated(GTK_WINDOW(args->fake_window), false);
-	gtk_widget_set_size_request(args->fake_window, 0, 0);
-	
+
+
 	args->window = gtk_window_new(GTK_WINDOW_POPUP);
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(args->window), true);
 	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(args->window), true);
@@ -282,10 +278,9 @@ struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorS
 	gtk_widget_show(args->color_widget);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_widget, true, true, 0);
 	
-	g_signal_connect(G_OBJECT(args->fake_window), "motion-notify-event", G_CALLBACK(motion_notify_cb), args);
-	g_signal_connect(G_OBJECT(args->fake_window), "scroll_event", G_CALLBACK(scroll_event_cb), args);
-	g_signal_connect(G_OBJECT(args->fake_window), "button-release-event", G_CALLBACK(button_release_cb), args);
-	g_signal_connect(G_OBJECT(args->fake_window), "key_press_event", G_CALLBACK(key_up_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "scroll_event", G_CALLBACK(scroll_event_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "button-release-event", G_CALLBACK(button_release_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "key_press_event", G_CALLBACK(key_up_cb), args);
 	
 	args->color_source = color_source;
 	
@@ -294,5 +289,4 @@ struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorS
 
 void floating_picker_free(struct Arguments *args){
 	gtk_widget_destroy(args->window);
-	gtk_widget_destroy(args->fake_window);
 }

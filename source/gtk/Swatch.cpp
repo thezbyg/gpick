@@ -347,11 +347,19 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 static gboolean gtk_swatch_button_release(GtkWidget *widget, GdkEventButton *event) {
 	//GtkSwatchPrivate *ns=GTK_SWATCH_GET_PRIVATE(widget);
 
+	int new_color = swatch_get_color_by_position(event->x - widget->style->xthickness, event->y - widget->style->ythickness);
+	
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
 		//gtk_swatch_set_color_to_main(GTK_SWATCH(widget));
 
 	}else if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)) {
-		g_signal_emit_by_name(widget, "popup-menu");
+		if (new_color==0){
+			
+		}else if (new_color<0){
+			g_signal_emit_by_name(widget, "popup-menu");
+		}else{
+			g_signal_emit_by_name(widget, "popup-menu");
+		}
 	}
 	gdk_pointer_ungrab(event->time);
 	return FALSE;
