@@ -262,8 +262,9 @@ int luaopen_lbox (lua_State *L) {
 	lua_pushcfunction(L, lua_gclbox);
 	lua_settable(L, -3);
 	
-	luaL_openlib(L, NULL, lua_lboxlib_m, 0);
-	luaL_openlib(L, "layout", lua_lboxlib_f, 0);
+	luaL_register(L, NULL, lua_lboxlib_m);
+	luaL_register(L, "layout", lua_lboxlib_f);
+	lua_pop(L, 2);
 	
 	
 	luaL_newmetatable(L, "layout_style");
@@ -276,10 +277,9 @@ int luaopen_lbox (lua_State *L) {
 	lua_pushcfunction(L, lua_lstyle_gc);
 	lua_settable(L, -3);
 	
-	luaL_openlib(L, NULL, lua_lstylelib_m, 0);
-	luaL_openlib(L, "layout_style", lua_lstylelib_f, 0);
-	
-	
+	luaL_register(L, NULL, lua_lstylelib_m);
+	luaL_register(L, "layout_style", lua_lstylelib_f);
+	lua_pop(L, 2);
 	
 	luaL_newmetatable(L, "layout_system");
 
@@ -287,22 +287,16 @@ int luaopen_lbox (lua_State *L) {
 	lua_pushvalue(L, -2);  /* pushes the metatable */
 	lua_settable(L, -3);  /* metatable.__index = metatable */
 
-	luaL_openlib(L, NULL, lua_systemlib_m, 0);
+	luaL_register(L, NULL, lua_systemlib_m);
+	lua_pop(L, 1);
 		
 	return 1;
 }
 
 
 int lua_ext_layout_openlib(lua_State *L){
-    int status;
-	
-	lua_pushcfunction(L, luaopen_lbox);
-    lua_pushstring(L, 0);
-    status = lua_pcall(L, 1, 0, 0);
-	if (status) {
-		cerr<<"lua_ext_layout_openlib: "<<lua_tostring (L, -1)<<endl;
-	}
-    return 0;
+	luaopen_lbox(L);
+	return 0;
 }
 
 

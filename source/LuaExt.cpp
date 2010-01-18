@@ -252,9 +252,11 @@ static int luaopen_color (lua_State *L) {
 	lua_pushvalue(L, -2);  /* pushes the metatable */
 	lua_settable(L, -3);  /* metatable.__index = metatable */
 
-	luaL_openlib(L, NULL, lua_colorlib_m, 0);
-	luaL_openlib(L, "color", lua_colorlib_f, 0);
+	luaL_register(L, NULL, lua_colorlib_m);
+	luaL_register(L, "color", lua_colorlib_f);
 		
+	lua_pop(L, 2);
+	
 	return 1;
 }
 
@@ -316,29 +318,18 @@ int luaopen_colorobject (lua_State *L) {
 	lua_pushvalue(L, -2);  /* pushes the metatable */
 	lua_settable(L, -3);  /* metatable.__index = metatable */
 
-	luaL_openlib(L, NULL, lua_colorobjectlib_m, 0);
-	luaL_openlib(L, "colorobject", lua_colorobjectlib_f, 0);
+	luaL_register(L, NULL, lua_colorobjectlib_m);
+	luaL_register(L, "colorobject", lua_colorobjectlib_f);
 		
+	lua_pop(L, 2);
+	
 	return 1;
 }
 
 
 int lua_ext_colors_openlib(lua_State *L){
-    int status;
-	
-	lua_pushcfunction(L, luaopen_color);
-    lua_pushstring(L, 0);
-    status = lua_pcall(L, 1, 0, 0);
-	if (status) {
-		cerr<<"LuaExt_Colors: "<<lua_tostring (L, -1)<<endl;
-	}
-    
-	lua_pushcfunction(L, luaopen_colorobject);
-    lua_pushstring(L, 0);
-    status = lua_pcall(L, 1, 0, 0);
-	if (status) {
-		cerr<<"LuaExt_Colors: "<<lua_tostring (L, -1)<<endl;
-	}
+	luaopen_color(L);
+	luaopen_colorobject(L);
     return 0;
 }
 

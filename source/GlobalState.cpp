@@ -194,6 +194,7 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 		lua_pushstring(L, "path");
 		lua_pushstring(L, lua_path);
 		lua_settable(L, -3);
+		lua_pop(L, 1);
 		
 		g_free(lua_path);
 		g_free(lua_root_path);
