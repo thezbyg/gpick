@@ -204,53 +204,34 @@ Converters* converters_init(struct dynvSystem* params){
 		lua_pushstring(L, "converters");
 		lua_gettable(L, gpick_namespace);
 		int converters_table = lua_gettop(L);
-		
-		lua_pushstring(L, "color_converters_get");
-		lua_gettable(L, gpick_namespace);
-		if (lua_type(L, -1) != LUA_TNIL){
-			
-			if ((status=lua_pcall(L, 0, 1, 0))==0){
-				if (lua_type(L, -1)==LUA_TTABLE){
-					size_t st;
-					int table_index = lua_gettop(L);
-					
-					for (int i=1;;i++){
-						lua_pushinteger(L, i);
-						lua_gettable(L, table_index);
-						if (lua_isnil(L, -1)) break;
-						
-						lua_pushstring(L, lua_tostring(L, -1));		//duplicate, because lua_gettable replaces stack top
-						lua_gettable(L, converters_table);
 
-						lua_pushstring(L, "human_readable");
-						lua_gettable(L, -2);
-						
-						Converter *converter = new Converter;
-						converter->human_readable = g_strdup(lua_tostring(L, -1));
-						converter->function_name = g_strdup(lua_tostring(L, -3));
-						converters->converters[converter->function_name] = converter;
-						
-						converters->all_converters.push_back(converter);
-						
-						lua_pushstring(L, "serialize");
-						lua_gettable(L, -3);
-						converter->serialize_available = !lua_isnil(L, -1);
-						converter->copy = false;
-						lua_pop(L, 1);
-						
-						lua_pushstring(L, "deserialize");
-						lua_gettable(L, -3);
-						converter->deserialize_available = !lua_isnil(L, -1);
-						converter->paste = false;
-						lua_pop(L, 1);
-						
-						lua_pop(L, 3);
-					}
-					
-				}
-			}else{
-				cerr<<"color_converters_get: "<<lua_tostring (L, -1)<<endl;
+		lua_pushnil(L);
+		while (lua_next(L, converters_table) != 0){
+			if (lua_type(L, -2) == LUA_TSTRING){
+				Converter *converter = new Converter;
+				converter->function_name = g_strdup(lua_tostring(L, -2));
+				converters->converters[converter->function_name] = converter;
+				converters->all_converters.push_back(converter);
+
+				lua_pushstring(L, "human_readable");
+				lua_gettable(L, -2);
+				converter->human_readable = g_strdup(lua_tostring(L, -1));
+				lua_pop(L, 1);
+				
+				lua_pushstring(L, "serialize");
+				lua_gettable(L, -2);
+				converter->serialize_available = !lua_isnil(L, -1);
+				converter->copy = false;
+				lua_pop(L, 1);
+				
+				lua_pushstring(L, "deserialize");
+				lua_gettable(L, -2);
+				converter->deserialize_available = !lua_isnil(L, -1);
+				converter->paste = false;
+				lua_pop(L, 1);
+
 			}
+			lua_pop(L, 1);      //pop value from stack, but leave key
 		}
 	}
 	lua_settop(L, stack_top);

@@ -175,15 +175,14 @@ void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release
 }
 
 void floating_picker_deactivate(struct Arguments *args){
+    gdk_pointer_ungrab(GDK_CURRENT_TIME);
+    gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 	
-	gdk_pointer_ungrab(GDK_CURRENT_TIME);
-	gdk_keyboard_ungrab(GDK_CURRENT_TIME);
-	
-	g_source_remove(args->timeout_source_id);
-	args->timeout_source_id = 0;
-	
-	gtk_widget_hide(args->window);
-	
+	if (args->timeout_source_id > 0){
+        g_source_remove(args->timeout_source_id);
+	    args->timeout_source_id = 0;
+    }
+    gtk_widget_hide(args->window);
 }
 
 static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, struct Arguments *args){

@@ -640,7 +640,7 @@ static int source_set_color(struct Arguments *args, ColorObject* color){
 
 static int source_activate(struct Arguments *args){
 
-	if (args->timeout_source_id) {
+	if (args->timeout_source_id > 0) {
 		g_source_remove(args->timeout_source_id);
 		args->timeout_source_id = 0;
 	}
@@ -657,7 +657,7 @@ static int source_deactivate(struct Arguments *args){
 	
 	gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"));
 	
-	if (args->timeout_source_id){
+	if (args->timeout_source_id > 0){
 		g_source_remove(args->timeout_source_id);
 		args->timeout_source_id = 0;
 	}
