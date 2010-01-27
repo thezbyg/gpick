@@ -17,6 +17,7 @@
  */
 
 #include "ColorObject.h"
+#include "DynvHelpers.h"
 
 using namespace std;
 
@@ -53,10 +54,10 @@ struct ColorObject* color_object_ref(struct ColorObject* color_object){
 }
 
 int color_object_get_color(struct ColorObject* color_object, Color* color){
-	if (!color_object->action){	
-		Color* c=(Color*)dynv_system_get(color_object->params, "color", "color");
+	if (!color_object->action){
+		const Color* c = dynv_get_color_wd(color_object->params, "color", 0);
 		if (c){
-			color_copy(c, color);
+			color_copy(const_cast<Color*>(c), color);
 			return 0;
 		}
 		return -1;
@@ -67,9 +68,9 @@ int color_object_get_color(struct ColorObject* color_object, Color* color){
 }
 
 int color_object_set_color(struct ColorObject* color_object, Color* color){
-	if (!color_object->action){	
+	if (!color_object->action){
 		//color_copy(color, &color_object->color);
-		dynv_system_set(color_object->params, "color", "color", color);
+		dynv_set_color(color_object->params, "color", color);
 		return 0;
 	}else{
 		//action
@@ -80,11 +81,11 @@ int color_object_set_color(struct ColorObject* color_object, Color* color){
 struct ColorObject* color_object_copy(struct ColorObject* color_object){
 	struct ColorObject* new_color_object = color_object_new(0);
 	new_color_object->params = dynv_system_copy(color_object->params);
-	
+
 	new_color_object->recalculate = color_object->recalculate;
 	new_color_object->selected = color_object->selected;
 	new_color_object->visited = color_object->visited;
-	
+
 	return new_color_object;
 }
 

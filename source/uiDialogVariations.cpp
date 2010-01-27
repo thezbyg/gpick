@@ -30,10 +30,10 @@ struct Arguments{
 	GtkWidget *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
-	
+
 	struct ColorList *selected_color_list;
 	struct ColorList *preview_color_list;
-	
+
 	struct dynvSystem *params;
 	GlobalState* gs;
 };
@@ -54,30 +54,30 @@ static void calc( struct Arguments *args, bool preview, int limit){
 		dynv_set_float(args->params, "saturation_to", saturation_to);
 		dynv_set_bool(args->params, "multiplication", multiplication);
 	}
-	
+
 	stringstream s;
 
 	Color r, hsl;
 	gint step_i;
 
 	struct ColorList *color_list;
-	if (preview) 
+	if (preview)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->gs->colors;
-	
-	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){ 
+
+	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
 		Color in;
 		color_object_get_color(*i, &in);
-		const char* name = (const char*)dynv_system_get((*i)->params, "string", "name");
-		
-		for (step_i = 0; step_i < steps; ++step_i) {	
+		const char* name = dynv_get_string_wd((*i)->params, "name", 0);
+
+		for (step_i = 0; step_i < steps; ++step_i) {
 
 			if (preview){
 				if (limit<=0) return;
 				limit--;
 			}
-			
+
 			color_rgb_to_hsl(&in, &hsl);
 
 			if (multiplication){
@@ -97,9 +97,9 @@ static void calc( struct Arguments *args, bool preview, int limit){
 			s<<name<<" variation "<<step_i;
 			//palette_list_add_entry_name(palette, s.str().c_str(), &r);
 			//color_list_add_color(color_list, &r);
-			
+
 			struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-			dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+			dynv_set_string(color_object->params, "name", s.str().c_str());
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object_release(color_object);
 		}
@@ -119,7 +119,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	struct Arguments *args = new struct Arguments;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.variations");
-	
+
 	GtkWidget *table, *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
@@ -128,7 +128,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
-	
+
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
 
@@ -152,7 +152,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	table_y++;
 	args->range_lightness_to = range_lightness_to;
 	g_signal_connect (G_OBJECT (range_lightness_to), "value-changed", G_CALLBACK (update), args);
-	
+
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 
 	range_saturation_from = gtk_spin_button_new_with_range (-100,100,0.001);
@@ -182,22 +182,22 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	table_y++;
 	args->toggle_multiplication = toggle_multiplication;
 	g_signal_connect (G_OBJECT (toggle_multiplication), "toggled", G_CALLBACK (update), args);
-	
+
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
 	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 3, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
-	
+
 
 	args->selected_color_list = selected_color_list;
 	args->preview_color_list = preview_color_list;
-	
+
 	update(0, args);
 
 
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
-	
+
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 
 	gint width, height;
@@ -207,7 +207,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
 
 	gtk_widget_destroy(dialog);
-	
+
 	dynv_system_release(args->params);
 	delete args;
 }

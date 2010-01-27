@@ -20,6 +20,7 @@
 #define DYNVVARIABLE_H_
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct dynvHandler;
 
@@ -27,11 +28,17 @@ struct dynvVariable{
 	char* name;
 
 	struct dynvHandler* handler;
-	void* value;
+	union{
+		void* ptr_value;
+		bool bool_value;
+		int32_t int_value;
+		float float_value;
+	};
+
 	enum Flags{
 		NO_SAVE = 0x01,
 		READONLY = 0x02,
-		
+
 		DUMMY = 0xFFFFFFFF
 	}flags;
 

@@ -18,6 +18,9 @@
 
 #include "ColorSource.h"
 
+#include <iostream>
+using namespace std;
+
 int color_source_init(ColorSource* source){
 	source->set_color = 0;
 	source->get_color = 0;
@@ -39,12 +42,18 @@ int color_source_deactivate(ColorSource *source){
 }
 
 int color_source_set_color(ColorSource *source, ColorObject *color){
-	if (source->set_color) return source->set_color(source, color);
+	if (source && source->set_color)
+		return source->set_color(source, color);
+	else if (!source)
+		cerr << "Color source undefined" << endl;
 	return -1;
 }
 
 int color_source_get_color(ColorSource *source, ColorObject **color){
-	if (source->get_color) return source->get_color(source, color);
+	if (source && source->get_color)
+		return source->get_color(source, color);
+	else if (!source)
+		cerr << "Color source undefined" << endl;
 	return -1;
 }
 

@@ -25,59 +25,47 @@
 using namespace std;
 
 static int dynv_var_int32_create(struct dynvVariable* variable){
-	if ((variable->value=new int32_t)){
-		return 0;
-	}
-	return -1;
+	variable->int_value = 0;
+	return 0;
 }
 
 static int dynv_var_int32_destroy(struct dynvVariable* variable){
-	if (variable->value){
-		delete (int32_t*)variable->value;
-		return 0;
-	}
-	return -1;
+	return 0;
 }
 
 static int dynv_var_int32_set(struct dynvVariable* variable, void* value, bool deref){
-	if (!variable->value) return -1;
-	*((int32_t*)variable->value)=*((int32_t*)value);
+	variable->int_value = *((int32_t*)value);
 	return 0;
 }
 
 static int dynv_var_int32_get(struct dynvVariable* variable, void** value){
-	if (variable->value){
-		*value = variable->value;
-		return 0;
-	}
-	return -1;
+	*value = &variable->int_value;
+	return 0;
 }
 
 static int dynv_var_int32_serialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
 	uint32_t written;
 
 	uint32_t length=4;
-	length=UINT32_TO_LE(length);
+	length = UINT32_TO_LE(length);
 
 	dynv_io_write(io, &length, 4, &written);
 
-	int32_t value=UINT32_TO_LE(*((int32_t*)variable->value));
+	int32_t value = UINT32_TO_LE(variable->int_value);
 	if (dynv_io_write(io, &value, 4, &written)==0){
-		if (written==4) return 0;
+		if (written == 4) return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_int32_deserialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
 	uint32_t read;
 	int32_t value;
 	dynv_io_read(io, &value, 4, &read);
 
 	if (dynv_io_read(io, &value, 4, &read)==0){
-		if (read==4){
-			*((int32_t*)variable->value)=UINT32_FROM_LE(value);
+		if (read == 4){
+			variable->int_value = UINT32_FROM_LE(value);
 			return 0;
 		}
 	}
@@ -85,20 +73,14 @@ static int dynv_var_int32_deserialize(struct dynvVariable* variable, struct dynv
 }
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
-	if (variable->value){
-		out << *(int32_t*)variable->value;
-	}
+	out << variable->int_value;
 	return 0;
 }
 
 static int deserialize_xml(struct dynvVariable* variable, const char *data){
 	stringstream ss(stringstream::in);
 	ss.str(data);
-	int32_t v;
-	ss >> v;
-	
-	*((int32_t*)variable->value) = v;
-	
+	ss >> variable->int_value;
 	return 0;
 }
 
@@ -111,11 +93,11 @@ struct dynvHandler* dynv_var_int32_new(){
 	handler->get=dynv_var_int32_get;
 	handler->serialize=dynv_var_int32_serialize;
 	handler->deserialize=dynv_var_int32_deserialize;
-	
+
 	handler->serialize_xml = serialize_xml;
 	handler->deserialize_xml = deserialize_xml;
-	
+
 	handler->data_size = sizeof(int32_t*);
-	
+
 	return handler;
 }

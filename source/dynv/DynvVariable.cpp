@@ -30,7 +30,7 @@ struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* 
 		variable->name = NULL;
 	}
 	variable->handler = handler;
-	variable->value = NULL;
+	variable->ptr_value = NULL;
 	variable->next = NULL;
 	variable->prev = NULL;
 	variable->flags = dynvVariable::Flags(0);
@@ -46,12 +46,12 @@ void dynv_variable_destroy_data(struct dynvVariable* variable){
 		if (i->handler->destroy!=NULL) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
-		
+
 		i = next;
 	}
-	
+
 	variable->next = NULL;
-	variable->value = NULL;
+	variable->ptr_value = NULL;
 	variable->handler = NULL;
 }
 
@@ -64,7 +64,7 @@ void dynv_variable_destroy(struct dynvVariable* variable){
 		if (i->handler->destroy!=NULL) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
-		
+
 		i = next;
 	}
 }

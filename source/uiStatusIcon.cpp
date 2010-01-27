@@ -38,21 +38,21 @@ struct uiStatusIcon{
 };
 
 static void status_icon_popup_detach(GtkWidget *attach_widget, GtkMenu *menu){
-	gtk_widget_destroy(GTK_WIDGET(menu));	
+	gtk_widget_destroy(GTK_WIDGET(menu));
 }
 
 static void status_icon_destroy_parent(GtkWidget *widget, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-	gtk_widget_destroy(GTK_WIDGET(si->parent));	
+	gtk_widget_destroy(GTK_WIDGET(si->parent));
 }
 
 static void status_icon_show_parent(GtkWidget *widget, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-	
+
 	floating_picker_deactivate(si->floating_picker);
 
 	status_icon_set_visible(si, false);
-	
+
 	struct dynvSystem *params = dynv_get_dynv(si->gs->params, "gpick.main");
 	main_show_window(si->parent, params);
 	dynv_system_release(params);
@@ -64,7 +64,6 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 
 	GtkMenu* menu;
 	GtkWidget* item;
-	GtkWidget* file_item ;
 
 	menu = GTK_MENU(gtk_menu_new ());
 
@@ -93,9 +92,9 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 
 static void status_icon_activate(GtkWidget *widget, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-	
+
 	floating_picker_activate(si->floating_picker, false);
-	
+
 }
 
 void status_icon_set_visible(struct uiStatusIcon* si, bool visible){
@@ -107,15 +106,15 @@ void status_icon_set_visible(struct uiStatusIcon* si, bool visible){
 
 struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, FloatingPicker floating_picker){
 	struct uiStatusIcon *si = new struct uiStatusIcon;
-	
+
 	si->gs = gs;
 	si->parent = gtk_widget_get_toplevel(parent);
-	
+
 	GtkStatusIcon *status_icon = gtk_status_icon_new();
 	gtk_status_icon_set_visible (status_icon, FALSE);
 	gtk_status_icon_set_from_icon_name(status_icon, "gpick");
 	g_signal_connect(G_OBJECT(status_icon), "popup-menu", G_CALLBACK(status_icon_popup), si);
-	
+
 #ifndef WIN32
 	g_signal_connect(G_OBJECT(status_icon), "activate", G_CALLBACK(status_icon_activate), si);
 #endif
@@ -124,7 +123,7 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, Floatin
 
 	si->status_icon = status_icon;
 	//si->color_source = color_source;
-	
+
 	return si;
 }
 

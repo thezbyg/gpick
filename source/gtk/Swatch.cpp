@@ -71,7 +71,7 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
 
 	gtk_swatch_signals[COLOR_ACTIVATED] = g_signal_new("color_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkSwatchClass, color_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-			
+
 	gtk_swatch_signals[CENTER_ACTIVATED] = g_signal_new("center_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkSwatchClass, center_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
@@ -91,7 +91,7 @@ gtk_swatch_new(void) {
 	for (gint32 i = 0; i < 7; ++i)
 		color_set(&ns->color[i], i/7.0);
 	ns->current_color = 1;
-	
+
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 	return widget;
 }
@@ -178,7 +178,7 @@ void gtk_swatch_set_main_color(GtkSwatch* swatch, guint index, Color* color) {
 }
 
 gint gtk_swatch_get_color_at(GtkSwatch* swatch, gint x, gint y) {
-	return swatch_get_color_by_position(x-GTK_WIDGET(swatch)->style->xthickness, y-GTK_WIDGET(swatch)->style->ythickness);	
+	return swatch_get_color_by_position(x-GTK_WIDGET(swatch)->style->xthickness, y-GTK_WIDGET(swatch)->style->ythickness);
 }
 
 static void gtk_swatch_draw_hexagon(cairo_t *cr, float x, float y, float radius) {
@@ -190,25 +190,25 @@ static void gtk_swatch_draw_hexagon(cairo_t *cr, float x, float y, float radius)
 }
 
 static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
-	
+
 	GtkStateType state;
-	
+
 	if (GTK_WIDGET_HAS_FOCUS (widget))
 		state = GTK_STATE_SELECTED;
 	else
 		state = GTK_STATE_ACTIVE;
 
-	
+
 	cairo_t *cr;
 
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
-	
+
 	gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
-	
+
 	if (GTK_WIDGET_HAS_FOCUS(widget)){
 		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
 	}
-	
+
 	cr = gdk_cairo_create(widget->window);
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
@@ -281,7 +281,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	cairo_set_matrix(cr, &matrix);
 
 	cairo_destroy(cr);
-	
+
 
 
 	return FALSE;
@@ -292,11 +292,11 @@ static int swatch_get_color_by_position(gint x, gint y){
 	vector2_set(&a, 1, 0);
 	vector2_set(&b, x - 75, y - 75);
 	float distance = vector2_length(&b);
-	
+
 	if (distance<20){			//center color
 		return 0;
 	}else if (distance>70){		//outside
-		return -1;			
+		return -1;
 	}else{
 		vector2_normalize(&b, &b);
 
@@ -309,14 +309,14 @@ static int swatch_get_color_by_position(gint x, gint y){
 			angle += PI * 2;
 		if (angle > 2 * PI)
 			angle -= PI * 2;
-		
+
 		return 1 + (int) floor(angle / ((PI*2) / 6));
 	}
 }
 
 static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event) {
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
-	
+
 	int new_color = swatch_get_color_by_position(event->x - widget->style->xthickness, event->y - widget->style->ythickness);
 
 	gtk_widget_grab_focus(widget);
@@ -327,7 +327,6 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 		}
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
 		if (new_color==0){
-			//gdk_pointer_grab(widget->window, FALSE, GdkEventMask(GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), NULL, NULL, event->time);
 			g_signal_emit(widget, gtk_swatch_signals[CENTER_ACTIVATED], 0);
 		}else if (new_color<0){
 			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
@@ -336,7 +335,7 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 				ns->current_color = new_color;
 
 				g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
-				
+
 				gtk_widget_queue_draw(GTK_WIDGET(widget));
 			}
 		}
@@ -345,23 +344,6 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 }
 
 static gboolean gtk_swatch_button_release(GtkWidget *widget, GdkEventButton *event) {
-	//GtkSwatchPrivate *ns=GTK_SWATCH_GET_PRIVATE(widget);
-
-	int new_color = swatch_get_color_by_position(event->x - widget->style->xthickness, event->y - widget->style->ythickness);
-	
-	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
-		//gtk_swatch_set_color_to_main(GTK_SWATCH(widget));
-
-	}else if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)) {
-		if (new_color==0){
-			
-		}else if (new_color<0){
-			g_signal_emit_by_name(widget, "popup-menu");
-		}else{
-			g_signal_emit_by_name(widget, "popup-menu");
-		}
-	}
-	gdk_pointer_ungrab(event->time);
 	return FALSE;
 }
 

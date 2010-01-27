@@ -15,7 +15,7 @@
  * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- 
+
 
 #include "ColorRYB.h"
 #include "MathUtil.h"
@@ -44,11 +44,11 @@ double bezier_eval_at_x(list<bezier*>& channel, double x, double delta){
 			for (int limit=50; limit>0; --limit){
 				v = (**i)(t);
 				d = v.x - x;
-				
+
 				if (fabs(d)<delta) return v.y;
-				
+
 				//printf("%f %f %f %f\n", t, v.x, v.y, d);
-				
+
 				t -= d/width;
 				if (t>1)
 					t=1;
@@ -75,13 +75,13 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 		bezier(	point(0.0, 0.0), point(1.0, 0.0), point(18.0, 0.0), point(19.0, 0.0) ),
 		bezier(	point(19.0, 0.0), point(22.0, 1.0), point(33.0, 1.0), point(36.0, 0.0) )
 	};
-	for (int i=0; i<sizeof(red_v)/sizeof(bezier); ++i){
+	for (uint32_t i=0; i<sizeof(red_v)/sizeof(bezier); ++i){
 		red.push_back(&red_v[i]);
 	}
-	for (int i=0; i<sizeof(green_v)/sizeof(bezier); ++i){
+	for (uint32_t i=0; i<sizeof(green_v)/sizeof(bezier); ++i){
 		green.push_back(&green_v[i]);
 	}
-	for (int i=0; i<sizeof(blue_v)/sizeof(bezier); ++i){
+	for (uint32_t i=0; i<sizeof(blue_v)/sizeof(bezier); ++i){
 		blue.push_back(&blue_v[i]);
 	}
 	/*red.push_back(
@@ -93,7 +93,7 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 	red.push_back(
 		new bezier(	point(21.0, 0.0), point(28.0, 0.0), point(33.0, 1.0), point(36.0, 1.0) )
 	);
-	
+
 	green.push_back(
 		new bezier(	point(0.0, 0.0), point(4.0, 0.4), point(13.0, 1.0), point(14.0, 1.0) )
 	);
@@ -103,7 +103,7 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 	green.push_back(
 		new bezier(	point(19.0, 0.7), point(24.0, 0.05), point(31.0, 0.0), point(36.0, 0.0) )
 	);
-	
+
 	blue.push_back(
 		new bezier(	point(0.0, 0.0), point(1.0, 0.0), point(18.0, 0.0), point(19.0, 0.0) )
 	);
@@ -115,29 +115,29 @@ static void color_get_ryb_curves(list<bezier*> &red, list<bezier*> &green, list<
 int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue){
 	list<bezier*> red, green, blue;
 	color_get_ryb_curves(red, green, blue);
-	
+
 	double hue = rgb_hue;
 	double d;
-	
+
 	double delta = 1/3600.0;
-	
+
 	Color color, color2;
 	for (int limit=100; limit>0; --limit){
 		color.rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
 		color.rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
 		color.rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
-	
+
 		color_rgb_to_hsv(&color, &color2);
-		
+
 		d = rgb_hue - color2.hsv.hue;
 		if (fabs(d)<delta){
 			*ryb_hue = hue;
 			return 0;
 		}
-		
+
 		hue += d/2;
 		if (hue>1) hue=1;
-		else if (hue<0) hue=0;		
+		else if (hue<0) hue=0;
 	}
 	*ryb_hue = hue;
 	return -1;
@@ -157,13 +157,12 @@ double color_rybhue_to_rgbhue_f(double hue){
 }
 
 int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue){
-	
+
 	double hue = rgb_hue;
 	double d;
-	
+
 	double delta = 1/3600.0;
-	
-	Color color, color2;
+
 	for (int limit=100; limit>0; --limit){
 
 		d = rgb_hue - color_rybhue_to_rgbhue_f(hue);
@@ -171,11 +170,11 @@ int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue){
 			*ryb_hue = hue;
 			return 0;
 		}
-		
+
 		hue += d/2;
 		if (hue>1) hue=1;
-		else if (hue<0) hue=0;	
-		
+		else if (hue<0) hue=0;
+
 	}
 	*ryb_hue = hue;
 	return -1;
@@ -185,7 +184,7 @@ int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue){
 void color_rybhue_to_rgb(double hue, Color* color){
 	list<bezier*> red, green, blue;
 	color_get_ryb_curves(red, green, blue);
-	
+
 	color->rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
 	color->rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
 	color->rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
@@ -196,7 +195,7 @@ double color_ryb_transform_lightness(double hue1, double hue2){
 	double t;
 	hue1 = modf(hue1, &t);
 	hue2 = modf(hue2, &t);
-	
+
 	double values[]={
 		0.50000000,		0.50000000,		0.50000000,		0.50000000,
 		0.50000000,		0.50000000,		0.50000000,		0.50000000,
@@ -231,12 +230,12 @@ double color_ryb_transform_hue(double hue, bool forward){
 
 	int32_t samples=sizeof(values)/sizeof(double)-2;
 	double new_hue;
-	
+
 	double t;
 	hue = modf(hue, &t);
 
 	if (!forward){
-		for (uint32_t i=0; i<samples; ++i){
+		for (int32_t i=0; i<samples; ++i){
 			if (values[i+1]>=hue){
 				int index1, index2;
 				double value1, value2, mix;

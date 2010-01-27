@@ -48,7 +48,7 @@ struct Arguments{
 
 	GtkWidget *gen_type;
 	GtkWidget *wheel_type;
-	
+
 	//GtkWidget *range_chaos;
 	//GtkWidget *toggle_brightness_correction;
 
@@ -137,7 +137,7 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
-	
+
 	//gfloat chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
 	//gboolean correction = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_brightness_correction));
 
@@ -175,17 +175,17 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	for (step_i = 0; step_i <= scheme_types[type].colors; ++step_i) {
 
 		wheel->hue_to_hsl(hue, &hsl);
-		
+
 		//color_rybhue_to_rgb(hue, &r);
 		//color_rybhue_to_rgb_f(hue*360, &r);
 		//color_rgb_to_hsl(&r, &hsl);
-		
+
 		hsl.hsl.lightness = clamp_float(hsl.hsl.lightness + lightness, 0, 1);
 		hsl.hsl.saturation = clamp_float(hsl.hsl.saturation * saturation, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
 
 		struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-		dynv_system_set(color_object->params, "float", "hue_offset", (void*)&hue_offset);
+		dynv_set_float(color_object->params, "hue_offset", hue_offset);
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object_release(color_object);
 
@@ -203,25 +203,25 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 		uint32_t total_colors = scheme_types[type].colors+1;
 		if (total_colors>MAX_COLOR_WIDGETS) total_colors=MAX_COLOR_WIDGETS;
 
-		for (int i=args->colors_visible; i>total_colors; --i)
+		for (uint32_t i = args->colors_visible; i > total_colors; --i)
 			gtk_widget_hide(args->colors[i-1]);
-		for (int i=args->colors_visible; i<total_colors; ++i)
+		for (uint32_t i = args->colors_visible; i < total_colors; ++i)
 			gtk_widget_show(args->colors[i]);
 		args->colors_visible = total_colors;
 
-		int j=0;
+		uint32_t j = 0;
 		char* text;
 		for (ColorList::iter i = color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			color_object_get_color(*i, &color);
 
 			text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
 
-			args->color_hue[j] = *(float*)dynv_system_get((*i)->params, "float", "hue_offset");
+			args->color_hue[j] = dynv_get_float_wd((*i)->params, "hue_offset", 0);
 
 			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text);
 			if (text) g_free(text);
 			++j;
-			if (j>=total_colors) break;
+			if (j >= total_colors) break;
 		}
 
 	}
@@ -241,7 +241,6 @@ static void on_color_paste(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	Color c;
 
 	struct ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs)==0){
@@ -280,7 +279,7 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 	string name=color_names_get(args->gs->color_names, &c);
-	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
+	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
 }
@@ -294,7 +293,7 @@ static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 
 		struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 		string name=color_names_get(args->gs->color_names, &c);
-		dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
+		dynv_set_string(color_object->params, "name", name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
 	}
@@ -310,7 +309,7 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 	string name=color_names_get(args->gs->color_names, &c);
-	dynv_system_set(color_object->params, "string", "name", (void*)name.c_str());
+	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
 }
@@ -406,7 +405,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, struc
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);
 				color_object = color_list_new_color_object(args->gs->colors, &c);
 
-				Converters *converters = (Converters*)dynv_system_get(args->gs->params, "ptr", "Converters");
+				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 				if (converter){
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
@@ -483,18 +482,18 @@ static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint
 
 	Color hsl, hsl_results;
 	color_rgb_to_hsl(&c, &hsl);
-	
+
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	const ColorWheelType *wheel = &color_wheel_types[wheel_type];
-	
+
 	wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
-	
+
 	//color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
 
 	shifted_hue = wrap_float(hue - args->color_hue[color_index]);
 
 	wheel->hue_to_hsl(hue, &hsl_results);
-	
+
 	//color_rybhue_to_rgb(hue, &c);
 	//color_rgb_to_hsl(&c, &hsl_results);
 
@@ -524,7 +523,6 @@ static int source_deactivate(struct Arguments *args){
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
 	Color c;
 	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
 	struct ColorObject* colorobject = color_object_new(dd->handler_map);
@@ -636,7 +634,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_table_attach(GTK_TABLE(table), args->wheel_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,0);
 
 	table_y++;
-	
+
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->colors->params);
 	struct ColorList* preview_color_list=color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);

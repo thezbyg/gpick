@@ -122,7 +122,7 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 		args->y = y;
 		args->width = event->width;
 		args->height = event->height;
-		
+
 		dynv_set_int32(args->params, "window.x", args->x);
 		dynv_set_int32(args->params, "window.y", args->y);
 		dynv_set_int32(args->params, "window.width", args->width);
@@ -153,7 +153,7 @@ static void destroy( GtkWidget *widget, struct Arguments *args){
 	dynv_set_int32(args->params, "window.height", args->height);
 
 	floating_picker_free(args->floating_picker);
-	
+
     gtk_main_quit ();
 }
 
@@ -167,14 +167,14 @@ static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *pa
 	color_source_activate(args->color_source[page_num]);
 	args->current_color_source = args->color_source[page_num];
 
-	dynv_system_set(args->gs->params, "ptr", "CurrentColorSource", args->current_color_source);
+	dynv_set_pointer(args->gs->params, "CurrentColorSource", args->current_color_source);
 }
 
 int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object){
 	struct ColorObject* color_object;
 	Color dummy_color;
 
-	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
 
 	typedef multimap<float, struct ColorObject*, greater<float> > ValidConverters;
 	ValidConverters valid_converters;
@@ -251,9 +251,8 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 	struct ColorObject* color_object;
 	color_object = color_list_new_color_object(gs->colors, color);
 	Converter *converter;
-	Converter **converter_array;
 
-	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
 
 	switch (text_type){
 	case COLOR_TEXT_TYPE_DISPLAY:
@@ -298,8 +297,9 @@ static void updateProgramName(struct Arguments *args){
 
 
 int main_pick_color(GlobalState* gs, GdkEventKey *event){
-	struct Arguments* window=(struct Arguments*)dynv_system_get(gs->params, "ptr", "MainWindowStruct");
+	//struct Arguments* window = (struct Arguments*)dynv_get_pointer_wd(gs->params, "MainWindowStruct", 0);
 	//TODO: return on_key_up(0, event, window);
+	return 0;
 }
 
 static void show_dialog_converter(GtkWidget *widget, struct Arguments *args){
@@ -332,6 +332,7 @@ int app_load_file(struct Arguments *args, const char *filename){
 
 int app_parse_geometry(struct Arguments *args, const char *geometry){
 	gtk_window_parse_geometry(GTK_WINDOW(args->window), geometry);
+	return 0;
 }
 
 static void menu_file_open(GtkWidget *widget, struct Arguments *args){
@@ -351,7 +352,7 @@ static void menu_file_open(GtkWidget *widget, struct Arguments *args){
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "gpick palette *.gpa");
+	gtk_file_filter_set_name(filter, "Gpick palette *.gpa");
 	gtk_file_filter_add_pattern(filter, "*.gpa");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -413,7 +414,7 @@ static void menu_file_save_as(GtkWidget *widget, struct Arguments *args){
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "gpick palette *.gpa");
+	gtk_file_filter_set_name(filter, "Gpick palette *.gpa");
 	gtk_file_filter_add_pattern(filter, "*.gpa");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -623,7 +624,7 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 	GtkWidget* item=0;
 	gchar* converted;
 
-	if (converters_color_serialize((Converters*)dynv_system_get(gs->params, "ptr", "Converters"), function, color_object, &converted)==0){
+	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, &converted)==0){
 		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
 
@@ -642,7 +643,7 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 }
 
 GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs){
-	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
 
 	GtkWidget *menu;
 	menu = gtk_menu_new();
@@ -671,12 +672,13 @@ void converter_get_text(const gchar* function, struct ColorObject* color_object,
 		color_list_add_color_object(color_list, color_object, 1);
 	}
 
-	Converters* converters = (Converters*)dynv_system_get(params, "ptr", "Converters");
+	Converters* converters = (Converters*)dynv_get_pointer_wd(params, "Converters", 0);
+
 	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 
 		gchar* converted;
 
-		if (converters_color_serialize((Converters*)dynv_system_get(params, "ptr", "Converters"), function, *i, &converted)==0){
+		if (converters_color_serialize(converters, function, *i, &converted)==0){
 			if (first){
 				text<<converted;
 				first=false;
@@ -855,7 +857,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 		case GDK_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 
-				Converters *converters = (Converters*)dynv_system_get(args->gs->params, "ptr", "Converters");
+				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 				if (converter){
 					converter_get_clipboard(converter->function_name, 0, args->color_list, args->gs->params);
@@ -992,11 +994,11 @@ static int unique_show_window(struct Arguments* args){
 
 struct Arguments* app_create_main(){
 	struct Arguments* args=new struct Arguments;
-	
+
 	GlobalState *gs = global_state_create();
 	args->gs = gs;
 	global_state_init(args->gs, GLOBALSTATE_CONFIGURATION);
-	
+
 	if (dynv_get_bool_wd(gs->params, "gpick.main.single_instance", false)){
 		if (unique_init((unique_cb_t)unique_show_window, args)==0){
 
@@ -1005,12 +1007,12 @@ struct Arguments* app_create_main(){
 			return 0;
 		}
 	}
-	
+
 	args->current_filename = 0;
 	args->current_color_source = 0;
 
 	global_state_init(args->gs, GLOBALSTATE_ALL);
-	
+
 	args->gs->colors->on_insert = color_list_on_insert;
 	args->gs->colors->on_clear = color_list_on_clear;
 	args->gs->colors->on_delete_selected = color_list_on_delete_selected;
@@ -1018,7 +1020,7 @@ struct Arguments* app_create_main(){
 	args->gs->colors->on_delete = color_list_on_delete;
 	args->gs->colors->userdata = args;
 
-	dynv_system_set(args->gs->params, "ptr", "MainWindowStruct", args);
+	dynv_set_pointer(args->gs->params, "MainWindowStruct", args);
 
 	args->params = dynv_get_dynv(args->gs->params, "gpick.main");
 
@@ -1042,8 +1044,7 @@ struct Arguments* app_create_main(){
 
     //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
 
-    GtkWidget *widget,*expander,*table,*vbox,*hbox,*statusbar,*notebook,*frame,*vbox2,*hbox2,*hpaned;
-    int table_y;
+    GtkWidget *widget, *statusbar, *notebook, *hpaned;
 
     GtkWidget* vbox_main = gtk_vbox_new(false, 0);
     gtk_container_add (GTK_CONTAINER(args->window), vbox_main);
@@ -1060,7 +1061,7 @@ struct Arguments* app_create_main(){
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 
 	statusbar=gtk_statusbar_new();
-	dynv_system_set(args->gs->params, "ptr", "StatusBar", statusbar);
+	dynv_set_pointer(args->gs->params, "StatusBar", statusbar);
 
 	gtk_paned_pack1(GTK_PANED(hpaned), notebook, FALSE, FALSE);
 
@@ -1112,7 +1113,7 @@ struct Arguments* app_create_main(){
 
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
 	args->statusbar=statusbar;
-	
+
 	GtkWidget *button = gtk_button_new();
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
     g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
@@ -1121,16 +1122,16 @@ struct Arguments* app_create_main(){
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
-	
+
 	gtk_widget_show(statusbar);
 
 	createMenu(GTK_MENU_BAR(menu_bar), args, accel_group);
 	gtk_widget_show_all(menu_bar);
-	
-	
+
+
 
 	args->statusIcon = status_icon_new(args->window, args->gs, args->floating_picker);
-	
+
 	return args;
 }
 

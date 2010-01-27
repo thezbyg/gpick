@@ -96,7 +96,7 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 	}else{
 		variable=(*i).second;
 	}
-	
+
 	if (variable->flags & dynvVariable::READONLY) return 0;
 
 	if (variable->handler==handler){
@@ -137,7 +137,7 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 	}else{
 		variable=(*i).second;
 	}
-	
+
 	if (variable->flags & dynvVariable::READONLY) return -4;
 
 	if (variable->handler==handler){
@@ -159,9 +159,9 @@ void* dynv_system_get_r(struct dynvSystem* dynv_system, const char* handler_name
 	struct dynvHandler* handler=NULL;
 	int error_redir;
 	if (error == NULL) error = &error_redir;
-	
+
 	*error = 1;
-	
+
 	if (handler_name!=NULL){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
@@ -204,9 +204,9 @@ void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handl
 	struct dynvHandler* handler=NULL;
 	int error_redir;
 	if (error == NULL) error = &error_redir;
-	
+
 	*error = 1;
-	
+
 	if (handler_name!=NULL){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
@@ -233,22 +233,23 @@ void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handl
 			i = i->next;
 		}
 		if (count) *count = n;
-		
-		void* value;
+
 		void** array = (void**)new char [n * handler->data_size];
 		void** o_array = array;
 		i = variable;
 		for (uint32_t j=0; j!=n; j++){
-			if (i->handler->get && i->handler->get(i, array)==0){
-
+			void *var;
+			if (i->handler->get && i->handler->get(i, &var)==0){
+				memcpy(array, var, handler->data_size);
 			}else{
+				memset(array, 0, handler->data_size);
 				//array[j] = 0;
 			}
 			array = (void**)(((char*)array) + handler->data_size);
-			
+
 			i = i->next;
 		}
-		
+
 		*error = 0;
 		return o_array;
 	}
@@ -258,31 +259,31 @@ void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handl
 
 static int build_linked_list(struct dynvVariable* start_variable, void** values, uint32_t count){
 	if (count<1) return -1;
-	
+
 	struct dynvVariable *variable, *v;
 	struct dynvHandler* handler = start_variable->handler;
-	
+
 	handler->set(start_variable, values, true);
 	values = (void**)(((char*)values) + handler->data_size);
-	
+
 	v = start_variable;
 	for (uint32_t i=1; i<count; i++){
 		variable=dynv_variable_create(0, handler);
 		variable->handler->create(variable);
 		variable->handler->set(variable, values, true);
 		values = (void**)(((char*)values) + handler->data_size);
-		
+
 		v->next = variable;
 		v = variable;
 	}
-	
-	return 0;	
+
+	return 0;
 }
 
 int dynv_system_set_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, void** values, uint32_t count){
 	struct dynvVariable* variable=NULL;
 	struct dynvHandler* handler=NULL;
-	
+
 	if (count<1){
 		return dynv_system_remove(dynv_system, variable_name);
 	}
@@ -301,29 +302,27 @@ int dynv_system_set_array(struct dynvSystem* dynv_system, const char* handler_na
 	i=dynv_system->variables.find(variable_name);
 	if (i==dynv_system->variables.end()){
 		if (handler==NULL) return -2;
-		
+
 		variable=dynv_variable_create(variable_name, handler);
 		dynv_system->variables[variable->name]=variable;
 		variable->handler->create(variable);
-		
+
 		return build_linked_list(variable, values, count);
-		
+
 	}else{
 		variable=(*i).second;
 	}
-	
+
 	if (variable->flags & dynvVariable::READONLY) return -4;
 
 	dynv_variable_destroy_data(variable);
 	variable->handler = handler;
 	variable->handler->create(variable);
-	
+
 	return build_linked_list(variable, values, count);
 }
 
 int dynv_system_remove(struct dynvSystem* dynv_system, const char* variable_name){
-	struct dynvVariable* variable=NULL;
-
 	dynvSystem::VariableMap::iterator i;
 	i=dynv_system->variables.find(variable_name);
 	if (i==dynv_system->variables.end()){
@@ -479,21 +478,21 @@ int dynv_io_reset(struct dynvIO* io) {
 }
 
 struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system){
-	
+
 	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(dynv_system);
 	struct dynvSystem* new_dynv = dynv_system_create(handler_map);
 	dynv_handler_map_release(handler_map);
-	
+
 	void* value;
 	struct dynvVariable *variable, *new_variable;
 	struct dynvHandler* handler;
-	
+
 	dynvSystem::VariableMap::iterator i;
 	for (i=dynv_system->variables.begin(); i!=dynv_system->variables.end(); ++i){
-		
+
 		variable = (*i).second;
 		handler = (*i).second->handler;
-		
+
 		if (handler->get(variable, &value)==0){
 			new_variable = dynv_variable_create(variable->name, handler);
 			new_dynv->variables[new_variable->name] = new_variable;
@@ -501,7 +500,7 @@ struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system){
 			new_variable->handler->set(new_variable, value, false);
 		}
 	}
-	
+
 	return new_dynv;
 }
 
@@ -510,7 +509,7 @@ struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system){
 int dynv_set(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, const void* value){
 	string path(variable_path);
 	size_t found;
-	
+
 	struct dynvSystem* dlevel = dynv_system_ref(dynv_system);
 
 	for (;;){
@@ -525,18 +524,18 @@ int dynv_set(struct dynvSystem* dynv_system, const char* handler_name, const cha
 				struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(dynv_system);
 				struct dynvSystem* dlevel_new = dynv_system_create(handler_map);
 				dynv_handler_map_release(handler_map);
-				
+
 				dynv_system_set(dlevel, "dynv", path.substr(0, found).c_str(), dlevel_new);
-				
+
 				dynv_system_release(dlevel);
 				dlevel = dlevel_new;
 			}
 			path = path.substr(found+1);
 		}else break;
 	}
-	
+
 	int r = dynv_system_set(dlevel, handler_name, path.c_str(), (void*)value);
-	
+
 	dynv_system_release(dlevel);
 	return r;
 }
@@ -544,7 +543,7 @@ int dynv_set(struct dynvSystem* dynv_system, const char* handler_name, const cha
 int dynv_set_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, const void** values, uint32_t count){
 	string path(variable_path);
 	size_t found;
-	
+
 	struct dynvSystem* dlevel = dynv_system_ref(dynv_system);
 
 	for (;;){
@@ -559,18 +558,18 @@ int dynv_set_array(struct dynvSystem* dynv_system, const char* handler_name, con
 				struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(dynv_system);
 				struct dynvSystem* dlevel_new = dynv_system_create(handler_map);
 				dynv_handler_map_release(handler_map);
-				
+
 				dynv_system_set(dlevel, "dynv", path.substr(0, found).c_str(), dlevel_new);
-				
+
 				dynv_system_release(dlevel);
 				dlevel = dlevel_new;
 			}
 			path = path.substr(found+1);
 		}else break;
 	}
-	
+
 	int r = dynv_system_set_array(dlevel, handler_name, path.c_str(), (void**)values, count);
-	
+
 	dynv_system_release(dlevel);
 	return r;
 }
@@ -580,9 +579,9 @@ void* dynv_get(struct dynvSystem* dynv_system, const char* handler_name, const c
 	size_t found;
 	int error_redir;
 	if (error == NULL) error = &error_redir;
-	
+
 	*error = 0;
-	
+
 	struct dynvSystem* dlevel = dynv_system_ref(dynv_system);
 
 	for (;;){
@@ -601,11 +600,11 @@ void* dynv_get(struct dynvSystem* dynv_system, const char* handler_name, const c
 			path = path.substr(found+1);
 		}else break;
 	}
-	
+
 	void* r = dynv_system_get_r(dlevel, handler_name, path.c_str(), error);
-	
+
 	dynv_system_release(dlevel);
-	return r;	
+	return r;
 }
 
 void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_path, uint32_t *count, int* error){
@@ -613,9 +612,9 @@ void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, 
 	size_t found;
 	int error_redir;
 	if (error == NULL) error = &error_redir;
-	
+
 	*error = 0;
-	
+
 	struct dynvSystem* dlevel = dynv_system_ref(dynv_system);
 
 	for (;;){
@@ -634,9 +633,9 @@ void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, 
 			path = path.substr(found+1);
 		}else break;
 	}
-	
+
 	void** r = dynv_system_get_array_r(dlevel, handler_name, path.c_str(), count, error);
-	
+
 	dynv_system_release(dlevel);
-	return r;	
+	return r;
 }

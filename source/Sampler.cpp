@@ -115,18 +115,8 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 
 	GdkPixbuf* pixbuf = screen_reader_get_pixbuf(sampler->screen_reader);
 
-
-	//GdkWindow* root_window;
-	//GdkImage* section;
-	GdkModifierType state;
-
-	//root_window = gdk_get_default_root_window();
-
-	int x=pointer.x, y=pointer.y;
-	int width=screen_size.x, height=screen_size.y;
-
-	//gdk_window_get_pointer(root_window, &x, &y, &state);
-	//gdk_window_get_geometry(root_window, NULL, NULL, &width, &height, NULL);
+	int x = pointer.x, y = pointer.y;
+	int width = screen_size.x, height = screen_size.y;
 
 	int left, right, top, bottom;
 
@@ -137,38 +127,19 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 	width = right - left;
 	height = bottom - top;
 
-	//GdkColormap* colormap=gdk_colormap_get_system();
-
-	//section = gdk_drawable_get_image (root_window, left, top, width, height);
-
-	//GdkPixbuf* pixbuf = gdk_pixbuf_get_from_drawable(sampler->pixbuf, root_window, colormap, left, top, 0, 0, width, height);
+	int center_x = x-left;
+	int center_y = y-top;
 
 
+	float max_distance = 1 / sqrt(2 * pow(sampler->oversample, 2));
 
-	guint32 color_value;
-	//GdkColor gdk_color;
-
-	int center_x=x-left;
-	int center_y=y-top;
-
-
-
-	float max_distance = 1/sqrt(2*pow(sampler->oversample, 2));
-
-	for (int x=-sampler->oversample; x<=sampler->oversample; ++x){
-		for (int y=-sampler->oversample; y<=sampler->oversample; ++y){
+	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
+		for (int y=-sampler->oversample; y <= sampler->oversample; ++y){
 
 			if ((center_x+x<0) || (center_y+y<0)) continue;
 			if ((center_x+x>=width) || (center_y+y>=height)) continue;
 
-			//color_value = gdk_image_get_pixel(section, center_x+x, center_y+y);
-			//gdk_colormap_query_color(colormap, color_value, &gdk_color);
-
 			get_pixel(pixbuf, offset.x + center_x+x, offset.y + center_y+y, &sample);
-
-			/*sample.rgb.red=gdk_color.red/(float)0xFFFF;
-			sample.rgb.green=gdk_color.green/(float)0xFFFF;
-			sample.rgb.blue=gdk_color.blue/(float)0xFFFF;*/
 
 			float f;
 			if (sampler->oversample){
@@ -184,11 +155,7 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 	}
 
 	color_multiply(&result, 1/divider);
-
 	color_copy(&result, color);
-
-	//g_object_unref (section);
-
 
 	return 0;
 }

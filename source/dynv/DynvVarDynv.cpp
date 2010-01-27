@@ -27,36 +27,36 @@
 using namespace std;
 
 static int create(struct dynvVariable* variable){
-	variable->value = 0;
+	variable->ptr_value = 0;
 	return 0;
 }
 
 static int destroy(struct dynvVariable* variable){
-	if (variable->value){
-		dynv_system_release((struct dynvSystem*)variable->value);
+	if (variable->ptr_value){
+		dynv_system_release((struct dynvSystem*)variable->ptr_value);
 		return 0;
 	}
 	return -1;
 }
 
 static int set(struct dynvVariable* variable, void* value, bool deref){
-	if (variable->value) dynv_system_release((struct dynvSystem*)variable->value);
-	variable->value = dynv_system_ref((struct dynvSystem*)value);
+	if (variable->ptr_value) dynv_system_release((struct dynvSystem*)variable->ptr_value);
+	variable->ptr_value = dynv_system_ref((struct dynvSystem*)value);
 	return 0;
 }
 
 static int get(struct dynvVariable* variable, void** value){
-	if (variable->value){
-		*value= dynv_system_ref((struct dynvSystem*)variable->value);
+	if (variable->ptr_value){
+		*value= dynv_system_ref((struct dynvSystem*)variable->ptr_value);
 		return 0;
 	}
 	return -1;
 }
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
-	if (variable->value){
+	if (variable->ptr_value){
 		out << endl;
-		dynv_xml_serialize((struct dynvSystem*)variable->value, out);
+		dynv_xml_serialize((struct dynvSystem*)variable->ptr_value, out);
 	}
 	return 0;
 }
@@ -70,9 +70,9 @@ struct dynvHandler* dynv_var_dynv_new(){
 	handler->get=get;
 	//handler->serialize=serialize;
 	//handler->deserialize=deserialize;
-	
+
 	handler->serialize_xml = serialize_xml;
-	
+
 	handler->data_size = sizeof(struct dynvSystem*);
 	return handler;
 }

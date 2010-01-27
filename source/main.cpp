@@ -56,18 +56,21 @@ int main(int argc, char **argv){
 		g_print ("option parsing failed: %s\n", error->message);
 		return -1;
 	}
-	
+
 	struct Arguments *args = app_create_main();
 	if (args){
-	
+
 		if (commandline_filename) app_load_file(args, commandline_filename[0]);
 		if (commandline_geometry) app_parse_geometry(args, commandline_geometry);
 
 		int r = app_run(args);
+		if (r){
+
+		}
 	}
-	
+
 	g_option_context_free(context);
-	
+
 	return 0;
-	
+
 }

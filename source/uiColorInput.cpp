@@ -18,48 +18,49 @@
 
 #include "uiColorInput.h"
 #include "Converter.h"
+#include "DynvHelpers.h"
 #include "uiApp.h"
 #include "uiUtilities.h"
 #include "GlobalStateStruct.h"
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object){
-	
+
 	gchar* text = 0;
-	
+
 	Converter *converter;
-	Converters *converters = (Converters*)dynv_system_get(gs->params, "ptr", "Converters");
+	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
 	converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	if (converter){
 		converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
 	}
-	
+
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit color", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
-	
+
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	
+
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
-	
+
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
-	
+
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Color:",0,0.5,0,0), false, false, 0);
-	
+
 	GtkWidget* entry = gtk_entry_new();
 	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
-	
+
 	if (text){
 		gtk_entry_set_text(GTK_ENTRY(entry), text);
 		g_free(text);
 	}
-	
+
 	gtk_widget_show_all(vbox);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
-	
+
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-		
+
 		struct ColorObject* color_object;
 		if (main_get_color_object_from_text(gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object)==0){
 			*new_color_object = color_object;
@@ -67,7 +68,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 			return 0;
 		}
 	}
-	gtk_widget_destroy(dialog);	
+	gtk_widget_destroy(dialog);
 	return -1;
 }
 

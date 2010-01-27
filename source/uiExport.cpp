@@ -35,9 +35,8 @@ using namespace std;
 static int32_t palette_export_gpl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
-	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
-	if (name==NULL) name="";
-	
+	const char* name = dynv_get_string_wd(color_object->params, "name", "");
+
 	(*(ofstream*)userdata)<<int32_t(color.rgb.red*255)<<"\t"
 						<<int32_t(color.rgb.green*255)<<"\t"
 						<<int32_t(color.rgb.blue*255)<<"\t"<<name<<endl;
@@ -57,7 +56,7 @@ static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* fil
 
 		g_free(name);
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			 palette_export_gpl_color(*i, &f);
 		}
 
@@ -117,7 +116,7 @@ static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* fil
 					c.rgb.green=g/255.0;
 					c.rgb.blue=b/255.0;
 					color_object=color_list_new_color_object(color_list, &c);
-					dynv_system_set(color_object->params, "string", "name", (void*)line.c_str());
+					dynv_set_string(color_object->params, "name", line.c_str());
 					color_list_add_color_object(color_list, color_object, TRUE);
 					color_object_release(color_object);
 				}
@@ -139,9 +138,8 @@ static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* fil
 static int32_t palette_export_mtl_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
-	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
-	if (name==NULL) name="";
-	
+	const char* name = dynv_get_string_wd(color_object->params, "name", "");
+
 	(*(ofstream*)userdata)<<"newmtl "<<name<<endl;
 	(*(ofstream*)userdata)<<"Ns 90.000000"<<endl;
 	(*(ofstream*)userdata)<<"Ka 0.000000 0.000000 0.000000"<<endl;
@@ -155,7 +153,7 @@ static int32_t palette_export_mtl_color(struct ColorObject* color_object, void* 
 static int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			 palette_export_mtl_color(*i, &f);
 		}
 		f.close();
@@ -171,9 +169,8 @@ static int32_t palette_export_ase_color(struct ColorObject* color_object, void* 
 
 	Color color;
 	color_object_get_color(color_object, &color);
-	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
-	if (name==NULL) name="";
-	
+	const char* name = dynv_get_string_wd(color_object->params, "name", "");
+
 	glong name_u16_len=0;
 	gunichar2 *name_u16 = g_utf8_to_utf16(name, -1, 0, &name_u16_len, 0);
 	for (glong i=0; i<name_u16_len; ++i){
@@ -222,7 +219,7 @@ static int32_t palette_export_ase(struct ColorList *color_list, const gchar* fil
 		blocks=UINT32_TO_BE(blocks);
 		f.write((char*)&blocks, 4);
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			 palette_export_ase_color(*i, &f);
 		}
 
@@ -370,7 +367,7 @@ static int32_t palette_import_ase(struct ColorList *color_list, const gchar* fil
 
 						struct ColorObject* color_object;
 						color_object=color_list_new_color_object(color_list, &c);
-						dynv_system_set(color_object->params, "string", "name", name);
+						dynv_set_string(color_object->params, "name", name);
 						color_list_add_color_object(color_list, color_object, TRUE);
 						color_object_release(color_object);
 
@@ -397,9 +394,8 @@ static int32_t palette_import_ase(struct ColorList *color_list, const gchar* fil
 static int32_t palette_export_txt_color(struct ColorObject* color_object, void* userdata){
 	Color color;
 	color_object_get_color(color_object, &color);
-	const gchar* name=(const gchar*)dynv_system_get(color_object->params, "string", "name");
-	if (name==NULL) name="";
-	
+	const char* name = dynv_get_string_wd(color_object->params, "name", 0);
+
 	(*(ofstream*)userdata)<<color.rgb.red<<", "
 						<<color.rgb.green<<", "
 						<<color.rgb.blue<<", "<<name<<endl;
@@ -413,8 +409,8 @@ static int32_t palette_export_txt(struct ColorList *color_list, const gchar* fil
 		gchar* name = g_path_get_basename(filename);
 
 		g_free(name);
-		
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){ 
+
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			 palette_export_txt_color(*i, &f);
 		}
 
@@ -429,7 +425,7 @@ static int32_t palette_export_txt(struct ColorList *color_list, const gchar* fil
 }
 
 int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list, gboolean selected, GlobalState *gs){
-	
+
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
@@ -455,7 +451,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		{ "Text file *.txt", "*.txt", palette_export_txt },
 	};
 
-	
+
 	const char* default_path = dynv_get_string_wd(gs->params, "gpick.export.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
@@ -492,7 +488,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 						color_list_arg = selected_color_list;
 					}else{
 						color_list_arg = gs->colors;
-					}			
+					}
 					if (formats[i].export_function(color_list_arg, filename, selected)==0){
 						saved=TRUE;
 					}else{
@@ -543,7 +539,7 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		{ "Text file *.txt", "*.txt", palette_export_txt },*/
 	};
 
-	
+
 
 	const char* default_path = dynv_get_string_wd(gs->params, "gpick.import.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);

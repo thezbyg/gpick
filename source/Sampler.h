@@ -26,11 +26,11 @@
 #include "ScreenReader.h"
 
 enum SamplerFalloff{
-	NONE,
-	LINEAR,
-	QUADRATIC,
-	CUBIC,
-	EXPONENTIAL,
+	NONE = 0,
+	LINEAR = 1,
+	QUADRATIC = 2,
+	CUBIC = 3,
+	EXPONENTIAL = 4,
 };
 
 struct Sampler;

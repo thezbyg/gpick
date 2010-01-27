@@ -21,8 +21,20 @@ v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
 
-if env['BUILD_TARGET'] == "":
-	env['BUILD_TARGET'] == sys.platform
+if os.environ.has_key('CC'):
+	env['CC'] = os.environ['CC']
+if os.environ.has_key('CFLAGS'):
+	env['CCFLAGS'] += SCons.Util.CLVar(os.environ['CFLAGS'])
+if os.environ.has_key('CXX'):
+	env['CXX'] = os.environ['CXX']
+if os.environ.has_key('CXXFLAGS'):
+	env['CXXFLAGS'] += SCons.Util.CLVar(os.environ['CXXFLAGS'])
+if os.environ.has_key('LDFLAGS'):
+	env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
+
+
+if not env['BUILD_TARGET']:
+	env['BUILD_TARGET'] = sys.platform
 
 if env['BUILD_TARGET'] == 'win32':
 	if sys.platform != 'win32':
@@ -68,8 +80,19 @@ env.Replace(
 	TARCOMSTR = "Archiving ==> $TARGET"
 	)
 	
-if env['DEBUG']==False:
-	env.Append(LINKFLAGS=['-s'])
+if env['DEBUG']:
+	env.Append(
+		CPPFLAGS=['-Wall', '-g3', '-O0'], 
+		CFLAGS=['-Wall', '-g3', '-O0'],
+		)
+else:
+	env.Append(
+		CPPDEFINES=['NDEBUG'],
+		CDEFINES=['NDEBUG'],
+		CPPFLAGS=['-Wall', '-O3'],
+		CFLAGS=['-Wall', '-O3'],
+		LINKFLAGS=['-s'],
+		)
 
 extern_libs = SConscript(['extern/SConscript'], exports='env')
 
@@ -99,8 +122,8 @@ env.Alias(target="nsis", source=[
 
 env.Alias(target="tar", source=[
 	env.Append(TARFLAGS = ['-z']),
-	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick_'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'/,"']),
-	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION'])+'.tar.gz', env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
+	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,"']),
+	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
 ])
 
 

@@ -26,39 +26,41 @@
 using namespace std;
 
 static int dynv_var_color_create(struct dynvVariable* variable){
-	if ((variable->value=new float[4])){
+	if ((variable->ptr_value = new float[4])){
 		return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_color_destroy(struct dynvVariable* variable){
-	if (variable->value){
-		delete [] (float*)variable->value;
+	if (variable->ptr_value){
+		delete [] (float*)variable->ptr_value;
 		return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_color_set(struct dynvVariable* variable, void* value, bool deref){
-	if (!variable->value) return -1;
-	((float*)variable->value)[0]=((float*)value)[0];
-	((float*)variable->value)[1]=((float*)value)[1];
-	((float*)variable->value)[2]=((float*)value)[2];
-	((float*)variable->value)[3]=((float*)value)[3];
+	if (!variable->ptr_value) return -1;
+	memcpy(variable->ptr_value, *(void**)value, sizeof(float[4]));
+
+	/*((float*)variable->ptr_value)[0] = ((float*)value)[0];
+	((float*)variable->ptr_value)[1] = ((float*)value)[1];
+	((float*)variable->ptr_value)[2] = ((float*)value)[2];
+	((float*)variable->ptr_value)[3] = ((float*)value)[3];*/
 	return 0;
 }
 
 static int dynv_var_color_get(struct dynvVariable* variable, void** value){
-	if (variable->value){
-		*value=variable->value;
+	if (variable->ptr_value){
+		*value = &variable->ptr_value;
 		return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_color_serialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
+	if (!variable->ptr_value) return -1;
 	uint32_t written;
 
 	uint32_t length=16;
@@ -67,7 +69,7 @@ static int dynv_var_color_serialize(struct dynvVariable* variable, struct dynvIO
 	dynv_io_write(io, &length, 4, &written);
 
 	uint32_t value[4];
-	memcpy(value, variable->value, 16);
+	memcpy(value, variable->ptr_value, 16);
 	value[0]=UINT32_TO_LE(value[0]);
 	value[1]=UINT32_TO_LE(value[1]);
 	value[2]=UINT32_TO_LE(value[2]);
@@ -80,7 +82,7 @@ static int dynv_var_color_serialize(struct dynvVariable* variable, struct dynvIO
 }
 
 static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
+	if (!variable->ptr_value) return -1;
 
 	uint32_t read;
 	uint32_t length;
@@ -93,7 +95,7 @@ static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynv
 			value[1]=UINT32_FROM_LE(value[1]);
 			value[2]=UINT32_FROM_LE(value[2]);
 			value[3]=UINT32_FROM_LE(value[3]);
-			memcpy(variable->value, value, 16);
+			memcpy(variable->ptr_value, value, 16);
 			return 0;
 		}
 	}
@@ -101,8 +103,8 @@ static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynv
 }
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
-	if (variable->value){
-		float* color = (float*)variable->value;
+	if (variable->ptr_value){
+		float* color = (float*)variable->ptr_value;
 		out << color[0] <<" "<< color[1] <<" "<< color[2] <<" "<< color[3];
 	}
 	return 0;
@@ -111,9 +113,8 @@ static int serialize_xml(struct dynvVariable* variable, ostream& out){
 static int deserialize_xml(struct dynvVariable* variable, const char *data){
 	stringstream ss(stringstream::in);
 	ss.str(data);
-	float c[4];
+	float *c = (float*)variable->ptr_value;
 	ss >> c[0] >> c[1] >> c[2] >> c[3];
-	dynv_var_color_set(variable, c, false);
 	return 0;
 }
 
@@ -126,11 +127,11 @@ struct dynvHandler* dynv_var_color_new(){
 	handler->get=dynv_var_color_get;
 	handler->serialize=dynv_var_color_serialize;
 	handler->deserialize=dynv_var_color_deserialize;
-	
+
 	handler->serialize_xml=serialize_xml;
 	handler->deserialize_xml=deserialize_xml;
-	
+
 	handler->data_size = sizeof(float*);
-	
+
 	return handler;
 }

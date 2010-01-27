@@ -26,96 +26,95 @@
 using namespace std;
 
 static int dynv_var_string_create(struct dynvVariable* variable){
-	variable->value=0;
+	variable->ptr_value = 0;
 	return -1;
 }
 
 static int dynv_var_string_destroy(struct dynvVariable* variable){
-	if (variable->value){
-		delete [] (char*)variable->value;
+	if (variable->ptr_value){
+		delete [] (char*)variable->ptr_value;
 		return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_string_set(struct dynvVariable* variable, void* value, bool deref){
-	if (variable->value){
-		delete [] (char*)variable->value;
+	if (variable->ptr_value){
+		delete [] (char*)variable->ptr_value;
 	}
-	if (deref) value = *(void**)value;
-	
-	uint32_t len=strlen((char*)value)+1;
-	variable->value=new char [len];
-	memcpy(variable->value, value, len);
+
+	uint32_t len = strlen(*(char**)value)+1;
+	variable->ptr_value = new char [len];
+	memcpy(variable->ptr_value, *(void**)value, len);
 	return 0;
 }
 
 static int dynv_var_string_get(struct dynvVariable* variable, void** value){
-	if (variable->value){
-		*value=variable->value;
+	if (variable->ptr_value){
+		*value = &variable->ptr_value;
 		return 0;
 	}
 	return -1;
 }
 
 static int dynv_var_string_serialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (!variable->value) return -1;
+	if (!variable->ptr_value) return -1;
 	uint32_t written;
-	uint32_t length=strlen((char*)variable->value);
-	uint32_t length_le=UINT32_TO_LE(length);
+	uint32_t length = strlen((char*)variable->ptr_value);
+	uint32_t length_le = UINT32_TO_LE(length);
 
 	if (dynv_io_write(io, &length_le, 4, &written)==0){
-		if (written!=4) return -1;
+		if (written != 4) return -1;
 	}else return -1;
 
-	if (dynv_io_write(io, variable->value, length, &written)==0){
-		if (written!=length) return -1;
+	if (dynv_io_write(io, variable->ptr_value, length, &written)==0){
+		if (written != length) return -1;
 	}else return -1;
 
 	return 0;
 }
 
 static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dynvIO* io){
-	if (variable->value){
-		delete [] (char*)variable->value;
-		variable->value=0;
+	if (variable->ptr_value){
+		delete [] (char*)variable->ptr_value;
+		variable->ptr_value = 0;
 	}
 	uint32_t read;
 	uint32_t length;
 
 	if (dynv_io_read(io, &length, 4, &read)==0){
-		if (read!=4) return -1;
+		if (read != 4) return -1;
 	}else return -1;
 
-	length=UINT32_FROM_LE(length);
+	length = UINT32_FROM_LE(length);
 
-	variable->value=new char [length+1];
+	variable->ptr_value = new char [length+1];
 
-	if (dynv_io_read(io, variable->value, length, &read)==0){
-		if (read!=length) return -1;
+	if (dynv_io_read(io, variable->ptr_value, length, &read)==0){
+		if (read != length) return -1;
 	}else return -1;
 
-	((char*)variable->value)[length]=0;
+	((char*)variable->ptr_value)[length] = 0;
 
 	return 0;
 }
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
-	if (variable->value){
+	if (variable->ptr_value){
 		//out << (char*)variable->value;
-		dynv_xml_escape((char*)variable->value, out);
+		dynv_xml_escape((char*)variable->ptr_value, out);
 	}
 	return 0;
 }
 
 static int deserialize_xml(struct dynvVariable* variable, const char *data){
-	if (variable->value){
-		delete [] (char*)variable->value;
-		variable->value=0;
+	if (variable->ptr_value){
+		delete [] (char*)variable->ptr_value;
+		variable->ptr_value = 0;
 	}
-	uint32_t len=strlen(data)+1;
-	variable->value=new char [len];
-	memcpy(variable->value, data, len);
+	uint32_t len = strlen(data)+1;
+	variable->ptr_value = new char [len];
+	memcpy(variable->ptr_value, data, len);
 	return 0;
 }
 
@@ -128,11 +127,12 @@ struct dynvHandler* dynv_var_string_new(){
 	handler->get=dynv_var_string_get;
 	handler->serialize=dynv_var_string_serialize;
 	handler->deserialize=dynv_var_string_deserialize;
-	
+
 	handler->serialize_xml=serialize_xml;
 	handler->deserialize_xml=deserialize_xml;
-	
+
 	handler->data_size = sizeof(char*);
-	
+
 	return handler;
 }
+

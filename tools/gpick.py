@@ -95,12 +95,12 @@ class GpickEnvironment(SConsEnvironment):
 			svn_revision = subprocess.Popen(['svnversion', '-n',  self.GetLaunchDir()], shell=False, stdout=subprocess.PIPE).communicate()[0]
 			svn_revision = str(svn_revision)
 			if svn_revision=="exported":
-				svn_revision="0"
+				svn_revision=""
 			svn_revision=svn_revision.replace(':','.')
 			svn_revision=svn_revision.rstrip('PSM')
 			revision=svn_revision;
 		except OSError, e:
-			revision = '0'
+			revision = ''
 
 		self.Replace(GPICK_BUILD_REVISION = revision,
 			GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),
@@ -113,7 +113,7 @@ def WriteNsisVersion(target, source, env):
 	for t in target:
 		for s in source:
 			file = open(str(t),"w")
-			file.writelines('!define VERSION "' + str(env['GPICK_BUILD_VERSION'])+'.'+str(env['GPICK_BUILD_REVISION']) + '"')
+			file.writelines('!define VERSION "' + str(env['GPICK_BUILD_VERSION']) + '"')
 			file.close()
 	return 0
 

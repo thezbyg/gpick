@@ -30,16 +30,16 @@ using namespace std;
 struct Arguments{
 	GtkWidget *mix_type;
 	GtkWidget *mix_steps;
-	
+
 	struct ColorList *selected_color_list;
 	struct ColorList *preview_color_list;
-	
+
 	struct dynvSystem *params;
 	GlobalState* gs;
 };
 
 static void calc( struct Arguments *args, bool preview, int limit){
-	
+
 	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->mix_steps));
 	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
 
@@ -47,7 +47,7 @@ static void calc( struct Arguments *args, bool preview, int limit){
 		dynv_set_int32(args->params, "type", type);
 		dynv_set_int32(args->params, "steps", steps);
 	}
-	
+
 	Color r;
 	gint step_i;
 
@@ -56,29 +56,29 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	s.setf(ios::fixed,ios::floatfield);
 
 	Color a,b;
-	
+
 	struct ColorList *color_list;
-	if (preview) 
+	if (preview)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->gs->colors;
 
 	ColorList::iter j;
-	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){ 
-	
+	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
+
 		color_object_get_color(*i, &a);
-		const char* name_a = (const char*)dynv_system_get((*i)->params, "string", "name");
+		const char* name_a = dynv_get_string_wd((*i)->params, "name", 0);
 		j=i;
 		++j;
-		for (; j!=args->selected_color_list->colors.end(); ++j){ 
-			
+		for (; j!=args->selected_color_list->colors.end(); ++j){
+
 			if (preview){
 				if (limit<=0) return;
 				limit--;
 			}
-		
+
 			color_object_get_color(*j, &b);
-			const char* name_b = (const char*)dynv_system_get((*j)->params, "string", "name");
+			const char* name_b = dynv_get_string_wd((*j)->params, "name", 0);
 
 			switch (type) {
 			case 0:
@@ -91,7 +91,7 @@ static void calc( struct Arguments *args, bool preview, int limit){
 					s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
 
 					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-					dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+					dynv_set_string(color_object->params, "name", s.str().c_str());
 					color_list_add_color_object(color_list, color_object, 1);
 					color_object_release(color_object);
 				}
@@ -109,12 +109,12 @@ static void calc( struct Arguments *args, bool preview, int limit){
 						r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
 
 						color_hsv_to_rgb(&r_hsv, &r);
-						
+
 						s.str("");
 						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
 
 						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+						dynv_set_string(color_object->params, "name", s.str().c_str());
 						color_list_add_color_object(color_list, color_object, 1);
 					}
 				}
@@ -139,13 +139,13 @@ static void calc( struct Arguments *args, bool preview, int limit){
 						r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
 
 						if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
-						color_hsv_to_rgb(&r_hsv, &r);							
-						
+						color_hsv_to_rgb(&r_hsv, &r);
+
 						s.str("");
 						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
 
 						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-						dynv_system_set(color_object->params, "string", "name", (void*)s.str().c_str());
+						dynv_set_string(color_object->params, "name", s.str().c_str());
 						color_list_add_color_object(color_list, color_object, 1);
 					}
 				}
@@ -164,7 +164,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	struct Arguments *args = new struct Arguments;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.mix");
-	
+
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
@@ -172,9 +172,9 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
-	
+
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
-		dynv_get_int32_wd(args->params, "window.height", -1));	
+		dynv_get_int32_wd(args->params, "window.height", -1));
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -192,7 +192,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table_y++;
 	args->mix_type = mix_type;
 	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), args);
-	
+
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
@@ -201,18 +201,18 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table_y++;
 	args->mix_steps = mix_steps;
 	g_signal_connect (G_OBJECT (mix_steps), "value-changed", G_CALLBACK (update), args);
-	
+
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
 	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
-	
+
 
 	args->selected_color_list = selected_color_list;
 	args->preview_color_list = preview_color_list;
-	
+
 	update(0, args);
-	
+
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
 
@@ -223,9 +223,9 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	dynv_set_int32(args->params, "window.width", width);
 	dynv_set_int32(args->params, "window.height", height);
 	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
-	
+
 	gtk_widget_destroy(dialog);
-	
+
 	dynv_system_release(args->params);
 	delete args;
 }

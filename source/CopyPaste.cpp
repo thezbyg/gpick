@@ -41,19 +41,19 @@ static guint n_targets = G_N_ELEMENTS (targets);
 
 struct Arguments{
 	struct ColorObject* color_object;
-	GlobalState* gs;	
+	GlobalState* gs;
 };
 
 static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint target_type, struct Arguments* args){
 	g_assert (selection_data != NULL);
-	
+
 	Color color;
 
 	switch (target_type){
 	case TARGET_COLOR_OBJECT:
 		gtk_selection_data_set (selection_data, gdk_atom_intern ("colorobject", false), 8, (guchar *)&args->color_object, sizeof(struct ColorObject*));
 		break;
-		
+
 	case TARGET_STRING:
 		{
 			color_object_get_color(args->color_object, &color);
@@ -64,7 +64,7 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 			}
 		}
 		break;
-		
+
 	case TARGET_COLOR:
 		{
 			color_object_get_color(args->color_object, &color);
@@ -74,7 +74,7 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 			data_color[1] = int(color.rgb.green * 0xFFFF);
 			data_color[2] = int(color.rgb.blue * 0xFFFF);
 			data_color[3] = 0xffff;
-			
+
 			gtk_selection_data_set (selection_data, gdk_atom_intern ("application/x-color", false), 16, (guchar *)data_color, 8);
 		}
 		break;
@@ -84,7 +84,7 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 		break;
 
 	default:
-		g_assert_not_reached ();	
+		g_assert_not_reached ();
 	}
 
 }
@@ -99,8 +99,8 @@ int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs
 	struct Arguments* args = new struct Arguments;
 	args->color_object = color_object_ref(color_object);
 	args->gs = gs;
-	
-	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, n_targets, 
+
+	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, n_targets,
 			(GtkClipboardGetFunc)clipboard_get, (GtkClipboardClearFunc)clipboard_clear, args)){
 		return 0;
 	}
@@ -111,20 +111,21 @@ int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs
 int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalState* gs){
 	GdkAtom *avail_targets;
 	gint avail_n_targets;
+
 	GtkClipboard *clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 	if (gtk_clipboard_wait_for_targets(clipboard, &avail_targets, &avail_n_targets)){
-		
-		for (gint j=0; j<n_targets; ++j){
-			for (gint i=0; i<avail_n_targets; ++i){
+
+		for (uint32_t j = 0; j < n_targets; ++j){
+			for (int32_t i = 0; i < avail_n_targets; ++i){
 				gchar* atom_name = gdk_atom_name(avail_targets[i]);
-				
+
 				if (g_strcmp0(targets[j].target, atom_name)==0){
 					GtkSelectionData *selection_data = gtk_clipboard_wait_for_contents(clipboard, avail_targets[i]);
-					
+
 					bool success = false;
-					
+
 					if (selection_data){
-						
+
 						switch (targets[j].info){
 						case TARGET_COLOR_OBJECT:
 							{
@@ -132,9 +133,9 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								memcpy(&color_object, selection_data->data, sizeof(struct ColorObject*));
 								*out_color_object = color_object;
 								success = true;
-							}							
+							}
 							break;
-					
+
 						case TARGET_STRING:
 							{
 								gchar* data = (gchar*)selection_data->data;
@@ -144,10 +145,10 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								if (main_get_color_object_from_text(gs, data, &color_object)==0){
 									*out_color_object = color_object;
 									success = true;
-								}							
-							}							
+								}
+							}
 							break;
-							
+
 						case TARGET_COLOR:
 							{
 								guint16* data = (guint16*)selection_data->data;
@@ -155,33 +156,33 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								Color color;
 
 								color.rgb.red = data[0] / (double)0xFFFF;
-								color.rgb.green = data[1] / (double)0xFFFF;				
+								color.rgb.green = data[1] / (double)0xFFFF;
 								color.rgb.blue = data[2] / (double)0xFFFF;
 
 								struct ColorObject* color_object = color_list_new_color_object(gs->colors, &color);
 								*out_color_object = color_object;
 								success = true;
 							}
-							
+
 							break;
-							
+
 						default:
 							g_assert_not_reached ();
 						}
-						
+
 					}
-					
+
 					if (success){
 						g_free(atom_name);
 						g_free(avail_targets);
 						return 0;
 					}
 				}
-				
+
 				g_free(atom_name);
 			}
 		}
-		
+
 		g_free(avail_targets);
 	}
 	return -1;
@@ -191,22 +192,22 @@ int copypaste_is_color_object_available(GlobalState* gs){
 	GdkAtom *avail_targets;
 	gint avail_n_targets;
 	if (gtk_clipboard_wait_for_targets(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), &avail_targets, &avail_n_targets)){
-		
-		for (gint j=0; j<n_targets; ++j){
-			for (gint i=0; i<avail_n_targets; ++i){
+
+		for (uint32_t j = 0; j < n_targets; ++j){
+			for (int32_t i = 0; i < avail_n_targets; ++i){
 				gchar* atom_name = gdk_atom_name(avail_targets[i]);
-				
+
 				if (g_strcmp0(targets[j].target, atom_name)==0){
-					
+
 					g_free(atom_name);
 					g_free(avail_targets);
 					return 0;
 				}
-				
+
 				g_free(atom_name);
 			}
 		}
-		
+
 		g_free(avail_targets);
 	}
 	return -1;

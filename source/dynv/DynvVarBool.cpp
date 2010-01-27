@@ -28,7 +28,7 @@
 using namespace std;
 
 static int create(struct dynvVariable* variable){
-	variable->value = 0;
+	variable->bool_value = false;
 	return 0;
 }
 
@@ -37,17 +37,17 @@ static int destroy(struct dynvVariable* variable){
 }
 
 static int set(struct dynvVariable* variable, void* value, bool deref){
-	*(bool*)&variable->value = *(bool*)value;
+	variable->bool_value = *(bool*)value;
 	return 0;
 }
 
 static int get(struct dynvVariable* variable, void** value){
-	*(bool*)value = *(bool*)&variable->value;
+	*value = &variable->bool_value;
 	return 0;
 }
 
 static int serialize_xml(struct dynvVariable* variable, ostream& out){
-	if (variable->value){
+	if (variable->bool_value){
 		out << "true";
 	}else{
 		out << "false";
@@ -57,10 +57,10 @@ static int serialize_xml(struct dynvVariable* variable, ostream& out){
 
 static int deserialize_xml(struct dynvVariable* variable, const char *data){
 	if (strcmp(data, "true")==0){
-		*(bool*)&variable->value = true;
+		*(bool*)&variable->bool_value = true;
 	}else{
-		*(bool*)&variable->value = false;
-	}	
+		*(bool*)&variable->bool_value = false;
+	}
 	return 0;
 }
 
@@ -73,11 +73,11 @@ struct dynvHandler* dynv_var_bool_new(){
 	handler->get=get;
 	//handler->serialize=serialize;
 	//handler->deserialize=deserialize;
-	
+
 	handler->serialize_xml = serialize_xml;
 	handler->deserialize_xml = deserialize_xml;
-	
+
 	handler->data_size = sizeof(bool);
-	
+
 	return handler;
 }

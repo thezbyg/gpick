@@ -39,7 +39,7 @@ bool dynv_get_bool_wd(struct dynvSystem* dynv_system, const char *path, bool def
 	void* r = dynv_get(dynv_system, "bool", path, &error);
 	if (error){
 		return default_value;
-	}else return (bool)r;
+	}else return *(bool*)r;
 }
 
 const char* dynv_get_string_wd(struct dynvSystem* dynv_system, const char *path, const char* default_value){
@@ -47,7 +47,7 @@ const char* dynv_get_string_wd(struct dynvSystem* dynv_system, const char *path,
 	void* r = dynv_get(dynv_system, "string", path, &error);
 	if (error){
 		return default_value;
-	}else return (const char*)r;
+	}else return *(const char**)r;
 }
 
 const Color* dynv_get_color_wd(struct dynvSystem* dynv_system, const char *path, const Color* default_value){
@@ -55,8 +55,17 @@ const Color* dynv_get_color_wd(struct dynvSystem* dynv_system, const char *path,
 	void* r = dynv_get(dynv_system, "color", path, &error);
 	if (error){
 		return default_value;
-	}else return (const Color*)r;
+	}else return *(const Color**)r;
 }
+
+const void* dynv_get_pointer_wd(struct dynvSystem* dynv_system, const char *path, const void* default_value){
+	int error;
+	void* r = dynv_get(dynv_system, "ptr", path, &error);
+	if (error){
+		return default_value;
+	}else return *(const void**)r;
+}
+
 
 
 
@@ -73,11 +82,15 @@ void dynv_set_bool(struct dynvSystem* dynv_system, const char *path, bool value)
 }
 
 void dynv_set_string(struct dynvSystem* dynv_system, const char *path, const char* value){
-	dynv_set(dynv_system, "string", path, value);
+	dynv_set(dynv_system, "string", path, &value);
 }
 
 void dynv_set_color(struct dynvSystem* dynv_system, const char *path, const Color* value){
-	dynv_set(dynv_system, "color", path, value);
+	dynv_set(dynv_system, "color", path, &value);
+}
+
+void dynv_set_pointer(struct dynvSystem* dynv_system, const char *path, const void* value){
+	dynv_set(dynv_system, "ptr", path, &value);
 }
 
 struct dynvSystem* dynv_get_dynv(struct dynvSystem* dynv_system, const char *path){
@@ -108,7 +121,7 @@ float* dynv_get_float_array_wd(struct dynvSystem* dynv_system, const char *path,
 	if (error){
 		if (count) *count = default_count;
 		return default_value;
-	}else return (float*)r;	
+	}else return (float*)r;
 }
 
 bool* dynv_get_bool_array_wd(struct dynvSystem* dynv_system, const char *path, bool *default_value, uint32_t default_count, uint32_t *count){
