@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -345,9 +345,17 @@ static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
 	}
 }
 
-static void add_all_to_palette_cb(GtkWidget *widget,  gpointer item) {
-	//struct Arguments* args=(struct Arguments*)item;
-    //TODO: implement
+static void add_all_to_palette_cb(GtkWidget *widget, struct Arguments *args) {
+
+	struct ColorObject *color_object;
+
+	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
+
+		color_object = color_list_new_color_object(args->gs->colors, &(*i)->color);
+		dynv_set_string(color_object->params, "name", (*i)->ident_name.c_str());
+		color_list_add_color_object(args->gs->colors, color_object, 1);
+		color_object_release(color_object);
+	}
 }
 
 static void popup_menu_detach_cb(GtkWidget *attach_widget, GtkMenu *menu) {

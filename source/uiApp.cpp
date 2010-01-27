@@ -295,13 +295,6 @@ static void updateProgramName(struct Arguments *args){
 	gtk_window_set_title(GTK_WINDOW(args->window), prg_name.c_str());
 }
 
-
-int main_pick_color(GlobalState* gs, GdkEventKey *event){
-	//struct Arguments* window = (struct Arguments*)dynv_get_pointer_wd(gs->params, "MainWindowStruct", 0);
-	//TODO: return on_key_up(0, event, window);
-	return 0;
-}
-
 static void show_dialog_converter(GtkWidget *widget, struct Arguments *args){
 	dialog_converter_show(GTK_WINDOW(args->window), args->gs);
 	return;
