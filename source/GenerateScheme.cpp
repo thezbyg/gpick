@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -57,6 +57,7 @@ struct Arguments{
 	GtkWidget *lightness;
 
 	GtkWidget *color_previews;
+	GtkWidget *last_focused_color;
 
 	GtkWidget *colors[MAX_COLOR_WIDGETS];
 	float color_hue[MAX_COLOR_WIDGETS];
@@ -300,6 +301,10 @@ static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 
 }
 
+static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, struct Arguments *args){
+	args->last_focused_color = widget;
+	return false;
+}
 
 static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
@@ -513,7 +518,11 @@ static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint
 
 
 static int source_set_color(struct Arguments *args, struct ColorObject* color){
-	return set_rgb_color(args, color, 0);
+	if (args->last_focused_color) {
+		return set_rgb_color_by_widget(args, color, args->last_focused_color);
+	}else{
+		return set_rgb_color(args, color, 0);
+	}
 }
 
 static int source_deactivate(struct Arguments *args){
@@ -572,11 +581,11 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 
 		args->colors[i] = widget;
 
-		g_signal_connect (G_OBJECT(widget), "button-press-event", G_CALLBACK (on_color_button_press), args);
-		g_signal_connect (G_OBJECT(widget), "activated", G_CALLBACK (on_color_activate), args);
-		g_signal_connect (G_OBJECT(widget), "key_press_event", G_CALLBACK (on_color_key_press), args);
-		g_signal_connect (G_OBJECT(widget), "popup-menu", G_CALLBACK (on_color_popup_menu), args);
-
+		g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
+		g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
+		g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
+		g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
+		g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
 
 		//setup drag&drop
 		gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
