@@ -542,11 +542,11 @@ void color_cmy_to_rgb(Color* a, Color* b){
 
 void color_cmy_to_cmyk(Color* a, Color* b){
 	float k = 1;
-	
+
 	if (a->cmy.c < k) k = a->cmy.c;
 	if (a->cmy.m < k) k = a->cmy.m;
 	if (a->cmy.y < k) k = a->cmy.y;
-	
+
 	if (k == 1){
 		b->cmyk.c = b->cmyk.m = b->cmyk.y = 0;
 	}else{
@@ -560,6 +560,26 @@ void color_cmy_to_cmyk(Color* a, Color* b){
 void color_cmyk_to_cmy(Color* a, Color* b){
 	b->cmy.c = (a->cmyk.c * (1 - a->cmyk.k) + a->cmyk.k);
 	b->cmy.m = (a->cmyk.m * (1 - a->cmyk.k) + a->cmyk.k);
-	b->cmy.y = (a->cmyk.y * (1 - a->cmyk.k) + a->cmyk.k);	
+	b->cmy.y = (a->cmyk.y * (1 - a->cmyk.k) + a->cmyk.k);
 }
+
+void color_rgb_to_cmyk(Color* a, Color* b){
+	Color c;
+	color_rgb_to_cmy(a, &c);
+	color_cmy_to_cmyk(&c, b);
+}
+
+void color_cmyk_to_rgb(Color* a, Color* b){
+	Color c;
+	color_cmyk_to_cmy(a, &c);
+	color_cmy_to_rgb(&c, b);
+}
+
+
+void color_rgb_normalize(Color* a){
+	a->rgb.red = clamp_float(a->rgb.red, 0, 1);
+	a->rgb.green = clamp_float(a->rgb.green, 0, 1);
+	a->rgb.blue = clamp_float(a->rgb.blue, 0, 1);
+}
+
 

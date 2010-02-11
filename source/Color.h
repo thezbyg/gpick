@@ -97,7 +97,11 @@ void color_cmy_to_rgb(Color* a, Color* b);
 void color_cmy_to_cmyk(Color* a, Color* b);
 void color_cmyk_to_cmy(Color* a, Color* b);
 
+void color_rgb_to_cmyk(Color* a, Color* b);
+void color_cmyk_to_rgb(Color* a, Color* b);
 
+
+void color_rgb_normalize(Color* a);
 
 void color_copy(Color* a, Color* b);
 

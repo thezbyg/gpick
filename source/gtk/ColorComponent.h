@@ -53,9 +53,20 @@ enum GtkColorComponentComp{
 	red,
 	green,
 	blue,
+
 	hue,
 	saturation,
 	value,
+	lightness,
+
+	cyan,
+	magenta,
+	yellow,
+	key,
+
+	xyz_x,
+	xyz_y,
+	xyz_z,
 };
 
 GtkWidget* gtk_color_component_new (GtkColorComponentComp component);

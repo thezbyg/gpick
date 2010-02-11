@@ -60,7 +60,8 @@ typedef struct GtkColorComponentPrivate
 	Color color;
 	GtkColorComponentComp component;
 
-	gfloat value;
+	double value;
+	double range;
 
 }GtkColorComponentPrivate;
 
@@ -111,7 +112,18 @@ gtk_color_component_new (GtkColorComponentComp component)
 	GtkWidget* widget=(GtkWidget*)g_object_new (GTK_TYPE_COLOR_COMPONENT, NULL);
 	GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
-	ns->component=component;
+	ns->component = component;
+
+	switch (component){
+	case xyz_x:
+	case xyz_y:
+	case xyz_z:
+	    ns->range = 100;
+		break;
+
+	default:
+		ns->range = 1;
+	}
 
 	gtk_widget_set_size_request(GTK_WIDGET(widget),200,24);
 
@@ -128,25 +140,64 @@ gtk_color_component_set_color(GtkColorComponent* color_component, Color* color)
 
 	switch (ns->component) {
 		case red:
-			ns->value=ns->color.rgb.red;
+			ns->value = ns->color.rgb.red;
 			break;
 		case green:
-			ns->value=ns->color.rgb.green;
+			ns->value = ns->color.rgb.green;
 			break;
 		case blue:
-			ns->value=ns->color.rgb.blue;
+			ns->value = ns->color.rgb.blue;
 			break;
 		case hue:
 			color_rgb_to_hsv(&ns->color, &c1);
-			ns->value=c1.hsv.hue;
+			ns->value = c1.hsv.hue;
 			break;
 		case saturation:
 			color_rgb_to_hsv(&ns->color, &c1);
-			ns->value=c1.hsv.saturation;
+			ns->value = c1.hsv.saturation;
 			break;
 		case value:
 			color_rgb_to_hsv(&ns->color, &c1);
-			ns->value=c1.hsv.value;
+			ns->value = c1.hsv.value;
+			break;
+		case lightness:
+			color_rgb_to_hsl(&ns->color, &c1);
+			ns->value = c1.hsl.lightness;
+			break;
+   		case cyan:
+			color_rgb_to_cmyk(&ns->color, &c1);
+			ns->value = c1.cmyk.c;
+			break;
+		case magenta:
+			color_rgb_to_cmyk(&ns->color, &c1);
+			ns->value = c1.cmyk.m;
+			break;
+		case yellow:
+			color_rgb_to_cmyk(&ns->color, &c1);
+			ns->value = c1.cmyk.y;
+			break;
+		case key:
+			color_rgb_to_cmyk(&ns->color, &c1);
+			ns->value = c1.cmyk.k;
+			break;
+		case xyz_x:
+		case xyz_y:
+		case xyz_z:
+			matrix3x3 adaptation_matrix, working_space_matrix;
+			vector3 d50, d65;
+			vector3_set(&d50, 96.442, 100.000,  82.821);
+			vector3_set(&d65, 95.047, 100.000, 108.883);
+			color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+			//matrix3x3_inverse(&working_space_matrix, &working_space_matrix);
+
+			color_rgb_to_xyz(&ns->color, &c1, &working_space_matrix);
+			if (ns->component == xyz_x)
+				ns->value = c1.xyz.x;
+			else if (ns->component == xyz_y)
+				ns->value = c1.xyz.y;
+			else
+				ns->value = c1.xyz.z;
 			break;
 
 	}
@@ -179,7 +230,7 @@ gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event)
 	float steps;
 	int i;
 
-	float pointer_pos=ns->value;
+	double pointer_pos = ns->value / ns->range;
 
 	switch (ns->component) {
 		case red:
@@ -241,6 +292,89 @@ gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event)
 				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
 			}
 			break;
+ 		case lightness:
+			steps = 100;
+			color_rgb_to_hsl(&ns->color, &c1);
+			for (i=0;i<=steps;++i){
+				c1.hsl.lightness = i/steps;
+				color_hsl_to_rgb(&c1, &c2);
+				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+			}
+			break;
+
+
+ 		case cyan:
+			steps = 100;
+			color_rgb_to_cmyk(&ns->color, &c1);
+			for (i=0;i<=steps;++i){
+				c1.cmyk.c = i/steps;
+				color_cmyk_to_rgb(&c1, &c2);
+				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+			}
+			break;
+ 		case magenta:
+			steps = 100;
+			color_rgb_to_cmyk(&ns->color, &c1);
+			for (i=0;i<=steps;++i){
+				c1.cmyk.m = i/steps;
+				color_cmyk_to_rgb(&c1, &c2);
+				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+			}
+			break;
+ 		case yellow:
+			steps = 100;
+			color_rgb_to_cmyk(&ns->color, &c1);
+			for (i=0;i<=steps;++i){
+				c1.cmyk.y = i/steps;
+				color_cmyk_to_rgb(&c1, &c2);
+				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+			}
+			break;
+ 		case key:
+			steps = 100;
+			color_rgb_to_cmyk(&ns->color, &c1);
+			for (i=0;i<=steps;++i){
+				c1.cmyk.k = i/steps;
+				color_cmyk_to_rgb(&c1, &c2);
+				cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+			}
+			break;
+
+		case xyz_x:
+		case xyz_y:
+		case xyz_z:
+
+			matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inv;
+			vector3 d50, d65;
+			vector3_set(&d50, 96.442, 100.000,  82.821);
+			vector3_set(&d65, 95.047, 100.000, 108.883);
+			color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+			matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inv);
+
+			steps = 100;
+			color_rgb_to_xyz(&ns->color, &c1, &working_space_matrix);
+			if (ns->component == xyz_x){
+				for (i=0; i<=steps; ++i){
+					c1.xyz.x = (i/steps) * ns->range;
+					color_xyz_to_rgb(&c1, &c2, &working_space_matrix_inv);
+					cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+				}
+			}else if (ns->component == xyz_y){
+				for (i=0; i<=steps; ++i){
+					c1.xyz.y = (i/steps) * ns->range;
+					color_xyz_to_rgb(&c1, &c2, &working_space_matrix_inv);
+					cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+				}
+			}else{
+				for (i=0; i<=steps; ++i){
+					c1.xyz.z = (i/steps) * ns->range;
+					color_xyz_to_rgb(&c1, &c2, &working_space_matrix_inv);
+					cairo_pattern_add_color_stop_rgb(pattern, i/steps, c2.rgb.red,c2.rgb.green,c2.rgb.blue);
+				}
+			}
+			break;
+
 		default:
 			break;
 	}
@@ -504,6 +638,60 @@ gtk_color_component_emit_color_change(GtkWidget *widget, gfloat new_value)
 			c2.hsv.value=new_value;
 			color_hsv_to_rgb(&c2, &c);
 			break;
+ 		case lightness:
+			color_rgb_to_hsl(&c, &c2);
+			c2.hsl.lightness = new_value;
+			color_hsl_to_rgb(&c2, &c);
+			break;
+ 		case cyan:
+			color_rgb_to_cmyk(&c, &c2);
+			c2.cmyk.c = new_value;
+			color_cmyk_to_rgb(&c2, &c);
+			break;
+ 		case magenta:
+			color_rgb_to_cmyk(&c, &c2);
+			c2.cmyk.m = new_value;
+			color_cmyk_to_rgb(&c2, &c);
+			break;
+ 		case yellow:
+			color_rgb_to_cmyk(&c, &c2);
+			c2.cmyk.y = new_value;
+			color_cmyk_to_rgb(&c2, &c);
+			break;
+ 		case key:
+			color_rgb_to_cmyk(&c, &c2);
+			c2.cmyk.k = new_value;
+			color_cmyk_to_rgb(&c2, &c);
+			break;
+
+		case xyz_x:
+		case xyz_y:
+		case xyz_z:
+
+			matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inv;
+			vector3 d50, d65;
+			vector3_set(&d50, 96.442, 100.000,  82.821);
+			vector3_set(&d65, 95.047, 100.000, 108.883);
+			color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+			matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inv);
+
+			color_rgb_to_xyz(&c, &c2, &working_space_matrix);
+			if (ns->component == xyz_x){
+				c2.xyz.x = new_value * ns->range;
+				color_xyz_to_rgb(&c2, &c, &working_space_matrix_inv);
+				color_rgb_normalize(&c);
+			}else if (ns->component == xyz_y){
+				c2.xyz.y = new_value * ns->range;
+				color_xyz_to_rgb(&c2, &c, &working_space_matrix_inv);
+				color_rgb_normalize(&c);
+			}else{
+				c2.xyz.z = new_value * ns->range;
+				color_xyz_to_rgb(&c2, &c, &working_space_matrix_inv);
+				color_rgb_normalize(&c);
+			}
+			break;
+
 	}
 
 	g_signal_emit (widget, gtk_color_component_signals[COLOR_CHANGED],0,&c);
