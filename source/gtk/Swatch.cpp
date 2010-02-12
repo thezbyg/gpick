@@ -166,7 +166,7 @@ void gtk_swatch_set_active_color(GtkSwatch* swatch, Color* color) {
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(swatch);
 	color_copy(color, &ns->color[ns->current_color]);
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
-	g_signal_emit(GTK_WIDGET(swatch), gtk_swatch_signals[COLOR_CHANGED], 0);
+	//g_signal_emit(GTK_WIDGET(swatch), gtk_swatch_signals[COLOR_CHANGED], 0);
 }
 
 void gtk_swatch_set_main_color(GtkSwatch* swatch, guint index, Color* color) {

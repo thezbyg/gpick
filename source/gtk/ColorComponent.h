@@ -50,23 +50,12 @@ typedef struct GtkColorComponentClass
 }GtkColorComponentClass;
 
 enum GtkColorComponentComp{
-	red,
-	green,
-	blue,
-
-	hue,
-	saturation,
-	value,
-	lightness,
-
-	cyan,
-	magenta,
-	yellow,
-	key,
-
-	xyz_x,
-	xyz_y,
-	xyz_z,
+	rgb,
+	hsv,
+	hsl,
+	cmyk,
+	xyz,
+	lab,
 };
 
 GtkWidget* gtk_color_component_new (GtkColorComponentComp component);

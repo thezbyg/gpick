@@ -70,6 +70,7 @@ typedef struct Color{
 			float m3;
 			float m4;
 		}m;
+		float ma[4];
 	};
 }Color;
 
