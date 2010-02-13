@@ -37,10 +37,6 @@ struct uiStatusIcon{
 	GlobalState* gs;
 };
 
-static void status_icon_popup_detach(GtkWidget *attach_widget, GtkMenu *menu){
-	gtk_widget_destroy(GTK_WIDGET(menu));
-}
-
 static void status_icon_destroy_parent(GtkWidget *widget, gpointer user_data){
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
 	gtk_widget_destroy(GTK_WIDGET(si->parent));
@@ -80,13 +76,12 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 
     gtk_widget_show_all (GTK_WIDGET(menu));
 
-	gtk_menu_attach_to_widget(GTK_MENU (menu), GTK_WIDGET(si->parent), status_icon_popup_detach );
-
-
 	//g_signal_connect (G_OBJECT (menu), "leave-notify-event", G_CALLBACK (tray_popup_leave), menu);
 
-
 	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, 0, 0, button, activate_time);
+
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
 }
 
 

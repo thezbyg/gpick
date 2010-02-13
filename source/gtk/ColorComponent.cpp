@@ -31,10 +31,13 @@ using namespace std;
 
 G_DEFINE_TYPE (GtkColorComponent, gtk_color_component, GTK_TYPE_DRAWING_AREA);
 
+typedef struct GtkColorComponentPrivate GtkColorComponentPrivate;
+
 static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event);
 static gboolean gtk_color_component_button_release (GtkWidget *widget, GdkEventButton *event);
 static gboolean gtk_color_component_button_press (GtkWidget *node_system, GdkEventButton *event);
 static gboolean gtk_color_component_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
+static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c);
 
 enum{
   COLOR_CHANGED,
@@ -43,7 +46,6 @@ enum{
 
 static guint gtk_color_component_signals[LAST_SIGNAL] = { 0 };
 
-typedef struct GtkColorComponentPrivate GtkColorComponentPrivate;
 
 typedef struct GtkColorComponentPrivate{
 	Color orig_color;
@@ -89,12 +91,9 @@ static void gtk_color_component_init (GtkColorComponent *color_component){
 }
 
 
-
-
-
 GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
-	GtkWidget* widget=(GtkWidget*)g_object_new (GTK_TYPE_COLOR_COMPONENT, NULL);
-	GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
+	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, NULL);
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	ns->component = component;
 
@@ -126,6 +125,33 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 	gtk_widget_set_size_request(GTK_WIDGET(widget), 200, 25 * ns->n_components);
 
 	return widget;
+}
+
+void gtk_color_component_get_color(GtkColorComponent* color_component, Color* color){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	color_copy(&ns->orig_color, color);
+}
+
+void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	color_copy(&ns->color, color);
+}
+
+void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	color_copy(color, &ns->color);
+	update_rgb_color(ns, &ns->orig_color);
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
+}
+
+int gtk_color_component_get_component_id_at(GtkColorComponent* color_component, gint x, gint y){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+
+	int component = y / 25;
+	if (component < 0) component = 0;
+	else if (component >= ns->n_components) component = ns->n_components - 1;
+
+	return component;
 }
 
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color){
@@ -323,227 +349,28 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	return TRUE;
 }
 
-#if 0
-static void gtk_color_component_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu){
-	gtk_widget_destroy(GTK_WIDGET(menu));
+
+GtkColorComponentComp gtk_color_component_get_component(GtkColorComponent* color_component){
+	return GTK_COLOR_COMPONENT_GET_PRIVATE(color_component)->component;
 }
 
-static void gtk_color_component_popup_copy_1(GtkWidget *widget,  gpointer item){
-	GtkColorComponentPrivate *ns=(GtkColorComponentPrivate*)item;
-	gchar* tmp=g_strdup_printf("%f",ns->value);
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), tmp, strlen(tmp));
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-    g_free(tmp);
-}
-
-static void gtk_color_component_popup_copy_100(GtkWidget *widget,  gpointer item){
-	GtkColorComponentPrivate *ns=(GtkColorComponentPrivate*)item;
-	gchar* tmp=g_strdup_printf("%d",gint32(ns->value*100));
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), tmp, strlen(tmp));
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-    g_free(tmp);
-}
-
-static void gtk_color_component_popup_copy_255(GtkWidget *widget,  gpointer item){
-	GtkColorComponentPrivate *ns=(GtkColorComponentPrivate*)item;
-	gchar* tmp=g_strdup_printf("%d",gint32(ns->value*255));
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), tmp, strlen(tmp));
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-    g_free(tmp);
-}
-
-static void
-gtk_color_component_popup_copy_360(GtkWidget *widget,  gpointer item)
-{
-	GtkColorComponentPrivate *ns=(GtkColorComponentPrivate*)item;
-	gchar* tmp=g_strdup_printf("%d",gint32(ns->value*360));
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), tmp, strlen(tmp));
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-    g_free(tmp);
-}
-
-static void
-gtk_color_component_popup_copy_FF(GtkWidget *widget,  gpointer item)
-{
-	GtkColorComponentPrivate *ns=(GtkColorComponentPrivate*)item;
-	gchar* tmp=g_strdup_printf("%02X",gint32(ns->value*255));
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), tmp, strlen(tmp));
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-    g_free(tmp);
-}
-
-
-static void
-gtk_color_component_popup_paste_1(GtkWidget *widget,  gpointer item)
-{
-	//GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(item);
-
-	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		gfloat value;
-		sscanf(text,"%f",&value);
-		gtk_color_component_emit_color_change(GTK_WIDGET(item), value);
-	}
-}
-static void
-gtk_color_component_popup_paste_100(GtkWidget *widget,  gpointer item)
-{
-	//GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(item);
-
-	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		gfloat value;
-		sscanf(text,"%f",&value);
-		gtk_color_component_emit_color_change(GTK_WIDGET(item), value/100.0);
-	}
-}
-static void
-gtk_color_component_popup_paste_255(GtkWidget *widget,  gpointer item)
-{
-	//GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(item);
-
-	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		gfloat value;
-		sscanf(text,"%f",&value);
-		gtk_color_component_emit_color_change(GTK_WIDGET(item), value/255.0);
-	}
-}
-static void
-gtk_color_component_popup_paste_360(GtkWidget *widget,  gpointer item)
-{
-	//GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(item);
-
-	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		gfloat value;
-		sscanf(text,"%f",&value);
-		gtk_color_component_emit_color_change(GTK_WIDGET(item), value/360.0);
-	}
-}
-static void
-gtk_color_component_popup_paste_FF(GtkWidget *widget,  gpointer item)
-{
-	//GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(item);
-
-	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		gint32 value;
-		sscanf(text,"%x",&value);
-		gtk_color_component_emit_color_change(GTK_WIDGET(item), value/255.0);
-	}
-}
-
-
-
-
-static gboolean
-gtk_color_component_popup_show (GtkWidget *widget, GdkEventButton* event, gpointer ptr){
-	GtkWidget *menu;
-	GtkWidget* item ;
-	gint32 button, event_time;
-
-	menu = gtk_menu_new ();
-
-	GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
-
-    item = gtk_menu_item_new_with_image ("Copy [0..1]", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_copy_1),ptr);
-
-    item = gtk_menu_item_new_with_image ("Copy [0..100]", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_copy_100),ptr);
-
-    item = gtk_menu_item_new_with_image ("Copy [0..255]", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_copy_255),ptr);
-
-    if ( ns->component == hue ){
-		item = gtk_menu_item_new_with_image ("Copy [0..360]", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_copy_360),ptr);
-    }
-
-    item = gtk_menu_item_new_with_image ("Copy Hexagonal [00..FF]", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_copy_FF),ptr);
-
-    item = gtk_separator_menu_item_new ();
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
-    gboolean paste_enabled = gtk_clipboard_wait_is_text_available(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-
-    item = gtk_menu_item_new_with_image ("Paste [0..1]", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    gtk_widget_set_sensitive(item, paste_enabled);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_paste_1),widget);
-
-    item = gtk_menu_item_new_with_image ("Paste [0..100]", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    gtk_widget_set_sensitive(item, paste_enabled);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_paste_100),widget);
-
-    item = gtk_menu_item_new_with_image ("Paste [0..255]", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    gtk_widget_set_sensitive(item, paste_enabled);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_paste_255),widget);
-
-    if ( ns->component == hue ){
-		item = gtk_menu_item_new_with_image ("Paste [0..360]", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		gtk_widget_set_sensitive(item, paste_enabled);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_paste_360),widget);
-    }
-
-    item = gtk_menu_item_new_with_image ("Paste Hexagonal [00..FF]", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    gtk_widget_set_sensitive(item, paste_enabled);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (gtk_color_component_popup_paste_FF),widget);
-
-
-    gtk_widget_show_all (GTK_WIDGET(menu));
-
-	if (event){
-		button = event->button;
-		event_time = event->time;
-	}else{
-		button = 0;
-		event_time = gtk_get_current_event_time ();
-	}
-
-	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, gtk_color_component_popup_menu_detach);
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL,
-				  button, event_time);
-
-	return 1;
-}
-
-#endif
-
-static void gtk_color_component_emit_color_change(GtkWidget *widget, int component, double value){
-	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
-	Color c;
+static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 	switch (ns->component) {
 		case rgb:
-			ns->color.ma[component] = value;
-			color_copy(&ns->color, &c);
-			color_rgb_normalize(&c);
+			color_copy(&ns->color, c);
+			color_rgb_normalize(c);
 			break;
 		case hsv:
-			ns->color.ma[component] = value;
-			color_hsv_to_rgb(&ns->color, &c);
-			color_rgb_normalize(&c);
+			color_hsv_to_rgb(&ns->color, c);
+			color_rgb_normalize(c);
 			break;
 		case hsl:
-			ns->color.ma[component] = value;
-			color_hsl_to_rgb(&ns->color, &c);
-			color_rgb_normalize(&c);
+			color_hsl_to_rgb(&ns->color, c);
+			color_rgb_normalize(c);
 			break;
 		case cmyk:
-			ns->color.ma[component] = value;
-			color_cmyk_to_rgb(&ns->color, &c);
-			color_rgb_normalize(&c);
+			color_cmyk_to_rgb(&ns->color, c);
+			color_rgb_normalize(c);
 			break;
 		case lab:
 			matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inv;
@@ -556,28 +383,33 @@ static void gtk_color_component_emit_color_change(GtkWidget *widget, int compone
 			matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inv);
 
 			Color c2;
-			ns->color.ma[component] = value * ns->range[component] + ns->offset[component];
 
 			color_lab_to_xyz(&ns->color, &c2, &d50);
 			color_xyz_chromatic_adaptation(&c2, &c2, &adaptation_matrix);
-			color_xyz_to_rgb(&c2, &c, &working_space_matrix_inv);
-			color_rgb_normalize(&c);
+			color_xyz_to_rgb(&c2, c, &working_space_matrix_inv);
+			color_rgb_normalize(c);
+
+			break;
+
+		case xyz:
 
 			break;
 
 	}
+}
+
+static void gtk_color_component_emit_color_change(GtkWidget *widget, int component, double value){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
+
+	Color c;
+	ns->color.ma[component] = value * ns->range[component] + ns->offset[component];
+	update_rgb_color(ns, &c);
 
 	g_signal_emit(widget, gtk_color_component_signals[COLOR_CHANGED], 0, &c);
 }
 
 static gboolean gtk_color_component_button_release (GtkWidget *widget, GdkEventButton *event){
-	GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
-
-	if ((event->type==GDK_BUTTON_RELEASE)&&(event->button==3)){
-		//gtk_color_component_popup_show(widget, event, ns);
-		return TRUE;
-	}
-	return FALSE;
+	return false;
 }
 
 static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventButton *event){

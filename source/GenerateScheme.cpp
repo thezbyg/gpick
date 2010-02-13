@@ -233,11 +233,6 @@ static void update(GtkWidget *widget, struct Arguments *args ){
 	calc(args, true, false);
 }
 
-static void on_color_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu) {
-	gtk_widget_destroy(GTK_WIDGET(menu));
-}
-
-
 static void on_color_paste(GtkWidget *widget,  gpointer item) {
 	struct Arguments* args=(struct Arguments*)item;
 
@@ -320,12 +315,7 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 }
 
 static void color_show_menu(GtkWidget* widget, struct Arguments* args, GdkEventButton *event ){
-	static GtkWidget *menu=NULL;
-	if (menu) {
-		gtk_menu_detach(GTK_MENU(menu));
-		menu=NULL;
-	}
-
+	GtkWidget *menu;
 	GtkWidget* item;
 
 	menu = gtk_menu_new ();
@@ -380,9 +370,10 @@ static void color_show_menu(GtkWidget* widget, struct Arguments* args, GdkEventB
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, on_color_popup_menu_detach);
 	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, button, event_time);
 
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
 }
 
 static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {

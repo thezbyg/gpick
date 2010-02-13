@@ -358,16 +358,8 @@ static void add_all_to_palette_cb(GtkWidget *widget, struct Arguments *args) {
 	}
 }
 
-static void popup_menu_detach_cb(GtkWidget *attach_widget, GtkMenu *menu) {
-	gtk_widget_destroy(GTK_WIDGET(menu));
-}
-
 static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {
-	static GtkWidget *menu=NULL;
-	if (menu) {
-		gtk_menu_detach(GTK_MENU(menu));
-		menu=NULL;
-	}
+	GtkWidget *menu;
 
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
 
@@ -422,8 +414,10 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struc
 		button = event->button;
 		event_time = event->time;
 
-		gtk_menu_attach_to_widget (GTK_MENU (menu), widget, popup_menu_detach_cb);
-		gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+
+		g_object_ref_sink(menu);
+		g_object_unref(menu);
 
 		return TRUE;
 	}
