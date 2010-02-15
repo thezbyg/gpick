@@ -45,6 +45,7 @@ struct Arguments{
 	GlobalState* gs;
 
 	bool release_mode;
+	bool click_mode;
 };
 
 static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* c){
@@ -149,6 +150,7 @@ void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release
 #ifndef WIN32			//Pointer grabbing in Windows is broken, disabling floating picker for now
 
 	args->release_mode = hide_on_mouse_release;
+	args->click_mode = true;
 
 	GdkCursor* cursor;
 	cursor = gdk_cursor_new(GDK_TCROSS);
@@ -205,18 +207,27 @@ static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, struct
 static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, struct Arguments *args){
 
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
-		if (args->release_mode){
+		if (args->release_mode || args->click_mode){
 			Color c;
-			//sampler_get_color_sample(si->gs->sampler, &c);
 			get_color_sample(args, false, &c);
 
 			struct ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->colors, &c);
 
-			Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
-			Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-			if (converter){
-				converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
+			if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.copy_on_release", false)){
+				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+				if (converter){
+					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
+				}
+			}
+
+			if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.add_on_release", false)){
+
+				string name = color_names_get(args->gs->color_names, &c);
+				dynv_set_string(color_object->params, "name", name.c_str());
+				color_list_add_color_object(args->gs->colors, color_object, 1);
+
 			}
 
 			color_object_release(color_object);
@@ -239,6 +250,7 @@ static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, struct Argumen
 	case GDK_Escape:
 		event2.type = GDK_BUTTON_RELEASE;
 		event2.button = 1;
+		args->release_mode = false;
 		button_release_cb(widget, &event2, args);
 		return TRUE;
 		break;
@@ -290,3 +302,4 @@ struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorS
 void floating_picker_free(struct Arguments *args){
 	gtk_widget_destroy(args->window);
 }
+

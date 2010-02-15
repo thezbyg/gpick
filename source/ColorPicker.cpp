@@ -71,10 +71,6 @@ struct Arguments{
 	GtkWidget* color_name;
 	GtkWidget* statusbar;
 
-	gboolean add_to_palette;
-	gboolean rotate_swatch;
-	gboolean copy_to_clipboard;
-
 	guint timeout_source_id;
 
 	FloatingPicker floating_picker;
@@ -238,11 +234,35 @@ static void paste_cb(GtkWidget *widget, struct Arguments* args) {
 	}
 }
 
-static gboolean on_swatch_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data) {
+static void swatch_popup_menu_cb(GtkWidget *widget, struct Arguments* args){
+ 	GtkWidget *menu;
+
+	gint32 button, event_time;
+
+	Color c;
+	updateMainColor(args);
+	gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
+
+    struct ColorObject* color_object;
+    color_object = color_list_new_color_object(args->gs->colors, &c);
+    menu = converter_create_copy_menu(color_object, 0, args->gs);
+	color_object_release(color_object);
+
+    gtk_widget_show_all(GTK_WIDGET(menu));
+
+	button = 0;
+	event_time = gtk_get_current_event_time ();
+
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
+}
+
+static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, struct Arguments* args){
+
 	GtkWidget *menu;
 	int color_index = gtk_swatch_get_color_at(GTK_SWATCH(widget), event->x, event->y);
-
-	struct Arguments* args=(struct Arguments*)data;
 
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS && color_index>0){
 		GtkWidget* item ;
@@ -366,7 +386,9 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			updateMainColor(args);
 			gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
 
-			if (args->add_to_palette){
+
+
+			if (dynv_get_bool_wd(args->params, "sampler.add_to_palette", true)){
 				Color c;
 				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
@@ -377,7 +399,7 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				color_object_release(color_object);
 			}
 
-			if (args->copy_to_clipboard){
+			if (dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", true)){
 				Color c;
 				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
@@ -393,7 +415,7 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 				color_object_release(color_object);
 			}
 
-			if (args->rotate_swatch){
+			if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)){
 				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
 			}
 			updateDiplays(args, widget);
@@ -556,17 +578,6 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 	return false;
 }
 
-static void on_add_to_palette_changed(GtkWidget *widget, gpointer data) {
-	((struct Arguments*)data)->add_to_palette = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-}
-
-static void on_copy_to_clipboard_changed(GtkWidget *widget, gpointer data) {
-	((struct Arguments*)data)->copy_to_clipboard = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-}
-
-static void on_rotate_swatch_changed(GtkWidget *widget, gpointer data) {
-	((struct Arguments*)data)->rotate_swatch = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
-}
 
 static void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 	GtkTreeIter iter;
@@ -661,9 +672,6 @@ static int source_destroy(struct Arguments *args){
 
 	dynv_set_int32(args->params, "sampler.oversample", sampler_get_oversample(args->gs->sampler));
 	dynv_set_int32(args->params, "sampler.falloff", sampler_get_falloff(args->gs->sampler));
-	dynv_set_bool(args->params, "sampler.add_to_palette", args->add_to_palette);
-	dynv_set_bool(args->params, "sampler.copy_to_clipboard", args->copy_to_clipboard);
-	dynv_set_bool(args->params, "sampler.rotate_swatch_after_sample", args->rotate_swatch);
 
 	dynv_set_float(args->params, "zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed_display)));
 
@@ -802,8 +810,8 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 			g_signal_connect(G_OBJECT(widget), "color_changed", G_CALLBACK(on_swatch_color_changed), args);
 			g_signal_connect(G_OBJECT(widget), "color_activated", G_CALLBACK(on_swatch_color_activated), args);
 			g_signal_connect(G_OBJECT(widget), "center_activated", G_CALLBACK(on_swatch_center_activated), args);
-			g_signal_connect_after(G_OBJECT(widget), "button-press-event",G_CALLBACK(on_swatch_button_press), args);
-
+			g_signal_connect_after(G_OBJECT(widget), "button-press-event",G_CALLBACK(swatch_button_press_cb), args);
+			g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(swatch_popup_menu_cb), args);
 
 			gtk_swatch_set_active_index(GTK_SWATCH(widget), dynv_get_int32_wd(args->params, "swatch.active_color", 1));
 			args->swatch_display = widget;
@@ -880,23 +888,6 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
 
-				widget = gtk_check_button_new_with_mnemonic ("_Add to palette immediately");
-				g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_add_to_palette_changed), args);
-				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "sampler.add_to_palette", false));
-				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-				table_y++;
-
-				widget = gtk_check_button_new_with_mnemonic ("_Copy to clipboard immediately");
-				g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_copy_to_clipboard_changed), args);
-				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", false));
-				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-				table_y++;
-
-				widget = gtk_check_button_new_with_mnemonic ("_Rotate swatch after sample");
-				g_signal_connect (G_OBJECT (widget), "toggled", G_CALLBACK (on_rotate_swatch_changed), args);
-				gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", false));
-				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-				table_y++;
 
 			expander=gtk_expander_new("HSV");
 			gtk_expander_set_expanded(GTK_EXPANDER(expander), dynv_get_bool_wd(args->params, "expander.hsv", false));

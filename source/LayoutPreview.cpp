@@ -361,7 +361,18 @@ static void add_all_to_palette_cb(GtkWidget *widget, struct Arguments *args) {
 static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {
 	GtkWidget *menu;
 
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
+	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
+		struct ColorObject *color_object;
+
+		if (source_get_color(args, &color_object)==0){
+			dynv_set_string(color_object->params, "name", "");
+			color_list_add_color_object(args->gs->colors, color_object, 1);
+			color_object_release(color_object);
+		}
+
+		return true;
+
+	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
 
 		GtkWidget* item ;
 		gint32 button, event_time;
@@ -653,7 +664,7 @@ ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_table_attach(GTK_TABLE(table), scrolled, 0, 3, table_y, table_y+1 ,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GtkAttachOptions(GTK_FILL | GTK_EXPAND),0,0);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), args->layout = gtk_layout_preview_new());
-	g_signal_connect_after(G_OBJECT(args->layout), "button-press-event", G_CALLBACK (button_press_cb), args);
+	g_signal_connect_after(G_OBJECT(args->layout), "button-press-event", G_CALLBACK(button_press_cb), args);
 	table_y++;
 
 	struct DragDrop dd;
