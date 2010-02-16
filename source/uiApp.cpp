@@ -37,6 +37,8 @@
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
 
+#include "tools/PaletteFromImage.h"
+
 #include "uiDialogOptions.h"
 #include "uiConverter.h"
 #include "uiStatusIcon.h"
@@ -500,6 +502,10 @@ static void show_about_box_cb(GtkWidget *widget, struct Arguments* args) {
 	show_about_box(args->window);
 }
 
+static void palette_from_image_cb(GtkWidget *widget, struct Arguments* args) {
+	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
+}
+
 static void createMenu(GtkMenuBar *menu_bar, struct Arguments *args, GtkAccelGroup *accel_group) {
 	GtkMenu* menu;
 	GtkWidget* item;
@@ -574,11 +580,23 @@ static void createMenu(GtkMenuBar *menu_bar, struct Arguments *args, GtkAccelGro
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_options), args);
 
-
-
     file_item = gtk_menu_item_new_with_mnemonic ("_Edit");
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
+
+
+
+
+    menu = GTK_MENU(gtk_menu_new());
+
+    item = gtk_menu_item_new_with_image("Palette From _Image...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
+
+    file_item = gtk_menu_item_new_with_mnemonic("_Tools");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
+
 
 
     menu = GTK_MENU(gtk_menu_new());
