@@ -34,9 +34,8 @@ static GOptionEntry commandline_entries[] =
 };
 
 int main(int argc, char **argv){
-
-	gtk_set_locale ();
-	gtk_init (&argc, &argv);
+	gtk_set_locale();
+	gtk_init(&argc, &argv);
 	g_set_application_name(program_name);
 
 	gchar* tmp;
@@ -72,5 +71,5 @@ int main(int argc, char **argv){
 	g_option_context_free(context);
 
 	return 0;
-
 }
+

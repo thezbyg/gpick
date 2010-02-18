@@ -145,6 +145,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 
 					if ((variable = dynv_system_add_empty(entity->dynv, handler, name))){
 						handler->set(variable, dlevel_new, false);
+						dynv_system_release(dlevel_new);
 					}
 
 					xml->entity.push(new XmlEntity(0, dlevel_new, false));

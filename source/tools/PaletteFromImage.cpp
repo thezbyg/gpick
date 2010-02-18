@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <iostream>
+#include <sstream>
 #include <stack>
 #include <string>
 using namespace std;
@@ -339,6 +340,11 @@ static void calc(struct Arguments *args, bool preview, int limit){
 			dynv_set_string(args->params, "current_folder", current_folder);
 			g_free(current_folder);
 		}
+		GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(args->file_browser));
+		if (filter){
+			const char *filter_name = static_cast<const char*>(g_object_get_data(G_OBJECT(filter), "name"));
+			dynv_set_string(args->params, "filter", filter_name);
+		}
 	}
 
 	struct ColorList *color_list;
@@ -377,9 +383,10 @@ static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 
 
 void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
+
 	struct Arguments *args = new struct Arguments;
 
-
+    args->previuos_filename = "";
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.tools.palette_from_image");
 	args->previuos_node = 0;
@@ -416,36 +423,50 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	table_y++;
 
 
-
-
-	/* TODO:
-	 *  use gdk_pixbuf_get_formats to query supported image types
-	 *  save selected filter
-	 */
-
-	struct filter_format{
-		const gchar* name;
-		const gchar* pattern[16];
-	};
-	filter_format formats[] = {
-		{ "PNG image (*.png)", {"*.png", 0}},
-		{ "JPEG image (*.jpg, *.jpeg, *.jpe)", {"*.jpg", "*.jpeg", "*.jpe", 0}},
-
-	};
-
+	const char* selected_filter = dynv_get_string_wd(args->params, "filter", "all_images");
 	GtkFileFilter *filter;
-	for (gint i = 0; i != sizeof(formats) / sizeof(struct filter_format); ++i) {
+	GtkFileFilter *all_image_filter;
+
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, "All files");
+	gtk_file_filter_add_pattern(filter, "*");
+	g_object_set_data_full(G_OBJECT(filter), "name", (void*)"all_files", GDestroyNotify(NULL));
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
+	if (g_strcmp0("all_files", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
+
+
+	all_image_filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(all_image_filter, "All images");
+	g_object_set_data_full(G_OBJECT(all_image_filter), "name", (void*)"all_images", GDestroyNotify(NULL));
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
+	if (g_strcmp0("all_images", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
+
+	stringstream ss;
+	GSList *formats = gdk_pixbuf_get_formats();
+	GSList *i = formats;
+	while (i){
+		GdkPixbufFormat *format = static_cast<GdkPixbufFormat*>(g_slist_nth_data(i, 0));
+
 		filter = gtk_file_filter_new();
-		gtk_file_filter_set_name(filter, formats[i].name);
-		for (int j = 0; formats[i].pattern[j]; j++)
-			gtk_file_filter_add_pattern(filter, formats[i].pattern[j]);
+		gtk_file_filter_set_name(filter, gdk_pixbuf_format_get_description(format));
 
+		gchar **extensions = gdk_pixbuf_format_get_extensions(format);
+        if (extensions){
+			for (int j = 0; extensions[j]; j++){
+				ss.str("");
+				ss << "*." << extensions[j];
+				gtk_file_filter_add_pattern(filter, ss.str().c_str());
+				gtk_file_filter_add_pattern(all_image_filter, ss.str().c_str());
+			}
+			g_strfreev(extensions);
+		}
+		g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(NULL));
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
+		if (g_strcmp0(gdk_pixbuf_format_get_name(format), selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
 
-		/*if (g_strcmp0(formats[i].pattern, selected_filter)==0){
-			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
-		}*/
+		i = g_slist_next(i);
 	}
+	if (formats) g_slist_free(formats);
 
 
 	frame = gtk_frame_new("Options");
@@ -502,6 +523,5 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	gtk_widget_destroy(dialog);
 
 	delete args;
-
 }
 

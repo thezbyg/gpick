@@ -6,14 +6,13 @@ import sys
 Import('*')
 local_env = env.Clone()
 
-local_env.Append (CPPDEFINES = ['BUILD_TIME="%s"'%(env['GPICK_BUILD_TIME']),
-				'BUILD_DATE="%s"'%(env['GPICK_BUILD_DATE']),
+local_env.Append (CPPDEFINES = ['BUILD_DATE="%s"'%(env['GPICK_BUILD_DATE']),
 				'BUILD_REVISION="%s"'%(env['GPICK_BUILD_REVISION']),
 				'BUILD_PLATFORM="%s"'%(sys.platform),
 				'BUILD_VERSION="%s"'%(env['GPICK_BUILD_VERSION']),
 ])
 
 sources = local_env.Glob('*.cpp')
-objects = local_env.Object([sources])
+objects = local_env.StaticObject([sources])
 
 Return('objects')

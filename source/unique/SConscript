@@ -22,6 +22,6 @@ elif 'DBUSGLIB_PC' in local_env:
 else:
 	sources.append('UniqueDummy.cpp')
 
-objects = local_env.Object(source = [sources])
+objects = local_env.StaticObject(source = [sources])
 
 Return('objects')

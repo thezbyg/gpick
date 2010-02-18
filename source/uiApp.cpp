@@ -589,7 +589,7 @@ static void createMenu(GtkMenuBar *menu_bar, struct Arguments *args, GtkAccelGro
 
     menu = GTK_MENU(gtk_menu_new());
 
-    item = gtk_menu_item_new_with_image("Palette From _Image...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_mnemonic("Palette From _Image...");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
     g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
 
