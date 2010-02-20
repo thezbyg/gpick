@@ -31,7 +31,7 @@
 
 using namespace math;
 
-struct Arguments{
+typedef struct FloatingPickerArgs{
 	GtkWidget* parent;
 
 	GtkWidget* window;
@@ -46,9 +46,9 @@ struct Arguments{
 
 	bool release_mode;
 	bool click_mode;
-};
+}FloatingPickerArgs;
 
-static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* c){
+static void get_color_sample(FloatingPickerArgs *args, bool updateWidgets, Color* c){
 
 	GdkScreen *screen;
 	GdkModifierType state;
@@ -89,7 +89,7 @@ static void get_color_sample(struct Arguments *args, bool updateWidgets, Color* 
 
 
 
-static gboolean update_display(struct Arguments *args){
+static gboolean update_display(FloatingPickerArgs *args){
 
 	GdkScreen *screen;
 	GdkModifierType state;
@@ -145,7 +145,7 @@ static gboolean update_display(struct Arguments *args){
 	return true;
 }
 
-void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release){
+void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_release){
 
 #ifndef WIN32			//Pointer grabbing in Windows is broken, disabling floating picker for now
 
@@ -176,7 +176,7 @@ void floating_picker_activate(struct Arguments *args, bool hide_on_mouse_release
 
 }
 
-void floating_picker_deactivate(struct Arguments *args){
+void floating_picker_deactivate(FloatingPickerArgs *args){
     gdk_pointer_ungrab(GDK_CURRENT_TIME);
     gdk_keyboard_ungrab(GDK_CURRENT_TIME);
 
@@ -187,7 +187,7 @@ void floating_picker_deactivate(struct Arguments *args){
     gtk_widget_hide(args->window);
 }
 
-static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, struct Arguments *args){
+static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, FloatingPickerArgs *args){
 
 	double zoom = gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed));
 
@@ -204,7 +204,7 @@ static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, struct
 
 
 
-static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, struct Arguments *args){
+static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, FloatingPickerArgs *args){
 
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
 		if (args->release_mode || args->click_mode){
@@ -242,7 +242,7 @@ static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, stru
 
 
 
-static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, struct Arguments *args){
+static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, FloatingPickerArgs *args){
 
 	GdkEventButton event2;
 
@@ -265,8 +265,8 @@ static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, struct Argumen
 
 
 
-struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source){
-	struct Arguments *args = new struct Arguments;
+FloatingPickerArgs* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source){
+	FloatingPickerArgs *args = new FloatingPickerArgs;
 
 	args->gs = gs;
 	args->parent = gtk_widget_get_toplevel(parent);
@@ -299,7 +299,7 @@ struct Arguments* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorS
 	return args;
 }
 
-void floating_picker_free(struct Arguments *args){
+void floating_picker_free(FloatingPickerArgs *args){
 	gtk_widget_destroy(args->window);
 }
 

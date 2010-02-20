@@ -30,7 +30,7 @@
 #include <iostream>
 using namespace std;
 
-struct Arguments{
+typedef struct DialogGenerateArgs{
 	GtkWidget *gen_type;
 	GtkWidget *wheel_type;
 
@@ -45,7 +45,7 @@ struct Arguments{
 
 	struct dynvSystem *params;
 	GlobalState* gs;
-};
+}DialogGenerateArgs;
 
 typedef struct SchemeType{
 	const char *name;
@@ -112,7 +112,7 @@ const ColorWheelType color_wheel_types[]={
 
 
 
-static void calc( struct Arguments *args, bool preview, int limit){
+static void calc( DialogGenerateArgs *args, bool preview, int limit){
 	int32_t type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	int32_t color_count = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors)));
@@ -195,13 +195,13 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	random_destroy(random);
 }
 
-static void update(GtkWidget *widget, struct Arguments *args ){
+static void update(GtkWidget *widget, DialogGenerateArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
 
 void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs){
-	struct Arguments *args = new struct Arguments;
+	DialogGenerateArgs *args = new DialogGenerateArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.generate");
 

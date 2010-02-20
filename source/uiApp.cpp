@@ -56,7 +56,7 @@
 #include <iostream>
 using namespace std;
 
-struct Arguments{
+typedef struct AppArgs{
 	GtkWidget *window;
 
 	ColorSource *color_source[3];
@@ -78,10 +78,10 @@ struct Arguments{
 	gint x, y;
 	gint width, height;
 
-};
+}AppArgs;
 
 
-static gboolean delete_event( GtkWidget *widget, GdkEvent *event, struct Arguments *args ){
+static gboolean delete_event( GtkWidget *widget, GdkEvent *event, AppArgs *args ){
 
 	if (dynv_get_bool_wd(args->params, "close_to_tray", false)){
 		gtk_widget_hide(args->window);
@@ -92,7 +92,7 @@ static gboolean delete_event( GtkWidget *widget, GdkEvent *event, struct Argumen
 	return false;
 }
 
-static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event, struct Arguments *args){
+static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event, AppArgs *args){
 
 	if (dynv_get_bool_wd(args->params, "minimize_to_tray", false)){
 
@@ -109,7 +109,7 @@ static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *ev
 	return false;
 }
 
-static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event, struct Arguments *args){
+static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event, AppArgs *args){
 
 	if (GTK_WIDGET_VISIBLE(widget)){
 
@@ -135,7 +135,7 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 	return false;
 }
 
-static void destroy( GtkWidget *widget, struct Arguments *args){
+static void destroy( GtkWidget *widget, AppArgs *args){
 
 	dynv_set_int32(args->params, "notebook_page", gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook)));
 	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
@@ -159,7 +159,7 @@ static void destroy( GtkWidget *widget, struct Arguments *args){
     gtk_main_quit ();
 }
 
-static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, struct Arguments *args){
+static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, AppArgs *args){
 
 	if (args->current_color_source) color_source_deactivate(args->current_color_source);
 
@@ -282,7 +282,7 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 	return text;
 }
 
-static void updateProgramName(struct Arguments *args){
+static void updateProgramName(AppArgs *args){
 	string prg_name;
 	if (args->current_filename==0){
 		prg_name="New palette";
@@ -297,25 +297,25 @@ static void updateProgramName(struct Arguments *args){
 	gtk_window_set_title(GTK_WINDOW(args->window), prg_name.c_str());
 }
 
-static void show_dialog_converter(GtkWidget *widget, struct Arguments *args){
+static void show_dialog_converter(GtkWidget *widget, AppArgs *args){
 	dialog_converter_show(GTK_WINDOW(args->window), args->gs);
 	return;
 }
 
-static void show_dialog_options(GtkWidget *widget, struct Arguments *args){
+static void show_dialog_options(GtkWidget *widget, AppArgs *args){
 	dialog_options_show(GTK_WINDOW(args->window), args->gs);
 	return;
 }
 
 
-static void menu_file_new(GtkWidget *widget, struct Arguments *args){
+static void menu_file_new(GtkWidget *widget, AppArgs *args){
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename=0;
 	palette_list_remove_all_entries(args->color_list);
 	updateProgramName(args);
 }
 
-int app_load_file(struct Arguments *args, const char *filename){
+int app_load_file(AppArgs *args, const char *filename){
 	if (palette_file_load(filename, args->gs->colors)==0){
 		args->current_filename = g_strdup(filename);
 		updateProgramName(args);
@@ -325,12 +325,12 @@ int app_load_file(struct Arguments *args, const char *filename){
 	return 0;
 }
 
-int app_parse_geometry(struct Arguments *args, const char *geometry){
+int app_parse_geometry(AppArgs *args, const char *geometry){
 	gtk_window_parse_geometry(GTK_WINDOW(args->window), geometry);
 	return 0;
 }
 
-static void menu_file_open(GtkWidget *widget, struct Arguments *args){
+static void menu_file_open(GtkWidget *widget, AppArgs *args){
 
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
@@ -390,7 +390,7 @@ static void menu_file_open(GtkWidget *widget, struct Arguments *args){
 
 }
 
-static void menu_file_save_as(GtkWidget *widget, struct Arguments *args){
+static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
@@ -446,7 +446,7 @@ static void menu_file_save_as(GtkWidget *widget, struct Arguments *args){
 	gtk_widget_destroy (dialog);
 }
 
-static void menu_file_save(GtkWidget *widget, struct Arguments *args) {
+static void menu_file_save(GtkWidget *widget, AppArgs *args) {
 	if (args->current_filename == 0){
 		menu_file_save_as(widget, args);
 	}else{
@@ -464,17 +464,17 @@ static gint32 color_list_selected(struct ColorObject* color_object, void *userda
 }
 
 static void menu_file_export_all(GtkWidget *widget, gpointer data) {
-	struct Arguments* args=(struct Arguments*)data;
+	AppArgs* args=(AppArgs*)data;
 	dialog_export_show(GTK_WINDOW(args->window), 0, false, args->gs);
 }
 
 static void menu_file_import(GtkWidget *widget, gpointer data) {
-	struct Arguments* args=(struct Arguments*)data;
+	AppArgs* args=(AppArgs*)data;
 	dialog_import_show(GTK_WINDOW(args->window), 0, args->gs);
 }
 
 static void menu_file_export(GtkWidget *widget, gpointer data) {
-	struct Arguments* args=(struct Arguments*)data;
+	AppArgs* args=(AppArgs*)data;
 	struct ColorList *color_list = color_list_new(NULL);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_export_show(GTK_WINDOW(args->window), color_list, true, args->gs);
@@ -482,7 +482,7 @@ static void menu_file_export(GtkWidget *widget, gpointer data) {
 }
 
 static void menu_file_activate(GtkWidget *widget, gpointer data) {
-	struct Arguments* args=(struct Arguments*)data;
+	AppArgs* args=(AppArgs*)data;
 
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
@@ -494,19 +494,19 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 	gtk_widget_set_sensitive(widgets[1], (selected_count >= 1));
 }
 
-static void floating_picker_show_cb(GtkWidget *widget, struct Arguments* args) {
+static void floating_picker_show_cb(GtkWidget *widget, AppArgs* args) {
 	floating_picker_activate(args->floating_picker, false);
 }
 
-static void show_about_box_cb(GtkWidget *widget, struct Arguments* args) {
+static void show_about_box_cb(GtkWidget *widget, AppArgs* args) {
 	show_about_box(args->window);
 }
 
-static void palette_from_image_cb(GtkWidget *widget, struct Arguments* args) {
+static void palette_from_image_cb(GtkWidget *widget, AppArgs* args) {
 	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
 }
 
-static void createMenu(GtkMenuBar *menu_bar, struct Arguments *args, GtkAccelGroup *accel_group) {
+static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group) {
 	GtkMenu* menu;
 	GtkWidget* item;
 	GtkWidget* file_item ;
@@ -728,11 +728,11 @@ static void palette_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu) {
 	gtk_widget_destroy(GTK_WIDGET(menu));
 }
 
-static void palette_popup_menu_remove_all(GtkWidget *widget, struct Arguments* args) {
+static void palette_popup_menu_remove_all(GtkWidget *widget, AppArgs* args) {
 	color_list_remove_all(args->gs->colors);
 }
 
-static void palette_popup_menu_remove_selected(GtkWidget *widget, struct Arguments* args) {
+static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args) {
 	palette_list_foreach_selected(args->color_list, color_list_mark_selected, 0);
 	color_list_remove_selected(args->gs->colors);
 }
@@ -744,7 +744,7 @@ gint32 palette_popup_menu_mix_list(Color* color, void *userdata){
 	return 0;
 }
 
-static void palette_popup_menu_mix(GtkWidget *widget, struct Arguments* args) {
+static void palette_popup_menu_mix(GtkWidget *widget, AppArgs* args) {
 	struct ColorList *color_list = color_list_new(NULL);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_mix_show(GTK_WINDOW(args->window), color_list, args->gs);
@@ -753,7 +753,7 @@ static void palette_popup_menu_mix(GtkWidget *widget, struct Arguments* args) {
 
 
 
-static void palette_popup_menu_variations(GtkWidget *widget, struct Arguments* args) {
+static void palette_popup_menu_variations(GtkWidget *widget, AppArgs* args) {
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(args->gs->params);
 
@@ -765,7 +765,7 @@ static void palette_popup_menu_variations(GtkWidget *widget, struct Arguments* a
 	dynv_handler_map_release(handler_map);
 }
 
-static void palette_popup_menu_generate(GtkWidget *widget, struct Arguments* args) {
+static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args) {
 
 	struct ColorList *color_list = color_list_new(NULL);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
@@ -773,7 +773,7 @@ static void palette_popup_menu_generate(GtkWidget *widget, struct Arguments* arg
 	color_list_destroy(color_list);
 }
 
-static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, struct Arguments *args) {
+static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, AppArgs *args) {
 	static GtkWidget *menu=NULL;
 	if (menu) {
 		gtk_menu_detach(GTK_MENU(menu));
@@ -848,18 +848,18 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	return TRUE;
 }
 
-static void on_palette_popup_menu(GtkWidget *widget, struct Arguments *args) {
+static void on_palette_popup_menu(GtkWidget *widget, AppArgs *args) {
 	palette_popup_menu_show(widget, 0, args);
 }
 
-static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event, struct Arguments *args) {
+static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event, AppArgs *args) {
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS) {
 		return palette_popup_menu_show(widget, event, args);
 	}
 	return FALSE;
 }
 
-static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event, struct Arguments *args){
+static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event, AppArgs *args){
 
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
@@ -900,22 +900,22 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 
 
 static int color_list_on_insert(struct ColorList* color_list, struct ColorObject* color_object){
-	palette_list_add_entry(((struct Arguments*)color_list->userdata)->color_list, color_object);
+	palette_list_add_entry(((AppArgs*)color_list->userdata)->color_list, color_object);
 	return 0;
 }
 
 static int color_list_on_delete_selected(struct ColorList* color_list){
-	palette_list_remove_selected_entries(((struct Arguments*)color_list->userdata)->color_list);
+	palette_list_remove_selected_entries(((AppArgs*)color_list->userdata)->color_list);
 	return 0;
 }
 
 static int color_list_on_delete(struct ColorList* color_list, struct ColorObject* color_object){
-	palette_list_remove_entry(((struct Arguments*)color_list->userdata)->color_list, color_object);
+	palette_list_remove_entry(((AppArgs*)color_list->userdata)->color_list, color_object);
 	return 0;
 }
 
 static int color_list_on_clear(struct ColorList* color_list){
-	palette_list_remove_all_entries(((struct Arguments*)color_list->userdata)->color_list);
+	palette_list_remove_all_entries(((AppArgs*)color_list->userdata)->color_list);
 	return 0;
 }
 
@@ -927,7 +927,7 @@ static gint32 callback_color_list_on_get_positions(struct ColorObject* color_obj
 
 static int color_list_on_get_positions(struct ColorList* color_list){
 	unsigned long item=0;
-	palette_list_foreach(((struct Arguments*)color_list->userdata)->color_list, callback_color_list_on_get_positions, &item );
+	palette_list_foreach(((AppArgs*)color_list->userdata)->color_list, callback_color_list_on_get_positions, &item );
 	return 0;
 }
 
@@ -963,7 +963,7 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params){
 	return 0;
 }
 
-static gboolean on_window_focus_change(GtkWidget *widget, GdkEventFocus *event, struct Arguments* args) {
+static gboolean on_window_focus_change(GtkWidget *widget, GdkEventFocus *event, AppArgs* args) {
 
 	if (event->in){
 		if (args->current_color_source) color_source_activate(args->current_color_source);
@@ -978,14 +978,20 @@ static void set_main_window_icon() {
 	GList *icons = 0;
 
 	GtkIconTheme *icon_theme;
+	GError *error = NULL;
 	icon_theme = gtk_icon_theme_get_default();
 
 	gint sizes[] = { 16, 32, 48, 128 };
 
 	for (guint32 i = 0; i < sizeof(sizes) / sizeof(gint); ++i) {
-		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, "gpick", sizes[i], GtkIconLookupFlags(0), 0);
-		if (pixbuf) {
+		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, "gpick", sizes[i], GtkIconLookupFlags(0), &error);
+		if (pixbuf && (error == NULL)){
 			icons = g_list_append(icons, pixbuf);
+		}
+		if (error){
+			cerr << error->message << endl;
+			g_error_free(error);
+			error = NULL;
 		}
 	}
 
@@ -997,14 +1003,14 @@ static void set_main_window_icon() {
 	}
 }
 
-static int unique_show_window(struct Arguments* args){
+static int unique_show_window(AppArgs* args){
 	status_icon_set_visible(args->statusIcon, false);
 	main_show_window(args->window, args->params);
 	return 0;
 }
 
-struct Arguments* app_create_main(){
-	struct Arguments* args=new struct Arguments;
+AppArgs* app_create_main(){
+	AppArgs* args=new AppArgs;
 
 	GlobalState *gs = global_state_create();
 	args->gs = gs;
@@ -1147,7 +1153,7 @@ struct Arguments* app_create_main(){
 }
 
 
-int app_run(struct Arguments *args){
+int app_run(AppArgs *args){
 
 	gtk_widget_realize(args->window);
 

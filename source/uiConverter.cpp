@@ -37,15 +37,15 @@ typedef enum{
 	CONVERTERLIST_N_COLUMNS
 }ConverterListColumns;
 
-struct Arguments{
+typedef struct ConverterArgs{
 	GtkWidget* list;
 	GtkWidget* combo;
 
 	struct dynvSystem *params;
 	GlobalState *gs;
-};
+}ConverterArgs;
 
-static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Converter *converter, struct Arguments *args) {
+static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Converter *converter, ConverterArgs *args) {
 	gchar* converted;
 
 	Color c;
@@ -83,7 +83,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 
 
 
-static void copy_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Arguments *args) {
+static void copy_toggled_cb(GtkCellRendererText *cell, gchar *path, ConverterArgs *args) {
 	GtkTreeIter iter1;
 	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(args->list)));
 	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
@@ -92,7 +92,7 @@ static void copy_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Argum
 	gtk_list_store_set(store, &iter1, CONVERTERLIST_COPY, !value, -1);
 }
 
-static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Arguments *args) {
+static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, ConverterArgs *args) {
 	GtkTreeIter iter1;
 	GtkListStore *store=GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(args->list)));
 	gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(store), &iter1, path );
@@ -101,7 +101,7 @@ static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, struct Argu
 	gtk_list_store_set(store, &iter1, CONVERTERLIST_PASTE, !value, -1);
 }
 
-static GtkWidget* converter_dropdown_new(struct Arguments *args, GtkTreeModel *model){
+static GtkWidget* converter_dropdown_new(ConverterArgs *args, GtkTreeModel *model){
 
 	GtkListStore  		*store = 0;
 	GtkCellRenderer     *renderer;
@@ -123,7 +123,7 @@ static GtkWidget* converter_dropdown_new(struct Arguments *args, GtkTreeModel *m
 	return combo;
 }
 
-static GtkWidget* converter_list_new(struct Arguments *args){
+static GtkWidget* converter_list_new(ConverterArgs *args){
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -187,7 +187,7 @@ static GtkWidget* converter_list_new(struct Arguments *args){
 
 void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 
-	struct Arguments *args = new struct Arguments;
+	ConverterArgs *args = new ConverterArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick");
 

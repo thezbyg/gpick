@@ -39,11 +39,12 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
 void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
 
+typedef struct AppArgs AppArgs;
 
-struct Arguments* app_create_main();
-int app_load_file(struct Arguments *args, const char *filename);
-int app_run(struct Arguments *args);
-int app_parse_geometry(struct Arguments *args, const char *geometry);
+AppArgs* app_create_main();
+int app_load_file(AppArgs *args, const char *filename);
+int app_run(AppArgs *args);
+int app_parse_geometry(AppArgs *args, const char *geometry);
 
 
 #endif /* UIAPP_H_ */

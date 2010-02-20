@@ -45,7 +45,7 @@ typedef struct Cube{
 	float z, d;
 }Cube;
 
-struct Arguments{
+typedef struct PaletteFromImageArgs{
 	GtkWidget *file_browser;
 	GtkWidget *range_colors;
 	GtkWidget *merge_threshold;
@@ -58,7 +58,7 @@ struct Arguments{
 
 	struct dynvSystem *params;
 	GlobalState* gs;
-};
+}PaletteFromImageArgs;
 
 
 static Node* node_new(Node *parent){
@@ -256,7 +256,7 @@ static void leaf_cb(Node *node, void *userdata){
 	l->push_back(c);
 }
 
-static Node* process_image(struct Arguments *args, const char *filename, Node* node){
+static Node* process_image(PaletteFromImageArgs *args, const char *filename, Node* node){
 
 	if (args->previuos_filename == filename){
 		if (args->previuos_node)
@@ -319,7 +319,7 @@ static Node* process_image(struct Arguments *args, const char *filename, Node* n
 	return node_copy(args->previuos_node, 0);
 }
 
-static void calc(struct Arguments *args, bool preview, int limit){
+static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 	Node *root_node = 0;
 
@@ -371,7 +371,7 @@ static void calc(struct Arguments *args, bool preview, int limit){
 
 }
 
-static void update(GtkWidget *widget, struct Arguments *args ){
+static void update(GtkWidget *widget, PaletteFromImageArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
@@ -384,7 +384,7 @@ static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 
 void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
-	struct Arguments *args = new struct Arguments;
+	PaletteFromImageArgs *args = new PaletteFromImageArgs;
 
     args->previuos_filename = "";
 	args->gs = gs;

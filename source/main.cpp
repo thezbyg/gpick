@@ -34,6 +34,7 @@ static GOptionEntry commandline_entries[] =
 };
 
 int main(int argc, char **argv){
+
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
 	g_set_application_name(program_name);
@@ -56,7 +57,7 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
-	struct Arguments *args = app_create_main();
+	AppArgs *args = app_create_main();
 	if (args){
 
 		if (commandline_filename) app_load_file(args, commandline_filename[0]);

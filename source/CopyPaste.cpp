@@ -39,12 +39,12 @@ static GtkTargetEntry targets[] = {
 
 static guint n_targets = G_N_ELEMENTS (targets);
 
-struct Arguments{
+typedef struct CopyPasteArgs{
 	struct ColorObject* color_object;
 	GlobalState* gs;
-};
+}CopyPasteArgs;
 
-static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint target_type, struct Arguments* args){
+static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint target_type, CopyPasteArgs* args){
 	g_assert (selection_data != NULL);
 
 	Color color;
@@ -89,14 +89,14 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 
 }
 
-static void clipboard_clear(GtkClipboard *clipboard, struct Arguments* args){
+static void clipboard_clear(GtkClipboard *clipboard, CopyPasteArgs* args){
 	color_object_release(args->color_object);
 	delete args;
 }
 
 
 int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs){
-	struct Arguments* args = new struct Arguments;
+	CopyPasteArgs* args = new CopyPasteArgs;
 	args->color_object = color_object_ref(color_object);
 	args->gs = gs;
 

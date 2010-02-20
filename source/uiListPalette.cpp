@@ -32,15 +32,15 @@
 
 using namespace std;
 
-struct Arguments{
+typedef struct ListPaletteArgs{
 	ColorSource source;
 
 	GlobalState* gs;
-};
+}ListPaletteArgs;
 
 static void destroy_arguments(gpointer data);
 
-static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, struct ColorObject* color_object, struct Arguments* args){
+static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, struct ColorObject* color_object, ListPaletteArgs* args){
 	Color color;
 	color_object_get_color(color_object, &color);
 	gchar* text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_COLOR_LIST);
@@ -68,7 +68,7 @@ static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gch
 }
 
 static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data) {
-	struct Arguments* args = (struct Arguments*)user_data;
+	ListPaletteArgs* args = (ListPaletteArgs*)user_data;
 
 	GtkTreeModel* model;
 	GtkTreeIter iter;
@@ -95,7 +95,7 @@ static int palette_list_preview_on_clear(struct ColorList* color_list){
 
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
 
-	struct Arguments* args = new struct Arguments;
+	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
 
 	GtkListStore  		*store;
@@ -182,7 +182,7 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
-	struct Arguments* args = (struct Arguments*)dd->userdata;
+	ListPaletteArgs* args = (ListPaletteArgs*)dd->userdata;
 
 	GtkTreePath* path;
 	GtkTreeViewDropPosition pos;
@@ -238,13 +238,13 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 }
 
 static void destroy_arguments(gpointer data){
-	struct Arguments* args = (struct Arguments*)data;
+	ListPaletteArgs* args = (ListPaletteArgs*)data;
 	delete args;
 }
 
 GtkWidget* palette_list_new(GlobalState* gs){
 
-	struct Arguments* args = new struct Arguments;
+	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
 
 	GtkListStore  		*store;
@@ -442,7 +442,7 @@ void palette_list_remove_selected_entries(GtkWidget* widget) {
 
 
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject* color_object){
-	struct Arguments* args = (struct Arguments*)g_object_get_data(G_OBJECT(widget), "arguments");
+	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 
 	GtkTreeIter iter1;
 	GtkListStore *store;

@@ -41,7 +41,7 @@ using namespace std;
 
 #define MAX_COLOR_WIDGETS		6
 
-struct Arguments{
+typedef struct GenerateSchemeArgs{
 	ColorSource source;
 
 	GtkWidget* main;
@@ -67,7 +67,7 @@ struct Arguments{
 
 	GlobalState* gs;
 	struct ColorList *preview_color_list;
-};
+}GenerateSchemeArgs;
 
 typedef struct SchemeType{
 	const char *name;
@@ -131,10 +131,10 @@ const ColorWheelType color_wheel_types[]={
 	{"RYB v2", ryb2_hue2hue, ryb2_rgbhue2hue},
 };
 
-static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(struct Arguments *args, struct ColorObject* color, GtkWidget* color_widget);
+static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index);
+static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color, GtkWidget* color_widget);
 
-static void calc( struct Arguments *args, bool preview, bool save_settings){
+static void calc( GenerateSchemeArgs *args, bool preview, bool save_settings){
 
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
@@ -228,13 +228,13 @@ static void calc( struct Arguments *args, bool preview, bool save_settings){
 	}
 }
 
-static void update(GtkWidget *widget, struct Arguments *args ){
+static void update(GtkWidget *widget, GenerateSchemeArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, false);
 }
 
 static void on_color_paste(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)item;
 
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
 
@@ -247,7 +247,7 @@ static void on_color_paste(GtkWidget *widget,  gpointer item) {
 
 
 static void on_color_edit(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)item;
 
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
 
@@ -268,7 +268,7 @@ static void on_color_edit(GtkWidget *widget,  gpointer item) {
 
 
 static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)item;
 	Color c;
 
 	gtk_color_get_color(GTK_COLOR(g_object_get_data(G_OBJECT(widget), "color_widget")), &c);
@@ -281,7 +281,7 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 }
 
 static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)item;
 	Color c;
 
 	for (int i=0; i<args->colors_visible; ++i){
@@ -296,13 +296,13 @@ static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 
 }
 
-static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, struct Arguments *args){
+static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, GenerateSchemeArgs *args){
 	args->last_focused_color = widget;
 	return false;
 }
 
 static void on_color_activate(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)item;
 	Color c;
 
 	gtk_color_get_color(GTK_COLOR(widget), &c);
@@ -314,7 +314,7 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
-static void color_show_menu(GtkWidget* widget, struct Arguments* args, GdkEventButton *event ){
+static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEventButton *event ){
 	GtkWidget *menu;
 	GtkWidget* item;
 
@@ -376,18 +376,18 @@ static void color_show_menu(GtkWidget* widget, struct Arguments* args, GdkEventB
 	g_object_unref(menu);
 }
 
-static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {
+static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, GenerateSchemeArgs* args) {
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
 		color_show_menu(widget, args, event);
 	}
 	return false;
 }
 
-static void on_color_popup_menu(GtkWidget *widget, struct Arguments* args){
+static void on_color_popup_menu(GtkWidget *widget, GenerateSchemeArgs* args){
 	color_show_menu(widget, args, 0);
 }
 
-static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, struct Arguments* args){
+static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, GenerateSchemeArgs* args){
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
 	Color c;
@@ -443,21 +443,21 @@ static gchar* format_lightness_value_cb (GtkScale *scale, gdouble value){
 		return g_strdup_printf ("-%d%%", -int(value));
 }
 
-static int source_destroy(struct Arguments *args){
+static int source_destroy(GenerateSchemeArgs *args){
 	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
 
-static int source_get_color(struct Arguments *args, ColorObject** color){
+static int source_get_color(GenerateSchemeArgs *args, ColorObject** color){
 	Color c;
 	gtk_color_get_color(GTK_COLOR(args->colors[0]), &c);
 	*color = color_list_new_color_object(args->gs->colors, &c);
 	return 0;
 }
 
-static int set_rgb_color_by_widget(struct Arguments *args, struct ColorObject* color_object, GtkWidget* color_widget){
+static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color_object, GtkWidget* color_widget){
 	for (int i=0; i<args->colors_visible; ++i){
 		if (args->colors[i]==color_widget){
 			set_rgb_color(args, color_object, i);
@@ -467,7 +467,7 @@ static int set_rgb_color_by_widget(struct Arguments *args, struct ColorObject* c
 	return -1;
 }
 
-static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint32_t color_index){
+static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index){
 	Color c;
 	color_object_get_color(color, &c);
 
@@ -508,7 +508,7 @@ static int set_rgb_color(struct Arguments *args, struct ColorObject* color, uint
 }
 
 
-static int source_set_color(struct Arguments *args, struct ColorObject* color){
+static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color){
 	if (args->last_focused_color) {
 		return set_rgb_color_by_widget(args, color, args->last_focused_color);
 	}else{
@@ -516,7 +516,7 @@ static int source_set_color(struct Arguments *args, struct ColorObject* color){
 	}
 }
 
-static int source_deactivate(struct Arguments *args){
+static int source_deactivate(GenerateSchemeArgs *args){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, true);
 	return 0;
@@ -531,13 +531,13 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+	GenerateSchemeArgs* args=(GenerateSchemeArgs*)dd->userdata;
 	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
 	return 0;
 }
 
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
-	struct Arguments* args=new struct Arguments;
+	GenerateSchemeArgs* args=new GenerateSchemeArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.generate_scheme");
 

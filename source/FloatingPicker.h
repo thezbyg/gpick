@@ -23,7 +23,7 @@
 #include "GlobalState.h"
 #include <gtk/gtk.h>
 
-typedef struct Arguments* FloatingPicker;
+typedef struct FloatingPickerArgs* FloatingPicker;
 
 FloatingPicker floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source);
 

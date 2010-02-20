@@ -80,19 +80,20 @@ env.Replace(
 	TARCOMSTR = "Archiving ==> $TARGET"
 	)
 	
-if env['DEBUG']:
-	env.Append(
-		CPPFLAGS=['-Wall', '-g3', '-O0'], 
-		CFLAGS=['-Wall', '-g3', '-O0'],
-		)
-else:
-	env.Append(
-		CPPDEFINES=['NDEBUG'],
-		CDEFINES=['NDEBUG'],
-		CPPFLAGS=['-Wall', '-O3'],
-		CFLAGS=['-Wall', '-O3'],
-		LINKFLAGS=['-s'],
-		)
+if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
+	if env['DEBUG']:
+		env.Append(
+			CPPFLAGS=['-Wall', '-g3', '-O0'], 
+			CFLAGS=['-Wall', '-g3', '-O0'],
+			)
+	else:
+		env.Append(
+			CPPDEFINES=['NDEBUG'],
+			CDEFINES=['NDEBUG'],
+			CPPFLAGS=['-Wall', '-O3'],
+			CFLAGS=['-Wall', '-O3'],
+			LINKFLAGS=['-s'],
+			)
 
 extern_libs = SConscript(['extern/SConscript'], exports='env')
 

@@ -26,7 +26,7 @@
 #include <sstream>
 using namespace std;
 
-struct Arguments{
+typedef struct DialogVariationsArgs{
 	GtkWidget *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
@@ -36,9 +36,9 @@ struct Arguments{
 
 	struct dynvSystem *params;
 	GlobalState* gs;
-};
+}DialogVariationsArgs;
 
-static void calc( struct Arguments *args, bool preview, int limit){
+static void calc( DialogVariationsArgs *args, bool preview, int limit){
 	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->range_steps));
 	gfloat lightness_from=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from));
 	gfloat lightness_to=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_to));
@@ -110,13 +110,13 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	//palette_list_free_color_list(colors);
 }
 
-static void update(GtkWidget *widget, struct Arguments *args ){
+static void update(GtkWidget *widget, DialogVariationsArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
 
 void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs) {
-	struct Arguments *args = new struct Arguments;
+	DialogVariationsArgs *args = new DialogVariationsArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.variations");
 

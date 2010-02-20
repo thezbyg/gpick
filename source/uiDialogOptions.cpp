@@ -22,7 +22,7 @@
 
 #include "DynvHelpers.h"
 
-struct Arguments{
+typedef struct DialogOptionsArgs{
 	GtkWidget *minimize_to_tray;
 	GtkWidget *close_to_tray;
 	GtkWidget *start_in_tray;
@@ -36,9 +36,9 @@ struct Arguments{
 
 	struct dynvSystem *params;
 	GlobalState* gs;
-};
+}DialogOptionsArgs;
 
-static void calc( struct Arguments *args, bool preview, int limit){
+static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	if (preview) return;
 
 	dynv_set_bool(args->params, "main.minimize_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->minimize_to_tray)));
@@ -57,7 +57,7 @@ static void calc( struct Arguments *args, bool preview, int limit){
 
 
 void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
-	struct Arguments *args = new struct Arguments;
+	DialogOptionsArgs *args = new DialogOptionsArgs;
 
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick");

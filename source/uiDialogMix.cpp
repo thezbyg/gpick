@@ -27,7 +27,7 @@
 #include <sstream>
 using namespace std;
 
-struct Arguments{
+typedef struct DialogMixArgs{
 	GtkWidget *mix_type;
 	GtkWidget *mix_steps;
 
@@ -36,9 +36,9 @@ struct Arguments{
 
 	struct dynvSystem *params;
 	GlobalState* gs;
-};
+}DialogMixArgs;
 
-static void calc( struct Arguments *args, bool preview, int limit){
+static void calc( DialogMixArgs *args, bool preview, int limit){
 
 	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->mix_steps));
 	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
@@ -155,13 +155,13 @@ static void calc( struct Arguments *args, bool preview, int limit){
 	}
 }
 
-static void update(GtkWidget *widget, struct Arguments *args ){
+static void update(GtkWidget *widget, DialogMixArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
 
 void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs) {
-	struct Arguments *args = new struct Arguments;
+	DialogMixArgs *args = new DialogMixArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.mix");
 

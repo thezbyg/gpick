@@ -41,7 +41,7 @@
 using namespace std;
 using namespace layout;
 
-struct Arguments{
+typedef struct LayoutPreviewArgs{
 	ColorSource source;
 
 	GtkWidget *main;
@@ -54,7 +54,7 @@ struct Arguments{
 	string last_filename;
 	struct dynvSystem *params;
 	GlobalState *gs;
-};
+}LayoutPreviewArgs;
 
 typedef enum{
 	LAYOUTLIST_HUMAN_NAME = 0,
@@ -75,7 +75,7 @@ static void style_cell_edited_cb(GtkCellRendererText *cell, gchar *path, gchar *
 	gtk_list_store_set(store, &iter1, STYLELIST_CSS_SELECTOR, new_text, -1);
 }
 
-static void load_colors(struct Arguments* args){
+static void load_colors(LayoutPreviewArgs* args){
 	if (args->layout_system){
 
 		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
@@ -96,7 +96,7 @@ static void load_colors(struct Arguments* args){
 	}
 }
 
-static void save_colors(struct Arguments* args){
+static void save_colors(LayoutPreviewArgs* args){
 	if (args->layout_system){
 		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
 		string ident_selector;
@@ -110,7 +110,7 @@ static void save_colors(struct Arguments* args){
 	}
 }
 
-static GtkWidget* style_list_new(struct Arguments *args){
+static GtkWidget* style_list_new(LayoutPreviewArgs *args){
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -153,7 +153,7 @@ static GtkWidget* style_list_new(struct Arguments *args){
 	return view;
 }
 
-static void assign_css_selectors_cb(GtkWidget *widget, struct Arguments* args) {
+static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args) {
 
 	GtkWidget *table;
 
@@ -234,7 +234,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, struct Arguments* args) {
 	gtk_widget_destroy(dialog);
 }
 
-static int source_destroy(struct Arguments *args){
+static int source_destroy(LayoutPreviewArgs *args){
 	save_colors(args);
 	if (args->layout_system) System::unref(args->layout_system);
 	args->layout_system = 0;
@@ -244,7 +244,7 @@ static int source_destroy(struct Arguments *args){
 	return 0;
 }
 
-static int source_get_color(struct Arguments *args, struct ColorObject** color){
+static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color){
 	Color c;
 	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c)==0){
 		*color = color_list_new_color_object(args->gs->colors, &c);
@@ -253,20 +253,20 @@ static int source_get_color(struct Arguments *args, struct ColorObject** color){
 	return -1;
 }
 
-static int source_set_color(struct Arguments *args, struct ColorObject* color){
+static int source_set_color(LayoutPreviewArgs *args, struct ColorObject* color){
 	Color c;
 	color_object_get_color(color, &c);
 	gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c);
 	return -1;
 }
 
-static int source_deactivate(struct Arguments *args){
+static int source_deactivate(LayoutPreviewArgs *args){
 
 	return 0;
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+	LayoutPreviewArgs* args=(LayoutPreviewArgs*)dd->userdata;
 	struct ColorObject* colorobject;
 	if (source_get_color(args, &colorobject)==0){
 		return colorobject;
@@ -275,22 +275,22 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+	LayoutPreviewArgs* args=(LayoutPreviewArgs*)dd->userdata;
 	Color color;
 	color_object_get_color(colorobject, &color);
 	gtk_layout_preview_set_color_at(GTK_LAYOUT_PREVIEW(args->layout), &color, x, y);
 	return 0;
 }
 
-bool test_at(struct DragDrop* dd, int x, int y){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+static bool test_at(struct DragDrop* dd, int x, int y){
+	LayoutPreviewArgs* args=(LayoutPreviewArgs*)dd->userdata;
 
 	gtk_layout_preview_set_focus_at(GTK_LAYOUT_PREVIEW(args->layout), x, y);
 
 	return gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout));
 }
 
-static GtkWidget* layout_preview_dropdown_new(struct Arguments *args, GtkTreeModel *model){
+static GtkWidget* layout_preview_dropdown_new(LayoutPreviewArgs *args, GtkTreeModel *model){
 
 	GtkListStore  		*store = 0;
 	GtkCellRenderer     *renderer;
@@ -313,7 +313,7 @@ static GtkWidget* layout_preview_dropdown_new(struct Arguments *args, GtkTreeMod
 }
 
 static void edit_cb(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	LayoutPreviewArgs* args=(LayoutPreviewArgs*)item;
 
 	struct ColorObject *color_object;
 	struct ColorObject* new_color_object = 0;
@@ -326,7 +326,7 @@ static void edit_cb(GtkWidget *widget,  gpointer item) {
 	}
 }
 
-static void paste_cb(GtkWidget *widget, struct Arguments* args) {
+static void paste_cb(GtkWidget *widget, LayoutPreviewArgs* args) {
 	struct ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs)==0){
 		source_set_color(args, color_object);
@@ -335,7 +335,7 @@ static void paste_cb(GtkWidget *widget, struct Arguments* args) {
 }
 
 static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	LayoutPreviewArgs* args=(LayoutPreviewArgs*)item;
 
 	struct ColorObject *color_object;
 	if (source_get_color(args, &color_object)==0){
@@ -345,7 +345,7 @@ static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
 	}
 }
 
-static void add_all_to_palette_cb(GtkWidget *widget, struct Arguments *args) {
+static void add_all_to_palette_cb(GtkWidget *widget, LayoutPreviewArgs *args) {
 
 	struct ColorObject *color_object;
 
@@ -358,7 +358,7 @@ static void add_all_to_palette_cb(GtkWidget *widget, struct Arguments *args) {
 	}
 }
 
-static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struct Arguments* args) {
+static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, LayoutPreviewArgs* args) {
 	GtkWidget *menu;
 
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
@@ -437,7 +437,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, struc
 
 
 
-static void layout_changed_cb(GtkWidget *widget, struct Arguments* args) {
+static void layout_changed_cb(GtkWidget *widget, LayoutPreviewArgs* args) {
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)) {
 		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
@@ -459,7 +459,7 @@ static void layout_changed_cb(GtkWidget *widget, struct Arguments* args) {
 }
 
 
-static int save_css_file(const char* filename, struct Arguments* args){
+static int save_css_file(const char* filename, LayoutPreviewArgs* args){
 
 	ofstream file(filename, ios::out);
 	if (file.is_open()){
@@ -515,7 +515,7 @@ static int save_css_file(const char* filename, struct Arguments* args){
 	return -1;
 }
 
-static void export_css_cb(GtkWidget *widget, struct Arguments* args){
+static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 
 	if (!args->last_filename.empty()){
 
@@ -584,7 +584,7 @@ static void export_css_cb(GtkWidget *widget, struct Arguments* args){
 	gtk_widget_destroy (dialog);
 }
 
-static void export_css_as_cb(GtkWidget *widget, struct Arguments* args){
+static void export_css_as_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 	args->last_filename="";
 	export_css_cb(widget, args);
 }
@@ -597,11 +597,9 @@ static GtkWidget* attach_label(GtkWidget *widget, const char *label){
 }
 
 ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
-	struct Arguments* args = new struct Arguments;
-	args->last_filename="";
+	LayoutPreviewArgs* args = new LayoutPreviewArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.layout_preview");
-
 	args->layout_system = 0;
 
 	color_source_init(&args->source);

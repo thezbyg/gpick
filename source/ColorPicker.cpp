@@ -42,7 +42,7 @@
 using namespace std;
 using namespace math;
 
-struct Arguments{
+typedef struct ColorPickerArgs{
 	ColorSource source;
 
 	GtkWidget* main;
@@ -78,12 +78,12 @@ struct Arguments{
 	struct dynvSystem *params;
 	GlobalState* gs;
 
-};
+}ColorPickerArgs;
 
-static int source_set_color(struct Arguments *args, ColorObject* color);
+static int source_set_color(ColorPickerArgs *args, ColorObject* color);
 
 static gboolean updateMainColor( gpointer data ){
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 
 	GdkScreen *screen;
 	GdkModifierType state;
@@ -129,13 +129,13 @@ static gboolean updateMainColor( gpointer data ){
 	return TRUE;
 }
 
-static gboolean updateMainColorTimer(struct Arguments* args){
+static gboolean updateMainColorTimer(ColorPickerArgs* args){
 	updateMainColor(args);
 	return true;
 }
 
 
-static void updateDiplays(struct Arguments *args, GtkWidget *except_widget){
+static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display),&c);
 
@@ -152,19 +152,19 @@ static void updateDiplays(struct Arguments *args, GtkWidget *except_widget){
 
 
 static void on_swatch_active_color_changed( GtkWidget *widget, gint32 new_active_color, gpointer data ){
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 	updateDiplays(args, widget);
 }
 
 static void on_swatch_color_changed( GtkWidget *widget, gpointer data ){
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 	updateDiplays(args, widget);
 }
 
 
 
 static void on_swatch_menu_add_to_palette(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	ColorPickerArgs* args=(ColorPickerArgs*)item;
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
@@ -176,7 +176,7 @@ static void on_swatch_menu_add_to_palette(GtkWidget *widget,  gpointer item) {
 }
 
 static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	ColorPickerArgs* args=(ColorPickerArgs*)item;
 	Color c;
 	for (int i = 1; i < 7; ++i) {
 		gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), i, &c);
@@ -190,7 +190,7 @@ static void on_swatch_menu_add_all_to_palette(GtkWidget *widget,  gpointer item)
 }
 
 static void on_swatch_color_activated(GtkWidget *widget, gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	ColorPickerArgs* args=(ColorPickerArgs*)item;
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(widget), &c);
 
@@ -202,14 +202,14 @@ static void on_swatch_color_activated(GtkWidget *widget, gpointer item) {
 }
 
 static void on_swatch_center_activated(GtkWidget *widget, gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	ColorPickerArgs* args=(ColorPickerArgs*)item;
 
 	floating_picker_activate(args->floating_picker, true);
 
 }
 
 static void on_swatch_color_edit(GtkWidget *widget, gpointer item) {
-	struct Arguments* args=(struct Arguments*)item;
+	ColorPickerArgs* args=(ColorPickerArgs*)item;
 
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
@@ -226,7 +226,7 @@ static void on_swatch_color_edit(GtkWidget *widget, gpointer item) {
 }
 
 
-static void paste_cb(GtkWidget *widget, struct Arguments* args) {
+static void paste_cb(GtkWidget *widget, ColorPickerArgs* args) {
 	struct ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs)==0){
 		source_set_color(args, color_object);
@@ -234,7 +234,7 @@ static void paste_cb(GtkWidget *widget, struct Arguments* args) {
 	}
 }
 
-static void swatch_popup_menu_cb(GtkWidget *widget, struct Arguments* args){
+static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args){
  	GtkWidget *menu;
 
 	gint32 button, event_time;
@@ -259,7 +259,7 @@ static void swatch_popup_menu_cb(GtkWidget *widget, struct Arguments* args){
 	g_object_unref(menu);
 }
 
-static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, struct Arguments* args){
+static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args){
 
 	GtkWidget *menu;
 	int color_index = gtk_swatch_get_color_at(GTK_SWATCH(widget), event->x, event->y);
@@ -326,7 +326,7 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 
 
 static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 
 
 	if (event->in){
@@ -342,7 +342,7 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 
 static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
@@ -434,17 +434,17 @@ int color_picker_key_up(ColorSource* color_source, GdkEventKey *event){
 }
 
 static void on_oversample_value_changed(GtkRange *slider, gpointer data){
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 	sampler_set_oversample(args->gs->sampler, (int)gtk_range_get_value(GTK_RANGE(slider)));
 }
 
 static void on_zoom_value_changed(GtkRange *slider, gpointer data){
-	struct Arguments* args=(struct Arguments*)data;
+	ColorPickerArgs* args=(ColorPickerArgs*)data;
 	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed_display), gtk_range_get_value(GTK_RANGE(slider)));
 }
 
 
-static void color_component_change_value(GtkWidget *widget, Color* c, struct Arguments* args){
+static void color_component_change_value(GtkWidget *widget, Color* c, ColorPickerArgs* args){
 	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), c);
 	updateDiplays(args, widget);
 }
@@ -501,7 +501,7 @@ struct ColorCompItem{
 	int component_id;
 };
 
-static void color_component_copy(GtkWidget *widget, struct Arguments* args){
+static void color_component_copy(GtkWidget *widget, ColorPickerArgs* args){
 	Color color;
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
 	gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
@@ -512,7 +512,7 @@ static void color_component_copy(GtkWidget *widget, struct Arguments* args){
     gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
 }
 
-static void color_component_paste(GtkWidget *widget, struct Arguments* args){
+static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 	Color color;
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
 	gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
@@ -533,7 +533,7 @@ static void destroy_comp_item(struct ColorCompItem *comp_item){
 	delete comp_item;
 }
 
-static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *event, struct Arguments* args){
+static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args){
 
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)){
 
@@ -587,7 +587,7 @@ static void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 		gint32 falloff_id;
 		gtk_tree_model_get(model, &iter, 2, &falloff_id, -1);
 
-		struct Arguments* args=(struct Arguments*)data;
+		ColorPickerArgs* args=(ColorPickerArgs*)data;
 		sampler_set_falloff(args->gs->sampler, (enum SamplerFalloff) falloff_id);
 
 	}
@@ -658,7 +658,7 @@ static GtkWidget* create_falloff_type_list (void){
 
 
 
-static int source_destroy(struct Arguments *args){
+static int source_destroy(ColorPickerArgs *args){
 
 	dynv_set_int32(args->params, "swatch.active_color", gtk_swatch_get_active_index(GTK_SWATCH(args->swatch_display)));
 
@@ -690,7 +690,7 @@ static int source_destroy(struct Arguments *args){
 	return 0;
 }
 
-static int source_get_color(struct Arguments *args, ColorObject** color){
+static int source_get_color(ColorPickerArgs *args, ColorObject** color){
 
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
@@ -705,7 +705,7 @@ static int source_get_color(struct Arguments *args, ColorObject** color){
 }
 
 
-static int source_set_color(struct Arguments *args, ColorObject* color){
+static int source_set_color(ColorPickerArgs *args, ColorObject* color){
 
 	Color c;
 	color_object_get_color(color, &c);
@@ -716,7 +716,7 @@ static int source_set_color(struct Arguments *args, ColorObject* color){
 	return 0;
 }
 
-static int source_activate(struct Arguments *args){
+static int source_activate(ColorPickerArgs *args){
 
 	if (args->timeout_source_id > 0) {
 		g_source_remove(args->timeout_source_id);
@@ -731,7 +731,7 @@ static int source_activate(struct Arguments *args){
 	return 0;
 }
 
-static int source_deactivate(struct Arguments *args){
+static int source_deactivate(ColorPickerArgs *args){
 
 	gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"));
 
@@ -744,7 +744,7 @@ static int source_deactivate(struct Arguments *args){
 
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	struct Arguments* args=(struct Arguments*)dd->userdata;
+	ColorPickerArgs* args=(ColorPickerArgs*)dd->userdata;
 	Color c;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 	struct ColorObject* colorobject = color_object_new(dd->handler_map);
@@ -758,7 +758,7 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 	color_object_get_color(colorobject, &c);
 	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &c);
 
-	updateDiplays((struct Arguments*)dd->userdata, 0);
+	updateDiplays((ColorPickerArgs*)dd->userdata, 0);
 
 	return 0;
 }
@@ -770,12 +770,12 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 }
 
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker){
-	struct Arguments* args = (struct Arguments*)color_source;
+	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	args->floating_picker = floating_picker;
 }
 
 ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
-	struct Arguments* args=new struct Arguments;
+	ColorPickerArgs* args=new ColorPickerArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.picker");
 	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
