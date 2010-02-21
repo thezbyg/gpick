@@ -93,6 +93,10 @@ static int palette_list_preview_on_clear(struct ColorList* color_list){
 	return 0;
 }
 
+static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
+	palette_list_remove_all_entries(widget);
+}
+
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
@@ -148,6 +152,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 	gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
+    g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
 
 	return expander;
 }
@@ -210,8 +215,10 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 		}
 
 		color_list_add_color_object(args->gs->colors, colorobject, false);
+		color_object_release(colorobject);
 	}else{
 		color_list_add_color_object(args->gs->colors, colorobject, true);
+		color_object_release(colorobject);
 	}
 	return 0;
 }
@@ -312,6 +319,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
+    g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
 
 	return view;
 }

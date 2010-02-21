@@ -135,7 +135,21 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 	return false;
 }
 
-static void destroy( GtkWidget *widget, AppArgs *args){
+static void notebook_switch_cb(GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, AppArgs *args){
+	if (args->current_color_source) color_source_deactivate(args->current_color_source);
+	args->current_color_source = NULL;
+
+	if (page_num >= 0 && page_num <= 2 && args->color_source[page_num]){
+		color_source_activate(args->color_source[page_num]);
+		args->current_color_source = args->color_source[page_num];
+		dynv_set_pointer(args->gs->params, "CurrentColorSource", args->current_color_source);
+	}else{
+		dynv_set_pointer(args->gs->params, "CurrentColorSource", NULL);
+	}
+}
+
+static void destroy_cb(GtkWidget *widget, AppArgs *args){
+	g_signal_handlers_disconnect_matched(G_OBJECT(args->notebook), G_SIGNAL_MATCH_FUNC, 0, NULL, NULL, (void*)notebook_switch_cb, 0);       //disconnect notebook switch callback, because destroying child widgets triggers it
 
 	dynv_set_int32(args->params, "notebook_page", gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook)));
 	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
@@ -144,7 +158,7 @@ static void destroy( GtkWidget *widget, AppArgs *args){
 		color_source_deactivate(args->current_color_source);
 		args->current_color_source = 0;
 	}
-	for (int i=0; i<3; ++i){
+	for (int i = 0; i < 3; ++i){
 		color_source_destroy(args->color_source[i]);
 		args->color_source[i] = 0;
 	}
@@ -156,21 +170,9 @@ static void destroy( GtkWidget *widget, AppArgs *args){
 
 	floating_picker_free(args->floating_picker);
 
-    gtk_main_quit ();
+    gtk_main_quit();
 }
 
-static void on_window_notebook_switch(GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, AppArgs *args){
-
-	if (args->current_color_source) color_source_deactivate(args->current_color_source);
-
-	if (page_num<0 || page_num>2) return;
-	if (!args->color_source[page_num]) return;
-
-	color_source_activate(args->color_source[page_num]);
-	args->current_color_source = args->color_source[page_num];
-
-	dynv_set_pointer(args->gs->params, "CurrentColorSource", args->current_color_source);
-}
 
 int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object){
 	struct ColorObject* color_object;
@@ -561,7 +563,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 
     item = gtk_menu_item_new_with_image ("E_xit", gtk_image_new_from_stock(GTK_STOCK_QUIT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (destroy), args);
+    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(destroy_cb), args);
 
 
     file_item = gtk_menu_item_new_with_mnemonic ("_File");
@@ -774,12 +776,7 @@ static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args) {
 }
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, AppArgs *args) {
-	static GtkWidget *menu=NULL;
-	if (menu) {
-		gtk_menu_detach(GTK_MENU(menu));
-		menu=NULL;
-	}
-
+	GtkWidget *menu;
 	GtkWidget* item ;
 	gint32 button, event_time;
 
@@ -841,9 +838,9 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_attach_to_widget (GTK_MENU (menu), widget, palette_popup_menu_detach);
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL,
-				  button, event_time);
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
 
 	return TRUE;
 }
@@ -1048,12 +1045,12 @@ AppArgs* app_create_main(){
 
 	updateProgramName(args);
 
-	g_signal_connect(G_OBJECT(args->window), "delete_event", 		G_CALLBACK (delete_event), args);
-	g_signal_connect(G_OBJECT(args->window), "destroy",      		G_CALLBACK (destroy), args);
-	g_signal_connect(G_OBJECT(args->window), "configure-event",		G_CALLBACK (on_window_configure), args);
-	g_signal_connect(G_OBJECT(args->window), "window-state-event",	G_CALLBACK (on_window_state_event), args);
-	g_signal_connect(G_OBJECT(args->window), "focus-in-event", 		G_CALLBACK (on_window_focus_change), args);
-	g_signal_connect(G_OBJECT(args->window), "focus-out-event", 	G_CALLBACK (on_window_focus_change), args);
+	g_signal_connect(G_OBJECT(args->window), "delete_event", 		G_CALLBACK(delete_event), args);
+	g_signal_connect(G_OBJECT(args->window), "destroy",      		G_CALLBACK(destroy_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "configure-event",		G_CALLBACK(on_window_configure), args);
+	g_signal_connect(G_OBJECT(args->window), "window-state-event",	G_CALLBACK(on_window_state_event), args);
+	g_signal_connect(G_OBJECT(args->window), "focus-in-event", 		G_CALLBACK(on_window_focus_change), args);
+	g_signal_connect(G_OBJECT(args->window), "focus-out-event", 	G_CALLBACK(on_window_focus_change), args);
 
     GtkAccelGroup *accel_group=gtk_accel_group_new();
     gtk_window_add_accel_group(GTK_WINDOW(args->window), accel_group);
@@ -1074,7 +1071,7 @@ AppArgs* app_create_main(){
  	gtk_box_pack_start (GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
 
 	notebook = gtk_notebook_new();
-	g_signal_connect (G_OBJECT (notebook), "switch-page", G_CALLBACK (on_window_notebook_switch), args);
+	g_signal_connect (G_OBJECT (notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 
 	statusbar=gtk_statusbar_new();
@@ -1165,15 +1162,13 @@ int app_run(AppArgs *args){
 		main_show_window(args->window, args->params);
 	}
 
-
-	gtk_main ();
-
+	gtk_main();
 
 	unique_term();
 	status_icon_destroy(args->statusIcon);
 	global_state_term(args->gs);
 	dynv_system_release(args->params);
-	delete args->gs;
+	global_state_destroy(args->gs);
 	if (args->current_filename) g_free(args->current_filename);
 	delete args;
 

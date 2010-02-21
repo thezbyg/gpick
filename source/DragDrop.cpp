@@ -125,7 +125,6 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 				struct ColorObject* color_object;
 				memcpy(&color_object, selection_data->data, sizeof(struct ColorObject*));
 				dd->set_color_object_at(dd, color_object, x, y, context->action & GDK_ACTION_MOVE );
-				color_object_release(color_object);
 			}
 			success = true;
 			break;
@@ -299,7 +298,7 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 
 	struct ColorObject* color_object = dd->get_color_object(dd);
 	if (color_object){
-		dd->color_object = color_object_ref(color_object);
+		dd->color_object = color_object;
 
 		GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
 		GtkWidget* colorwidget = gtk_color_new();

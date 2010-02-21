@@ -444,6 +444,7 @@ static gchar* format_lightness_value_cb (GtkScale *scale, gdouble value){
 }
 
 static int source_destroy(GenerateSchemeArgs *args){
+	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
@@ -537,7 +538,7 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 }
 
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
-	GenerateSchemeArgs* args=new GenerateSchemeArgs;
+	GenerateSchemeArgs* args = new GenerateSchemeArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.generate_scheme");
 
@@ -636,7 +637,7 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	table_y++;
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->colors->params);
-	struct ColorList* preview_color_list=color_list_new(handler_map);
+	struct ColorList* preview_color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 
 

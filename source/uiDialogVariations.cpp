@@ -208,6 +208,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 
 	gtk_widget_destroy(dialog);
 
+	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
 	delete args;
 }

@@ -226,6 +226,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 
 	gtk_widget_destroy(dialog);
 
+	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
 	delete args;
 }

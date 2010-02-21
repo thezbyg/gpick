@@ -775,7 +775,7 @@ void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker 
 }
 
 ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
-	ColorPickerArgs* args=new ColorPickerArgs;
+	ColorPickerArgs* args = new ColorPickerArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.picker");
 	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);

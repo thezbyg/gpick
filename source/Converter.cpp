@@ -64,6 +64,8 @@ Converters::~Converters(){
 	Converters::ConverterMap::iterator i;
 
 	for (i=converters.begin(); i!=converters.end(); ++i){
+		g_free(((*i).second)->human_readable);
+		g_free(((*i).second)->function_name);
 		delete ((*i).second);
 	}
 	converters.clear();

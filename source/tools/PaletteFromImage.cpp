@@ -518,6 +518,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	if (args->previuos_node) node_delete(args->previuos_node);
 
+	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
 
 	gtk_widget_destroy(dialog);

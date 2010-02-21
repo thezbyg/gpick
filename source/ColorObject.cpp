@@ -19,6 +19,7 @@
 #include "ColorObject.h"
 #include "DynvHelpers.h"
 
+#include <iostream>
 using namespace std;
 
 

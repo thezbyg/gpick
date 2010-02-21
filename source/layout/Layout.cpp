@@ -57,6 +57,8 @@ Layouts::~Layouts(){
 	Layouts::LayoutMap::iterator i;
 
 	for (i=layouts.begin(); i!=layouts.end(); ++i){
+		g_free(((*i).second)->human_readable);
+		g_free(((*i).second)->name);
 		delete ((*i).second);
 	}
 	layouts.clear();

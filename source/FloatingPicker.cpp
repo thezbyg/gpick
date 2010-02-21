@@ -263,7 +263,9 @@ static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, FloatingPicker
 	return FALSE;
 }
 
-
+static void destroy_cb(GtkWidget *widget, FloatingPickerArgs *args){
+	delete args;
+}
 
 FloatingPickerArgs* floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source){
 	FloatingPickerArgs *args = new FloatingPickerArgs;
@@ -293,6 +295,7 @@ FloatingPickerArgs* floating_picker_new(GtkWidget *parent, GlobalState *gs, Colo
 	g_signal_connect(G_OBJECT(args->window), "scroll_event", G_CALLBACK(scroll_event_cb), args);
 	g_signal_connect(G_OBJECT(args->window), "button-release-event", G_CALLBACK(button_release_cb), args);
 	g_signal_connect(G_OBJECT(args->window), "key_press_event", G_CALLBACK(key_up_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "destroy", G_CALLBACK(destroy_cb), args);
 
 	args->color_source = color_source;
 

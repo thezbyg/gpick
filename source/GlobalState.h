@@ -34,5 +34,6 @@ enum GlobalStateLevel{
 int global_state_init(GlobalState *gs, GlobalStateLevel level);
 int global_state_term(GlobalState *gs);
 GlobalState *global_state_create();
+int global_state_destroy(GlobalState* gs);
 
 #endif /* GLOBALSTATE_H_ */
