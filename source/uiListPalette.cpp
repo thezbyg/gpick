@@ -39,6 +39,7 @@ typedef struct ListPaletteArgs{
 }ListPaletteArgs;
 
 static void destroy_arguments(gpointer data);
+static struct ColorObject* get_color_object(struct DragDrop* dd);
 
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, struct ColorObject* color_object, ListPaletteArgs* args){
 	Color color;
@@ -123,11 +124,22 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
 
-	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
-	g_object_unref (GTK_TREE_MODEL(store));
+	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
+	g_object_unref(GTK_TREE_MODEL(store));
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_NONE);
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
+
+	gtk_drag_source_set(view, GDK_BUTTON1_MASK, 0, 0, GdkDragAction(GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_ASK));
+
+	struct DragDrop dd;
+	dragdrop_init(&dd, gs);
+
+	dd.get_color_object = get_color_object;
+	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.userdata = args;
+
+	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE), &dd);
 
 	if (out_color_list) {
 		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(color_list->params);

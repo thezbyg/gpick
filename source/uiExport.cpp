@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -37,9 +37,9 @@ static int32_t palette_export_gpl_color(struct ColorObject* color_object, void* 
 	color_object_get_color(color_object, &color);
 	const char* name = dynv_get_string_wd(color_object->params, "name", "");
 
-	(*(ofstream*)userdata)<<int32_t(color.rgb.red*255)<<"\t"
-						<<int32_t(color.rgb.green*255)<<"\t"
-						<<int32_t(color.rgb.blue*255)<<"\t"<<name<<endl;
+	(*(ofstream*)userdata) << int32_t(color.rgb.red*255) << "\t"
+						<< int32_t(color.rgb.green*255) << "\t"
+						<< int32_t(color.rgb.blue*255) << "\t" << name << endl;
 	return 0;
 }
 
@@ -49,10 +49,10 @@ static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* fil
 
 		gchar* name = g_path_get_basename(filename);
 
-		f<<"GIMP Palette"<<endl;
-		f<<"Name: "<<name<<endl;
-		f<<"Columns: 1"<<endl;
-		f<<"#"<<endl;
+		f << "GIMP Palette" << endl;
+		f << "Name: " << name << endl;
+		f << "Columns: 1" << endl;
+		f << "#" << endl;
 
 		g_free(name);
 
@@ -73,18 +73,18 @@ static void strip_leading_trailing_chars(string& x, string& stripchars){
    size_t start = x.find_first_not_of(stripchars);
    size_t end = x.find_last_not_of(stripchars);
 
-   if ((start==string::npos)||(end==string::npos)){
+   if ((start == string::npos) || (end == string::npos)){
 	   x.erase();
 	   return;
    }
 
-   x = x.substr(start, (end-start+ 1) );
+   x = x.substr(start, end - start + 1);
 }
 
 static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::in);
 	if (f.is_open()){
-		int r=0;
+		int r = 0;
 		string line;
 		getline(f, line);
 		if (f.good() && line=="GIMP Palette"){
@@ -93,10 +93,10 @@ static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* fil
 			}while (f.good() && line!="#");
 
 			if (line=="#"){
-				int r,g,b;
+				int r, g, b;
 				Color c;
 				struct ColorObject* color_object;
-				string strip_chars=" \t";
+				string strip_chars = " \t";
 
 				for(;;){
 					getline(f, line);
@@ -105,28 +105,23 @@ static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* fil
 
 					stringstream ss(line);
 
-					ss>>r>>g>>b;
-
+					ss >> r >> g >> b;
 
 					getline(ss, line);
-					if (!f.good()) line="";
+					if (!f.good()) line = "";
 					strip_leading_trailing_chars(line, strip_chars);
 
-					c.rgb.red=r/255.0;
-					c.rgb.green=g/255.0;
-					c.rgb.blue=b/255.0;
+					c.rgb.red = r / 255.0;
+					c.rgb.green = g / 255.0;
+					c.rgb.blue = b / 255.0;
 					color_object=color_list_new_color_object(color_list, &c);
 					dynv_set_string(color_object->params, "name", line.c_str());
 					color_list_add_color_object(color_list, color_object, TRUE);
 					color_object_release(color_object);
 				}
 
-
-
-			}else r=-1;
-
-
-		}else r=-1;
+			}else r = -1;
+		}else r = -1;
 
 		f.close();
 		return r;
@@ -140,11 +135,11 @@ static int32_t palette_export_mtl_color(struct ColorObject* color_object, void* 
 	color_object_get_color(color_object, &color);
 	const char* name = dynv_get_string_wd(color_object->params, "name", "");
 
-	(*(ofstream*)userdata)<<"newmtl "<<name<<endl;
-	(*(ofstream*)userdata)<<"Ns 90.000000"<<endl;
-	(*(ofstream*)userdata)<<"Ka 0.000000 0.000000 0.000000"<<endl;
-	(*(ofstream*)userdata)<<"Kd "<<color.rgb.red<<" "<<color.rgb.green<<" "<<color.rgb.blue<<endl;
-	(*(ofstream*)userdata)<<"Ks 0.500000 0.500000 0.500000"<<endl<<endl;
+	(*(ofstream*)userdata) << "newmtl " << name << endl;
+	(*(ofstream*)userdata) << "Ns 90.000000" << endl;
+	(*(ofstream*)userdata) << "Ka 0.000000 0.000000 0.000000" << endl;
+	(*(ofstream*)userdata) << "Kd " << color.rgb.red << " " << color.rgb.green << " " << color.rgb.blue << endl;
+	(*(ofstream*)userdata) << "Ks 0.500000 0.500000 0.500000" << endl << endl;
 	return 0;
 }
 
@@ -162,8 +157,10 @@ static int32_t palette_export_mtl(struct ColorList *color_list, const gchar* fil
 	return -1;
 }
 
-
-
+typedef union FloatInt{
+	float f;
+	uint32_t i;
+}FloatInt;
 
 static int32_t palette_export_ase_color(struct ColorObject* color_object, void* userdata){
 
@@ -191,10 +188,14 @@ static int32_t palette_export_ase_color(struct ColorObject* color_object, void* 
 
 	(*(ofstream*)userdata)<<"RGB ";
 
-	uint32_t r=UINT32_TO_BE(*((guint*)&color.rgb.red)),
-			g=UINT32_TO_BE(*((guint*)&color.rgb.green)),
-			b=UINT32_TO_BE(*((guint*)&color.rgb.blue));
+	FloatInt r, g, b;
+	r.f = color.rgb.red;
+	g.f = color.rgb.green;
+	b.f = color.rgb.blue;
 
+	r.i = UINT32_TO_BE(r.i);
+	g.i = UINT32_TO_BE(g.i);
+	b.i = UINT32_TO_BE(b.i);
 
 	(*(ofstream*)userdata).write((char*)&r, 4);
 	(*(ofstream*)userdata).write((char*)&g, 4);
@@ -211,8 +212,8 @@ static int32_t palette_export_ase_color(struct ColorObject* color_object, void* 
 static int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc | ios::binary);
 	if (f.is_open()){
-		f<<"ASEF";	//magic header
-		uint32_t version=UINT32_TO_BE(0x00010000);
+		f << "ASEF";	//magic header
+		uint32_t version = UINT32_TO_BE(0x00010000);
 		f.write((char*)&version, 4);
 
 		uint32_t blocks=color_list_get_count(color_list);
@@ -262,9 +263,10 @@ static int32_t palette_import_ase(struct ColorList *color_list, const gchar* fil
 
 	    matrix3x3 adaptation_matrix, working_space_matrix;
 	    vector3 d50, d65;
-	    vector3_set(&d50, 96.442, 100.000,  82.821);
-	    vector3_set(&d65, 95.047, 100.000, 108.883);
+	    vector3_set(&d50, 96.442, 100.000,  82.821);    // D50 illuminant tristimulus values
+	    vector3_set(&d65, 95.047, 100.000, 108.883);    // D65 illuminant tristimulus values
 	    color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+	    // constants used below are sRGB working space red, green and blue primaries for D65 reference white
 	    color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
 	    matrix3x3_inverse(&working_space_matrix, &working_space_matrix);
 
@@ -286,81 +288,85 @@ static int32_t palette_import_ase(struct ColorList *color_list, const gchar* fil
 					for (uint32_t j=0; j<name_length; ++j){
 						name_u16[j]=UINT16_FROM_BE(name_u16[j]);
 					}
-					gchar *name=g_utf16_to_utf8(name_u16, name_length, 0, 0, 0);
+					gchar *name = g_utf16_to_utf8(name_u16, name_length, 0, 0, 0);
 
 					Color c;
 
 					char colorspace[4];
 					f.read(colorspace, 4);
-					color_supported=0;
+					color_supported = 0;
 
 					if (memcmp(colorspace, "RGB ", 4)==0){
-						uint32_t rgb[3];
+						FloatInt rgb[3];
 						f.read((char*)&rgb[0], 4);
 						f.read((char*)&rgb[1], 4);
 						f.read((char*)&rgb[2], 4);
 
-						rgb[0]=UINT32_FROM_BE(rgb[0]);
-						rgb[1]=UINT32_FROM_BE(rgb[1]);
-						rgb[2]=UINT32_FROM_BE(rgb[2]);
+						rgb[0].i = UINT32_FROM_BE(rgb[0].i);
+						rgb[1].i = UINT32_FROM_BE(rgb[1].i);
+						rgb[2].i = UINT32_FROM_BE(rgb[2].i);
 
-						c.rgb.red=((float*)&rgb[0])[0];
-						c.rgb.green=((float*)&rgb[1])[0];
-						c.rgb.blue=((float*)&rgb[2])[0];
+						c.rgb.red = rgb[0].f;
+						c.rgb.green = rgb[1].f;
+						c.rgb.blue = rgb[2].f;
 
-						color_supported=1;
+						color_supported = 1;
 
 					}else if (memcmp(colorspace, "CMYK", 4)==0){
-						uint32_t cmyk[4];
+						Color c2;
+						FloatInt cmyk[4];
+
 						f.read((char*)&cmyk[0], 4);
 						f.read((char*)&cmyk[1], 4);
 						f.read((char*)&cmyk[2], 4);
 						f.read((char*)&cmyk[3], 4);
 
-						cmyk[0]=UINT32_FROM_BE(cmyk[0]);
-						cmyk[1]=UINT32_FROM_BE(cmyk[1]);
-						cmyk[2]=UINT32_FROM_BE(cmyk[2]);
-						cmyk[3]=UINT32_FROM_BE(cmyk[3]);
+						cmyk[0].i = UINT32_FROM_BE(cmyk[0].i);
+						cmyk[1].i = UINT32_FROM_BE(cmyk[1].i);
+						cmyk[2].i = UINT32_FROM_BE(cmyk[2].i);
+						cmyk[3].i = UINT32_FROM_BE(cmyk[3].i);
 
-						c.cmyk.c=((float*)&cmyk[0])[0];
-						c.cmyk.m=((float*)&cmyk[1])[0];
-						c.cmyk.y=((float*)&cmyk[2])[0];
-						c.cmyk.k=((float*)&cmyk[3])[0];
+						c2.cmyk.c = cmyk[0].f;
+						c2.cmyk.m = cmyk[1].f;
+						c2.cmyk.y = cmyk[2].f;
+						c2.cmyk.k = cmyk[3].f;
 
-						color_supported=0; //no cmyk support
+						color_cmyk_to_rgb(&c2, &c);
+
+						color_supported = 1;
 
 					}else if (memcmp(colorspace, "Gray", 4)==0){
-						uint32_t gray;
+						FloatInt gray;
 						f.read((char*)&gray, 4);
-						gray=UINT32_FROM_BE(gray);
-						c.rgb.red=c.rgb.green=c.rgb.blue=((float*)&gray)[0];
+						gray.i = UINT32_FROM_BE(gray.i);
+						c.rgb.red = c.rgb.green = c.rgb.blue = gray.f;
 
-						color_supported=1;
+						color_supported = 1;
 
 					}else if (memcmp(colorspace, "LAB ", 4)==0){
 						Color c2, c3;
-						uint32_t lab[3];
+						FloatInt lab[3];
 						f.read((char*)&lab[0], 4);
 						f.read((char*)&lab[1], 4);
 						f.read((char*)&lab[2], 4);
 
-						lab[0]=UINT32_FROM_BE(lab[0]);
-						lab[1]=UINT32_FROM_BE(lab[1]);
-						lab[2]=UINT32_FROM_BE(lab[2]);
+						lab[0].i = UINT32_FROM_BE(lab[0].i);
+						lab[1].i = UINT32_FROM_BE(lab[1].i);
+						lab[2].i = UINT32_FROM_BE(lab[2].i);
 
-						c2.lab.L=((float*)&lab[0])[0]*100;
-						c2.lab.a=((float*)&lab[1])[0];
-						c2.lab.b=((float*)&lab[2])[0];
+						c2.lab.L = lab[0].f*100;
+						c2.lab.a = lab[1].f;
+						c2.lab.b = lab[2].f;
 
 					    color_lab_to_xyz(&c2, &c3, &d50);
 						color_xyz_chromatic_adaptation(&c3, &c3, &adaptation_matrix);
 					    color_xyz_to_rgb(&c3, &c, &working_space_matrix);
 
-					    c.rgb.red=clamp_float(c.rgb.red, 0, 1);
-					    c.rgb.green=clamp_float(c.rgb.green, 0, 1);
-					    c.rgb.blue=clamp_float(c.rgb.blue, 0, 1);
+					    c.rgb.red = clamp_float(c.rgb.red, 0, 1);
+					    c.rgb.green = clamp_float(c.rgb.green, 0, 1);
+					    c.rgb.blue = clamp_float(c.rgb.blue, 0, 1);
 
-						color_supported=1;
+						color_supported = 1;
 
 					}
 					if (color_supported){

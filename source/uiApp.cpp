@@ -726,10 +726,6 @@ gint32 color_list_mark_selected(struct ColorObject* color_object, void *userdata
 	return 0;
 }
 
-static void palette_popup_menu_detach(GtkWidget *attach_widget, GtkMenu *menu) {
-	gtk_widget_destroy(GTK_WIDGET(menu));
-}
-
 static void palette_popup_menu_remove_all(GtkWidget *widget, AppArgs* args) {
 	color_list_remove_all(args->gs->colors);
 }
@@ -738,7 +734,6 @@ static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args)
 	palette_list_foreach_selected(args->color_list, color_list_mark_selected, 0);
 	color_list_remove_selected(args->gs->colors);
 }
-
 
 
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata){

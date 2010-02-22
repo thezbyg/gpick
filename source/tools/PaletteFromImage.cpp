@@ -49,6 +49,10 @@ typedef struct PaletteFromImageArgs{
 	GtkWidget *file_browser;
 	GtkWidget *range_colors;
 	GtkWidget *merge_threshold;
+	GtkWidget *preview_expander;
+
+	string filename;
+	uint32_t n_colors;
 
     string previuos_filename;
     Node *previuos_node;
@@ -319,33 +323,39 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 	return node_copy(args->previuos_node, 0);
 }
 
-static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
-	Node *root_node = 0;
+static void get_settings(PaletteFromImageArgs *args){
 
 	gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(args->file_browser));
 	if (filename){
-		root_node = process_image(args, filename, root_node);
+		args->filename = filename;
 		g_free(filename);
+	}else{
+		args->filename.clear();
 	}
 
+	args->n_colors = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors));
+}
 
-	int colors = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors));
-	//double threshold = gtk_range_get_value(GTK_RANGE(args->merge_threshold));
-
-	if (!preview){
-		dynv_set_int32(args->params, "colors", colors);
-		gchar *current_folder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(args->file_browser));
-		if (current_folder){
-			dynv_set_string(args->params, "current_folder", current_folder);
-			g_free(current_folder);
-		}
-		GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(args->file_browser));
-		if (filter){
-			const char *filter_name = static_cast<const char*>(g_object_get_data(G_OBJECT(filter), "name"));
-			dynv_set_string(args->params, "filter", filter_name);
-		}
+static void save_settings(PaletteFromImageArgs *args){
+	dynv_set_int32(args->params, "colors", args->n_colors);
+	gchar *current_folder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(args->file_browser));
+	if (current_folder){
+		dynv_set_string(args->params, "current_folder", current_folder);
+		g_free(current_folder);
 	}
+	GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(args->file_browser));
+	if (filter){
+		const char *filter_name = static_cast<const char*>(g_object_get_data(G_OBJECT(filter), "name"));
+		dynv_set_string(args->params, "filter", filter_name);
+	}
+}
+
+static void calc(PaletteFromImageArgs *args, bool preview, int limit){
+
+	Node *root_node = 0;
+    if (!args->filename.empty())
+		root_node = process_image(args, args->filename.c_str(), root_node);
 
 	struct ColorList *color_list;
 
@@ -357,7 +367,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	list<Color> tmp_list;
 
 	if (root_node){
-		node_reduce(root_node, colors);
+		node_reduce(root_node, args->n_colors);
 		node_leaf_callback(root_node, leaf_cb, &tmp_list);
 		node_delete(root_node);
 	}
@@ -373,12 +383,47 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 static void update(GtkWidget *widget, PaletteFromImageArgs *args ){
 	color_list_remove_all(args->preview_color_list);
+	get_settings(args);
 	calc(args, true, 100);
 }
 
 
 static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 	return g_strdup_printf("%0.01f%%", value);
+}
+
+static void destroy_cb(GtkWidget* widget, PaletteFromImageArgs *args){
+
+	if (args->previuos_node) node_delete(args->previuos_node);
+
+	color_list_destroy(args->preview_color_list);
+	dynv_system_release(args->params);
+
+	delete args;
+}
+
+static void response_cb(GtkWidget* widget, gint response_id, PaletteFromImageArgs *args){
+
+	get_settings(args);
+	save_settings(args);
+
+	gint width, height;
+	gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
+
+	dynv_set_int32(args->params, "window.width", width);
+	dynv_set_int32(args->params, "window.height", height);
+	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->preview_expander)));
+
+	switch (response_id){
+		case GTK_RESPONSE_APPLY:
+			calc(args, false, 0);
+			break;
+		case GTK_RESPONSE_DELETE_EVENT:
+			break;
+		case GTK_RESPONSE_CLOSE:
+			gtk_widget_destroy(widget);
+			break;
+	}
 }
 
 
@@ -393,13 +438,12 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	GtkWidget *table, *table_m, *widget;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Palette from image", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,	GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Palette from image", parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
 
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 
 
 	GtkWidget *frame;
@@ -498,9 +542,8 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	table_y++;
     */
 
-	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table_m), preview_expander = palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
 	args->preview_color_list = preview_color_list;
@@ -508,21 +551,10 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	gtk_widget_show_all(table_m);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table_m);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
+	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(destroy_cb), args);
+	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(response_cb), args);
 
-	gint width, height;
-	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-
-	if (args->previuos_node) node_delete(args->previuos_node);
-
-	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
-
-	gtk_widget_destroy(dialog);
-
-	delete args;
+	gtk_widget_show(dialog);
 }
+
 
