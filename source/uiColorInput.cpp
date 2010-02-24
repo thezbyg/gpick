@@ -22,6 +22,7 @@
 #include "uiApp.h"
 #include "uiUtilities.h"
 #include "GlobalStateStruct.h"
+#include "gtk/ColorWheel.h"
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object){
 
@@ -42,6 +43,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), gtk_color_wheel_new(), false, false, 0);
 
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);

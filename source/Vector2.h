@@ -21,6 +21,9 @@
 
 namespace math{
 
+/** \class Vec2
+ * \brief Two dimensional vector
+ */
 template<typename T>
 class Vec2{
 public:
@@ -32,39 +35,39 @@ public:
 		x = x_;
 		y = y_;
 	};
-	
+
 	Vec2(T &x_, T &y_){
 		x = x_;
 		y = y_;
 	};
-	
+
 	Vec2& operator= (const Vec2& v){
     	x = v.x;
     	y = v.y;
-    	return *this;	
+    	return *this;
 	};
-	
+
 	Vec2 operator* (const Vec2& v){
     	Vec2 r;
     	r.x = x * v.x;
-    	r.y = y * v.y;  		
-    	return r;	
+    	r.y = y * v.y;
+    	return r;
 	};
-	
+
 	Vec2 operator* (const double& v){
     	Vec2 r;
     	r.x = x * v;
-    	r.y = y * v;  		
-    	return r;	
+    	r.y = y * v;
+    	return r;
 	};
-	
+
 	Vec2 operator+ (const Vec2& v){
     	Vec2 r;
     	r.x = x + v.x;
-    	r.y = y + v.y;  		
-    	return r;	
+    	r.y = y + v.y;
+    	return r;
 	};
-	
+
 	T x;
 	T y;
 };

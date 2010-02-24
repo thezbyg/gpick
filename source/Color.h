@@ -21,12 +21,19 @@
 
 #include "MathUtil.h"
 
+/** \file Color.h
+ * \brief Color structure and functions to convert colors from one colorspace to another
+ */
+
+/** \struct Color
+ * \brief Color structure is an union of all available colorspaces
+ */
 typedef struct Color{
 	union{
 		struct{
-			float red;
-			float green;
-			float blue;
+			float red;               /**< Red component */
+			float green;             /**< Green component */
+			float blue;              /**< Blue component */
 		}rgb;
 		struct{
 			float hue;
@@ -74,7 +81,18 @@ typedef struct Color{
 	};
 }Color;
 
+/**
+ * Convert RGB colorspace to HSL colorspace
+ * @param[in] a Source color in RGB colorspace
+ * @param[out] b Destination color in HSL colorspace
+ */
 void color_rgb_to_hsl(Color* a, Color* b);
+
+/**
+ * Convert HSL colorspace to RGB colorspace
+ * @param[in] a Source color in HSL colorspace
+ * @param[out] b Destination color in RGB colorspace
+ */
 void color_hsl_to_rgb(Color* a, Color* b);
 
 void color_rgb_to_hsv(Color* a, Color* b);

@@ -29,20 +29,35 @@
 #include <string>
 using namespace std;
 
-typedef struct Node{
-	uint32_t n_pixels;
-	uint32_t n_pixels_in;
-	float color[3];
-	float distance;
+/** \file PaletteFromImage.cpp
+ * \brief
+ */
 
-	Node *child[8];
-	Node *parent;
+/** \struct Node
+ * \brief Node is a cube in space with color information
+ *
+ * Each node can b
+ */
+typedef struct Node{
+	uint32_t n_pixels;          /**< Number of colors in current Node and its children */
+	uint32_t n_pixels_in;       /**< Number of colors in current Node */
+	float color[3];             /**< Sum of color values */
+	float distance;             /**< Squared distances from Node center of colors in Node */
+
+	Node *child[8];             /**< Pointers to child Nodes */
+	Node *parent;               /**< Pointer to parent Node */
 }Node;
 
+/** \struct Cube
+ * \brief Cube structure holds all information necessary to define cube size and position in space
+ */
 typedef struct Cube{
-	float x, w;
-	float y, h;
-	float z, d;
+	float x;                 /**< X position */
+	float w;                 /**< Width */
+	float y;                 /**< Y position */
+	float h;                 /**< Height */
+	float z;                 /**< Z position */
+	float d;                 /**< Depth */
 }Cube;
 
 typedef struct PaletteFromImageArgs{
@@ -64,7 +79,11 @@ typedef struct PaletteFromImageArgs{
 	GlobalState* gs;
 }PaletteFromImageArgs;
 
-
+/**
+ * Allocate and initialize a new node with specified parent
+ * @param[in] parent Parent node
+ * @return New node
+ */
 static Node* node_new(Node *parent){
 	Node *n = new Node;
 	n->color[0] = n->color[1] = n->color[2] = 0;
@@ -78,6 +97,10 @@ static Node* node_new(Node *parent){
 	return n;
 }
 
+/**
+ * Deallocate node and its children
+ * @param[in] node Node to deallocate
+ */
 static void node_delete(Node *node){
 	for (int i = 0; i < 8; i++){
 		if (node->child[i]){
@@ -88,6 +111,12 @@ static void node_delete(Node *node){
 	delete node;
 }
 
+/**
+ * Copy node and assing new parent
+ * @param[in] node Node to copy
+ * @param[in] parent Parent of copied node
+ * @return A copy of node
+ */
 static Node* node_copy(Node *node, Node *parent){
 	Node *n = node_new(0);
 	memcpy(n, node, sizeof(Node));
@@ -103,6 +132,11 @@ static Node* node_copy(Node *node, Node *parent){
 	return n;
 }
 
+/**
+ * Get the number of nodes with available color information in them
+ * @param[in] node Start from this node
+ * @return Number of nodes with available color information in them
+ */
 static uint32_t node_count_leafs(Node *node){
 	uint32_t r = 0;
 	if (node->n_pixels_in) r++;
@@ -113,6 +147,12 @@ static uint32_t node_count_leafs(Node *node){
 	return r;
 }
 
+/**
+ * Call callback on all nodes with available color information in them
+ * @param[in] node Start from this node
+ * @param[in] leaf_cb Callback function
+ * @param[in] userdata User supplied pointer which is passed when calling callback
+ */
 static void node_leaf_callback(Node *node, void (*leaf_cb)(Node* node, void* userdata), void* userdata){
 	if (node->n_pixels_in > 0) leaf_cb(node, userdata);
 
@@ -122,6 +162,10 @@ static void node_leaf_callback(Node *node, void (*leaf_cb)(Node* node, void* use
 	}
 }
 
+/**
+ * Merge node information into its parent node
+ * @param[in] node Node to merge
+ */
 static void node_prune(Node *node){
 
 	for (int i = 0; i < 8; i++){
@@ -380,6 +424,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	}
 
 }
+
 
 static void update(GtkWidget *widget, PaletteFromImageArgs *args ){
 	color_list_remove_all(args->preview_color_list);
