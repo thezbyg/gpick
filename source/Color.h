@@ -95,7 +95,32 @@ void color_rgb_to_hsl(Color* a, Color* b);
  */
 void color_hsl_to_rgb(Color* a, Color* b);
 
+/**
+ * Convert HSL colorspace to HSV colorspace
+ * @param[in] a Source color in HSL colorspace
+ * @param[out] b Destination color in HSV colorspace
+ */
+void color_hsl_to_hsv(Color *a, Color *b);
+
+/**
+ * Convert HSV colorspace to HSL colorspace
+ * @param[in] a Source color in HSV colorspace
+ * @param[out] b Destination color in HSL colorspace
+ */
+void color_hsv_to_hsl(Color *a, Color *b);
+
+/**
+ * Convert RGB colorspace to HSV colorspace
+ * @param[in] a Source color in RGB colorspace
+ * @param[out] b Destination color in HSV colorspace
+ */
 void color_rgb_to_hsv(Color* a, Color* b);
+
+/**
+ * Convert HSV colorspace to RGB colorspace
+ * @param[in] a Source color in HSV colorspace
+ * @param[out] b Destination color in RGB colorspace
+ */
 void color_hsv_to_rgb(Color* a, Color* b);
 
 void color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation);

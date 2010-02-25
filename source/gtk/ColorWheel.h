@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "../Color.h"
+#include "../ColorWheelType.h"
 
 
 G_BEGIN_DECLS
@@ -47,21 +48,27 @@ typedef struct GtkColorWheel
 
 typedef struct GtkColorWheelClass{
 	GtkDrawingAreaClass parent_class;
-	void  (* active_color_changed)(GtkWidget* widget, gint32 active_color, gpointer userdata);
-	void  (* color_changed)(GtkWidget* widget, gpointer userdata);
-	void  (* color_activated)(GtkWidget* widget, gpointer userdata);
-	void  (* center_activated)(GtkWidget* widget, gpointer userdata);
+	void  (*hue_changed)(GtkWidget* widget, gint color_id, gpointer userdata);
+	void  (*saturation_value_changed)(GtkWidget* widget, gint color_id, gpointer userdata);
 }GtkColorWheelClass;
 
 GtkWidget* gtk_color_wheel_new(void);
 
-typedef enum{
-	HSL_RGB,
-	HSL_RYB,
-}ColorWheelSpace;
+void gtk_color_wheel_set_value(GtkColorWheel* color_wheel, guint32 index, double value);
+void gtk_color_wheel_set_hue(GtkColorWheel* color_wheel, guint32 index, double hue);
+void gtk_color_wheel_set_saturation(GtkColorWheel* color_wheel, guint32 index, double saturation);
+void gtk_color_wheel_set_selected(GtkColorWheel* color_wheel, guint32 index);
 
-void gtk_color_wheel_set_color_space(GtkColorWheel *color_wheel, ColorWheelSpace color_space);
-void gtk_color_wheel_set_color(GtkColorWheel *color_wheel, guint32 index, double hue, double saturation, double lightness );
+double gtk_color_wheel_get_hue(GtkColorWheel* color_wheel, guint32 index);
+double gtk_color_wheel_get_saturation(GtkColorWheel* color_wheel, guint32 index);
+double gtk_color_wheel_get_value(GtkColorWheel* color_wheel, guint32 index);
+
+void gtk_color_wheel_set_block_editable(GtkColorWheel* color_wheel, bool editable);
+bool gtk_color_wheel_get_block_editable(GtkColorWheel* color_wheel);
+
+void gtk_color_wheel_set_n_colors(GtkColorWheel* color_wheel, guint32 number_of_colors);
+
+void gtk_color_wheel_set_color_wheel_type(GtkColorWheel *color_wheel, const ColorWheelType *color_wheel_type);
 
 GType gtk_color_wheel_get_type(void);
 

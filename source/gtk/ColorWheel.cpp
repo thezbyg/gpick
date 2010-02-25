@@ -18,7 +18,7 @@
 
 #include "ColorWheel.h"
 #include "../Color.h"
-#include "../ColorRYB.h"
+#include "../ColorWheelType.h"
 #include "../MathUtil.h"
 #include <math.h>
 #include <stdlib.h>
@@ -29,15 +29,15 @@ using namespace std;
 #define GTK_COLOR_WHEEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
 
 G_DEFINE_TYPE (GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA);
+GtkWindowClass *parent_class = NULL;
 
 static gboolean gtk_color_wheel_expose(GtkWidget *color_wheel, GdkEventExpose *event);
 static gboolean gtk_color_wheel_button_release(GtkWidget *color_wheel, GdkEventButton *event);
 static gboolean gtk_color_wheel_button_press(GtkWidget *color_wheel, GdkEventButton *event);
-
-static int color_wheel_get_color_by_position(gint x, gint y);
+static gboolean gtk_color_wheel_motion_notify(GtkWidget *widget, GdkEventMotion *event);
 
 enum {
-	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, CENTER_ACTIVATED, LAST_SIGNAL
+	HUE_CHANGED, SATURATION_VALUE_CHANGED, LAST_SIGNAL
 };
 
 static guint gtk_color_wheel_signals[LAST_SIGNAL] = { 0 };
@@ -50,9 +50,39 @@ typedef struct ColorPoint{
 }ColorPoint;
 
 typedef struct GtkColorWheelPrivate{
-	list<ColorPoint*> cpoint;
+	ColorPoint cpoint[10];
+	uint32_t n_cpoint;
+
+	ColorPoint *grab_active;
+    bool grab_block;
+
+	ColorPoint *selected;
+
 	int active_color;
+
+	double radius;
+	double circle_width;
+	double block_size;
+
+	bool block_editable;
+
+	const ColorWheelType *color_wheel_type;
+
+	cairo_surface_t *cache_color_wheel;
 }GtkColorWheelPrivate;
+
+static uint32_t get_color_index(GtkColorWheelPrivate *ns, ColorPoint *cp);
+
+static void gtk_color_wheel_finalize(GObject *color_wheel_obj){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel_obj);
+
+	if (ns->cache_color_wheel){
+		cairo_surface_destroy(ns->cache_color_wheel);
+		ns->cache_color_wheel = 0;
+	}
+
+	G_OBJECT_CLASS(parent_class)->finalize(color_wheel_obj);
+}
 
 static void gtk_color_wheel_class_init(GtkColorWheelClass *color_wheel_class) {
 	GObjectClass *obj_class;
@@ -67,27 +97,19 @@ static void gtk_color_wheel_class_init(GtkColorWheelClass *color_wheel_class) {
 	widget_class->button_release_event = gtk_color_wheel_button_release;
 	widget_class->button_press_event = gtk_color_wheel_button_press;
 
-	/*widget_class->button_press_event = gtk_node_view_button_press;
-	 widget_class->button_release_event = gtk_node_view_button_release;
-	 widget_class->motion_notify_event = gtk_node_view_motion_notify;*/
+	widget_class->motion_notify_event = gtk_color_wheel_motion_notify;
+
+	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(color_wheel_class));
+	obj_class->finalize = gtk_color_wheel_finalize;
 
 	g_type_class_add_private(obj_class, sizeof(GtkColorWheelPrivate));
 
-	gtk_color_wheel_signals[ACTIVE_COLOR_CHANGED] = g_signal_new("active_color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkColorWheelClass, active_color_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
-
-	gtk_color_wheel_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkColorWheelClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-
-	gtk_color_wheel_signals[COLOR_ACTIVATED] = g_signal_new("color_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkColorWheelClass, color_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
-
-	gtk_color_wheel_signals[CENTER_ACTIVATED] = g_signal_new("center_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkColorWheelClass, center_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+	gtk_color_wheel_signals[HUE_CHANGED] = g_signal_new("hue_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, hue_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+	gtk_color_wheel_signals[SATURATION_VALUE_CHANGED] = g_signal_new("saturation_value_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, saturation_value_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
 }
 
-static void gtk_color_wheel_init(GtkColorWheel *color_wheel) {
+static void gtk_color_wheel_init(GtkColorWheel *color_wheel){
 	gtk_widget_add_events(GTK_WIDGET(color_wheel), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
 }
 
@@ -98,102 +120,211 @@ GtkWidget* gtk_color_wheel_new(){
 	gtk_widget_set_size_request(GTK_WIDGET(widget), 200 + widget->style->xthickness*2, 200 + widget->style->ythickness*2);
 
 	ns->active_color = 1;
+	ns->radius = 100;
+	ns->circle_width = 16;
+	ns->block_size = 2 * (ns->radius - ns->circle_width) * sin(M_PI / 4) - 8;
+
+	ns->n_cpoint = 0;
+	ns->grab_active = 0;
+	ns->grab_block = false;
+    ns->selected = &ns->cpoint[0];
+	ns->block_editable = true;
+
+	ns->color_wheel_type = &color_wheel_types_get()[0];
+	ns->cache_color_wheel = 0;
 
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 	return widget;
 }
 
-void gtk_color_wheel_set_active_index(GtkColorWheel* color_wheel, guint32 index) {
+
+void gtk_color_wheel_set_color_wheel_type(GtkColorWheel *color_wheel, const ColorWheelType *color_wheel_type){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
-	ns->active_color = index;
-	gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	if (ns->color_wheel_type != color_wheel_type){
+		ns->color_wheel_type = color_wheel_type;
+		if (ns->cache_color_wheel){
+			cairo_surface_destroy(ns->cache_color_wheel);
+			ns->cache_color_wheel = 0;
+		}
+		gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	}
 }
 
 
-typedef struct ColorWheelType{
-	const char *name;
-	void (*hue_to_hsl)(double hue, Color* hsl);
-	void (*rgbhue_to_hue)(double rgbhue, double *hue);
-}ColorWheelType;
-
-static void rgb_hue2hue(double hue, Color* hsl){
-	hsl->hsl.hue = hue;
-	hsl->hsl.saturation = 1;
-	hsl->hsl.lightness = 0.5;
+void gtk_color_wheel_set_block_editable(GtkColorWheel* color_wheel, bool editable){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+    ns->block_editable = editable;
 }
 
-static void rgb_rgbhue2hue(double rgbhue, double *hue){
-	*hue = rgbhue;
+bool gtk_color_wheel_get_block_editable(GtkColorWheel* color_wheel){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+    return ns->block_editable;
 }
 
-static void ryb1_hue2hue(double hue, Color* hsl){
-	Color c;
-	color_rybhue_to_rgb(hue, &c);
-	color_rgb_to_hsl(&c, hsl);
+void gtk_color_wheel_set_selected(GtkColorWheel* color_wheel, guint32 index){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		ns->selected = &ns->cpoint[index];
+		gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	}
 }
 
-static void ryb1_rgbhue2hue(double rgbhue, double *hue){
-	color_rgbhue_to_rybhue(rgbhue, hue);
+void gtk_color_wheel_set_n_colors(GtkColorWheel* color_wheel, guint32 number_of_colors){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (number_of_colors <= 10){
+        if (ns->n_cpoint != number_of_colors){
+			ns->n_cpoint = number_of_colors;
+
+			if (ns->selected){
+				uint32_t index = get_color_index(ns, ns->selected);
+				if (index >= number_of_colors){
+					ns->selected = &ns->cpoint[0];
+				}
+			}
+			gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+		}
+	}
 }
 
-static void ryb2_hue2hue(double hue, Color* hsl){
-	hsl->hsl.hue = color_rybhue_to_rgbhue_f(hue);
-	hsl->hsl.saturation = 1;
-	hsl->hsl.lightness = 0.5;
+void gtk_color_wheel_set_hue(GtkColorWheel* color_wheel, guint32 index, double hue){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		ns->cpoint[index].hue = hue;
+		gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	}
 }
 
-static void ryb2_rgbhue2hue(double rgbhue, double *hue){
-	color_rgbhue_to_rybhue_f(rgbhue, hue);
+void gtk_color_wheel_set_saturation(GtkColorWheel* color_wheel, guint32 index, double saturation){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		ns->cpoint[index].saturation = saturation;
+		if (&ns->cpoint[index] == ns->selected)
+			gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	}
 }
 
-const ColorWheelType color_wheel_types[]={
-	{"RGB", rgb_hue2hue, rgb_rgbhue2hue},
-	{"RYB v1", ryb1_hue2hue, ryb1_rgbhue2hue},
-	{"RYB v2", ryb2_hue2hue, ryb2_rgbhue2hue},
-};
+void gtk_color_wheel_set_value(GtkColorWheel* color_wheel, guint32 index, double value){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		ns->cpoint[index].lightness = value;
+		if (&ns->cpoint[index] == ns->selected)
+			gtk_widget_queue_draw(GTK_WIDGET(color_wheel));
+	}
+}
+
+double gtk_color_wheel_get_hue(GtkColorWheel* color_wheel, guint32 index){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		return ns->cpoint[index].hue;
+	}
+	return 0;
+}
+
+double gtk_color_wheel_get_saturation(GtkColorWheel* color_wheel, guint32 index){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		return ns->cpoint[index].saturation;
+	}
+	return 0;
+}
+
+double gtk_color_wheel_get_value(GtkColorWheel* color_wheel, guint32 index){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+	if (index < 10){
+		return ns->cpoint[index].lightness;
+	}
+	return 0;
+}
 
 
-static void draw_wheel(cairo_t *cr, double radius, double width, const ColorWheelType *wheel){
+static void draw_dot(cairo_t *cr, double x, double y, double size){
+	cairo_arc(cr, x, y, size - 1, 0, 2 * M_PI);
+	cairo_set_source_rgba(cr, 1, 1, 1, 0.5);
+	cairo_set_line_width(cr, 2);
+	cairo_stroke(cr);
 
-	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(radius * 2), ceil(radius * 2));
+	cairo_arc(cr, x, y, size, 0, 2 * M_PI);
+	cairo_set_source_rgba(cr, 0, 0, 0, 1);
+	cairo_set_line_width(cr, 1);
+	cairo_stroke(cr);
+
+}
+
+static void draw_sat_val_block(cairo_t *cr, double pos_x, double pos_y, double size, double hue){
+	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(size), ceil(size));
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_image_surface_get_stride(surface);
 	int surface_width = cairo_image_surface_get_width(surface);
 	int surface_height = cairo_image_surface_get_height(surface);
 
-	double inner_radius = radius - width;
-	double offset = radius;
-
-	double radius_sq = radius * radius + 2 * radius + 1;
-	double inner_radius_sq = inner_radius * inner_radius - 2 * inner_radius + 1;
-
-	double block_width = (2 * inner_radius * sin(M_PI / 4)) - 2;
-
 	Color c;
-
-	int bl_start_x = (surface_width - block_width) / 2;
-	int bl_end_x = bl_start_x + block_width;
-	int bl_start_y = (surface_height - block_width) / 2;
-	int bl_end_y = bl_start_y + block_width;
 
 	unsigned char *line_data;
 	for (int y = 0; y < surface_height; ++y){
 		line_data = data + stride * y;
 		for (int x = 0; x < surface_width; ++x){
 
-			int dx = -(x - surface_width / 2);
-			int dy = y - surface_height / 2;
-			int dist = dx * dx + dy * dy;
+			c.hsv.hue = hue;
+			c.hsv.saturation = x / size;
+			c.hsv.value = y / size;
 
-			if (dist < inner_radius_sq){
+			color_hsv_to_rgb(&c, &c);
 
-				if ((x >= bl_start_x) && (x <= bl_end_x) && (y >= bl_start_y) && (y <= bl_end_y)){
+			line_data[2] = c.rgb.red * 255;
+			line_data[1] = c.rgb.green * 255;
+			line_data[0] = c.rgb.blue * 255;
+			line_data[3] = 0xFF;
 
-					c.hsl.hue = 0;
-					c.hsl.saturation = (x - bl_start_x) / block_width;
-					c.hsl.lightness = (y - bl_start_y) / block_width;
+			line_data += 4;
+		}
+	}
 
-					color_hsv_to_rgb(&c, &c);
+	cairo_save(cr);
+
+	cairo_set_source_surface(cr, surface, pos_x - size / 2, pos_y - size / 2);
+	cairo_surface_destroy(surface);
+
+	cairo_rectangle(cr, pos_x - size / 2, pos_y - size / 2, size, size);
+	cairo_fill(cr);
+
+	cairo_restore(cr);
+
+}
+
+static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, double width, const ColorWheelType *wheel){
+	cairo_surface_t *surface;
+	double inner_radius = radius - width;
+
+	if (ns->cache_color_wheel){
+        surface = ns->cache_color_wheel;
+	}else{
+		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(radius * 2), ceil(radius * 2));
+		unsigned char *data = cairo_image_surface_get_data(surface);
+		int stride = cairo_image_surface_get_stride(surface);
+		int surface_width = cairo_image_surface_get_width(surface);
+		int surface_height = cairo_image_surface_get_height(surface);
+
+
+		double radius_sq = radius * radius + 2 * radius + 1;
+		double inner_radius_sq = inner_radius * inner_radius - 2 * inner_radius + 1;
+
+		Color c;
+
+		unsigned char *line_data;
+		for (int y = 0; y < surface_height; ++y){
+			line_data = data + stride * y;
+			for (int x = 0; x < surface_width; ++x){
+
+				int dx = -(x - surface_width / 2);
+				int dy = y - surface_height / 2;
+				int dist = dx * dx + dy * dy;
+
+				if ((dist >= inner_radius_sq) && (dist <= radius_sq)){
+
+					double angle = atan2(dx, dy) + M_PI;
+
+					wheel->hue_to_hsl(angle / (M_PI * 2), &c);
+					color_hsl_to_rgb(&c, &c);
 
 					line_data[2] = c.rgb.red * 255;
 					line_data[1] = c.rgb.green * 255;
@@ -201,30 +332,18 @@ static void draw_wheel(cairo_t *cr, double radius, double width, const ColorWhee
 					line_data[3] = 0xFF;
 				}
 
-			}else if (dist <= radius_sq){
-
-				double angle = atan2(dx, dy) + M_PI;
-
-				wheel->hue_to_hsl(angle / (M_PI * 2), &c);
-				color_hsl_to_rgb(&c, &c);
-
-				line_data[2] = c.rgb.red * 255;
-				line_data[1] = c.rgb.green * 255;
-				line_data[0] = c.rgb.blue * 255;
-				line_data[3] = 0xFF;
+				line_data += 4;
 			}
 
-			line_data += 4;
 		}
 
+		ns->cache_color_wheel = surface;
 	}
-
-	//cairo_t *source_cr = cairo_create(surface);
 
 	cairo_save(cr);
 
 	cairo_set_source_surface(cr, surface, 0, 0);
-	cairo_surface_destroy(surface);
+	//cairo_surface_destroy(surface);
 
 	cairo_set_line_width(cr, width);
 	cairo_new_path(cr);
@@ -232,35 +351,81 @@ static void draw_wheel(cairo_t *cr, double radius, double width, const ColorWhee
 
 	cairo_stroke(cr);
 
-	cairo_rectangle(cr, radius - block_width / 2, radius - block_width / 2, block_width, block_width);
-	cairo_fill(cr);
-
 	cairo_restore(cr);
-
-
-	/*const double step = 1 / 360.0;
-	for (double i = 0; i < 1; i += step){
-        cairo_new_path(cr);
-
-		cairo_move_to(cr, offset + sin(i * PI * 2) * inner_radius, offset - cos(i * PI * 2) * inner_radius);
-		cairo_line_to(cr, offset + sin((i + step) * PI * 2) * inner_radius, offset - cos((i + step) * PI * 2) * inner_radius);
-		cairo_line_to(cr, offset + sin((i + step) * PI * 2) * radius, offset - cos((i + step) * PI * 2) * radius);
-		cairo_line_to(cr, offset + sin(i * PI * 2) * radius, offset - cos(i * PI * 2) * radius);
-
-		cairo_close_path(cr);
-
-		wheel->hue_to_hsl(i, &c);
-		color_hsl_to_rgb(&c, &c);
-
-		cairo_set_source_rgb(cr, c.rgb.red, c.rgb.green, c.rgb.blue);
-
-		cairo_stroke_preserve(cr);
-		cairo_fill(cr);
-
-	}*/
 }
 
-static gboolean gtk_color_wheel_expose(GtkWidget *widget, GdkEventExpose *event) {
+static bool is_inside_block(GtkColorWheelPrivate *ns, gint x, gint y){
+	double size = ns->block_size;
+
+	if ((x >= ns->radius - size / 2) && (x <= ns->radius + size / 2)){
+		if ((y >= ns->radius - size / 2) && (y <= ns->radius + size / 2)){
+		return true;
+		}
+	}
+	return false;
+}
+
+static ColorPoint* get_cpoint_at(GtkColorWheelPrivate *ns, gint x, gint y){
+
+	double dx, dy;
+	for (uint32_t i = 0; i != ns->n_cpoint; i++){
+		dx = ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * M_PI * 2) - x;
+		dy = ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * M_PI * 2) - y;
+
+		if (sqrt(dx * dx + dy * dy) < 16){
+			return &ns->cpoint[i];
+		}
+	}
+
+	return 0;
+}
+
+static uint32_t get_color_index(GtkColorWheelPrivate *ns, ColorPoint *cp){
+	return (uint64_t(cp) - uint64_t(ns)) / sizeof(ColorPoint);
+}
+
+static gboolean gtk_color_wheel_motion_notify(GtkWidget *widget, GdkEventMotion *event){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
+
+    if (ns->grab_active){
+		double dx = -((event->x - widget->style->xthickness) - ns->radius);
+		double dy = (event->y - widget->style->ythickness) - ns->radius;
+
+		double angle = atan2(dx, dy) + M_PI;
+
+		ns->grab_active->hue = angle / (M_PI * 2);
+
+		g_signal_emit(widget, gtk_color_wheel_signals[HUE_CHANGED], 0, get_color_index(ns, ns->grab_active));
+
+		gtk_widget_queue_draw(widget);
+
+		return true;
+	}else if (ns->grab_block){
+
+		double dx = (event->x - widget->style->xthickness) - ns->radius + ns->block_size / 2;
+		double dy = (event->y - widget->style->ythickness) - ns->radius + ns->block_size / 2;
+
+		ns->selected->saturation = clamp_float(dx / ns->block_size, 0, 1);
+		ns->selected->lightness = clamp_float(dy / ns->block_size, 0, 1);
+
+		g_signal_emit(widget, gtk_color_wheel_signals[SATURATION_VALUE_CHANGED], 0, get_color_index(ns, ns->selected));
+
+		gtk_widget_queue_draw(widget);
+		return true;
+	}
+
+/*	ColorPoint *p = get_cpoint_at(ns, event->x, event->y);
+	if (p){
+		GdkCursor *grab = gdk_cursor_new(GDK_HAND2);
+		gdk_window_set_cursor(gtk_widget_get_window(widget), grab);
+		gdk_cursor_destroy(grab);
+
+	}
+*/
+	return false;
+}
+
+static gboolean gtk_color_wheel_expose(GtkWidget *widget, GdkEventExpose *event){
 
 	GtkStateType state;
 
@@ -269,12 +434,9 @@ static gboolean gtk_color_wheel_expose(GtkWidget *widget, GdkEventExpose *event)
 	else
 		state = GTK_STATE_ACTIVE;
 
-
 	cairo_t *cr;
 
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
-
-//	gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
 
 /*	if (GTK_WIDGET_HAS_FOCUS(widget)){
 		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
@@ -287,79 +449,25 @@ static gboolean gtk_color_wheel_expose(GtkWidget *widget, GdkEventExpose *event)
 
 	cairo_translate(cr, widget->style->xthickness + 0.5, widget->style->ythickness + 0.5);
 
-	draw_wheel(cr, 100, 20, &color_wheel_types[0]);
+	draw_wheel(ns, cr, ns->radius, ns->circle_width, ns->color_wheel_type);
 
-	/*
-	cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-	cairo_set_font_size(cr, 12);
+	if (ns->selected){
+		double block_size = 2 * (ns->radius - ns->circle_width) * sin(M_PI / 4) - 6;
 
-	cairo_matrix_t matrix;
-	cairo_get_matrix(cr, &matrix);
-	cairo_translate(cr, 75+widget->style->xthickness, 75+widget->style->ythickness);
+		Color hsl;
+		ns->color_wheel_type->hue_to_hsl(ns->selected->hue, &hsl);
 
-	int edges = 6;
+		draw_sat_val_block(cr, ns->radius, ns->radius, block_size, hsl.hsl.hue);
 
-	cairo_set_source_rgb(cr, 0, 0, 0);
+		draw_dot(cr, ns->radius - block_size / 2 + block_size * ns->selected->saturation, ns->radius - block_size / 2 + block_size * ns->selected->lightness, 4);
 
-	float radius_multi = 50 * cos((180 / edges) / (180 / PI));
-	float rotation = -(PI/6 * 4);
-
-	//Draw stroke
-	cairo_set_source_rgb(cr, 0, 0, 0);
-	cairo_set_line_width(cr, 3);
-	for (int i = 1; i < 7; ++i) {
-		if (i == ns->current_color)
-			continue;
-		gtk_color_wheel_draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 27);
 	}
 
-	cairo_stroke(cr);
-
-	cairo_set_source_rgb(cr, 1, 1, 1);
-	gtk_color_wheel_draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2
-			* PI) / edges), 27);
-	cairo_stroke(cr);
-
-	//Draw fill
-	for (int i = 1; i < 7; ++i) {
-		if (i == ns->current_color)
-			continue;
-		cairo_set_source_rgb(cr, ns->color[i].rgb.red, ns->color[i].rgb.green, ns->color[i].rgb.blue);
-		gtk_color_wheel_draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 25.5);
-		cairo_fill(cr);
+	for (uint32_t i = 0; i != ns->n_cpoint; i++){
+		draw_dot(cr, ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * M_PI * 2), ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * M_PI * 2), (&ns->cpoint[i] == ns->selected) ? 7 : 4);
 	}
-
-	cairo_set_source_rgb(cr, ns->color[ns->current_color].rgb.red, ns->color[ns->current_color].rgb.green, ns->color[ns->current_color].rgb.blue);
-	gtk_color_wheel_draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2
-			* PI) / edges), 25.5);
-	cairo_fill(cr);
-
-	//Draw center
-	cairo_set_source_rgb(cr, ns->color[0].rgb.red, ns->color[0].rgb.green, ns->color[0].rgb.blue);
-	gtk_color_wheel_draw_hexagon(cr, 0, 0, 25.5);
-	cairo_fill(cr);
-
-	//Draw numbers
-	char numb[2] = " ";
-	for (int i = 1; i < 7; ++i) {
-		Color c;
-		color_get_contrasting(&ns->color[i], &c);
-
-		cairo_text_extents_t extends;
-		numb[0] = '0' + i;
-		cairo_text_extents(cr, numb, &extends);
-		cairo_set_source_rgb(cr, c.rgb.red, c.rgb.green, c.rgb.blue);
-		cairo_move_to(cr, radius_multi * cos(rotation + i * (2 * PI) / edges) - extends.width / 2, radius_multi * sin(rotation + i * (2 * PI) / edges)
-				+ extends.height / 2);
-		cairo_show_text(cr, numb);
-	}
-
-	cairo_set_matrix(cr, &matrix);
-    */
 
 	cairo_destroy(cr);
-
-
 
 	return FALSE;
 }
@@ -368,34 +476,47 @@ static gboolean gtk_color_wheel_expose(GtkWidget *widget, GdkEventExpose *event)
 static gboolean gtk_color_wheel_button_press(GtkWidget *widget, GdkEventButton *event) {
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
 
-	/*int new_color = color_wheel_get_color_by_position(event->x - widget->style->xthickness, event->y - widget->style->ythickness);
+	gint x = event->x - widget->style->xthickness;
+	gint y = event->y - widget->style->ythickness;
 
 	gtk_widget_grab_focus(widget);
 
-	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
-		if (new_color>0){
-			g_signal_emit(widget, gtk_color_wheel_signals[COLOR_ACTIVATED], 0);
-		}
-	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
-		if (new_color==0){
-			g_signal_emit(widget, gtk_color_wheel_signals[CENTER_ACTIVATED], 0);
-		}else if (new_color<0){
-			g_signal_emit(widget, gtk_color_wheel_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
-		}else{
-			if (new_color != ns->current_color){
-				ns->current_color = new_color;
+    ColorPoint *p;
+	if (is_inside_block(ns, x, y)){
+		if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
+			if (ns->block_editable && ns->selected){
 
-				g_signal_emit(widget, gtk_color_wheel_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
+				ns->grab_block = true;
 
-				gtk_widget_queue_draw(GTK_WIDGET(widget));
+				GdkCursor *cursor = gdk_cursor_new(GDK_CROSS);
+				gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, cursor, GDK_CURRENT_TIME);
+				gdk_cursor_destroy(cursor);
+				return true;
 			}
 		}
-	}*/
-	return FALSE;
+	}else if ((p = get_cpoint_at(ns, x, y))){
+		if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
+
+			ns->grab_active = p;
+			ns->selected = p;
+
+			GdkCursor *cursor = gdk_cursor_new(GDK_CROSS);
+			gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, cursor, GDK_CURRENT_TIME);
+			gdk_cursor_destroy(cursor);
+			return true;
+		}
+	}
+	return false;
 }
 
 static gboolean gtk_color_wheel_button_release(GtkWidget *widget, GdkEventButton *event) {
-	return FALSE;
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
+
+	gdk_pointer_ungrab(GDK_CURRENT_TIME);
+	ns->grab_active = 0;
+	ns->grab_block = false;
+
+	return false;
 }
 
 

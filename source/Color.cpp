@@ -582,4 +582,27 @@ void color_rgb_normalize(Color* a){
 	a->rgb.blue = clamp_float(a->rgb.blue, 0, 1);
 }
 
+void color_hsl_to_hsv(Color *a, Color *b){
+    float l = a->hsl.lightness * 2.0;
+	float s = a->hsl.saturation * ((l <= 1.0) ? (l) : (2.0 - l));
+
+	b->hsv.hue = a->hsl.hue;
+	if (l + s == 0){
+		b->hsv.value = 0;
+		b->hsv.saturation = 1;
+	}else{
+		b->hsv.value = (l + s) / 2.0;
+		b->hsv.saturation = (2.0 * s) / (l + s);
+	}
+}
+
+void color_hsv_to_hsl(Color *a, Color *b){
+	float l = (2.0 - a->hsv.saturation) * a->hsv.value;
+	float s = (a->hsv.saturation * a->hsv.value) / ((l <= 1.0) ? (l) : (2 - l));
+    if (l == 0) s = 0;
+
+	b->hsl.hue = a->hsv.hue;
+	b->hsl.saturation = s;
+	b->hsl.lightness = l / 2.0;
+}
 
