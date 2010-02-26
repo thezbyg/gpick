@@ -81,3 +81,4 @@ struct dynvHandler* dynv_var_bool_new(){
 
 	return handler;
 }
+

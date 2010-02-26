@@ -97,7 +97,8 @@ struct dynvHandler* dynv_var_int32_new(){
 	handler->serialize_xml = serialize_xml;
 	handler->deserialize_xml = deserialize_xml;
 
-	handler->data_size = sizeof(int32_t*);
+	handler->data_size = sizeof(int32_t);
 
 	return handler;
 }
+

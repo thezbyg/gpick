@@ -108,7 +108,8 @@ struct dynvHandler* dynv_var_float_new(){
 	handler->serialize_xml = serialize_xml;
 	handler->deserialize_xml = deserialize_xml;
 
-	handler->data_size = sizeof(float*);
+	handler->data_size = sizeof(float);
 
 	return handler;
 }
+

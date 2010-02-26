@@ -203,7 +203,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
 
-	gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
+	//gtk_paint_shadow(widget->style, widget->window, state, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
 
 	if (GTK_WIDGET_HAS_FOCUS(widget)){
 		gtk_paint_focus(widget->style, widget->window, state, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);

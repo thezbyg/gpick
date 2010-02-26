@@ -37,6 +37,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include <math.h>
+#include <string.h>
 #include <sstream>
 #include <iostream>
 using namespace std;
@@ -104,7 +105,7 @@ const SchemeType scheme_types[]={
 static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color, GtkWidget* color_widget);
 
-static void calc( GenerateSchemeArgs *args, bool preview, bool save_settings){
+static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
@@ -125,7 +126,7 @@ static void calc( GenerateSchemeArgs *args, bool preview, bool save_settings){
 		dynv_set_float(args->params, "hue", hue);
 		dynv_set_float(args->params, "saturation", saturation);
 		dynv_set_float(args->params, "lightness", lightness);
-		dynv_set_bool(args->params, "wheel_locked", args->wheel_locked);
+
 	}
 
 	hue /= 360.0;
@@ -613,7 +614,7 @@ static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, ui
 
 
 static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color){
-	if (args->last_focused_color) {
+	if (args->last_focused_color){
 		return set_rgb_color_by_widget(args, color, args->last_focused_color);
 	}else{
 		return set_rgb_color(args, color, 0);
@@ -623,7 +624,19 @@ static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color)
 static int source_deactivate(GenerateSchemeArgs *args){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, true);
-	return 0;
+
+
+	dynv_set_bool(args->params, "wheel_locked", args->wheel_locked);
+
+	float hsv_shift_array[MAX_COLOR_WIDGETS * 3];
+	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
+		hsv_shift_array[i * 3 + 0] = args->mod[i].hue;
+		hsv_shift_array[i * 3 + 1] = args->mod[i].saturation;
+		hsv_shift_array[i * 3 + 2] = args->mod[i].value;
+	}
+	dynv_set_float_array(args->params, "hsv_shift", hsv_shift_array, MAX_COLOR_WIDGETS * 3);
+
+    return 0;
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
@@ -650,6 +663,25 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
+
+	uint32_t hsv_shift_array_size = 0;
+	float *hsv_shift_array = dynv_get_float_array_wd(args->params, "hsv_shift", 0, 0, &hsv_shift_array_size);
+    hsv_shift_array_size /= 3;
+
+    for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
+		if (i < hsv_shift_array_size){
+			args->mod[i].hue = hsv_shift_array[i * 3 + 0];
+			args->mod[i].saturation = hsv_shift_array[i * 3 + 1];
+			args->mod[i].value = hsv_shift_array[i * 3 + 2];
+		}else{
+			args->mod[i].hue = 0;
+			args->mod[i].saturation = 0;
+			args->mod[i].value = 0;
+		}
+	}
+
+	if (hsv_shift_array) delete [] hsv_shift_array;
+
 
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
 
