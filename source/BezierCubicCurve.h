@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -26,20 +26,20 @@ public:
 
 	BezierCubicCurve(const PT &p0_, const PT &p1_, const PT &p2_, const PT &p3_):p0(p0_),p1(p1_),p2(p2_),p3(p3_){
 	};
-	
+
 	PT operator() (const T &t){
-		T t2 = 1-t;		
+		T t2 = 1-t;
 		return p0*(t2*t2*t2) + p1*(3*(t2*t2)*t) + p2*(3*t2*t*t) + p3*(t*t*t);
 	};
-	
+
 	BezierCubicCurve& operator= (const BezierCubicCurve& curve){
 		p0 = curve.p0;
 		p1 = curve.p1;
 		p2 = curve.p2;
-		p3 = curve.p3;			
+		p3 = curve.p3;
 		return *this;
 	};
-	
+
 	PT p0;
 	PT p1;
 	PT p2;

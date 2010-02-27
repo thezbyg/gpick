@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@ struct dynvIO{
 	int (*seek)(struct dynvIO* io, uint32_t offset, int type, uint32_t* position);
 	int (*free)(struct dynvIO* io);
 	int (*reset)(struct dynvIO* io);
-	
+
 	void* userdata;
 };
 

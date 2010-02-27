@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -25,10 +25,10 @@ using namespace math;
 
 namespace layout{
 
-	
+
 Style::Style(const char* _name, Color* _color, float _font_size){
 	string name = string(_name);
-	
+
 	size_t pos = name.find(":");
 	if (pos != string::npos){
 		ident_name = name.substr(0, pos);
@@ -37,27 +37,27 @@ Style::Style(const char* _name, Color* _color, float _font_size){
 		ident_name = name;
 		human_name = name;
 	}
-	
+
 	style_type = TYPE_UNKNOWN;
-	
+
 	if ((pos = ident_name.rfind("_")) != string::npos){
 		string flags = ident_name.substr(pos);
-		
+
 		if (flags.find("t") != string::npos){
 			style_type = TYPE_COLOR;
 		}else if (flags.find("b") != string::npos){
 			style_type = TYPE_BACKGROUND;
 		}
 	}
-		
+
 	color_copy(_color, &color);
 	font_size = _font_size;
-	
+
 	dirty = true;
 	highlight = false;
 	selected_box = 0;
 }
-	
+
 Style::~Style(){
 
 }

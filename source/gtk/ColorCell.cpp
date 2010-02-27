@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -137,7 +137,7 @@ void custom_cell_renderer_color_set_size(GtkCellRenderer *cell,  gint width, gin
 static void custom_cell_renderer_color_get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width,
 		gint *height) {
 	CustomCellRendererColor *cellcolor=CUSTOM_CELL_RENDERER_COLOR(cell);
-			
+
 	gint calc_width;
 	gint calc_height;
 

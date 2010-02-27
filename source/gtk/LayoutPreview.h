@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -48,7 +48,7 @@ typedef struct GtkLayoutPreview
 typedef struct GtkLayoutPreviewClass
 {
 	GtkDrawingAreaClass parent_class;
-	
+
 	void  (* active_color_changed)(GtkWidget* widget, gint32 active_color, gpointer userdata);
 	void  (* color_changed)(GtkWidget* widget, gpointer userdata);
 	void  (* color_activated)(GtkWidget* widget, gpointer userdata);

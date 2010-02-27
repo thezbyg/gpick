@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@ static int lua_newcolor (lua_State *L) {
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
-		c->rgb.red = luaL_checknumber(L, 2);	
+		c->rgb.red = luaL_checknumber(L, 2);
 		c->rgb.green = luaL_checknumber(L, 3);
 		c->rgb.blue = luaL_checknumber(L, 4);
 	}else{
@@ -59,7 +59,7 @@ static int lua_color2string (lua_State *L) {
 static int lua_color_rgb (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
-		c->rgb.red = luaL_checknumber(L, 2);	
+		c->rgb.red = luaL_checknumber(L, 2);
 		c->rgb.green = luaL_checknumber(L, 3);
 		c->rgb.blue = luaL_checknumber(L, 4);
 	}
@@ -100,7 +100,7 @@ static int lua_color_blue (lua_State *L) {
 static int lua_color_hsl (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER ){
-		c->hsl.hue = luaL_checknumber(L, 2);	
+		c->hsl.hue = luaL_checknumber(L, 2);
 		c->hsl.saturation = luaL_checknumber(L, 3);
 		c->hsl.lightness = luaL_checknumber(L, 4);
 	}
@@ -141,10 +141,10 @@ static int lua_color_lightness (lua_State *L) {
 static int lua_color_cmyk (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	if (lua_type(L, 2)==LUA_TNUMBER && lua_type(L, 3)==LUA_TNUMBER  && lua_type(L, 4)==LUA_TNUMBER  && lua_type(L, 5)==LUA_TNUMBER ){
-		c->cmyk.c = luaL_checknumber(L, 2);	
+		c->cmyk.c = luaL_checknumber(L, 2);
 		c->cmyk.m = luaL_checknumber(L, 3);
 		c->cmyk.y = luaL_checknumber(L, 4);
-		c->cmyk.k = luaL_checknumber(L, 5);	
+		c->cmyk.k = luaL_checknumber(L, 5);
 	}
 	lua_pushnumber(L, c->cmyk.c);
 	lua_pushnumber(L, c->cmyk.m);
@@ -226,18 +226,18 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"green",		lua_color_green},
 	{"blue",		lua_color_blue},
 	{"rgb",			lua_color_rgb},
-	
+
 	{"hue",			lua_color_hue},
 	{"saturation",	lua_color_saturation},
 	{"lightness",	lua_color_lightness},
 	{"hsl",			lua_color_hsl},
-	
+
 	{"cyan",		lua_color_cyan},
 	{"magenta",		lua_color_magenta},
-	{"yellow",		lua_color_yellow},	
+	{"yellow",		lua_color_yellow},
 	{"key_black",	lua_color_key_black},
 	{"cmyk",		lua_color_cmyk},
-	
+
 	{"rgb_to_hsl",	lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",	lua_color_hsl_to_rgb},
 	{"rgb_to_cmyk",	lua_color_rgb_to_cmyk},
@@ -254,9 +254,9 @@ static int luaopen_color (lua_State *L) {
 
 	luaL_register(L, NULL, lua_colorlib_m);
 	luaL_register(L, "color", lua_colorlib_f);
-		
+
 	lua_pop(L, 2);
-	
+
 	return 1;
 }
 
@@ -320,9 +320,9 @@ int luaopen_colorobject (lua_State *L) {
 
 	luaL_register(L, NULL, lua_colorobjectlib_m);
 	luaL_register(L, "colorobject", lua_colorobjectlib_f);
-		
+
 	lua_pop(L, 2);
-	
+
 	return 1;
 }
 

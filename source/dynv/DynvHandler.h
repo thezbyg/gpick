@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -40,10 +40,10 @@ struct dynvHandler{
 
 	int (*serialize)(struct dynvVariable* variable, struct dynvIO* io);
 	int (*deserialize)(struct dynvVariable* variable, struct dynvIO* io);
-	
+
 	int (*serialize_xml)(struct dynvVariable* variable, std::ostream& out);
 	int (*deserialize_xml)(struct dynvVariable* variable, const char* data);
-	
+
 	uint32_t id;
 	uint32_t data_size;
 };

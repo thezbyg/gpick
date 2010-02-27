@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -24,13 +24,13 @@
 typedef struct ColorSource{
 	int (*set_color)(ColorSource *source, ColorObject *color);
 	int (*get_color)(ColorSource *source, ColorObject **color);
-	
+
 	int (*activate)(ColorSource *source);
 	int (*deactivate)(ColorSource *source);
-	
+
 	int (*init)(ColorSource *source);
 	int (*destroy)(ColorSource *source);
-	
+
 	void* userdata;
 }ColorSource;
 

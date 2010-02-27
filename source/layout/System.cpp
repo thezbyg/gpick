@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,7 +21,7 @@
 using namespace std;
 
 namespace layout{
-	
+
 System::System(){
 	box = 0;
 }
@@ -36,11 +36,11 @@ System::~System(){
 
 void System::Draw(cairo_t *cr, const math::Rect2<float>& parent_rect ){
 	if (!box) return;
-	box->Draw(cr, parent_rect);	
+	box->Draw(cr, parent_rect);
 }
 
 void System::AddStyle(Style *_style){
-	styles.push_back(static_cast<Style*>(_style->ref()));	
+	styles.push_back(static_cast<Style*>(_style->ref()));
 }
 
 void System::SetBox(Box *_box){

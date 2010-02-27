@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -31,14 +31,14 @@ enum DragDropFlags{
 struct DragDrop{
 	GtkWidget* widget;
 	void* userdata;
-	
+
 	struct ColorObject* (*get_color_object)(struct DragDrop* dd);
 	int (*set_color_object_at)(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move);
 	bool (*test_at)(struct DragDrop* dd, int x, int y);
 	bool (*data_received)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_get)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_delete)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
-		
+
 	struct ColorObject* color_object;
 	struct dynvHandlerMap* handler_map;
 	GtkWidget* dragwidget;

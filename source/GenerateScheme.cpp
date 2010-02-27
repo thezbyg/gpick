@@ -581,8 +581,13 @@ static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, ui
 	double lightness;
 	double shifted_hue;
 
-	Color hsl, hsl_results;
-	color_rgb_to_hsl(&c, &hsl);
+	Color hsl, hsv, hsl_results;
+	color_rgb_to_hsv(&c, &hsv);
+
+	//hsv.hsv.saturation = clamp_float(hsv.hsv.saturation - args->mod[color_index].saturation, 0, 1);
+	//hsv.hsv.value = clamp_float(hsv.hsv.value - args->mod[color_index].value, 0, 1);
+
+	color_hsv_to_hsl(&hsv, &hsl);
 
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	const ColorWheelType *wheel = &color_wheel_types_get()[wheel_type];
@@ -591,12 +596,9 @@ static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, ui
 
 	//color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
 
-	shifted_hue = wrap_float(hue - args->color_hue[color_index]);
+	shifted_hue = wrap_float(hue - args->color_hue[color_index] - args->mod[color_index].hue);
 
 	wheel->hue_to_hsl(hue, &hsl_results);
-
-	//color_rybhue_to_rgb(hue, &c);
-	//color_rgb_to_hsl(&c, &hsl_results);
 
 	saturation = hsl.hsl.saturation * 1/hsl_results.hsl.saturation;
 	lightness = hsl.hsl.lightness - hsl_results.hsl.lightness;

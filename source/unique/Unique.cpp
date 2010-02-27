@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -30,7 +30,7 @@ static UniqueResponse user_callback (UniqueApp *app, gint command, UniqueMessage
 		unique_callback(unique_user_data);
 		//gtk_window_set_startup_id(GTK_WINDOW (our_window), startup_id);
 	}
-	
+
 	return UNIQUE_RESPONSE_OK;
 }
 
@@ -43,7 +43,7 @@ int unique_init(int (*unique_callback)(void* user_data), void* user_data){
 	if (unique_app_is_running(unique_app)){
 
 		unique_app_send_message(unique_app, UNIQUE_ACTIVATE, 0);
-		
+
 		g_object_unref(unique_app);
 		return 1;
 	}else{

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -57,10 +57,10 @@ void screen_reader_reset_rect(struct ScreenReader *screen){
 
 void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update_rect){
 	if (!screen->screen) return;
-	
+
 	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
 	GdkColormap* colormap = gdk_screen_get_system_colormap(screen->screen);
-	
+
 	int left = screen->read_area.getX();
 	int top = screen->read_area.getY();
 	int width = screen->read_area.getWidth();

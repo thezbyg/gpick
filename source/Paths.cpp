@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,9 +29,9 @@ static gchar* get_data_dir(){
 
 	i=g_list_append(i, (gchar*)"share");
 	paths=i;
-	
+
 	i=g_list_append(i, (gchar*)g_get_user_data_dir());
-	
+
 	const gchar* const *datadirs = g_get_system_data_dirs();
 	for (gint datadirs_i=0; datadirs[datadirs_i];++datadirs_i){
 		i=g_list_append(i, (gchar*)datadirs[datadirs_i]);
@@ -73,7 +73,7 @@ gchar* build_config_path(const gchar *filename){
 	if (filename)
 		return g_build_filename(g_get_user_config_dir(), "gpick", filename, NULL);
 	else
-		return g_build_filename(g_get_user_config_dir(), "gpick", NULL);	
+		return g_build_filename(g_get_user_config_dir(), "gpick", NULL);
 }
 
 

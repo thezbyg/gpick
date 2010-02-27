@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -52,5 +52,5 @@ void dynv_set_float_array(struct dynvSystem* dynv_system, const char *path, floa
 void dynv_set_bool_array(struct dynvSystem* dynv_system, const char *path, bool* values, uint32_t count);
 void dynv_set_string_array(struct dynvSystem* dynv_system, const char *path, const char** values, uint32_t count);
 void dynv_set_color_array(struct dynvSystem* dynv_system, const char *path, const Color** values, uint32_t count);
-	
+
 #endif /* DYNVHELPERS_H_ */

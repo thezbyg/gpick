@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@ public:
 	Rect2(const T &x1_, const T &y1_, const T &x2_, const T &y2_):x1(x1_),y1(y1_),x2(x2_),y2(y2_){
 		empty=false;
 	};
-	
+
 	const Rect2 operator=(const Rect2 &rect){
 		x1 = rect.x1;
 		y1 = rect.y1;
@@ -38,14 +38,14 @@ public:
 		empty = rect.empty;
 		return *this;
 	};
-	
+
 	const Rect2 operator+(const Rect2 &rect) const{
 
 		if (rect.empty) return *this;
 		if (empty) return rect;
-		
+
 		Rect2 r;
-			
+
 		if (x1 < rect.x1) r.x1 = x1;
 		else r.x1 = rect.x1;
 		if (y1 < rect.y1) r.y1 = y1;
@@ -55,36 +55,36 @@ public:
 		else r.x2 = rect.x2;
 		if (y2 > rect.y2) r.y2 = y2;
 		else r.y2 = rect.y2;
-		
+
 		return r;
 	};
-	
+
 	const Rect2 operator+=(const Rect2 &rect){
 		*this=*this+rect;
 		return *this;
 	};
-	
+
 	const Rect2 impose(const Rect2 &rect){
 		x1 = rect.x1 + x1 * rect.getWidth();
 		y1 = rect.y1 + y1 * rect.getHeight();
-		
+
 		x2 = rect.x1 + x2 * rect.getWidth();
 		y2 = rect.y1 + y2 * rect.getHeight();
-		
+
 		return *this;
 	}
-	
+
 	bool isInside(const T &x, const T &y){
 		if (x<x1 || x>x2 || y<y1 || y>y2)
 			return false;
 		else
-			return true;	
+			return true;
 	}
-	
+
 	bool isEmpty() const{
 		return empty;
 	};
-	
+
 	const T& getX() const{
 		return x1;
 	};
@@ -97,7 +97,7 @@ public:
 	T getHeight() const{
 		return y2-y1;
 	};
-	
+
 private:
 	bool empty;
 	T x1, y1, x2, y2;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -41,7 +41,7 @@ typedef struct _SingleInstanceFactoryClass {
 } SingleInstanceFactoryClass;
 
 static gboolean single_instance_activate (SingleInstanceFactory *factory, GError **error);
-					      
+
 #include "single_instance_server.h"
 
 static gboolean single_instance_activate (SingleInstanceFactory *factory, GError **error){
@@ -69,7 +69,7 @@ G_DEFINE_TYPE(SingleInstanceFactory, single_instance_factory, G_TYPE_OBJECT);
 #define FACTORY_NAME "org.gpick.SingleInstanceFactory"
 static int register_factory (void){
 	DBusGConnection *connection=NULL;
-	
+
 	GError *error = NULL;
 	SingleInstanceFactory *factory;
 	guint32 request_name_ret;
@@ -77,7 +77,7 @@ static int register_factory (void){
 	connection = dbus_g_bus_get (DBUS_BUS_SESSION, &error);
 	if (connection == NULL) {
         g_printerr ("Error: %s\n", error->message);
-		g_error_free (error);    
+		g_error_free (error);
 		return -1;
 	}
 
@@ -89,21 +89,21 @@ static int register_factory (void){
 	if (!org_freedesktop_DBus_request_name (proxy, FACTORY_NAME,
 						0, &request_name_ret, &error)) {
         g_printerr ("Error: %s\n", error->message);
-		g_error_free (error);    				
+		g_error_free (error);
 		return -1;
 	}
 
 	if (request_name_ret != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-		//name already taken, 
-		
-		proxy = dbus_g_proxy_new_for_name (connection, FACTORY_NAME, "/Factory", 
-				"com.google.code.gpick.SingleInstance"); 
-		
+		//name already taken,
+
+		proxy = dbus_g_proxy_new_for_name (connection, FACTORY_NAME, "/Factory",
+				"com.google.code.gpick.SingleInstance");
+
 		if (!com_google_code_gpick_SingleInstance_activate(proxy, &error)){
 		    g_printerr ("Error: %s\n", error->message);
-			g_error_free (error);    
+			g_error_free (error);
 		}
-		
+
 		return 1;
 	}
 
@@ -127,7 +127,7 @@ int unique_init(int (*unique_callback)(void* user_data), void* user_data){
 	if ((r=register_factory()) == 0){
 		return 0;
 	}
-	
+
 	return 1;
 }
 

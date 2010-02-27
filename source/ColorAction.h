@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -24,7 +24,7 @@
 
 struct ColorAction{
 	uint32_t refcnt;
-	
+
 	struct dynvSystem* params;
 	struct ColorList* parents; //color objects which change current action results
 

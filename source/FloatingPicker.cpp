@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -251,6 +251,7 @@ static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, FloatingPicker
 		event2.type = GDK_BUTTON_RELEASE;
 		event2.button = 1;
 		args->release_mode = false;
+		args->click_mode = false;
 		button_release_cb(widget, &event2, args);
 		return TRUE;
 		break;

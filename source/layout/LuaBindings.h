@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,7 +29,7 @@ int lua_ext_layout_openlib(lua_State *L);
 
 Box* lua_checklbox (lua_State *L, int index);
 int lua_pushlbox (lua_State *L, Box* box);
-	
+
 System* lua_checklsystem (lua_State *L, int index);
 int lua_pushlsystem (lua_State *L, System* system);
 

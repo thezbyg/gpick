@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -46,7 +46,7 @@ typedef struct GtkColorPrivate {
 	Color color;
 	Color text_color;
 	gchar* text;
-	
+
 	bool rounded_rectangle;
 	bool h_center;
 } GtkColorPrivate;
@@ -54,7 +54,7 @@ typedef struct GtkColorPrivate {
 static void gtk_color_class_init(GtkColorClass *color_class) {
 	GObjectClass *obj_class;
 	GtkWidgetClass *widget_class;
-	
+
 	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(color_class));
 
 	obj_class = G_OBJECT_CLASS(color_class);
@@ -64,11 +64,11 @@ static void gtk_color_class_init(GtkColorClass *color_class) {
 	widget_class->button_release_event = gtk_color_button_release;
 	widget_class->button_press_event = gtk_color_button_press;
 	widget_class->size_request = gtk_color_size_request;
-	
+
 	obj_class->finalize = gtk_color_finalize;
-	
+
 	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
-	
+
 	gtk_color_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkColorClass, activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
@@ -95,27 +95,27 @@ GtkWidget* gtk_color_new(void) {
 
 static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
-	
+
 	gint width = 32+widget->style->xthickness*2;
 	gint height = 16+widget->style->ythickness*2;
-	
+
 	if (ns->rounded_rectangle){
 		width += 20;
 		height += 20;
 	}
-	
+
 	requisition->width = width;
 	requisition->height = height;
 }
 
 static void gtk_color_finalize(GObject *color_obj){
-	
+
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(color_obj);
 	if (ns->text){
 		g_free(ns->text);
 		ns->text = 0;
 	}
-	
+
 	G_OBJECT_CLASS(parent_class)->finalize (color_obj);
 }
 
@@ -128,7 +128,7 @@ void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text) {
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	color_copy(color, &ns->color);
 	color_get_contrasting(&ns->color, &ns->text_color);
-	
+
 	if (ns->text)
 		g_free(ns->text);
 	ns->text = 0;
@@ -140,7 +140,7 @@ void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text) {
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	ns->rounded_rectangle = rounded_rectangle;
-	
+
 	//if (ns->rounded_rectangle)
 	//	gtk_widget_set_size_request(GTK_WIDGET(widget), 32+GTK_WIDGET(widget)->style->xthickness*2, 48+GTK_WIDGET(widget)->style->ythickness*2);
 
@@ -155,9 +155,9 @@ void gtk_color_set_hcenter(GtkColor* widget, bool hcenter){
 
 
 static void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width, double height, double roundness){
-	
+
 	double strength = 0.3;
-	
+
 	cairo_move_to(cr, x+roundness, y);
 	cairo_line_to(cr, x+width-roundness, y);
 	cairo_curve_to(cr, x+width-roundness*strength, y, x+width, y+roundness*strength, x+width, y+roundness);
@@ -172,32 +172,32 @@ static void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double widt
 }
 
 static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
-	
+
 	GtkStateType state;
-	
+
 	if (GTK_WIDGET_HAS_FOCUS (widget))
 		state = GTK_STATE_SELECTED;
 	else
 		state = GTK_STATE_ACTIVE;
 
-	
+
 	cairo_t *cr;
 
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
-	
+
 	cr = gdk_cairo_create(widget->window);
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
-	
+
 	if (ns->rounded_rectangle){
-	
-		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness, 
+
+		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness,
 			widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, 20);
-			
+
 		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
 		cairo_fill_preserve(cr);
-		
+
 		if (GTK_WIDGET_HAS_FOCUS(widget)){
 			cairo_set_source_rgb(cr, widget->style->fg[GTK_STATE_NORMAL].red/65536.0, widget->style->fg[GTK_STATE_NORMAL].green/65536.0, widget->style->fg[GTK_STATE_NORMAL].blue/65536.0);
 			cairo_set_line_width(cr, 3);
@@ -205,22 +205,22 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 			cairo_set_source_rgb(cr, 0, 0, 0);
 			cairo_set_line_width(cr, 1);
 		}
-		
+
 		cairo_stroke(cr);
-		
+
 	}else{
 		cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
 		cairo_fill(cr);
 	}
-	
+
 	if (ns->text){
 		cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
 		cairo_set_font_size(cr, 14);
-	
+
 		cairo_text_extents_t extents;
 		cairo_text_extents(cr, ns->text, &extents);
-	
+
 		cairo_set_source_rgb(cr, ns->text_color.rgb.red, ns->text_color.rgb.green, ns->text_color.rgb.blue);
 		if (ns->h_center)
 			cairo_move_to(cr, widget->allocation.width/2 - (extents.width/2 + extents.x_bearing), widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
@@ -228,9 +228,9 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 			cairo_move_to(cr, widget->style->xthickness, widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
 		cairo_show_text(cr, ns->text);
 	}
-	
+
 	cairo_destroy(cr);
-	
+
 
 	return FALSE;
 }
@@ -243,11 +243,11 @@ static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *even
 
 static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event){
 	gtk_widget_grab_focus(widget);
-	
+
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
 		g_signal_emit(widget, gtk_color_signals[ACTIVATED], 0);
 	}
-	
+
 	return FALSE;
 }
 

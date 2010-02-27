@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -156,7 +156,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 		struct dynvIO* mem_io=dynv_io_memory_new();
 		char* data;
 		uint32_t size;
-		
+
 		ofstream::pos_type end_pos;
 
 		struct ChunkHeader header;
@@ -176,7 +176,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 		file.write(data, size);
 		dynv_io_reset(mem_io);
 		dynv_handler_map_release(handler_map);
-		
+
 		end_pos = file.tellp();
 		file.seekp(handler_map_pos);
 		prepare_chunk_header(&header, CHUNK_TYPE_HANDLER_MAP, end_pos-handler_map_pos-sizeof(struct ChunkHeader));
@@ -194,15 +194,15 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 		dynv_io_reset(mem_io);
 		dynv_handler_map_release(handler_map);*/
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){			
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
 			dynv_system_serialize((*i)->params, mem_io);
 			dynv_io_memory_get_data(mem_io, &data, &size);
-			file.write(data, size);			
+			file.write(data, size);
 			dynv_io_reset(mem_io);
 		}
-		
+
 		dynv_io_free(mem_io);
-		
+
 		end_pos = file.tellp();
 		file.seekp(colorlist_pos);
 		prepare_chunk_header(&header, CHUNK_TYPE_COLOR_LIST, end_pos-colorlist_pos-sizeof(struct ChunkHeader));
@@ -225,7 +225,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 		file.write((char*)positions, color_list->colors.size()*sizeof(long));
 
 		delete [] positions;
-	
+
 		file.close();
 		return 0;
 	}

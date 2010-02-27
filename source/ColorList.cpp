@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -33,8 +33,8 @@ struct ColorList* color_list_new(struct dynvHandlerMap* handler_map){
 	color_list->on_clear=NULL;
 	color_list->on_delete_selected=NULL;
 	color_list->on_get_positions=NULL;
-	color_list->userdata=NULL;	
-	
+	color_list->userdata=NULL;
+
 
 	return color_list;
 }
@@ -59,7 +59,7 @@ struct ColorObject* color_list_new_color_object(struct ColorList* color_list, Co
 	struct ColorObject *color_object=color_object_new(handler_map);
 	if (handler_map) dynv_handler_map_release(handler_map);
 	color_object_set_color(color_object, color);
-	
+
 	return color_object;
 }
 
@@ -80,7 +80,7 @@ struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* co
 	}else{
 		delete color_object;
 		return 0;
-	}	
+	}
 }
 
 int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object, int add_to_palette){
@@ -96,7 +96,7 @@ int color_list_remove_color_object(struct ColorList* color_list, struct ColorObj
 	return 0;
 }
 
-int color_list_remove_selected(struct ColorList* color_list){	
+int color_list_remove_selected(struct ColorList* color_list){
 	ColorList::iter i=color_list->colors.begin();
 	while (i!=color_list->colors.end()){
 		if ((*i)->selected){
