@@ -66,6 +66,13 @@ const void* dynv_get_pointer_wd(struct dynvSystem* dynv_system, const char *path
 	}else return *(const void**)r;
 }
 
+void* dynv_get_pointer_wdc(struct dynvSystem* dynv_system, const char *path, void* default_value){
+	int error;
+	void* r = dynv_get(dynv_system, "ptr", path, &error);
+	if (error){
+		return default_value;
+	}else return *(void**)r;
+}
 
 
 

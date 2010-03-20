@@ -188,12 +188,11 @@ int converters_color_serialize(Converters* converters, const char* function, str
 }
 
 Converters* converters_init(struct dynvSystem* params){
-	Converters *converters = new Converters;
 
-
-	lua_State* L = (lua_State*)dynv_get_pointer_wd(params, "lua_State", 0);
+	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
 	if (L==NULL) return 0;
 
+	Converters *converters = new Converters;
 	converters->L = L;
 	converters->display_converter = 0;
 

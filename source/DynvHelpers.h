@@ -31,6 +31,7 @@ bool dynv_get_bool_wd(struct dynvSystem* dynv_system, const char *path, bool def
 const char* dynv_get_string_wd(struct dynvSystem* dynv_system, const char *path, const char* default_value);
 const Color* dynv_get_color_wd(struct dynvSystem* dynv_system, const char *path, const Color* default_value);
 const void* dynv_get_pointer_wd(struct dynvSystem* dynv_system, const char *path, const void* default_value);
+void* dynv_get_pointer_wdc(struct dynvSystem* dynv_system, const char *path, void* default_value);
 
 void dynv_set_int32(struct dynvSystem* dynv_system, const char *path, int32_t value);
 void dynv_set_float(struct dynvSystem* dynv_system, const char *path, float value);

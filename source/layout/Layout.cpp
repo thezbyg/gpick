@@ -65,11 +65,11 @@ Layouts::~Layouts(){
 }
 
 Layouts* layouts_init(struct dynvSystem* params){
+
+	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
+	if (L == NULL) return 0;
+
 	Layouts *layouts = new Layouts;
-
-	lua_State* L=(lua_State*)dynv_get_pointer_wd(params, "lua_State", 0);
-	if (L==NULL) return 0;
-
 	layouts->L = L;
 
 	int status;

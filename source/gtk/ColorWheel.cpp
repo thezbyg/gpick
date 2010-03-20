@@ -384,6 +384,19 @@ static uint32_t get_color_index(GtkColorWheelPrivate *ns, ColorPoint *cp){
 	return (uint64_t(cp) - uint64_t(ns)) / sizeof(ColorPoint);
 }
 
+int gtk_color_wheel_get_at(GtkColorWheel *color_wheel, int x, int y){
+	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
+
+	ColorPoint *cp = get_cpoint_at(ns, x, y);
+	if (cp){
+		return get_color_index(ns, cp);
+	}
+
+	if (is_inside_block(ns, x, y)) return -1;
+
+	return -2;
+}
+
 static gboolean gtk_color_wheel_motion_notify(GtkWidget *widget, GdkEventMotion *event){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
 

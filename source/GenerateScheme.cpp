@@ -650,9 +650,49 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
-	GenerateSchemeArgs* args=(GenerateSchemeArgs*)dd->userdata;
+	GenerateSchemeArgs* args = static_cast<GenerateSchemeArgs*>(dd->userdata);
 	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
 	return 0;
+}
+
+static int set_color_object_at_color_wheel(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+	int item = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(dd->widget), x, y);
+	GenerateSchemeArgs* args = static_cast<GenerateSchemeArgs*>(dd->userdata);
+
+	if (item == -1){
+
+	}else if (item >= 0){
+		Color c, hsl;
+		double hue;
+		color_object_get_color(colorobject, &c);
+		color_rgb_to_hsl(&c, &hsl);
+
+		int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
+		const ColorWheelType *wheel = &color_wheel_types_get()[wheel_type];
+		wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
+
+		if (args->wheel_locked){
+			double hue_shift = (hue - args->mod[item].orig_hue) - args->mod[item].hue;
+            hue = wrap_float(gtk_range_get_value(GTK_RANGE(args->hue)) / 360.0 + hue_shift);
+
+			gtk_range_set_value(GTK_RANGE(args->hue), hue * 360.0);
+		}else{
+			args->mod[item].hue = hue - args->mod[item].orig_hue;
+			update(dd->widget, args);
+		}
+	}
+	return 0;
+}
+
+static bool test_at_color_wheel(struct DragDrop* dd, int x, int y){
+	int item = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(dd->widget), x, y);
+	if (item == -1){
+
+	}else if (item >= 0){
+
+		return true;
+	}
+	return false;
 }
 
 ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
@@ -736,6 +776,15 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	g_signal_connect(G_OBJECT(args->color_wheel), "button-press-event", G_CALLBACK(color_wheel_button_press_cb), args);
 	args->wheel_locked = dynv_get_bool_wd(args->params, "wheel_locked", true);
 	gtk_color_wheel_set_block_editable(GTK_COLOR_WHEEL(args->color_wheel), !args->wheel_locked);
+
+	gtk_drag_dest_set(args->color_wheel, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.userdata = args;
+	dd.userdata2 = 0;
+	dd.set_color_object_at = set_color_object_at_color_wheel;
+	dd.test_at = test_at_color_wheel;
+	dragdrop_widget_attach(args->color_wheel, DragDropFlags(DRAGDROP_DESTINATION), &dd);
+
 
 	gint table_y;
 	table = gtk_table_new(5, 2, false);

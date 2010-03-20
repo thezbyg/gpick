@@ -39,7 +39,6 @@ typedef enum{
 
 typedef struct ConverterArgs{
 	GtkWidget* list;
-	GtkWidget* combo;
 
 	struct dynvSystem *params;
 	GlobalState *gs;
@@ -55,7 +54,9 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
 	dynv_set_string(color_object->params, "name", "Test color");
 
-	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0), converter->function_name, color_object, &converted)==0) {
+	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
+
+	if (converters_color_serialize(converters, converter->function_name, color_object, &converted) == 0) {
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 			CONVERTERLIST_HUMAN_NAME, converter->human_readable,
 			CONVERTERLIST_EXAMPLE, converted,
@@ -231,7 +232,7 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	table_y++;
 
 
-	Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
 
 	Converter **converter_table;
 	uint32_t total_converters, converter_i;
@@ -308,11 +309,11 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 
 		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
-		if (count>0){
+		if (count > 0){
 			char** name_array = new char*[count];
 			bool* copy_array = new bool[count];
 			bool* paste_array = new bool[count];
-			unsigned int i=0;
+			unsigned int i = 0;
 
 			while (valid){
 				Converter* converter;
