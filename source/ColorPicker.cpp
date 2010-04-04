@@ -159,7 +159,6 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 
 	stringstream ss;
 	ss.setf(ios::fixed, ios::floatfield);
-	const char *status[2] = {"Good", "Bad"};
 
 	matrix3x3 adaptation_matrix, working_space_matrix;
 	vector3 d50, d65;
@@ -186,15 +185,7 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	complementary *= std::sin(hsl1.hsl.lightness * M_PI) * std::sin(hsl2.hsl.lightness * M_PI);
 	complementary *= std::sin(hsl1.hsl.saturation * M_PI / 2) * std::sin(hsl2.hsl.saturation * M_PI / 2);
 
-	ss << std::setprecision(2) << std::abs(c_lab.lab.L - c2_lab.lab.L) + complementary * 50 << "%";
-
-	/*double brightness1 = (c.rgb.red * 299.0 + c.rgb.green * 587.0 + c.rgb.blue * 114.0) / 1000.0;
-	double brightness2 = (c2.rgb.red * 299.0 + c2.rgb.green * 587.0 + c2.rgb.blue * 114.0) / 1000.0;
-	double color_diff = std::abs(c.rgb.red - c2.rgb.red) + std::abs(c.rgb.green - c2.rgb.green) + std::abs(c.rgb.blue - c2.rgb.blue);
-
-	ss << std::setprecision(1) << "brightness " << status[std::abs(brightness1 - brightness2) * 255 > 125 ? 0 : 1] << " [" << std::abs(brightness1 - brightness2) * 255 * 100 / 125 << "%]" << "\ncolor difference " << status[color_diff * 255 > 500 ? 0 : 1] << " [" << color_diff * 255 * 100 / 500 << "%]";
-
-	*/
+	ss << std::setprecision(1) << std::abs(c_lab.lab.L - c2_lab.lab.L) + complementary * 50 << "%";
 
 	gtk_label_set_text(GTK_LABEL(args->contrastCheckMsg), ss.str().c_str());
 }
@@ -1099,6 +1090,12 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 					Color *c;
 					if ((c = const_cast<Color*>(dynv_get_color_wd(args->params, "contrast.color", 0)))){
 						gtk_color_set_color(GTK_COLOR(widget), c, "Sample");
+					}else{
+						Color c;
+						c.rgb.red = 1;
+						c.rgb.green = 1;
+						c.rgb.blue = 1;
+						gtk_color_set_color(GTK_COLOR(widget), &c, "Sample");
 					}
 					gtk_color_set_rounded(GTK_COLOR(widget), true);
 					gtk_color_set_hcenter(GTK_COLOR(widget), true);
