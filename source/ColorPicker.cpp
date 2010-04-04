@@ -23,6 +23,8 @@
 #include "DynvHelpers.h"
 #include "CopyPaste.h"
 #include "FloatingPicker.h"
+#include "ColorRYB.h"
+#include "ColorWheelType.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -39,6 +41,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 using namespace std;
 using namespace math;
 
@@ -70,6 +73,9 @@ typedef struct ColorPickerArgs{
 
 	GtkWidget* color_name;
 	GtkWidget* statusbar;
+
+	GtkWidget* contrastCheck;
+	GtkWidget* contrastCheckMsg;
 
 	guint timeout_source_id;
 
@@ -136,7 +142,7 @@ static gboolean updateMainColorTimer(ColorPickerArgs* args){
 
 
 static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
-	Color c;
+	Color c, c2;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display),&c);
 
 	if (except_widget != args->hsl_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsl_control), &c);
@@ -148,6 +154,49 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	string color_name = color_names_get(args->gs->color_names, &c);
 	gtk_entry_set_text(GTK_ENTRY(args->color_name), color_name.c_str());
 
+	gtk_color_get_color(GTK_COLOR(args->contrastCheck), &c2);
+	gtk_color_set_text_color(GTK_COLOR(args->contrastCheck), &c);
+
+	stringstream ss;
+	ss.setf(ios::fixed, ios::floatfield);
+	const char *status[2] = {"Good", "Bad"};
+
+	matrix3x3 adaptation_matrix, working_space_matrix;
+	vector3 d50, d65;
+	vector3_set(&d50, 96.442, 100.000,  82.821);
+	vector3_set(&d65, 95.047, 100.000, 108.883);
+	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+
+	Color c_lab, c2_lab;
+    color_rgb_to_lab(&c, &c_lab, &d50, &working_space_matrix);
+    color_rgb_to_lab(&c2, &c2_lab, &d50, &working_space_matrix);
+
+	const ColorWheelType *wheel = &color_wheel_types_get()[0];
+	Color hsl1, hsl2;
+	double hue1, hue2;
+	color_rgb_to_hsl(&c, &hsl1);
+	color_rgb_to_hsl(&c2, &hsl2);
+
+	wheel->rgbhue_to_hue(hsl1.hsl.hue, &hue1);
+	wheel->rgbhue_to_hue(hsl2.hsl.hue, &hue2);
+
+	double complementary = std::abs(hue1 - hue2);
+    complementary -= std::floor(complementary);
+	complementary *= std::sin(hsl1.hsl.lightness * M_PI) * std::sin(hsl2.hsl.lightness * M_PI);
+	complementary *= std::sin(hsl1.hsl.saturation * M_PI / 2) * std::sin(hsl2.hsl.saturation * M_PI / 2);
+
+	ss << std::setprecision(2) << std::abs(c_lab.lab.L - c2_lab.lab.L) + complementary * 50 << "%";
+
+	/*double brightness1 = (c.rgb.red * 299.0 + c.rgb.green * 587.0 + c.rgb.blue * 114.0) / 1000.0;
+	double brightness2 = (c2.rgb.red * 299.0 + c2.rgb.green * 587.0 + c2.rgb.blue * 114.0) / 1000.0;
+	double color_diff = std::abs(c.rgb.red - c2.rgb.red) + std::abs(c.rgb.green - c2.rgb.green) + std::abs(c.rgb.blue - c2.rgb.blue);
+
+	ss << std::setprecision(1) << "brightness " << status[std::abs(brightness1 - brightness2) * 255 > 125 ? 0 : 1] << " [" << std::abs(brightness1 - brightness2) * 255 * 100 / 125 << "%]" << "\ncolor difference " << status[color_diff * 255 > 500 ? 0 : 1] << " [" << color_diff * 255 * 100 / 500 << "%]";
+
+	*/
+
+	gtk_label_set_text(GTK_LABEL(args->contrastCheckMsg), ss.str().c_str());
 }
 
 
@@ -662,10 +711,11 @@ static int source_destroy(ColorPickerArgs *args){
 
 	dynv_set_int32(args->params, "swatch.active_color", gtk_swatch_get_active_index(GTK_SWATCH(args->swatch_display)));
 
+	Color c;
+
 	char tmp[32];
 	for (gint i=1; i<7; ++i){
 		sprintf(tmp, "swatch.color%d", i);
-		Color c;
 		gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), i, &c);
 		dynv_set_color(args->params, tmp, &c);
 	}
@@ -682,6 +732,9 @@ static int source_destroy(ColorPickerArgs *args){
 	dynv_set_bool(args->params, "expander.lab", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderLAB)));
 	dynv_set_bool(args->params, "expander.cmyk", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderCMYK)));
 	dynv_set_bool(args->params, "expander.info", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderInfo)));
+
+	gtk_color_get_color(GTK_COLOR(args->contrastCheck), &c);
+	dynv_set_color(args->params, "contrast.color", &c);
 
 	gtk_widget_destroy(args->main);
 
@@ -772,6 +825,23 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker){
 	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	args->floating_picker = floating_picker;
+}
+
+static struct ColorObject* get_color_object_contrast(struct DragDrop* dd){
+	Color c;
+	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
+	struct ColorObject* colorobject = color_object_new(dd->handler_map);
+	color_object_set_color(colorobject, &c);
+	return colorobject;
+}
+
+static int set_color_object_at_contrast(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
+	Color c;
+	color_object_get_color(colorobject, &c);
+	gtk_color_set_color(GTK_COLOR(args->contrastCheck), &c, "Sample");
+	updateDiplays((ColorPickerArgs*)dd->userdata, 0);
+	return 0;
 }
 
 ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
@@ -1012,10 +1082,38 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 
 					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color name:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 					widget = gtk_entry_new();
-					gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+					gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					gtk_editable_set_editable(GTK_EDITABLE(widget), FALSE);
 					//gtk_widget_set_sensitive(GTK_WIDGET(widget), FALSE);
 					args->color_name = widget;
+					table_y++;
+
+					dragdrop_init(&dd, gs);
+					dd.userdata = args;
+					dd.get_color_object = get_color_object_contrast;
+					dd.set_color_object_at = set_color_object_at_contrast;
+
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Contrast:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+					widget = gtk_color_new();
+
+					Color *c;
+					if ((c = const_cast<Color*>(dynv_get_color_wd(args->params, "contrast.color", 0)))){
+						gtk_color_set_color(GTK_COLOR(widget), c, "Sample");
+					}
+					gtk_color_set_rounded(GTK_COLOR(widget), true);
+					gtk_color_set_hcenter(GTK_COLOR(widget), true);
+					gtk_color_set_roundness(GTK_COLOR(widget), 5);
+					gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+					args->contrastCheck = widget;
+
+					gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+					gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+					dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+					dd.userdata2 = 0;
+					dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+
+					gtk_table_attach(GTK_TABLE(table), args->contrastCheckMsg = gtk_label_new(""),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
+
 					table_y++;
 
 

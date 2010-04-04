@@ -49,6 +49,9 @@ typedef struct GtkColorPrivate {
 
 	bool rounded_rectangle;
 	bool h_center;
+	bool secondary_color;
+
+	double roundness;
 } GtkColorPrivate;
 
 static void gtk_color_class_init(GtkColorClass *color_class) {
@@ -87,6 +90,8 @@ GtkWidget* gtk_color_new(void) {
 	ns->text = 0;
 	ns->rounded_rectangle = false;
 	ns->h_center = false;
+	ns->secondary_color = false;
+	ns->roundness = 20;
 
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 
@@ -96,12 +101,12 @@ GtkWidget* gtk_color_new(void) {
 static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 
-	gint width = 32+widget->style->xthickness*2;
-	gint height = 16+widget->style->ythickness*2;
+	gint width = 32 + widget->style->xthickness * 2;
+	gint height = 16 + widget->style->ythickness * 2;
 
 	if (ns->rounded_rectangle){
-		width += 20;
-		height += 20;
+		width += ns->roundness;
+		height += ns->roundness;
 	}
 
 	requisition->width = width;
@@ -124,10 +129,36 @@ void gtk_color_get_color(GtkColor* widget, Color* color){
 	color_copy(&ns->color, color);
 }
 
+void gtk_color_set_text_color(GtkColor* widget, Color* color) {
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	color_copy(color, &ns->text_color);
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+
+void gtk_color_set_roundness(GtkColor* widget, double roundness){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	ns->roundness = roundness;
+
+	gint width = 32 + GTK_WIDGET(widget)->style->xthickness * 2;
+	gint height = 16 + GTK_WIDGET(widget)->style->ythickness * 2;
+
+	if (ns->rounded_rectangle){
+		width += ns->roundness;
+		height += ns->roundness;
+	}
+
+	gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+
 void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text) {
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	color_copy(color, &ns->color);
-	color_get_contrasting(&ns->color, &ns->text_color);
+	if (ns->secondary_color){
+
+	}else{
+		color_get_contrasting(&ns->color, &ns->text_color);
+	}
 
 	if (ns->text)
 		g_free(ns->text);
@@ -193,7 +224,7 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 	if (ns->rounded_rectangle){
 
 		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness,
-			widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, 20);
+			widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, ns->roundness);
 
 		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
 		cairo_fill_preserve(cr);

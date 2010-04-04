@@ -54,8 +54,10 @@ typedef struct GtkColorClass
 
 GtkWidget* gtk_color_new (void);
 void gtk_color_set_color(GtkColor* widget, Color* color, gchar* text);
+void gtk_color_set_text_color(GtkColor* widget, Color* color);
 void gtk_color_get_color(GtkColor* widget, Color* color);
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);
+void gtk_color_set_roundness(GtkColor* widget, double roundness);
 void gtk_color_set_hcenter(GtkColor* widget, bool hcenter);
 GType gtk_color_get_type(void);
 
