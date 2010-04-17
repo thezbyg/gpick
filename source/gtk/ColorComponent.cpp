@@ -52,6 +52,7 @@ typedef struct GtkColorComponentPrivate{
 	Color color;
 	GtkColorComponentComp component;
 	int n_components;
+	int capture_on;
 
 	double range[4];
 	double offset[4];
@@ -122,7 +123,7 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 			ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = 0;
 	}
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget), 200, 25 * ns->n_components);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), 200, 16 * ns->n_components);
 
 	return widget;
 }
@@ -147,7 +148,7 @@ void gtk_color_component_set_transformed_color(GtkColorComponent* color_componen
 int gtk_color_component_get_component_id_at(GtkColorComponent* color_component, gint x, gint y){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
 
-	int component = y / 25;
+	int component = y / 16;
 	if (component < 0) component = 0;
 	else if (component >= ns->n_components) component = ns->n_components - 1;
 
@@ -329,14 +330,14 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 	for (i = 0; i < ns->n_components; ++i){
 		cairo_set_source(cr, pattern[i]);
-		cairo_rectangle(cr, 0, 25 * i, 200, 24);
+		cairo_rectangle(cr, 0, 16 * i, 200, 15);
 		cairo_fill(cr);
 		cairo_pattern_destroy(pattern[i]);
 
 
-		cairo_move_to(cr, 200*pointer_pos[i], 25 * i + 17);
-		cairo_line_to(cr, 200*pointer_pos[i]+3, 25 * i + 25);
-		cairo_line_to(cr, 200*pointer_pos[i]-3, 25 * i + 25);
+		cairo_move_to(cr, 200*pointer_pos[i], 16 * i + 9);
+		cairo_line_to(cr, 200*pointer_pos[i]+3, 16 * i + 16);
+		cairo_line_to(cr, 200*pointer_pos[i]-3, 16 * i + 16);
 		cairo_set_source_rgb(cr, 1, 1, 1);
 		cairo_fill_preserve(cr);
 		cairo_set_source_rgb(cr, 0, 0, 0);
@@ -422,9 +423,11 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 		if (value < 0) value = 0;
 		else if (value > 1) value = 1;
 
-		int component = event->y / 25;
+		int component = event->y / 16;
 		if (component < 0) component = 0;
 		else if (component >= ns->n_components) component = ns->n_components - 1;
+
+		ns->capture_on = component;
 
 		gtk_color_component_emit_color_change(widget, component, value);
 		gtk_widget_queue_draw(widget);
@@ -443,11 +446,11 @@ static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMo
 		if (value < 0) value = 0;
 		else if (value > 1) value = 1;
 
-		int component = event->y / 25;
+		/*int component = event->y / 16;
 		if (component < 0) component = 0;
-		else if (component >= ns->n_components) component = ns->n_components - 1;
+		else if (component >= ns->n_components) component = ns->n_components - 1;*/
 
-		gtk_color_component_emit_color_change(widget, component, value);
+		gtk_color_component_emit_color_change(widget, ns->capture_on, value);
 		gtk_widget_queue_draw(widget);
 		return TRUE;
 	}

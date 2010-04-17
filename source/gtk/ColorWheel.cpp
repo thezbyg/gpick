@@ -117,13 +117,13 @@ GtkWidget* gtk_color_wheel_new(){
 	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR_WHEEL, NULL);
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget), 200 + widget->style->xthickness*2, 200 + widget->style->ythickness*2);
 
 	ns->active_color = 1;
-	ns->radius = 100;
-	ns->circle_width = 16;
+	ns->radius = 80;
+	ns->circle_width = 14;
 	ns->block_size = 2 * (ns->radius - ns->circle_width) * sin(M_PI / 4) - 8;
 
+	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->radius * 2 + widget->style->xthickness*2, ns->radius * 2 + widget->style->ythickness*2);
 	ns->n_cpoint = 0;
 	ns->grab_active = 0;
 	ns->grab_block = false;

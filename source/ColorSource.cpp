@@ -18,10 +18,12 @@
 
 #include "ColorSource.h"
 
+#include <glib.h>
 #include <iostream>
 using namespace std;
 
-int color_source_init(ColorSource* source){
+int color_source_init(ColorSource* source, const char *identificator){
+	source->identificator = g_strdup(identificator);
 	source->set_color = 0;
 	source->get_color = 0;
 	source->activate = 0;
@@ -59,6 +61,7 @@ int color_source_get_color(ColorSource *source, ColorObject **color){
 
 int color_source_destroy(ColorSource* source){
 	if (source->destroy) return source->destroy(source);
+	g_free(source->identificator);
 	delete source;
 	return 0;
 }

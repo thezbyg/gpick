@@ -59,13 +59,18 @@ using namespace std;
 typedef struct AppArgs{
 	GtkWidget *window;
 
-	ColorSource *color_source[3];
+    map<string, ColorSource*> color_source;
+	vector<ColorSource*> color_source_index;
+
+	//ColorSource *color_source[3];
 	ColorSource *current_color_source;
+	ColorSource *secondary_color_source;
 
 	GtkWidget *color_list;
 	GtkWidget* notebook;
 	GtkWidget* statusbar;
 	GtkWidget* hpaned;
+	GtkWidget* vpaned;
 
 	uiStatusIcon* statusIcon;
 	FloatingPicker floating_picker;
@@ -139,9 +144,9 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkNotebookPage *page, gui
 	if (args->current_color_source) color_source_deactivate(args->current_color_source);
 	args->current_color_source = NULL;
 
-	if (page_num >= 0 && page_num <= 2 && args->color_source[page_num]){
-		color_source_activate(args->color_source[page_num]);
-		args->current_color_source = args->color_source[page_num];
+	if (page_num >= 0 && page_num <= args->color_source_index.size() && args->color_source_index[page_num]){
+		color_source_activate(args->color_source_index[page_num]);
+		args->current_color_source = args->color_source_index[page_num];
 		dynv_set_pointer(args->gs->params, "CurrentColorSource", args->current_color_source);
 	}else{
 		dynv_set_pointer(args->gs->params, "CurrentColorSource", NULL);
@@ -151,17 +156,26 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkNotebookPage *page, gui
 static void destroy_cb(GtkWidget *widget, AppArgs *args){
 	g_signal_handlers_disconnect_matched(G_OBJECT(args->notebook), G_SIGNAL_MATCH_FUNC, 0, NULL, NULL, (void*)notebook_switch_cb, 0);       //disconnect notebook switch callback, because destroying child widgets triggers it
 
-	dynv_set_int32(args->params, "notebook_page", gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook)));
+	//dynv_set_int32(args->params, "notebook_page", gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook)));
+	dynv_set_string(args->params, "color_source", args->color_source_index[gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook))]->identificator);
 	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
+	dynv_set_int32(args->params, "vertical_paned_position", gtk_paned_get_position(GTK_PANED(args->vpaned)));
 
 	if (args->current_color_source){
 		color_source_deactivate(args->current_color_source);
 		args->current_color_source = 0;
 	}
-	for (int i = 0; i < 3; ++i){
-		color_source_destroy(args->color_source[i]);
-		args->color_source[i] = 0;
+	if (args->secondary_color_source){
+		dynv_set_string(args->params, "secondary_color_source", args->secondary_color_source->identificator);
+		color_source_deactivate(args->secondary_color_source);
+		args->secondary_color_source = 0;
 	}
+
+	for (map<string, ColorSource*>::iterator i = args->color_source.begin(); i != args->color_source.end(); ++i){
+		color_source_destroy((*i).second);
+	}
+	args->color_source.clear();
+	args->color_source_index.clear();
 
 	dynv_set_int32(args->params, "window.x", args->x);
 	dynv_set_int32(args->params, "window.y", args->y);
@@ -1019,6 +1033,7 @@ AppArgs* app_create_main(){
 
 	args->current_filename = 0;
 	args->current_color_source = 0;
+	args->secondary_color_source = 0;
 
 	global_state_init(args->gs, GLOBALSTATE_ALL);
 
@@ -1053,7 +1068,7 @@ AppArgs* app_create_main(){
 
     //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
 
-    GtkWidget *widget, *statusbar, *notebook, *hpaned;
+    GtkWidget *widget, *statusbar, *notebook, *vpaned, *hpaned;
 
     GtkWidget* vbox_main = gtk_vbox_new(false, 0);
     gtk_container_add (GTK_CONTAINER(args->window), vbox_main);
@@ -1065,29 +1080,46 @@ AppArgs* app_create_main(){
  	hpaned = gtk_hpaned_new();
  	gtk_box_pack_start (GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
 
+	vpaned = gtk_vpaned_new();
+	args->vpaned = vpaned;
+	gtk_paned_pack1(GTK_PANED(hpaned), vpaned, false, false);
+
 	notebook = gtk_notebook_new();
-	g_signal_connect (G_OBJECT (notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
+	g_signal_connect(G_OBJECT (notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 
 	statusbar=gtk_statusbar_new();
 	dynv_set_pointer(args->gs->params, "StatusBar", statusbar);
 
-	gtk_paned_pack1(GTK_PANED(hpaned), notebook, FALSE, FALSE);
+	gtk_paned_pack1(GTK_PANED(vpaned), notebook, false, false);
 
 	gtk_widget_show_all(vbox_main);
 
-		args->color_source[0] = color_picker_new(args->gs, &widget);
-		args->floating_picker = floating_picker_new(args->window, args->gs, args->color_source[0]);
-		color_picker_set_floating_picker(args->color_source[0], args->floating_picker);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Color picker"));
+		ColorSource *source;
+		source = color_picker_new(args->gs, &widget);
+		args->color_source[source->identificator] = source;
+		args->color_source_index.push_back(source);
+		args->floating_picker = floating_picker_new(args->window, args->gs, source);
+		color_picker_set_floating_picker(source, args->floating_picker);
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Color picker"));
 		gtk_widget_show(widget);
 
-		args->color_source[1] = generate_scheme_new(args->gs, &widget);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Scheme generation"));
+		source = generate_scheme_new(args->gs, &widget);
+		args->color_source[source->identificator] = source;
+		args->color_source_index.push_back(source);
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Scheme generation"));
 		gtk_widget_show(widget);
 
-		args->color_source[2] = layout_preview_new(args->gs, &widget);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook),widget,gtk_label_new("Layout preview"));
+/*		source = generate_scheme_new(args->gs, &widget);
+		args->secondary_color_source = source;
+		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
+		gtk_widget_show(widget);
+*/
+
+		source = layout_preview_new(args->gs, &widget);
+		args->color_source[source->identificator] = source;
+		args->color_source_index.push_back(source);
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Layout preview"));
 		gtk_widget_show(widget);
 
 		widget = palette_list_new(args->gs);
@@ -1111,12 +1143,20 @@ AppArgs* app_create_main(){
 	args->notebook = notebook;
 
 	{
-		int page = dynv_get_int32_wd(args->params, "notebook_page", 0);
+		const char *tab = dynv_get_string_wd(args->params, "color_source", "");
 
-		if (page>2) page=2;
-		else if (page<0) page=0;
+		map<string, ColorSource*>::iterator i = args->color_source.find(tab);
+		if (i != args->color_source.end()){
+			uint32_t tab_index = 0;
+			for (vector<ColorSource*>::iterator j = args->color_source_index.begin(); j != args->color_source_index.end(); ++j){
+				if ((*j) == (*i).second){
+					gtk_notebook_set_current_page(GTK_NOTEBOOK(args->notebook), tab_index);
+					break;
+				}
+				tab_index++;
+			}
 
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(args->notebook), page);
+		}
 	}
 
 
@@ -1150,6 +1190,7 @@ int app_run(AppArgs *args){
 	gtk_widget_realize(args->window);
 
 	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
+	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
 
 	if (dynv_get_bool_wd(args->params, "start_in_tray", false)){
 		status_icon_set_visible (args->statusIcon, true);

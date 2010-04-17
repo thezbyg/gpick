@@ -22,6 +22,8 @@
 #include "ColorObject.h"
 
 typedef struct ColorSource{
+	char *identificator;
+
 	int (*set_color)(ColorSource *source, ColorObject *color);
 	int (*get_color)(ColorSource *source, ColorObject **color);
 
@@ -34,7 +36,7 @@ typedef struct ColorSource{
 	void* userdata;
 }ColorSource;
 
-int color_source_init(ColorSource* source);
+int color_source_init(ColorSource* source, const char *identificator);
 
 int color_source_activate(ColorSource *source);
 int color_source_deactivate(ColorSource *source);

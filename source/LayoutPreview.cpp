@@ -45,6 +45,7 @@ typedef struct LayoutPreviewArgs{
 	ColorSource source;
 
 	GtkWidget *main;
+	GtkWidget* statusbar;
 
 	GtkWidget *layout;
 
@@ -596,17 +597,24 @@ static GtkWidget* attach_label(GtkWidget *widget, const char *label){
 	return hbox;
 }
 
+static int source_activate(LayoutPreviewArgs *args){
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
+	return 0;
+}
+
 ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	LayoutPreviewArgs* args = new LayoutPreviewArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.layout_preview");
+	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
 	args->layout_system = 0;
 
-	color_source_init(&args->source);
+	color_source_init(&args->source, "LayoutPreview");
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
+	args->source.activate = (int (*)(ColorSource *source))source_activate;
 
 	Layouts* layouts = (Layouts*)dynv_get_pointer_wd(gs->params, "Layouts", 0);
 	args->layouts = layouts;

@@ -48,6 +48,7 @@ typedef struct GenerateSchemeArgs{
 	ColorSource source;
 
 	GtkWidget* main;
+	GtkWidget* statusbar;
 
 	GtkWidget *gen_type;
 	GtkWidget *wheel_type;
@@ -623,6 +624,11 @@ static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color)
 	}
 }
 
+static int source_activate(GenerateSchemeArgs *args){
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
+	return 0;
+}
+
 static int source_deactivate(GenerateSchemeArgs *args){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, true);
@@ -699,12 +705,14 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	GenerateSchemeArgs* args = new GenerateSchemeArgs;
 
 	args->params = dynv_get_dynv(gs->params, "gpick.generate_scheme");
+	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
 
-	color_source_init(&args->source);
+	color_source_init(&args->source, "GenerateScheme");
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
+	args->source.activate = (int (*)(ColorSource *source))source_activate;
 
 	uint32_t hsv_shift_array_size = 0;
 	float *hsv_shift_array = dynv_get_float_array_wd(args->params, "hsv_shift", 0, 0, &hsv_shift_array_size);
