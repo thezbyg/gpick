@@ -16,11 +16,23 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUTPREVIEW_H_
-#define LAYOUTPREVIEW_H_
+#ifndef COLORSOURCEMANAGER_H_
+#define COLORSOURCEMANAGER_H_
 
-#include "ColorSourceManager.h"
+#include "ColorSource.h"
 
-int layout_preview_source_register(ColorSourceManager *csm);
+#include <vector>
+#include <map>
+#include <string>
 
-#endif /* LAYOUTPREVIEW_H_ */
+typedef struct ColorSourceManager{
+	std::map<std::string, ColorSource*> colorsource;
+}ColorSourceManager;
+
+ColorSourceManager* color_source_manager_create();
+int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source);
+ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name);
+std::vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm);
+int color_source_manager_destroy(ColorSourceManager *csm);
+
+#endif /* COLORSOURCE_H_ */

@@ -21,11 +21,12 @@
 
 #include "FloatingPicker.h"
 #include "ColorSource.h"
-#include "GlobalState.h"
+#include "ColorSourceManager.h"
 
 #include <gtk/gtk.h>
 
-ColorSource* color_picker_new(GlobalState* gs, GtkWidget **widget);
+int color_picker_source_register(ColorSourceManager *csm);
+
 int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
 

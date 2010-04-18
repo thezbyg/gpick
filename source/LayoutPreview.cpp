@@ -602,14 +602,14 @@ static int source_activate(LayoutPreviewArgs *args){
 	return 0;
 }
 
-ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
+static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struct dynvSystem *dynv_namespace){
 	LayoutPreviewArgs* args = new LayoutPreviewArgs;
 
-	args->params = dynv_get_dynv(gs->params, "gpick.layout_preview");
+	args->params = dynv_system_ref(dynv_namespace);
 	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
 	args->layout_system = 0;
 
-	color_source_init(&args->source, "LayoutPreview");
+	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
@@ -723,8 +723,16 @@ ColorSource* layout_preview_new(GlobalState* gs, GtkWidget **out_widget){
 	//update(0, args);
 
 	args->main = vbox;
-	*out_widget = vbox;
+	args->source.widget =vbox;
 
 	return (ColorSource*)args;
+}
+
+int layout_preview_source_register(ColorSourceManager *csm){
+    ColorSource *color_source = new ColorSource;
+	color_source_init(color_source, "layout_preview", "Layout preview");
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+    color_source_manager_add_source(csm, color_source);
+	return 0;
 }
 

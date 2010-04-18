@@ -16,11 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUTPREVIEW_H_
-#define LAYOUTPREVIEW_H_
+#include "RegisterSources.h"
 
-#include "ColorSourceManager.h"
+#include "GenerateScheme.h"
+#include "ColorPicker.h"
+#include "LayoutPreview.h"
 
-int layout_preview_source_register(ColorSourceManager *csm);
+int register_sources(ColorSourceManager *csm){
+	generate_scheme_source_register(csm);
+	color_picker_source_register(csm);
+	layout_preview_source_register(csm);
+	return 0;
+}
 
-#endif /* LAYOUTPREVIEW_H_ */

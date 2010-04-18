@@ -83,6 +83,7 @@ typedef struct ColorPickerArgs{
 	FloatingPicker floating_picker;
 
 	struct dynvSystem *params;
+	struct dynvSystem *global_params;
 	GlobalState* gs;
 
 }ColorPickerArgs;
@@ -628,7 +629,7 @@ static void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 		gint32 falloff_id;
 		gtk_tree_model_get(model, &iter, 2, &falloff_id, -1);
 
-		ColorPickerArgs* args=(ColorPickerArgs*)data;
+		ColorPickerArgs* args = (ColorPickerArgs*)data;
 		sampler_set_falloff(args->gs->sampler, (enum SamplerFalloff) falloff_id);
 
 	}
@@ -731,6 +732,7 @@ static int source_destroy(ColorPickerArgs *args){
 	gtk_widget_destroy(args->main);
 
 	dynv_system_release(args->params);
+	dynv_system_release(args->global_params);
 	delete args;
 	return 0;
 }
@@ -768,7 +770,7 @@ static int source_activate(ColorPickerArgs *args){
 		args->timeout_source_id = 0;
 	}
 
-	float refresh_rate = dynv_get_float_wd(args->params, "refresh_rate", 30);
+	float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
 
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"), "Click on swatch area to begin adding colors to palette");
@@ -841,14 +843,15 @@ static void show_dialog_converter(GtkWidget *widget, ColorPickerArgs *args){
 	return;
 }
 
-ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
 	ColorPickerArgs* args = new ColorPickerArgs;
 
-	args->params = dynv_get_dynv(gs->params, "gpick.picker");
+	args->params = dynv_system_ref(dynv_namespace);
+	args->global_params = dynv_get_dynv(gs->params, "gpick.picker");
 	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
 	args->floating_picker = 0;
 
-	color_source_init(&args->source, "ColorPicker");
+	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
@@ -1072,10 +1075,17 @@ ColorSource* color_picker_new(GlobalState* gs, GtkWidget **out_widget){
 
 	gtk_widget_show_all(main_hbox);
 
-	*out_widget = main_hbox;
-
-
+    args->source.widget = main_hbox;
 
 	return (ColorSource*)args;
+}
+
+int color_picker_source_register(ColorSourceManager *csm){
+    ColorSource *color_source = new ColorSource;
+	color_source_init(color_source, "color_picker", "Color picker");
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->single_instance_only = true;
+    color_source_manager_add_source(csm, color_source);
+	return 0;
 }
 

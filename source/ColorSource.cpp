@@ -22,14 +22,18 @@
 #include <iostream>
 using namespace std;
 
-int color_source_init(ColorSource* source, const char *identificator){
+int color_source_init(ColorSource* source, const char *identificator, const char *name){
 	source->identificator = g_strdup(identificator);
+	source->hr_name = g_strdup(name);
 	source->set_color = 0;
 	source->get_color = 0;
 	source->activate = 0;
 	source->deactivate = 0;
 	source->destroy = 0;
 	source->userdata = 0;
+	source->implement = 0;
+	source->widget = 0;
+	source->single_instance_only = false;
 	return 0;
 }
 
@@ -62,6 +66,16 @@ int color_source_get_color(ColorSource *source, ColorObject **color){
 int color_source_destroy(ColorSource* source){
 	if (source->destroy) return source->destroy(source);
 	g_free(source->identificator);
+	g_free(source->hr_name);
 	delete source;
 	return 0;
 }
+
+ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace){
+	return source->implement(source, gs, dynv_namespace);
+}
+
+GtkWidget* color_source_get_widget(ColorSource* source){
+	return source->widget;
+}
+

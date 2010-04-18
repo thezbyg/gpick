@@ -701,13 +701,13 @@ static bool test_at_color_wheel(struct DragDrop* dd, int x, int y){
 	return false;
 }
 
-ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
 	GenerateSchemeArgs* args = new GenerateSchemeArgs;
 
-	args->params = dynv_get_dynv(gs->params, "gpick.generate_scheme");
+	args->params = dynv_system_ref(dynv_namespace);
 	args->statusbar = (GtkWidget*)dynv_get_pointer_wd(gs->params, "StatusBar", 0);
 
-	color_source_init(&args->source, "GenerateScheme");
+	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
@@ -740,8 +740,8 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	vbox = gtk_vbox_new(FALSE, 5);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
 
-	args->color_previews = gtk_hbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, TRUE, TRUE, 5);
+	args->color_previews = gtk_table_new(3, 2, false);
+	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 5);
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
@@ -750,11 +750,14 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
 
-	for (int i=0; i<MAX_COLOR_WIDGETS; ++i){
+	for (int i = 0; i < MAX_COLOR_WIDGETS; ++i){
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
 		gtk_color_set_hcenter(GTK_COLOR(widget), true);
-		gtk_box_pack_start(GTK_BOX(args->color_previews), widget, TRUE, TRUE, 0);
+
+		gtk_table_attach(GTK_TABLE(args->color_previews), widget, i % 2, (i % 2) + 1, i / 2, i / 2 + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+
+		//gtk_box_pack_start(GTK_BOX(args->color_previews), widget, TRUE, TRUE, 0);
 
 		args->colors[i] = widget;
 
@@ -854,14 +857,22 @@ ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **out_widget){
 	args->colors_visible = MAX_COLOR_WIDGETS;
 	args->gs = gs;
 
-	gtk_widget_show_all(vbox);
+	gtk_widget_show_all(hbox);
 
 	update(0, args);
 
 	args->main = hbox;
 
-	*out_widget = hbox;
+	args->source.widget = hbox;
 
 	return (ColorSource*)args;
+}
+
+int generate_scheme_source_register(ColorSourceManager *csm){
+    ColorSource *color_source = new ColorSource;
+	color_source_init(color_source, "generate_scheme", "Scheme generation");
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+    color_source_manager_add_source(csm, color_source);
+	return 0;
 }
 

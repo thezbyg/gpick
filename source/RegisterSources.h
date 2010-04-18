@@ -16,11 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUTPREVIEW_H_
-#define LAYOUTPREVIEW_H_
+#ifndef REGISTERSOURCES_H_
+#define REGISTERSOURCES_H_
 
 #include "ColorSourceManager.h"
 
-int layout_preview_source_register(ColorSourceManager *csm);
+int register_sources(ColorSourceManager *csm);
 
-#endif /* LAYOUTPREVIEW_H_ */
+#endif /* REGISTERSOURCES_H_ */
+

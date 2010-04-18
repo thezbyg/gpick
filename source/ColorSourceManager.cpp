@@ -16,11 +16,56 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUTPREVIEW_H_
-#define LAYOUTPREVIEW_H_
-
 #include "ColorSourceManager.h"
 
-int layout_preview_source_register(ColorSourceManager *csm);
+#include <glib.h>
+#include <iostream>
+using namespace std;
 
-#endif /* LAYOUTPREVIEW_H_ */
+
+ColorSourceManager* color_source_manager_create(){
+	ColorSourceManager *csm = new ColorSourceManager;
+
+
+	return csm;
+}
+
+int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source){
+	pair<map<string, ColorSource*>::iterator, bool> r;
+	r = csm->colorsource.insert(pair<string, ColorSource*>(source->identificator, source));
+	return r.second;
+}
+
+ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name){
+	map<string, ColorSource*>::iterator i = csm->colorsource.find(name);
+	if (i != csm->colorsource.end()){
+		return (*i).second;
+	}
+	return 0;
+}
+
+vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm){
+	vector<ColorSource*> ret;
+	ret.resize(csm->colorsource.size());
+
+	uint32_t j = 0;
+	for (map<string, ColorSource*>::iterator i = csm->colorsource.begin(); i != csm->colorsource.end(); ++i){
+		ret[j] = (*i).second;
+		j++;
+	}
+	return ret;
+}
+
+int color_source_manager_destroy(ColorSourceManager *csm){
+	for (map<string, ColorSource*>::iterator i = csm->colorsource.begin(); i != csm->colorsource.end(); ++i){
+		color_source_destroy((*i).second);
+	}
+	csm->colorsource.clear();
+	delete csm;
+	return 0;
+}
+
+
+
+
+

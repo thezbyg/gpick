@@ -19,11 +19,8 @@
 #ifndef GENERATESCHEME_H_
 #define GENERATESCHEME_H_
 
-#include "ColorSource.h"
-#include "GlobalState.h"
+#include "ColorSourceManager.h"
 
-#include <gtk/gtk.h>
-
-ColorSource* generate_scheme_new(GlobalState* gs, GtkWidget **widget);
+int generate_scheme_source_register(ColorSourceManager *csm);
 
 #endif /* GENERATESCHEME_H_ */

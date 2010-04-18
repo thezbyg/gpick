@@ -20,9 +20,12 @@
 #define COLORSOURCE_H_
 
 #include "ColorObject.h"
+#include "GlobalStateStruct.h"
+#include <gtk/gtk.h>
 
 typedef struct ColorSource{
 	char *identificator;
+	char *hr_name;
 
 	int (*set_color)(ColorSource *source, ColorObject *color);
 	int (*get_color)(ColorSource *source, ColorObject **color);
@@ -30,13 +33,16 @@ typedef struct ColorSource{
 	int (*activate)(ColorSource *source);
 	int (*deactivate)(ColorSource *source);
 
-	int (*init)(ColorSource *source);
+	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 	int (*destroy)(ColorSource *source);
 
+	bool single_instance_only;
+
+	GtkWidget *widget;
 	void* userdata;
 }ColorSource;
 
-int color_source_init(ColorSource* source, const char *identificator);
+int color_source_init(ColorSource* source, const char *identificator, const char *name);
 
 int color_source_activate(ColorSource *source);
 int color_source_deactivate(ColorSource *source);
@@ -44,6 +50,9 @@ int color_source_deactivate(ColorSource *source);
 int color_source_set_color(ColorSource *source, ColorObject *color);
 int color_source_get_color(ColorSource *source, ColorObject *color);
 
+ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
+GtkWidget* color_source_get_widget(ColorSource* source);
 int color_source_destroy(ColorSource* source);
 
 #endif /* COLORSOURCE_H_ */
+

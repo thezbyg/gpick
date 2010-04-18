@@ -25,6 +25,8 @@
 #include "CopyPaste.h"
 #include "unique/Unique.h"
 
+#include "RegisterSources.h"
+
 #include "GenerateScheme.h"
 #include "ColorPicker.h"
 #include "LayoutPreview.h"
@@ -62,9 +64,13 @@ typedef struct AppArgs{
     map<string, ColorSource*> color_source;
 	vector<ColorSource*> color_source_index;
 
+	ColorSourceManager *csm;
 	//ColorSource *color_source[3];
 	ColorSource *current_color_source;
+
 	ColorSource *secondary_color_source;
+	GtkWidget *secondary_source_widget;
+    GtkWidget *secondary_source_container;
 
 	GtkWidget *color_list;
 	GtkWidget* notebook;
@@ -168,7 +174,11 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args){
 	if (args->secondary_color_source){
 		dynv_set_string(args->params, "secondary_color_source", args->secondary_color_source->identificator);
 		color_source_deactivate(args->secondary_color_source);
+		color_source_destroy(args->secondary_color_source);
 		args->secondary_color_source = 0;
+		args->secondary_source_widget = 0;
+	}else{
+		dynv_set_string(args->params, "secondary_color_source", "");
 	}
 
 	for (map<string, ColorSource*>::iterator i = args->color_source.begin(); i != args->color_source.end(); ++i){
@@ -1009,6 +1019,41 @@ static void set_main_window_icon() {
 	}
 }
 
+static void activate_secondary_source(AppArgs *args, ColorSource *source){
+	if (args->secondary_color_source){
+		//gtk_container_remove(GTK_CONTAINER(args->secondary_source_container), args->secondary_source_widget);
+		color_source_deactivate(args->secondary_color_source);
+		color_source_destroy(args->secondary_color_source);
+		args->secondary_color_source = 0;
+		args->secondary_source_widget = 0;
+	}
+
+	if (source){
+
+		string namespace_str = "gpick.secondary_view.";
+		namespace_str += source->identificator;
+
+		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->params, namespace_str.c_str());
+		source = color_source_implement(source, args->gs, dynv_namespace);
+		GtkWidget *new_widget = color_source_get_widget(source);
+		dynv_system_release(dynv_namespace);
+
+		args->secondary_color_source = source;
+		args->secondary_source_widget = new_widget;
+
+		gtk_box_pack_start(GTK_BOX(args->secondary_source_container), new_widget, true, true, 0);
+
+		gtk_widget_show(new_widget);
+		color_source_activate(source);
+
+	}
+}
+
+static void secondary_view_cb(GtkWidget *widget, AppArgs *args){
+	ColorSource *source = static_cast<ColorSource*>(g_object_get_data(G_OBJECT(widget), "source"));
+	activate_secondary_source(args, source);
+}
+
 static int unique_show_window(AppArgs* args){
 	status_icon_set_visible(args->statusIcon, false);
 	main_show_window(args->window, args->params);
@@ -1034,6 +1079,7 @@ AppArgs* app_create_main(){
 	args->current_filename = 0;
 	args->current_color_source = 0;
 	args->secondary_color_source = 0;
+	args->secondary_source_widget = 0;
 
 	global_state_init(args->gs, GLOBALSTATE_ALL);
 
@@ -1048,6 +1094,8 @@ AppArgs* app_create_main(){
 
 	args->params = dynv_get_dynv(args->gs->params, "gpick.main");
 
+	args->csm = color_source_manager_create();
+	register_sources(args->csm);
 
 	args->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
@@ -1096,7 +1144,13 @@ AppArgs* app_create_main(){
 	gtk_widget_show_all(vbox_main);
 
 		ColorSource *source;
-		source = color_picker_new(args->gs, &widget);
+		struct dynvSystem *dynv_namespace;
+
+        dynv_namespace = dynv_get_dynv(gs->params, "gpick.picker");
+        source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, dynv_namespace);
+		widget = color_source_get_widget(source);
+		dynv_system_release(dynv_namespace);
+
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
 		args->floating_picker = floating_picker_new(args->window, args->gs, source);
@@ -1104,7 +1158,10 @@ AppArgs* app_create_main(){
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Color picker"));
 		gtk_widget_show(widget);
 
-		source = generate_scheme_new(args->gs, &widget);
+        dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
+        source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, dynv_namespace);
+		widget = color_source_get_widget(source);
+		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Scheme generation"));
@@ -1115,8 +1172,48 @@ AppArgs* app_create_main(){
 		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
 		gtk_widget_show(widget);
 */
+		widget = gtk_vbox_new(false, 0);
+		args->secondary_source_container = widget;
 
-		source = layout_preview_new(args->gs, &widget);
+		GtkWidget *menubar = gtk_menu_bar_new();
+		GtkWidget *menu;
+		GtkWidget *item, *file_item;
+
+		menu = gtk_menu_new();
+
+		item = gtk_menu_item_new_with_label("None");
+		g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+		vector<ColorSource*> sources = color_source_manager_get_all(args->csm);
+		for (uint32_t i = 0; i < sources.size(); i++){
+			if (!(sources[i]->single_instance_only)){
+				item = gtk_menu_item_new_with_label(sources[i]->hr_name);
+				g_object_set_data_full(G_OBJECT(item), "source", sources[i], (GDestroyNotify)NULL);
+				g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+			}
+		}
+
+		file_item = gtk_menu_item_new_with_mnemonic("_View");
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
+		gtk_menu_bar_append(GTK_MENU_BAR(menubar), file_item);
+
+		gtk_box_pack_start(GTK_BOX(widget), menubar, false, true, 0);
+
+		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
+		gtk_widget_show_all(widget);
+
+
+		source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
+		if (source) activate_secondary_source(args, source);
+
+
+        dynv_namespace = dynv_get_dynv(gs->params, "gpick.layout_preview");
+        source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, dynv_namespace);
+		widget = color_source_get_widget(source);
+		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Layout preview"));
@@ -1161,7 +1258,7 @@ AppArgs* app_create_main(){
 
 
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
-	args->statusbar=statusbar;
+	args->statusbar = statusbar;
 
 	GtkWidget *button = gtk_button_new();
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
@@ -1210,3 +1307,4 @@ int app_run(AppArgs *args){
 
 	return 0;
 }
+
