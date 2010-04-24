@@ -21,6 +21,9 @@
 #include "uiApp.h"
 
 #include <string.h>
+#include <iostream>
+
+using namespace std;
 
 enum {
 	TARGET_STRING = 1,
@@ -263,7 +266,6 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 					g_free(text);
 				}
 			}
-			color_object_release(color_object);
 			break;
 
 		case TARGET_COLOR:
@@ -278,16 +280,13 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 
 				gtk_selection_data_set (selection_data, gdk_atom_intern ("application/x-color", TRUE), 16, (guchar *)data_color, 8);
 			}
-			color_object_release(color_object);
 			break;
 
 		case TARGET_ROOTWIN:
 			g_print ("Dropped on the root window!\n");
-			color_object_release(color_object);
 			break;
 
 		default:
-			color_object_release(color_object);
 			g_assert_not_reached ();
 		}
 	}

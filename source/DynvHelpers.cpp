@@ -58,6 +58,14 @@ const Color* dynv_get_color_wd(struct dynvSystem* dynv_system, const char *path,
 	}else return *(const Color**)r;
 }
 
+Color* dynv_get_color_wdc(struct dynvSystem* dynv_system, const char *path, Color* default_value){
+	int error;
+	void* r = dynv_get(dynv_system, "color", path, &error);
+	if (error){
+		return default_value;
+	}else return *(Color**)r;
+}
+
 const void* dynv_get_pointer_wd(struct dynvSystem* dynv_system, const char *path, const void* default_value){
 	int error;
 	void* r = dynv_get(dynv_system, "ptr", path, &error);

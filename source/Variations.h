@@ -16,18 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RegisterSources.h"
+#ifndef VARIATIONS_H_
+#define VARIATIONS_H_
 
-#include "GenerateScheme.h"
-#include "ColorPicker.h"
-#include "LayoutPreview.h"
-#include "Variations.h"
+#include "ColorSourceManager.h"
 
-int register_sources(ColorSourceManager *csm){
-	generate_scheme_source_register(csm);
-	color_picker_source_register(csm);
-	layout_preview_source_register(csm);
-	variations_source_register(csm);
-	return 0;
-}
+int variations_source_register(ColorSourceManager *csm);
+
+#endif /* VARIATIONS_H_ */
 
