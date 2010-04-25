@@ -246,18 +246,40 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 	}
 
 	if (ns->text){
-		cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
-		cairo_set_font_size(cr, 14);
 
-		cairo_text_extents_t extents;
-		cairo_text_extents(cr, ns->text, &extents);
+		PangoLayout *layout;
+		PangoFontDescription *font_description;
+		font_description = pango_font_description_new();
+		layout = pango_cairo_create_layout(cr);
+
+		pango_font_description_set_family(font_description, "monospace");
+		pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
+		pango_font_description_set_absolute_size(font_description, 14 * PANGO_SCALE);
+		pango_layout_set_font_description(layout, font_description);
+        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 		cairo_set_source_rgb(cr, ns->text_color.rgb.red, ns->text_color.rgb.green, ns->text_color.rgb.blue);
+
+		pango_layout_set_markup(layout, ns->text, -1);
+		pango_layout_set_width(layout, (widget->allocation.width - widget->style->xthickness * 2) * PANGO_SCALE);
+		pango_layout_set_height(layout, (widget->allocation.height - widget->style->ythickness * 2) * PANGO_SCALE);
+
+		int width, height;
+		pango_layout_get_pixel_size(layout, &width, &height);
+		cairo_move_to(cr, widget->style->xthickness, widget->style->ythickness + (widget->allocation.height - height) / 2);
+
 		if (ns->h_center)
-			cairo_move_to(cr, widget->allocation.width/2 - (extents.width/2 + extents.x_bearing), widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
+			pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 		else
-			cairo_move_to(cr, widget->style->xthickness, widget->allocation.height/2 - (extents.height/2 + extents.y_bearing));
-		cairo_show_text(cr, ns->text);
+			pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+
+		pango_cairo_update_layout(cr, layout);
+		pango_cairo_show_layout(cr, layout);
+
+
+		g_object_unref (layout);
+		pango_font_description_free (font_description);
+
 	}
 
 	cairo_destroy(cr);

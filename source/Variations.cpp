@@ -45,19 +45,24 @@ using namespace std;
 #define VAR_COLOR_WIDGETS		8
 #define MAX_COLOR_LINES			3
 
+#define COMPONENT_ID_HSL_HUE		1
+#define COMPONENT_ID_HSL_SATURATION	2
+#define COMPONENT_ID_HSL_LIGHTNESS	3
+#define COMPONENT_ID_LAB_LIGHTNESS	4
+
 typedef struct VariationType{
 	const char *name;
 	const char *symbol;
+	const char *unique_name;
 	int component_id;
 	double strength_mult;
 }VariationType;
 
 const VariationType variation_types[] = {
-	{"Hue", "H", 0, 1},
-	{"Saturation", "S", 1, 1},
-	{"Saturation 2x", "S 2x", 1, 2},
-	{"Saturation 4x", "S 4x", 1, 4},
-	{"Lightness", "L", 2, 1},
+	{"Hue", "H<span font='8' rise='8000'>HSL</span>", "hsl_hue", COMPONENT_ID_HSL_HUE, 1},
+	{"Saturation", "S<span font='8' rise='8000'>HSL</span>", "hsl_saturation", COMPONENT_ID_HSL_SATURATION, 1},
+	{"Lightness", "L<span font='8' rise='8000'>HSL</span>", "hsl_lightness", COMPONENT_ID_HSL_LIGHTNESS, 1},
+	{"Lightness (Lab)", "L<span font='8' rise='8000'>Lab</span>", "lab_lightness", COMPONENT_ID_LAB_LIGHTNESS, 1},
 };
 
 typedef struct VariationsArgs{
@@ -94,31 +99,57 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 		dynv_set_float(args->params, "strength", strength);
 	}
 
-	Color color, hsl, r, hsl_mod;
+	Color color, hsl, lab, r, hsl_mod, lab_mod;
+	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
+	vector3 d50, d65;
+	vector3_set(&d50, 96.442, 100.000,  82.821);
+	vector3_set(&d65, 95.047, 100.000, 108.883);
 
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		gtk_color_get_color(GTK_COLOR(args->color[i].color), &color);
 
-		color_rgb_to_hsl(&color, &hsl);
+		switch (args->color[i].type->component_id){
+		case COMPONENT_ID_HSL_HUE:
+		case COMPONENT_ID_HSL_SATURATION:
+		case COMPONENT_ID_HSL_LIGHTNESS:
+			color_rgb_to_hsl(&color, &hsl);
+			break;
+		case COMPONENT_ID_LAB_LIGHTNESS:
+			{
+				color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+				color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+				matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inverted);
+				color_rgb_to_lab(&color, &lab, &d50, &working_space_matrix);
+			}
+			break;
+		}
 
 		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
 			if (j == VAR_COLOR_WIDGETS / 2) continue;
 
-			color_copy(&hsl, &hsl_mod);
-
 			switch (args->color[i].type->component_id){
-			case 0:
-				hsl_mod.hsl.hue = clamp_float(hsl.hsl.hue + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0, 0, 1);
+			case COMPONENT_ID_HSL_HUE:
+				color_copy(&hsl, &hsl_mod);
+				hsl_mod.hsl.hue = wrap_float(hsl.hsl.hue + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0);
+				color_hsl_to_rgb(&hsl_mod, &r);
 				break;
-			case 1:
+			case COMPONENT_ID_HSL_SATURATION:
+				color_copy(&hsl, &hsl_mod);
 				hsl_mod.hsl.saturation = clamp_float(hsl.hsl.saturation + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0, 0, 1);
+				color_hsl_to_rgb(&hsl_mod, &r);
 				break;
-			case 2:
+			case COMPONENT_ID_HSL_LIGHTNESS:
+				color_copy(&hsl, &hsl_mod);
 				hsl_mod.hsl.lightness = clamp_float(hsl.hsl.lightness + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0, 0, 1);
+				color_hsl_to_rgb(&hsl_mod, &r);
+				break;
+			case COMPONENT_ID_LAB_LIGHTNESS:
+				color_copy(&lab, &lab_mod);
+				lab_mod.lab.L = clamp_float(lab.lab.L + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 4.0, 0, 100);
+				color_lab_to_rgb(&lab_mod, &r, &d50, &working_space_matrix_inverted);
+				color_rgb_normalize(&r);
 				break;
 			}
-
-			color_hsl_to_rgb(&hsl_mod, &r);
 
 			gtk_color_set_color(GTK_COLOR(args->color[i].var_colors[j]), &r, "");
 		}
@@ -216,6 +247,32 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
+static void type_toggled_cb(GtkWidget *widget, VariationsArgs *args) {
+	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	const VariationType *var_type = static_cast<const VariationType*>(g_object_get_data(G_OBJECT(widget), "variation_type"));
+
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
+
+		int line_id = -1;
+		for (int i = 0; i < MAX_COLOR_LINES; ++i){
+			if (args->color[i].color == color_widget){
+				line_id = i;
+				break;
+			}
+		}
+
+		args->color[line_id].type = var_type;
+
+		Color c;
+		gtk_color_get_color(GTK_COLOR(color_widget), &c);
+
+		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
+		set_rgb_color(args, color_object, line_id);
+		color_object_release(color_object);
+
+	}
+}
+
 static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventButton *event ){
 	GtkWidget *menu;
 	GtkWidget* item;
@@ -245,29 +302,47 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
 	color_object_release(color_object);
 
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
+	int line_id = -1;
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == widget){
-
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
-			item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
-			g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-			item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
-			g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-			if (copypaste_is_color_object_available(args->gs)!=0){
-				gtk_widget_set_sensitive(item, false);
-			}
-
-			break;
+			line_id = i;
 		}
+	}
+
+	if (line_id > -1){
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+		GSList *group = 0;
+		for (uint32_t i = 0; i < sizeof(variation_types) / sizeof(VariationType); i++){
+			item = gtk_radio_menu_item_new_with_label(group, variation_types[i].name);
+			group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+			if (args->color[line_id].type == &variation_types[i]){
+				gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+			}
+			g_object_set_data(G_OBJECT(item), "color_widget", widget);
+			g_object_set_data(G_OBJECT(item), "variation_type", (void*)&variation_types[i]);
+			g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(type_toggled_cb), args);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		}
+
+
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);
+
+		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
+		g_object_set_data(G_OBJECT(item), "color_widget", widget);
+
+		if (copypaste_is_color_object_available(args->gs)!=0){
+			gtk_widget_set_sensitive(item, false);
+		}
+
+
 	}
 
 	gtk_widget_show_all (GTK_WIDGET(menu));
@@ -350,6 +425,9 @@ static int source_destroy(VariationsArgs *args){
 	Color c;
 	char tmp[32];
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+		sprintf(tmp, "type%d", i);
+        dynv_set_string(args->params, tmp, args->color[i].type->unique_name);
+
 		sprintf(tmp, "color%d", i);
 		gtk_color_get_color(GTK_COLOR(args->color[i].color), &c);
 		dynv_set_color(args->params, tmp, &c);
@@ -438,13 +516,13 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
 
-	hbox = gtk_hbox_new(FALSE, 5);
+	hbox = gtk_hbox_new(FALSE, 0);
 
-	vbox = gtk_vbox_new(FALSE, 5);
+	vbox = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
 
 	args->color_previews = gtk_table_new(MAX_COLOR_LINES, VAR_COLOR_WIDGETS + 1, false);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
@@ -499,23 +577,35 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	color_set(&c, 0.5);
 	char tmp[32];
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+		sprintf(tmp, "type%d", i);
+		const char *type_name = dynv_get_string_wd(args->params, tmp, "lab_lightness");
+
+		for (uint32_t j = 0; j < sizeof(variation_types) / sizeof(VariationType); j++){
+			if (g_strcmp0(variation_types[j].unique_name, type_name)==0){
+				args->color[i].type = &variation_types[j];
+				break;
+			}
+		}
+
 		sprintf(tmp, "color%d", i);
 		gtk_color_set_color(GTK_COLOR(args->color[i].color), dynv_get_color_wdc(args->params, tmp, &c), args->color[i].type->symbol);
+
+
 	}
 
-	hbox2 = gtk_hbox_new(FALSE, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 5);
+	hbox2 = gtk_hbox_new(FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
 
 	gint table_y;
 	table = gtk_table_new(5, 2, false);
-	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 5);
+	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
 	table_y = 0;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Strength:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Strength:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
 	args->strength = gtk_hscale_new_with_range(1, 100, 1);
 	gtk_range_set_value(GTK_RANGE(args->strength), dynv_get_float_wd(args->params, "strength", 30));
 	g_signal_connect(G_OBJECT(args->strength), "value-changed", G_CALLBACK (update), args);
-	gtk_table_attach(GTK_TABLE(table), args->strength,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	gtk_table_attach(GTK_TABLE(table), args->strength,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,0,0);
 	table_y++;
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->colors->params);
