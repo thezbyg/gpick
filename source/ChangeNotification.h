@@ -16,58 +16,48 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORSOURCE_H_
-#define COLORSOURCE_H_
+#ifndef CHANGENOTIFICATION_H_
+#define CHANGENOTIFICATION_H_
 
-#include "ColorObject.h"
-#include "GlobalStateStruct.h"
-#include <gtk/gtk.h>
+#include "ColorSource.h"
 
-typedef struct ColorSourceSlot{
-	const char *identificator;
-	const char *hr_name;
+#include <map>
+#include <string>
+#include <list>
 
-	uint32_t id;
+#include <boost/shared_ptr.hpp>
+using namespace boost;
 
-	struct{
-		bool read;
-		bool write;
-	}supports;
-}ColorSourceSlot;
+class ChangeNotification;
 
-typedef struct ColorSource{
-	char *identificator;
-	char *hr_name;
+class NotificationLink{
+protected:
+	std::string source_name;
+	uint32_t source_slot_id;
+	std::string destination_name;
+	uint32_t destination_slot_id;
 
-	int (*set_color)(ColorSource *source, ColorObject *color);
-	int (*get_color)(ColorSource *source, ColorObject **color);
+	bool enabled;
 
-	int (*activate)(ColorSource *source);
-	int (*deactivate)(ColorSource *source);
+public:
+	NotificationLink(const char *source_name, uint32_t source_slot_id, const char *destination_name, uint32_t destination_slot_id);
+	friend class ChangeNotification;
+};
 
-	int (*query_slots)(ColorSource *source, ColorSourceSlot *slot);
-	int (*set_slot_color)(ColorSource *source, uint32_t slot_id, ColorObject *color);
+class ChangeNotification{
+protected:
+	std::map<std::string, ColorSource*> sources;
+	std::list<shared_ptr<NotificationLink> > links;
+public:
+	ChangeNotification();
+	~ChangeNotification();
 
-	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace);
-	int (*destroy)(ColorSource *source);
+	bool registerSource(const char *location, ColorSource *source);
+	bool unregisterSource(const char *location, ColorSource *source);
 
-	bool single_instance_only;
+	bool addLink(shared_ptr<NotificationLink> notification_link);
+	bool removeLink(shared_ptr<NotificationLink> notification_link);
+};
 
-	GtkWidget *widget;
-	void* userdata;
-}ColorSource;
-
-int color_source_init(ColorSource* source, const char *identificator, const char *name);
-
-int color_source_activate(ColorSource *source);
-int color_source_deactivate(ColorSource *source);
-
-int color_source_set_color(ColorSource *source, ColorObject *color);
-int color_source_get_color(ColorSource *source, ColorObject *color);
-
-ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
-GtkWidget* color_source_get_widget(ColorSource* source);
-int color_source_destroy(ColorSource* source);
-
-#endif /* COLORSOURCE_H_ */
+#endif /* CHANGENOTIFICATION_H_ */
 

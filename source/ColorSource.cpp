@@ -30,6 +30,8 @@ int color_source_init(ColorSource* source, const char *identificator, const char
 	source->activate = 0;
 	source->deactivate = 0;
 	source->destroy = 0;
+	source->set_slot_color = 0;
+	source->query_slots = 0;
 	source->userdata = 0;
 	source->implement = 0;
 	source->widget = 0;

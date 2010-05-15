@@ -16,58 +16,49 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORSOURCE_H_
-#define COLORSOURCE_H_
+#include "ChangeNotification.h"
 
-#include "ColorObject.h"
-#include "GlobalStateStruct.h"
-#include <gtk/gtk.h>
+using namespace std;
 
-typedef struct ColorSourceSlot{
-	const char *identificator;
-	const char *hr_name;
 
-	uint32_t id;
+NotificationLink::NotificationLink(const char *source_name_, uint32_t source_slot_id_, const char *destination_name_, uint32_t destination_slot_id_){
+    source_name = source_name_;
+    destination_name = destination_name_;
+    source_slot_id = source_slot_id_;
+    destination_slot_id = destination_slot_id_;
+	enabled = false;
+}
 
-	struct{
-		bool read;
-		bool write;
-	}supports;
-}ColorSourceSlot;
+ChangeNotification::ChangeNotification(){
 
-typedef struct ColorSource{
-	char *identificator;
-	char *hr_name;
+}
 
-	int (*set_color)(ColorSource *source, ColorObject *color);
-	int (*get_color)(ColorSource *source, ColorObject **color);
+ChangeNotification::~ChangeNotification(){
 
-	int (*activate)(ColorSource *source);
-	int (*deactivate)(ColorSource *source);
+}
 
-	int (*query_slots)(ColorSource *source, ColorSourceSlot *slot);
-	int (*set_slot_color)(ColorSource *source, uint32_t slot_id, ColorObject *color);
+bool ChangeNotification::registerSource(const char *location, ColorSource *source){
+	sources[location] = source;
+	return true;
+}
 
-	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace);
-	int (*destroy)(ColorSource *source);
+bool ChangeNotification::unregisterSource(const char *location, ColorSource *source){
+    map<string, ColorSource*>::iterator i = sources.find(location);
+	if (i != sources.end()){
+		sources.erase(i);
+		return true;
+	}
+	return false;
+}
 
-	bool single_instance_only;
+bool ChangeNotification::addLink(shared_ptr<NotificationLink> notification_link){
 
-	GtkWidget *widget;
-	void* userdata;
-}ColorSource;
+	return true;
+}
 
-int color_source_init(ColorSource* source, const char *identificator, const char *name);
+bool ChangeNotification::removeLink(shared_ptr<NotificationLink> notification_link){
 
-int color_source_activate(ColorSource *source);
-int color_source_deactivate(ColorSource *source);
+	return true;
+}
 
-int color_source_set_color(ColorSource *source, ColorObject *color);
-int color_source_get_color(ColorSource *source, ColorObject *color);
-
-ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
-GtkWidget* color_source_get_widget(ColorSource* source);
-int color_source_destroy(ColorSource* source);
-
-#endif /* COLORSOURCE_H_ */
 

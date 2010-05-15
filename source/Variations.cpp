@@ -75,6 +75,7 @@ typedef struct VariationsArgs{
 	GtkWidget *last_focused_color;
 	GtkWidget *color_previews;
 
+	GtkWidget *all_colors;
     struct{
 		GtkWidget *color;
 		GtkWidget *var_colors[VAR_COLOR_WIDGETS + 1];
@@ -203,7 +204,7 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 	gtk_color_get_color(GTK_COLOR(g_object_get_data(G_OBJECT(widget), "color_widget")), &c);
 
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
-	string name=color_names_get(args->gs->color_names, &c);
+	string name = color_names_get(args->gs->color_names, &c);
 	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
@@ -241,7 +242,7 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
-	string name=color_names_get(args->gs->color_names, &c);
+	string name = color_names_get(args->gs->color_names, &c);
 	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
@@ -303,30 +304,33 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 	color_object_release(color_object);
 
 	int line_id = -1;
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
+	bool all_colors = false;
+	if (args->all_colors == widget){
+		all_colors = true;
+	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == widget){
 			line_id = i;
 		}
 	}
 
-	if (line_id > -1){
+	if (line_id >= 0 || all_colors){
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-		GSList *group = 0;
-		for (uint32_t i = 0; i < sizeof(variation_types) / sizeof(VariationType); i++){
-			item = gtk_radio_menu_item_new_with_label(group, variation_types[i].name);
-			group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-			if (args->color[line_id].type == &variation_types[i]){
-				gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+		if (!all_colors){
+			GSList *group = 0;
+			for (uint32_t i = 0; i < sizeof(variation_types) / sizeof(VariationType); i++){
+				item = gtk_radio_menu_item_new_with_label(group, variation_types[i].name);
+				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+				if (args->color[line_id].type == &variation_types[i]){
+					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+				}
+				g_object_set_data(G_OBJECT(item), "color_widget", widget);
+				g_object_set_data(G_OBJECT(item), "variation_type", (void*)&variation_types[i]);
+				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(type_toggled_cb), args);
+				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			}
-			g_object_set_data(G_OBJECT(item), "color_widget", widget);
-			g_object_set_data(G_OBJECT(item), "variation_type", (void*)&variation_types[i]);
-			g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(type_toggled_cb), args);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 		}
-
-
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
 		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -433,6 +437,9 @@ static int source_destroy(VariationsArgs *args){
 		dynv_set_color(args->params, tmp, &c);
 	}
 
+	gtk_color_get_color(GTK_COLOR(args->all_colors), &c);
+	dynv_set_color(args->params, "all_colors", &c);
+
 	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
@@ -449,7 +456,10 @@ static int source_get_color(VariationsArgs *args, ColorObject** color){
 
 static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* color_object, GtkWidget* color_widget){
 
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
+    if (args->all_colors){
+		set_rgb_color(args, color_object, -1);
+		return 0;
+	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == color_widget){
 			set_rgb_color(args, color_object, i);
 			return 0;
@@ -461,7 +471,14 @@ static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* col
 static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index){
 	Color c;
 	color_object_get_color(color, &c);
-	gtk_color_set_color(GTK_COLOR(args->color[color_index].color), &c, args->color[color_index].type->symbol);
+	if (color_index == -1){
+		gtk_color_set_color(GTK_COLOR(args->all_colors), &c, "");
+		for (int i = 0; i < MAX_COLOR_LINES; ++i){
+			gtk_color_set_color(GTK_COLOR(args->color[i].color), &c, args->color[i].type->symbol);
+		}
+	}else{
+		gtk_color_set_color(GTK_COLOR(args->color[color_index].color), &c, args->color[color_index].type->symbol);
+	}
 	update(0, args);
 	return 0;
 }
@@ -531,6 +548,32 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
 
+
+	widget = gtk_color_new();
+	gtk_color_set_rounded(GTK_COLOR(widget), true);
+	gtk_color_set_hcenter(GTK_COLOR(widget), true);
+	gtk_color_set_roundness(GTK_COLOR(widget), 5);
+
+	gtk_table_attach(GTK_TABLE(args->color_previews), widget, VAR_COLOR_WIDGETS / 2, VAR_COLOR_WIDGETS / 2 + 1, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
+
+	args->all_colors = widget;
+
+	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
+	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
+	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
+	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
+	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
+
+	//setup drag&drop
+	gtk_widget_set_size_request(widget, 50, 20);
+
+	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.userdata2 = (void*)-1;
+	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+
+
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
 
@@ -539,7 +582,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
 
-			gtk_table_attach(GTK_TABLE(args->color_previews), widget, j, j + 1, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
+			gtk_table_attach(GTK_TABLE(args->color_previews), widget, j, j + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
 
 			args->color[i].var_colors[j] = widget;
 			args->color[i].type = &variation_types[i];
@@ -552,7 +595,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 			//setup drag&drop
             if (j == VAR_COLOR_WIDGETS / 2){
-				gtk_widget_set_size_request(widget, 50, 40);
+				gtk_widget_set_size_request(widget, 50, 30);
 
 				gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
@@ -563,7 +606,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				args->color[i].color = args->color[i].var_colors[j];
 
 			}else{
-				gtk_widget_set_size_request(widget, 30, 30);
+				gtk_widget_set_size_request(widget, 30, 25);
 
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 				dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
@@ -592,6 +635,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 
 	}
+	gtk_color_set_color(GTK_COLOR(args->all_colors), dynv_get_color_wdc(args->params, "all_colors", &c), "");
 
 	hbox2 = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
