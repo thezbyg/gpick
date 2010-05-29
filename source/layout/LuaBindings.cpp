@@ -193,6 +193,22 @@ int lua_box_helper_only (lua_State *L) {
 	}
 }
 
+int lua_box_locked (lua_State *L) {
+	Box* box = lua_checklbox(L, 1);
+	if (lua_type(L, 2)==LUA_TBOOLEAN){
+		int v = lua_toboolean(L, 2);
+		if (v){
+			box->locked = true;
+		}else{
+			box->locked = false;
+		}
+		return 0;
+	}else{
+		lua_pushboolean(L, box->locked);
+		return 1;
+	}
+}
+
 int lua_gclbox (lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
 	Box::unref(box);
@@ -209,6 +225,7 @@ static const struct luaL_reg lua_lboxlib_f [] = {
 static const struct luaL_reg lua_lboxlib_m [] = {
 	{"add", lua_add},
 	{"helper_only", lua_box_helper_only},
+	{"locked", lua_box_locked},
 	{NULL, NULL}
 };
 

@@ -29,7 +29,7 @@ using namespace std;
 #define GTK_COLOR_WHEEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
 
 G_DEFINE_TYPE (GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA);
-GtkWindowClass *parent_class = NULL;
+static GtkWindowClass *parent_class = NULL;
 
 static gboolean gtk_color_wheel_expose(GtkWidget *color_wheel, GdkEventExpose *event);
 static gboolean gtk_color_wheel_button_release(GtkWidget *color_wheel, GdkEventButton *event);

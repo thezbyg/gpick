@@ -101,9 +101,13 @@ Layouts* layouts_init(struct dynvSystem* params){
 						lua_pushstring(L, "human_readable");
 						lua_gettable(L, -2);
 
+						lua_pushstring(L, "mask");
+						lua_gettable(L, -3);
+
 						Layout *layout = new Layout;
-						layout->human_readable = g_strdup(lua_tostring(L, -1));
-						layout->name = g_strdup(lua_tostring(L, -3));
+						layout->human_readable = g_strdup(lua_tostring(L, -2));
+						layout->name = g_strdup(lua_tostring(L, -4));
+						layout->mask = lua_tointeger(L, -1);
 						layouts->layouts[layout->name] = layout;
 
 						layouts->all_layouts.push_back(layout);

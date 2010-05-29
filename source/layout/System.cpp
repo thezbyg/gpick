@@ -58,4 +58,11 @@ Box* System::GetBoxAt(const math::Vec2<float>& point){
 		return 0;
 }
 
+Box* System::GetNamedBox(const char *name){
+	if (box)
+		return box->GetNamedBox(name);
+	else
+		return 0;
+}
+
 }

@@ -22,12 +22,14 @@
 #include "ColorPicker.h"
 #include "LayoutPreview.h"
 #include "Variations.h"
+#include "BrightnessDarkness.h"
 
 int register_sources(ColorSourceManager *csm){
 	generate_scheme_source_register(csm);
 	color_picker_source_register(csm);
 	layout_preview_source_register(csm);
 	variations_source_register(csm);
+	brightness_darkness_source_register(csm);
 	return 0;
 }
 

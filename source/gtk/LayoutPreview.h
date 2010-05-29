@@ -61,10 +61,13 @@ int gtk_layout_preview_set_system(GtkLayoutPreview* widget, layout::System* syst
 
 int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdouble x, gdouble y);
 int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble y);
+int gtk_layout_preview_set_focus_named(GtkLayoutPreview* widget, const char *name);
+int gtk_layout_preview_set_color_named(GtkLayoutPreview* widget, Color* color, const char *name);
 
 int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color);
 int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color);
 bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
+bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget);
 
 G_END_DECLS
 

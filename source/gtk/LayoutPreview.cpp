@@ -36,6 +36,7 @@ static gboolean gtk_layout_preview_button_press(GtkWidget *layout_preview, GdkEv
 
 
 enum {
+	COLOR_CHANGED,
 	EMPTY,
 	LAST_SIGNAL
 };
@@ -67,6 +68,7 @@ static void gtk_layout_preview_class_init(GtkLayoutPreviewClass *klass){
 
 	g_type_class_add_private(obj_class, sizeof(GtkLayoutPreviewPrivate));
 
+	gtk_layout_preview_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkLayoutPreviewClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
 static void gtk_layout_preview_init(GtkLayoutPreview *layout_preview){
@@ -176,7 +178,7 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 
 	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
 	Box* box = ns->system->GetBoxAt(point);
-	if (box && box->style){
+	if (box && box->style && !box->locked){
 		color_copy(color, &box->style->color);
 
 		/*if (typeid(*box)==typeid(Fill)){
@@ -191,6 +193,33 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 	return -1;
 }
 
+int gtk_layout_preview_set_color_named(GtkLayoutPreview* widget, Color* color, const char *name){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (!ns->system) return -1;
+
+	Box* box = ns->system->GetNamedBox(name);
+	if (box && box->style && !box->locked){
+		color_copy(color, &box->style->color);
+		gtk_widget_queue_draw(GTK_WIDGET(widget));
+		return 0;
+	}
+
+	return -1;
+}
+
+int gtk_layout_preview_set_focus_named(GtkLayoutPreview* widget, const char *name){
+
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (!ns->system) return -1;
+
+	Box* box;
+	if (set_selected_box(ns, box = ns->system->GetNamedBox(name))){
+		gtk_widget_queue_draw(GTK_WIDGET(widget));
+
+		return (box)?(0):(-1);
+	}
+	return -1;
+}
 
 
 int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble y){
@@ -231,7 +260,7 @@ int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color)
 int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color){
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
 
-	if (ns->system && ns->selected_style){
+	if (ns->system && ns->selected_style && !ns->selected_box->locked){
 		Box* box = ns->selected_box;
 
 		color_copy(color, &box->style->color);
@@ -251,6 +280,14 @@ bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget){
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
 	if (ns->system && ns->selected_style && ns->selected_box){
 		return true;
+	}
+	return false;
+}
+
+bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (ns->system && ns->selected_style && ns->selected_box){
+		return !ns->selected_box->locked;
 	}
 	return false;
 }

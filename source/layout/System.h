@@ -44,6 +44,7 @@ public:
 	void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
 
 	Box* GetBoxAt(const math::Vec2<float>& point);
+	Box* GetNamedBox(const char *name);
 
 	void AddStyle(Style *style);
 	void SetBox(Box *box);

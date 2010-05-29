@@ -700,6 +700,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 	bool layout_found = false;
 
 	for (uint32_t i=0; i!=n_layouts; ++i){
+		if (layout_table[i]->mask != 0) continue;
+
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,

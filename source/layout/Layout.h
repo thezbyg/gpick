@@ -32,6 +32,7 @@ class Layouts;
 typedef struct Layout{
 	char* name;
 	char* human_readable;
+	uint32_t mask;
 }Layout;
 
 Layouts* layouts_init(struct dynvSystem* params);
@@ -44,3 +45,4 @@ System* layouts_get(Layouts *layouts, const char* name);
 }
 
 #endif /* LAYOUT_LAYOUT_H_ */
+

@@ -18,6 +18,7 @@
 
 #include "Box.h"
 
+#include <string>
 #include <typeinfo>
 #include <iostream>
 using namespace std;
@@ -64,6 +65,7 @@ Box::Box(const char* _name, float x, float y, float width, float height){
 	name = _name;
 	rect = Rect2<float>(x, y, x+width, y+height);
 	helper_only = false;
+	locked = false;
 }
 
 Box::~Box(){
@@ -71,6 +73,22 @@ Box::~Box(){
 	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
 		unref(*i);
 	}
+}
+
+Box* Box::GetNamedBox(const char *name_){
+	if (name.compare(name_) == 0){
+		return this;
+	}
+
+	Box* r;
+	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+		if ((r = (*i)->GetNamedBox(name_))){
+			if (!r->helper_only)
+				return r;
+		}
+	}
+
+	return 0;
 }
 
 Box* Box::GetBoxAt(const Vec2<float>& point){
