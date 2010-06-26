@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include <list>
+#include <iostream>
 using namespace std;
 
 #define GTK_COLOR_WHEEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
@@ -279,6 +280,8 @@ static void draw_sat_val_block(cairo_t *cr, double pos_x, double pos_y, double s
 		}
 	}
 
+	cairo_surface_mark_dirty(surface);
+
 	cairo_save(cr);
 
 	cairo_set_source_surface(cr, surface, pos_x - size / 2, pos_y - size / 2);
@@ -299,11 +302,15 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
         surface = ns->cache_color_wheel;
 	}else{
 		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(radius * 2), ceil(radius * 2));
+		if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS){
+			cerr << "ColorWheel image surface allocation failed" << endl;
+			return;
+		}
+
 		unsigned char *data = cairo_image_surface_get_data(surface);
 		int stride = cairo_image_surface_get_stride(surface);
 		int surface_width = cairo_image_surface_get_width(surface);
 		int surface_height = cairo_image_surface_get_height(surface);
-
 
 		double radius_sq = radius * radius + 2 * radius + 1;
 		double inner_radius_sq = inner_radius * inner_radius - 2 * inner_radius + 1;
@@ -339,6 +346,8 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 
 		ns->cache_color_wheel = surface;
 	}
+
+	cairo_surface_mark_dirty(surface);
 
 	cairo_save(cr);
 

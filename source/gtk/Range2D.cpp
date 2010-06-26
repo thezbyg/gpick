@@ -186,6 +186,7 @@ static void draw_sat_val_block(GtkRange2DPrivate *ns, cairo_t *cr, double pos_x,
 		ns->cache_range_2d = surface;
 	}
 
+	cairo_surface_mark_dirty(surface);
 	cairo_save(cr);
 
 	cairo_set_source_surface(cr, surface, pos_x, pos_y);
