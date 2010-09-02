@@ -16,22 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RegisterSources.h"
+#ifndef COLOR_MIXER_H_
+#define COLOR_MIXER_H_
 
-#include "GenerateScheme.h"
-#include "ColorPicker.h"
-#include "LayoutPreview.h"
-#include "Variations.h"
-#include "BrightnessDarkness.h"
-#include "ColorMixer.h"
+#include "ColorSourceManager.h"
 
-int register_sources(ColorSourceManager *csm){
-	generate_scheme_source_register(csm);
-	color_picker_source_register(csm);
-	layout_preview_source_register(csm);
-	variations_source_register(csm);
-	brightness_darkness_source_register(csm);
-	color_mixer_source_register(csm);
-	return 0;
-}
+int color_mixer_source_register(ColorSourceManager *csm);
+
+#endif /* COLOR_MIXER_H_ */
+
 

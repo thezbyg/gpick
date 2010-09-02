@@ -76,14 +76,14 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 
 
 	gtk_color_component_signals[COLOR_CHANGED] = g_signal_new (
-	     "color-changed",
-	     G_OBJECT_CLASS_TYPE (obj_class),
-	     G_SIGNAL_RUN_FIRST,
-	     G_STRUCT_OFFSET (GtkColorComponentClass, color_changed),
-	     NULL, NULL,
-	     g_cclosure_marshal_VOID__POINTER,
-	     G_TYPE_NONE, 1,
-	     G_TYPE_POINTER);
+			"color-changed",
+			G_OBJECT_CLASS_TYPE (obj_class),
+			G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET (GtkColorComponentClass, color_changed),
+			NULL, NULL,
+			g_cclosure_marshal_VOID__POINTER,
+			G_TYPE_NONE, 1,
+			G_TYPE_POINTER);
 }
 
 static void gtk_color_component_init (GtkColorComponent *color_component){
