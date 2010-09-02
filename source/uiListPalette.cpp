@@ -206,6 +206,7 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 	GtkTreeIter iter, iter2;
 
 	GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(dd->widget));
+  bool copy = false;
 
 	if (move){
 		if (colorobject->refcnt!=1){	//only one reference, can't be in palette
@@ -213,6 +214,7 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 		}
 	}else{
 		colorobject = color_object_copy(colorobject);
+		copy = true;
 	}
 
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
@@ -224,13 +226,16 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			gtk_list_store_insert_after(GTK_LIST_STORE(model), &iter2, &iter);
 			palette_list_entry_fill(GTK_LIST_STORE(model), &iter2, colorobject, args);
+		}else{
+			if (copy) color_object_release(colorobject);
+			return -1;
 		}
 
 		color_list_add_color_object(args->gs->colors, colorobject, false);
-		color_object_release(colorobject);
+		if (copy) color_object_release(colorobject);
 	}else{
 		color_list_add_color_object(args->gs->colors, colorobject, true);
-		color_object_release(colorobject);
+		if (copy) color_object_release(colorobject);
 	}
 	return 0;
 }

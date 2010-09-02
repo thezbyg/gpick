@@ -52,7 +52,7 @@ bool ChangeNotification::unregisterSource(const char *location, ColorSource *sou
 }
 
 bool ChangeNotification::addLink(shared_ptr<NotificationLink> notification_link){
-
+	links.insert(pair<string, shared_ptr<NotificationLink> >(notification_link->source_name, notification_link));
 	return true;
 }
 

@@ -139,10 +139,62 @@ gpick.layouts['std_layout_brightness_darkness'] = {
 		return 1;
 	end; };
 
+gpick.layouts['std_layout_grid_1'] = {
+	human_readable = 'Grid (4x3)',
+	mask = 0,
+	build = function (layout_system)
+		local root = layout:new_box("root", 0, 0, 400, 300);
+		layout_system:setbox(root);
+		
+		for j=0,2 do
+			for i=0,3 do 
+				local item_i = 1 + (i + j * 4);
+				local style = layout_style:new("item" .. item_i .. ":Item" .. item_i, color:new(0.8, 0.8, 0.8), 1.0);
+				local style_text = layout_style:new("item" .. item_i .. "_text:Item" .. item_i .. " Text", color:new(0.2, 0.2, 0.2), 0.5);
+				layout_system:addstyle(style);
+				layout_system:addstyle(style_text);			
+				
+				local fill = layout:new_fill("b" .. item_i, (1 / 4) * i, (1 / 3) * j, (1 / 4) * 0.95, (1 / 3) * 0.95, style);
+				fill:add(layout:new_text("item_text".. item_i, 0, 0.25, 1, 0.5, style_text, "Item" .. item_i));
+				
+				
+				root:add(fill);
+			end;
+		end;
 
+		return 1;
+	end; };
+	
+	
+gpick.layouts['std_layout_grid_2'] = {
+	human_readable = 'Grid (5x4)',
+	mask = 0,
+	build = function (layout_system)
+		local root = layout:new_box("root", 0, 0, 500, 400);
+		layout_system:setbox(root);
+		
+		for j=0,3 do
+			for i=0,4 do 
+				local item_i = 1 + (i + j * 5);
+				local style = layout_style:new("item" .. item_i .. ":Item" .. item_i, color:new(0.8, 0.8, 0.8), 1.0);
+				local style_text = layout_style:new("item" .. item_i .. "_text:Item" .. item_i .. " Text", color:new(0.2, 0.2, 0.2), 0.5);
+				layout_system:addstyle(style);
+				layout_system:addstyle(style_text);			
+				
+				local fill = layout:new_fill("b" .. item_i, (1 / 5) * i, (1 / 4) * j, (1 / 5) * 0.95, (1 / 4) * 0.95, style);
+				fill:add(layout:new_text("item_text".. item_i, 0, 0.25, 1, 0.5, style_text, "Item" .. item_i));
+				
+				
+				root:add(fill);
+			end;
+		end;
+
+		return 1;
+	end; };
 
 gpick.layouts_get = function()
 	local layouts = {};
-	for k,v in pairs(gpick.layouts) do table.insert(layouts, k) end
+	for k,v in pairs(gpick.layouts) do table.insert(layouts, k) end;
+	table.sort(layouts);
 	return layouts;
 end;

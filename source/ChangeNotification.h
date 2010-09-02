@@ -47,7 +47,7 @@ public:
 class ChangeNotification{
 protected:
 	std::map<std::string, ColorSource*> sources;
-	std::list<shared_ptr<NotificationLink> > links;
+	std::multimap<std::string, shared_ptr<NotificationLink> > links;
 public:
 	ChangeNotification();
 	~ChangeNotification();

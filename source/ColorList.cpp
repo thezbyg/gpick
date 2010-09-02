@@ -18,6 +18,7 @@
 
 #include "ColorList.h"
 
+#include <algorithm>
 using namespace std;
 
 struct ColorList* color_list_new(struct dynvHandlerMap* handler_map){
@@ -90,10 +91,13 @@ int color_list_add_color_object(struct ColorList* color_list, struct ColorObject
 }
 
 int color_list_remove_color_object(struct ColorList* color_list, struct ColorObject* color_object){
-	if (color_list->on_delete) color_list->on_delete(color_list, color_object);
-	color_list->colors.remove(color_object);
-	color_object_release(color_object);
-	return 0;
+	list<struct ColorObject*>::iterator i = std::find(color_list->colors.begin(), color_list->colors.end(), color_object);
+  if (i != color_list->colors.end()){
+		if (color_list->on_delete) color_list->on_delete(color_list, color_object);
+		color_list->colors.erase(i);
+		color_object_release(color_object);
+		return 0;
+	}else return -1;
 }
 
 int color_list_remove_selected(struct ColorList* color_list){
