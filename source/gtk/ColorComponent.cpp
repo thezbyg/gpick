@@ -197,22 +197,21 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
 
-
+static void interpolate_colors(Color *color1, Color *color2, float position, Color *result){
+	result->rgb.red = color1->rgb.red * (1 - position) + color2->rgb.red * position;
+	result->rgb.green= color1->rgb.green * (1 - position) + color2->rgb.green * position;
+	result->rgb.blue = color1->rgb.blue * (1 - position) + color2->rgb.blue * position;
+}
 
 static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event){
 	cairo_t *cr;
 
-	GtkColorComponentPrivate *ns=GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
-	/* get a cairo_t */
 	cr = gdk_cairo_create (widget->window);
+	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
+	cairo_clip(cr);
 
-	cairo_rectangle (cr,
-			event->area.x, event->area.y,
-			event->area.width, event->area.height);
-	cairo_clip (cr);
-
-	cairo_pattern_t* pattern[4];
 	Color c[4];
 	Color c2[4];
 	double pointer_pos[4];
@@ -222,8 +221,19 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 	for (int i = 0; i < ns->n_components; ++i){
 		pointer_pos[i] = (ns->color.ma[i] - ns->offset[i]) / ns->range[i];
-		pattern[i] = cairo_pattern_create_linear(0, 0, 200, 0);
 	}
+
+	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, ns->n_components * 16);
+	unsigned char *data = cairo_image_surface_get_data(surface);
+	int stride = cairo_image_surface_get_stride(surface);
+	int surface_width = cairo_image_surface_get_width(surface);
+	int surface_height = cairo_image_surface_get_height(surface);
+
+	unsigned char *col_ptr;
+
+	Color *rgb_points = new Color[ns->n_components * 200];
+
+	double int_part;
 
 	switch (ns->component) {
 		case rgb:
@@ -231,17 +241,30 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
-			for (i = 0; i <= steps; ++i){
-				c[0].rgb.red = c[1].rgb.green = c[2].rgb.blue = i / steps;
+			for (i = 0; i < surface_width; ++i){
+				c[0].rgb.red = c[1].rgb.green = c[2].rgb.blue = (float)i / (float)(surface_width - 1);
+				col_ptr = data + i * 4;
 
-				for (j = 0; j < 3; ++j){
-					cairo_pattern_add_color_stop_rgb(pattern[j], i / steps, c[j].rgb.red, c[j].rgb.green, c[j].rgb.blue);
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
 				}
+
 			}
 			break;
 
  		case hsv:
-			steps = 200;
+			steps = 100;
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
@@ -249,14 +272,39 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				c[0].hsv.hue = c[1].hsv.saturation = c[2].hsv.value = i / steps;
 
 				for (j = 0; j < 3; ++j){
-					color_hsv_to_rgb(&c[j], &c2[j]);
-					cairo_pattern_add_color_stop_rgb(pattern[j], i / steps, c2[j].rgb.red, c2[j].rgb.green, c2[j].rgb.blue);
+					color_hsv_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+				}
+			}
+			for (i = 0; i < surface_width; ++i){
+
+				float position = modf(i * steps / surface_width, &int_part);
+        int index = i * int(steps) / surface_width;
+
+				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+
+				col_ptr = data + i * 4;
+
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
 				}
 			}
 			break;
 
 		case hsl:
-			steps = 200;
+			steps = 100;
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
@@ -264,8 +312,33 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				c[0].hsl.hue = c[1].hsl.saturation = c[2].hsl.lightness = i / steps;
 
 				for (j = 0; j < 3; ++j){
-					color_hsl_to_rgb(&c[j], &c2[j]);
-					cairo_pattern_add_color_stop_rgb(pattern[j], i / steps, c2[j].rgb.red, c2[j].rgb.green, c2[j].rgb.blue);
+					color_hsl_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+				}
+			}
+			for (i = 0; i < surface_width; ++i){
+
+				float position = modf(i * steps / surface_width, &int_part);
+        int index = i * int(steps) / surface_width;
+
+				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+
+				col_ptr = data + i * 4;
+
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
 				}
 			}
 			break;
@@ -279,8 +352,34 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				c[0].cmyk.c = c[1].cmyk.m = c[2].cmyk.y = c[3].cmyk.k = i / steps;
 
 				for (j = 0; j < 4; ++j){
-					color_cmyk_to_rgb(&c[j], &c2[j]);
-					cairo_pattern_add_color_stop_rgb(pattern[j], i / steps, c2[j].rgb.red, c2[j].rgb.green, c2[j].rgb.blue);
+					color_cmyk_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+				}
+			}
+			for (i = 0; i < surface_width; ++i){
+
+				float position = modf(i * steps / surface_width, &int_part);
+        int index = i * int(steps) / surface_width;
+
+				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+				interpolate_colors(&rgb_points[3 * (int(steps) + 1) + index], &rgb_points[3 * (int(steps) + 1) + index + 1], position, &c[3]);
+
+				col_ptr = data + i * 4;
+
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
 				}
 			}
 			break;
@@ -304,23 +403,49 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				c[0].lab.L = (i / steps) * ns->range[0] + ns->offset[0];
 				color_lab_to_xyz(&c[0], &c2[0], &d50);
 				color_xyz_chromatic_adaptation(&c2[0], &c2[0], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[0], &c2[0], &working_space_matrix_inv);
-				cairo_pattern_add_color_stop_rgb(pattern[0], i / steps, c2[0].rgb.red, c2[0].rgb.green, c2[0].rgb.blue);
+				color_xyz_to_rgb(&c2[0], &rgb_points[0 * (int(steps) + 1) + i], &working_space_matrix_inv);
+				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
 			}
 
 			for (i = 0; i <= steps; ++i){
 				c[1].lab.a = (i / steps) * ns->range[1] + ns->offset[1];
 				color_lab_to_xyz(&c[1], &c2[1], &d50);
 				color_xyz_chromatic_adaptation(&c2[1], &c2[1], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[1], &c2[1], &working_space_matrix_inv);
-				cairo_pattern_add_color_stop_rgb(pattern[1], i / steps, c2[1].rgb.red, c2[1].rgb.green, c2[1].rgb.blue);
+				color_xyz_to_rgb(&c2[1], &rgb_points[1 * (int(steps) + 1) + i], &working_space_matrix_inv);
+				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[2].lab.b = (i / steps) * ns->range[2] + ns->offset[2];
 				color_lab_to_xyz(&c[2], &c2[2], &d50);
 				color_xyz_chromatic_adaptation(&c2[2], &c2[2], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[2], &c2[2], &working_space_matrix_inv);
-				cairo_pattern_add_color_stop_rgb(pattern[2], i / steps, c2[2].rgb.red, c2[2].rgb.green, c2[2].rgb.blue);
+				color_xyz_to_rgb(&c2[2], &rgb_points[2 * (int(steps) + 1) + i], &working_space_matrix_inv);
+				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
+			}
+			for (i = 0; i < surface_width; ++i){
+
+				float position = modf(i * steps / surface_width, &int_part);
+        int index = i * int(steps) / surface_width;
+
+				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+
+				col_ptr = data + i * 4;
+
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
+				}
 			}
 			break;
 
@@ -328,13 +453,22 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			break;
 	}
 
+	delete [] rgb_points;
+
+	cairo_surface_mark_dirty(surface);
+	cairo_save(cr);
+
+	cairo_set_source_surface(cr, surface, 0, 0);
+	cairo_surface_destroy(surface);
+
 	for (i = 0; i < ns->n_components; ++i){
-		cairo_set_source(cr, pattern[i]);
 		cairo_rectangle(cr, 0, 16 * i, 200, 15);
 		cairo_fill(cr);
-		cairo_pattern_destroy(pattern[i]);
+	}
 
+	cairo_restore(cr);
 
+	for (i = 0; i < ns->n_components; ++i){
 		cairo_move_to(cr, 200*pointer_pos[i], 16 * i + 9);
 		cairo_line_to(cr, 200*pointer_pos[i]+3, 16 * i + 16);
 		cairo_line_to(cr, 200*pointer_pos[i]-3, 16 * i + 16);

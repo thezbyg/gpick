@@ -55,7 +55,7 @@ typedef struct GtkColorWheelPrivate{
 	uint32_t n_cpoint;
 
 	ColorPoint *grab_active;
-    bool grab_block;
+	bool grab_block;
 
 	ColorPoint *selected;
 
@@ -128,7 +128,7 @@ GtkWidget* gtk_color_wheel_new(){
 	ns->n_cpoint = 0;
 	ns->grab_active = 0;
 	ns->grab_block = false;
-    ns->selected = &ns->cpoint[0];
+	ns->selected = &ns->cpoint[0];
 	ns->block_editable = true;
 
 	ns->color_wheel_type = &color_wheel_types_get()[0];
@@ -154,12 +154,12 @@ void gtk_color_wheel_set_color_wheel_type(GtkColorWheel *color_wheel, const Colo
 
 void gtk_color_wheel_set_block_editable(GtkColorWheel* color_wheel, bool editable){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
-    ns->block_editable = editable;
+	ns->block_editable = editable;
 }
 
 bool gtk_color_wheel_get_block_editable(GtkColorWheel* color_wheel){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
-    return ns->block_editable;
+	return ns->block_editable;
 }
 
 void gtk_color_wheel_set_selected(GtkColorWheel* color_wheel, guint32 index){
@@ -173,7 +173,7 @@ void gtk_color_wheel_set_selected(GtkColorWheel* color_wheel, guint32 index){
 void gtk_color_wheel_set_n_colors(GtkColorWheel* color_wheel, guint32 number_of_colors){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(color_wheel);
 	if (number_of_colors <= 10){
-        if (ns->n_cpoint != number_of_colors){
+		if (ns->n_cpoint != number_of_colors){
 			ns->n_cpoint = number_of_colors;
 
 			if (ns->selected){
