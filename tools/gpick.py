@@ -9,6 +9,9 @@ import sys
 import glob
 import subprocess
 
+from lemon import *
+from flex import *
+
 from SCons.Script import *
 from SCons.Util import *
 from SCons.Script.SConscript import SConsEnvironment
@@ -41,7 +44,11 @@ class GpickLibrary(NodeList):
 class GpickEnvironment(SConsEnvironment):
 	
 	extern_libs = {}
-
+	
+	def AddCustomBuilders(self):
+		addLemonBuilder(self)
+		addFlexBuilder(self)
+		
 	def DefineLibrary(self, library_name, library):
 		self.extern_libs[library_name] = library
 		

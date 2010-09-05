@@ -23,6 +23,7 @@ objects.append(SConscript(['version/SConscript'], exports='env'))
 objects.append(SConscript(['unique/SConscript'], exports='env'))
 objects.append(SConscript(['gtk/SConscript'], exports='env'))
 objects.append(SConscript(['layout/SConscript'], exports='env'))
+objects.append(SConscript(['cssparser/SConscript'], exports='env'))
 
 if local_env['BUILD_TARGET'] == 'win32':
 	local_env.Append(LINKFLAGS = '-mwindows')

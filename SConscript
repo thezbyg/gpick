@@ -7,6 +7,7 @@ import sys
 from tools.gpick import *
 
 env = GpickEnvironment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = WriteNsisVersion, suffix = ".nsi")})
+env.AddCustomBuilders()
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
@@ -50,19 +51,19 @@ except OSError:     # ignore on systems that don't support umask
 
 if not env.GetOption('clean'):
 	conf = Configure(env)
-	
+
 	libs = {
 		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
 		'LUA_PC': 			{'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
 	}
-	
+
 	if env['WITH_UNIQUE']==True:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
 	elif env['WITH_DBUSGLIB']==True:
 		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76'}}
 
 	env.ConfirmLibs(conf, libs)
-	
+
 	env = conf.Finish()
 
 
@@ -79,11 +80,11 @@ env.Replace(
 	ARCOMSTR = "Linking static ==> $TARGET",
 	TARCOMSTR = "Archiving ==> $TARGET"
 	)
-	
+
 if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
 	if env['DEBUG']:
 		env.Append(
-			CPPFLAGS = ['-Wall', '-g3', '-O0'], 
+			CPPFLAGS = ['-Wall', '-g3', '-O0'],
 			CFLAGS = ['-Wall', '-g3', '-O0'],
 			LINKFLAGS = ['-Wl,-as-needed'],
 			)
@@ -95,7 +96,7 @@ if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.env
 			CFLAGS = ['-Wall', '-O3'],
 			LINKFLAGS = ['-Wl,-as-needed', '-s'],
 			)
-
+			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
 
 executable = SConscript(['source/SConscript'], exports='env')
