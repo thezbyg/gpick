@@ -23,26 +23,19 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <list>
+
 #include "memory_manager.h"
 
 typedef struct parse_parm_s parse_parm;
 
-class css_base{
-public:
-	uint32_t struct_type;
-	struct css_base *next;
-	struct css_base *end;
-
-	css_base(uint32_t id):struct_type(id),next(0),end(this){};
-	css_base():struct_type(0),next(0),end(this){};
-
-	void* operator new(size_t num_bytes, parse_parm* parm);
-	void operator delete(void* base, parse_parm* parm);
-};
-
+namespace css_parser {
+class css_file;
+class css_base;
+}
 
 typedef struct parse_parm_s{
-	css_base *page;
+	css_parser::css_file *page;
 	struct Memory* memory;
 
 	uint32_t first_line;
@@ -58,7 +51,7 @@ int parse(FILE* f, int *result);
 
 #ifndef YYSTYPE
 typedef union css_yystype{
-	struct css_base *base;
+	css_parser::css_base *base;
 	char* string;
 	uint32_t number;
 } css_yystype;
@@ -101,54 +94,125 @@ typedef union css_yystype{
     fprintf (Out, "%d.%d", (Loc).first_line, (Loc).first_column)
 
 
+namespace css_parser {
 
-#define CSS_PARSER_PROPERTY			0x0001
-#define CSS_PARSER_FUNCTION			0x0002
-#define CSS_PARSER_HEX				0x0003
-#define CSS_PARSER_NUMBER			0x0004
-#define CSS_PARSER_PERCENTAGE		0x0005
-#define CSS_PARSER_STRING			0x0006
+class css_base{
+public:
+	css_base();
 
+	void* operator new(size_t num_bytes, parse_parm* parm);
+	void operator delete(void* base, parse_parm* parm);
 
-css_base* css_parser_push_base(css_base* base, css_base* x);
+	virtual void polymorphic();
+};
 
 class css_property: public css_base{
 public:
-	char* name;
-	css_property(char* _name):css_base(CSS_PARSER_PROPERTY),name(_name){};
+	const char* name_;
+	std::list<css_base*> values_;
+
+	css_property(const char* name);
+
+	void addValue(css_base* value);
+};
+
+class css_properties: public css_base{
+public:
+	std::list<css_property*> properties_;
+
+	css_properties();
+
+	void addProperty(css_property* property);
+};
+
+class css_simple_selector: public css_base{
+public:
+	const char* name_;
+
+	css_simple_selector(const char* name);
+};
+
+class css_selector: public css_base{
+public:
+	std::list<css_simple_selector*> simple_selectors_;
+
+	css_selector();
+
+	void addSimpleSelector(css_simple_selector* simple_selector);
+	void addSelector(css_selector* selector);
+	void prependSimpleSelector(css_simple_selector* simple_selector);
+};
+
+class css_selectors: public css_base{
+public:
+	std::list<css_selector*> selectors_;
+
+	css_selectors();
+
+	void addSelector(css_selector* selector);
+};
+
+class css_ruleset: public css_base{
+public:
+	std::list<css_selector*> selectors_;
+	std::list<css_property*> properties_;
+
+	css_ruleset();
+
+	void addSelector(css_selector* selector);
+	void setSelectors(std::list<css_selector*> &selectors);
+	void addProperty(css_property* property);
+	void addProperties(css_properties* properties);
+};
+
+class css_file: public css_base{
+public:
+	std::list<css_ruleset*> rulesets_;
+
+	css_file();
+
+	void addRuleset(css_ruleset* ruleset);
 };
 
 class css_function: public css_base{
 public:
-	char* name;
-	css_function(char* _name):css_base(CSS_PARSER_FUNCTION),name(_name){};
+	const char* name_;
+	std::list<css_base*> arguments_;
+
+	css_function(const char* name);
+
+	void addArgument(css_base* argument);
 };
 
 class css_hex: public css_base{
 public:
-	uint32_t value;
-	css_hex(uint32_t _value):css_base(CSS_PARSER_HEX),value(_value){};
+	uint32_t value_;
+	css_hex(uint32_t value);
+	css_hex(const char *value);
 };
 
 class css_number: public css_base{
 public:
-	double value;
-	css_number(double _value):css_base(CSS_PARSER_NUMBER),value(_value){};
+	double value_;
+	css_number(double value);
 };
 
 class css_percentage: public css_base{
 public:
-	double value;
-	css_percentage(double _value):css_base(CSS_PARSER_PERCENTAGE),value(_value){};
+	double value_;
+	css_percentage(double value);
 };
 
 class css_string: public css_base{
 public:
-	char* value;
-	css_string(char* _value):css_base(CSS_PARSER_STRING),value(_value){};
+	const char* value_;
+	css_string(const char* value);
 };
+
+}
 
 int parse_file(const char *filename);
 
 
 #endif
+

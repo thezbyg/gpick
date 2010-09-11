@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2010, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -40,6 +40,7 @@
 #include "uiDialogGenerate.h"
 
 #include "tools/PaletteFromImage.h"
+#include "tools/PaletteFromCssFile.h"
 
 #include "uiDialogOptions.h"
 #include "uiConverter.h"
@@ -61,16 +62,15 @@ using namespace std;
 typedef struct AppArgs{
 	GtkWidget *window;
 
-    map<string, ColorSource*> color_source;
+	map<string, ColorSource*> color_source;
 	vector<ColorSource*> color_source_index;
 
 	ColorSourceManager *csm;
-	//ColorSource *color_source[3];
 	ColorSource *current_color_source;
 
 	ColorSource *secondary_color_source;
 	GtkWidget *secondary_source_widget;
-    GtkWidget *secondary_source_container;
+	GtkWidget *secondary_source_container;
 
 	GtkWidget *color_list;
 	GtkWidget* notebook;
@@ -532,6 +532,10 @@ static void palette_from_image_cb(GtkWidget *widget, AppArgs* args) {
 	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
 }
 
+static void palette_from_css_file_cb(GtkWidget *widget, AppArgs* args) {
+	tools_palette_from_css_file_show(GTK_WINDOW(args->window), args->gs);
+}
+
 static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group) {
 	GtkMenu* menu;
 	GtkWidget* item;
@@ -618,6 +622,10 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
     item = gtk_menu_item_new_with_mnemonic("Palette From _Image...");
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
     g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
+
+    item = gtk_menu_item_new_with_mnemonic("Palette From _CSS file...");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_css_file_cb), args);
 
     file_item = gtk_menu_item_new_with_mnemonic("_Tools");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));

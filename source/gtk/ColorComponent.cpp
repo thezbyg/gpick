@@ -551,6 +551,7 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
+		if (event->x < 0 || event->x > 200) return FALSE;
 		double value;
 
 		value = event->x / 200.0;
@@ -574,6 +575,7 @@ static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMo
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	if ((event->state & GDK_BUTTON1_MASK)){
+		if (event->x < 0 || event->x > 200) return FALSE;
 		double value;
 
 		value = event->x / 200.0;
