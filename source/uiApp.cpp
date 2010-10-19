@@ -623,9 +623,9 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
     gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
     g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
 
-    item = gtk_menu_item_new_with_mnemonic("Palette From _CSS file...");
-    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-    g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_css_file_cb), args);
+    //item = gtk_menu_item_new_with_mnemonic("Palette From _CSS file...");
+    //gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    //g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_css_file_cb), args);
 
     file_item = gtk_menu_item_new_with_mnemonic("_Tools");
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
