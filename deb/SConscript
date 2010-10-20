@@ -56,7 +56,7 @@ def debian_write_control(target=None, source=None, env=None):
 	files = tools.gpick.Glob(os.path.join('build', 'deb', DEBNAME, 'usr'))
 	for i in files:
 		installed_size += os.stat(str(i))[6]
-	installed_size = math.ceil(installed_size/1024)
+	installed_size = int(math.ceil(installed_size/1024))
 	
 	control_info = CONTROL_TEMPLATE % (
 		DEBNAME, DEBVERSION, DEBSECTION, DEBPRIORITY, DEBARCH,
