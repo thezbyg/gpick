@@ -8,11 +8,15 @@ local_env = env.Clone()
 
 if not local_env.GetOption('clean'):
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
-	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	if not env['INTERNAL_LUA']:
+		local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
 	
 sources = local_env.Glob('*.cpp')
 
 objects = local_env.StaticObject(
 	source = [sources])
 	
+if env['INTERNAL_LUA']:
+	Depends(objects, local_env.UseLibrary('lua'))
+
 Return('objects')

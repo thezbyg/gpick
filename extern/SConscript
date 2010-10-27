@@ -4,4 +4,5 @@ Import('*')
 
 objects = []
 objects.append(SConscript(['expat/SConscript'], exports='env'))
+objects.append(SConscript(['lua/SConscript'], exports='env'))
 Return('objects')

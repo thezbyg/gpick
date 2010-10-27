@@ -16,6 +16,8 @@ vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)
 vars.Add('WITH_DBUSGLIB', 'Compile with DBus support', True)
 vars.Add('DEBUG', 'Compile with debug information', False)
 vars.Add('BUILD_TARGET', 'Build target', '')
+vars.Add('INTERNAL_EXPAT', 'Use internal Expat library', True)
+vars.Add('INTERNAL_LUA', 'Use internal Lua library', True)
 vars.Update(env)
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
@@ -54,9 +56,10 @@ if not env.GetOption('clean'):
 
 	libs = {
 		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
-		'LUA_PC': 			{'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
 	}
 
+	if not env['INTERNAL_LUA']:
+		libs['LUA_PC'] = {'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
 	if env['WITH_UNIQUE']==True:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
 	elif env['WITH_DBUSGLIB']==True:

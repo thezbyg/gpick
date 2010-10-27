@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+
+from tools.gpick import *
+
+Import('*')
+local_env = env.Clone()
+
+local_env.Append (
+	CPPPATH = ['.']
+	)
+
+sources = ['src/lapi.c', 'src/lauxlib.c', 'src/lcode.c', 'src/lgc.c', 'src/llex.c', 'src/lmathlib.c', 'src/lobject.c', 'src/lopcodes.c', 'src/loslib.c', 'src/lparser.c', 'src/lstate.c', 'src/lstring.c', 'src/lstrlib.c', 'src/ltable.c', 'src/ltablib.c', 'src/ltm.c', 'src/lvm.c', 'src/lzio.c', 'src/lbaselib.c', 'src/ldblib.c', 'src/lfunc.c', 'src/lmem.c', 'src/ldebug.c', 'src/lua.c', 'src/ldo.c', 'src/ldump.c', 'src/lundump.c', 'src/linit.c', 'src/liolib.c', 'src/loadlib.c'] 
+
+executable = local_env.StaticLibrary(
+	'lua',
+	source = [sources])
+
+library = GpickLibrary(executable);
+library.include_dirs = ['#extern/lua/src']
+env.DefineLibrary('lua', library)
+	
+Return('executable')
