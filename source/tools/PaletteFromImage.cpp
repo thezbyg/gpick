@@ -416,11 +416,12 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 		node_delete(root_node);
 	}
 
-    for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
-	    struct ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
-	    dynv_set_string(color_object->params, "name", "");
-	    color_list_add_color_object(color_list, color_object, 1);
-	    color_object_release(color_object);
+	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
+		struct ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
+		string name = color_names_get(args->gs->color_names, &(*i));
+		dynv_set_string(color_object->params, "name", name.c_str());
+		color_list_add_color_object(color_list, color_object, 1);
+		color_object_release(color_object);
 	}
 
 }

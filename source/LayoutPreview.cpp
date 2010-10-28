@@ -248,7 +248,13 @@ static int source_destroy(LayoutPreviewArgs *args){
 static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color){
 	Color c;
 	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c)==0){
-		*color = color_list_new_color_object(args->gs->colors, &c);
+
+		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
+		string name = color_names_get(args->gs->color_names, &c);
+		dynv_set_string(color_object->params, "name", name.c_str());
+
+		*color = color_object;
+
 		return 0;
 	}
 	return -1;

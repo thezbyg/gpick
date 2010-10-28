@@ -95,6 +95,20 @@ typedef struct AppArgs{
 
 }AppArgs;
 
+static void updateRecentFileList(AppArgs *args, const char *filename, bool move_up){
+	list<string>::iterator i = std::find(args->recent_files.begin(), args->recent_files.end(), string(filename));
+	if (i == args->recent_files.end()){
+		args->recent_files.push_front(string(filename));
+		while (args->recent_files.size() > 10){
+			args->recent_files.pop_back();
+		}
+	}else{
+		if (move_up){
+			args->recent_files.erase(i);
+			args->recent_files.push_front(string(filename));
+		}
+	}
+}
 
 static gboolean delete_event( GtkWidget *widget, GdkEvent *event, AppArgs *args ){
 
@@ -348,6 +362,7 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args){
 int app_load_file(AppArgs *args, const char *filename){
 	if (palette_file_load(filename, args->gs->colors)==0){
 		args->current_filename = g_strdup(filename);
+		updateRecentFileList(args, filename, false);
 		updateProgramName(args);
 	}else{
 		return -1;
@@ -360,18 +375,6 @@ int app_parse_geometry(AppArgs *args, const char *geometry){
 	return 0;
 }
 
-static void updateRecentFileList(AppArgs *args, const char *filename){
-	list<string>::iterator i = std::find(args->recent_files.begin(), args->recent_files.end(), string(filename));
-	if (i == args->recent_files.end()){
-		args->recent_files.push_front(string(filename));
-		while (args->recent_files.size() > 10){
-			args->recent_files.pop_back();
-		}
-	}else{
-		args->recent_files.erase(i);
-		args->recent_files.push_front(string(filename));
-	}
-}
 
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
   const char *filename = args->recent_files.begin()->c_str();
@@ -381,7 +384,7 @@ static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
 	args->current_filename = 0;
 
 	if (palette_file_load(filename, args->gs->colors) == 0){
-		updateRecentFileList(args, filename);
+		updateRecentFileList(args, filename, false);
 		args->current_filename = g_strdup(filename);
 		updateProgramName(args);
 	}else{
@@ -405,7 +408,7 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
 	args->current_filename = 0;
 
 	if (palette_file_load(filename, args->gs->colors) == 0){
-		updateRecentFileList(args, filename);
+		updateRecentFileList(args, filename, false);
 		args->current_filename = g_strdup(filename);
 		updateProgramName(args);
 	}else{
@@ -457,7 +460,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 			args->current_filename = 0;
 
 			if (palette_file_load(filename, args->gs->colors) == 0){
-				updateRecentFileList(args, filename);
+				updateRecentFileList(args, filename, false);
 				args->current_filename = g_strdup(filename);
 				updateProgramName(args);
 				finished = TRUE;
@@ -514,10 +517,11 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 			dynv_set_string(args->params, "save.path", path);
 			g_free(path);
 
-			if (palette_file_save(filename, args->gs->colors)==0){
+			if (palette_file_save(filename, args->gs->colors) == 0){
 				if (args->current_filename) g_free(args->current_filename);
-				args->current_filename=g_strdup(filename);
+				args->current_filename = g_strdup(filename);
 				updateProgramName(args);
+				updateRecentFileList(args, filename, true);
 				finished=TRUE;
 			}else{
 				GtkWidget* message;
@@ -539,7 +543,7 @@ static void menu_file_save(GtkWidget *widget, AppArgs *args) {
 		menu_file_save_as(widget, args);
 	}else{
 		if (palette_file_save(args->current_filename, args->gs->colors) == 0){
-
+			updateRecentFileList(args, args->current_filename, true);
 		}else{
 
 		}

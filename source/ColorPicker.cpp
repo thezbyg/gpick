@@ -792,10 +792,8 @@ static int source_deactivate(ColorPickerArgs *args){
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
 	ColorPickerArgs* args=(ColorPickerArgs*)dd->userdata;
-	Color c;
-	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-	struct ColorObject* colorobject = color_object_new(dd->handler_map);
-	color_object_set_color(colorobject, &c);
+	ColorObject *colorobject;
+	source_get_color(args, &colorobject);
 	return colorobject;
 }
 
@@ -822,10 +820,15 @@ void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker 
 }
 
 static struct ColorObject* get_color_object_contrast(struct DragDrop* dd){
+	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
 	Color c;
 	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
 	struct ColorObject* colorobject = color_object_new(dd->handler_map);
 	color_object_set_color(colorobject, &c);
+
+	string name = color_names_get(args->gs->color_names, &c);
+	dynv_set_string(colorobject->params, "name", name.c_str());
+
 	return colorobject;
 }
 
