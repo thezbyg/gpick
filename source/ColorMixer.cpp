@@ -200,12 +200,12 @@ static void on_color_edit(GtkWidget *widget,  gpointer item) {
 
 
 static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
-	ColorMixerArgs* args=(ColorMixerArgs*)item;
+	ColorMixerArgs* args = (ColorMixerArgs*)item;
 	Color c;
 
 	gtk_color_get_color(GTK_COLOR(g_object_get_data(G_OBJECT(widget), "color_widget")), &c);
 
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
+	struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
 	string name = color_names_get(args->gs->color_names, &c);
 	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
@@ -213,11 +213,10 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 }
 
 static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
-	ColorMixerArgs* args=(ColorMixerArgs*)item;
+	ColorMixerArgs* args = (ColorMixerArgs*)item;
 	Color c;
 
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-
 		gtk_color_get_color(GTK_COLOR(args->color[i].input), &c);
 
 		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
@@ -443,8 +442,15 @@ static int source_destroy(ColorMixerArgs *args){
 
 static int source_get_color(ColorMixerArgs *args, ColorObject** color){
 	Color c;
-	gtk_color_get_color(GTK_COLOR(args->color[0].input), &c);
+	if (args->last_focused_color){
+		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
+	}else{
+		gtk_color_get_color(GTK_COLOR(args->color[0].input), &c);
+	}
 	*color = color_list_new_color_object(args->gs->colors, &c);
+
+	string name = color_names_get(args->gs->color_names, &c);
+	dynv_set_string((*color)->params, "name", name.c_str());
 	return 0;
 }
 
@@ -498,11 +504,12 @@ static int source_deactivate(ColorMixerArgs *args){
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	Color c;
-	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
-	struct ColorObject* colorobject = color_object_new(dd->handler_map);
-	color_object_set_color(colorobject, &c);
-	return colorobject;
+	ColorMixerArgs* args = (ColorMixerArgs*)dd->userdata;
+	struct ColorObject* colorobject;
+	if (source_get_color(args, &colorobject) == 0){
+		return colorobject;
+	}
+	return 0;
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){

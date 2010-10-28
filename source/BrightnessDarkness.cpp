@@ -115,8 +115,11 @@ static void update(GtkWidget *widget, BrightnessDarknessArgs *args ){
 
 static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** color){
 	Color c;
-	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout_view), &c)==0){
+	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout_view), &c) == 0){
 		*color = color_list_new_color_object(args->gs->colors, &c);
+
+		string name = color_names_get(args->gs->color_names, &c);
+		dynv_set_string((*color)->params, "name", name.c_str());
 		return 0;
 	}
 	return -1;
@@ -132,9 +135,9 @@ static int source_set_color(BrightnessDarknessArgs *args, struct ColorObject* co
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	BrightnessDarknessArgs* args=(BrightnessDarknessArgs*)dd->userdata;
+	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
 	struct ColorObject* colorobject;
-	if (source_get_color(args, &colorobject)==0){
+	if (source_get_color(args, &colorobject) == 0){
 		return colorobject;
 	}
 	return 0;
@@ -214,7 +217,6 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Brigh
 		struct ColorObject *color_object;
 
 		if (source_get_color(args, &color_object)==0){
-			dynv_set_string(color_object->params, "name", "");
 			color_list_add_color_object(args->gs->colors, color_object, 1);
 			color_object_release(color_object);
 		}

@@ -56,6 +56,8 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <vector>
+#include <algorithm>
 #include <iostream>
 using namespace std;
 
@@ -64,6 +66,8 @@ typedef struct AppArgs{
 
 	map<string, ColorSource*> color_source;
 	vector<ColorSource*> color_source_index;
+
+	list<string> recent_files;
 
 	ColorSourceManager *csm;
 	ColorSource *current_color_source;
@@ -356,6 +360,64 @@ int app_parse_geometry(AppArgs *args, const char *geometry){
 	return 0;
 }
 
+static void updateRecentFileList(AppArgs *args, const char *filename){
+	list<string>::iterator i = std::find(args->recent_files.begin(), args->recent_files.end(), string(filename));
+	if (i == args->recent_files.end()){
+		args->recent_files.push_front(string(filename));
+		while (args->recent_files.size() > 10){
+			args->recent_files.pop_back();
+		}
+	}else{
+		args->recent_files.erase(i);
+		args->recent_files.push_front(string(filename));
+	}
+}
+
+static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
+  const char *filename = args->recent_files.begin()->c_str();
+
+	palette_list_remove_all_entries(args->color_list);
+	if (args->current_filename) g_free(args->current_filename);
+	args->current_filename = 0;
+
+	if (palette_file_load(filename, args->gs->colors) == 0){
+		updateRecentFileList(args, filename);
+		args->current_filename = g_strdup(filename);
+		updateProgramName(args);
+	}else{
+		updateProgramName(args);
+		GtkWidget* message;
+		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
+		gtk_window_set_title(GTK_WINDOW(message), "Open");
+		gtk_dialog_run(GTK_DIALOG(message));
+		gtk_widget_destroy(message);
+	}
+}
+
+static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
+	list<string>::iterator i = args->recent_files.begin();
+	uintptr_t index = (uintptr_t)g_object_get_data(G_OBJECT(widget), "index");
+	std::advance(i, index);
+  const char *filename = (*i).c_str();
+
+	palette_list_remove_all_entries(args->color_list);
+	if (args->current_filename) g_free(args->current_filename);
+	args->current_filename = 0;
+
+	if (palette_file_load(filename, args->gs->colors) == 0){
+		updateRecentFileList(args, filename);
+		args->current_filename = g_strdup(filename);
+		updateProgramName(args);
+	}else{
+		updateProgramName(args);
+		GtkWidget* message;
+		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
+		gtk_window_set_title(GTK_WINDOW(message), "Open");
+		gtk_dialog_run(GTK_DIALOG(message));
+		gtk_widget_destroy(message);
+	}
+}
+
 static void menu_file_open(GtkWidget *widget, AppArgs *args){
 
 	GtkWidget *dialog;
@@ -392,11 +454,11 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 
 			palette_list_remove_all_entries(args->color_list);
 			if (args->current_filename) g_free(args->current_filename);
-			args->current_filename=0;
+			args->current_filename = 0;
 
-
-			if (palette_file_load(filename, args->gs->colors)==0){
-				args->current_filename=g_strdup(filename);
+			if (palette_file_load(filename, args->gs->colors) == 0){
+				updateRecentFileList(args, filename);
+				args->current_filename = g_strdup(filename);
 				updateProgramName(args);
 				finished = TRUE;
 			}else{
@@ -507,6 +569,13 @@ static void menu_file_export(GtkWidget *widget, gpointer data) {
 	color_list_destroy(color_list);
 }
 
+
+typedef struct FileMenuItems{
+	GtkWidget *export_all;
+	GtkWidget *export_selected;
+	GtkWidget *recent_files;
+}FileMenuItems;
+
 static void menu_file_activate(GtkWidget *widget, gpointer data) {
 	AppArgs* args=(AppArgs*)data;
 
@@ -515,9 +584,40 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 
 	//GtkMenu* menu=GTK_MENU(gtk_menu_item_get_submenu(GTK_MENU_ITEM(widget)));
 
-	GtkWidget** widgets=(GtkWidget**)g_object_get_data(G_OBJECT(widget), "widgets");
-	gtk_widget_set_sensitive(widgets[0], (total_count >= 1));
-	gtk_widget_set_sensitive(widgets[1], (selected_count >= 1));
+  FileMenuItems *items = (FileMenuItems*) g_object_get_data(G_OBJECT(widget), "items");
+	gtk_widget_set_sensitive(items->export_all, (total_count >= 1));
+	gtk_widget_set_sensitive(items->export_selected, (selected_count >= 1));
+
+
+
+	if (args->recent_files.size() > 0){
+
+		GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
+		GtkWidget *item;
+
+		item = gtk_menu_item_new_with_image ("Open Last File", gtk_image_new_from_stock(GTK_STOCK_OPEN, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
+		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open_last), args);
+
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), gtk_separator_menu_item_new ());
+
+		uint32_t j = 0;
+		for (list<string>::iterator i = args->recent_files.begin(); i != args->recent_files.end(); i++){
+			item = gtk_menu_item_new_with_label ((*i).c_str());
+			gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
+			g_object_set_data_full(G_OBJECT(item), "index", (void*)j, (GDestroyNotify)NULL);
+			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open_nth), args);
+			j++;
+		}
+
+		gtk_widget_show_all(GTK_WIDGET(menu2));
+		gtk_menu_item_set_submenu (GTK_MENU_ITEM (items->recent_files), GTK_WIDGET(menu2));
+
+		gtk_widget_set_sensitive(items->recent_files, true);
+	}else{
+		gtk_widget_set_sensitive(items->recent_files, false);
+	}
+
 }
 
 static void floating_picker_show_cb(GtkWidget *widget, AppArgs* args) {
@@ -536,14 +636,18 @@ static void palette_from_css_file_cb(GtkWidget *widget, AppArgs* args) {
 	tools_palette_from_css_file_show(GTK_WINDOW(args->window), args->gs);
 }
 
+static void destroy_file_menu_items(FileMenuItems *items){
+	delete items;
+}
+
 static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group) {
-	GtkMenu* menu;
-	GtkWidget* item;
-	GtkWidget* file_item ;
+	GtkMenu *menu;
+	GtkWidget *item;
+	GtkWidget* file_item;
 
     menu = GTK_MENU(gtk_menu_new());
 
-    GtkWidget** widgets=(GtkWidget**)g_malloc(sizeof(GtkWidget*)*2);
+    FileMenuItems *items = new FileMenuItems();
 
     item = gtk_menu_item_new_with_image ("_New", gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -554,6 +658,12 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open), args);
     gtk_widget_add_accelerator (item, "activate", accel_group, GDK_o, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+
+
+		item = gtk_menu_item_new_with_mnemonic ("_Recent files");
+    items->recent_files = item;
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
@@ -571,14 +681,14 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
     item = gtk_image_menu_item_new_with_mnemonic ("Ex_port...");
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export_all), args);
-    widgets[0]=item;
+    items->export_all = item;
 
     //gtk_widget_set_sensitive(item, (total_count >= 1));
 
     item = gtk_image_menu_item_new_with_mnemonic ("Expo_rt Selected...");
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export), args);
-    widgets[1]=item;
+    items->export_selected = item;
 
     //gtk_widget_set_sensitive(item, (selected_count >= 1));
 
@@ -596,7 +706,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 
     file_item = gtk_menu_item_new_with_mnemonic ("_File");
     g_signal_connect (G_OBJECT (file_item), "activate", G_CALLBACK (menu_file_activate), args);
-    g_object_set_data_full(G_OBJECT(file_item), "widgets", widgets, (GDestroyNotify)g_free);
+    g_object_set_data_full(G_OBJECT(file_item), "items", items, (GDestroyNotify)destroy_file_menu_items);
     gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
@@ -1118,8 +1228,8 @@ AppArgs* app_create_main(){
 	g_signal_connect(G_OBJECT(args->window), "focus-in-event", 		G_CALLBACK(on_window_focus_change), args);
 	g_signal_connect(G_OBJECT(args->window), "focus-out-event", 	G_CALLBACK(on_window_focus_change), args);
 
-    GtkAccelGroup *accel_group=gtk_accel_group_new();
-    gtk_window_add_accel_group(GTK_WINDOW(args->window), accel_group);
+	GtkAccelGroup *accel_group=gtk_accel_group_new();
+	gtk_window_add_accel_group(GTK_WINDOW(args->window), accel_group);
 	g_object_unref(G_OBJECT (accel_group));
 
     //gtk_accel_group_connect(accel_group, GDK_s, GdkModifierType(GDK_CONTROL_MASK), GtkAccelFlags(GTK_ACCEL_VISIBLE), g_cclosure_new (G_CALLBACK (menu_file_save),window,NULL));
@@ -1154,8 +1264,8 @@ AppArgs* app_create_main(){
 		ColorSource *source;
 		struct dynvSystem *dynv_namespace;
 
-        dynv_namespace = dynv_get_dynv(gs->params, "gpick.picker");
-        source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, dynv_namespace);
+		dynv_namespace = dynv_get_dynv(gs->params, "gpick.picker");
+		source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, dynv_namespace);
 		widget = color_source_get_widget(source);
 		dynv_system_release(dynv_namespace);
 
@@ -1166,8 +1276,8 @@ AppArgs* app_create_main(){
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Color picker"));
 		gtk_widget_show(widget);
 
-        dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
-        source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, dynv_namespace);
+		dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
+		source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, dynv_namespace);
 		widget = color_source_get_widget(source);
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
@@ -1218,8 +1328,8 @@ AppArgs* app_create_main(){
 		if (source) activate_secondary_source(args, source);
 
 
-        dynv_namespace = dynv_get_dynv(gs->params, "gpick.layout_preview");
-        source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, dynv_namespace);
+		dynv_namespace = dynv_get_dynv(gs->params, "gpick.layout_preview");
+		source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, dynv_namespace);
 		widget = color_source_get_widget(source);
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
@@ -1270,14 +1380,27 @@ AppArgs* app_create_main(){
 
 	GtkWidget *button = gtk_button_new();
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
-    g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
-    gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
+	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	gtk_widget_set_tooltip_text(button, "Pick colors");
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
 
 	gtk_widget_show(statusbar);
+
+
+	{
+		//Load recent file list
+		char** recent_array;
+		uint32_t recent_array_size;
+		if ((recent_array = (char**)dynv_get_string_array_wd(args->gs->params, "gpick.recent.files", 0, 0, &recent_array_size))){
+			for (int i = 0; i < recent_array_size; i++){
+				args->recent_files.push_back(string(recent_array[i]));
+			}
+			delete [] recent_array;
+		}
+	}
 
 	createMenu(GTK_MENU_BAR(menu_bar), args, accel_group);
 	gtk_widget_show_all(menu_bar);
@@ -1304,6 +1427,24 @@ int app_run(AppArgs *args){
 	}
 
 	gtk_main();
+
+	{
+		//Save recent file list
+		const char** recent_array;
+		uint32_t recent_array_size;
+
+		recent_array_size = args->recent_files.size();
+		recent_array = new const char* [recent_array_size];
+
+		uint32_t j =0;
+		for (list<string>::iterator i = args->recent_files.begin(); i != args->recent_files.end(); i++){
+			recent_array[j] = (*i).c_str();
+			j++;
+		}
+
+		dynv_set_string_array(args->gs->params, "gpick.recent.files", recent_array, recent_array_size);
+		delete [] recent_array;
+	}
 
 	unique_term();
 	status_icon_destroy(args->statusIcon);

@@ -449,8 +449,15 @@ static int source_destroy(VariationsArgs *args){
 
 static int source_get_color(VariationsArgs *args, ColorObject** color){
 	Color c;
-	gtk_color_get_color(GTK_COLOR(args->color[0].color), &c);
+	if (args->last_focused_color){
+		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
+	}else{
+		gtk_color_get_color(GTK_COLOR(args->color[0].color), &c);
+	}
 	*color = color_list_new_color_object(args->gs->colors, &c);
+
+	string name = color_names_get(args->gs->color_names, &c);
+	dynv_set_string((*color)->params, "name", name.c_str());
 	return 0;
 }
 
@@ -504,11 +511,12 @@ static int source_deactivate(VariationsArgs *args){
 }
 
 static struct ColorObject* get_color_object(struct DragDrop* dd){
-	Color c;
-	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
-	struct ColorObject* colorobject = color_object_new(dd->handler_map);
-	color_object_set_color(colorobject, &c);
-	return colorobject;
+	VariationsArgs* args = (VariationsArgs*)dd->userdata;
+	struct ColorObject* colorobject;
+	if (source_get_color(args, &colorobject) == 0){
+		return colorobject;
+	}
+	return 0;
 }
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
