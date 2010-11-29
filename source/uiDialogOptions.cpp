@@ -33,6 +33,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *copy_to_clipboard;
 	GtkWidget *rotate_swatch;
 	GtkWidget *copy_on_release;
+	GtkWidget *zoom_size;
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -47,6 +48,7 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	dynv_set_bool(args->params, "main.single_instance", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance)));
 
 	dynv_set_float(args->params, "picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
+	dynv_set_int32(args->params, "picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
 	dynv_set_bool(args->params, "picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.copy_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
@@ -143,6 +145,12 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hz",0,0.5,0,0),2,3,table_y,table_y+1,GTK_FILL,GTK_FILL,5,5);
 	table_y++;
 
+
+	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new("_Magnified area size:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	args->zoom_size = widget = gtk_spin_button_new_with_range(75, 300, 15);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->zoom_size), dynv_get_int32_wd(args->params, "picker.zoom_size", 150));
+	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
+	table_y++;
 
 	frame = gtk_frame_new("Floating picker click behaviour");
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);

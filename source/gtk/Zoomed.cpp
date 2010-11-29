@@ -66,6 +66,7 @@ typedef struct GtkZoomedPrivate
 	GdkPixbuf *pixbuf;
 
 	vector2 point;
+	int32_t width_height;
 
 }GtkZoomedPrivate;
 
@@ -118,14 +119,36 @@ GtkWidget *
 gtk_zoomed_new () {
 	GtkWidget* widget=(GtkWidget*)g_object_new (GTK_TYPE_ZOOMED, NULL);
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
-	gtk_widget_set_size_request(GTK_WIDGET(widget),150+widget->style->xthickness*2,150+widget->style->ythickness*2);
 
 	ns->zoom = 2;
-	ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 150, 150);
 	ns->point.x = 0;
 	ns->point.y = 0;
+	ns->width_height = 150;
+	ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
+
+	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->width_height + widget->style->xthickness*2, ns->width_height + widget->style->ythickness*2);
 
 	return widget;
+}
+
+int32_t gtk_zoomed_get_size(GtkZoomed *zoomed){
+	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(zoomed);
+	return ns->width_height;
+}
+
+void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height){
+	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(zoomed);
+	if (ns->width_height != width_height){
+		if (ns->pixbuf){
+			g_object_unref (ns->pixbuf);
+			ns->pixbuf = 0;
+		}
+
+		ns->width_height = width_height;
+		ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
+
+		gtk_widget_set_size_request(GTK_WIDGET(zoomed), ns->width_height + GTK_WIDGET(zoomed)->style->xthickness*2, ns->width_height + GTK_WIDGET(zoomed)->style->ythickness*2);
+	}
 }
 
 static void gtk_zoomed_finalize(GObject *zoomed_obj){
@@ -147,7 +170,7 @@ void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, mat
 
 	gint32 left, right, top, bottom;
 
-	gint32 area_width = gint32(150 / ns->zoom);
+	gint32 area_width = gint32(ns->width_height / ns->zoom);
 
 	left	= x - area_width/2;
 	top		= y - area_width/2;
@@ -185,7 +208,7 @@ void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<i
 
 	gint32 left, right, top, bottom;
 
-	gint32 area_width = gint32(150 / ns->zoom);
+	gint32 area_width = gint32(ns->width_height / ns->zoom);
 
 	left	= x - area_width/2;
 	top		= y - area_width/2;
@@ -209,14 +232,14 @@ void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<i
 		bottom=height;
 	}
 
-	ns->point.x = (x - left) * ns->zoom + (150.0/area_width)/2.0;
-	ns->point.y = (y - top) * ns->zoom + (150.0/area_width)/2.0;
+	ns->point.x = (x - left) * ns->zoom + (ns->width_height / (double)area_width)/2.0;
+	ns->point.y = (y - top) * ns->zoom + (ns->width_height / (double)area_width)/2.0;
 
 	width	= right - left;
 	height	= bottom - top;
 
 
-	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, 150, 150, offset.x, offset.y, 150.0/width, 150.0/height, GDK_INTERP_NEAREST);
+	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, ns->width_height, ns->width_height, offset.x, offset.y, ns->width_height / (double)width, ns->width_height / (double)height, GDK_INTERP_NEAREST);
 
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 
@@ -246,8 +269,8 @@ static gboolean gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event){
 		gint pixbuf_x = max(event->area.x-widget->style->xthickness, 0);
 		gint pixbuf_y = max(event->area.y-widget->style->ythickness, 0);
 
-		gint pixbuf_width = min(150-pixbuf_x, 150);
-		gint pixbuf_height = min(150-pixbuf_y, 150);
+		gint pixbuf_width = min(ns->width_height - pixbuf_x, ns->width_height);
+		gint pixbuf_height = min(ns->width_height - pixbuf_y, ns->width_height);
 
 		if (pixbuf_width>0 && pixbuf_height>0)
 			gdk_draw_pixbuf(widget->window,
@@ -275,7 +298,7 @@ static gboolean gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event){
 
 	cairo_destroy (cr);
 
-	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 150);
+	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, ns->width_height, ns->width_height);
 
 	return true;
 }

@@ -277,7 +277,7 @@ static void paste_cb(GtkWidget *widget, ColorPickerArgs* args) {
 }
 
 static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args){
- 	GtkWidget *menu;
+	GtkWidget *menu;
 
 	gint32 button, event_time;
 
@@ -285,12 +285,12 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args){
 	updateMainColor(args);
 	gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
 
-    struct ColorObject* color_object;
-    color_object = color_list_new_color_object(args->gs->colors, &c);
-    menu = converter_create_copy_menu(color_object, 0, args->gs);
+	struct ColorObject* color_object;
+	color_object = color_list_new_color_object(args->gs->colors, &c);
+	menu = converter_create_copy_menu(color_object, 0, args->gs);
 	color_object_release(color_object);
 
-    gtk_widget_show_all(GTK_WIDGET(menu));
+	gtk_widget_show_all(GTK_WIDGET(menu));
 
 	button = 0;
 	event_time = gtk_get_current_event_time ();
@@ -717,6 +717,7 @@ static int source_destroy(ColorPickerArgs *args){
 	dynv_set_int32(args->params, "sampler.falloff", sampler_get_falloff(args->gs->sampler));
 
 	dynv_set_float(args->params, "zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed_display)));
+	dynv_set_int32(args->params, "zoom_size", gtk_zoomed_get_size(GTK_ZOOMED(args->zoomed_display)));
 
 	dynv_set_bool(args->params, "expander.settings", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderSettings)));
 	dynv_set_bool(args->params, "expander.rgb", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderRGB)));
@@ -772,6 +773,8 @@ static int source_activate(ColorPickerArgs *args){
 
 	float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+
+	gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
 
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"), "Click on swatch area to begin adding colors to palette");
 
@@ -922,6 +925,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 
 			args->zoomed_display = gtk_zoomed_new();
+			gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
 			gtk_box_pack_start (GTK_BOX(vbox), args->zoomed_display, false, false, 0);
 
 
@@ -962,7 +966,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				gtk_range_set_value(GTK_RANGE(widget), dynv_get_float_wd(args->params, "zoom", 2));
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
-
 
 			expander=gtk_expander_new("HSV");
 			gtk_expander_set_expanded(GTK_EXPANDER(expander), dynv_get_bool_wd(args->params, "expander.hsv", false));

@@ -20,18 +20,21 @@
 #include "ScreenReader.h"
 #include "Rect2.h"
 
+#include <algorithm>
 
 using namespace math;
 
 struct ScreenReader{
 	GdkPixbuf *pixbuf;
+	int max_size;
 	GdkScreen *screen;
 	Rect2<int> read_area;
 };
 
 struct ScreenReader* screen_reader_new(){
 	struct ScreenReader* screen = new struct ScreenReader;
-	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 75, 75);
+	screen->max_size = 150;
+	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 150, 150);
 	screen->screen = NULL;
 	return screen;
 }
@@ -65,6 +68,12 @@ void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update
 	int top = screen->read_area.getY();
 	int width = screen->read_area.getWidth();
 	int height = screen->read_area.getHeight();
+
+	if (width > screen->max_size || height > screen->max_size){
+		if (screen->pixbuf) g_object_unref(screen->pixbuf);
+		screen->max_size = (std::max(width, height) / 150 + 1) * 150;
+		screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, screen->max_size, screen->max_size);
+	}
 
 	gdk_pixbuf_get_from_drawable(screen->pixbuf, root_window, colormap, left, top, 0, 0, width, height);
 	*update_rect = screen->read_area;
