@@ -72,7 +72,7 @@ color_hsv_to_rgb(Color* a, Color* b)
 		b->rgb.red = b->rgb.green = b->rgb.blue = a->hsv.value;
 	} else {
 
-		h = fmodf(a->hsv.hue, 1.0f) * 6.0f;
+		h = (a->hsv.hue - floor(a->hsv.hue)) * 6.0f;
 
 		i = int(h);
 		f = h - floor(h);
