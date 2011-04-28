@@ -151,6 +151,15 @@ gpick.serialize_css_border_left_hex = function (color_object)
 	return 'border-left-color: ' .. gpick.serialize_web_hex(color_object)
 end
 
+gpick.serialize_color_csv = function (color_object)
+	local c = color_object:get_color();
+	os.setlocale("C", "numeric");
+	local r = string.format('%f\t%f\t%f', c:red(), c:green(), c:blue());
+	os.setlocale("", "numeric");
+	return r;
+end;
+
+
 gpick.converters['color_web_hex'] = {
 	human_readable = 'Web: hex code',
 	serialize = gpick.serialize_web_hex,
@@ -211,6 +220,12 @@ gpick.converters['css_border_left_hex'] = {
 	serialize = gpick.serialize_css_border_left_hex,
 	deserialize = nil
 }
+
+gpick.converters['color_csv'] = {
+	human_readable = 'CSV',
+	serialize = gpick.serialize_color_csv,
+	deserialize = nil
+};
 
 gpick.color_serialize = function(converter, color_object)
 	return gpick.converters[converter].serialize(color_object)
