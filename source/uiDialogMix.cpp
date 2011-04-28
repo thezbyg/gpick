@@ -56,6 +56,13 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 	s.setf(ios::fixed,ios::floatfield);
 
 	Color a,b;
+	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
+	vector3 d50, d65;
+	vector3_set(&d50, 96.442, 100.000,  82.821);
+	vector3_set(&d65, 95.047, 100.000, 108.883);
+	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
+	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
+    matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inverted);
 
 	struct ColorList *color_list;
 	if (preview)
@@ -150,6 +157,29 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 					}
 				}
 				break;
+
+			case 3:
+				{
+					Color a_lab, b_lab, r_lab;
+					color_rgb_to_lab(&a, &a_lab, &d50, &working_space_matrix);
+					color_rgb_to_lab(&b, &b_lab, &d50, &working_space_matrix);
+
+					for (step_i = 0; step_i < steps; ++step_i) {
+						r_lab.lab.L = mix_float(a_lab.lab.L, b_lab.lab.L, step_i/(float)(steps-1));
+						r_lab.lab.a = mix_float(a_lab.lab.a, b_lab.lab.a, step_i/(float)(steps-1));
+						r_lab.lab.b = mix_float(a_lab.lab.b, b_lab.lab.b, step_i/(float)(steps-1));
+
+						color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
+
+						s.str("");
+						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+						struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+						dynv_set_string(color_object->params, "name", s.str().c_str());
+						color_list_add_color_object(color_list, color_object, 1);
+					}
+				}
+				break;
 			}
 		}
 	}
@@ -187,6 +217,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "RGB");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV");
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV shortest hue distance");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "LAB");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_table_attach(GTK_TABLE(table), mix_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
