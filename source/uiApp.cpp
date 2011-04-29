@@ -355,7 +355,7 @@ static void show_dialog_options(GtkWidget *widget, AppArgs *args){
 static void menu_file_new(GtkWidget *widget, AppArgs *args){
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename=0;
-	palette_list_remove_all_entries(args->color_list);
+	color_list_remove_all(args->gs->colors);
 	updateProgramName(args);
 }
 
@@ -379,7 +379,7 @@ int app_parse_geometry(AppArgs *args, const char *geometry){
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
   const char *filename = args->recent_files.begin()->c_str();
 
-	palette_list_remove_all_entries(args->color_list);
+	color_list_remove_all(args->gs->colors);
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename = 0;
 
@@ -403,7 +403,7 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
 	std::advance(i, index);
   const char *filename = (*i).c_str();
 
-	palette_list_remove_all_entries(args->color_list);
+	color_list_remove_all(args->gs->colors);
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename = 0;
 
@@ -455,7 +455,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 			dynv_set_string(args->params, "open.path", path);
 			g_free(path);
 
-			palette_list_remove_all_entries(args->color_list);
+			color_list_remove_all(args->gs->colors);
 			if (args->current_filename) g_free(args->current_filename);
 			args->current_filename = 0;
 
