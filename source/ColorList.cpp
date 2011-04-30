@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -136,10 +136,18 @@ unsigned long color_list_get_count(struct ColorList* color_list){
 
 int color_list_get_positions(struct ColorList* color_list){
 	ColorList::iter i;
-	for (i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-		(*i)->position=~(uint32_t)0;
+	if (color_list->on_get_positions){
+		for (i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+			(*i)->position=~(uint32_t)0;
+		}
+		color_list->on_get_positions(color_list);
+	}else{
+		uint32_t j = 0;
+		for (i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+			(*i)->position = j;
+			j++;
+		}
 	}
-	if (color_list->on_get_positions) color_list->on_get_positions(color_list);
 	return 0;
 }
 

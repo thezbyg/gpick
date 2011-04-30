@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -206,7 +206,7 @@ static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
 	gtk_color_get_color(GTK_COLOR(g_object_get_data(G_OBJECT(widget), "color_widget")), &c);
 
 	struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
-	string name = color_names_get(args->gs->color_names, &c);
+	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
@@ -220,7 +220,7 @@ static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 		gtk_color_get_color(GTK_COLOR(args->color[i].input), &c);
 
 		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
-		string name = color_names_get(args->gs->color_names, &c);
+		string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 		dynv_set_string(color_object->params, "name", name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
@@ -228,7 +228,7 @@ static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
 		gtk_color_get_color(GTK_COLOR(args->color[i].output), &c);
 
 		color_object = color_list_new_color_object(args->gs->colors, &c);
-		name = color_names_get(args->gs->color_names, &c);
+		name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 		dynv_set_string(color_object->params, "name", name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
@@ -249,7 +249,7 @@ static void on_color_activate(GtkWidget *widget,  gpointer item) {
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
-	string name = color_names_get(args->gs->color_names, &c);
+	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 	dynv_set_string(color_object->params, "name", name.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
@@ -449,7 +449,7 @@ static int source_get_color(ColorMixerArgs *args, ColorObject** color){
 	}
 	*color = color_list_new_color_object(args->gs->colors, &c);
 
-	string name = color_names_get(args->gs->color_names, &c);
+	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 	dynv_set_string((*color)->params, "name", name.c_str());
 	return 0;
 }

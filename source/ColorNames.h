@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -52,6 +52,6 @@ void
 color_names_destroy(ColorNames* cnames);
 
 string
-color_names_get(ColorNames* cnames, Color* color);
+color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix);
 
 #endif /* COLORNAMES_H_ */

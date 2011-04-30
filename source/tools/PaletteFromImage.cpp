@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -418,7 +418,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
 		struct ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
-		string name = color_names_get(args->gs->color_names, &(*i));
+		string name = color_names_get(args->gs->color_names, &(*i), dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 		dynv_set_string(color_object->params, "name", name.c_str());
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object_release(color_object);

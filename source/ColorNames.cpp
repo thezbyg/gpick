@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -106,6 +106,16 @@ color_names_load_from_file(ColorNames* cnames, const char* filename)
 			getline(rline, name);
 
 			color_names_strip_spaces(name, strip_chars);
+
+			string::iterator i(name.begin());
+
+			if (i != name.end())
+				name[0] = toupper((unsigned char)name[0]);
+
+			while(++i != name.end()){
+				*i = tolower((unsigned char)*i);
+			}
+
 			color_multiply(&color, 1/255.0);
 
 			ColorNameEntry* name_entry = new ColorNameEntry;
@@ -145,7 +155,7 @@ color_names_destroy(ColorNames* cnames)
 }
 
 string
-color_names_get(ColorNames* cnames, Color* color)
+color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 {
 	Color c1;
 	cnames->colorspace_convert(color, &c1);
@@ -183,7 +193,7 @@ color_names_get(ColorNames* cnames, Color* color)
 	if (color_entry){
 		stringstream s;
 		s<<color_entry->name->name;//<<" "<<int((result_delta)*5773);
-		if (result_delta>0.1) s<<" ~";
+		if (imprecision_postfix) if (result_delta>0.1) s<<" ~";
 		return s.str();//(*result_i)->name;
 	}
 

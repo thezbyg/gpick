@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -118,7 +118,7 @@ static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** c
 	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout_view), &c) == 0){
 		*color = color_list_new_color_object(args->gs->colors, &c);
 
-		string name = color_names_get(args->gs->color_names, &c);
+		string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 		dynv_set_string((*color)->params, "name", name.c_str());
 		return 0;
 	}

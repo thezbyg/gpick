@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -43,6 +43,31 @@ static int32_t palette_export_gpl_color(struct ColorObject* color_object, void* 
 	return 0;
 }
 
+
+static vector<struct ColorObject*> get_ordered_list(struct ColorList *color_list){
+		vector<struct ColorObject*> ordered(color_list_get_count(color_list));
+		color_list_get_positions(color_list);
+
+		uint32_t max_index = ~(uint32_t)0;
+		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+			if ((*i)->position != ~(uint32_t)0){
+				ordered[(*i)->position] = *i;
+				if (max_index == ~(uint32_t)0){
+					max_index = (*i)->position;
+				}else if ((*i)->position > max_index){
+          max_index = (*i)->position;
+				}
+			}
+		}
+
+		if (max_index == ~(uint32_t)0){
+			return vector<struct ColorObject*>();
+		}else{
+			ordered.resize(max_index + 1);
+			return ordered;
+		}
+}
+
 static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
@@ -56,8 +81,9 @@ static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* fil
 
 		g_free(name);
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-			 palette_export_gpl_color(*i, &f);
+    vector<struct ColorObject*> ordered = get_ordered_list(color_list);
+		for (vector<struct ColorObject*>::iterator i=ordered.begin(); i!=ordered.end(); ++i){
+			palette_export_gpl_color(*i, &f);
 		}
 
 		f.close();
@@ -148,7 +174,9 @@ static int32_t palette_export_mtl_color(struct ColorObject* color_object, void* 
 static int32_t palette_export_mtl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+
+    vector<struct ColorObject*> ordered = get_ordered_list(color_list);
+		for (vector<struct ColorObject*>::iterator i=ordered.begin(); i!=ordered.end(); ++i){
 			 palette_export_mtl_color(*i, &f);
 		}
 		f.close();
@@ -220,17 +248,10 @@ static int32_t palette_export_ase(struct ColorList *color_list, const gchar* fil
 		blocks=UINT32_TO_BE(blocks);
 		f.write((char*)&blocks, 4);
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+    vector<struct ColorObject*> ordered = get_ordered_list(color_list);
+		for (vector<struct ColorObject*>::iterator i=ordered.begin(); i!=ordered.end(); ++i){
 			 palette_export_ase_color(*i, &f);
 		}
-
-		/*if (selected)
-			palette_list_foreach_selected(palette, palette_export_mtl_color, &f);
-		else
-			palette_list_foreach(palette, palette_export_ase_color, &f);*/
-
-		//uint16_t terminator=0;
-		//f.write((char*)&terminator, 2);
 
 		f.close();
 		return 0;
@@ -416,14 +437,11 @@ static int32_t palette_export_txt(struct ColorList *color_list, const gchar* fil
 
 		g_free(name);
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+    vector<struct ColorObject*> ordered = get_ordered_list(color_list);
+		for (vector<struct ColorObject*>::iterator i=ordered.begin(); i!=ordered.end(); ++i){
 			 palette_export_txt_color(*i, &f);
 		}
 
-		/*if (selected)
-			palette_list_foreach_selected(palette, palette_export_txt_color, &f);
-		else
-			palette_list_foreach(palette, palette_export_txt_color, &f);*/
 		f.close();
 		return 0;
 	}

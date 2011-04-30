@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -68,6 +68,8 @@ int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color)
 int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color);
 bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
 bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget);
+
+int gtk_layout_preview_get_current_style(GtkLayoutPreview* widget, layout::Style** style);
 
 G_END_DECLS
 

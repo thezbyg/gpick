@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -236,22 +236,21 @@ int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble
 	return -1;
 }
 
+int gtk_layout_preview_get_current_style(GtkLayoutPreview* widget, Style** style){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	if (ns->system && ns->selected_style){
+		*style = ns->selected_style;
+		return 0;
+	}
+	return -1;
+}
+
 int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color){
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
-
 	if (ns->system && ns->selected_style){
 		Box* box = ns->selected_box;
-
 		color_copy(&box->style->color, color);
-
-		/*if (typeid(*box)==typeid(Fill)){
-			color_copy(&box->style->background_color, color);
-		}else if (typeid(*box)==typeid(Text)){
-			color_copy(&box->style->text_color, color);
-		}*/
-
 		return 0;
-
 	}
 	return -1;
 }

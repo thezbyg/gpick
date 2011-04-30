@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -250,7 +250,7 @@ static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color)
 	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c)==0){
 
 		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
-		string name = color_names_get(args->gs->color_names, &c);
+		string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 		dynv_set_string(color_object->params, "name", name.c_str());
 
 		*color = color_object;
@@ -344,9 +344,11 @@ static void paste_cb(GtkWidget *widget, LayoutPreviewArgs* args) {
 static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
 	LayoutPreviewArgs* args=(LayoutPreviewArgs*)item;
 
-	struct ColorObject *color_object;
-	if (source_get_color(args, &color_object)==0){
-		dynv_set_string(color_object->params, "name", "");
+	Style* style = 0;
+	if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout), &style) == 0){
+		struct ColorObject *color_object;
+		color_object = color_list_new_color_object(args->gs->colors, &style->color);
+		dynv_set_string(color_object->params, "name", style->ident_name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
 	}
@@ -369,14 +371,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 	GtkWidget *menu;
 
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
-		struct ColorObject *color_object;
-
-		if (source_get_color(args, &color_object)==0){
-			dynv_set_string(color_object->params, "name", "");
-			color_list_add_color_object(args->gs->colors, color_object, 1);
-			color_object_release(color_object);
-		}
-
+		add_to_palette_cb(widget, args);
 		return true;
 
 	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){

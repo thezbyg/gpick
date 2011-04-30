@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -224,7 +224,7 @@ static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, Floa
 
 			if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.add_on_release", false)){
 
-				string name = color_names_get(args->gs->color_names, &c);
+				string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
 				dynv_set_string(color_object->params, "name", name.c_str());
 				color_list_add_color_object(args->gs->colors, color_object, 1);
 
