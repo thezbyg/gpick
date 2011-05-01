@@ -1291,7 +1291,7 @@ AppArgs* app_create_main(){
 		args->color_source_index.push_back(source);
 		args->floating_picker = floating_picker_new(args->window, args->gs, source);
 		color_picker_set_floating_picker(source, args->floating_picker);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Color picker"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Color pic_ker"));
 		gtk_widget_show(widget);
 
 		dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
@@ -1300,7 +1300,7 @@ AppArgs* app_create_main(){
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Scheme generation"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Scheme _generation"));
 		gtk_widget_show(widget);
 
 /*		source = generate_scheme_new(args->gs, &widget);
@@ -1352,7 +1352,7 @@ AppArgs* app_create_main(){
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new("Layout preview"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Lay_out preview"));
 		gtk_widget_show(widget);
 
 		widget = palette_list_new(args->gs);
@@ -1400,7 +1400,7 @@ AppArgs* app_create_main(){
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
 	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-	gtk_widget_set_tooltip_text(button, "Pick colors");
+	gtk_widget_set_tooltip_text(button, "Pick colors (Ctrl+P)");
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);

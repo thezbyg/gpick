@@ -412,6 +412,42 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			return FALSE;
 			break;
 
+		case GDK_1:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_2:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_3:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_4:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_5:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_6:
+			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
+			updateDiplays(args, widget);
+			return TRUE;
+			break;
+
 		case GDK_Right:
 			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
 			updateDiplays(args, widget);
