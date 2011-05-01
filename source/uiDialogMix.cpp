@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -170,6 +170,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 						r_lab.lab.b = mix_float(a_lab.lab.b, b_lab.lab.b, step_i/(float)(steps-1));
 
 						color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
+						color_rgb_normalize(&r);
 
 						s.str("");
 						s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;

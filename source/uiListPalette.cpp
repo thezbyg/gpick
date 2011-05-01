@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -34,12 +34,68 @@ using namespace std;
 
 typedef struct ListPaletteArgs{
 	ColorSource source;
+	GtkWidget *treeview;
+  gint scroll_timeout;
 
 	GlobalState* gs;
 }ListPaletteArgs;
 
 static void destroy_arguments(gpointer data);
 static struct ColorObject* get_color_object(struct DragDrop* dd);
+
+#define SCROLL_EDGE_SIZE 15 //SCROLL_EDGE_SIZE from gtktreeview.c
+
+static void add_scroll_timeout(ListPaletteArgs *args);
+static void remove_scroll_timeout(ListPaletteArgs *args);
+static gboolean scroll_row_timeout(ListPaletteArgs *args);
+static void palette_list_vertical_autoscroll(GtkTreeView *treeview);
+
+
+static gboolean scroll_row_timeout(ListPaletteArgs *args){
+  palette_list_vertical_autoscroll(GTK_TREE_VIEW(args->treeview));
+	return true;
+}
+
+static void add_scroll_timeout(ListPaletteArgs *args){
+  if (!args->scroll_timeout){
+		args->scroll_timeout = gdk_threads_add_timeout(150, (GSourceFunc)scroll_row_timeout, args);
+	}
+}
+
+static void remove_scroll_timeout(ListPaletteArgs *args){
+  if (args->scroll_timeout){
+		g_source_remove(args->scroll_timeout);
+		args->scroll_timeout = 0;
+	}
+}
+
+static bool drag_end(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context){
+	remove_scroll_timeout((ListPaletteArgs*)dd->userdata);
+}
+
+static void palette_list_vertical_autoscroll(GtkTreeView *treeview){
+	GdkRectangle visible_rect;
+	gint y;
+	gint offset;
+
+	gdk_window_get_pointer(gtk_tree_view_get_bin_window(treeview), NULL, &y, NULL);
+	gint dy;
+	gtk_tree_view_convert_bin_window_to_tree_coords(treeview, 0, 0, 0, &dy);
+	y += dy;
+
+	gtk_tree_view_get_visible_rect(treeview, &visible_rect);
+
+	offset = y - (visible_rect.y + 2 * SCROLL_EDGE_SIZE);
+	if (offset > 0) {
+		offset = y - (visible_rect.y + visible_rect.height - 2 * SCROLL_EDGE_SIZE);
+		if (offset < 0)
+			return;
+	}
+
+	GtkAdjustment *adjustment = gtk_tree_view_get_vadjustment(treeview);
+	gtk_adjustment_set_value(adjustment, min(max(gtk_adjustment_get_value(adjustment) + offset, 0.0), gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size (adjustment)));
+}
+
 
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, struct ColorObject* color_object, ListPaletteArgs* args){
 	Color color;
@@ -95,6 +151,7 @@ static int palette_list_preview_on_clear(struct ColorList* color_list){
 }
 
 static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
+	remove_scroll_timeout(args);
 	palette_list_remove_all_entries(widget);
 }
 
@@ -102,13 +159,15 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 
 	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
+	args->scroll_timeout = 0;
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
 	GtkTreeViewColumn   *col;
 	GtkWidget           *view;
 
-	view = gtk_tree_view_new ();
+	view = gtk_tree_view_new();
+	args->treeview = view;
 
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 0);
 
@@ -136,6 +195,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 	dragdrop_init(&dd, gs);
 
 	dd.get_color_object = get_color_object;
+	dd.drag_end = drag_end;
 	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
 	dd.userdata = args;
 
@@ -201,6 +261,8 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
 	ListPaletteArgs* args = (ListPaletteArgs*)dd->userdata;
 
+	remove_scroll_timeout((ListPaletteArgs*)dd->userdata);
+
 	GtkTreePath* path;
 	GtkTreeViewDropPosition pos;
 	GtkTreeIter iter, iter2;
@@ -254,6 +316,7 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 		}
 
 		gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(dd->widget), path, pos);
+		add_scroll_timeout((ListPaletteArgs*)dd->userdata);
 	}else{
 		gtk_tree_view_unset_rows_drag_dest(GTK_TREE_VIEW(dd->widget));
 	}
@@ -270,6 +333,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
+	args->scroll_timeout = 0;
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -277,6 +341,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	GtkWidget           *view;
 
 	view = gtk_tree_view_new ();
+	args->treeview = view;
 
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 1);
 
@@ -331,6 +396,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	dd.set_color_object_at = set_color_object_at;
 	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
 	dd.test_at = test_at;
+	dd.drag_end = drag_end;
 	dd.userdata = args;
 
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);

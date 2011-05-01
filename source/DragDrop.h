@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -38,6 +38,7 @@ struct DragDrop{
 	bool (*data_received)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_get)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_delete)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
+	bool (*drag_end)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
 
 	struct ColorObject* color_object;
 	struct dynvHandlerMap* handler_map;

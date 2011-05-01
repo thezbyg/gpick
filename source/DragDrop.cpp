@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -61,6 +61,7 @@ int dragdrop_init(struct DragDrop* dd, GlobalState *gs){
 	dd->data_received = 0;
 	dd->data_get = 0;
 	dd->data_delete = 0;
+	dd->drag_end = 0;
 
 	dd->handler_map = 0;
 	dd->color_object = 0;
@@ -213,13 +214,18 @@ static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, g
 
 
 static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data){
+	struct DragDrop *dd = (struct DragDrop*)user_data;
 
 	GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
 
 	if (target != GDK_NONE){
 		gtk_drag_get_data(widget, context, target, time);
+		if (dd->drag_end)
+			dd->drag_end(dd, widget, context);
 		return TRUE;
 	}
+	if (dd->drag_end)
+		dd->drag_end(dd, widget, context);
 	return FALSE;
 }
 
@@ -330,6 +336,9 @@ static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_d
 		gtk_widget_destroy(dd->dragwidget);
 		dd->dragwidget = 0;
 	}
+
+	if (dd->drag_end)
+		dd->drag_end(dd, widget, context);
 
 }
 
