@@ -18,6 +18,7 @@ vars.Add('DEBUG', 'Compile with debug information', False)
 vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Add('INTERNAL_EXPAT', 'Use internal Expat library', True)
 vars.Add('INTERNAL_LUA', 'Use internal Lua library', True)
+vars.Add('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False)
 vars.Update(env)
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
@@ -101,9 +102,7 @@ if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.env
 			)
 			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
-
-executable = SConscript(['source/SConscript'], exports='env')
-
+executable, parser_files  = SConscript(['source/SConscript'], exports='env')
 
 env.Alias(target="build", source=[
 	executable
@@ -126,10 +125,15 @@ env.Alias(target="nsis", source=[
 	env.WriteNsisVersion("version.py")
 ])
 
+tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+
+for item in parser_files:
+	tarFiles.append(str(item))
+
 env.Alias(target="tar", source=[
 	env.Append(TARFLAGS = ['-z']),
-	env.Prepend(TARFLAGS = ['--transform', '"s,^,gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,"']),
-	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)"))
+	env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
+	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)
 ])
 
 

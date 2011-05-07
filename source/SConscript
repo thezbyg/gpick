@@ -24,7 +24,9 @@ objects.append(SConscript(['version/SConscript'], exports='env'))
 objects.append(SConscript(['unique/SConscript'], exports='env'))
 objects.append(SConscript(['gtk/SConscript'], exports='env'))
 objects.append(SConscript(['layout/SConscript'], exports='env'))
-objects.append(SConscript(['cssparser/SConscript'], exports='env'))
+
+parser_objects, generated_files = SConscript(['cssparser/SConscript'], exports='env')
+objects.append(parser_objects)
 
 if local_env['BUILD_TARGET'] == 'win32':
 	local_env.Append(LINKFLAGS = '-mwindows')
@@ -41,5 +43,5 @@ if env['INTERNAL_EXPAT']:
 if env['INTERNAL_LUA']:
 	Depends(executable, local_env.UseLibrary('lua'))
 
-Return('executable')
+Return('executable', 'generated_files')
 

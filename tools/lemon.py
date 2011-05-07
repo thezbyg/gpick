@@ -11,7 +11,6 @@ def addLemonBuilder(env):
 	def headerEmitter(target, source, env): 
 		bs = SCons.Util.splitext(str(source[0].name))[0] 
 		target.append(bs + '.h')
-		target.append(bs + '.c')
 		bs = SCons.Util.splitext(str(target[0]))[0] + ".y"
 		source.append(bs) 	
 		return (target, source)

@@ -17,4 +17,5 @@
  */
 
 #undef NDEBUG
+#define NEVER(a) false
 #include <css_grammar.c>

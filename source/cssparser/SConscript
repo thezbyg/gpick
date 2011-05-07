@@ -8,15 +8,22 @@ local_env = env.Clone()
 
 local_env.PrependUnique(CPPPATH = ['.'])
 
-parser = local_env.Lemon('css_grammar.y')
-lexer = local_env.Flex('css_lex.l')
+if not env['PREBUILD_GRAMMAR']:
+	parser = local_env.Lemon('css_grammar.y')
+	lexer = local_env.Flex('css_lex.l')
+else:
+	parser = [File('css_grammar.c'), File('css_grammar.h')]
+	lexer = [File('css_lex.cpp'), File('css_lex.h')]
+
+generated_files = Flatten([parser, lexer])
 
 sources = local_env.Glob('*.cpp')
 
 objects = local_env.StaticObject(
 	source = [sources])
 	
-Depends(parser, lexer)
-Depends(objects, parser)
+if not env['PREBUILD_GRAMMAR']:
+	Depends(parser, lexer)
+	Depends(objects, parser)
 	
-Return('objects')
+Return('objects', 'generated_files')
