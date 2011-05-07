@@ -18,7 +18,7 @@
 
 #include "DynvXml.h"
 #include "DynvVariable.h"
-#include "expat.h"
+#include <expat.h>
 
 #include <stdlib.h>
 #include <string.h>

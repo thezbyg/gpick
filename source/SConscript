@@ -34,6 +34,9 @@ if local_env['BUILD_TARGET'] == 'win32':
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt'])
 
+if not env['INTERNAL_EXPAT']:
+	local_env.Append(LIBS=['expat'])
+
 executable = local_env.Program(
 	'gpick',
 	source = [sources, objects])

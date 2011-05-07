@@ -71,6 +71,7 @@ static void remove_scroll_timeout(ListPaletteArgs *args){
 
 static bool drag_end(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context){
 	remove_scroll_timeout((ListPaletteArgs*)dd->userdata);
+	return true;
 }
 
 static void palette_list_vertical_autoscroll(GtkTreeView *treeview){
