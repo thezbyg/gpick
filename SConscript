@@ -125,7 +125,7 @@ env.Alias(target="nsis", source=[
 	env.WriteNsisVersion("version.py")
 ])
 
-tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
 
 for item in parser_files:
 	tarFiles.append(str(item))
