@@ -21,6 +21,7 @@
 
 
 #include <gtk/gtk.h>
+#include <stdint.h>
 #include "../Color.h"
 #include "../Rect2.h"
 #include "../Vector2.h"
