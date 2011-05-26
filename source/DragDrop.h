@@ -34,13 +34,32 @@ struct DragDrop{
 
 	struct ColorObject* (*get_color_object)(struct DragDrop* dd);
 	int (*set_color_object_at)(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move);
+
+	struct ColorObject** (*get_color_object_list)(struct DragDrop* dd, uint32_t *colorobject_n);
+	int (*set_color_object_list_at)(struct DragDrop* dd, struct ColorObject** colorobject, uint32_t colorobject_n, int x, int y, bool move);
+
 	bool (*test_at)(struct DragDrop* dd, int x, int y);
 	bool (*data_received)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_get)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_delete)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
 	bool (*drag_end)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
 
-	struct ColorObject* color_object;
+	enum DataType{
+		DATA_TYPE_NONE,
+		DATA_TYPE_COLOR_OBJECT,
+		DATA_TYPE_COLOR_OBJECTS,
+	};
+	DataType data_type;
+	union{
+		struct{
+			struct ColorObject* color_object;
+		}color_object;
+		struct{
+			struct ColorObject** color_objects;
+			uint32_t color_object_n;
+		}color_objects;
+	}data;
+
 	struct dynvHandlerMap* handler_map;
 	GtkWidget* dragwidget;
 	GlobalState *gs;
