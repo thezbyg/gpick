@@ -117,8 +117,9 @@ gpick.layouts['std_layout_brightness_darkness'] = {
 			cvar3 = layout_style:new("c3:C3", color:new(0.3, 0.3, 0.3)),
 			cvar4 = layout_style:new("c4:C4", color:new(0.3, 0.3, 0.3)),
 		};
-		for i,v in pairs(styles) do
-			layout_system:addstyle(v);
+		local styles_order = {'cvar4', 'cvar3',	'cvar2','cvar1', 'main', 'bvar1', 'bvar2', 'bvar3', 'bvar4'};
+		for i,v in ipairs(styles_order) do
+			layout_system:addstyle(styles[v]);
 		end;
 
 		local root = layout:new_box("root", 0, 0, 320, 128);
@@ -145,46 +146,46 @@ gpick.layouts['std_layout_grid_1'] = {
 	build = function (layout_system)
 		local root = layout:new_box("root", 0, 0, 400, 300);
 		layout_system:setbox(root);
-		
+
 		for j=0,2 do
-			for i=0,3 do 
+			for i=0,3 do
 				local item_i = 1 + (i + j * 4);
 				local style = layout_style:new("item" .. item_i .. ":Item" .. item_i, color:new(0.8, 0.8, 0.8), 1.0);
 				local style_text = layout_style:new("item" .. item_i .. "_text:Item" .. item_i .. " Text", color:new(0.2, 0.2, 0.2), 0.5);
 				layout_system:addstyle(style);
-				layout_system:addstyle(style_text);			
-				
+				layout_system:addstyle(style_text);
+
 				local fill = layout:new_fill("b" .. item_i, (1 / 4) * i, (1 / 3) * j, (1 / 4) * 0.95, (1 / 3) * 0.95, style);
 				fill:add(layout:new_text("item_text".. item_i, 0, 0.25, 1, 0.5, style_text, "Item" .. item_i));
-				
-				
+
+
 				root:add(fill);
 			end;
 		end;
 
 		return 1;
 	end; };
-	
-	
+
+
 gpick.layouts['std_layout_grid_2'] = {
 	human_readable = 'Grid (5x4)',
 	mask = 0,
 	build = function (layout_system)
 		local root = layout:new_box("root", 0, 0, 500, 400);
 		layout_system:setbox(root);
-		
+
 		for j=0,3 do
-			for i=0,4 do 
+			for i=0,4 do
 				local item_i = 1 + (i + j * 5);
 				local style = layout_style:new("item" .. item_i .. ":Item" .. item_i, color:new(0.8, 0.8, 0.8), 1.0);
 				local style_text = layout_style:new("item" .. item_i .. "_text:Item" .. item_i .. " Text", color:new(0.2, 0.2, 0.2), 0.5);
 				layout_system:addstyle(style);
-				layout_system:addstyle(style_text);			
-				
+				layout_system:addstyle(style_text);
+
 				local fill = layout:new_fill("b" .. item_i, (1 / 5) * i, (1 / 4) * j, (1 / 5) * 0.95, (1 / 4) * 0.95, style);
 				fill:add(layout:new_text("item_text".. item_i, 0, 0.25, 1, 0.5, style_text, "Item" .. item_i));
-				
-				
+
+
 				root:add(fill);
 			end;
 		end;
