@@ -184,7 +184,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
-
+	gtk_tree_view_set_enable_search(GTK_TREE_VIEW(view), false);
 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
 	g_object_unref(GTK_TREE_MODEL(store));
 
@@ -465,8 +465,9 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	g_object_set(renderer, "editable", TRUE, NULL);
 	g_signal_connect(renderer, "edited", (GCallback) palette_list_cell_edited, store);
 
-	gtk_tree_view_set_model (GTK_TREE_VIEW (view), GTK_TREE_MODEL(store));
-	g_object_unref (GTK_TREE_MODEL(store));
+	gtk_tree_view_set_enable_search(GTK_TREE_VIEW(view), false);
+	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
+	g_object_unref(GTK_TREE_MODEL(store));
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
 
