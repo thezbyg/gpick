@@ -1359,7 +1359,7 @@ AppArgs* app_create_main(){
 		args->color_list = widget;
 		gtk_widget_show(widget);
 
-		g_signal_connect(G_OBJECT(widget), "popup-menu",     G_CALLBACK (on_palette_popup_menu), args);
+		g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK (on_palette_popup_menu), args);
 		g_signal_connect(G_OBJECT(widget), "button-press-event",G_CALLBACK (on_palette_button_press), args);
 		g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK (on_palette_list_key_press), args);
 

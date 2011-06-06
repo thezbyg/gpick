@@ -25,17 +25,22 @@
 #include "uiApp.h"
 #include "GlobalStateStruct.h"
 #include "DynvHelpers.h"
+#include "Vector2.h"
 
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 
+using namespace math;
 using namespace std;
 
 typedef struct ListPaletteArgs{
 	ColorSource source;
 	GtkWidget *treeview;
   gint scroll_timeout;
+
+	Vec2<int> last_click_position;
+	bool disable_selection;
 
 	GlobalState* gs;
 }ListPaletteArgs;
@@ -418,6 +423,61 @@ static void destroy_arguments(gpointer data){
 	delete args;
 }
 
+static gboolean disable_palette_selection_function(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
+  return args->disable_selection;
+}
+
+static void disable_palette_selection(GtkWidget *widget, gboolean disable, int x, int y, ListPaletteArgs *args) {
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	args->disable_selection = disable;
+	gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)disable_palette_selection_function, args, NULL);
+
+  args->last_click_position.x = x;
+  args->last_click_position.y = y;
+}
+
+static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
+	disable_palette_selection(widget, true, -1, -1, args);
+
+	if (event->button != 1)
+		return false;
+	if (event->state & (GDK_SHIFT_MASK|GDK_CONTROL_MASK))
+		return false;
+
+	GtkTreePath *path = NULL;
+	if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget),
+				event->x, event->y,
+				&path,
+				NULL,
+				NULL, NULL))
+		return false;
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	if (gtk_tree_selection_path_is_selected(selection, path)) {
+		disable_palette_selection(widget, false, event->x, event->y, args);
+	}
+	if (path)
+		gtk_tree_path_free(path);
+	return false;
+}
+
+static gboolean on_palette_button_release(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
+	if (args->last_click_position != Vec2<int>(-1, -1)) {
+		Vec2<int> click_pos = args->last_click_position;
+		disable_palette_selection(widget, true, -1, -1, args);
+		if (click_pos.x == event->x && click_pos.y == event->y) {
+			GtkTreePath *path = NULL;
+			GtkTreeViewColumn *column;
+			if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), event->x, event->y, &path, &column, NULL, NULL)) {
+				gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
+			}
+			if (path)
+				gtk_tree_path_free(path);
+		}
+	}
+	return false;
+}
+
 GtkWidget* palette_list_new(GlobalState* gs){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
@@ -473,7 +533,9 @@ GtkWidget* palette_list_new(GlobalState* gs){
 
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 
-	g_signal_connect (G_OBJECT (view), "row-activated", G_CALLBACK(palette_list_row_activated), args);
+	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(palette_list_row_activated), args);
+	g_signal_connect(G_OBJECT(view), "button-press-event",G_CALLBACK (on_palette_button_press), args);
+	g_signal_connect(G_OBJECT(view), "button-release-event",G_CALLBACK (on_palette_button_release), args);
 
 	///gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
 	gtk_drag_dest_set( view, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GdkDragAction(GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_ASK));
@@ -494,7 +556,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
-    g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
+	g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
 
 	return view;
 }

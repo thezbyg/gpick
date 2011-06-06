@@ -68,6 +68,12 @@ public:
     	return r;
 	};
 
+	friend bool operator!= (const Vec2& lhs, const Vec2& rhs){
+		if (lhs.x != rhs.x) return false;
+		if (lhs.y != rhs.y) return false;
+		return true;
+	};
+
 	T x;
 	T y;
 };
