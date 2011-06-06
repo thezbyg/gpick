@@ -1017,6 +1017,46 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 
 	switch(event->keyval)
 	{
+		case GDK_1:
+		case GDK_KP_1:
+		case GDK_2:
+		case GDK_KP_2:
+		case GDK_3:
+		case GDK_KP_3:
+		case GDK_4:
+		case GDK_KP_4:
+		case GDK_5:
+		case GDK_KP_5:
+		case GDK_6:
+		case GDK_KP_6:
+			{
+				struct ColorList *color_list = color_list_new(NULL);
+				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
+				if (color_list_get_count(color_list) > 0){
+					ColorSource *color_source = (ColorSource*)dynv_get_pointer_wd(args->gs->params, "CurrentColorSource", 0);
+          uint32_t color_index = 0;
+					switch(event->keyval)
+					{
+						case GDK_KP_1:
+						case GDK_1: color_index = 0; break;
+						case GDK_KP_2:
+						case GDK_2: color_index = 1; break;
+						case GDK_KP_3:
+						case GDK_3: color_index = 2; break;
+						case GDK_KP_4:
+						case GDK_4: color_index = 3; break;
+						case GDK_KP_5:
+						case GDK_5: color_index = 4; break;
+						case GDK_KP_6:
+						case GDK_6: color_index = 5; break;
+					}
+					color_source_set_nth_color(color_source, color_index, *color_list->colors.begin());
+				}
+				color_list_destroy(color_list);
+			}
+			return false;
+			break;
+
 		case GDK_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 

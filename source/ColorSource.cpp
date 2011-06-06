@@ -27,6 +27,8 @@ int color_source_init(ColorSource* source, const char *identificator, const char
 	source->hr_name = g_strdup(name);
 	source->set_color = 0;
 	source->get_color = 0;
+	source->set_nth_color = 0;
+	source->get_nth_color = 0;
 	source->activate = 0;
 	source->deactivate = 0;
 	source->destroy = 0;
@@ -60,6 +62,22 @@ int color_source_set_color(ColorSource *source, ColorObject *color){
 int color_source_get_color(ColorSource *source, ColorObject **color){
 	if (source && source->get_color)
 		return source->get_color(source, color);
+	else if (!source)
+		cerr << "Color source undefined" << endl;
+	return -1;
+}
+
+int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color){
+	if (source && source->set_nth_color)
+		return source->set_nth_color(source, color_n, color);
+	else if (!source)
+		cerr << "Color source undefined" << endl;
+	return -1;
+}
+
+int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject **color){
+	if (source && source->get_nth_color)
+		return source->get_nth_color(source, color_n, color);
 	else if (!source)
 		cerr << "Color source undefined" << endl;
 	return -1;

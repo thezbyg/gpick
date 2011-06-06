@@ -622,6 +622,10 @@ static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, ui
 	return 0;
 }
 
+static int source_set_nth_color(GenerateSchemeArgs *args, uint32_t color_n, ColorObject* color){
+	if (color_n < 0 || color_n > 6) return -1;
+	return set_rgb_color(args, color, color_n);
+}
 
 static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color){
 	if (args->last_focused_color){
@@ -719,6 +723,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
+	args->source.set_nth_color = (int (*)(ColorSource *source, uint32_t color_n, ColorObject* color))source_set_nth_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
 
