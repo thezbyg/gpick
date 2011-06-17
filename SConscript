@@ -12,13 +12,13 @@ env.AddCustomBuilders()
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
 vars.Add('DEBARCH', 'Debian package architecture', 'i386')
-vars.Add('WITH_UNIQUE', 'Use libunique instead of pure DBus', False)
-vars.Add('WITH_DBUSGLIB', 'Compile with DBus support', True)
-vars.Add('DEBUG', 'Compile with debug information', False)
+vars.Add(BoolVariable('WITH_UNIQUE', 'Use libunique instead of pure DBus', False))
+vars.Add(BoolVariable('WITH_DBUSGLIB', 'Compile with DBus support', True))
+vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
-vars.Add('INTERNAL_EXPAT', 'Use internal Expat library', True)
-vars.Add('INTERNAL_LUA', 'Use internal Lua library', True)
-vars.Add('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False)
+vars.Add(BoolVariable('INTERNAL_EXPAT', 'Use internal Expat library', True))
+vars.Add(BoolVariable('INTERNAL_LUA', 'Use internal Lua library', True))
+vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
@@ -60,10 +60,10 @@ if not env.GetOption('clean'):
 	}
 
 	if not env['INTERNAL_LUA']:
-		libs['LUA_PC'] = {'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}},
-	if env['WITH_UNIQUE']==True:
+		libs['LUA_PC'] = {'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}}
+	if env['WITH_UNIQUE']:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
-	elif env['WITH_DBUSGLIB']==True:
+	elif env['WITH_DBUSGLIB']:
 		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76'}}
 
 	env.ConfirmLibs(conf, libs)

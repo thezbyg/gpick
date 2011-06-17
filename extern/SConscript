@@ -3,6 +3,10 @@
 Import('*')
 
 objects = []
-objects.append(SConscript(['expat/SConscript'], exports='env'))
-objects.append(SConscript(['lua/SConscript'], exports='env'))
+
+if env['INTERNAL_EXPAT']:
+	objects.append(SConscript(['expat/SConscript'], exports='env'))
+if env['INTERNAL_LUA']:
+	objects.append(SConscript(['lua/SConscript'], exports='env'))
 Return('objects')
+
