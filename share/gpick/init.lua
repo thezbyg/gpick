@@ -250,3 +250,21 @@ gpick.color_deserialize = function(converter, text, color_object)
 	return gpick.converters[converter].deserialize(text, color_object)
 end
 
+gpick.component_to_text = function(component_type, color)
+	if component_type == 'rgb' then
+		return {round(color:red()*255) .. '', round(color:green()*255) .. '', round(color:blue()*255) .. ''}
+	end
+	if component_type == 'hsl' then
+		return {round(color:hue()*360) .. '', round(color:saturation()*100) .. '', round(color:lightness()*100) .. ''}
+	end
+	if component_type == 'hsv' then
+		return {round(color:hue()*360) .. '', round(color:saturation()*100) .. '', round(color:value()*100) .. ''}
+	end
+	if component_type == 'cmyk' then
+		return {round(color:cyan()*255) .. '', round(color:magenta()*255) .. '', round(color:yellow()*255) .. '', round(color:key_black()*255) .. ''}
+	end
+	if component_type == 'lab' then
+		return {round(color:lab_lightness()) .. '', round(color:lab_a()) .. '', round(color:lab_b()) .. ''}
+	end
+	return {}
+end

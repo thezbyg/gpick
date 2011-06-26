@@ -39,6 +39,8 @@ static gboolean gtk_color_component_button_press (GtkWidget *node_system, GdkEve
 static gboolean gtk_color_component_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
 static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c);
 
+static void gtk_color_component_finalize(GObject *color_obj);
+
 enum{
   COLOR_CHANGED,
   LAST_SIGNAL
@@ -54,6 +56,7 @@ typedef struct GtkColorComponentPrivate{
 	int n_components;
 	int capture_on;
 
+	gchar *text[4];
 	double range[4];
 	double offset[4];
 }GtkColorComponentPrivate;
@@ -74,6 +77,7 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 
 	g_type_class_add_private(obj_class, sizeof(GtkColorComponentPrivate));
 
+	obj_class->finalize = gtk_color_component_finalize;
 
 	gtk_color_component_signals[COLOR_CHANGED] = g_signal_new (
 			"color-changed",
@@ -91,12 +95,28 @@ static void gtk_color_component_init (GtkColorComponent *color_component){
 			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_MOTION_MASK);
 }
 
+static void gtk_color_component_finalize(GObject *color_obj){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_obj);
+	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
+		if (ns->text[i]){
+			g_free(ns->text[i]);
+			ns->text[i] = 0;
+		}
+	}
+	gpointer parent_class = g_type_class_peek_parent(G_OBJECT_CLASS(GTK_COLOR_COMPONENT_GET_CLASS(color_obj)));
+	G_OBJECT_CLASS(parent_class)->finalize(color_obj);
+}
+
 
 GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, NULL);
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	ns->component = component;
+
+	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
+		ns->text[i] = 0;
+	}
 
 	switch (component){
 		case lab:
@@ -123,7 +143,7 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 			ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = 0;
 	}
 
-	gtk_widget_set_size_request(GTK_WIDGET(widget), 200, 16 * ns->n_components);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), 242, 16 * ns->n_components);
 
 	return widget;
 }
@@ -153,6 +173,22 @@ int gtk_color_component_get_component_id_at(GtkColorComponent* color_component, 
 	else if (component >= ns->n_components) component = ns->n_components - 1;
 
 	return component;
+}
+
+const char* gtk_color_component_get_text(GtkColorComponent* color_component, gint component_id){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	return ns->text[component_id];
+}
+
+void gtk_color_component_set_text(GtkColorComponent* color_component, const char *text[4]){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
+		if (ns->text[i]){
+			g_free(ns->text[i]);
+		}
+		ns->text[i] = g_strdup(text[i]);
+	}
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
 
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color){
@@ -477,6 +513,37 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 1);
 		cairo_stroke(cr);
+
+
+		if (ns->text[i]){
+			PangoLayout *layout;
+			PangoFontDescription *font_description;
+			font_description = pango_font_description_new();
+			layout = pango_cairo_create_layout(cr);
+
+			pango_font_description_set_family(font_description, "sans");
+			pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
+			pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
+			pango_layout_set_font_description(layout, font_description);
+			pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
+			pango_layout_set_single_paragraph_mode(layout, true);
+
+			gdk_cairo_set_source_color(cr, &widget->style->text[0]);
+
+			pango_layout_set_text(layout, ns->text[i], -1);
+			pango_layout_set_width(layout, 40 * PANGO_SCALE);
+			pango_layout_set_height(layout, 16 * PANGO_SCALE);
+			pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
+			pango_cairo_update_layout(cr, layout);
+
+			int width, height;
+			pango_layout_get_pixel_size(layout, &width, &height);
+			cairo_move_to(cr, 200, i * 16);
+			pango_cairo_show_layout(cr, layout);
+
+			g_object_unref (layout);
+			pango_font_description_free (font_description);
+		}
 	}
 
 	cairo_destroy (cr);

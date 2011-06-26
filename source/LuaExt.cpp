@@ -189,6 +189,35 @@ static int lua_color_key_black (lua_State *L) {
 	return 1;
 }
 
+
+static int lua_color_lab_lightness (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lab.L = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lab.L);
+	return 1;
+}
+
+static int lua_color_lab_a (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lab.a = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lab.a);
+	return 1;
+}
+
+static int lua_color_lab_b (lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lab.b = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lab.b);
+	return 1;
+}
+
+
 static int lua_color_rgb_to_hsl (lua_State *L) {
 	Color *c = lua_checkcolor(L, 1);
 	Color c2;
@@ -230,6 +259,7 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"hue",			lua_color_hue},
 	{"saturation",	lua_color_saturation},
 	{"lightness",	lua_color_lightness},
+	{"value",	lua_color_lightness},
 	{"hsl",			lua_color_hsl},
 
 	{"cyan",		lua_color_cyan},
@@ -237,6 +267,10 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"yellow",		lua_color_yellow},
 	{"key_black",	lua_color_key_black},
 	{"cmyk",		lua_color_cmyk},
+
+	{"lab_lightness",		lua_color_lab_lightness},
+	{"lab_a",		lua_color_lab_a},
+	{"lab_b",		lua_color_lab_b},
 
 	{"rgb_to_hsl",	lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",	lua_color_hsl_to_rgb},

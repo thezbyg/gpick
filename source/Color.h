@@ -147,6 +147,11 @@ void color_cmyk_to_rgb(Color* a, Color* b);
 
 void color_rgb_normalize(Color* a);
 
+/**
+ * Copy color
+ * @param[in] a Source color in any colorspace
+ * @param[out] b Destination color
+ */
 void color_copy(Color* a, Color* b);
 
 void color_add(Color* a, Color* b);

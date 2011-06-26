@@ -29,7 +29,7 @@ G_BEGIN_DECLS
 #define GTK_COLOR_COMPONENT_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_COLOR_COMPONENT, GtkColorComponentClass))
 #define GTK_IS_COLOR_COMPONENT(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_COLOR_COMPONENT))
 #define GTK_IS_COLOR_COMPONENT_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_COLOR_COMPONENT))
-#define GTK_COLOR_COMPONENT_GET_CLASS	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentClass))
+#define GTK_COLOR_COMPONENT_GET_CLASS(obj)	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentClass))
 
 typedef struct GtkColorComponent			GtkColorComponent;
 typedef struct GtkColorComponentClass		GtkColorComponentClass;
@@ -59,6 +59,8 @@ enum GtkColorComponentComp{
 GtkWidget* gtk_color_component_new (GtkColorComponentComp component);
 
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color);
+void gtk_color_component_set_text(GtkColorComponent* color_component, const char *text[4]);
+const char* gtk_color_component_get_text(GtkColorComponent* color_component, gint component_id);
 void gtk_color_component_get_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color);

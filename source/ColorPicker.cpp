@@ -39,6 +39,7 @@
 #include <gdk/gdkkeysyms.h>
 
 #include <math.h>
+#include <string.h>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -143,6 +144,71 @@ static gboolean updateMainColorTimer(ColorPickerArgs* args){
 	return true;
 }
 
+static list<string> component_to_text(ColorPickerArgs* args, const char *type, Color *color){
+	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(args->gs->params, "lua_State", 0));
+
+  list<string> result;
+
+	size_t st;
+	int status;
+	int stack_top = lua_gettop(L);
+
+	lua_getglobal(L, "gpick");
+	int gpick_namespace = lua_gettop(L);
+	if (lua_type(L, -1) != LUA_TNIL){
+
+		lua_pushstring(L, "component_to_text");
+		lua_gettable(L, gpick_namespace);
+		if (lua_type(L, -1) != LUA_TNIL){
+
+			lua_pushstring(L, type);
+			lua_pushcolor(L, color);
+
+			status = lua_pcall(L, 2, 1, 0);
+			if (status == 0){
+				if (lua_type(L, -1) == LUA_TTABLE){
+
+					for (int i = 0; i < 4; i++){
+						lua_pushinteger(L, i + 1);
+						lua_gettable(L, -2);
+						if (lua_type(L, -1) == LUA_TSTRING){
+							const char* converted = lua_tostring(L, -1);
+							result.push_back(string(converted));
+						}
+						lua_pop(L, 1);
+					}
+
+					lua_settop(L, stack_top);
+					return result;
+				}else{
+					cerr << "gpick.component_to_text: returned not a table value, type is \"" << type << "\"" << endl;
+				}
+			}else{
+				cerr << "gpick.component_to_text: " << lua_tostring (L, -1) << endl;
+			}
+		}else{
+			cerr << "gpick.component_to_text: no such function" << endl;
+		}
+	}
+
+	lua_settop(L, stack_top);
+	return result;
+}
+
+static void updateComponentText(ColorPickerArgs *args, GtkColorComponent *component, const char *type){
+	Color transformed_color;
+	gtk_color_component_get_transformed_color(component, &transformed_color);
+	list<string> str = component_to_text(args, type, &transformed_color);
+	int j = 0;
+	const char *text[4];
+	memset(text, 0, sizeof(text));
+	for (list<string>::iterator i = str.begin(); i != str.end(); i++){
+		text[j] = (*i).c_str();
+		j++;
+		if (j > 3) break;
+	}
+	gtk_color_component_set_text(component, text);
+}
 
 static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	Color c, c2;
@@ -150,9 +216,15 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 
 	if (except_widget != args->hsl_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsl_control), &c);
 	if (except_widget != args->hsv_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsv_control), &c);
-	if (except_widget != args->rgb_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->rgb_control), &c);
+	if (except_widget != args->rgb_control)	gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->rgb_control), &c);
 	if (except_widget != args->cmyk_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->cmyk_control), &c);
 	if (except_widget != args->lab_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lab_control), &c);
+
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsl_control), "hsl");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsv_control), "hsv");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->rgb_control), "rgb");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->cmyk_control), "cmyk");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
 
 	string color_name = color_names_get(args->gs->color_names, &c, true);
 	gtk_entry_set_text(GTK_ENTRY(args->color_name), color_name.c_str());
@@ -171,8 +243,8 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
 
 	Color c_lab, c2_lab;
-    color_rgb_to_lab(&c, &c_lab, &d50, &working_space_matrix);
-    color_rgb_to_lab(&c2, &c2_lab, &d50, &working_space_matrix);
+	color_rgb_to_lab(&c, &c_lab, &d50, &working_space_matrix);
+	color_rgb_to_lab(&c2, &c2_lab, &d50, &working_space_matrix);
 
 	const ColorWheelType *wheel = &color_wheel_types_get()[0];
 	Color hsl1, hsl2;
@@ -184,7 +256,7 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	wheel->rgbhue_to_hue(hsl2.hsl.hue, &hue2);
 
 	double complementary = std::abs(hue1 - hue2);
-    complementary -= std::floor(complementary);
+	complementary -= std::floor(complementary);
 	complementary *= std::sin(hsl1.hsl.lightness * M_PI) * std::sin(hsl2.hsl.lightness * M_PI);
 	complementary *= std::sin(hsl1.hsl.saturation * M_PI / 2) * std::sin(hsl2.hsl.saturation * M_PI / 2);
 
@@ -581,14 +653,12 @@ struct ColorCompItem{
 };
 
 static void color_component_copy(GtkWidget *widget, ColorPickerArgs* args){
-	Color color;
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
-	gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
-
-	string text = serial[0].set(comp_item->component, comp_item->component_id, &color);
-
-    gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text.c_str(), text.length());
-    gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+	const char *text = gtk_color_component_get_text(GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id);
+	if (text){
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, strlen(text));
+		gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+	}
 }
 
 static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
@@ -1132,11 +1202,11 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 }
 
 int color_picker_source_register(ColorSourceManager *csm){
-    ColorSource *color_source = new ColorSource;
+	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "color_picker", "Color picker");
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->single_instance_only = true;
-    color_source_manager_add_source(csm, color_source);
+	color_source_manager_add_source(csm, color_source);
 	return 0;
 }
 
