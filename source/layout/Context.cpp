@@ -16,25 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GLOBALSTATE_H_
-#define GLOBALSTATE_H_
 
-typedef struct GlobalState GlobalState;
+#include "Context.h"
 
-enum GlobalStateLevel{
-	GLOBALSTATE_CONFIGURATION = 1,
-	GLOBALSTATE_SCRIPTING = 2,
-	GLOBALSTATE_COLOR_LIST = 4,
-	GLOBALSTATE_CONVERTERS = 8,
-	GLOBALSTATE_COLOR_NAMES = 16,
-	GLOBALSTATE_OTHER = 32,
-	GLOBALSTATE_TRANSFORMATIONS = 64,
-	GLOBALSTATE_ALL = 0xffffffff,
-};
+namespace layout{
 
-int global_state_init(GlobalState *gs, GlobalStateLevel level);
-int global_state_term(GlobalState *gs);
-GlobalState *global_state_create();
-int global_state_destroy(GlobalState* gs);
+Context::Context(cairo_t *cr_, transformation::Chain *chain_)
+{
+	cr = cr_;
+	chain = chain_;
+}
 
-#endif /* GLOBALSTATE_H_ */
+Context::~Context()
+{
+
+}
+
+cairo_t* Context::getCairo() const
+{
+	return cr;
+}
+
+transformation::Chain* Context::getTransformationChain() const
+{
+	return chain;
+}
+
+}
+

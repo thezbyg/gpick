@@ -34,9 +34,9 @@ System::~System(){
 	Box::unref(box);
 }
 
-void System::Draw(cairo_t *cr, const math::Rect2<float>& parent_rect ){
+void System::Draw(Context *context, const math::Rect2<float>& parent_rect ){
 	if (!box) return;
-	box->Draw(cr, parent_rect);
+	box->Draw(context, parent_rect);
 }
 
 void System::AddStyle(Style *_style){

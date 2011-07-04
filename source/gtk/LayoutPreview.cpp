@@ -18,6 +18,7 @@
 
 #include "LayoutPreview.h"
 #include "../layout/System.h"
+#include "../transformation/Chain.h"
 #include "../Rect2.h"
 
 #include <list>
@@ -50,6 +51,7 @@ typedef struct GtkLayoutPreviewPrivate{
 	Rect2<float> area;
 	Style* selected_style;
 	Box* selected_box;
+	transformation::Chain *transformation_chain;
 }GtkLayoutPreviewPrivate;
 
 
@@ -88,6 +90,7 @@ GtkWidget* gtk_layout_preview_new(void){
 	ns->selected_style = 0;
 	ns->selected_box = 0;
 	ns->system = 0;
+	ns->transformation_chain = 0;
 
 	g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK (gtk_layout_preview_destroy), NULL);
 
@@ -130,7 +133,8 @@ static gboolean gtk_layout_preview_expose(GtkWidget *widget, GdkEventExpose *eve
 
 	if (ns->system && ns->system->box){
 		ns->area = Rect2<float>(0, 0, 1, 1);
-		ns->system->box->Draw(cr, ns->area);
+		layout::Context context(cr, ns->transformation_chain);
+		ns->system->box->Draw(&context, ns->area);
 	}
 
 	cairo_destroy(cr);
@@ -289,5 +293,11 @@ bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget){
 		return !ns->selected_box->locked;
 	}
 	return false;
+}
+
+void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, transformation::Chain *chain){
+	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
+	ns->transformation_chain = chain;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 

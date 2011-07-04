@@ -23,6 +23,7 @@
 #include <gtk/gtk.h>
 #include "../ColorObject.h"
 #include "../layout/System.h"
+#include "../transformation/Chain.h"
 
 G_BEGIN_DECLS
 
@@ -70,6 +71,8 @@ bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
 bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget);
 
 int gtk_layout_preview_get_current_style(GtkLayoutPreview* widget, layout::Style** style);
+
+void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, transformation::Chain *chain);
 
 G_END_DECLS
 

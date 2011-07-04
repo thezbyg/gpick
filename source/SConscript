@@ -17,7 +17,7 @@ if not local_env.GetOption('clean'):
 	if local_env.has_key('DBUSGLIB_PC'):
 		local_env.ParseConfig('pkg-config --libs $DBUSGLIB_PC')
 
-sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('tools/*.cpp')
+sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('tools/*.cpp') + local_env.Glob('transformation/*.cpp')
 
 objects = []
 objects.append(SConscript(['version/SConscript'], exports='env'))

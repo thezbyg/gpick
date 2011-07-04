@@ -38,6 +38,7 @@
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
+#include "uiTransformations.h"
 
 #include "tools/PaletteFromImage.h"
 #include "tools/PaletteFromCssFile.h"
@@ -343,6 +344,11 @@ static void updateProgramName(AppArgs *args){
 
 static void show_dialog_converter(GtkWidget *widget, AppArgs *args){
 	dialog_converter_show(GTK_WINDOW(args->window), args->gs);
+	return;
+}
+
+static void show_dialog_transformations(GtkWidget *widget, AppArgs *args){
+	dialog_transformations_show(GTK_WINDOW(args->window), args->gs);
 	return;
 }
 
@@ -729,6 +735,10 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	item = gtk_menu_item_new_with_image ("Edit _Converters...", gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_converter), args);
+
+	item = gtk_menu_item_new_with_image ("Edit _Transformations...", gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_transformations), args);
 
 
 	if (gtk_stock_lookup(GTK_STOCK_PREFERENCES, &stock_item)){

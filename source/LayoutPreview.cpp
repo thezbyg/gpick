@@ -683,13 +683,15 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 	dd.test_at = test_at;
 	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
 
-
 	gtk_drag_dest_set(args->layout, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set(args->layout, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 	dragdrop_widget_attach(args->layout, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 	args->gs = gs;
 
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layout), chain);
 
 	// Restore settings and fill list
 	const char* layout_name = dynv_get_string_wd(args->params, "layout_name", "std_layout_menu_1");

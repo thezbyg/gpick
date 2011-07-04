@@ -23,6 +23,7 @@
 #include "../Vector2.h"
 #include "Box.h"
 #include "Style.h"
+#include "Context.h"
 #include "ReferenceCounter.h"
 
 #include <gtk/gtk.h>
@@ -41,7 +42,7 @@ public:
 	System();
 	virtual ~System();
 
-	void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	void Draw(Context *context, const math::Rect2<float>& parent_rect );
 
 	Box* GetBoxAt(const math::Vec2<float>& point);
 	Box* GetNamedBox(const char *name);

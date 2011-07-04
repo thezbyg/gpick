@@ -25,6 +25,7 @@
 
 #include "ReferenceCounter.h"
 #include "Style.h"
+#include "Context.h"
 
 #include <gtk/gtk.h>
 
@@ -43,8 +44,8 @@ public:
 	math::Rect2<float> rect;
 
 	std::list<Box*> child;
-	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
-	void DrawChildren(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
+	void DrawChildren(Context *context, const math::Rect2<float>& parent_rect );
 	void AddChild(Box* box);
 
 	void SetStyle(Style *style);
@@ -61,14 +62,14 @@ class Text:public Box{
 public:
 	std::string text;
 
-	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
 	Text(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
 	};
 };
 
 class Fill:public Box{
 public:
-	virtual void Draw(cairo_t *cr, const math::Rect2<float>& parent_rect );
+	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
 	Fill(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
 	};
 };

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,25 +16,52 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GLOBALSTATE_H_
-#define GLOBALSTATE_H_
+#include "Chain.h"
 
-typedef struct GlobalState GlobalState;
+using namespace std;
 
-enum GlobalStateLevel{
-	GLOBALSTATE_CONFIGURATION = 1,
-	GLOBALSTATE_SCRIPTING = 2,
-	GLOBALSTATE_COLOR_LIST = 4,
-	GLOBALSTATE_CONVERTERS = 8,
-	GLOBALSTATE_COLOR_NAMES = 16,
-	GLOBALSTATE_OTHER = 32,
-	GLOBALSTATE_TRANSFORMATIONS = 64,
-	GLOBALSTATE_ALL = 0xffffffff,
-};
+namespace transformation {
 
-int global_state_init(GlobalState *gs, GlobalStateLevel level);
-int global_state_term(GlobalState *gs);
-GlobalState *global_state_create();
-int global_state_destroy(GlobalState* gs);
+Chain::Chain()
+{
 
-#endif /* GLOBALSTATE_H_ */
+}
+
+void Chain::apply(Color *input, Color *output)
+{
+	Color tmp[2];
+	Color *tmp_p[3];
+
+  color_copy(input, &tmp[0]);
+
+	tmp_p[0] = &tmp[0];
+	tmp_p[1] = &tmp[1];
+	for (TransformationList::iterator i = transformation_chain.begin(); i != transformation_chain.end(); i++){
+
+		(*i)->apply(tmp_p[0], tmp_p[1]);
+
+		tmp_p[2] = tmp_p[0];
+		tmp_p[0] = tmp_p[1];
+		tmp_p[1] = tmp_p[2];
+	}
+
+	color_copy(tmp_p[0], output);
+}
+
+void Chain::add(boost::shared_ptr<Transformation> transformation)
+{
+	transformation_chain.push_back(transformation);
+}
+
+void Chain::clear()
+{
+	transformation_chain.clear();
+}
+
+Chain::TransformationList& Chain::getAll()
+{
+	return transformation_chain;
+}
+
+}
+

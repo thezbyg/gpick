@@ -25,6 +25,9 @@
 #include "layout/LuaBindings.h"
 #include "layout/Layout.h"
 
+#include "transformation/Chain.h"
+#include "transformation/ColorVisionDeficiency.h"
+
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
 #include "dynv/DynvVarInt32.h"
@@ -76,6 +79,10 @@ int global_state_term(GlobalState *gs){
 
 	//destroy layout system
 	layout::layouts_term((layout::Layouts*)dynv_get_pointer_wd(gs->params, "Layouts", 0));
+
+	//destroy transformation chain
+	transformation::Chain *chain = reinterpret_cast<transformation::Chain*>(dynv_get_pointer_wdc(gs->params, "TransformationChain", 0));
+	delete chain;
 
 	//destroy color list, random generator and other systems
 	color_list_destroy(gs->colors);
@@ -294,6 +301,14 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_CONVERTERS);
 	}
 
+	if ((level & GLOBALSTATE_TRANSFORMATIONS) && !(gs->loaded_levels & GLOBALSTATE_TRANSFORMATIONS)){
+		transformation::Chain *chain = new transformation::Chain();
+		//boost::shared_ptr<transformation::ColorVisionDeficiency> color_vision_deficiency = boost::shared_ptr<transformation::ColorVisionDeficiency>(new transformation::ColorVisionDeficiency(transformation::ColorVisionDeficiency::DEUTERANOMALY, 0.4));
+		//chain->add(color_vision_deficiency);
+
+		dynv_set_pointer(gs->params, "TransformationChain", chain);
+		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_TRANSFORMATIONS);
+	}
 
 	if ((level & GLOBALSTATE_OTHER) && !(gs->loaded_levels & GLOBALSTATE_OTHER)){
 		//create layout system

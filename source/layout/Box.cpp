@@ -36,7 +36,7 @@ void Box::SetStyle(Style *_style){
 	}
 }
 
-void Box::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
+void Box::Draw(Context *context, const Rect2<float>& parent_rect ){
 	/*Rect2<float> draw_rect = rect;
 	draw_rect.impose( parent_rect );
 
@@ -44,15 +44,15 @@ void Box::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
 	cairo_fill(cr);*/
 
-	DrawChildren(cr, parent_rect);
+	DrawChildren(context, parent_rect);
 }
 
-void Box::DrawChildren(cairo_t *cr, const math::Rect2<float>& parent_rect ){
+void Box::DrawChildren(Context *context, const math::Rect2<float>& parent_rect ){
 	Rect2<float> child_rect = rect;
 	child_rect.impose( parent_rect );
 
 	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
-		(*i)->Draw(cr, child_rect);
+		(*i)->Draw(context, child_rect);
 	}
 }
 
@@ -112,9 +112,11 @@ Box* Box::GetBoxAt(const Vec2<float>& point){
 	}
 }
 
-void Text::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
+void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
 	Rect2<float> draw_rect = rect;
 	draw_rect.impose( parent_rect );
+
+	cairo_t *cr = context->getCairo();
 
 	if (text!=""){
 		if (helper_only){
@@ -124,7 +126,13 @@ void Text::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 		}
 		if (style){
 			cairo_set_font_size(cr, style->font_size * draw_rect.getHeight());
-			cairo_set_source_rgb(cr, style->color.rgb.red, style->color.rgb.green, style->color.rgb.blue);
+			Color color;
+			if (context->getTransformationChain()){
+				context->getTransformationChain()->apply(&style->color, &color);
+			}else{
+        color_copy(&style->color, &color);
+			}
+			cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 		}else{
 			cairo_set_font_size(cr, draw_rect.getHeight());
 			cairo_set_source_rgb(cr, 0, 0, 0);
@@ -145,14 +153,22 @@ void Text::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 		}
 	}
 
-	DrawChildren(cr, parent_rect);
+	DrawChildren(context, parent_rect);
 }
 
-void Fill::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
+void Fill::Draw(Context *context, const Rect2<float>& parent_rect ){
 	Rect2<float> draw_rect = rect;
 	draw_rect.impose( parent_rect );
 
-	cairo_set_source_rgb(cr, style->color.rgb.red, style->color.rgb.green, style->color.rgb.blue);
+	cairo_t *cr = context->getCairo();
+
+	Color color;
+	if (context->getTransformationChain()){
+		context->getTransformationChain()->apply(&style->color, &color);
+	}else{
+		color_copy(&style->color, &color);
+	}
+	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
 	cairo_fill(cr);
 
@@ -163,7 +179,7 @@ void Fill::Draw(cairo_t *cr, const Rect2<float>& parent_rect ){
 		cairo_stroke(cr);
 	}
 
-	DrawChildren(cr, parent_rect);
+	DrawChildren(context, parent_rect);
 }
 
 

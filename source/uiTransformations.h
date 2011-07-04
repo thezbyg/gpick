@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,25 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GLOBALSTATE_H_
-#define GLOBALSTATE_H_
+#ifndef UI_TRANSFORMATIONS_H_
+#define UI_TRANSFORMATIONS_H_
 
-typedef struct GlobalState GlobalState;
+#include <gtk/gtk.h>
+#include "GlobalState.h"
 
-enum GlobalStateLevel{
-	GLOBALSTATE_CONFIGURATION = 1,
-	GLOBALSTATE_SCRIPTING = 2,
-	GLOBALSTATE_COLOR_LIST = 4,
-	GLOBALSTATE_CONVERTERS = 8,
-	GLOBALSTATE_COLOR_NAMES = 16,
-	GLOBALSTATE_OTHER = 32,
-	GLOBALSTATE_TRANSFORMATIONS = 64,
-	GLOBALSTATE_ALL = 0xffffffff,
-};
+void dialog_transformations_show(GtkWindow* parent, GlobalState* gs);
 
-int global_state_init(GlobalState *gs, GlobalStateLevel level);
-int global_state_term(GlobalState *gs);
-GlobalState *global_state_create();
-int global_state_destroy(GlobalState* gs);
+#endif /* UI_TRANSFORMATIONS_H_ */
 
-#endif /* GLOBALSTATE_H_ */
