@@ -18,10 +18,18 @@
 
 #include "ColorVisionDeficiency.h"
 #include "../MathUtil.h"
-
+#include "../uiUtilities.h"
+#include <gtk/gtk.h>
 #include <math.h>
+#include <string.h>
 
 namespace transformation {
+
+const char* ColorVisionDeficiency::deficiency_type_string[] = {
+	"protanomaly",
+	"deuteranomaly",
+	"tritanomaly",
+};
 
 const float protanomaly[11][9] = {
 {1.000000,0.000000,-0.000000,0.000000,1.000000,0.000000,-0.000000,-0.000000,1.000000},
@@ -92,16 +100,19 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	switch (type){
   case PROTANOMALY:
 		load_matrix(protanomaly[index], &matrix1);
-		load_matrix(protanomaly[index], &matrix2);
+		load_matrix(protanomaly[index_secondary], &matrix2);
 		break;
   case DEUTERANOMALY:
 		load_matrix(deuteranomaly[index], &matrix1);
-		load_matrix(deuteranomaly[index], &matrix2);
+		load_matrix(deuteranomaly[index_secondary], &matrix2);
 		break;
   case TRITANOMALY:
 		load_matrix(tritanomaly[index], &matrix1);
-		load_matrix(tritanomaly[index], &matrix2);
+		load_matrix(tritanomaly[index_secondary], &matrix2);
 		break;
+  default:
+		color_copy(input, output);
+		return;
 	}
 
 	vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
@@ -110,6 +121,12 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	output->rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
 	output->rgb.green= vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
 	output->rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
+}
+
+ColorVisionDeficiency::ColorVisionDeficiency():Transformation("color_vision_deficiency", "Color vision deficiency")
+{
+	type = PROTANOMALY;
+	strength = 0.5;
 }
 
 ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation("color_vision_deficiency", "Color vision deficiency")
@@ -123,7 +140,97 @@ ColorVisionDeficiency::~ColorVisionDeficiency()
 
 }
 
+
+void ColorVisionDeficiency::serialize(struct dynvSystem *dynv)
+{
+	dynv_set_float(dynv, "strength", strength);
+	dynv_set_string(dynv, "type", deficiency_type_string[type]);
+}
+
+ColorVisionDeficiency::DeficiencyType ColorVisionDeficiency::typeFromString(const char *type_string)
+{
+	for (int i = 0; i < DEFICIENCY_TYPE_COUNT; i++){
+		if (strcmp(type_string, deficiency_type_string[i]) == 0){
+			return (DeficiencyType)i;
+		}
+	}
+	return PROTANOMALY;
+}
+
+void ColorVisionDeficiency::deserialize(struct dynvSystem *dynv)
+{
+	strength = dynv_get_float_wd(dynv, "strength", 0.5);
+	type = typeFromString(dynv_get_string_wd(dynv, "type", "protanomaly"));
 }
 
 
+static GtkWidget* create_type_list(void){
+	GtkListStore *store;
+	GtkCellRenderer *renderer;
+	GtkWidget *widget;
+	store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+	widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
+	renderer = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 1, NULL);
+	g_object_unref(GTK_TREE_MODEL(store));
+	GtkTreeIter iter1;
+
+	const char* types[][1] = {
+			{ "Test1" },
+			{ "Test2" },
+			{ "Test3" },
+			};
+
+	int type_ids[]={
+		ColorVisionDeficiency::PROTANOMALY,
+		ColorVisionDeficiency::DEUTERANOMALY,
+		ColorVisionDeficiency::TRITANOMALY,
+	};
+
+	for (int i = 0; i < sizeof(type_ids) / sizeof(int); ++i){
+		gtk_list_store_append(store, &iter1);
+		gtk_list_store_set(store, &iter1,
+			0, types[i][0],
+			1, type_ids[i],
+		-1);
+	}
+
+	return widget;
+}
+
+
+static GtkWidget* createUi(){
+
+	GtkWidget *table = gtk_table_new(2, 2, false);
+	GtkWidget *widget;
+	int table_y = 0;
+
+	table_y=0;
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:", 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	widget = create_type_list();
+	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+	table_y++;
+
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Strength:",0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	widget = gtk_hscale_new_with_range(0, 100, 1);
+	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+	table_y++;
+
+	return table;
+}
+
+
+GtkWidget* ColorVisionDeficiency::getWidget()
+{
+	return 0;
+}
+
+void ColorVisionDeficiency::applyConfig(dynvSystem *dynv)
+{
+}
+
+
+}
 

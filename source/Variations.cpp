@@ -76,7 +76,7 @@ typedef struct VariationsArgs{
 	GtkWidget *color_previews;
 
 	GtkWidget *all_colors;
-    struct{
+	struct{
 		GtkWidget *color;
 		GtkWidget *var_colors[VAR_COLOR_WIDGETS + 1];
 		const VariationType *type;
@@ -500,6 +500,17 @@ static int source_set_color(VariationsArgs *args, struct ColorObject* color){
 }
 
 static int source_activate(VariationsArgs *args){
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_color_set_transformation_chain(GTK_COLOR(args->all_colors), chain);
+
+	for (int i = 0; i < MAX_COLOR_LINES; ++i){
+		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].color), chain);
+		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
+			gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].var_colors[j]), chain);
+		}
+	}
+
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }

@@ -599,6 +599,10 @@ static GtkWidget* attach_label(GtkWidget *widget, const char *label){
 }
 
 static int source_activate(LayoutPreviewArgs *args){
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layout), chain);
+
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }
@@ -690,8 +694,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 	args->gs = gs;
 
 
-	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
-	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layout), chain);
 
 	// Restore settings and fill list
 	const char* layout_name = dynv_get_string_wd(args->params, "layout_name", "std_layout_menu_1");

@@ -16,35 +16,26 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_CHAIN_H_
-#define TRANSFORMATION_CHAIN_H_
-
-#include "Transformation.h"
-#include <boost/shared_ptr.hpp>
-#include <list>
+#include "Configuration.h"
 
 namespace transformation {
 
-class Chain{
-	public:
-		typedef std::list<boost::shared_ptr<Transformation> > TransformationList;
-	protected:
-		TransformationList transformation_chain;
-		bool enabled;
-	public:
-		Chain();
-
-		void apply(Color *input, Color *output);
-
-		void add(boost::shared_ptr<Transformation> transformation);
-		void clear();
-
-		void setEnabled(bool enabled);
-
-		TransformationList& getAll();
-};
-
+Configuration::Configuration()
+{
 }
 
-#endif /* TRANSFORMATION_CHAIN_H_ */
+Configuration::~Configuration()
+{
+}
+
+GtkWidget* Configuration::getWidget()
+{
+	return 0;
+}
+
+void Configuration::applyConfig(dynvSystem *dynv)
+{
+}
+
+}
 

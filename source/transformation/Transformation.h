@@ -20,6 +20,8 @@
 #define TRANSFORMATION_H_
 
 #include "../Color.h"
+#include "Configuration.h"
+#include "../DynvHelpers.h"
 #include <string>
 
 namespace transformation {
@@ -32,6 +34,14 @@ class Transformation{
 	public:
 		Transformation(const char *name, const char *readable_name);
 		virtual ~Transformation();
+
+		virtual void serialize(struct dynvSystem *dynv);
+		virtual void deserialize(struct dynvSystem *dynv);
+
+		virtual void buildConfigPage(GtkWidget *vbox);
+
+		virtual GtkWidget* getWidget();
+		virtual void applyConfig(dynvSystem *dynv);
 
 		std::string getName() const;
 		std::string getReadableName() const;

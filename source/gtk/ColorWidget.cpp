@@ -52,6 +52,7 @@ typedef struct GtkColorPrivate {
 	bool secondary_color;
 
 	double roundness;
+	transformation::Chain *transformation_chain;
 } GtkColorPrivate;
 
 static void gtk_color_class_init(GtkColorClass *color_class) {
@@ -92,6 +93,7 @@ GtkWidget* gtk_color_new(void) {
 	ns->h_center = false;
 	ns->secondary_color = false;
 	ns->roundness = 20;
+	ns->transformation_chain = 0;
 
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 
@@ -220,13 +222,18 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
+	Color color;
 
 	if (ns->rounded_rectangle){
 
-		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness,
-			widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, ns->roundness);
+		cairo_rounded_rectangle(cr, widget->style->xthickness, widget->style->ythickness, widget->allocation.width-widget->style->xthickness*2, widget->allocation.height-widget->style->ythickness*2, ns->roundness);
 
-		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
+		if (ns->transformation_chain){
+			ns->transformation_chain->apply(&ns->color, &color);
+		}else{
+			color_copy(&ns->color, &color);
+		}
+		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 		cairo_fill_preserve(cr);
 
 		if (GTK_WIDGET_HAS_FOCUS(widget)){
@@ -241,7 +248,13 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 
 	}else{
 		cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
-		cairo_set_source_rgb(cr, ns->color.rgb.red, ns->color.rgb.green, ns->color.rgb.blue);
+
+		if (ns->transformation_chain){
+			ns->transformation_chain->apply(&ns->color, &color);
+		}else{
+			color_copy(&ns->color, &color);
+		}
+		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 		cairo_fill(cr);
 	}
 
@@ -256,9 +269,14 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 		pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
 		pango_font_description_set_absolute_size(font_description, 14 * PANGO_SCALE);
 		pango_layout_set_font_description(layout, font_description);
-        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+		pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
-		cairo_set_source_rgb(cr, ns->text_color.rgb.red, ns->text_color.rgb.green, ns->text_color.rgb.blue);
+		if (ns->transformation_chain){
+			ns->transformation_chain->apply(&ns->text_color, &color);
+		}else{
+			color_copy(&ns->text_color, &color);
+		}
+		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 
 		pango_layout_set_markup(layout, ns->text, -1);
 		pango_layout_set_width(layout, (widget->allocation.width - widget->style->xthickness * 2) * PANGO_SCALE);
@@ -302,5 +320,11 @@ static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event)
 	}
 
 	return FALSE;
+}
+
+void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain){
+	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
+	ns->transformation_chain = chain;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 

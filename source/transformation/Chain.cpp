@@ -24,11 +24,15 @@ namespace transformation {
 
 Chain::Chain()
 {
-
+	enabled = true;
 }
 
 void Chain::apply(Color *input, Color *output)
 {
+	if (!enabled) {
+		color_copy(input, output);
+		return;
+	}
 	Color tmp[2];
 	Color *tmp_p[3];
 
@@ -61,6 +65,11 @@ void Chain::clear()
 Chain::TransformationList& Chain::getAll()
 {
 	return transformation_chain;
+}
+
+void Chain::setEnabled(bool enabled_)
+{
+	enabled = enabled_;
 }
 
 }

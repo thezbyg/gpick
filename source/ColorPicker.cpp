@@ -885,6 +885,11 @@ static int source_activate(ColorPickerArgs *args){
 		args->timeout_source_id = 0;
 	}
 
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->color_code), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->contrastCheck), chain);
+
 	float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
 
@@ -1007,6 +1012,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_swatch_set_active_index(GTK_SWATCH(widget), dynv_get_int32_wd(args->params, "swatch.active_color", 1));
 			args->swatch_display = widget;
 
+
 			gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 
@@ -1033,6 +1039,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 					}
 				}
 			}
+
+
 
 			args->color_code = gtk_color_new();
 			gtk_box_pack_start (GTK_BOX(vbox), args->color_code, false, true, 0);

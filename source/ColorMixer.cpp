@@ -493,6 +493,15 @@ static int source_set_color(ColorMixerArgs *args, struct ColorObject* color){
 }
 
 static int source_activate(ColorMixerArgs *args){
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_color_set_transformation_chain(GTK_COLOR(args->secondary_color), chain);
+
+	for (int i = 0; i < MAX_COLOR_LINES; ++i){
+		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].input), chain);
+		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].output), chain);
+	}
+
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }

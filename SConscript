@@ -73,18 +73,6 @@ if not env.GetOption('clean'):
 
 Decider('MD5-timestamp')
 
-env.Replace(
-	SHCCCOMSTR = "Compiling ==> $TARGET",
-	SHCXXCOMSTR = "Compiling ==> $TARGET",
-	CCCOMSTR = "Compiling ==> $TARGET",
-	CXXCOMSTR = "Compiling ==> $TARGET",
-	SHLINKCOMSTR = "Linking shared ==> $TARGET",
-	LINKCOMSTR = "Linking ==> $TARGET",
-	LDMODULECOMSTR = "Linking module ==> $TARGET",
-	ARCOMSTR = "Linking static ==> $TARGET",
-	TARCOMSTR = "Archiving ==> $TARGET"
-	)
-
 if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
 	if env['DEBUG']:
 		env.Append(

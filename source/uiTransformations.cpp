@@ -24,6 +24,7 @@
 #include "GlobalStateStruct.h"
 
 #include "transformation/Chain.h"
+#include "transformation/ColorVisionDeficiency.h"
 
 #include <iostream>
 using namespace std;
@@ -35,8 +36,13 @@ typedef enum{
 }TransformationsColumns;
 
 typedef struct TransformationsArgs{
-	GtkWidget* list;
+	GtkWidget *list;
+	GtkWidget *config_vbox;
+
+	GtkWidget *enabled;
+
 	struct dynvSystem *params;
+	struct dynvSystem *transformations_params;
 	GlobalState *gs;
 }TransformationsArgs;
 
@@ -85,6 +91,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	TransformationsArgs *args = new TransformationsArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick");
+	args->transformations_params = dynv_get_dynv(args->gs->params, "gpick.transformations");
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons("Transformations", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -96,7 +103,15 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 
+	GtkWidget *widget;
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
+
+	args->enabled = widget = gtk_check_button_new_with_mnemonic ("_Enabled");
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
+	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
+
+	GtkWidget* hbox = gtk_hbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
 
 	GtkWidget *list;
 	list = transformations_list_new(args);
@@ -105,15 +120,13 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(scrolled), list);
 
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_box_pack_start(GTK_BOX(vbox), scrolled, true, true, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), scrolled, true, true, 0);
 
-	gint table_y;
-	GtkWidget* table = gtk_table_new(5, 2, false);
-	gtk_box_pack_start(GTK_BOX(vbox), table, false, false, 0);
-	table_y=0;
+
+	args->config_vbox = gtk_vbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(hbox), args->config_vbox, true, true, 0);
 
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
-
 
 	GtkTreeIter iter1;
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
@@ -134,6 +147,13 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+
+		boost::shared_ptr<transformation::ColorVisionDeficiency> color_vision_deficiency = boost::shared_ptr<transformation::ColorVisionDeficiency>(new transformation::ColorVisionDeficiency(transformation::ColorVisionDeficiency::DEUTERANOMALY, 0.8));
+		chain->add(color_vision_deficiency);
+
+    bool enabled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->enabled));
+		dynv_set_bool(args->transformations_params, "enabled", enabled);
+		chain->setEnabled(enabled);
 
 		/*unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
 		if (count > 0){
@@ -183,6 +203,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	gtk_widget_destroy(dialog);
 
+	dynv_system_release(args->transformations_params);
 	dynv_system_release(args->params);
 	delete args;
 }

@@ -26,7 +26,6 @@
 #include "layout/Layout.h"
 
 #include "transformation/Chain.h"
-#include "transformation/ColorVisionDeficiency.h"
 
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
@@ -303,9 +302,6 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 
 	if ((level & GLOBALSTATE_TRANSFORMATIONS) && !(gs->loaded_levels & GLOBALSTATE_TRANSFORMATIONS)){
 		transformation::Chain *chain = new transformation::Chain();
-		//boost::shared_ptr<transformation::ColorVisionDeficiency> color_vision_deficiency = boost::shared_ptr<transformation::ColorVisionDeficiency>(new transformation::ColorVisionDeficiency(transformation::ColorVisionDeficiency::DEUTERANOMALY, 0.4));
-		//chain->add(color_vision_deficiency);
-
 		dynv_set_pointer(gs->params, "TransformationChain", chain);
 		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_TRANSFORMATIONS);
 	}

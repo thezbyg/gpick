@@ -46,5 +46,30 @@ std::string Transformation::getReadableName() const
 	return readable_name;
 }
 
+void Transformation::serialize(struct dynvSystem *dynv)
+{
+
+}
+
+void Transformation::deserialize(struct dynvSystem *dynv)
+{
+
+}
+
+void Transformation::buildConfigPage(GtkWidget *vbox)
+{
+
+}
+
+GtkWidget* Transformation::getWidget()
+{
+	return 0;
+}
+
+void Transformation::applyConfig(dynvSystem *dynv)
+{
+
+}
+
 }
 

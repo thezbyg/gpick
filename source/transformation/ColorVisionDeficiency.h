@@ -29,14 +29,25 @@ class ColorVisionDeficiency: public Transformation{
 			PROTANOMALY,
 			DEUTERANOMALY,
 			TRITANOMALY,
+			DEFICIENCY_TYPE_COUNT,
 		};
+		static const char *deficiency_type_string[];
 	protected:
 		float strength;
 		DeficiencyType type;
 		virtual void apply(Color *input, Color *output);
 	public:
+		ColorVisionDeficiency();
 		ColorVisionDeficiency(DeficiencyType type, float strength);
 		virtual ~ColorVisionDeficiency();
+
+		virtual void serialize(struct dynvSystem *dynv);
+		virtual void deserialize(struct dynvSystem *dynv);
+
+		virtual GtkWidget* getWidget();
+		virtual void applyConfig(dynvSystem *dynv);
+
+		DeficiencyType typeFromString(const char *type_string);
 };
 
 }

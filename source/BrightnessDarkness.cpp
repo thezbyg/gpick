@@ -311,6 +311,10 @@ static int set_rgb_color(BrightnessDarknessArgs *args, struct ColorObject* color
 }
 
 static int source_activate(BrightnessDarknessArgs *args){
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layout_view), chain);
+
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }
@@ -318,7 +322,7 @@ static int source_activate(BrightnessDarknessArgs *args){
 static int source_deactivate(BrightnessDarknessArgs *args){
 	dynv_set_color(args->params, "color", &args->color);
 	calc(args, true, true);
-    return 0;
+	return 0;
 }
 
 static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
@@ -385,7 +389,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	color_copy(color, &args->color);
 	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), color, "main");
-    calc(args, true, false);
+	calc(args, true, false);
 
 	gtk_widget_show_all(hbox);
 
@@ -399,10 +403,10 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 }
 
 int brightness_darkness_source_register(ColorSourceManager *csm){
-    ColorSource *color_source = new ColorSource;
+	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "brightness_darkness", "Brightness Darkness");
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
-    color_source_manager_add_source(csm, color_source);
+	color_source_manager_add_source(csm, color_source);
 	return 0;
 }
 

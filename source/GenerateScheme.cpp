@@ -636,6 +636,12 @@ static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color)
 }
 
 static int source_activate(GenerateSchemeArgs *args){
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
+		gtk_color_set_transformation_chain(GTK_COLOR(args->colors[i]), chain);
+	}
+
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }

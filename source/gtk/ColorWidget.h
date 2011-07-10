@@ -22,7 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "../Color.h"
-
+#include "../transformation/Chain.h"
 
 G_BEGIN_DECLS
 
@@ -59,6 +59,8 @@ void gtk_color_get_color(GtkColor* widget, Color* color);
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);
 void gtk_color_set_roundness(GtkColor* widget, double roundness);
 void gtk_color_set_hcenter(GtkColor* widget, bool hcenter);
+void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain);
+
 GType gtk_color_get_type(void);
 
 G_END_DECLS

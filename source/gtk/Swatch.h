@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include "../Color.h"
+#include "../transformation/Chain.h"
 
 
 G_BEGIN_DECLS
@@ -70,8 +71,9 @@ gint32 gtk_swatch_get_active_index(GtkSwatch* swatch);
 void gtk_swatch_get_active_color(GtkSwatch* swatch, Color* color);
 
 void gtk_swatch_set_color_count(GtkSwatch* swatch, gint32 colors);
-
 gint gtk_swatch_get_color_at(GtkSwatch* swatch, gint x, gint y);
+
+void gtk_swatch_set_transformation_chain(GtkSwatch* widget, transformation::Chain *chain);
 
 GType gtk_swatch_get_type(void);
 

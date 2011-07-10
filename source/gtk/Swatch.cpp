@@ -42,6 +42,7 @@ typedef struct GtkSwatchPrivate GtkSwatchPrivate;
 typedef struct GtkSwatchPrivate {
 	Color color[7];
 	gint32 current_color;
+	transformation::Chain *transformation_chain;
 } GtkSwatchPrivate;
 
 static void gtk_swatch_class_init(GtkSwatchClass *swatch_class) {
@@ -91,6 +92,7 @@ gtk_swatch_new(void) {
 	for (gint32 i = 0; i < 7; ++i)
 		color_set(&ns->color[i], i/7.0);
 	ns->current_color = 1;
+	ns->transformation_chain = 0;
 
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 	return widget;
@@ -244,22 +246,40 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 			* PI) / edges), 27);
 	cairo_stroke(cr);
 
+  Color color;
+
 	//Draw fill
 	for (int i = 1; i < 7; ++i) {
 		if (i == ns->current_color)
 			continue;
-		cairo_set_source_rgb(cr, ns->color[i].rgb.red, ns->color[i].rgb.green, ns->color[i].rgb.blue);
+
+		if (ns->transformation_chain){
+			ns->transformation_chain->apply(&ns->color[i], &color);
+		}else{
+			color_copy(&ns->color[i], &color);
+		}
+		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+
 		gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 25.5);
 		cairo_fill(cr);
 	}
 
-	cairo_set_source_rgb(cr, ns->color[ns->current_color].rgb.red, ns->color[ns->current_color].rgb.green, ns->color[ns->current_color].rgb.blue);
-	gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2
-			* PI) / edges), 25.5);
+	if (ns->transformation_chain){
+		ns->transformation_chain->apply(&ns->color[ns->current_color], &color);
+	}else{
+		color_copy(&ns->color[ns->current_color], &color);
+	}
+	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+	gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2 * PI) / edges), 25.5);
 	cairo_fill(cr);
 
 	//Draw center
-	cairo_set_source_rgb(cr, ns->color[0].rgb.red, ns->color[0].rgb.green, ns->color[0].rgb.blue);
+	if (ns->transformation_chain){
+		ns->transformation_chain->apply(&ns->color[0], &color);
+	}else{
+		color_copy(&ns->color[0], &color);
+	}
+	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
 	gtk_swatch_draw_hexagon(cr, 0, 0, 25.5);
 	cairo_fill(cr);
 
@@ -345,5 +365,11 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 
 static gboolean gtk_swatch_button_release(GtkWidget *widget, GdkEventButton *event) {
 	return FALSE;
+}
+
+void gtk_swatch_set_transformation_chain(GtkSwatch* widget, transformation::Chain *chain){
+	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
+	ns->transformation_chain = chain;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 

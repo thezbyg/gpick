@@ -1093,6 +1093,10 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			return false;
 			break;
 
+		case GDK_Delete:
+			palette_popup_menu_remove_selected(widget, args);
+			break;
+
 		default:
 			return false;
 		break;
@@ -1168,8 +1172,11 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params){
 static gboolean on_window_focus_change(GtkWidget *widget, GdkEventFocus *event, AppArgs* args) {
 
 	if (event->in){
+
+		if (args->secondary_color_source)	color_source_activate(args->secondary_color_source);
 		if (args->current_color_source) color_source_activate(args->current_color_source);
 	}else{
+		if (args->secondary_color_source)	color_source_deactivate(args->secondary_color_source);
 		if (args->current_color_source) color_source_deactivate(args->current_color_source);
 	}
 
