@@ -16,24 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "RegisterSources.h"
+#ifndef BLEND_COLORS_H_
+#define BLEND_COLORS_H_
 
-#include "GenerateScheme.h"
-#include "ColorPicker.h"
-#include "LayoutPreview.h"
-#include "Variations.h"
-#include "BrightnessDarkness.h"
-#include "ColorMixer.h"
-#include "BlendColors.h"
+#include "ColorSourceManager.h"
 
-int register_sources(ColorSourceManager *csm){
-	generate_scheme_source_register(csm);
-	color_picker_source_register(csm);
-	layout_preview_source_register(csm);
-	variations_source_register(csm);
-	brightness_darkness_source_register(csm);
-	color_mixer_source_register(csm);
-	blend_colors_source_register(csm);
-	return 0;
-}
+int blend_colors_source_register(ColorSourceManager *csm);
+
+#endif /* BLEND_COLORS_H_ */
+
+
 
