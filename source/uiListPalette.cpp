@@ -162,7 +162,7 @@ static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
 	palette_list_remove_all_entries(widget);
 }
 
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
@@ -227,14 +227,19 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expanded, struct Color
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), view);
 
-	GtkWidget *expander=gtk_expander_new("Preview");
-	gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
-	gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
+	GtkWidget *main_widget = scrolled_window;
+	if (expander){
+		GtkWidget *expander=gtk_expander_new("Preview");
+		gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
+		gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
+
+		main_widget = expander;
+	}
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
-    g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
+	g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
 
-	return expander;
+	return main_widget;
 }
 
 static struct ColorObject** get_color_object_list(struct DragDrop* dd, uint32_t *colorobject_n){
