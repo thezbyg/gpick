@@ -56,19 +56,9 @@ void Transformation::deserialize(struct dynvSystem *dynv)
 
 }
 
-void Transformation::buildConfigPage(GtkWidget *vbox)
+boost::shared_ptr<Configuration> Transformation::getConfig()
 {
-
-}
-
-GtkWidget* Transformation::getWidget()
-{
-	return 0;
-}
-
-void Transformation::applyConfig(dynvSystem *dynv)
-{
-
+	return boost::shared_ptr<Configuration>();
 }
 
 }

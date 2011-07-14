@@ -162,6 +162,10 @@ static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
 	palette_list_remove_all_entries(widget);
 }
 
+GtkWidget* palette_list_get_widget(struct ColorList *color_list){
+	return (GtkWidget*)color_list->userdata;
+}
+
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list){
 
 	ListPaletteArgs* args = new ListPaletteArgs;

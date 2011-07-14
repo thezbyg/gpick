@@ -23,6 +23,7 @@
 #include "Configuration.h"
 #include "../DynvHelpers.h"
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 namespace transformation {
 
@@ -38,10 +39,7 @@ class Transformation{
 		virtual void serialize(struct dynvSystem *dynv);
 		virtual void deserialize(struct dynvSystem *dynv);
 
-		virtual void buildConfigPage(GtkWidget *vbox);
-
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
+		virtual boost::shared_ptr<Configuration> getConfig();
 
 		std::string getName() const;
 		std::string getReadableName() const;

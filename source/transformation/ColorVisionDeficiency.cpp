@@ -25,6 +25,19 @@
 
 namespace transformation {
 
+static const char * transformation_name = "color_vision_deficiency";
+static const char * transformation_readable_name = "Color vision deficiency";
+
+const char *ColorVisionDeficiency::getName()
+{
+	return transformation_name;
+}
+
+const char *ColorVisionDeficiency::getReadableName()
+{
+	return transformation_readable_name;
+}
+
 const char* ColorVisionDeficiency::deficiency_type_string[] = {
 	"protanomaly",
 	"deuteranomaly",
@@ -123,13 +136,13 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	output->rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency():Transformation("color_vision_deficiency", "Color vision deficiency")
+ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformation_name, transformation_readable_name)
 {
 	type = PROTANOMALY;
 	strength = 0.5;
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation("color_vision_deficiency", "Color vision deficiency")
+ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation(transformation_name, transformation_readable_name)
 {
 	type = type_;
 	strength = strength_;
@@ -173,27 +186,24 @@ static GtkWidget* create_type_list(void){
 	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
-	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 1, NULL);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 0, NULL);
 	g_object_unref(GTK_TREE_MODEL(store));
 	GtkTreeIter iter1;
 
-	const char* types[][1] = {
-			{ "Test1" },
-			{ "Test2" },
-			{ "Test3" },
-			};
-
-	int type_ids[]={
-		ColorVisionDeficiency::PROTANOMALY,
-		ColorVisionDeficiency::DEUTERANOMALY,
-		ColorVisionDeficiency::TRITANOMALY,
+  struct {
+		const char *name;
+		int type;
+	} types[] = {
+		{"Protanomaly", ColorVisionDeficiency::PROTANOMALY},
+		{"Deuteranomaly", ColorVisionDeficiency::DEUTERANOMALY},
+		{"Tritanomaly", ColorVisionDeficiency::TRITANOMALY},
 	};
 
-	for (int i = 0; i < sizeof(type_ids) / sizeof(int); ++i){
+	for (int i = 0; i < ColorVisionDeficiency::DEFICIENCY_TYPE_COUNT; ++i){
 		gtk_list_store_append(store, &iter1);
 		gtk_list_store_set(store, &iter1,
-			0, types[i][0],
-			1, type_ids[i],
+			0, types[i].name,
+			1, types[i].type,
 		-1);
 	}
 
@@ -201,7 +211,14 @@ static GtkWidget* create_type_list(void){
 }
 
 
-static GtkWidget* createUi(){
+
+boost::shared_ptr<Configuration> ColorVisionDeficiency::getConfig(){
+	boost::shared_ptr<ColorVisionDeficiencyConfig> config = boost::shared_ptr<ColorVisionDeficiencyConfig>(new ColorVisionDeficiencyConfig(*this));
+	return config;
+}
+
+
+ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation){
 
 	GtkWidget *table = gtk_table_new(2, 2, false);
 	GtkWidget *widget;
@@ -209,27 +226,54 @@ static GtkWidget* createUi(){
 
 	table_y=0;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:", 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	widget = create_type_list();
+	type = widget = create_type_list();
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), transformation.type);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Strength:",0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	widget = gtk_hscale_new_with_range(0, 100, 1);
+	strength = widget = gtk_hscale_new_with_range(0, 100, 1);
+	gtk_range_set_value(GTK_RANGE(widget), transformation.strength * 100);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
 
-	return table;
+	main = table;
+	gtk_widget_show_all(main);
+
+	g_object_ref(main);
+
+}
+
+ColorVisionDeficiencyConfig::~ColorVisionDeficiencyConfig(){
+	g_object_unref(main);
+}
+
+GtkWidget* ColorVisionDeficiencyConfig::getWidget(){
+	return main;
+}
+
+void ColorVisionDeficiencyConfig::applyConfig(dynvSystem *dynv){
+	dynv_set_float(dynv, "strength", gtk_range_get_value(GTK_RANGE(strength)) / 100.0f);
+
+	GtkTreeIter iter;
+	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(type), &iter)) {
+		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(type));
+		ColorVisionDeficiency::DeficiencyType type_id;
+		gtk_tree_model_get(model, &iter, 2, &type_id, -1);
+		dynv_set_string(dynv, "type", ColorVisionDeficiency::deficiency_type_string[type_id]);
+	}
 }
 
 
-GtkWidget* ColorVisionDeficiency::getWidget()
-{
-	return 0;
-}
 
-void ColorVisionDeficiency::applyConfig(dynvSystem *dynv)
-{
-}
+
+
+
+
+
+
+
+
 
 
 }

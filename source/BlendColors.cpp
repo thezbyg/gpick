@@ -31,6 +31,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "uiApp.h"
 
 #include <math.h>
 #include <string.h>
@@ -55,6 +56,7 @@ typedef struct BlendColorsArgs{
 	GtkWidget *middle_color;
 	GtkWidget *end_color;
 
+	GtkWidget *preview_list;
 	struct ColorList *preview_color_list;
 
 	struct dynvSystem *params;
@@ -190,10 +192,166 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 	}
 }
 
+static gint32 add_to_palette_cb_helper(struct ColorObject* color_object, void *userdata){
+	BlendColorsArgs *args = (BlendColorsArgs*)userdata;
+	color_list_add_color_object(args->gs->colors, color_object, 1);
+	return 0;
+}
+
+static gboolean add_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args) {
+	palette_list_foreach_selected(args->preview_list, add_to_palette_cb_helper, args);
+	return true;
+}
+
+static gboolean add_all_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args) {
+	palette_list_foreach(args->preview_list, add_to_palette_cb_helper, args);
+	return true;
+}
+
+static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
+	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
+	return 0;
+}
+
+typedef struct CopyMenuItem{
+	gchar* function_name;
+	struct ColorObject* color_object;
+	GlobalState* gs;
+	GtkWidget* palette_widget;
+}CopyMenuItem;
+
+static void converter_destroy_params(CopyMenuItem* args){
+	color_object_release(args->color_object);
+	g_free(args->function_name);
+	delete args;
+}
+
+static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
+	CopyMenuItem* itemdata=(CopyMenuItem*)g_object_get_data(G_OBJECT(widget), "item_data");
+	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->params);
+}
+
+
+static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs){
+	GtkWidget* item=0;
+	gchar* converted;
+
+	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, &converted)==0){
+		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
+
+		CopyMenuItem* itemdata=new CopyMenuItem;
+		itemdata->function_name=g_strdup(function);
+		itemdata->palette_widget=palette_widget;
+		itemdata->color_object=color_object_ref(color_object);
+		itemdata->gs = gs;
+
+		g_object_set_data_full(G_OBJECT(item), "item_data", itemdata, (GDestroyNotify)converter_destroy_params);
+
+		g_free(converted);
+	}
+
+	return item;
+}
+
+static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *event, BlendColorsArgs *args) {
+	GtkWidget *menu;
+
+	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
+		//add_to_palette_cb(widget, args);
+		//return true;
+	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
+
+		GtkWidget* item ;
+		gint32 button, event_time;
+
+		menu = gtk_menu_new ();
+
+		bool selection_avail = palette_list_get_selected_count(widget) != 0;
+
+	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_to_palette_cb), args);
+		if (!selection_avail) gtk_widget_set_sensitive(item, false);
+
+
+	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
+
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+	    item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+
+		if (selection_avail){
+			struct ColorList *color_list = color_list_new(NULL);
+			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
+			if (color_list_get_count(color_list) != 0){
+				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (*color_list->colors.begin(), args->preview_list, args->gs));
+			}
+			color_list_destroy(color_list);
+		}else{
+			gtk_widget_set_sensitive(item, false);
+		}
+
+		gtk_widget_show_all (GTK_WIDGET(menu));
+
+		button = event->button;
+		event_time = event->time;
+
+		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+
+		g_object_ref_sink(menu);
+		g_object_unref(menu);
+
+		return TRUE;
+	}
+	return FALSE;
+}
+
 
 static void update(GtkWidget *widget, BlendColorsArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 101);
+}
+
+static void reset_middle_color_cb(GtkWidget *widget, BlendColorsArgs *args){
+    Color a, b;
+		gtk_color_get_color(GTK_COLOR(args->start_color), &a);
+		gtk_color_get_color(GTK_COLOR(args->end_color), &b);
+		color_multiply(&a, 0.5);
+		color_multiply(&b, 0.5);
+		color_add(&a, &b);
+		gtk_color_set_color(GTK_COLOR(args->middle_color), &a, "");
+		update(0, args);
+}
+
+static gboolean color_button_press_cb(GtkWidget *widget, GdkEventButton *event, BlendColorsArgs *args) {
+	GtkWidget *menu;
+
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
+		GtkWidget* item ;
+		gint32 button, event_time;
+		menu = gtk_menu_new ();
+
+	    item = gtk_menu_item_new_with_mnemonic("_Reset");
+	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (reset_middle_color_cb), args);
+
+		gtk_widget_show_all (GTK_WIDGET(menu));
+
+		button = event->button;
+		event_time = event->time;
+
+		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+
+		g_object_ref_sink(menu);
+		g_object_unref(menu);
+
+		return TRUE;
+	}
+	return FALSE;
 }
 
 static int set_rgb_color(BlendColorsArgs *args, struct ColorObject* color, uint32_t color_index){
@@ -335,6 +493,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Middle:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->middle_color = widget = gtk_color_new();
+
+	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(color_button_press_cb), args);
 	gtk_color_set_color(GTK_COLOR(args->middle_color), dynv_get_color_wdc(args->params, "middle_color", &c), "");
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
@@ -398,9 +558,16 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
   table_y = 3;
 
-	GtkWidget* preview_expander;
-	struct ColorList* preview_color_list=NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, false, false, gs->colors, &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	GtkWidget* preview;
+	struct ColorList* preview_color_list = NULL;
+	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->colors, &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+
+	args->preview_list = palette_list_get_widget(preview_color_list);
+
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->preview_list));
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
+
+	g_signal_connect(G_OBJECT(args->preview_list), "button-press-event", G_CALLBACK(preview_list_button_press_cb), args);
 	table_y++;
 
 	args->preview_color_list = preview_color_list;

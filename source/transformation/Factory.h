@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,31 +16,29 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UILISTPALETTE_H_
-#define UILISTPALETTE_H_
+#ifndef TRANSFORMATION_FACTORY_H_
+#define TRANSFORMATION_FACTORY_H_
 
-#include <gtk/gtk.h>
-#include "ColorObject.h"
-#include "ColorList.h"
-#include "GlobalState.h"
+#include "Transformation.h"
+#include <boost/shared_ptr.hpp>
+#include <vector>
+
+namespace transformation {
+
+class Factory{
+	public:
+    typedef struct TypeInfo{
+			const char *name;
+			const char *human_name;
+			TypeInfo(const char *name, const char *human_name);
+		}TypeInfo;
+
+		static boost::shared_ptr<Transformation> create(const char *type);
+		static std::vector<TypeInfo> getAllTypes();
+};
+
+}
+
+#endif /* TRANSFORMATION_FACTORY_H_ */
 
 
-GtkWidget* palette_list_new(GlobalState* gs);
-void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
-
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);
-GtkWidget* palette_list_get_widget(struct ColorList *color_list);
-
-void palette_list_remove_all_entries(GtkWidget* widget);
-void palette_list_remove_selected_entries(GtkWidget* widget);
-int palette_list_remove_entry(GtkWidget* widget, struct ColorObject *color_object);
-
-gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-
-gint32 palette_list_get_selected_count(GtkWidget* widget);
-gint32 palette_list_get_count(GtkWidget* widget);
-
-
-#endif /* UILISTPALETTE_H_ */

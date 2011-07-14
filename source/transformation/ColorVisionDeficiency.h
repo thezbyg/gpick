@@ -23,6 +23,21 @@
 
 namespace transformation {
 
+class ColorVisionDeficiency;
+
+class ColorVisionDeficiencyConfig: public Configuration{
+	protected:
+		GtkWidget *main;
+		GtkWidget *type;
+		GtkWidget *strength;
+	public:
+		ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation);
+		virtual ~ColorVisionDeficiencyConfig();
+
+		virtual GtkWidget* getWidget();
+		virtual void applyConfig(dynvSystem *dynv);
+};
+
 class ColorVisionDeficiency: public Transformation{
 	public:
 		enum DeficiencyType{
@@ -32,6 +47,9 @@ class ColorVisionDeficiency: public Transformation{
 			DEFICIENCY_TYPE_COUNT,
 		};
 		static const char *deficiency_type_string[];
+
+		static const char *getName();
+		static const char *getReadableName();
 	protected:
 		float strength;
 		DeficiencyType type;
@@ -44,10 +62,11 @@ class ColorVisionDeficiency: public Transformation{
 		virtual void serialize(struct dynvSystem *dynv);
 		virtual void deserialize(struct dynvSystem *dynv);
 
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
+		virtual boost::shared_ptr<Configuration> getConfig();
 
 		DeficiencyType typeFromString(const char *type_string);
+
+	friend class ColorVisionDeficiencyConfig;
 };
 
 }
