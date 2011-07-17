@@ -43,6 +43,7 @@ typedef enum{
 }AvailableTransformationsColumns;
 
 typedef struct TransformationsArgs{
+	GtkWidget *available_transformations;
 	GtkWidget *list;
 	GtkWidget *config_vbox;
 
@@ -55,6 +56,8 @@ typedef struct TransformationsArgs{
 	struct dynvSystem *transformations_params;
 	GlobalState *gs;
 }TransformationsArgs;
+
+static void configure_transformation(TransformationsArgs *args, transformation::Transformation *transformation);
 
 static void tranformations_update_row(GtkTreeModel *model, GtkTreeIter *iter1, transformation::Transformation *transformation, TransformationsArgs *args) {
 	gtk_list_store_set(GTK_LIST_STORE(model), iter1,
@@ -74,32 +77,39 @@ static GtkWidget* available_transformations_list_new(TransformationsArgs *args)
 {
 	GtkListStore *store;
 	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *col;
-	GtkWidget *view;
+	GtkWidget *widget;
+	store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+	widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
 
-	view = gtk_tree_view_new();
-	args->list = view;
-
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 1);
-
-	store = gtk_list_store_new(AVAILABLE_TRANSFORMATIONS_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING);
-
-	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
-	gtk_tree_view_column_set_resizable(col, 1);
-	gtk_tree_view_column_set_title(col, "Name");
 	renderer = gtk_cell_renderer_text_new();
-	gtk_tree_view_column_pack_start(col, renderer, true);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", AVAILABLE_TRANSFORMATIONS_HUMAN_NAME);
-	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget),renderer,0);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", AVAILABLE_TRANSFORMATIONS_HUMAN_NAME, NULL);
 
-	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
 	g_object_unref(GTK_TREE_MODEL(store));
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_SINGLE);
+	return widget;
+}
 
-	return view;
+static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
+{
+	GtkTreeIter iter;
+	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(args->available_transformations), &iter)) {
+		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(args->available_transformations));
+
+		gchar *name = 0;
+		gtk_tree_model_get(model, &iter, AVAILABLE_TRANSFORMATIONS_NAME, &name, -1);
+
+		boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+		transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+		chain->add(tran);
+
+		configure_transformation(args, tran.get());
+
+		model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+		tranformations_update_row(model, &iter, tran.get(), args);
+	}
 }
 
 static GtkWidget* transformations_list_new(TransformationsArgs *args)
@@ -146,6 +156,20 @@ static void apply_configuration(TransformationsArgs *args){
 	}
 }
 
+static void configure_transformation(TransformationsArgs *args, transformation::Transformation *transformation)
+{
+	if (args->configuration){
+		gtk_container_remove(GTK_CONTAINER(args->config_vbox), args->configuration->getWidget());
+		apply_configuration(args);
+		args->configuration = boost::shared_ptr<transformation::Configuration>();
+	}
+	if (transformation){
+		args->configuration = transformation->getConfig();
+		args->transformation = transformation;
+		gtk_box_pack_start(GTK_BOX(args->config_vbox), args->configuration->getWidget(), true, true, 0);
+	}
+}
+
 static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args) {
 	GtkTreeModel* model;
 	GtkTreeIter iter;
@@ -155,16 +179,7 @@ static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePa
 
 	transformation::Transformation *transformation;
 	gtk_tree_model_get(model, &iter, TRANSFORMATIONS_TRANSFORMATION_PTR, &transformation, -1);
-
-	if (transformation){
-		if (args->configuration){
-			gtk_container_remove(GTK_CONTAINER(args->config_vbox), args->configuration->getWidget());
-			apply_configuration(args);
-		}
-		args->configuration = transformation->getConfig();
-		args->transformation = transformation;
-		gtk_box_pack_start(GTK_BOX(args->config_vbox), args->configuration->getWidget(), true, true, 0);
-	}
+	configure_transformation(args, transformation);
 }
 
 
@@ -201,20 +216,32 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	GtkTreeIter iter1;
 	GtkTreeModel *model;
 
-	list = available_transformations_list_new(args);
-	scrolled = gtk_scrolled_window_new(0, 0);
-	gtk_container_add(GTK_CONTAINER(scrolled), list);
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_box_pack_start(GTK_BOX(vbox2), scrolled, true, true, 0);
 
-	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
+	args->available_transformations = list = available_transformations_list_new(args);
+
+	GtkToolItem *tool;
+	GtkWidget *toolbar = gtk_toolbar_new();
+	gtk_box_pack_start(GTK_BOX(vbox2), toolbar, false, false, 0);
+
+	tool = gtk_tool_item_new();
+  gtk_tool_item_set_expand(tool, true);
+	gtk_container_add(GTK_CONTAINER(tool), list);
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
+
+	tool = gtk_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON), "Add");
+	gtk_tool_item_set_tooltip_text(tool, "Add");
+	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(add_transformation_cb), args);
+	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
+
+	model = gtk_combo_box_get_model(GTK_COMBO_BOX(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
 	for (int i = 0; i != types.size(); i++){
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		available_tranformations_update_row(model, &iter1, &types[i], args);
 	}
 
-	list = transformations_list_new(args);
+
+	args->list = list = transformations_list_new(args);
 	g_signal_connect(G_OBJECT(list), "row-activated", G_CALLBACK(transformation_chain_row_activated), args);
 	scrolled = gtk_scrolled_window_new(0, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled), list);

@@ -259,7 +259,7 @@ void ColorVisionDeficiencyConfig::applyConfig(dynvSystem *dynv){
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(type), &iter)) {
 		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(type));
 		ColorVisionDeficiency::DeficiencyType type_id;
-		gtk_tree_model_get(model, &iter, 2, &type_id, -1);
+		gtk_tree_model_get(model, &iter, 1, &type_id, -1);
 		dynv_set_string(dynv, "type", ColorVisionDeficiency::deficiency_type_string[type_id]);
 	}
 }
