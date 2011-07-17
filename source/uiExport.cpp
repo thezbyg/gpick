@@ -24,11 +24,13 @@
 #include "GlobalStateStruct.h"
 
 #include <string.h>
+#include <math.h>
 
 #include <fstream>
 #include <string>
 #include <iostream>
 #include <sstream>
+
 using namespace std;
 
 
@@ -37,9 +39,9 @@ static int32_t palette_export_gpl_color(struct ColorObject* color_object, void* 
 	color_object_get_color(color_object, &color);
 	const char* name = dynv_get_string_wd(color_object->params, "name", "");
 
-	(*(ofstream*)userdata) << int32_t(color.rgb.red*255) << "\t"
-						<< int32_t(color.rgb.green*255) << "\t"
-						<< int32_t(color.rgb.blue*255) << "\t" << name << endl;
+	(*(ofstream*)userdata) << int32_t(roundf(color.rgb.red*255)) << "\t"
+						<< int32_t(roundf(color.rgb.green*255)) << "\t"
+						<< int32_t(roundf(color.rgb.blue*255)) << "\t" << name << endl;
 	return 0;
 }
 
