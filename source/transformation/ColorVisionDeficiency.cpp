@@ -158,6 +158,7 @@ void ColorVisionDeficiency::serialize(struct dynvSystem *dynv)
 {
 	dynv_set_float(dynv, "strength", strength);
 	dynv_set_string(dynv, "type", deficiency_type_string[type]);
+	Transformation::serialize(dynv);
 }
 
 ColorVisionDeficiency::DeficiencyType ColorVisionDeficiency::typeFromString(const char *type_string)

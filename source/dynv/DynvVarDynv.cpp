@@ -41,13 +41,17 @@ static int destroy(struct dynvVariable* variable){
 
 static int set(struct dynvVariable* variable, void* value, bool deref){
 	if (variable->ptr_value) dynv_system_release((struct dynvSystem*)variable->ptr_value);
-	variable->ptr_value = dynv_system_ref((struct dynvSystem*)value);
+	if (deref)
+		variable->ptr_value = dynv_system_ref(*((struct dynvSystem**)value));
+	else
+		variable->ptr_value = dynv_system_ref((struct dynvSystem*)value);
 	return 0;
 }
 
-static int get(struct dynvVariable* variable, void** value){
+static int get(struct dynvVariable* variable, void** value, bool *deref){
 	if (variable->ptr_value){
 		*value= dynv_system_ref((struct dynvSystem*)variable->ptr_value);
+		*deref = false;
 		return 0;
 	}
 	return -1;

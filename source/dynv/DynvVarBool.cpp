@@ -41,7 +41,7 @@ static int set(struct dynvVariable* variable, void* value, bool deref){
 	return 0;
 }
 
-static int get(struct dynvVariable* variable, void** value){
+static int get(struct dynvVariable* variable, void** value, bool *deref){
 	*value = &variable->bool_value;
 	return 0;
 }

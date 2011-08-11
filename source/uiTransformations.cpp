@@ -209,7 +209,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
 
-	GtkWidget* hbox = gtk_hbox_new(false, 5);
+	GtkWidget* hbox = gtk_hbox_new(true, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
 
 	GtkWidget *list, *scrolled;
@@ -219,19 +219,14 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	args->available_transformations = list = available_transformations_list_new(args);
 
-	GtkToolItem *tool;
-	GtkWidget *toolbar = gtk_toolbar_new();
-	gtk_box_pack_start(GTK_BOX(vbox2), toolbar, false, false, 0);
 
-	tool = gtk_tool_item_new();
-  gtk_tool_item_set_expand(tool, true);
-	gtk_container_add(GTK_CONTAINER(tool), list);
-	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
+	GtkWidget* hbox2 = gtk_hbox_new(false, 0);
+	gtk_box_pack_start(GTK_BOX(vbox2), hbox2, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(hbox2), list, true, true, 0);
 
-	tool = gtk_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_BUTTON), "Add");
-	gtk_tool_item_set_tooltip_text(tool, "Add");
-	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(add_transformation_cb), args);
-	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
+	GtkWidget *button = gtk_button_new_from_stock(GTK_STOCK_ADD);
+	gtk_box_pack_start(GTK_BOX(hbox2), button, false, false, 0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(add_transformation_cb), args);
 
 	model = gtk_combo_box_get_model(GTK_COMBO_BOX(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
@@ -239,6 +234,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		available_tranformations_update_row(model, &iter1, &types[i], args);
 	}
+	gtk_combo_box_set_active(GTK_COMBO_BOX(list), 0);
 
 
 	args->list = list = transformations_list_new(args);
@@ -286,46 +282,36 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		dynv_set_bool(args->transformations_params, "enabled", enabled);
 		chain->setEnabled(enabled);
 
-		/*unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
+		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
 		if (count > 0){
-			char** name_array = new char*[count];
-			bool* copy_array = new bool[count];
-			bool* paste_array = new bool[count];
+			struct dynvSystem** config_array = new struct dynvSystem*[count];
 			unsigned int i = 0;
 
+			struct dynvHandlerMap *handler_map = dynv_system_get_handler_map(args->gs->params);
+
 			while (valid){
-				Converter* converter;
-				gboolean copy, paste;
-				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, CONVERTERLIST_CONVERTER_PTR, &converter, CONVERTERLIST_COPY, &copy, CONVERTERLIST_PASTE, &paste, -1);
+				transformation::Transformation* transformation;
+				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, TRANSFORMATIONS_TRANSFORMATION_PTR, &transformation, -1);
 
-				name_array[i] = converter->function_name;
-				copy_array[i] = copy;
-				paste_array[i] = paste;
-
-				converter->copy = copy;
-				converter->paste = paste;
+				struct dynvSystem *dv = dynv_system_create(handler_map);
+				transformation->serialize(dv);
+				config_array[i] = dv;
 
 				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 				++i;
 			}
 
-			converters_reorder(converters, (const char**)name_array, count);
+			dynv_handler_map_release(handler_map);
 
-			dynv_set_string_array(args->params, "converters.names", (const char**)name_array, count);
-			dynv_set_bool_array(args->params, "converters.copy", copy_array, count);
-			dynv_set_bool_array(args->params, "converters.paste", paste_array, count);
+			dynv_set_dynv_array(args->transformations_params, "items", (const dynvSystem**)config_array, count);
 
-			delete [] name_array;
-			delete [] copy_array;
-			delete [] paste_array;
+			for (i = 0; i != count; i++){
+				dynv_system_release(config_array[i]);
+			}
+			delete [] config_array;
 		}else{
-			converters_reorder(converters, 0, 0);
-
-			dynv_set_string_array(args->params, "converters.names", 0, 0);
-			dynv_set_bool_array(args->params, "converters.copy", 0, 0);
-			dynv_set_bool_array(args->params, "converters.paste", 0, 0);
-
-		} */
+			dynv_set_dynv_array(args->transformations_params, "items", 0, 0);
+		}
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

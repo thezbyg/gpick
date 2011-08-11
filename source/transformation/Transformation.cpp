@@ -48,7 +48,7 @@ std::string Transformation::getReadableName() const
 
 void Transformation::serialize(struct dynvSystem *dynv)
 {
-
+	dynv_set_string(dynv, "name", name.c_str());
 }
 
 void Transformation::deserialize(struct dynvSystem *dynv)

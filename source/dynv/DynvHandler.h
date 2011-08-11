@@ -36,7 +36,7 @@ struct dynvHandler{
 	int (*create)(struct dynvVariable* variable);
 	int (*destroy)(struct dynvVariable* variable);
 
-	int (*get)(struct dynvVariable* variable, void** value);
+	int (*get)(struct dynvVariable* variable, void** value, bool *deref);
 
 	int (*serialize)(struct dynvVariable* variable, struct dynvIO* io);
 	int (*deserialize)(struct dynvVariable* variable, struct dynvIO* io);

@@ -51,7 +51,7 @@ static int dynv_var_color_set(struct dynvVariable* variable, void* value, bool d
 	return 0;
 }
 
-static int dynv_var_color_get(struct dynvVariable* variable, void** value){
+static int dynv_var_color_get(struct dynvVariable* variable, void** value, bool *deref){
 	if (variable->ptr_value){
 		*value = &variable->ptr_value;
 		return 0;

@@ -35,7 +35,7 @@ static int dynv_var_ptr_set(struct dynvVariable* variable, void* value, bool der
 	return 0;
 }
 
-static int dynv_var_ptr_get(struct dynvVariable* variable, void** value){
+static int dynv_var_ptr_get(struct dynvVariable* variable, void** value, bool *deref){
 	*value = &variable->ptr_value;
 	return 0;
 }

@@ -121,8 +121,16 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 				}else{
 					variable = dynv_variable_create(0, entity->list_handler);
 					variable->handler->create(variable);
-					xml->entity.push(n = new XmlEntity(variable, entity->dynv, false));
-
+					if (strcmp(entity->list_handler->name, "dynv") == 0){
+						struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(entity->dynv);
+						struct dynvSystem* dlevel_new = dynv_system_create(handler_map);
+						dynv_handler_map_release(handler_map);
+						entity->list_handler->set(variable, dlevel_new, false);
+						xml->entity.push(n = new XmlEntity(variable, dlevel_new, false));
+						dynv_system_release(dlevel_new);
+					}else{
+						xml->entity.push(n = new XmlEntity(variable, entity->dynv, false));
+					}
 					entity->variable->next = variable;
 					entity->variable = variable;
 				}
@@ -145,10 +153,16 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 
 					if ((variable = dynv_system_add_empty(entity->dynv, handler, name))){
 						handler->set(variable, dlevel_new, false);
-						dynv_system_release(dlevel_new);
 					}
 
-					xml->entity.push(new XmlEntity(0, dlevel_new, false));
+					if (list && strcmp(list, "true")==0){
+						xml->entity.push(n = new XmlEntity(variable, dlevel_new, true));
+						n->list_handler = handler;
+					}else{
+						xml->entity.push(n = new XmlEntity(variable, dlevel_new, false));
+					}
+
+					dynv_system_release(dlevel_new);
 				}else if (handler->deserialize_xml){
 
 					if (list && strcmp(list, "true")==0){
@@ -198,7 +212,8 @@ static void end_element_handler(XmlCtx *xml, const XML_Char *name){
 					dynv_system_remove(entity->dynv, entity->variable->name);
 				}
 			}else if (entity->variable){
-				entity->variable->handler->deserialize_xml(entity->variable, entity->entity_data.str().c_str());
+				if (entity->variable->handler->deserialize_xml)
+					entity->variable->handler->deserialize_xml(entity->variable, entity->entity_data.str().c_str());
 			}
 			delete entity;
 		}

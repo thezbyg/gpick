@@ -183,7 +183,8 @@ void* dynv_system_get_r(struct dynvSystem* dynv_system, const char* handler_name
 	if (variable->handler==handler){
 		if (variable->handler->get!=NULL){
 			void* value = 0;
-			if (variable->handler->get(variable, &value)==0){
+			bool deref = true;
+			if (variable->handler->get(variable, &value, &deref)==0){
 				*error = 0;
 				return value;
 			}else{
@@ -239,8 +240,12 @@ void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handl
 		i = variable;
 		for (uint32_t j=0; j!=n; j++){
 			void *var;
-			if (i->handler->get && i->handler->get(i, &var)==0){
-				memcpy(array, var, handler->data_size);
+			bool deref = true;
+			if (i->handler->get && i->handler->get(i, &var, &deref)==0){
+				if (deref)
+					memcpy(array, var, handler->data_size);
+				else
+					memcpy(array, &var, handler->data_size);
 			}else{
 				memset(array, 0, handler->data_size);
 				//array[j] = 0;
@@ -493,7 +498,8 @@ struct dynvSystem* dynv_system_copy(struct dynvSystem* dynv_system){
 		variable = (*i).second;
 		handler = (*i).second->handler;
 
-		if (handler->get(variable, &value)==0){
+		bool deref = true;
+		if (handler->get(variable, &value, &deref)==0){
 			new_variable = dynv_variable_create(variable->name, handler);
 			new_dynv->variables[new_variable->name] = new_variable;
 			new_variable->handler->create(new_variable);

@@ -38,7 +38,7 @@ static int dynv_var_float_set(struct dynvVariable* variable, void* value, bool d
 	return 0;
 }
 
-static int dynv_var_float_get(struct dynvVariable* variable, void** value){
+static int dynv_var_float_get(struct dynvVariable* variable, void** value, bool *deref){
 	*value = &variable->float_value;
 	return 0;
 }

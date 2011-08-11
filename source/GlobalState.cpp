@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -26,6 +26,7 @@
 #include "layout/Layout.h"
 
 #include "transformation/Chain.h"
+#include "transformation/Factory.h"
 
 #include "dynv/DynvMemoryIO.h"
 #include "dynv/DynvVarString.h"
@@ -303,6 +304,23 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 	if ((level & GLOBALSTATE_TRANSFORMATIONS) && !(gs->loaded_levels & GLOBALSTATE_TRANSFORMATIONS)){
 		transformation::Chain *chain = new transformation::Chain();
 		dynv_set_pointer(gs->params, "TransformationChain", chain);
+
+		struct dynvSystem** config_array;
+		uint32_t config_size;
+
+		if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->params, "gpick.transformations.items", 0, 0, &config_size))){
+			for (uint32_t i = 0; i != config_size; i++){
+				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
+				if (name){
+					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+          tran->deserialize(config_array[i]);
+					chain->add(tran);
+				}
+			}
+
+			delete [] config_array;
+		}
+
 		gs->loaded_levels = GlobalStateLevel(gs->loaded_levels | GLOBALSTATE_TRANSFORMATIONS);
 	}
 
