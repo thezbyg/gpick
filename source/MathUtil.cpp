@@ -265,3 +265,9 @@ float vector3_length(vector3* vector) {
 	return sqrt(vector->x * vector->x + vector->y * vector->y + vector->z * vector->z);
 }
 
+void vector3_clamp(vector3* vector, float a, float b){
+	vector->x = clamp_float(vector->x, a, b);
+	vector->y = clamp_float(vector->y, a, b);
+	vector->z = clamp_float(vector->z, a, b);
+}
+

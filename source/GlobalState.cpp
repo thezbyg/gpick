@@ -304,6 +304,7 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 	if ((level & GLOBALSTATE_TRANSFORMATIONS) && !(gs->loaded_levels & GLOBALSTATE_TRANSFORMATIONS)){
 		transformation::Chain *chain = new transformation::Chain();
 		dynv_set_pointer(gs->params, "TransformationChain", chain);
+		chain->setEnabled(dynv_get_bool_wd(gs->params, "gpick.transformations.enabled", false));
 
 		struct dynvSystem** config_array;
 		uint32_t config_size;

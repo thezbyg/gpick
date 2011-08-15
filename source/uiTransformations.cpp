@@ -209,7 +209,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
 
-	GtkWidget* hbox = gtk_hbox_new(true, 5);
+	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
 
 	GtkWidget *list, *scrolled;

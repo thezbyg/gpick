@@ -88,4 +88,6 @@ float vector3_length(vector3* vector);
 
 void vector3_multiply_matrix3x3(vector3* vector, matrix3x3* matrix, vector3* result );
 
+void vector3_clamp(vector3* vector, float a, float b);
+
 #endif /* MATHUTIL_H_ */

@@ -44,6 +44,9 @@ class ColorVisionDeficiency: public Transformation{
 			PROTANOMALY,
 			DEUTERANOMALY,
 			TRITANOMALY,
+			PROTANOPIA,
+			DEUTERANOPIA,
+			TRITANOPIA,
 			DEFICIENCY_TYPE_COUNT,
 		};
 		static const char *deficiency_type_string[];

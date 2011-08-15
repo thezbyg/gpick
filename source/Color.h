@@ -147,6 +147,9 @@ void color_cmyk_to_rgb(Color* a, Color* b);
 
 void color_rgb_normalize(Color* a);
 
+void color_rgb_get_linear(Color* a, Color* b);
+void color_linear_get_rgb(Color* a, Color* b);
+
 /**
  * Copy color
  * @param[in] a Source color in any colorspace

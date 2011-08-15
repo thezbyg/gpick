@@ -606,3 +606,16 @@ void color_hsv_to_hsl(Color *a, Color *b){
 	b->hsl.lightness = l / 2.0;
 }
 
+void color_rgb_get_linear(Color* a, Color* b){
+	b->rgb.red = pow(a->rgb.red, 1.0 / 2.1);
+	b->rgb.green = pow(a->rgb.green, 1.0 / 2.0);
+	b->rgb.blue = pow(a->rgb.blue, 1.0 / 2.1);
+}
+
+void color_linear_get_rgb(Color* a, Color* b){
+	b->rgb.red = pow(a->rgb.red, 2.1);
+	b->rgb.green = pow(a->rgb.green, 2.0);
+	b->rgb.blue = pow(a->rgb.blue, 2.1);
+}
+
+

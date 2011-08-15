@@ -42,9 +42,12 @@ const char* ColorVisionDeficiency::deficiency_type_string[] = {
 	"protanomaly",
 	"deuteranomaly",
 	"tritanomaly",
+	"protanopia",
+	"deuteranopia",
+	"tritanopia",
 };
 
-const float protanomaly[11][9] = {
+const double protanomaly[11][9] = {
 {1.000000,0.000000,-0.000000,0.000000,1.000000,0.000000,-0.000000,-0.000000,1.000000},
 {0.856167,0.182038,-0.038205,0.029342,0.955115,0.015544,-0.002880,-0.001563,1.004443},
 {0.734766,0.334872,-0.069637,0.051840,0.919198,0.028963,-0.004928,-0.004209,1.009137},
@@ -58,7 +61,7 @@ const float protanomaly[11][9] = {
 {0.152286,1.052583,-0.204868,0.114503,0.786281,0.099216,-0.003882,-0.048116,1.051998},
 };
 
-const float deuteranomaly[11][9] = {
+const double deuteranomaly[11][9] = {
 {1.000000,0.000000,-0.000000,0.000000,1.000000,0.000000,-0.000000,-0.000000,1.000000},
 {0.866435,0.177704,-0.044139,0.049567,0.939063,0.011370,-0.003453,0.007233,0.996220},
 {0.760729,0.319078,-0.079807,0.090568,0.889315,0.020117,-0.006027,0.013325,0.992702},
@@ -72,7 +75,7 @@ const float deuteranomaly[11][9] = {
 {0.367322,0.860646,-0.227968,0.280085,0.672501,0.047413,-0.011820,0.042940,0.968881},
 };
 
-const float tritanomaly[11][9] = {
+const double tritanomaly[11][9] = {
 {1.000000,0.000000,-0.000000,0.000000,1.000000,0.000000,-0.000000,-0.000000,1.000000},
 {0.926670,0.092514,-0.019184,0.021191,0.964503,0.014306,0.008437,0.054813,0.936750},
 {0.895720,0.133330,-0.029050,0.029997,0.945400,0.024603,0.013027,0.104707,0.882266},
@@ -86,7 +89,71 @@ const float tritanomaly[11][9] = {
 {1.255528,-0.076749,-0.178779,-0.078411,0.930809,0.147602,0.004733,0.691367,0.303900},
 };
 
-static void load_matrix(const float matrix_data[9], matrix3x3 *matrix)
+const double rgb_to_lms[3][3] = {
+{0.05059983, 0.08585369, 0.00952420},
+{0.01893033, 0.08925308, 0.01370054},
+{0.00292202, 0.00975732, 0.07145979},
+};
+
+const double lms_to_rgb[3][3] = {
+{30.830854, -29.832659, 1.610474},
+{-6.481468, 17.715578, -2.532642},
+{-0.375690, -1.199062, 14.273846},
+};
+
+const double anchor[] = {
+0.080080, 0.157900, 0.589700,
+0.128400, 0.223700, 0.363600,
+0.985600, 0.732500, 0.001079,
+0.091400, 0.007009, 0.000000,
+};
+
+const double rgb_anchor[] = {
+rgb_to_lms[0][0] + rgb_to_lms[0][1] + rgb_to_lms[0][2],
+rgb_to_lms[1][0] + rgb_to_lms[1][1] + rgb_to_lms[1][2],
+rgb_to_lms[2][0] + rgb_to_lms[2][1] + rgb_to_lms[2][2],
+};
+
+const vector3 protanopia_abc[2] = {
+	{{{
+		rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7],
+		rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8],
+		rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6],
+	}}},
+	{{{
+		rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1],
+		rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2],
+		rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0],
+	}}},
+};
+
+const vector3 deuteranopia_abc[2] = {
+	{{{
+		rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7],
+		rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8],
+		rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6],
+	}}},
+	{{{
+		rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1],
+		rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2],
+		rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0],
+	}}},
+};
+
+const vector3 tritanopia_abc[2] = {
+	{{{
+		rgb_anchor[1] * anchor[11] - rgb_anchor[2] * anchor[10],
+		rgb_anchor[2] * anchor[9] - rgb_anchor[0] * anchor[11],
+		rgb_anchor[0] * anchor[10] - rgb_anchor[1] * anchor[9],
+	}}},
+	{{{
+		rgb_anchor[1] * anchor[5] - rgb_anchor[2] * anchor[4],
+		rgb_anchor[2] * anchor[3] - rgb_anchor[0] * anchor[5],
+		rgb_anchor[0] * anchor[4] - rgb_anchor[1] * anchor[3],
+	}}},
+};
+
+static void load_matrix(const double matrix_data[9], matrix3x3 *matrix)
 {
 	matrix->m[0][0] = matrix_data[0];
 	matrix->m[1][0] = matrix_data[1];
@@ -99,41 +166,105 @@ static void load_matrix(const float matrix_data[9], matrix3x3 *matrix)
 	matrix->m[2][2] = matrix_data[8];
 }
 
+static void load_matrix(const double matrix_data[3][3], matrix3x3 *matrix)
+{
+	matrix->m[0][0] = matrix_data[0][0];
+	matrix->m[1][0] = matrix_data[1][0];
+	matrix->m[2][0] = matrix_data[2][0];
+	matrix->m[0][1] = matrix_data[0][1];
+	matrix->m[1][1] = matrix_data[1][1];
+	matrix->m[2][1] = matrix_data[2][1];
+	matrix->m[0][2] = matrix_data[0][2];
+	matrix->m[1][2] = matrix_data[1][2];
+	matrix->m[2][2] = matrix_data[2][2];
+}
+
+static void load_vector(const Color *color, vector3 *vector)
+{
+	vector->x = color->rgb.red;
+	vector->y = color->rgb.green;
+	vector->z = color->rgb.blue;
+}
+
 void ColorVisionDeficiency::apply(Color *input, Color *output)
 {
+	Color linear_input, linear_output;
+	color_rgb_get_linear(input, &linear_input);
 	vector3 vi, vo1, vo2;
-	vi.x = input->rgb.red;
-	vi.y = input->rgb.green;
-	vi.z = input->rgb.blue;
+	load_vector(&linear_input, &vi);
 	matrix3x3 matrix1, matrix2;
 	int index = floor(strength * 10);
 	int index_secondary = std::min(index + 1, 10);
-	float interpolation_factor = (strength * 10) - index;
+	float interpolation_factor = 1 - (strength * 10) - index;
+
+	vector3 lms;
+	if ((type == PROTANOPIA) || (type == DEUTERANOPIA) || (type == TRITANOPIA)){
+		load_matrix(rgb_to_lms, &matrix1);
+		load_matrix(lms_to_rgb, &matrix2);
+		vector3_multiply_matrix3x3(&vi, &matrix1, &lms);
+	}
 
 	switch (type){
   case PROTANOMALY:
 		load_matrix(protanomaly[index], &matrix1);
 		load_matrix(protanomaly[index_secondary], &matrix2);
+		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
 		break;
   case DEUTERANOMALY:
 		load_matrix(deuteranomaly[index], &matrix1);
 		load_matrix(deuteranomaly[index_secondary], &matrix2);
+		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
 		break;
   case TRITANOMALY:
 		load_matrix(tritanomaly[index], &matrix1);
 		load_matrix(tritanomaly[index_secondary], &matrix2);
+		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
+		break;
+	case PROTANOPIA:
+		if (lms.z / lms.y < rgb_anchor[2] / rgb_anchor[1]){
+			lms.x = -(protanopia_abc[0].y * lms.y + protanopia_abc[0].z * lms.z) / protanopia_abc[0].x;
+		}else{
+			lms.x = -(protanopia_abc[1].y * lms.y + protanopia_abc[1].z * lms.z) / protanopia_abc[1].x;
+		}
+		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+		load_vector(&linear_input, &vo2);
+		interpolation_factor = strength;
+		break;
+	case DEUTERANOPIA:
+		if (lms.z / lms.x < rgb_anchor[2] / rgb_anchor[0]){
+			lms.y = -(deuteranopia_abc[0].x * lms.x + deuteranopia_abc[0].z * lms.z) / deuteranopia_abc[0].y;
+		}else{
+			lms.y = -(deuteranopia_abc[1].x * lms.x + deuteranopia_abc[1].z * lms.z) / deuteranopia_abc[1].y;
+		}
+		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+		load_vector(&linear_input, &vo2);
+		interpolation_factor = strength;
+		break;
+	case TRITANOPIA:
+		if (lms.y / lms.x < rgb_anchor[1] / rgb_anchor[0]){
+			lms.z = -(tritanopia_abc[0].x * lms.x + tritanopia_abc[0].y * lms.y) / tritanopia_abc[0].z;
+		}else{
+			lms.z = -(tritanopia_abc[1].x * lms.x + tritanopia_abc[1].y * lms.y) / tritanopia_abc[1].z;
+		}
+		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+		load_vector(&linear_input, &vo2);
+		interpolation_factor = strength;
 		break;
   default:
 		color_copy(input, output);
 		return;
 	}
 
-	vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
-	vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
+	//vector3_clamp(&vo1, 0, 1);
 
-	output->rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
-	output->rgb.green= vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
-	output->rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
+	linear_output.rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
+	linear_output.rgb.green= vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
+	linear_output.rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
+	color_linear_get_rgb(&linear_output, output);
+	color_rgb_normalize(output);
 }
 
 ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformation_name, transformation_readable_name)
@@ -195,9 +326,12 @@ static GtkWidget* create_type_list(void){
 		const char *name;
 		int type;
 	} types[] = {
-		{"Protanomaly", ColorVisionDeficiency::PROTANOMALY},
-		{"Deuteranomaly", ColorVisionDeficiency::DEUTERANOMALY},
-		{"Tritanomaly", ColorVisionDeficiency::TRITANOMALY},
+		{"Protanomaly - altered spectral sensitivity of red receptors", ColorVisionDeficiency::PROTANOMALY},
+		{"Deuteranomaly - altered spectral sensitivity of green receptors", ColorVisionDeficiency::DEUTERANOMALY},
+		{"Tritanomaly - altered spectral sensitivity of blue receptors", ColorVisionDeficiency::TRITANOMALY},
+		{"Protanopia - absence of red receptors", ColorVisionDeficiency::PROTANOPIA},
+		{"Deuteranopia - absence of green receptors", ColorVisionDeficiency::DEUTERANOPIA},
+		{"Tritanopia - absence of blue receptors", ColorVisionDeficiency::TRITANOPIA},
 	};
 
 	for (int i = 0; i < ColorVisionDeficiency::DEFICIENCY_TYPE_COUNT; ++i){
