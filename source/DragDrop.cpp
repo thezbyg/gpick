@@ -19,6 +19,7 @@
 #include "DragDrop.h"
 #include "gtk/ColorWidget.h"
 #include "uiApp.h"
+#include "dynv/DynvXml.h"
 
 #include <string.h>
 #include <iostream>
@@ -31,10 +32,12 @@ enum {
 	TARGET_ROOTWIN,
 	TARGET_COLOR,
 	TARGET_COLOR_OBJECT_LIST,
+	TARGET_COLOR_OBJECT_LIST_SERIALIZED,
 };
 
 static GtkTargetEntry targets[] = {
 	{ (char*)"colorobject-list", GTK_TARGET_SAME_APP, TARGET_COLOR_OBJECT_LIST },
+	{ (char*)"application/x-colorobject-list", GTK_TARGET_OTHER_APP, TARGET_COLOR_OBJECT_LIST_SERIALIZED },
 	{ (char*)"application/x-color", 0, TARGET_COLOR },
 	{ (char*)"text/plain", 0, TARGET_STRING },
 	{ (char*)"STRING",     0, TARGET_STRING },
@@ -150,6 +153,69 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 					if (dd->set_color_object_at)
 						dd->set_color_object_at(dd, data.color_object, x, y, context->action & GDK_ACTION_MOVE );
 				}
+
+			}
+			success = true;
+			break;
+
+		case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
+			{
+				char *buffer = new char [selection_data->length + 1];
+				buffer[selection_data->length] = 0;
+				memcpy(buffer, selection_data->data, selection_data->length);
+				stringstream str(buffer);
+				delete [] buffer;
+				struct dynvSystem *params = dynv_system_create(dd->handler_map);
+				dynv_xml_deserialize(params, str);
+
+				uint32_t color_n = 0;
+				struct dynvSystem **colors = (struct dynvSystem**)dynv_get_dynv_array_wd(params, "colors", 0, 0, &color_n);
+				if (color_n > 0 && colors){
+					if (color_n > 1){
+						if (dd->set_color_object_list_at){
+							struct ColorObject **color_objects = new struct ColorObject*[color_n];
+							for (uint32_t i = 0; i < color_n; i++){
+								color_objects[i] = color_object_new(NULL);
+								color_objects[i]->params = dynv_system_ref(colors[i]);
+								color_objects[i] = color_object_copy(color_objects[i]);
+							}
+							dd->set_color_object_list_at(dd, color_objects, color_n, x, y, false);
+							for (uint32_t i = 0; i < color_n; i++){
+								color_object_release(color_objects[i]);
+							}
+							delete [] color_objects;
+						}else	if (dd->set_color_object_at){
+							struct ColorObject* color_object = color_object_new(NULL);
+							color_object->params = dynv_system_ref(colors[0]);
+							dd->set_color_object_at(dd, color_object, x, y, false);
+							color_object_release(color_object);
+						}
+					}else{
+						if (dd->set_color_object_at){
+							struct ColorObject* color_object = color_object_new(NULL);
+							color_object->params = dynv_system_ref(colors[0]);
+							dd->set_color_object_at(dd, color_object, x, y, false);
+							color_object_release(color_object);
+						}
+					}
+				}
+				if (colors){
+					for (uint32_t i = 0; i < color_n; i++){
+						dynv_system_release(colors[i]);
+					}
+					delete [] colors;
+				}
+
+				/*
+				if (data.color_object_n > 1){
+					memcpy(color_objects, selection_data->data + offsetof(ColorList, color_object), sizeof(struct ColorObject*) * data.color_object_n);
+
+					if (dd->set_color_object_list_at)
+					else if (dd->set_color_object_at)
+						dd->set_color_object_at(dd, data.color_object, x, y, context->action & GDK_ACTION_MOVE );
+
+				}else{
+				} */
 
 			}
 			success = true;
@@ -295,6 +361,24 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 				}
 				break;
 
+			case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
+				{
+					struct dynvSystem *params = dynv_system_create(dd->handler_map);
+					struct dynvSystem **colors = new struct dynvSystem*[1];
+					colors[0] = color_object->params;
+					dynv_set_dynv_array(params, "colors", (const dynvSystem**)colors, 1);
+					delete [] colors;
+
+					stringstream str;
+					str << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
+					dynv_xml_serialize(params, str);
+					str << "</root>" << endl;
+					string xml_data = str.str();
+
+					gtk_selection_data_set(selection_data, gdk_atom_intern("application/x-colorobject-list", TRUE), 8, (guchar *)xml_data.c_str(), xml_data.length());
+				}
+				break;
+
 			case TARGET_STRING:
 				{
 					color_object_get_color(color_object, &color);
@@ -349,6 +433,29 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 
 					gtk_selection_data_set(selection_data, gdk_atom_intern("colorobject", TRUE), 8, (guchar *)data, data_length);
 					delete [] (char*)data;
+				}
+				break;
+
+			case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
+				{
+					struct dynvSystem *params = dynv_system_create(dd->handler_map);
+
+					if (color_object_n > 0){
+						struct dynvSystem **colors = new struct dynvSystem*[color_object_n];
+						for (uint32_t i = 0; i < color_object_n; i++){
+							colors[i] = color_objects[i]->params;
+						}
+						dynv_set_dynv_array(params, "colors", (const dynvSystem**)colors, color_object_n);
+						delete [] colors;
+					}
+
+					stringstream str;
+					str << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
+					dynv_xml_serialize(params, str);
+					str << "</root>" << endl;
+					string xml_data = str.str();
+
+					gtk_selection_data_set(selection_data, gdk_atom_intern("application/x-colorobject-list", TRUE), 8, (guchar *)xml_data.c_str(), xml_data.length());
 				}
 				break;
 

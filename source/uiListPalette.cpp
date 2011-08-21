@@ -338,11 +338,13 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 	}
 
   for (uint32_t i = 0; i != colorobject_n; i++){
-		struct ColorObject *colorobject;
+		struct ColorObject *colorobject = 0;
 		if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			colorobject = colorobjects[i];
 		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			colorobject = colorobjects[colorobject_n - i - 1];
+		}else{
+			colorobject = colorobjects[i];
 		}
 
 		if (move){
