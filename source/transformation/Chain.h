@@ -37,6 +37,7 @@ class Chain{
 		void apply(Color *input, Color *output);
 
 		void add(boost::shared_ptr<Transformation> transformation);
+		void remove(const Transformation *transformation);
 		void clear();
 
 		void setEnabled(bool enabled);

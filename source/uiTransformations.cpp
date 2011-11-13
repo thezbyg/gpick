@@ -112,6 +112,53 @@ static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 	}
 }
 
+static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
+{
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->list));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_count_selected_rows(selection) == 0){
+		return;
+	}
+
+	configure_transformation(args, NULL);
+
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *ref_list = NULL;
+
+	GList *i = list;
+	while (i) {
+		ref_list = g_list_prepend(ref_list, gtk_tree_row_reference_new(model, (GtkTreePath*) (i->data)));
+		i = g_list_next(i);
+	}
+
+	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+
+	i = ref_list;
+	GtkTreePath *path;
+	while (i) {
+		path = gtk_tree_row_reference_get_path((GtkTreeRowReference*)i->data);
+		if (path) {
+			gtk_tree_model_get_iter(model, &iter, path);
+			gtk_tree_path_free(path);
+
+			transformation::Transformation *transformation;
+			gtk_tree_model_get(model, &iter, TRANSFORMATIONS_TRANSFORMATION_PTR, &transformation, -1);
+
+			chain->remove(transformation);
+
+			gtk_list_store_remove(GTK_LIST_STORE(model), &iter);
+		}
+		i = g_list_next(i);
+	}
+	g_list_foreach(ref_list, (GFunc)gtk_tree_row_reference_free, NULL);
+	g_list_free(ref_list);
+
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(list);
+}
+
 static GtkWidget* transformations_list_new(TransformationsArgs *args)
 {
 	GtkListStore *store;
@@ -228,6 +275,10 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_box_pack_start(GTK_BOX(hbox2), button, false, false, 0);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(add_transformation_cb), args);
 
+	button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
+	gtk_box_pack_start(GTK_BOX(hbox2), button, false, false, 0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(remove_transformation_cb), args);
+
 	model = gtk_combo_box_get_model(GTK_COMBO_BOX(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
 	for (int i = 0; i != types.size(); i++){
@@ -312,6 +363,27 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		}else{
 			dynv_set_dynv_array(args->transformations_params, "items", 0, 0);
 		}
+	}else{
+		chain->clear();
+		chain->setEnabled(dynv_get_bool_wd(gs->params, "gpick.transformations.enabled", false));
+
+		struct dynvSystem** config_array;
+		uint32_t config_size;
+
+		if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->params, "gpick.transformations.items", 0, 0, &config_size))){
+			for (uint32_t i = 0; i != config_size; i++){
+				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
+				if (name){
+					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+          tran->deserialize(config_array[i]);
+					chain->add(tran);
+				}
+			}
+
+			delete [] config_array;
+		}
+
+
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

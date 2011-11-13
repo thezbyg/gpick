@@ -57,6 +57,16 @@ void Chain::add(boost::shared_ptr<Transformation> transformation)
 	transformation_chain.push_back(transformation);
 }
 
+void Chain::remove(const Transformation *transformation)
+{
+	for (TransformationList::iterator i = transformation_chain.begin(); i != transformation_chain.end(); i++){
+		if ((*i).get() == transformation){
+			transformation_chain.erase(i);
+			return;
+		}
+	}
+}
+
 void Chain::clear()
 {
 	transformation_chain.clear();
