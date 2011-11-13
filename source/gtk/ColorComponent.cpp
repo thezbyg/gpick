@@ -43,11 +43,11 @@ static void gtk_color_component_finalize(GObject *color_obj);
 
 enum{
   COLOR_CHANGED,
+  INPUT_CLICKED,
   LAST_SIGNAL
 };
 
-static guint gtk_color_component_signals[LAST_SIGNAL] = { 0 };
-
+static guint gtk_color_component_signals[LAST_SIGNAL] = {0, 0};
 
 typedef struct GtkColorComponentPrivate{
 	Color orig_color;
@@ -56,6 +56,7 @@ typedef struct GtkColorComponentPrivate{
 	int n_components;
 	int capture_on;
 	gint last_event_position;
+	bool changing_color;
 
 	gchar *text[4];
 	double range[4];
@@ -80,15 +81,24 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 
 	obj_class->finalize = gtk_color_component_finalize;
 
-	gtk_color_component_signals[COLOR_CHANGED] = g_signal_new (
+	gtk_color_component_signals[COLOR_CHANGED] = g_signal_new(
 			"color-changed",
-			G_OBJECT_CLASS_TYPE (obj_class),
+			G_OBJECT_CLASS_TYPE(obj_class),
 			G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET (GtkColorComponentClass, color_changed),
+			G_STRUCT_OFFSET(GtkColorComponentClass, color_changed),
 			NULL, NULL,
 			g_cclosure_marshal_VOID__POINTER,
 			G_TYPE_NONE, 1,
 			G_TYPE_POINTER);
+	gtk_color_component_signals[INPUT_CLICKED] = g_signal_new(
+			"input-clicked",
+			G_OBJECT_CLASS_TYPE(obj_class),
+			G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkColorComponentClass, input_clicked),
+			NULL, NULL,
+			g_cclosure_marshal_VOID__INT,
+			G_TYPE_NONE, 1,
+			G_TYPE_INT);
 }
 
 static void gtk_color_component_init (GtkColorComponent *color_component){
@@ -115,6 +125,7 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 
 	ns->component = component;
 	ns->last_event_position = -1;
+	ns->changing_color = false;
 
 	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
 		ns->text[i] = 0;
@@ -602,6 +613,19 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 	}
 }
 
+void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color* color){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	color_copy(&ns->color, color);
+}
+
+void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	color_copy(color, &ns->color);
+	Color c;
+	update_rgb_color(ns, &c);
+	g_signal_emit(GTK_WIDGET(color_component), gtk_color_component_signals[COLOR_CHANGED], 0, &c);
+}
+
 static void gtk_color_component_emit_color_change(GtkWidget *widget, int component, double value){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
@@ -613,7 +637,9 @@ static void gtk_color_component_emit_color_change(GtkWidget *widget, int compone
 }
 
 static gboolean gtk_color_component_button_release (GtkWidget *widget, GdkEventButton *event){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 	gdk_pointer_ungrab(GDK_CURRENT_TIME);
+	ns->changing_color = false;
 	return false;
 }
 
@@ -621,7 +647,15 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
-		if (event->x < 0 || event->x > 200) return FALSE;
+		int component = event->y / 16;
+		if (component < 0) component = 0;
+		else if (component >= ns->n_components) component = ns->n_components - 1;
+
+		if (event->x < 0 || event->x > 200) {
+			g_signal_emit(widget, gtk_color_component_signals[INPUT_CLICKED], 0, component);
+			return FALSE;
+		}
+		ns->changing_color = true;
 		ns->last_event_position = event->x;
 		double value;
 
@@ -629,9 +663,6 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 		if (value < 0) value = 0;
 		else if (value > 1) value = 1;
 
-		int component = event->y / 16;
-		if (component < 0) component = 0;
-		else if (component >= ns->n_components) component = ns->n_components - 1;
 
 		ns->capture_on = component;
 		gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, NULL, GDK_CURRENT_TIME);
@@ -646,7 +677,7 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMotion *event){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
-	if ((event->state & GDK_BUTTON1_MASK)){
+	if (ns->changing_color && (event->state & GDK_BUTTON1_MASK)){
 		if ((event->x < 0 && ns->last_event_position < 0) || (event->x > 200 && ns->last_event_position > 200)) return FALSE;
 		ns->last_event_position = event->x;
 		double value;

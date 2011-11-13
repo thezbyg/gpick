@@ -45,6 +45,7 @@ typedef struct GtkColorComponent{
 typedef struct GtkColorComponentClass{
 	GtkDrawingAreaClass parent_class;
 	void  (*color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
+	void  (*input_clicked)(GtkWidget* widget, int component_id, gpointer userdata);
 }GtkColorComponentClass;
 
 enum GtkColorComponentComp{
@@ -62,6 +63,8 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 void gtk_color_component_set_text(GtkColorComponent* color_component, const char *text[4]);
 const char* gtk_color_component_get_text(GtkColorComponent* color_component, gint component_id);
 void gtk_color_component_get_color(GtkColorComponent* color_component, Color* color);
+void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color* color);
+void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color);
 
