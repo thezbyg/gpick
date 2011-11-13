@@ -46,6 +46,7 @@ typedef struct TransformationsArgs{
 	GtkWidget *available_transformations;
 	GtkWidget *list;
 	GtkWidget *config_vbox;
+	GtkWidget *hpaned;
 
 	GtkWidget *enabled;
 
@@ -256,8 +257,10 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
 
-	GtkWidget* hbox = gtk_hbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
+
+ 	args->hpaned = gtk_hpaned_new();
+	gtk_box_pack_start(GTK_BOX(vbox), args->hpaned, true, true, 0);
+
 
 	GtkWidget *list, *scrolled;
 	GtkTreeIter iter1;
@@ -295,11 +298,10 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_box_pack_start(GTK_BOX(vbox2), scrolled, true, true, 0);
 
-	gtk_box_pack_start(GTK_BOX(hbox), vbox2, true, true, 0);
-
+	gtk_paned_pack1(GTK_PANED(args->hpaned), vbox2, false, false);
 
 	args->config_vbox = gtk_vbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(hbox), args->config_vbox, true, true, 0);
+	gtk_paned_pack2(GTK_PANED(args->hpaned), args->config_vbox, false, false);
 
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
 
@@ -313,6 +315,8 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		tranformations_update_row(model, &iter1, (*i).get(), args);
 	}
+
+	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
 
 	gtk_widget_show_all(vbox);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
@@ -363,32 +367,32 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		}else{
 			dynv_set_dynv_array(args->transformations_params, "items", 0, 0);
 		}
-	}else{
-		chain->clear();
-		chain->setEnabled(dynv_get_bool_wd(gs->params, "gpick.transformations.enabled", false));
+	}
 
-		struct dynvSystem** config_array;
-		uint32_t config_size;
+	chain->clear();
+	chain->setEnabled(dynv_get_bool_wd(gs->params, "gpick.transformations.enabled", false));
 
-		if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->params, "gpick.transformations.items", 0, 0, &config_size))){
-			for (uint32_t i = 0; i != config_size; i++){
-				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
-				if (name){
-					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-          tran->deserialize(config_array[i]);
-					chain->add(tran);
-				}
+	struct dynvSystem** config_array;
+	uint32_t config_size;
+
+	if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->params, "gpick.transformations.items", 0, 0, &config_size))){
+		for (uint32_t i = 0; i != config_size; i++){
+			const char *name = dynv_get_string_wd(config_array[i], "name", 0);
+			if (name){
+				boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+				tran->deserialize(config_array[i]);
+				chain->add(tran);
 			}
-
-			delete [] config_array;
 		}
 
-
+		delete [] config_array;
 	}
+
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
 	dynv_set_int32(args->params, "transformations.window.width", width);
 	dynv_set_int32(args->params, "transformations.window.height", height);
+	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
 
 	gtk_widget_destroy(dialog);
 

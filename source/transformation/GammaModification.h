@@ -16,39 +16,50 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Factory.h"
+#ifndef TRANSFORMATION_GAMMA_MODIFICATION_H_
+#define TRANSFORMATION_GAMMA_MODIFICATION_H_
 
-#include "ColorVisionDeficiency.h"
-#include "GammaModification.h"
-
-#include <string.h>
+#include "Transformation.h"
 
 namespace transformation {
 
-boost::shared_ptr<Transformation> Factory::create(const char *type)
-{
-	if (strcmp(ColorVisionDeficiency::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new ColorVisionDeficiency());
-	}
-	if (strcmp(GammaModification::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new GammaModification());
-	}
-	return boost::shared_ptr<Transformation>();
+class GammaModification;
+
+class GammaModificationConfig: public Configuration{
+	protected:
+		GtkWidget *main;
+		GtkWidget *value;
+	public:
+		GammaModificationConfig(GammaModification &transformation);
+		virtual ~GammaModificationConfig();
+
+		virtual GtkWidget* getWidget();
+		virtual void applyConfig(dynvSystem *dynv);
+};
+
+class GammaModification: public Transformation{
+	public:
+		static const char *getName();
+		static const char *getReadableName();
+	protected:
+		float value;
+		virtual void apply(Color *input, Color *output);
+	public:
+		GammaModification();
+		GammaModification(float value);
+		virtual ~GammaModification();
+
+		virtual void serialize(struct dynvSystem *dynv);
+		virtual void deserialize(struct dynvSystem *dynv);
+
+		virtual boost::shared_ptr<Configuration> getConfig();
+
+	friend class GammaModificationConfig;
+};
+
 }
 
-std::vector<Factory::TypeInfo> Factory::getAllTypes()
-{
-	std::vector<TypeInfo> result;
-	result.push_back(TypeInfo(ColorVisionDeficiency::getName(), ColorVisionDeficiency::getReadableName()));
-	result.push_back(TypeInfo(GammaModification::getName(), GammaModification::getReadableName()));
-	return result;
-}
+#endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */
 
-Factory::TypeInfo::TypeInfo(const char *name_, const char *human_name_):
-	name(name_), human_name(human_name_)
-{
-}
-
-}
 
 
