@@ -671,6 +671,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 		for (uint32_t i = 0; i < comp_type_input->n_items; i++){
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(comp_type_input->items[i].name,0,0,0,0),0,1,i,i+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			args->value[i] = gtk_spin_button_new_with_range(comp_type_input->items[i].min_value, comp_type_input->items[i].max_value, comp_type_input->items[i].step);
+			gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
 			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), raw_color.ma[i] * comp_type_input->items[i].raw_scale);
 			gtk_table_attach(GTK_TABLE(table), args->value[i],1,2,i,i+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			if (i == component_id)
@@ -680,6 +681,8 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 
 	gtk_widget_show_all(table);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		if (comp_type_input){
@@ -777,6 +780,11 @@ static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 	}
 }
 
+static void color_component_edit(GtkWidget *widget, ColorPickerArgs* args){
+	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
+	color_component_input_dialog(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id, args);
+}
+
 static void destroy_comp_item(struct ColorCompItem *comp_item){
 	delete comp_item;
 }
@@ -805,6 +813,12 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 		item = gtk_menu_item_new_with_image("Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_paste), args);
+
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+
+		item = gtk_menu_item_new_with_image("Edit", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_edit), args);
 
 		gtk_widget_show_all(GTK_WIDGET(menu));
 
