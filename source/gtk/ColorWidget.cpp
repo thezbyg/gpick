@@ -159,7 +159,13 @@ void gtk_color_set_color(GtkColor* widget, Color* color, const char* text) {
 	if (ns->secondary_color){
 
 	}else{
-		color_get_contrasting(&ns->color, &ns->text_color);
+		if (ns->transformation_chain){
+			Color c;
+			ns->transformation_chain->apply(&ns->color, &c);
+			color_get_contrasting(&c, &ns->text_color);
+		}else{
+			color_get_contrasting(&ns->color, &ns->text_color);
+		}
 	}
 
 	if (ns->text)
@@ -272,7 +278,11 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 		pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 		if (ns->transformation_chain){
-			ns->transformation_chain->apply(&ns->text_color, &color);
+			if (ns->secondary_color){
+				ns->transformation_chain->apply(&ns->text_color, &color);
+			}else{
+				color_copy(&ns->text_color, &color);
+			}
 		}else{
 			color_copy(&ns->text_color, &color);
 		}
@@ -325,6 +335,13 @@ static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event)
 void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	ns->transformation_chain = chain;
+	if (ns->transformation_chain){
+		Color c;
+		ns->transformation_chain->apply(&ns->color, &c);
+		color_get_contrasting(&c, &ns->text_color);
+	}else{
+		color_get_contrasting(&ns->color, &ns->text_color);
+	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 

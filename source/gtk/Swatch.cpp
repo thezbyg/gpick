@@ -287,7 +287,13 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	char numb[2] = " ";
 	for (int i = 1; i < 7; ++i) {
 		Color c;
-		color_get_contrasting(&ns->color[i], &c);
+		if (ns->transformation_chain){
+			Color t;
+			ns->transformation_chain->apply(&ns->color[i], &t);
+			color_get_contrasting(&t, &c);
+		}else{
+			color_get_contrasting(&ns->color[i], &c);
+		}
 
 		cairo_text_extents_t extends;
 		numb[0] = '0' + i;
