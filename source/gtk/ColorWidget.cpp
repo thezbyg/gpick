@@ -21,6 +21,9 @@
 #include "../MathUtil.h"
 #include <math.h>
 
+#include <iostream>
+using namespace std;
+
 #define GTK_COLOR_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR, GtkColorPrivate))
 
 G_DEFINE_TYPE (GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
@@ -335,12 +338,14 @@ static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event)
 void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain){
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 	ns->transformation_chain = chain;
-	if (ns->transformation_chain){
-		Color c;
-		ns->transformation_chain->apply(&ns->color, &c);
-		color_get_contrasting(&c, &ns->text_color);
-	}else{
-		color_get_contrasting(&ns->color, &ns->text_color);
+	if (!ns->secondary_color){
+		if (ns->transformation_chain){
+			Color c;
+			ns->transformation_chain->apply(&ns->color, &c);
+			color_get_contrasting(&c, &ns->text_color);
+		}else{
+			color_get_contrasting(&ns->color, &ns->text_color);
+		}
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }

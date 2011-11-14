@@ -23,6 +23,9 @@
 #include <math.h>
 #include <string.h>
 
+#include <iostream>
+using namespace std;
+
 namespace transformation {
 
 static const char * transformation_name = "color_vision_deficiency";
@@ -195,7 +198,7 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	matrix3x3 matrix1, matrix2;
 	int index = floor(strength * 10);
 	int index_secondary = std::min(index + 1, 10);
-	float interpolation_factor = 1 - (strength * 10) - index;
+	float interpolation_factor = 1 - ((strength * 10) - index);
 
 	vector3 lms;
 	if ((type == PROTANOPIA) || (type == DEUTERANOPIA) || (type == TRITANOPIA)){
@@ -258,10 +261,8 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 		return;
 	}
 
-	//vector3_clamp(&vo1, 0, 1);
-
 	linear_output.rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
-	linear_output.rgb.green= vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
+	linear_output.rgb.green = vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
 	linear_output.rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
 	color_linear_get_rgb(&linear_output, output);
 	color_rgb_normalize(output);
