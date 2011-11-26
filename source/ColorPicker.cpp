@@ -98,6 +98,17 @@ struct ColorCompItem{
 static int source_set_color(ColorPickerArgs *args, ColorObject* color);
 static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject* color);
 
+static void updateMainColorNow(ColorPickerArgs* args){
+	if (!dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
+		Color c;
+		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
+		gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
+		gtk_color_set_color(GTK_COLOR(args->color_code), &c, text);
+		if (text) g_free(text);
+		gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
+	}
+}
+
 static gboolean updateMainColor( gpointer data ){
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
 
@@ -120,8 +131,12 @@ static gboolean updateMainColor( gpointer data ){
 	sampler_get_screen_rect(args->gs->sampler, pointer, window_size, &sampler_rect);
 	screen_reader_add_rect(args->gs->screen_reader, screen, sampler_rect);
 
-	gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed_display), pointer, window_size, &zoomed_rect);
-	screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
+	bool zoomed_enabled = dynv_get_bool_wd(args->params, "zoomed_enabled", true);
+
+	if (zoomed_enabled){
+		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed_display), pointer, window_size, &zoomed_rect);
+		screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
+	}
 
 	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
 
@@ -132,15 +147,16 @@ static gboolean updateMainColor( gpointer data ){
 	sampler_get_color_sample(args->gs->sampler, pointer, window_size, offset, &c);
 
 	gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
-
 	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text);
 	if (text) g_free(text);
 
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 
 
-	offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
-	gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, window_size, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
+	if (zoomed_enabled){
+		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
+		gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, window_size, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
+	}
 
 	return TRUE;
 }
@@ -216,7 +232,8 @@ static void updateComponentText(ColorPickerArgs *args, GtkColorComponent *compon
 	gtk_color_component_set_text(component, text);
 }
 
-static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
+static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget){
+	updateMainColorNow(args);
 	Color c, c2;
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display),&c);
 
@@ -273,13 +290,13 @@ static void updateDiplays(ColorPickerArgs *args, GtkWidget *except_widget){
 
 
 static void on_swatch_active_color_changed( GtkWidget *widget, gint32 new_active_color, gpointer data ){
-	ColorPickerArgs* args=(ColorPickerArgs*)data;
-	updateDiplays(args, widget);
+	ColorPickerArgs* args = (ColorPickerArgs*)data;
+	updateDisplays(args, widget);
 }
 
 static void on_swatch_color_changed( GtkWidget *widget, gpointer data ){
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
-	updateDiplays(args, widget);
+	updateDisplays(args, widget);
 }
 
 
@@ -493,57 +510,55 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
 		case GDK_1:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_2:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_3:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_4:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_5:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_6:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_Right:
 			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_Left:
 			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),-1);
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_space:
 			updateMainColor(args);
 			gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
-
-
 
 			if (dynv_get_bool_wd(args->params, "sampler.add_to_palette", true)){
 				Color c;
@@ -575,7 +590,17 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)){
 				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
 			}
-			updateDiplays(args, widget);
+			updateDisplays(args, widget);
+			return TRUE;
+			break;
+
+		case GDK_a:
+			on_swatch_menu_add_all_to_palette(NULL, args);
+			return TRUE;
+			break;
+
+		case GDK_e:
+			on_swatch_color_edit(NULL, args);
 			return TRUE;
 			break;
 
@@ -602,7 +627,7 @@ static void on_zoom_value_changed(GtkRange *slider, gpointer data){
 
 static void color_component_change_value(GtkWidget *widget, Color* c, ColorPickerArgs* args){
 	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), c);
-	updateDiplays(args, widget);
+	updateDisplays(args, widget);
 }
 
 typedef struct ColorPickerComponentEditArgs{
@@ -776,7 +801,7 @@ static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 
 		gtk_color_component_get_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
 		gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), &color);
-        updateDiplays(args, comp_item->widget);
+		updateDisplays(args, comp_item->widget);
 	}
 }
 
@@ -978,7 +1003,7 @@ static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorOb
 	color_object_get_color(color, &c);
 	gtk_swatch_set_color(GTK_SWATCH(args->swatch_display), color_n + 1, &c);
 
-	updateDiplays(args, 0);
+	updateDisplays(args, 0);
 	return 0;
 }
 
@@ -987,7 +1012,7 @@ static int source_set_color(ColorPickerArgs *args, ColorObject* color){
 	color_object_get_color(color, &c);
 	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), &c);
 
-	updateDiplays(args, 0);
+	updateDisplays(args, 0);
 	return 0;
 }
 
@@ -1003,8 +1028,10 @@ static int source_activate(ColorPickerArgs *args){
 	gtk_color_set_transformation_chain(GTK_COLOR(args->color_code), chain);
 	gtk_color_set_transformation_chain(GTK_COLOR(args->contrastCheck), chain);
 
-	float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
-	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+	if (dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
+		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+	}
 
 	gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
 
@@ -1038,7 +1065,7 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 	color_object_get_color(colorobject, &c);
 	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &c);
 
-	updateDiplays((ColorPickerArgs*)dd->userdata, 0);
+	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
 
 	return 0;
 }
@@ -1072,12 +1099,35 @@ static int set_color_object_at_contrast(struct DragDrop* dd, struct ColorObject*
 	Color c;
 	color_object_get_color(colorobject, &c);
 	gtk_color_set_color(GTK_COLOR(args->contrastCheck), &c, "Sample");
-	updateDiplays((ColorPickerArgs*)dd->userdata, 0);
+	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
 	return 0;
 }
 
 static void show_dialog_converter(GtkWidget *widget, ColorPickerArgs *args){
 	dialog_converter_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs);
+	return;
+}
+
+static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
+	if (dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
+		gtk_zoomed_set_fade(GTK_ZOOMED(args->zoomed_display), true);
+		dynv_set_bool(args->params, "zoomed_enabled", false);
+
+		if (args->timeout_source_id > 0){
+			g_source_remove(args->timeout_source_id);
+			args->timeout_source_id = 0;
+		}
+	}else{
+		gtk_zoomed_set_fade(GTK_ZOOMED(args->zoomed_display), false);
+		dynv_set_bool(args->params, "zoomed_enabled", true);
+
+		if (args->timeout_source_id > 0){
+			g_source_remove(args->timeout_source_id);
+			args->timeout_source_id = 0;
+		}
+		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+	}
 	return;
 }
 
@@ -1123,8 +1173,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(swatch_popup_menu_cb), args);
 
 			gtk_swatch_set_active_index(GTK_SWATCH(widget), dynv_get_int32_wd(args->params, "swatch.active_color", 1));
-			args->swatch_display = widget;
 
+			args->swatch_display = widget;
 
 			gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
@@ -1161,8 +1211,12 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 
 			args->zoomed_display = gtk_zoomed_new();
+			if (!dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
+				gtk_zoomed_set_fade(GTK_ZOOMED(args->zoomed_display), true);
+			}
 			gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
 			gtk_box_pack_start (GTK_BOX(vbox), args->zoomed_display, false, false, 0);
+			g_signal_connect(G_OBJECT(args->zoomed_display), "activated", G_CALLBACK(on_zoomed_activate), args);
 
 
 		scrolled = gtk_scrolled_window_new(0, 0);
@@ -1315,7 +1369,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 					table_y++;
 
 
-	updateDiplays(args, 0);
+	updateDisplays(args, 0);
 
 
 	args->main = main_hbox;

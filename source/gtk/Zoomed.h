@@ -51,13 +51,16 @@ typedef struct GtkZoomedClass
 {
 	GtkDrawingAreaClass parent_class;
 	void  (* color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
+	void  (*activated)(GtkWidget* widget, gpointer userdata);
 }GtkZoomedClass;
 
 
 GtkWidget* gtk_zoomed_new ();
 
-void gtk_zoomed_set_zoom (GtkZoomed* zoomed, gfloat zoom);
-gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed);
+void gtk_zoomed_set_zoom(GtkZoomed* zoomed, gfloat zoom);
+gfloat gtk_zoomed_get_zoom(GtkZoomed* zoomed);
+
+void gtk_zoomed_set_fade(GtkZoomed* zoomed, bool fade);
 
 int32_t gtk_zoomed_get_size(GtkZoomed *zoomed);
 void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height);

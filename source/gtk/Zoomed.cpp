@@ -36,12 +36,13 @@ static void gtk_zoomed_finalize(GObject *zoomed_obj);
 
 static GtkWindowClass *parent_class = NULL;
 
+static gboolean
+gtk_zoomed_button_press (GtkWidget *node_system, GdkEventButton *event);
+
 /*
 static gboolean
 gtk_zoomed_button_release (GtkWidget *widget, GdkEventButton *event);
 
-static gboolean
-gtk_zoomed_button_press (GtkWidget *node_system, GdkEventButton *event);
 
 static gboolean
 gtk_zoomed_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
@@ -50,6 +51,7 @@ gtk_zoomed_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
 enum
 {
   COLOR_CHANGED,
+	ACTIVATED,
   LAST_SIGNAL
 };
 
@@ -68,6 +70,8 @@ typedef struct GtkZoomedPrivate
 	vector2 point;
 	int32_t width_height;
 
+	bool fade;
+
 }GtkZoomedPrivate;
 
 static void
@@ -84,20 +88,28 @@ gtk_zoomed_class_init (GtkZoomedClass *zoomed_class)
 	/* GtkWidget signals */
 
 	widget_class->expose_event = gtk_zoomed_expose;
-	/*widget_class->button_release_event = gtk_zoomed_button_release;
 	widget_class->button_press_event = gtk_zoomed_button_press;
+	/*widget_class->button_release_event = gtk_zoomed_button_release;
 	widget_class->motion_notify_event = gtk_zoomed_motion_notify;*/
 
 	obj_class->finalize = gtk_zoomed_finalize;
 
 	g_type_class_add_private (obj_class, sizeof (GtkZoomedPrivate));
 
+	gtk_zoomed_signals[ACTIVATED] = g_signal_new(
+			"activated",
+			G_OBJECT_CLASS_TYPE(obj_class),
+			G_SIGNAL_RUN_FIRST,
+			G_STRUCT_OFFSET(GtkZoomedClass, activated),
+			NULL, NULL,
+			g_cclosure_marshal_VOID__VOID,
+			G_TYPE_NONE, 0);
 
 	gtk_zoomed_signals[COLOR_CHANGED] = g_signal_new (
 	     "color-changed",
-	     G_OBJECT_CLASS_TYPE (obj_class),
+	     G_OBJECT_CLASS_TYPE(obj_class),
 	     G_SIGNAL_RUN_FIRST,
-	     G_STRUCT_OFFSET (GtkZoomedClass, color_changed),
+	     G_STRUCT_OFFSET(GtkZoomedClass, color_changed),
 	     NULL, NULL,
 	     g_cclosure_marshal_VOID__POINTER,
 	     G_TYPE_NONE, 1,
@@ -108,7 +120,7 @@ static void
 gtk_zoomed_init (GtkZoomed *zoomed)
 {
 	gtk_widget_add_events (GTK_WIDGET (zoomed),
-			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_MOTION_MASK);
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_MOTION_MASK | GDK_2BUTTON_PRESS);
 }
 
 
@@ -120,11 +132,22 @@ gtk_zoomed_new () {
 	GtkWidget* widget=(GtkWidget*)g_object_new (GTK_TYPE_ZOOMED, NULL);
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
 
+	ns->fade = false;
 	ns->zoom = 2;
 	ns->point.x = 0;
 	ns->point.y = 0;
 	ns->width_height = 150;
 	ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
+
+  int rowstride;
+  rowstride = gdk_pixbuf_get_rowstride(ns->pixbuf);
+  guchar *pixels = gdk_pixbuf_get_pixels(ns->pixbuf);
+  for (int y = 0; y < ns->width_height; y++){
+		guchar *p = pixels + y * rowstride;
+		for (int x = 0; x < ns->width_height * 3; x++){
+			p[x] = 0x80;
+		}
+	}
 
 	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->width_height + widget->style->xthickness*2, ns->width_height + widget->style->ythickness*2);
 
@@ -147,8 +170,24 @@ void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height){
 		ns->width_height = width_height;
 		ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
 
+		int rowstride;
+		rowstride = gdk_pixbuf_get_rowstride(ns->pixbuf);
+		guchar *pixels = gdk_pixbuf_get_pixels(ns->pixbuf);
+		for (int y = 0; y < ns->width_height; y++){
+			guchar *p = pixels + y * rowstride;
+			for (int x = 0; x < ns->width_height * 3; x++){
+				p[x] = 0x80;
+			}
+		}
+
 		gtk_widget_set_size_request(GTK_WIDGET(zoomed), ns->width_height + GTK_WIDGET(zoomed)->style->xthickness*2, ns->width_height + GTK_WIDGET(zoomed)->style->ythickness*2);
 	}
+}
+
+void gtk_zoomed_set_fade(GtkZoomed* zoomed, bool fade){
+	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	ns->fade = fade;
+	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }
 
 static void gtk_zoomed_finalize(GObject *zoomed_obj){
@@ -262,39 +301,30 @@ gfloat gtk_zoomed_get_zoom (GtkZoomed* zoomed){
 }
 
 static gboolean gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event){
-
-	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(widget);
-	if (ns->pixbuf){
-
-		gint pixbuf_x = max(event->area.x-widget->style->xthickness, 0);
-		gint pixbuf_y = max(event->area.y-widget->style->ythickness, 0);
-
-		gint pixbuf_width = min(ns->width_height - pixbuf_x, ns->width_height);
-		gint pixbuf_height = min(ns->width_height - pixbuf_y, ns->width_height);
-
-		if (pixbuf_width>0 && pixbuf_height>0)
-			gdk_draw_pixbuf(widget->window,
-				widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
-				ns->pixbuf,
-				pixbuf_x, pixbuf_y,
-				pixbuf_x+widget->style->xthickness, pixbuf_y+widget->style->ythickness,
-				pixbuf_width, pixbuf_height,
-				GDK_RGB_DITHER_NONE, 0, 0);
-	}
+	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(widget);
 
 	cairo_t *cr;
-	cr = gdk_cairo_create (widget->window);
-
+	cr = gdk_cairo_create(widget->window);
 	cairo_translate(cr, widget->style->xthickness, widget->style->ythickness);
 
-	cairo_set_source_rgba(cr, 0,0,0,0.75);
-	cairo_arc(cr, ns->point.x, ns->point.y, 5.5, -PI, PI);
-	cairo_stroke(cr);
+	if (ns->pixbuf){
+		gdk_cairo_set_source_pixbuf(cr, ns->pixbuf, 0, 0);
+		if (ns->fade){
+			cairo_paint_with_alpha(cr, 0.2);
+		}else{
+			cairo_paint(cr);
+		}
+	}
 
-	cairo_set_source_rgba(cr, 1,1,1,0.75);
-	cairo_arc(cr, ns->point.x, ns->point.y, 5, -PI, PI);
-	cairo_stroke(cr);
+	if (!ns->fade){
+		cairo_set_source_rgba(cr, 0,0,0,0.75);
+		cairo_arc(cr, ns->point.x, ns->point.y, 5.5, -PI, PI);
+		cairo_stroke(cr);
 
+		cairo_set_source_rgba(cr, 1,1,1,0.75);
+		cairo_arc(cr, ns->point.x, ns->point.y, 5, -PI, PI);
+		cairo_stroke(cr);
+	}
 
 	cairo_destroy (cr);
 
@@ -303,3 +333,12 @@ static gboolean gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event){
 	return true;
 }
 
+static gboolean gtk_zoomed_button_press(GtkWidget *widget, GdkEventButton *event){
+	gtk_widget_grab_focus(widget);
+
+	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
+		g_signal_emit(widget, gtk_zoomed_signals[ACTIVATED], 0);
+	}
+
+	return FALSE;
+}
