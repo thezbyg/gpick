@@ -51,6 +51,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Color:",0,0.5,0,0), false, false, 0);
 
 	GtkWidget* entry = gtk_entry_new();
+	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
 	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
 
 	if (text){
@@ -60,6 +61,8 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 
 	gtk_widget_show_all(vbox);
 	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
+
+	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 

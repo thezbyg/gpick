@@ -381,14 +381,27 @@ void color_rgb_to_lch(Color* a, Color* b){
 	static vector3 d65={
 		{{95.047, 100.000, 108.883}}
 	};
-    static matrix3x3 transformation={{		//sRGB transformation matrix
+	static matrix3x3 transformation={{		//sRGB transformation matrix
 		{0.4124564,  0.3575761,  0.1804375},
 		{0.2126729,  0.7151522,  0.0721750},
 		{0.0193339,  0.1191920,  0.9503041}
-    }};
+	}};
 
 	color_rgb_to_lab(a, &c, &d65, &transformation);
 	color_lab_to_lch(&c, b);
+}
+
+void color_rgb_to_lab_d65(Color* a, Color* b){
+	static vector3 d65={
+		{{95.047, 100.000, 108.883}}
+	};
+	static matrix3x3 transformation={{		//sRGB transformation matrix
+		{0.4124564,  0.3575761,  0.1804375},
+		{0.2126729,  0.7151522,  0.0721750},
+		{0.0193339,  0.1191920,  0.9503041}
+	}};
+
+	color_rgb_to_lab(a, b, &d65, &transformation);
 }
 
 void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){

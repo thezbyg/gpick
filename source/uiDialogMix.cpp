@@ -74,6 +74,8 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
 
 		color_object_get_color(*i, &a);
+		color_rgb_get_linear(&a, &a);
+
 		const char* name_a = dynv_get_string_wd((*i)->params, "name", 0);
 		j=i;
 		++j;
@@ -85,6 +87,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 			}
 
 			color_object_get_color(*j, &b);
+			color_rgb_get_linear(&b, &b);
 			const char* name_b = dynv_get_string_wd((*j)->params, "name", 0);
 
 			switch (type) {
@@ -96,6 +99,8 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 
 					s.str("");
 					s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b;
+
+					color_linear_get_rgb(&r, &r);
 
 					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 					dynv_set_string(color_object->params, "name", s.str().c_str());
@@ -170,6 +175,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 						r_lab.lab.b = mix_float(a_lab.lab.b, b_lab.lab.b, step_i/(float)(steps-1));
 
 						color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
+
 						color_rgb_normalize(&r);
 
 						s.str("");

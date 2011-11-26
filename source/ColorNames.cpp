@@ -27,18 +27,21 @@ using namespace std;
 
 //CIE94 color difference calculation
 float color_names_distance_lch(Color* a, Color* b){
+	Color al, bl;
+	color_lab_to_lch(a, &al);
+	color_lab_to_lch(b, &bl);
 	return sqrt(
-			pow((b->lch.L-a->lch.L)/1,2)+
-			pow((b->lch.C-a->lch.C)/(1+0.045*a->lch.C),2)+
-			pow((b->lch.h-a->lch.h)/(1+0.015*a->lch.C),2));
+			pow((bl.lch.L - al.lch.L) / 1, 2) +
+			pow((bl.lch.C - al.lch.C) / (1 + 0.045 * al.lch.C), 2) +
+			pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2));
 }
 
 ColorNames*
 color_names_new()
 {
 	ColorNames* cnames = new ColorNames;
-	cnames->colorspace_convert=color_rgb_to_lch;
-	cnames->colorspace_distance=color_names_distance_lch;
+	cnames->colorspace_convert = color_rgb_to_lab_d65;
+	cnames->colorspace_distance = color_names_distance_lch;
 	return cnames;
 }
 
