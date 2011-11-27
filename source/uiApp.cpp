@@ -638,6 +638,28 @@ static void show_about_box_cb(GtkWidget *widget, AppArgs* args) {
 	show_about_box(args->window);
 }
 
+static void view_palette_cb(GtkWidget *widget, AppArgs* args) {
+  if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
+		g_object_ref(args->vpaned);
+		GtkWidget *vbox = gtk_widget_get_parent(GTK_WIDGET(args->vpaned));
+		gtk_container_remove(GTK_CONTAINER(vbox), args->vpaned);
+		gtk_paned_pack1(GTK_PANED(args->hpaned), args->vpaned, false, false);
+		g_object_unref(args->vpaned);
+		gtk_widget_show(GTK_WIDGET(args->hpaned));
+
+		dynv_set_bool(args->params, "view.palette", true);
+	}else{
+		gtk_widget_hide(GTK_WIDGET(args->hpaned));
+		g_object_ref(args->vpaned);
+		gtk_container_remove(GTK_CONTAINER(args->hpaned), args->vpaned);
+		GtkWidget *vbox = gtk_widget_get_parent(GTK_WIDGET(args->hpaned));
+		gtk_box_pack_start(GTK_BOX(vbox), args->vpaned, TRUE, TRUE, 5);
+		g_object_unref(args->vpaned);
+
+		dynv_set_bool(args->params, "view.palette", false);
+	}
+}
+
 static void palette_from_image_cb(GtkWidget *widget, AppArgs* args) {
 	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
 }
@@ -752,6 +774,17 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
+	menu = GTK_MENU(gtk_menu_new());
+
+	item = gtk_check_menu_item_new_with_mnemonic("Palette");
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.palette", true));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
+
+	file_item = gtk_menu_item_new_with_mnemonic ("_View");
+	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
 	menu = GTK_MENU(gtk_menu_new());
 
@@ -1319,11 +1352,15 @@ AppArgs* app_create_main(){
 		gtk_box_pack_start (GTK_BOX(vbox_main), menu_bar, FALSE, FALSE, 0);
 
  	hpaned = gtk_hpaned_new();
- 	gtk_box_pack_start (GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
+  bool color_list_visible = dynv_get_bool_wd(args->params, "view.palette", true);
+
 
 	vpaned = gtk_vpaned_new();
 	args->vpaned = vpaned;
-	gtk_paned_pack1(GTK_PANED(hpaned), vpaned, false, false);
+	if (color_list_visible)
+		gtk_paned_pack1(GTK_PANED(hpaned), vpaned, false, false);
+	else
+		gtk_box_pack_start(GTK_BOX(vbox_main), vpaned, TRUE, TRUE, 5);
 
 	notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT (notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
@@ -1334,7 +1371,14 @@ AppArgs* app_create_main(){
 
 	gtk_paned_pack1(GTK_PANED(vpaned), notebook, false, false);
 
-	gtk_widget_show_all(vbox_main);
+	if (color_list_visible){
+		gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
+		gtk_widget_show_all(vbox_main);
+	}else{
+		gtk_widget_show_all(vbox_main);
+		gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
+	}
+
 
 		ColorSource *source;
 		struct dynvSystem *dynv_namespace;
