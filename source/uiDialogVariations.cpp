@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include <sstream>
 using namespace std;
@@ -124,7 +125,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Variations", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Variations"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -138,7 +139,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Lightness:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Lightness:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 
 	range_lightness_from = gtk_spin_button_new_with_range (-100,100,0.001);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_lightness_from), dynv_get_float_wd(args->params, "lightness_from", 1));
@@ -153,7 +154,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	args->range_lightness_to = range_lightness_to;
 	g_signal_connect (G_OBJECT (range_lightness_to), "value-changed", G_CALLBACK (update), args);
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Saturation:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Saturation:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 
 	range_saturation_from = gtk_spin_button_new_with_range (-100,100,0.001);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_saturation_from), dynv_get_float_wd(args->params, "saturation_from", 0));
@@ -168,7 +169,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	args->range_saturation_to = range_saturation_to;
 	g_signal_connect (G_OBJECT (range_saturation_to), "value-changed", G_CALLBACK (update), args);
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Steps:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	range_steps = gtk_spin_button_new_with_range (3,255,1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(range_steps), dynv_get_int32_wd(args->params, "steps", 3));
 	gtk_table_attach(GTK_TABLE(table), range_steps,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -176,7 +177,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	args->range_steps = range_steps;
 	g_signal_connect (G_OBJECT (range_steps), "value-changed", G_CALLBACK (update), args);
 
-	toggle_multiplication = gtk_check_button_new_with_mnemonic ("_Use multiplication");
+	toggle_multiplication = gtk_check_button_new_with_mnemonic (_("_Use multiplication"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle_multiplication), dynv_get_bool_wd(args->params, "multiplication", true));
 	gtk_table_attach(GTK_TABLE(table), toggle_multiplication,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;

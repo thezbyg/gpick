@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+Import('*')
+local_env = env.Clone()
+
+if not local_env.GetOption('clean'):
+	if local_env['ENABLE_NLS']:
+		local_env.Append(
+			CPPDEFINES = ['LOCALEDIR=' + local_env['LOCALEDIR']],
+			)
+
+sources = local_env.Glob('*.cpp')
+objects = local_env.StaticObject([sources])
+
+Return('objects')

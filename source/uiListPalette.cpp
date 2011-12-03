@@ -26,6 +26,7 @@
 #include "GlobalStateStruct.h"
 #include "DynvHelpers.h"
 #include "Vector2.h"
+#include "Internationalisation.h"
 
 #include <sstream>
 #include <iostream>
@@ -233,7 +234,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 
 	GtkWidget *main_widget = scrolled_window;
 	if (expander){
-		GtkWidget *expander=gtk_expander_new("Preview");
+		GtkWidget *expander=gtk_expander_new(_("Preview"));
 		gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
 		gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
 
@@ -524,7 +525,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "Color");
+	gtk_tree_view_column_set_title(col, _("Color"));
 	renderer = custom_cell_renderer_color_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
@@ -533,7 +534,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "Color");
+	gtk_tree_view_column_set_title(col, _("Color"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 1);
@@ -542,7 +543,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "Name");
+	gtk_tree_view_column_set_title(col, _("Name"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 2);

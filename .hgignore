@@ -11,6 +11,7 @@ diff
 *.out
 *.pyc
 *.log
+*.mo
 user-config.py
 build
 tags

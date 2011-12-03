@@ -21,6 +21,7 @@
 #include "../uiListPalette.h"
 #include "../GlobalStateStruct.h"
 #include "../DynvHelpers.h"
+#include "../Internationalisation.h"
 
 #include <string.h>
 #include <iostream>
@@ -484,7 +485,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	GtkWidget *table, *table_m, *widget;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Palette from image", parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
@@ -497,7 +498,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	table_m = gtk_table_new(3, 1, FALSE);
 	table_m_y = 0;
-	frame = gtk_frame_new("Image");
+	frame = gtk_frame_new(_("Image"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -506,7 +507,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->file_browser = widget = gtk_file_chooser_button_new("Image file", GTK_FILE_CHOOSER_ACTION_OPEN);
+	args->file_browser = widget = gtk_file_chooser_button_new(_("Image file"), GTK_FILE_CHOOSER_ACTION_OPEN);
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), dynv_get_string_wd(args->params, "current_folder", ""));
 	gtk_table_attach(GTK_TABLE(table), widget, 0, 3, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	g_signal_connect(G_OBJECT(args->file_browser), "file-set", G_CALLBACK(update), args);
@@ -518,7 +519,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	GtkFileFilter *all_image_filter;
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "All files");
+	gtk_file_filter_set_name(filter, _("All files"));
 	gtk_file_filter_add_pattern(filter, "*");
 	g_object_set_data_full(G_OBJECT(filter), "name", (void*)"all_files", GDestroyNotify(NULL));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
@@ -526,7 +527,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 
 	all_image_filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(all_image_filter, "All images");
+	gtk_file_filter_set_name(all_image_filter, _("All images"));
 	g_object_set_data_full(G_OBJECT(all_image_filter), "name", (void*)"all_images", GDestroyNotify(NULL));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
 	if (g_strcmp0("all_images", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
@@ -559,7 +560,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	if (formats) g_slist_free(formats);
 
 
-	frame = gtk_frame_new("Options");
+	frame = gtk_frame_new(_("Options"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -569,7 +570,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Colors:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Colors:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_colors = widget = gtk_spin_button_new_with_range (1, 100, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), dynv_get_int32_wd(args->params, "colors", 3));
 	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);

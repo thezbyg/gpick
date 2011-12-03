@@ -51,6 +51,8 @@
 #include "FileFormat.h"
 #include "MathUtil.h"
 
+#include "Internationalisation.h"
+
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 
@@ -329,15 +331,15 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 
 static void updateProgramName(AppArgs *args){
 	string prg_name;
-	if (args->current_filename==0){
-		prg_name="New palette";
+	if (args->current_filename == 0){
+		prg_name = _("New palette");
 	}else{
-		gchar* filename=g_path_get_basename(args->current_filename);
-		prg_name=filename;
+		gchar* filename = g_path_get_basename(args->current_filename);
+		prg_name = filename;
 		g_free(filename);
 	}
-	prg_name+=" - ";
-	prg_name+=program_name;
+	prg_name += " - ";
+	prg_name += program_name;
 
 	gtk_window_set_title(GTK_WINDOW(args->window), prg_name.c_str());
 }
@@ -396,8 +398,8 @@ static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
 	}else{
 		updateProgramName(args);
 		GtkWidget* message;
-		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
-		gtk_window_set_title(GTK_WINDOW(message), "Open");
+		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
+		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
 		gtk_dialog_run(GTK_DIALOG(message));
 		gtk_widget_destroy(message);
 	}
@@ -420,8 +422,8 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
 	}else{
 		updateProgramName(args);
 		GtkWidget* message;
-		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
-		gtk_window_set_title(GTK_WINDOW(message), "Open");
+		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
+		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
 		gtk_dialog_run(GTK_DIALOG(message));
 		gtk_widget_destroy(message);
 	}
@@ -432,7 +434,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
-	dialog = gtk_file_chooser_dialog_new ("Open File", GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+	dialog = gtk_file_chooser_dialog_new(_("Open File"), GTK_WINDOW(gtk_widget_get_toplevel(widget)),
 						  GTK_FILE_CHOOSER_ACTION_OPEN,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 						  GTK_STOCK_OPEN, GTK_RESPONSE_OK,
@@ -444,7 +446,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "Gpick palette *.gpa");
+	gtk_file_filter_set_name(filter, _("Gpick palette *.gpa"));
 	gtk_file_filter_add_pattern(filter, "*.gpa");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -473,8 +475,8 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 			}else{
 				updateProgramName(args);
 				GtkWidget* message;
-				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be opened");
-				gtk_window_set_title(GTK_WINDOW(dialog), "Open");
+				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
+				gtk_window_set_title(GTK_WINDOW(dialog), _("Open"));
 				gtk_dialog_run(GTK_DIALOG(message));
 				gtk_widget_destroy(message);
 			}
@@ -492,7 +494,7 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
-	dialog = gtk_file_chooser_dialog_new ("Save As", GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+	dialog = gtk_file_chooser_dialog_new (_("Save As"), GTK_WINDOW(gtk_widget_get_toplevel(widget)),
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 						  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
@@ -506,7 +508,7 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "Gpick palette *.gpa");
+	gtk_file_filter_set_name(filter, _("Gpick palette *.gpa"));
 	gtk_file_filter_add_pattern(filter, "*.gpa");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -531,8 +533,8 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 				finished=TRUE;
 			}else{
 				GtkWidget* message;
-				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be saved");
-				gtk_window_set_title(GTK_WINDOW(dialog), "Open");
+				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));
+				gtk_window_set_title(GTK_WINDOW(dialog), _("Open"));
 				gtk_dialog_run(GTK_DIALOG(message));
 				gtk_widget_destroy(message);
 			}
@@ -605,7 +607,7 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 		GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 		GtkWidget *item;
 
-		item = gtk_menu_item_new_with_image ("Open Last File", gtk_image_new_from_stock(GTK_STOCK_OPEN, GTK_ICON_SIZE_MENU));
+		item = gtk_menu_item_new_with_image (_("Open Last File"), gtk_image_new_from_stock(GTK_STOCK_OPEN, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open_last), args);
 
@@ -683,24 +685,24 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	FileMenuItems *items = new FileMenuItems();
 
 	if (gtk_stock_lookup(GTK_STOCK_NEW, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_new), args);
+		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL (menu), item);
+		if (stock_item.keyval) gtk_widget_add_accelerator(item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
+		g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(menu_file_new), args);
 	}
 
 	if (gtk_stock_lookup(GTK_STOCK_OPEN, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_open), args);
+		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		if (stock_item.keyval) gtk_widget_add_accelerator(item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open), args);
 	}
 
-	item = gtk_menu_item_new_with_mnemonic ("_Recent files");
+	item = gtk_menu_item_new_with_mnemonic(_("_Recent files"));
 	items->recent_files = item;
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new ());
 
 	if (gtk_stock_lookup(GTK_STOCK_SAVE, &stock_item)){
 		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
@@ -718,21 +720,21 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-	item = gtk_image_menu_item_new_with_mnemonic ("Ex_port...");
+	item = gtk_image_menu_item_new_with_mnemonic(_("Ex_port..."));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export_all), args);
 	items->export_all = item;
 
 	//gtk_widget_set_sensitive(item, (total_count >= 1));
 
-	item = gtk_image_menu_item_new_with_mnemonic ("Expo_rt Selected...");
+	item = gtk_image_menu_item_new_with_mnemonic(_("Expo_rt Selected..."));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export), args);
 	items->export_selected = item;
 
 	//gtk_widget_set_sensitive(item, (selected_count >= 1));
 
-	item = gtk_image_menu_item_new_with_mnemonic ("_Import...");
+	item = gtk_image_menu_item_new_with_mnemonic(_("_Import..."));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_import), args);
 	//gtk_widget_set_sensitive(item, 0);
@@ -746,7 +748,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(destroy_cb), args);
 	}
 
-	file_item = gtk_menu_item_new_with_mnemonic ("_File");
+	file_item = gtk_menu_item_new_with_mnemonic(_("_File"));
 	g_signal_connect (G_OBJECT (file_item), "activate", G_CALLBACK (menu_file_activate), args);
 	g_object_set_data_full(G_OBJECT(file_item), "items", items, (GDestroyNotify)destroy_file_menu_items);
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
@@ -754,11 +756,11 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 
 	menu = GTK_MENU(gtk_menu_new());
 
-	item = gtk_menu_item_new_with_image ("Edit _Converters...", gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image(_("Edit _Converters..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_converter), args);
 
-	item = gtk_menu_item_new_with_image ("Edit _Transformations...", gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image(_("Edit _Transformations..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_transformations), args);
 
@@ -770,33 +772,33 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(show_dialog_options), args);
 	}
 
-	file_item = gtk_menu_item_new_with_mnemonic ("_Edit");
+	file_item = gtk_menu_item_new_with_mnemonic(_("_Edit"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
 	menu = GTK_MENU(gtk_menu_new());
 
-	item = gtk_check_menu_item_new_with_mnemonic("Palette");
+	item = gtk_check_menu_item_new_with_mnemonic(_("Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.palette", true));
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
 
-	file_item = gtk_menu_item_new_with_mnemonic ("_View");
+	file_item = gtk_menu_item_new_with_mnemonic (_("_View"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
 	menu = GTK_MENU(gtk_menu_new());
 
-	item = gtk_menu_item_new_with_mnemonic("Palette From _Image...");
+	item = gtk_menu_item_new_with_mnemonic(_("Palette From _Image..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
 
-	//item = gtk_menu_item_new_with_mnemonic("Palette From _CSS file...");
+	//item = gtk_menu_item_new_with_mnemonic(_("Palette From _CSS file..."));
 	//gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	//g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_css_file_cb), args);
 
-	file_item = gtk_menu_item_new_with_mnemonic("_Tools");
+	file_item = gtk_menu_item_new_with_mnemonic(_("_Tools"));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
 
@@ -811,7 +813,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(show_about_box_cb), args);
 	}
 
-	file_item = gtk_menu_item_new_with_mnemonic ("_Help");
+	file_item = gtk_menu_item_new_with_mnemonic (_("_Help"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 }
@@ -983,7 +985,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
 
-	item = gtk_menu_item_new_with_mnemonic ("_Copy to Clipboard");
+	item = gtk_menu_item_new_with_mnemonic(_("_Copy to Clipboard"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 
@@ -998,17 +1000,17 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-    item = gtk_menu_item_new_with_image ("_Mix Colors...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Mix Colors..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_mix), args);
     gtk_widget_set_sensitive(item, (selected_count >= 2));
 
-    item = gtk_menu_item_new_with_image ("_Variations...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Variations..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_variations), args);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
-    item = gtk_menu_item_new_with_image ("_Generate...", gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Generate..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_generate), args);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
@@ -1016,12 +1018,12 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-    item = gtk_menu_item_new_with_image ("_Remove", gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Remove"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_remove_selected), args);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
-    item = gtk_menu_item_new_with_image ("Remove _All", gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("Remove _All"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_remove_all), args);
     gtk_widget_set_sensitive(item, (total_count >= 1));
@@ -1190,7 +1192,6 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params){
 	if (x<0 || y<0 || x>gdk_screen_width() || y>gdk_screen_height()){
 		gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	}else{
-		//cout << "Moving to "<< x << " " << y << endl;
 		gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_NONE);
 		gtk_window_move(GTK_WINDOW(window), x, y);
 	}
@@ -1392,7 +1393,7 @@ AppArgs* app_create_main(){
 		args->color_source_index.push_back(source);
 		args->floating_picker = floating_picker_new(args->window, args->gs, source);
 		color_picker_set_floating_picker(source, args->floating_picker);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Color pic_ker"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Color pic_ker")));
 		gtk_widget_show(widget);
 
 		dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
@@ -1401,7 +1402,7 @@ AppArgs* app_create_main(){
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Scheme _generation"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Scheme _generation")));
 		gtk_widget_show(widget);
 
 /*		source = generate_scheme_new(args->gs, &widget);
@@ -1418,7 +1419,7 @@ AppArgs* app_create_main(){
 
 		menu = gtk_menu_new();
 
-		item = gtk_menu_item_new_with_label("None");
+		item = gtk_menu_item_new_with_label(_("None"));
 		g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
@@ -1433,7 +1434,7 @@ AppArgs* app_create_main(){
 			}
 		}
 
-		file_item = gtk_menu_item_new_with_mnemonic("_View");
+		file_item = gtk_menu_item_new_with_mnemonic(_("_View"));
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
 		gtk_menu_bar_append(GTK_MENU_BAR(menubar), file_item);
 
@@ -1453,7 +1454,7 @@ AppArgs* app_create_main(){
 		dynv_system_release(dynv_namespace);
 		args->color_source[source->identificator] = source;
 		args->color_source_index.push_back(source);
-		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic("Lay_out preview"));
+		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Lay_out preview")));
 		gtk_widget_show(widget);
 
 		widget = palette_list_new(args->gs);
@@ -1501,7 +1502,7 @@ AppArgs* app_create_main(){
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
 	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-	gtk_widget_set_tooltip_text(button, "Pick colors (Ctrl+P)");
+	gtk_widget_set_tooltip_text(button, _("Pick colors (Ctrl+P)"));
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);

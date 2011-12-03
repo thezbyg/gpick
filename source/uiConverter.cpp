@@ -22,6 +22,7 @@
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include <iostream>
 using namespace std;
@@ -52,7 +53,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	c.rgb.green=0.50;
 	c.rgb.blue=0.25;
 	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
-	dynv_set_string(color_object->params, "name", "Test color");
+	dynv_set_string(color_object->params, "name", _("Test color"));
 
 	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
 
@@ -70,7 +71,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	}else{
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 			CONVERTERLIST_HUMAN_NAME, converter->human_readable,
-			CONVERTERLIST_EXAMPLE, "error",
+			CONVERTERLIST_EXAMPLE, _("error"),
 			CONVERTERLIST_CONVERTER_PTR, converter,
 			CONVERTERLIST_COPY, converter->copy,
 			CONVERTERLIST_COPY_ENABLED, converter->serialize_available,
@@ -141,7 +142,7 @@ static GtkWidget* converter_list_new(ConverterArgs *args){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "Function name");
+	gtk_tree_view_column_set_title(col, _("Function name"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", CONVERTERLIST_HUMAN_NAME);
@@ -150,7 +151,7 @@ static GtkWidget* converter_list_new(ConverterArgs *args){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col,1);
-	gtk_tree_view_column_set_title(col, "Example");
+	gtk_tree_view_column_set_title(col, _("Example"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", CONVERTERLIST_EXAMPLE);
@@ -159,7 +160,7 @@ static GtkWidget* converter_list_new(ConverterArgs *args){
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-	gtk_tree_view_column_set_title(col, "Copy");
+	gtk_tree_view_column_set_title(col, _("Copy"));
 	renderer = gtk_cell_renderer_toggle_new();
 	gtk_tree_view_column_pack_start(col, renderer, false);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
@@ -168,7 +169,7 @@ static GtkWidget* converter_list_new(ConverterArgs *args){
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-	gtk_tree_view_column_set_title(col, "Paste");
+	gtk_tree_view_column_set_title(col, _("Paste"));
 	renderer = gtk_cell_renderer_toggle_new();
 	gtk_tree_view_column_pack_start(col, renderer, false);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
@@ -192,7 +193,7 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick");
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Converters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Converters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -220,13 +221,13 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	table_y=0;
 
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Displays:",0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Displays:"),0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
 	GtkWidget *display = converter_dropdown_new(args, 0);
 	GtkTreeModel *model2=gtk_combo_box_get_model(GTK_COMBO_BOX(display));
 	gtk_table_attach(GTK_TABLE(table), display, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	table_y++;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Color list:",0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Color list:"),0,0.5,0,0), 0, 1, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
 	GtkWidget *color_list = converter_dropdown_new(args, model2);
 	gtk_table_attach(GTK_TABLE(table), color_list, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	table_y++;

@@ -31,6 +31,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "Internationalisation.h"
 
 #include "uiApp.h"
 
@@ -59,7 +60,7 @@ typedef struct ColorMixerType{
 	int mode_id;
 }ColorMixerType;
 
-static const ColorMixerType color_mixer_types[] = {
+static ColorMixerType color_mixer_types[] = {
 	{"Normal", "normal", MODE_ID_NORMAL},
 	{"Multiply", "multiply", MODE_ID_MULTIPLY},
 	{"Add", "add", MODE_ID_ADD},
@@ -276,19 +277,19 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 
 	menu = gtk_menu_new ();
 
-	item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image (_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-	item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-	item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
+	item = gtk_menu_item_new_with_mnemonic (_("_Copy to clipboard"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 	Color c;
@@ -328,12 +329,12 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 		}
 
-		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		item = gtk_menu_item_new_with_image (_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
@@ -656,7 +657,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
 	table_y = 0;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Opacity:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Opacity:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
 	args->opacity = gtk_hscale_new_with_range(1, 100, 1);
 	gtk_range_set_value(GTK_RANGE(args->opacity), dynv_get_float_wd(args->params, "opacity", 50));
 	g_signal_connect(G_OBJECT(args->opacity), "value-changed", G_CALLBACK (update), args);
@@ -684,7 +685,16 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int color_mixer_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "color_mixer", "Color mixer");
+
+  color_mixer_types[0].name = _("Normal");
+  color_mixer_types[1].name = _("Multiply");
+  color_mixer_types[2].name = _("Add");
+  color_mixer_types[3].name = _("Difference");
+  color_mixer_types[4].name = _("Hue");
+  color_mixer_types[5].name = _("Saturation");
+  color_mixer_types[6].name = _("Lightness");
+
+	color_source_init(color_source, "color_mixer", _("Color mixer"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

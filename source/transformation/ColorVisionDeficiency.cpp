@@ -19,6 +19,7 @@
 #include "ColorVisionDeficiency.h"
 #include "../MathUtil.h"
 #include "../uiUtilities.h"
+#include "../Internationalisation.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>
@@ -29,7 +30,6 @@ using namespace std;
 namespace transformation {
 
 static const char * transformation_name = "color_vision_deficiency";
-static const char * transformation_readable_name = "Color vision deficiency";
 
 const char *ColorVisionDeficiency::getName()
 {
@@ -38,7 +38,7 @@ const char *ColorVisionDeficiency::getName()
 
 const char *ColorVisionDeficiency::getReadableName()
 {
-	return transformation_readable_name;
+	return _("Color vision deficiency");
 }
 
 const char* ColorVisionDeficiency::deficiency_type_string[] = {
@@ -268,13 +268,13 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	color_rgb_normalize(output);
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformation_name, transformation_readable_name)
+ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformation_name, getReadableName())
 {
 	type = PROTANOMALY;
 	strength = 0.5;
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation(transformation_name, transformation_readable_name)
+ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation(transformation_name, getReadableName())
 {
 	type = type_;
 	strength = strength_;
@@ -327,12 +327,12 @@ static GtkWidget* create_type_list(void){
 		const char *name;
 		int type;
 	} types[] = {
-		{"Protanomaly - altered spectral sensitivity of red receptors", ColorVisionDeficiency::PROTANOMALY},
-		{"Deuteranomaly - altered spectral sensitivity of green receptors", ColorVisionDeficiency::DEUTERANOMALY},
-		{"Tritanomaly - altered spectral sensitivity of blue receptors", ColorVisionDeficiency::TRITANOMALY},
-		{"Protanopia - absence of red receptors", ColorVisionDeficiency::PROTANOPIA},
-		{"Deuteranopia - absence of green receptors", ColorVisionDeficiency::DEUTERANOPIA},
-		{"Tritanopia - absence of blue receptors", ColorVisionDeficiency::TRITANOPIA},
+		{_("Protanomaly - altered spectral sensitivity of red receptors"), ColorVisionDeficiency::PROTANOMALY},
+		{_("Deuteranomaly - altered spectral sensitivity of green receptors"), ColorVisionDeficiency::DEUTERANOMALY},
+		{_("Tritanomaly - altered spectral sensitivity of blue receptors"), ColorVisionDeficiency::TRITANOMALY},
+		{_("Protanopia - absence of red receptors"), ColorVisionDeficiency::PROTANOPIA},
+		{_("Deuteranopia - absence of green receptors"), ColorVisionDeficiency::DEUTERANOPIA},
+		{_("Tritanopia - absence of blue receptors"), ColorVisionDeficiency::TRITANOPIA},
 	};
 
 	for (int i = 0; i < ColorVisionDeficiency::DEFICIENCY_TYPE_COUNT; ++i){
@@ -361,13 +361,13 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 	int table_y = 0;
 
 	table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:", 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	type = widget = create_type_list();
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), transformation.type);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Strength:",0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	strength = widget = gtk_hscale_new_with_range(0, 100, 1);
 	gtk_range_set_value(GTK_RANGE(widget), transformation.strength * 100);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);

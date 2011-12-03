@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,20 +16,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GENERATESCHEME_H_
-#define GENERATESCHEME_H_
+#ifndef INTERNATIONALISATIOM_H_
+#define INTERNATIONALISATIOM_H_
 
-#include "ColorSourceManager.h"
+#ifdef ENABLE_NLS
+#include <libintl.h>
+#define _(STRING) gettext(STRING)
+#else
+#define _(STRING) STRING
+#endif
 
-typedef struct SchemeType{
-	const char *name;
-	int32_t colors;
-	int32_t turn_types;
-	double turn[4];
-}SchemeType;
+void initialize_internationalisation();
 
-int generate_scheme_source_register(ColorSourceManager *csm);
-const SchemeType* generate_scheme_get_scheme_type(uint32_t index);
-uint32_t generate_scheme_get_n_scheme_types();
+#endif /* INTERNATIONALISATIOM_H_ */
 
-#endif /* GENERATESCHEME_H_ */

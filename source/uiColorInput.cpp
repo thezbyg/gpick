@@ -23,6 +23,7 @@
 #include "uiUtilities.h"
 #include "GlobalStateStruct.h"
 #include "gtk/ColorWheel.h"
+#include "Internationalisation.h"
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object){
 
@@ -35,7 +36,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 		converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
 	}
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Edit color", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -48,7 +49,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
 
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new("Color:",0,0.5,0,0), false, false, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"),0,0.5,0,0), false, false, 0);
 
 	GtkWidget* entry = gtk_entry_new();
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);

@@ -19,6 +19,7 @@
 #include "GammaModification.h"
 #include "../MathUtil.h"
 #include "../uiUtilities.h"
+#include "../Internationalisation.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>
@@ -26,7 +27,6 @@
 namespace transformation {
 
 static const char * transformation_name = "gamma_modification";
-static const char * transformation_readable_name = "Gamma modification";
 
 const char *GammaModification::getName()
 {
@@ -35,7 +35,7 @@ const char *GammaModification::getName()
 
 const char *GammaModification::getReadableName()
 {
-	return transformation_readable_name;
+	return _("Gamma modification");
 }
 
 void GammaModification::apply(Color *input, Color *output)
@@ -49,12 +49,12 @@ void GammaModification::apply(Color *input, Color *output)
 	color_rgb_normalize(output);
 }
 
-GammaModification::GammaModification():Transformation(transformation_name, transformation_readable_name)
+GammaModification::GammaModification():Transformation(transformation_name, getReadableName())
 {
 	value = 1;
 }
 
-GammaModification::GammaModification(float value_):Transformation(transformation_name, transformation_readable_name)
+GammaModification::GammaModification(float value_):Transformation(transformation_name, getReadableName())
 {
 	value = value_;
 }
@@ -85,7 +85,7 @@ GammaModificationConfig::GammaModificationConfig(GammaModification &transformati
 	int table_y = 0;
 
 	table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Value:",0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	value = widget = gtk_spin_button_new_with_range(0, 100, 0.01);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);

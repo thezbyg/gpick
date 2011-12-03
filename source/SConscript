@@ -16,6 +16,10 @@ if not local_env.GetOption('clean'):
 		local_env.ParseConfig('pkg-config --libs $UNIQUE_PC')
 	if local_env.has_key('DBUSGLIB_PC'):
 		local_env.ParseConfig('pkg-config --libs $DBUSGLIB_PC')
+	if local_env['ENABLE_NLS']:
+		local_env.Append(
+			CPPDEFINES = ['ENABLE_NLS'],
+			)
 
 sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('tools/*.cpp') + local_env.Glob('transformation/*.cpp')
 
@@ -24,6 +28,7 @@ objects.append(SConscript(['version/SConscript'], exports='env'))
 objects.append(SConscript(['unique/SConscript'], exports='env'))
 objects.append(SConscript(['gtk/SConscript'], exports='env'))
 objects.append(SConscript(['layout/SConscript'], exports='env'))
+objects.append(SConscript(['internationalisation/SConscript'], exports='env'))
 
 parser_objects, generated_files = SConscript(['cssparser/SConscript'], exports='env')
 objects.append(parser_objects)

@@ -11,9 +11,11 @@ env.AddCustomBuilders()
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
+vars.Add('LOCALEDIR', 'Path to locale directory', '/usr/local/share/locale')
 vars.Add('DEBARCH', 'Debian package architecture', 'i386')
 vars.Add(BoolVariable('WITH_UNIQUE', 'Use libunique instead of pure DBus', False))
 vars.Add(BoolVariable('WITH_DBUSGLIB', 'Compile with DBus support', True))
+vars.Add(BoolVariable('ENABLE_NLS', 'Compile with gettext support', True))
 vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Add(BoolVariable('INTERNAL_EXPAT', 'Use internal Expat library', True))
@@ -107,6 +109,7 @@ env.Alias(target="install", source=[
 	env.InstallData(dir=env['DESTDIR'] +'/share/man/man1', source=['share/man/man1/gpick.1']),
 	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/48x48/apps/', source=[env.Glob('share/icons/hicolor/48x48/apps/*.png')]),
 	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/scalable/apps/', source=[env.Glob('share/icons/hicolor/scalable/apps/*.svg')]),
+	env.InstallData(dir=env['DESTDIR'] +'/share/locale/lt/LC_MESSAGES/', source=[env.Glob('share/locale/lt/LC_MESSAGES/gpick.mo')]),
 ])
 
 env.Alias(target="nsis", source=[

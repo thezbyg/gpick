@@ -23,6 +23,7 @@
 #include "uiApp.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "Internationalisation.h"
 
 #include "GlobalStateStruct.h"
 #include "uiUtilities.h"
@@ -127,7 +128,7 @@ static GtkWidget* style_list_new(LayoutPreviewArgs *args){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col, true);
-	gtk_tree_view_column_set_title(col, "Style item");
+	gtk_tree_view_column_set_title(col, _("Style item"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", STYLELIST_HUMAN_NAME);
@@ -136,7 +137,7 @@ static GtkWidget* style_list_new(LayoutPreviewArgs *args){
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col, true);
-	gtk_tree_view_column_set_title(col, "CSS selector");
+	gtk_tree_view_column_set_title(col, _("CSS selector"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", STYLELIST_CSS_SELECTOR);
@@ -158,7 +159,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args) 
 
 	GtkWidget *table;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Assign CSS selectors", GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Assign CSS selectors"), GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -383,18 +384,18 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 
 		bool selection_avail = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout));
 
-	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image(_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
-	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image(_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
 
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-	    item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
+	    item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 		if (selection_avail){
@@ -408,12 +409,12 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-		item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (edit_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
-		item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		item = gtk_menu_item_new_with_image (_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
@@ -525,7 +526,7 @@ static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 
 		}else{
 			GtkWidget* message;
-			message=gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(widget)), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be saved");
+			message=gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(widget)), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));
 			gtk_dialog_run(GTK_DIALOG(message));
 			gtk_widget_destroy(message);
 		}
@@ -536,7 +537,7 @@ static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
-	dialog = gtk_file_chooser_dialog_new ("Export", GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+	dialog = gtk_file_chooser_dialog_new(_("Export"), GTK_WINDOW(gtk_widget_get_toplevel(widget)),
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 						  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
@@ -550,7 +551,7 @@ static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
 	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, "Cascading Style Sheets *.css");
+	gtk_file_filter_set_name(filter, _("Cascading Style Sheets *.css"));
 	gtk_file_filter_add_pattern(filter, "*.css");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
@@ -573,7 +574,7 @@ static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
 				finished = true;
 			}else{
 				GtkWidget* message;
-				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be saved");
+				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));
 				//gtk_window_set_title(GTK_WINDOW(dialog), "Open");
 				gtk_dialog_run(GTK_DIALOG(message));
 				gtk_widget_destroy(message);
@@ -642,16 +643,16 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 	table_y++;
 
 	tool = gtk_tool_item_new();
-    gtk_tool_item_set_expand(tool, true);
+	gtk_tool_item_set_expand(tool, true);
 	GtkWidget *layout_dropdown = layout_preview_dropdown_new(args, 0);
-    gtk_container_add(GTK_CONTAINER(tool), attach_label(layout_dropdown, "Layout:"));
+	gtk_container_add(GTK_CONTAINER(tool), attach_label(layout_dropdown, _("Layout:")));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
 	g_signal_connect (G_OBJECT(layout_dropdown), "changed", G_CALLBACK(layout_changed_cb), args);
 
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
 
-	tool = gtk_menu_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_BUTTON), "Export CSS File");
-	gtk_tool_item_set_tooltip_text(tool, "Export CSS file");
+	tool = gtk_menu_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_BUTTON), _("Export CSS File"));
+	gtk_tool_item_set_tooltip_text(tool, _("Export CSS file"));
 	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(export_css_cb), args);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
 
@@ -660,11 +661,11 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 
 	menu = gtk_menu_new ();
 
-	item = gtk_menu_item_new_with_image("_Export CSS File As...", gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image(_("_Export CSS File As..."), gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (export_css_as_cb), args);
 
-	item = gtk_menu_item_new_with_mnemonic("_Assign CSS Selectors...");
+	item = gtk_menu_item_new_with_mnemonic(_("_Assign CSS Selectors..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (assign_css_selectors_cb), args);
 
@@ -736,10 +737,10 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 }
 
 int layout_preview_source_register(ColorSourceManager *csm){
-    ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "layout_preview", "Layout preview");
+	ColorSource *color_source = new ColorSource;
+	color_source_init(color_source, "layout_preview", _("Layout preview"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
-    color_source_manager_add_source(csm, color_source);
+	color_source_manager_add_source(csm, color_source);
 	return 0;
 }
 

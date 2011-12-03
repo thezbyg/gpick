@@ -19,6 +19,7 @@
 #include "uiDialogOptions.h"
 #include "uiUtilities.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include "DynvHelpers.h"
 
@@ -70,7 +71,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	GtkWidget *table, *table_m, *widget;
 
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Options", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Options"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -87,7 +88,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 
 	table_m = gtk_table_new(3, 1, FALSE);
 	table_m_y = 0;
-	frame = gtk_frame_new("System");
+	frame = gtk_frame_new(_("System"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -96,13 +97,13 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->single_instance = widget = gtk_check_button_new_with_mnemonic ("_Single instance");
+	args->single_instance = widget = gtk_check_button_new_with_mnemonic (_("_Single instance"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.single_instance", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
 
-	frame = gtk_frame_new("System tray");
+	frame = gtk_frame_new(_("System tray"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -110,29 +111,29 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Minimize to system tray");
+	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic (_("_Minimize to system tray"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.minimize_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic ("_Close to system tray");
+	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic (_("_Close to system tray"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.close_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic ("_Start in system tray");
+	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic (_("_Start in system tray"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.start_in_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic("_Main"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Main")));
 
 
 
 	table_m = gtk_table_new(3, 1, FALSE);
 	table_m_y = 0;
-	frame = gtk_frame_new("Display");
+	frame = gtk_frame_new(_("Display"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -141,7 +142,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new("_Refresh rate:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Refresh rate:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	args->refresh_rate = widget = gtk_spin_button_new_with_range(1, 60, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->refresh_rate), dynv_get_float_wd(args->params, "picker.refresh_rate", 30));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
@@ -149,13 +150,13 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y++;
 
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new("_Magnified area size:",0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Magnified area size:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	args->zoom_size = widget = gtk_spin_button_new_with_range(75, 300, 15);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->zoom_size), dynv_get_int32_wd(args->params, "picker.zoom_size", 150));
 	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 	table_y++;
 
-	frame = gtk_frame_new("Floating picker click behaviour");
+	frame = gtk_frame_new(_("Floating picker click behaviour"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -163,18 +164,18 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->add_on_release = widget = gtk_check_button_new_with_mnemonic("_Add to palette");
+	args->add_on_release = widget = gtk_check_button_new_with_mnemonic(_("_Add to palette"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_on_release", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	args->copy_on_release = widget = gtk_check_button_new_with_mnemonic("_Copy to clipboard");
+	args->copy_on_release = widget = gtk_check_button_new_with_mnemonic(_("_Copy to clipboard"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.copy_on_release", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
 
-	frame = gtk_frame_new("'Spacebar' button behaviour");
+	frame = gtk_frame_new(_("'Spacebar' button behaviour"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -182,29 +183,29 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->add_to_palette = widget = gtk_check_button_new_with_mnemonic("_Add to palette");
+	args->add_to_palette = widget = gtk_check_button_new_with_mnemonic(_("_Add to palette"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_to_palette", false));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	args->copy_to_clipboard = widget = gtk_check_button_new_with_mnemonic("_Copy to clipboard");
+	args->copy_to_clipboard = widget = gtk_check_button_new_with_mnemonic(_("_Copy to clipboard"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.copy_to_clipboard", false));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	args->rotate_swatch = widget = gtk_check_button_new_with_mnemonic("_Rotate swatch");
+	args->rotate_swatch = widget = gtk_check_button_new_with_mnemonic(_("_Rotate swatch"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.rotate_swatch_after_sample", false));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic("_Picker"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));
 
 
 
 	table_m = gtk_table_new(3, 1, FALSE);
 	table_m_y = 0;
-	frame = gtk_frame_new("Color name generation");
+	frame = gtk_frame_new(_("Color name generation"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	table_m_y++;
@@ -213,12 +214,12 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->imprecision_postfix = widget = gtk_check_button_new_with_mnemonic("_Imprecision postix");
+	args->imprecision_postfix = widget = gtk_check_button_new_with_mnemonic(_("_Imprecision postix"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "color_names.imprecision_postfix", true));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic("_Color names"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Color names")));
 
 
 	gtk_widget_show_all(notebook);

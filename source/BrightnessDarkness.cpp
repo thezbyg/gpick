@@ -30,6 +30,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "Internationalisation.h"
 
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
@@ -233,18 +234,18 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Brigh
 		bool selection_avail = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
 		bool edit_avail = gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(args->layout_view));
 
-	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
-	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
 
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-	    item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
+	    item = gtk_menu_item_new_with_mnemonic (_("_Copy to clipboard"));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 		if (selection_avail){
@@ -260,12 +261,12 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Brigh
 
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-			item = gtk_menu_item_new_with_image ("_Edit...", gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+			item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (edit_cb), args);
 			if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
-			item = gtk_menu_item_new_with_image ("_Paste", gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+			item = gtk_menu_item_new_with_image (_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
 			if (!selection_avail) gtk_widget_set_sensitive(item, false);
@@ -358,7 +359,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	args->brightness_darkness = widget = gtk_range_2d_new();
 	gtk_range_2d_set_values(GTK_RANGE_2D(widget), dynv_get_float_wd(dynv_namespace, "brightness", 0.5), dynv_get_float_wd(dynv_namespace, "darkness", 0.5));
-	gtk_range_2d_set_axis(GTK_RANGE_2D(widget), "Brightness", "Darkness");
+	gtk_range_2d_set_axis(GTK_RANGE_2D(widget), _("Brightness"), _("Darkness"));
 	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(update), args);
     gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
 
@@ -404,7 +405,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int brightness_darkness_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "brightness_darkness", "Brightness Darkness");
+	color_source_init(color_source, "brightness_darkness", _("Brightness Darkness"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

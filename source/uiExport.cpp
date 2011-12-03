@@ -22,6 +22,7 @@
 #include "Endian.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include <string.h>
 #include <math.h>
@@ -455,7 +456,7 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 	GtkWidget *dialog;
 	GtkFileFilter *filter;
 
-	dialog = gtk_file_chooser_dialog_new ("Export",	parent,
+	dialog = gtk_file_chooser_dialog_new (_("Export"),	parent,
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 						  GTK_STOCK_SAVE, GTK_RESPONSE_OK,
@@ -471,10 +472,10 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		int32_t (*export_function)(struct ColorList *color_list, const gchar* filename, gboolean selected);
 	};
 	struct export_formats formats[] = {
-		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_export_gpl },
-		{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
-		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_export_ase },
-		{ "Text file *.txt", "*.txt", palette_export_txt },
+		{ _("GIMP/Inkscape Palette *.gpl"), "*.gpl", palette_export_gpl },
+		{ _("Alias/WaveFront Material *.mtl"), "*.mtl", palette_export_mtl },
+		{ _("Adobe Swatch Exchange *.ase"), "*.ase", palette_export_ase },
+		{ _("Text file *.txt"), "*.txt", palette_export_txt },
 	};
 
 
@@ -519,8 +520,8 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 						saved=TRUE;
 					}else{
 						GtkWidget* message;
-						message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be exported");
-						gtk_window_set_title(GTK_WINDOW(dialog), "Export");
+						message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be exported"));
+						gtk_window_set_title(GTK_WINDOW(dialog), _("Export"));
 						gtk_dialog_run(GTK_DIALOG(message));
 						gtk_widget_destroy(message);
 					}
@@ -543,7 +544,7 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 
 	GtkFileFilter *filter;
 
-	dialog = gtk_file_chooser_dialog_new ("Import",	parent,
+	dialog = gtk_file_chooser_dialog_new (_("Import"),	parent,
 						  GTK_FILE_CHOOSER_ACTION_OPEN,
 						  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 						  GTK_STOCK_OPEN, GTK_RESPONSE_OK,
@@ -557,12 +558,12 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		int32_t (*import_function)(struct ColorList *color_list, const gchar* filename);
 	};
 	struct import_formats formats[] = {
-		{ "GIMP/Inkscape Palette *.gpl", "*.gpl", palette_import_gpl },
-		{ "Adobe Swatch Exchange *.ase", "*.ase", palette_import_ase },
+		{ _("GIMP/Inkscape Palette *.gpl"), "*.gpl", palette_import_gpl },
+		{ _("Adobe Swatch Exchange *.ase"), "*.ase", palette_import_ase },
 
-		/*{ "Alias/WaveFront Material *.mtl", "*.mtl", palette_export_mtl },
+		/*{ _("Alias/WaveFront Material *.mtl"), "*.mtl", palette_export_mtl },
 
-		{ "Text file *.txt", "*.txt", palette_export_txt },*/
+		{ _("Text file *.txt"), "*.txt", palette_export_txt },*/
 	};
 
 
@@ -604,8 +605,8 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 						finished=TRUE;
 					}else{
 						GtkWidget* message;
-						message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, "File could not be imported");
-						gtk_window_set_title(GTK_WINDOW(dialog), "Import");
+						message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
+						gtk_window_set_title(GTK_WINDOW(dialog), _("Import"));
 						gtk_dialog_run(GTK_DIALOG(message));
 						gtk_widget_destroy(message);
 					}

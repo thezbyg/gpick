@@ -18,6 +18,7 @@
 
 #include "uiAbout.h"
 #include "version/Version.h"
+#include "Internationalisation.h"
 
 const gchar* program_name = "Gpick";
 
@@ -77,7 +78,7 @@ void show_about_box(GtkWidget *widget){
 
 	const char *program_authors = "Albertas Vyšniauskas <thezbyg@gmail.com>";
 
-	GtkWidget* dialog = gtk_dialog_new_with_buttons("About Gpick", GTK_WINDOW(gtk_widget_get_toplevel(widget)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget* dialog = gtk_dialog_new_with_buttons(_("About Gpick"), GTK_WINDOW(gtk_widget_get_toplevel(widget)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL,
 		NULL);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_CANCEL);
@@ -110,7 +111,7 @@ void show_about_box(GtkWidget *widget){
 	gtk_box_pack_start(GTK_BOX(vbox2), name, false, false, 0);
 	g_free(tmp_string);
 
-	GtkWidget *comments = gtk_label_new("Advanced color picker");
+	GtkWidget *comments = gtk_label_new(_("Advanced color picker"));
 	gtk_label_set_selectable(GTK_LABEL(comments), true);
 	gtk_label_set_justify(GTK_LABEL(comments), GTK_JUSTIFY_CENTER);
 	gtk_box_pack_start(GTK_BOX(vbox2), comments, false, false, 0);
@@ -129,10 +130,10 @@ void show_about_box(GtkWidget *widget){
 
 	GtkWidget *notebook = gtk_notebook_new();
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(license), gtk_label_new("License"));
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(program_authors), gtk_label_new("Credits"));
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(expat_license), gtk_label_new("Expat License"));
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(lua_license), gtk_label_new("Lua License"));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(license), gtk_label_new(_("License")));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(program_authors), gtk_label_new(_("Credits")));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(expat_license), gtk_label_new(_("Expat License")));
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(lua_license), gtk_label_new(_("Lua License")));
 
 	gtk_box_pack_start(GTK_BOX(vbox), notebook, true, true, 0);
 

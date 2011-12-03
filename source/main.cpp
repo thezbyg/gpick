@@ -21,6 +21,7 @@
 #include "Paths.h"
 #include "uiAbout.h"
 #include "uiApp.h"
+#include "Internationalisation.h"
 
 #include <gtk/gtk.h>
 
@@ -37,6 +38,9 @@ int main(int argc, char **argv){
 
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
+
+	initialize_internationalisation();
+
 	g_set_application_name(program_name);
 
 	gchar* tmp;

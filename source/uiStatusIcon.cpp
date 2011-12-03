@@ -26,6 +26,7 @@
 #include "FloatingPicker.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "Internationalisation.h"
 #include <gdk/gdkkeysyms.h>
 
 using namespace math;
@@ -63,14 +64,14 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 
 	menu = GTK_MENU(gtk_menu_new ());
 
-    item = gtk_menu_item_new_with_image ("_Show Main Window", gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Show Main Window"), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (status_icon_show_parent), si);
 
 
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new());
 
-    item = gtk_menu_item_new_with_image ("_Quit", gtk_image_new_from_stock(GTK_STOCK_QUIT, GTK_ICON_SIZE_MENU));
+    item = gtk_menu_item_new_with_image (_("_Quit"), gtk_image_new_from_stock(GTK_STOCK_QUIT, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (status_icon_destroy_parent), si);
 

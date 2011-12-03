@@ -22,6 +22,7 @@
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
@@ -177,7 +178,7 @@ static GtkWidget* transformations_list_new(TransformationsArgs *args)
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col, 1);
-	gtk_tree_view_column_set_title(col, "Name");
+	gtk_tree_view_column_set_title(col, _("Name"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", TRANSFORMATIONS_HUMAN_NAME);
@@ -253,7 +254,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
 	GtkWidget *vbox2 = gtk_vbox_new(false, 5);
 
-	args->enabled = widget = gtk_check_button_new_with_mnemonic ("_Enabled");
+	args->enabled = widget = gtk_check_button_new_with_mnemonic (_("_Enabled"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
 

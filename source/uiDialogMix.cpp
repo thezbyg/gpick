@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "Internationalisation.h"
 
 #include <stdbool.h>
 #include <sstream>
@@ -205,7 +206,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Mix colors", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Mix colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
@@ -219,12 +220,12 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table = gtk_table_new(3, 2, FALSE);
 	table_y=0;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Type:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_type = gtk_combo_box_new_text();
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "RGB");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV shortest hue distance");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "LAB");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("RGB"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV shortest hue distance"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_table_attach(GTK_TABLE(table), mix_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
@@ -232,7 +233,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), args);
 
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Steps:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Steps:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);

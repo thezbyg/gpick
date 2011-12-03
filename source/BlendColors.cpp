@@ -32,6 +32,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "uiApp.h"
+#include "Internationalisation.h"
 
 #include <math.h>
 #include <string.h>
@@ -269,19 +270,19 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 
 		bool selection_avail = palette_list_get_selected_count(widget) != 0;
 
-	    item = gtk_menu_item_new_with_image ("_Add to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
 
-	    item = gtk_menu_item_new_with_image ("_Add all to palette", gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
 
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-	    item = gtk_menu_item_new_with_mnemonic ("_Copy to clipboard");
+	    item = gtk_menu_item_new_with_mnemonic (_("_Copy to clipboard"));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 		if (selection_avail){
@@ -335,7 +336,7 @@ static gboolean color_button_press_cb(GtkWidget *widget, GdkEventButton *event, 
 		gint32 button, event_time;
 		menu = gtk_menu_new ();
 
-	    item = gtk_menu_item_new_with_mnemonic("_Reset");
+	    item = gtk_menu_item_new_with_mnemonic(_("_Reset"));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (reset_middle_color_cb), args);
 
@@ -475,7 +476,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	Color c;
 	color_set(&c, 0.5);
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Start:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->start_color = widget = gtk_color_new();
 	gtk_color_set_color(GTK_COLOR(args->start_color), dynv_get_color_wdc(args->params, "start_color", &c), "");
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
@@ -491,7 +492,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	table_y++;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Middle:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Middle:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->middle_color = widget = gtk_color_new();
 
 	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(color_button_press_cb), args);
@@ -509,7 +510,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	table_y++;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("End:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->end_color = widget = gtk_color_new();
 	gtk_color_set_color(GTK_COLOR(args->end_color), dynv_get_color_wdc(args->params, "end_color", &c), "");
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
@@ -526,12 +527,12 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y = 0;
 
 	GtkWidget* vbox = gtk_vbox_new(false, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new("Type:",0,0,0,0), false, false, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"),0,0,0,0), false, false, 0);
 	args->mix_type = mix_type = gtk_combo_box_new_text();
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "RGB");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "HSV shortest hue distance");
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), "LAB");
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("RGB"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV shortest hue distance"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), mix_type, false, false, 0);
 	g_signal_connect(G_OBJECT(mix_type), "changed", G_CALLBACK (update), args);
@@ -540,7 +541,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y = 0;
 
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Start steps:",0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start steps:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (1,255,1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps1", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -548,7 +549,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->steps1 = mix_steps;
 	g_signal_connect(G_OBJECT(mix_steps), "value-changed", G_CALLBACK (update), args);
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("End steps:",0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End steps:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (1,255,1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps2", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -585,7 +586,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int blend_colors_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "blend_colors", "Blend colors");
+	color_source_init(color_source, "blend_colors", _("Blend colors"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
