@@ -11,6 +11,7 @@ import subprocess
 
 from lemon import *
 from flex import *
+from gettext import *
 
 from SCons.Script import *
 from SCons.Util import *
@@ -33,10 +34,19 @@ def MatchFiles (files, path, repath, dir_exclude_pattern,  file_exclude_pattern)
 				files.append (fullname)
 
 def CheckPKG(context, name):
-	context.Message( 'Checking for %s... ' % name )
+	context.Message('Checking for library %s... ' % name)
 	ret = context.TryAction('pkg-config --exists "%s"' % name)[0]
-	context.Result( ret )
+	context.Result(ret)
 	return ret
+
+def CheckProgram(context, env, name, member_name):
+	context.Message('Checking for program %s... ' % name)
+	if env[member_name]:
+		context.Result(True)
+		return True
+	else:
+		context.Result(False)
+		return False
 
 class GpickLibrary(NodeList):
 	include_dirs = []
@@ -48,6 +58,8 @@ class GpickEnvironment(SConsEnvironment):
 	def AddCustomBuilders(self):
 		addLemonBuilder(self)
 		addFlexBuilder(self)
+		addGettextBuilder(self)
+
 		
 	def DefineLibrary(self, library_name, library):
 		self.extern_libs[library_name] = library
@@ -63,9 +75,24 @@ class GpickEnvironment(SConsEnvironment):
 		
 		return lib
 
-	def ConfirmLibs(self, conf, libs):
+	def ConfirmPrograms(self, conf, programs):
+		conf.AddTests({'CheckProgram': CheckProgram})
 		
-		conf.AddTests({ 'CheckPKG' : CheckPKG })
+		for evar, args in programs.iteritems():
+			found = False
+			for name, member_name in args['checks'].iteritems():
+				if conf.CheckProgram(self, name, member_name):
+					found = True;
+					break
+			if not found:
+				if 'required' in args:
+					if not args['required']==False:
+						self.Exit(1)
+				else:
+					self.Exit(1)
+
+	def ConfirmLibs(self, conf, libs):
+		conf.AddTests({'CheckPKG': CheckPKG})
 		
 		for evar, args in libs.iteritems():
 			found = False
@@ -87,8 +114,20 @@ class GpickEnvironment(SConsEnvironment):
 			self.AddPostAction(i, Chmod(i, perm))
 		return dir
 
+	def InstallPermAutoDir(self, dir, relative_dir, source, perm):
+		for f in Flatten(source):
+			path = dir
+			if str(f.get_dir()).startswith(relative_dir):
+				path = os.path.join(path, str(f.get_dir())[len(relative_dir):])
+			else:
+				path = os.path.join(path, str(f.get_dir()))
+			obj = self.Install(path, f)
+			for i in obj:
+				self.AddPostAction(i, Chmod(i, perm))
+
 	InstallProgram = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0755)
 	InstallData = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0644)
+	InstallDataAutoDir = lambda self, dir, relative_dir, source: GpickEnvironment.InstallPermAutoDir(self, dir, relative_dir, source, 0644)
 
 	def GetSourceFiles(self, dir_exclude_pattern, file_exclude_pattern):
 		dir_exclude_prog = re.compile(dir_exclude_pattern)

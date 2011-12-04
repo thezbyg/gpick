@@ -57,6 +57,14 @@ except OSError:     # ignore on systems that don't support umask
 if not env.GetOption('clean'):
 	conf = Configure(env)
 
+	programs = {}
+	if env['ENABLE_NLS']:
+		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
+	if not env['PREBUILD_GRAMMAR']:
+		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
+		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
+	env.ConfirmPrograms(conf, programs)
+
 	libs = {
 		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
 	}
@@ -101,6 +109,15 @@ env.Alias(target="build", source=[
 if 'debian' in COMMAND_LINE_TARGETS:
 	SConscript("deb/SConscript", exports='env')
 
+
+if env['ENABLE_NLS']:
+	locales = env.Gettext(env.Glob('share/locale/*/LC_MESSAGES/gpick.po'))
+	Depends(executable, locales)
+	
+	env.Alias(target="locales", source=[
+		locales
+	])
+
 env.Alias(target="install", source=[
 	env.InstallProgram(dir=env['DESTDIR'] +'/bin', source=[executable]),
 	env.InstallData(dir=env['DESTDIR'] +'/share/applications', source=['share/applications/gpick.desktop']),
@@ -109,7 +126,7 @@ env.Alias(target="install", source=[
 	env.InstallData(dir=env['DESTDIR'] +'/share/man/man1', source=['share/man/man1/gpick.1']),
 	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/48x48/apps/', source=[env.Glob('share/icons/hicolor/48x48/apps/*.png')]),
 	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/scalable/apps/', source=[env.Glob('share/icons/hicolor/scalable/apps/*.svg')]),
-	env.InstallData(dir=env['DESTDIR'] +'/share/locale/lt/LC_MESSAGES/', source=[env.Glob('share/locale/lt/LC_MESSAGES/gpick.mo')]),
+	env.InstallDataAutoDir(dir=env['DESTDIR'] + '/share/locale/', relative_dir='share/locale/', source=[env.Glob('share/locale/*/LC_MESSAGES/gpick.mo')]),
 ])
 
 env.Alias(target="nsis", source=[
