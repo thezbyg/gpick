@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2011, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -38,7 +38,7 @@ static gboolean gtk_color_component_button_release (GtkWidget *widget, GdkEventB
 static gboolean gtk_color_component_button_press (GtkWidget *node_system, GdkEventButton *event);
 static gboolean gtk_color_component_motion_notify (GtkWidget *node_system, GdkEventMotion *event);
 static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c);
-
+static void gtk_color_component_size_request (GtkWidget *widget, GtkRequisition *requisition);
 static void gtk_color_component_finalize(GObject *color_obj);
 
 enum{
@@ -46,6 +46,8 @@ enum{
   INPUT_CLICKED,
   LAST_SIGNAL
 };
+
+static const int MaxNumberOfComponents = 4;
 
 static guint gtk_color_component_signals[LAST_SIGNAL] = {0, 0};
 
@@ -58,9 +60,10 @@ typedef struct GtkColorComponentPrivate{
 	gint last_event_position;
 	bool changing_color;
 
-	gchar *text[4];
-	double range[4];
-	double offset[4];
+	const char *label[MaxNumberOfComponents][2];
+	gchar *text[MaxNumberOfComponents];
+	double range[MaxNumberOfComponents];
+	double offset[MaxNumberOfComponents];
 }GtkColorComponentPrivate;
 
 static void gtk_color_component_class_init (GtkColorComponentClass *color_component_class){
@@ -76,6 +79,7 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 	widget_class->button_release_event = gtk_color_component_button_release;
 	widget_class->button_press_event = gtk_color_component_button_press;
 	widget_class->motion_notify_event = gtk_color_component_motion_notify;
+	widget_class->size_request = gtk_color_component_size_request;
 
 	g_type_class_add_private(obj_class, sizeof(GtkColorComponentPrivate));
 
@@ -129,6 +133,10 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 
 	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
 		ns->text[i] = 0;
+	}
+	for (int i = 0; i != sizeof(ns->label) / sizeof(const char*[2]); i++){
+		ns->label[i][0] = 0;
+		ns->label[i][1] = 0;
 	}
 
 	switch (component){
@@ -193,13 +201,23 @@ const char* gtk_color_component_get_text(GtkColorComponent* color_component, gin
 	return ns->text[component_id];
 }
 
-void gtk_color_component_set_text(GtkColorComponent* color_component, const char *text[4]){
+void gtk_color_component_set_text(GtkColorComponent* color_component, const char **text){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
 	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
+		if (!text[i]) break;
 		if (ns->text[i]){
 			g_free(ns->text[i]);
 		}
 		ns->text[i] = g_strdup(text[i]);
+	}
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
+}
+
+void gtk_color_component_set_label(GtkColorComponent* color_component, const char **label){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	for (int i = 0; i != MaxNumberOfComponents * 2; i++){
+		if (!label[i]) break;
+		ns->label[i >> 1][i & 1] = label[i];
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
@@ -252,18 +270,28 @@ static void interpolate_colors(Color *color1, Color *color2, float position, Col
 	result->rgb.blue = color1->rgb.blue * (1 - position) + color2->rgb.blue * position;
 }
 
+static void gtk_color_component_size_request (GtkWidget *widget, GtkRequisition *requisition){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
+
+	gint width = 240 + widget->style->xthickness * 2;
+	gint height = ns->n_components * 16 + widget->style->ythickness * 2;
+
+	requisition->width = width;
+	requisition->height = height;
+}
+
 static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *event){
 	cairo_t *cr;
 
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
-	cr = gdk_cairo_create (widget->window);
+	cr = gdk_cairo_create(widget->window);
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
 
-	Color c[4];
-	Color c2[4];
-	double pointer_pos[4];
+	Color c[MaxNumberOfComponents];
+	Color c2[MaxNumberOfComponents];
+	double pointer_pos[MaxNumberOfComponents];
 
 	float steps;
 	int i, j;
@@ -507,28 +535,29 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	cairo_surface_mark_dirty(surface);
 	cairo_save(cr);
 
-	cairo_set_source_surface(cr, surface, 0, 0);
+	int offset_x = widget->allocation.width - widget->style->xthickness * 2 - 240;
+
+	cairo_set_source_surface(cr, surface, offset_x, 0);
 	cairo_surface_destroy(surface);
 
 	for (i = 0; i < ns->n_components; ++i){
-		cairo_rectangle(cr, 0, 16 * i, 200, 15);
+		cairo_rectangle(cr, offset_x, 16 * i, 200, 15);
 		cairo_fill(cr);
 	}
 
 	cairo_restore(cr);
 
 	for (i = 0; i < ns->n_components; ++i){
-		cairo_move_to(cr, 200*pointer_pos[i], 16 * i + 9);
-		cairo_line_to(cr, 200*pointer_pos[i]+3, 16 * i + 16);
-		cairo_line_to(cr, 200*pointer_pos[i]-3, 16 * i + 16);
+		cairo_move_to(cr, offset_x + 200 * pointer_pos[i], 16 * i + 9);
+		cairo_line_to(cr, offset_x + 200 * pointer_pos[i] + 3, 16 * i + 16);
+		cairo_line_to(cr, offset_x + 200 * pointer_pos[i] - 3, 16 * i + 16);
 		cairo_set_source_rgb(cr, 1, 1, 1);
 		cairo_fill_preserve(cr);
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 1);
 		cairo_stroke(cr);
 
-
-		if (ns->text[i]){
+		if (ns->text[i] || ns->label[i]){
 			PangoLayout *layout;
 			PangoFontDescription *font_description;
 			font_description = pango_font_description_new();
@@ -542,20 +571,39 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			pango_layout_set_single_paragraph_mode(layout, true);
 
 			gdk_cairo_set_source_color(cr, &widget->style->text[0]);
-
-			pango_layout_set_text(layout, ns->text[i], -1);
-			pango_layout_set_width(layout, 40 * PANGO_SCALE);
-			pango_layout_set_height(layout, 16 * PANGO_SCALE);
-			pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
-			pango_cairo_update_layout(cr, layout);
-
 			int width, height;
-			pango_layout_get_pixel_size(layout, &width, &height);
-			cairo_move_to(cr, 200, i * 16);
-			pango_cairo_show_layout(cr, layout);
 
-			g_object_unref (layout);
-			pango_font_description_free (font_description);
+			if (ns->text[i]){
+				pango_layout_set_text(layout, ns->text[i], -1);
+				pango_layout_set_width(layout, 40 * PANGO_SCALE);
+				pango_layout_set_height(layout, 16 * PANGO_SCALE);
+				pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
+				pango_cairo_update_layout(cr, layout);
+
+				pango_layout_get_pixel_size(layout, &width, &height);
+				cairo_move_to(cr, 200 + offset_x, i * 16);
+				pango_cairo_show_layout(cr, layout);
+			}
+
+			if (ns->label[i] && offset_x > 10){
+				if (offset_x > 50){
+					pango_layout_set_text(layout, ns->label[i][1], -1);
+				}else{
+					pango_layout_set_text(layout, ns->label[i][0], -1);
+				}
+				pango_layout_set_width(layout, (offset_x - 10) * PANGO_SCALE);
+				pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+				pango_layout_set_height(layout, 16 * PANGO_SCALE);
+				pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+				pango_cairo_update_layout(cr, layout);
+
+				pango_layout_get_pixel_size(layout, &width, &height);
+				cairo_move_to(cr, 5, i * 16);
+				pango_cairo_show_layout(cr, layout);
+			}
+
+			g_object_unref(layout);
+			pango_font_description_free(font_description);
 		}
 	}
 
@@ -651,7 +699,9 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 		if (component < 0) component = 0;
 		else if (component >= ns->n_components) component = ns->n_components - 1;
 
-		if (event->x < 0 || event->x > 200) {
+		int offset_x = widget->allocation.width - widget->style->xthickness * 2 - 240;
+
+		if (event->x < offset_x || event->x > 200 + offset_x) {
 			g_signal_emit(widget, gtk_color_component_signals[INPUT_CLICKED], 0, component);
 			return FALSE;
 		}
@@ -659,7 +709,7 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 		ns->last_event_position = event->x;
 		double value;
 
-		value = event->x / 200.0;
+		value = (event->x - offset_x) / 200.0;
 		if (value < 0) value = 0;
 		else if (value > 1) value = 1;
 
@@ -678,11 +728,12 @@ static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMo
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	if (ns->changing_color && (event->state & GDK_BUTTON1_MASK)){
-		if ((event->x < 0 && ns->last_event_position < 0) || (event->x > 200 && ns->last_event_position > 200)) return FALSE;
+		int offset_x = widget->allocation.width - widget->style->xthickness * 2 - 240;
+		if ((event->x < offset_x && ns->last_event_position < offset_x) || ((event->x > 200 + offset_x) && (ns->last_event_position > 200 + offset_x))) return FALSE;
 		ns->last_event_position = event->x;
 		double value;
 
-		value = event->x / 200.0;
+		value = (event->x - offset_x) / 200.0;
 		if (value < 0) value = 0;
 		else if (value > 1) value = 1;
 

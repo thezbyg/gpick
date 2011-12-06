@@ -60,8 +60,9 @@ enum GtkColorComponentComp{
 GtkWidget* gtk_color_component_new (GtkColorComponentComp component);
 
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color);
-void gtk_color_component_set_text(GtkColorComponent* color_component, const char *text[4]);
+void gtk_color_component_set_text(GtkColorComponent* color_component, const char **text);
 const char* gtk_color_component_get_text(GtkColorComponent* color_component, gint component_id);
+void gtk_color_component_set_label(GtkColorComponent* color_component, const char **label);
 void gtk_color_component_get_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color);

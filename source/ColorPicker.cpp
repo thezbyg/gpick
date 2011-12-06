@@ -1264,6 +1264,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(hsv);
+				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsv_labels);
 				args->hsv_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
@@ -1276,6 +1278,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(hsl);
+				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsl_labels);
 				args->hsl_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
@@ -1288,6 +1292,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(rgb);
+				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), rgb_labels);
 				args->rgb_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
@@ -1300,6 +1306,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(cmyk);
+				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), cmyk_labels);
 				args->cmyk_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
@@ -1312,6 +1320,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(lab);
+				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->lab_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
