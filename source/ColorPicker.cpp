@@ -1252,9 +1252,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				table_y++;
 
 				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Zoom:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-				widget = gtk_hscale_new_with_range (2, 15, 0.5);
+				widget = gtk_hscale_new_with_range (0, 100, 1);
 				g_signal_connect (G_OBJECT (widget), "value-changed", G_CALLBACK (on_zoom_value_changed), args);
-				gtk_range_set_value(GTK_RANGE(widget), dynv_get_float_wd(args->params, "zoom", 2));
+				gtk_range_set_value(GTK_RANGE(widget), dynv_get_float_wd(args->params, "zoom", 20));
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
 
