@@ -34,6 +34,7 @@ class ColorVisionDeficiencyConfig: public Configuration{
 		GtkWidget *strength;
 
 		static void type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_);
+		static void info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiencyConfig *this_);
 	public:
 		ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation);
 		virtual ~ColorVisionDeficiencyConfig();

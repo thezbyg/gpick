@@ -360,26 +360,28 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 
 	table_y = 0;
 
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	type = widget = create_type_list();
+	g_signal_connect(G_OBJECT(type), "changed", G_CALLBACK(ColorVisionDeficiencyConfig::type_combobox_change_cb), this);
+	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+	table_y++;
+
 	info_bar = widget = gtk_info_bar_new();
 	info_label = gtk_label_new("");
 	gtk_label_set_line_wrap(GTK_LABEL(info_label), true);
 	gtk_label_set_justify(GTK_LABEL(info_label), GTK_JUSTIFY_LEFT);
   gtk_label_set_single_line_mode(GTK_LABEL(info_label), false);
 	gtk_misc_set_alignment(GTK_MISC(info_label), 0, 0.5);
-	gtk_widget_set_size_request(info_label, 250, -1);
+	gtk_widget_set_size_request(info_label, 1, -1);
 	GtkWidget *content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
 	gtk_container_add(GTK_CONTAINER(content_area), info_label);
 	gtk_widget_show_all(info_bar);
+	g_signal_connect(G_OBJECT(info_label), "size-allocate", G_CALLBACK(info_label_size_allocate_cb), this);
 
-	gtk_table_attach(GTK_TABLE(table), widget, 0, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	type = widget = create_type_list();
-	g_signal_connect(G_OBJECT(type), "changed", G_CALLBACK(ColorVisionDeficiencyConfig::type_combobox_change_cb), this);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), transformation.type);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
+
+	gtk_combo_box_set_active(GTK_COMBO_BOX(type), transformation.type);
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	strength = widget = gtk_hscale_new_with_range(0, 100, 1);
@@ -417,12 +419,12 @@ void ColorVisionDeficiencyConfig::applyConfig(dynvSystem *dynv){
 void ColorVisionDeficiencyConfig::type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_)
 {
 	const char *descriptions[] = {
-		_("Protanomaly - altered spectral sensitivity of red receptors"),
-		_("Deuteranomaly - altered spectral sensitivity of green receptors"),
-		_("Tritanomaly - altered spectral sensitivity of blue receptors"),
-		_("Protanopia - absence of red receptors"),
-		_("Deuteranopia - absence of green receptors"),
-		_("Tritanopia - absence of blue receptors"),
+		_("Altered spectral sensitivity of red receptors"),
+		_("Altered spectral sensitivity of green receptors"),
+		_("Altered spectral sensitivity of blue receptors"),
+		_("Absence of red receptors"),
+		_("Absence of green receptors"),
+		_("Absence of blue receptors"),
 	};
 
 	GtkTreeIter iter;
@@ -436,6 +438,11 @@ void ColorVisionDeficiencyConfig::type_combobox_change_cb(GtkWidget *widget, Col
 		gtk_label_set_text(GTK_LABEL(this_->info_label), "");
 	}
 	gtk_info_bar_set_message_type(GTK_INFO_BAR(this_->info_bar), GTK_MESSAGE_INFO);
+}
+
+void ColorVisionDeficiencyConfig::info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiencyConfig *this_)
+{
+	gtk_widget_set_size_request(this_->info_label, allocation->width - 16, -1);
 }
 
 }
