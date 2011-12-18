@@ -3,9 +3,11 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2011-12-03 15:00+0200\n"
-"PO-Revision-Date: 2011-12-03 15:01+0300\n"
+"POT-Creation-Date: 2011-12-18 13:57+0200\n"
+"PO-Revision-Date: 2011-12-18 14:02+0300\n"
 "Last-Translator: Albertas Vyšniauskas <thezbyg@gmail.com>\n"
+"Language-Team: \n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -41,7 +43,7 @@ msgid "_Add all to palette"
 msgstr "_Įkelti visas į paletę"
 
 #: source/GenerateScheme.cpp:427
-#: source/ColorPicker.cpp:426
+#: source/ColorPicker.cpp:425
 #: source/ColorMixer.cpp:292
 #: source/uiDialogOptions.cpp:172
 #: source/uiDialogOptions.cpp:191
@@ -53,7 +55,7 @@ msgid "_Copy to clipboard"
 msgstr "_Kopijuoti"
 
 #: source/GenerateScheme.cpp:440
-#: source/ColorPicker.cpp:436
+#: source/ColorPicker.cpp:435
 #: source/ColorMixer.cpp:332
 #: source/BrightnessDarkness.cpp:264
 #: source/Variations.cpp:336
@@ -62,7 +64,7 @@ msgid "_Edit..."
 msgstr "_Keisti..."
 
 #: source/GenerateScheme.cpp:445
-#: source/ColorPicker.cpp:441
+#: source/ColorPicker.cpp:439
 #: source/ColorMixer.cpp:337
 #: source/BrightnessDarkness.cpp:269
 #: source/Variations.cpp:341
@@ -91,7 +93,7 @@ msgstr "Šviesumas:"
 
 #: source/GenerateScheme.cpp:842
 #: source/uiDialogMix.cpp:223
-#: source/transformation/ColorVisionDeficiency.cpp:364
+#: source/transformation/ColorVisionDeficiency.cpp:377
 #: source/uiDialogGenerate.cpp:212
 #: source/BlendColors.cpp:530
 msgid "Type:"
@@ -272,7 +274,7 @@ msgid "Scheme _generation"
 msgstr "Schemos _generavimas"
 
 #: source/uiApp.cpp:1422
-#: source/ColorPicker.cpp:909
+#: source/ColorPicker.cpp:907
 msgid "None"
 msgstr "Joks"
 
@@ -343,128 +345,142 @@ msgstr "LAB"
 msgid "Steps:"
 msgstr "Žingsniai:"
 
-#: source/ColorPicker.cpp:474
+#: source/ColorPicker.cpp:472
 msgid "Press Spacebar to sample color under mouse pointer"
 msgstr "Paspauskite Tarpą norėdami gauti spalvą esančią po pelės kursoriu"
 
-#: source/ColorPicker.cpp:656
-#: source/ColorPicker.cpp:847
+#: source/ColorPicker.cpp:654
+#: source/ColorPicker.cpp:845
 msgid "Edit"
 msgstr "Keisti"
 
-#: source/ColorPicker.cpp:683
-#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:681
+#: source/ColorPicker.cpp:682
+#: source/ColorPicker.cpp:1267
+#: source/ColorPicker.cpp:1281
 #: source/ColorMixer.cpp:693
 #: source/Variations.cpp:697
 msgid "Hue"
 msgstr "Atspalvis"
 
-#: source/ColorPicker.cpp:683
-#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:681
+#: source/ColorPicker.cpp:682
+#: source/ColorPicker.cpp:1267
+#: source/ColorPicker.cpp:1281
 #: source/ColorMixer.cpp:694
 #: source/Variations.cpp:698
 msgid "Saturation"
 msgstr "Įsotinimas"
 
-#: source/ColorPicker.cpp:683
+#: source/ColorPicker.cpp:681
+#: source/ColorPicker.cpp:1267
 msgid "Value"
 msgstr "Reikšmė"
 
-#: source/ColorPicker.cpp:684
-#: source/ColorPicker.cpp:687
+#: source/ColorPicker.cpp:682
+#: source/ColorPicker.cpp:685
+#: source/ColorPicker.cpp:1281
+#: source/ColorPicker.cpp:1323
 #: source/ColorMixer.cpp:695
 #: source/Variations.cpp:699
 msgid "Lightness"
 msgstr "Šviesumas"
 
-#: source/ColorPicker.cpp:685
+#: source/ColorPicker.cpp:683
+#: source/ColorPicker.cpp:1295
 msgid "Red"
 msgstr "Raudona"
 
-#: source/ColorPicker.cpp:685
+#: source/ColorPicker.cpp:683
+#: source/ColorPicker.cpp:1295
 msgid "Green"
 msgstr "Žalia"
 
-#: source/ColorPicker.cpp:685
+#: source/ColorPicker.cpp:683
+#: source/ColorPicker.cpp:1295
 msgid "Blue"
 msgstr "Mėlyna"
 
-#: source/ColorPicker.cpp:686
+#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:1309
 msgid "Cyan"
 msgstr "Žydra"
 
-#: source/ColorPicker.cpp:686
+#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:1309
 msgid "Magenta"
 msgstr "Purpurinė"
 
-#: source/ColorPicker.cpp:686
+#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:1309
 msgid "Yellow"
 msgstr "Geltona"
 
-#: source/ColorPicker.cpp:686
+#: source/ColorPicker.cpp:684
+#: source/ColorPicker.cpp:1309
 msgid "Key"
 msgstr "Juoda"
 
-#: source/ColorPicker.cpp:837
+#: source/ColorPicker.cpp:835
 #: source/uiConverter.cpp:163
 msgid "Copy"
 msgstr "Kopijavimas"
 
-#: source/ColorPicker.cpp:841
+#: source/ColorPicker.cpp:839
 #: source/uiConverter.cpp:172
 msgid "Paste"
 msgstr "Įdėjimas"
 
-#: source/ColorPicker.cpp:910
+#: source/ColorPicker.cpp:908
 msgid "Linear"
 msgstr "Tiesinis"
 
-#: source/ColorPicker.cpp:911
+#: source/ColorPicker.cpp:909
 msgid "Quadratic"
 msgstr "Kvardatinis"
 
-#: source/ColorPicker.cpp:912
+#: source/ColorPicker.cpp:910
 msgid "Cubic"
 msgstr "Kubinis"
 
-#: source/ColorPicker.cpp:913
+#: source/ColorPicker.cpp:911
 msgid "Exponential"
 msgstr "Eksponentinis"
 
-#: source/ColorPicker.cpp:1239
+#: source/ColorPicker.cpp:1230
 msgid "Settings"
 msgstr "Nustatymai"
 
-#: source/ColorPicker.cpp:1249
+#: source/ColorPicker.cpp:1240
 msgid "Oversample:"
 msgstr "Mėginio vidurkis"
 
-#: source/ColorPicker.cpp:1256
+#: source/ColorPicker.cpp:1247
 msgid "Falloff:"
 msgstr "Nuožulnumas:"
 
-#: source/ColorPicker.cpp:1263
+#: source/ColorPicker.cpp:1254
 msgid "Zoom:"
 msgstr "Priartinimas:"
 
-#: source/ColorPicker.cpp:1330
+#: source/ColorPicker.cpp:1331
 msgid "Info"
 msgstr "Informacija"
 
-#: source/ColorPicker.cpp:1339
+#: source/ColorPicker.cpp:1340
 msgid "Color name:"
 msgstr "Spalvos pavadinimas:"
 
-#: source/ColorPicker.cpp:1352
+#: source/ColorPicker.cpp:1353
 msgid "Contrast:"
 msgstr "Kontrastas:"
 
-#: source/ColorPicker.cpp:1357
-#: source/ColorPicker.cpp:1363
+#: source/ColorPicker.cpp:1358
+#: source/ColorPicker.cpp:1364
 msgid "Sample"
 msgstr "Pavyzdys"
 
-#: source/ColorPicker.cpp:1396
+#: source/ColorPicker.cpp:1397
 msgid "Color picker"
 msgstr "Spalvų rinkyklė"
 
@@ -553,7 +569,7 @@ msgid "Color name generation"
 msgstr "Spalvų pavadinimų generavimas"
 
 #: source/uiDialogOptions.cpp:217
-msgid "_Imprecision postix"
+msgid "_Imprecision postfix"
 msgstr "_Netikslumo ženklas"
 
 #: source/uiDialogOptions.cpp:222
@@ -609,7 +625,7 @@ msgid "_Quit"
 msgstr "_Išeiti"
 
 #: source/Variations.cpp:668
-#: source/transformation/ColorVisionDeficiency.cpp:370
+#: source/transformation/ColorVisionDeficiency.cpp:384
 msgid "Strength:"
 msgstr "Stiprumas:"
 
@@ -700,26 +716,50 @@ msgid "Color vision deficiency"
 msgstr "Spalvų matymo defektai"
 
 #: source/transformation/ColorVisionDeficiency.cpp:330
+msgid "Protanomaly"
+msgstr "Protanomalija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:331
+msgid "Deuteranomaly"
+msgstr "Deuteranomalija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:332
+msgid "Tritanomaly"
+msgstr "Tritanomalija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:333
+msgid "Protanopia"
+msgstr "Protanopija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:334
+msgid "Deuteranopia"
+msgstr "Deuteranopija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:335
+msgid "Tritanopia"
+msgstr "Tritanopija"
+
+#: source/transformation/ColorVisionDeficiency.cpp:420
 msgid "Protanomaly - altered spectral sensitivity of red receptors"
 msgstr ""
 
-#: source/transformation/ColorVisionDeficiency.cpp:331
+#: source/transformation/ColorVisionDeficiency.cpp:421
 msgid "Deuteranomaly - altered spectral sensitivity of green receptors"
 msgstr ""
 
-#: source/transformation/ColorVisionDeficiency.cpp:332
+#: source/transformation/ColorVisionDeficiency.cpp:422
 msgid "Tritanomaly - altered spectral sensitivity of blue receptors"
 msgstr ""
 
-#: source/transformation/ColorVisionDeficiency.cpp:333
+#: source/transformation/ColorVisionDeficiency.cpp:423
 msgid "Protanopia - absence of red receptors"
 msgstr ""
 
-#: source/transformation/ColorVisionDeficiency.cpp:334
+#: source/transformation/ColorVisionDeficiency.cpp:424
 msgid "Deuteranopia - absence of green receptors"
 msgstr ""
 
-#: source/transformation/ColorVisionDeficiency.cpp:335
+#: source/transformation/ColorVisionDeficiency.cpp:425
 msgid "Tritanopia - absence of blue receptors"
 msgstr ""
 

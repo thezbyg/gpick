@@ -327,12 +327,12 @@ static GtkWidget* create_type_list(void){
 		const char *name;
 		int type;
 	} types[] = {
-		{_("Protanomaly - altered spectral sensitivity of red receptors"), ColorVisionDeficiency::PROTANOMALY},
-		{_("Deuteranomaly - altered spectral sensitivity of green receptors"), ColorVisionDeficiency::DEUTERANOMALY},
-		{_("Tritanomaly - altered spectral sensitivity of blue receptors"), ColorVisionDeficiency::TRITANOMALY},
-		{_("Protanopia - absence of red receptors"), ColorVisionDeficiency::PROTANOPIA},
-		{_("Deuteranopia - absence of green receptors"), ColorVisionDeficiency::DEUTERANOPIA},
-		{_("Tritanopia - absence of blue receptors"), ColorVisionDeficiency::TRITANOPIA},
+		{_("Protanomaly"), ColorVisionDeficiency::PROTANOMALY},
+		{_("Deuteranomaly"), ColorVisionDeficiency::DEUTERANOMALY},
+		{_("Tritanomaly"), ColorVisionDeficiency::TRITANOMALY},
+		{_("Protanopia"), ColorVisionDeficiency::PROTANOPIA},
+		{_("Deuteranopia"), ColorVisionDeficiency::DEUTERANOPIA},
+		{_("Tritanopia"), ColorVisionDeficiency::TRITANOPIA},
 	};
 
 	for (int i = 0; i < ColorVisionDeficiency::DEFICIENCY_TYPE_COUNT; ++i){
@@ -346,8 +346,6 @@ static GtkWidget* create_type_list(void){
 	return widget;
 }
 
-
-
 boost::shared_ptr<Configuration> ColorVisionDeficiency::getConfig(){
 	boost::shared_ptr<ColorVisionDeficiencyConfig> config = boost::shared_ptr<ColorVisionDeficiencyConfig>(new ColorVisionDeficiencyConfig(*this));
 	return config;
@@ -360,14 +358,30 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 	GtkWidget *widget;
 	int table_y = 0;
 
-	table_y=0;
+	table_y = 0;
+
+	info_bar = widget = gtk_info_bar_new();
+	info_label = gtk_label_new("");
+	gtk_label_set_line_wrap(GTK_LABEL(info_label), true);
+	gtk_label_set_justify(GTK_LABEL(info_label), GTK_JUSTIFY_LEFT);
+  gtk_label_set_single_line_mode(GTK_LABEL(info_label), false);
+	gtk_misc_set_alignment(GTK_MISC(info_label), 0, 0.5);
+	gtk_widget_set_size_request(info_label, 250, -1);
+	GtkWidget *content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));
+	gtk_container_add(GTK_CONTAINER(content_area), info_label);
+	gtk_widget_show_all(info_bar);
+
+	gtk_table_attach(GTK_TABLE(table), widget, 0, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+	table_y++;
+
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	type = widget = create_type_list();
+	g_signal_connect(G_OBJECT(type), "changed", G_CALLBACK(ColorVisionDeficiencyConfig::type_combobox_change_cb), this);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), transformation.type);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
 
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	strength = widget = gtk_hscale_new_with_range(0, 100, 1);
 	gtk_range_set_value(GTK_RANGE(widget), transformation.strength * 100);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
@@ -400,17 +414,29 @@ void ColorVisionDeficiencyConfig::applyConfig(dynvSystem *dynv){
 	}
 }
 
+void ColorVisionDeficiencyConfig::type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_)
+{
+	const char *descriptions[] = {
+		_("Protanomaly - altered spectral sensitivity of red receptors"),
+		_("Deuteranomaly - altered spectral sensitivity of green receptors"),
+		_("Tritanomaly - altered spectral sensitivity of blue receptors"),
+		_("Protanopia - absence of red receptors"),
+		_("Deuteranopia - absence of green receptors"),
+		_("Tritanopia - absence of blue receptors"),
+	};
 
+	GtkTreeIter iter;
+	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(this_->type), &iter)) {
+		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(this_->type));
+		ColorVisionDeficiency::DeficiencyType type_id;
+		gtk_tree_model_get(model, &iter, 1, &type_id, -1);
 
-
-
-
-
-
-
-
-
-
+		gtk_label_set_text(GTK_LABEL(this_->info_label), descriptions[type_id]);
+	}else{
+		gtk_label_set_text(GTK_LABEL(this_->info_label), "");
+	}
+	gtk_info_bar_set_message_type(GTK_INFO_BAR(this_->info_bar), GTK_MESSAGE_INFO);
+}
 
 }
 

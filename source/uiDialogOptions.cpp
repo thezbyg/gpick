@@ -214,7 +214,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	args->imprecision_postfix = widget = gtk_check_button_new_with_mnemonic(_("_Imprecision postix"));
+	args->imprecision_postfix = widget = gtk_check_button_new_with_mnemonic(_("_Imprecision postfix"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "color_names.imprecision_postfix", true));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;

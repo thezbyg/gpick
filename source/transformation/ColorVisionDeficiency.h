@@ -28,8 +28,12 @@ class ColorVisionDeficiency;
 class ColorVisionDeficiencyConfig: public Configuration{
 	protected:
 		GtkWidget *main;
+		GtkWidget *info_bar;
+		GtkWidget *info_label;
 		GtkWidget *type;
 		GtkWidget *strength;
+
+		static void type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_);
 	public:
 		ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation);
 		virtual ~ColorVisionDeficiencyConfig();
@@ -57,6 +61,7 @@ class ColorVisionDeficiency: public Transformation{
 		float strength;
 		DeficiencyType type;
 		virtual void apply(Color *input, Color *output);
+
 	public:
 		ColorVisionDeficiency();
 		ColorVisionDeficiency(DeficiencyType type, float strength);
