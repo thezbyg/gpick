@@ -11,7 +11,7 @@ env.AddCustomBuilders()
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
-vars.Add('LOCALEDIR', 'Path to locale directory', '/usr/local/share/locale')
+vars.Add('LOCALEDIR', 'Path to locale directory', '')
 vars.Add('DEBARCH', 'Debian package architecture', 'i386')
 vars.Add(BoolVariable('WITH_UNIQUE', 'Use libunique instead of pure DBus', False))
 vars.Add(BoolVariable('WITH_DBUSGLIB', 'Compile with DBus support', True))
@@ -22,6 +22,9 @@ vars.Add(BoolVariable('INTERNAL_EXPAT', 'Use internal Expat library', True))
 vars.Add(BoolVariable('INTERNAL_LUA', 'Use internal Lua library', True))
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
+
+if env['LOCALEDIR'] == '':
+	env['LOCALEDIR'] == env['DESTDIR'] + '/share/locale'
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
@@ -48,6 +51,7 @@ if not env.GetOption('clean'):
 	programs = {}
 	if env['ENABLE_NLS']:
 		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
+		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}}
 	if not env['PREBUILD_GRAMMAR']:
 		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
 		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
@@ -114,6 +118,14 @@ if env['ENABLE_NLS']:
 	
 	env.Alias(target="locales", source=[
 		locales
+	])
+
+	template = env.Xgettext("template.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'))
+
+	env.Append(XGETTEXT_FLAGS = ['--package-version="$GPICK_BUILD_VERSION"'])
+
+	env.Alias(target="template", source=[
+		template
 	])
 
 env.Alias(target="install", source=[

@@ -15,3 +15,15 @@ def addGettextBuilder(env):
 
 	env.Append(BUILDERS = {'Gettext': builder})
 
+	XgettextAction = SCons.Action.Action("$XGETTEXTCOM", "$XGETTEXTCOMSTR")
+	
+	env["XGETTEXT"]    = env.Detect("xgettext")
+	env["XGETTEXTCOM"] = "$XGETTEXT --keyword=_ --from-code utf8 --package-name=gpick $XGETTEXT_FLAGS --output=$TARGET $SOURCES"
+	
+	builder = Builder(
+		action = XgettextAction,
+		suffix = '.pot',
+		src_suffix = '.cpp',
+		single_source = False)
+
+	env.Append(BUILDERS = {'Xgettext': builder})
