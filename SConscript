@@ -27,18 +27,6 @@ v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
 v.Update(env)
 
-if os.environ.has_key('CC'):
-	env['CC'] = os.environ['CC']
-if os.environ.has_key('CFLAGS'):
-	env['CCFLAGS'] += SCons.Util.CLVar(os.environ['CFLAGS'])
-if os.environ.has_key('CXX'):
-	env['CXX'] = os.environ['CXX']
-if os.environ.has_key('CXXFLAGS'):
-	env['CXXFLAGS'] += SCons.Util.CLVar(os.environ['CXXFLAGS'])
-if os.environ.has_key('LDFLAGS'):
-	env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
-
-
 if not env['BUILD_TARGET']:
 	env['BUILD_TARGET'] = sys.platform
 
@@ -80,7 +68,17 @@ if not env.GetOption('clean'):
 
 	env = conf.Finish()
 
-
+if os.environ.has_key('CC'):
+	env['CC'] = os.environ['CC']
+if os.environ.has_key('CFLAGS'):
+	env['CCFLAGS'] += SCons.Util.CLVar(os.environ['CFLAGS'])
+if os.environ.has_key('CXX'):
+	env['CXX'] = os.environ['CXX']
+if os.environ.has_key('CXXFLAGS'):
+	env['CXXFLAGS'] += SCons.Util.CLVar(os.environ['CXXFLAGS'])
+if os.environ.has_key('LDFLAGS'):
+	env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
+	
 Decider('MD5-timestamp')
 
 if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
