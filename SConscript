@@ -24,7 +24,7 @@ vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
 
 if env['LOCALEDIR'] == '':
-	env['LOCALEDIR'] == env['DESTDIR'] + '/share/locale'
+	env['LOCALEDIR'] = env['DESTDIR'] + '/share/locale'
 
 v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
 v.Add('GPICK_BUILD_VERSION', '', '0.0')
