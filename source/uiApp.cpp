@@ -21,6 +21,7 @@
 #include "GlobalStateStruct.h"
 
 
+#include "Paths.h"
 #include "Converter.h"
 #include "CopyPaste.h"
 #include "unique/Unique.h"
@@ -183,6 +184,7 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkNotebookPage *page, gui
 static void destroy_cb(GtkWidget *widget, AppArgs *args){
 	g_signal_handlers_disconnect_matched(G_OBJECT(args->notebook), G_SIGNAL_MATCH_FUNC, 0, NULL, NULL, (void*)notebook_switch_cb, 0);       //disconnect notebook switch callback, because destroying child widgets triggers it
 
+
 	//dynv_set_int32(args->params, "notebook_page", gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook)));
 	dynv_set_string(args->params, "color_source", args->color_source_index[gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook))]->identificator);
 	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
@@ -215,7 +217,13 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args){
 
 	floating_picker_free(args->floating_picker);
 
-    gtk_main_quit();
+	if (app_is_autoload_enabled(args)){
+		gchar* autosave_file = build_config_path("autosave.gpa");
+		palette_file_save(autosave_file, args->gs->colors);
+		g_free(autosave_file);
+	}
+
+	gtk_main_quit();
 }
 
 
@@ -367,10 +375,12 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args){
 	updateProgramName(args);
 }
 
-int app_load_file(AppArgs *args, const char *filename){
+int app_load_file(AppArgs *args, const char *filename, bool autoload){
 	if (palette_file_load(filename, args->gs->colors)==0){
-		args->current_filename = g_strdup(filename);
-		updateRecentFileList(args, filename, false);
+		if (!autoload) {
+			args->current_filename = g_strdup(filename);
+			updateRecentFileList(args, filename, false);
+		}
 		updateProgramName(args);
 	}else{
 		return -1;
@@ -1285,6 +1295,10 @@ static int unique_show_window(AppArgs* args){
 	status_icon_set_visible(args->statusIcon, false);
 	main_show_window(args->window, args->params);
 	return 0;
+}
+
+bool app_is_autoload_enabled(AppArgs *args){
+	return dynv_get_bool_wd(args->params, "main.save_restore_palette", true);
 }
 
 AppArgs* app_create_main(){

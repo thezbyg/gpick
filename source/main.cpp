@@ -22,6 +22,7 @@
 #include "uiAbout.h"
 #include "uiApp.h"
 #include "Internationalisation.h"
+#include "DynvHelpers.h"
 
 #include <gtk/gtk.h>
 
@@ -64,7 +65,15 @@ int main(int argc, char **argv){
 	AppArgs *args = app_create_main();
 	if (args){
 
-		if (commandline_filename) app_load_file(args, commandline_filename[0]);
+		if (commandline_filename){
+			app_load_file(args, commandline_filename[0]);
+		}else{
+			if (app_is_autoload_enabled(args)){
+				gchar* autosave_file = build_config_path("autosave.gpa");
+				app_load_file(args, autosave_file, true);
+				g_free(autosave_file);
+			}
+		}
 		if (commandline_geometry) app_parse_geometry(args, commandline_geometry);
 
 		int r = app_run(args);

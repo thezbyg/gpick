@@ -29,6 +29,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *start_in_tray;
 	GtkWidget *refresh_rate;
 	GtkWidget *single_instance;
+	GtkWidget *save_restore_palette;
 	GtkWidget *add_on_release;
 	GtkWidget *add_to_palette;
 	GtkWidget *copy_to_clipboard;
@@ -48,6 +49,7 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	dynv_set_bool(args->params, "main.close_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->close_to_tray)));
 	dynv_set_bool(args->params, "main.start_in_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray)));
 	dynv_set_bool(args->params, "main.single_instance", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance)));
+	dynv_set_bool(args->params, "main.save_restore_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->save_restore_palette)));
 
 	dynv_set_float(args->params, "picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
 	dynv_set_int32(args->params, "picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
@@ -99,6 +101,11 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 
 	args->single_instance = widget = gtk_check_button_new_with_mnemonic (_("_Single instance"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.single_instance", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+
+	args->save_restore_palette = widget = gtk_check_button_new_with_mnemonic (_("Save/_Restore palette"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.save_restore_palette", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 

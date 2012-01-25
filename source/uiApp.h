@@ -42,9 +42,11 @@ void converter_get_text(const gchar* function, struct ColorObject* color_object,
 typedef struct AppArgs AppArgs;
 
 AppArgs* app_create_main();
-int app_load_file(AppArgs *args, const char *filename);
+int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
 int app_run(AppArgs *args);
 int app_parse_geometry(AppArgs *args, const char *geometry);
+
+bool app_is_autoload_enabled(AppArgs *args);
 
 
 #endif /* UIAPP_H_ */
