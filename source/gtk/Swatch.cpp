@@ -239,6 +239,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 		gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 27);
 	}
 
+	cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
 	cairo_stroke(cr);
 
 	cairo_set_source_rgb(cr, 1, 1, 1);
