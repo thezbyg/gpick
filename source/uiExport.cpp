@@ -71,7 +71,7 @@ static vector<struct ColorObject*> get_ordered_list(struct ColorList *color_list
 		}
 }
 
-static int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc);
 	if (f.is_open()){
 
@@ -110,7 +110,7 @@ static void strip_leading_trailing_chars(string& x, string& stripchars){
    x = x.substr(start, end - start + 1);
 }
 
-static int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
+int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::in);
 	if (f.is_open()){
 		int r = 0;
@@ -240,7 +240,7 @@ static int32_t palette_export_ase_color(struct ColorObject* color_object, void* 
 	return 0;
 }
 
-static int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
+int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected){
 	ofstream f(filename, ios::out | ios::trunc | ios::binary);
 	if (f.is_open()){
 		f << "ASEF";	//magic header
@@ -263,7 +263,7 @@ static int32_t palette_export_ase(struct ColorList *color_list, const gchar* fil
 }
 
 
-static int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
+int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 	ifstream f(filename, ios::binary);
 	if (f.is_open()){
 		char magic[4];

@@ -93,6 +93,7 @@ typedef struct AppArgs{
 	GlobalState* gs;
 
 	char* current_filename;
+	bool imported;
 
 	gint x, y;
 	gint width, height;
@@ -338,18 +339,21 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 }
 
 static void updateProgramName(AppArgs *args){
-	string prg_name;
+	stringstream prg_name;
 	if (args->current_filename == 0){
-		prg_name = _("New palette");
+		prg_name << _("New palette");
 	}else{
 		gchar* filename = g_path_get_basename(args->current_filename);
-		prg_name = filename;
+		if (args->imported){
+			prg_name << filename << " " << _("(Imported)");
+		}else{
+			prg_name << filename;
+		}
 		g_free(filename);
 	}
-	prg_name += " - ";
-	prg_name += program_name;
+	prg_name << " - " << program_name;
 
-	gtk_window_set_title(GTK_WINDOW(args->window), prg_name.c_str());
+	gtk_window_set_title(GTK_WINDOW(args->window), prg_name.str().c_str());
 }
 
 static void show_dialog_converter(GtkWidget *widget, AppArgs *args){
@@ -375,14 +379,115 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args){
 	updateProgramName(args);
 }
 
+enum FileType{
+	GPA,
+	GPL,
+	ASE,
+	UNKNOWN,
+};
+
+static FileType get_file_type_from_ext(const char *filename){
+	const struct{
+		FileType type;
+		const char *extension;
+	}extensions[] = {
+		{GPA, ".gpa"},
+		{GPL, ".gpl"},
+		{ASE, ".ase"},
+		{UNKNOWN, 0},
+	};
+	const char *ext = g_strrstr(filename, ".");
+	if (ext){
+		for (int i = 0; extensions[i].type != UNKNOWN; ++i){
+			if (g_ascii_strcasecmp(ext, extensions[i].extension) == 0){
+				return extensions[i].type;
+			}
+		}
+	}
+	return UNKNOWN;
+}
+
+int app_save_file(AppArgs *args, const char *filename){
+	int return_value = -1;
+
+	if (filename == NULL){
+		if (args->current_filename){
+			filename = args->current_filename;
+		}else{
+			return -1;
+		}
+	}
+
+	FileType filetype;
+  switch (filetype = get_file_type_from_ext(filename)){
+		case GPL:
+			return_value = palette_export_gpl(args->gs->colors, filename, false);
+			break;
+		case ASE:
+			return_value = palette_export_ase(args->gs->colors, filename, false);
+			break;
+		case UNKNOWN:
+		case GPA:
+			return_value = palette_file_save(filename, args->gs->colors);
+			break;
+	}
+
+	if (return_value == 0){
+		if (filetype == GPA || filetype == UNKNOWN){
+			args->imported = false;
+		}else{
+			args->imported = true;
+		}
+		if (filename != args->current_filename){  // do not touch current_filename if it is assigned to filename
+			if (args->current_filename) g_free(args->current_filename);
+			args->current_filename = g_strdup(filename);
+		}
+		updateProgramName(args);
+		updateRecentFileList(args, filename, true);
+		return 0;
+	}else{
+		updateProgramName(args);
+		return -1;
+	}
+	return 0;
+}
+
 int app_load_file(AppArgs *args, const char *filename, bool autoload){
-	if (palette_file_load(filename, args->gs->colors)==0){
-		if (!autoload) {
+	int return_value = -1;
+	int index;
+	bool imported = false;
+
+	switch (get_file_type_from_ext(filename)){
+		case GPL:
+			return_value = palette_import_gpl(args->gs->colors, filename);
+			imported = true;
+			break;
+		case ASE:
+			return_value = palette_import_ase(args->gs->colors, filename);
+			imported = true;
+			break;
+		case GPA:
+		case UNKNOWN:
+			return_value = palette_file_load(filename, args->gs->colors);
+			break;
+	}
+
+	if (args->current_filename) g_free(args->current_filename);
+	args->current_filename = NULL;
+
+	if (return_value == 0){
+		if (imported){
+			args->imported = true;
+		}else{
+			args->imported = false;
+		}
+		if (!autoload){
 			args->current_filename = g_strdup(filename);
 			updateRecentFileList(args, filename, false);
 		}
 		updateProgramName(args);
 	}else{
+		updateProgramName(args);
 		return -1;
 	}
 	return 0;
@@ -393,20 +498,33 @@ int app_parse_geometry(AppArgs *args, const char *geometry){
 	return 0;
 }
 
+static void menu_file_revert(GtkWidget *widget, AppArgs *args){
+  string filename;
+	if (args->current_filename){
+		filename = args->current_filename;
+	}else{
+		return;
+	}
+
+	color_list_remove_all(args->gs->colors);
+
+	if (app_load_file(args, filename.c_str()) == 0){
+	}else{
+		GtkWidget* message;
+		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
+		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
+		gtk_dialog_run(GTK_DIALOG(message));
+		gtk_widget_destroy(message);
+	}
+}
 
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args){
   const char *filename = args->recent_files.begin()->c_str();
 
 	color_list_remove_all(args->gs->colors);
-	if (args->current_filename) g_free(args->current_filename);
-	args->current_filename = 0;
 
-	if (palette_file_load(filename, args->gs->colors) == 0){
-		updateRecentFileList(args, filename, false);
-		args->current_filename = g_strdup(filename);
-		updateProgramName(args);
+	if (app_load_file(args, filename) == 0){
 	}else{
-		updateProgramName(args);
 		GtkWidget* message;
 		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
 		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
@@ -422,15 +540,9 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
   const char *filename = (*i).c_str();
 
 	color_list_remove_all(args->gs->colors);
-	if (args->current_filename) g_free(args->current_filename);
-	args->current_filename = 0;
 
-	if (palette_file_load(filename, args->gs->colors) == 0){
-		updateRecentFileList(args, filename, false);
-		args->current_filename = g_strdup(filename);
-		updateProgramName(args);
+	if (app_load_file(args, filename) == 0){
 	}else{
-		updateProgramName(args);
 		GtkWidget* message;
 		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
 		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
@@ -439,10 +551,45 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args){
 	}
 }
 
+static void add_file_filters (GtkWidget *dialog, FileType preselect){
+	const struct{
+		FileType type;
+		const char *label;
+		const char *filter;
+	}filters[] = {
+		{GPA, _("Gpick palette (*.gpa)"), "*.gpa"},
+		{GPL, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl"},
+		{ASE, _("Adobe Swatch Exchange (*.ase)"), "*.ase"},
+		{UNKNOWN, 0, 0},
+	};
+	GtkFileFilter *filter;
+
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, _("All files"));
+	gtk_file_filter_add_pattern(filter, "*");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, _("All supported formats"));
+	for (gint i = 0; filters[i].type != UNKNOWN; ++i) {
+		gtk_file_filter_add_pattern(filter, filters[i].filter);
+	}
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+
+	for (gint i = 0; filters[i].type != UNKNOWN; ++i) {
+		filter = gtk_file_filter_new();
+		gtk_file_filter_set_name(filter, filters[i].label);
+		gtk_file_filter_add_pattern(filter, filters[i].filter);
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+		if (preselect == filters[i].type){
+			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+		}
+	}
+}
 static void menu_file_open(GtkWidget *widget, AppArgs *args){
 
 	GtkWidget *dialog;
-	GtkFileFilter *filter;
 
 	dialog = gtk_file_chooser_dialog_new(_("Open File"), GTK_WINDOW(gtk_widget_get_toplevel(widget)),
 						  GTK_FILE_CHOOSER_ACTION_OPEN,
@@ -455,11 +602,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 	const gchar* default_path = dynv_get_string_wd(args->params, "open.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
-	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, _("Gpick palette *.gpa"));
-	gtk_file_filter_add_pattern(filter, "*.gpa");
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	add_file_filters(dialog, UNKNOWN);
 
 	gboolean finished=FALSE;
 
@@ -474,16 +617,10 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 			g_free(path);
 
 			color_list_remove_all(args->gs->colors);
-			if (args->current_filename) g_free(args->current_filename);
-			args->current_filename = 0;
 
-			if (palette_file_load(filename, args->gs->colors) == 0){
-				updateRecentFileList(args, filename, false);
-				args->current_filename = g_strdup(filename);
-				updateProgramName(args);
+			if (app_load_file(args, filename) == 0){
 				finished = TRUE;
 			}else{
-				updateProgramName(args);
 				GtkWidget* message;
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
 				gtk_window_set_title(GTK_WINDOW(dialog), _("Open"));
@@ -502,7 +639,6 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args){
 static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 
 	GtkWidget *dialog;
-	GtkFileFilter *filter;
 
 	dialog = gtk_file_chooser_dialog_new (_("Save As"), GTK_WINDOW(gtk_widget_get_toplevel(widget)),
 						  GTK_FILE_CHOOSER_ACTION_SAVE,
@@ -517,11 +653,7 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 	const gchar* default_path = dynv_get_string_wd(args->params, "save.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
 
-	filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, _("Gpick palette *.gpa"));
-	gtk_file_filter_add_pattern(filter, "*.gpa");
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	add_file_filters(dialog, UNKNOWN);
 
 	gboolean finished=FALSE;
 
@@ -535,16 +667,12 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 			dynv_set_string(args->params, "save.path", path);
 			g_free(path);
 
-			if (palette_file_save(filename, args->gs->colors) == 0){
-				if (args->current_filename) g_free(args->current_filename);
-				args->current_filename = g_strdup(filename);
-				updateProgramName(args);
-				updateRecentFileList(args, filename, true);
+			if (app_save_file(args, filename) == 0){
 				finished=TRUE;
 			}else{
 				GtkWidget* message;
 				message=gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));
-				gtk_window_set_title(GTK_WINDOW(dialog), _("Open"));
+				gtk_window_set_title(GTK_WINDOW(message), _("Save As"));
 				gtk_dialog_run(GTK_DIALOG(message));
 				gtk_widget_destroy(message);
 			}
@@ -557,13 +685,17 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args){
 }
 
 static void menu_file_save(GtkWidget *widget, AppArgs *args) {
+	// If file has no name, "Save As" dialog is shown instead.
 	if (args->current_filename == 0){
 		menu_file_save_as(widget, args);
 	}else{
-		if (palette_file_save(args->current_filename, args->gs->colors) == 0){
-			updateRecentFileList(args, args->current_filename, true);
+		if (app_save_file(args, NULL) == 0){
 		}else{
-
+			GtkWidget* message;
+			message=gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));
+			gtk_window_set_title(GTK_WINDOW(message), _("Save"));
+			gtk_dialog_run(GTK_DIALOG(message));
+			gtk_widget_destroy(message);
 		}
 	}
 }
@@ -708,9 +840,17 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open), args);
 	}
 
-	item = gtk_menu_item_new_with_mnemonic(_("_Recent files"));
+	item = gtk_menu_item_new_with_mnemonic(_("Recent _files"));
 	items->recent_files = item;
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
+	if (gtk_stock_lookup(GTK_STOCK_REVERT_TO_SAVED, &stock_item)){
+		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_r, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_F5, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_revert), args);
+	}
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new ());
 
@@ -1089,7 +1229,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
 				if (color_list_get_count(color_list) > 0){
 					ColorSource *color_source = (ColorSource*)dynv_get_pointer_wd(args->gs->params, "CurrentColorSource", 0);
-          uint32_t color_index = 0;
+					uint32_t color_index = 0;
 					switch(event->keyval)
 					{
 						case GDK_KP_1:
@@ -1318,6 +1458,7 @@ AppArgs* app_create_main(){
 	}
 
 	args->current_filename = 0;
+	args->imported = false;
 	args->current_color_source = 0;
 	args->secondary_color_source = 0;
 	args->secondary_source_widget = 0;
