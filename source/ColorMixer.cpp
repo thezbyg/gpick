@@ -282,7 +282,7 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-	item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	item = gtk_menu_item_new_with_image (_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);

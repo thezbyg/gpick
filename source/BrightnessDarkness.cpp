@@ -239,7 +239,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Brigh
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
 
-	    item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
 

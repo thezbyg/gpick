@@ -416,7 +416,7 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_to_palette), args);
 
-	    item = gtk_menu_item_new_with_image (_("_Add all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	    item = gtk_menu_item_new_with_image (_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
 	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_all_to_palette), args);
 
