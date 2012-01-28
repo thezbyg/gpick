@@ -819,6 +819,44 @@ static void destroy_file_menu_items(FileMenuItems *items){
 	delete items;
 }
 
+static void activate_secondary_source(AppArgs *args, ColorSource *source){
+	if (args->secondary_color_source){
+		//gtk_container_remove(GTK_CONTAINER(args->secondary_source_container), args->secondary_source_widget);
+		color_source_deactivate(args->secondary_color_source);
+		color_source_destroy(args->secondary_color_source);
+		args->secondary_color_source = 0;
+		args->secondary_source_widget = 0;
+	}
+
+	if (source){
+
+		string namespace_str = "gpick.secondary_view.";
+		namespace_str += source->identificator;
+
+		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->params, namespace_str.c_str());
+		source = color_source_implement(source, args->gs, dynv_namespace);
+		GtkWidget *new_widget = color_source_get_widget(source);
+		dynv_system_release(dynv_namespace);
+
+		args->secondary_color_source = source;
+		args->secondary_source_widget = new_widget;
+
+		gtk_box_pack_start(GTK_BOX(args->secondary_source_container), new_widget, true, true, 0);
+
+		gtk_widget_show(new_widget);
+		color_source_activate(source);
+
+	}
+}
+
+
+static void secondary_view_cb(GtkWidget *widget, AppArgs *args){
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
+			ColorSource *source = static_cast<ColorSource*>(g_object_get_data(G_OBJECT(widget), "source"));
+			activate_secondary_source(args, source);
+	}
+}
+
 static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group) {
 	GtkMenu *menu;
 	GtkWidget *item;
@@ -933,6 +971,39 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 
 	menu = GTK_MENU(gtk_menu_new());
+
+	GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
+	GSList *group = NULL;
+
+	ColorSource *source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
+
+	item = gtk_radio_menu_item_new_with_label(group, _("None"));
+	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+	if (source == NULL)
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+	g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
+
+
+	vector<ColorSource*> sources = color_source_manager_get_all(args->csm);
+	for (uint32_t i = 0; i < sources.size(); i++){
+		if (!(sources[i]->single_instance_only)){
+			item = gtk_radio_menu_item_new_with_label(group, sources[i]->hr_name);
+			group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+			if (source == sources[i])
+				gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+			g_object_set_data_full(G_OBJECT(item), "source", sources[i], (GDestroyNotify)NULL);
+			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
+		}
+	}
+
+	item = gtk_menu_item_new_with_mnemonic(_("_Secondary View"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), GTK_WIDGET(menu2));
+
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	item = gtk_check_menu_item_new_with_mnemonic(_("Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
@@ -1402,41 +1473,6 @@ static void set_main_window_icon() {
 	}
 }
 
-static void activate_secondary_source(AppArgs *args, ColorSource *source){
-	if (args->secondary_color_source){
-		//gtk_container_remove(GTK_CONTAINER(args->secondary_source_container), args->secondary_source_widget);
-		color_source_deactivate(args->secondary_color_source);
-		color_source_destroy(args->secondary_color_source);
-		args->secondary_color_source = 0;
-		args->secondary_source_widget = 0;
-	}
-
-	if (source){
-
-		string namespace_str = "gpick.secondary_view.";
-		namespace_str += source->identificator;
-
-		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->params, namespace_str.c_str());
-		source = color_source_implement(source, args->gs, dynv_namespace);
-		GtkWidget *new_widget = color_source_get_widget(source);
-		dynv_system_release(dynv_namespace);
-
-		args->secondary_color_source = source;
-		args->secondary_source_widget = new_widget;
-
-		gtk_box_pack_start(GTK_BOX(args->secondary_source_container), new_widget, true, true, 0);
-
-		gtk_widget_show(new_widget);
-		color_source_activate(source);
-
-	}
-}
-
-static void secondary_view_cb(GtkWidget *widget, AppArgs *args){
-	ColorSource *source = static_cast<ColorSource*>(g_object_get_data(G_OBJECT(widget), "source"));
-	activate_secondary_source(args, source);
-}
-
 static int unique_show_window(AppArgs* args){
 	status_icon_set_visible(args->statusIcon, false);
 	main_show_window(args->window, args->params);
@@ -1574,32 +1610,6 @@ AppArgs* app_create_main(){
 		widget = gtk_vbox_new(false, 0);
 		args->secondary_source_container = widget;
 
-		GtkWidget *menubar = gtk_menu_bar_new();
-		GtkWidget *menu;
-		GtkWidget *item, *file_item;
-
-		menu = gtk_menu_new();
-
-		item = gtk_menu_item_new_with_label(_("None"));
-		g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-
-		vector<ColorSource*> sources = color_source_manager_get_all(args->csm);
-		for (uint32_t i = 0; i < sources.size(); i++){
-			if (!(sources[i]->single_instance_only)){
-				item = gtk_menu_item_new_with_label(sources[i]->hr_name);
-				g_object_set_data_full(G_OBJECT(item), "source", sources[i], (GDestroyNotify)NULL);
-				g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
-				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-			}
-		}
-
-		file_item = gtk_menu_item_new_with_mnemonic(_("_View"));
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
-		gtk_menu_bar_append(GTK_MENU_BAR(menubar), file_item);
-
-		gtk_box_pack_start(GTK_BOX(widget), menubar, false, true, 0);
 
 		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
 		gtk_widget_show_all(widget);

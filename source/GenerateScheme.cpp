@@ -754,7 +754,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
 
 	args->color_previews = gtk_table_new(3, 2, false);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
@@ -766,6 +766,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	for (int i = 0; i < MAX_COLOR_WIDGETS; ++i){
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
+		gtk_color_set_roundness(GTK_COLOR(widget), 5);
 		gtk_color_set_hcenter(GTK_COLOR(widget), true);
 
 		gtk_table_attach(GTK_TABLE(args->color_previews), widget, i % 2, (i % 2) + 1, i / 2, i / 2 + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
@@ -790,7 +791,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 
 	hbox2 = gtk_hbox_new(FALSE, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
 
     args->color_wheel = gtk_color_wheel_new();
 	gtk_box_pack_start(GTK_BOX(hbox2), args->color_wheel, false, false, 0);
@@ -812,7 +813,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gint table_y;
 	table = gtk_table_new(5, 2, false);
-	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 5);
+	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
 	table_y = 0;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Hue:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
