@@ -717,7 +717,10 @@ static void menu_file_import(GtkWidget *widget, gpointer data) {
 
 static void menu_file_export(GtkWidget *widget, gpointer data) {
 	AppArgs* args=(AppArgs*)data;
-	struct ColorList *color_list = color_list_new(NULL);
+	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->params);
+	struct ColorList *color_list = color_list_new(handler_map);
+	dynv_handler_map_release(handler_map);
+
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_export_show(GTK_WINDOW(args->window), color_list, true, args->gs);
 	color_list_destroy(color_list);
@@ -871,6 +874,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
 	item = gtk_image_menu_item_new_with_mnemonic(_("Ex_port..."));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_e, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export_all), args);
 	items->export_all = item;
@@ -878,6 +882,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	//gtk_widget_set_sensitive(item, (total_count >= 1));
 
 	item = gtk_image_menu_item_new_with_mnemonic(_("Expo_rt Selected..."));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_e, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export), args);
 	items->export_selected = item;
@@ -885,6 +890,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 	//gtk_widget_set_sensitive(item, (selected_count >= 1));
 
 	item = gtk_image_menu_item_new_with_mnemonic(_("_Import..."));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_i, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_import), args);
 	//gtk_widget_set_sensitive(item, 0);

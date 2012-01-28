@@ -17,6 +17,7 @@
  */
 
 #include "uiExport.h"
+#include "FileFormat.h"
 #include "uiUtilities.h"
 #include "uiListPalette.h"
 #include "Endian.h"
@@ -69,6 +70,14 @@ static vector<struct ColorObject*> get_ordered_list(struct ColorList *color_list
 			ordered.resize(max_index + 1);
 			return ordered;
 		}
+}
+
+int32_t palette_import_gpa(struct ColorList *color_list, const gchar* filename){
+    return palette_file_load (filename, color_list);
+}
+
+int32_t palette_export_gpa(struct ColorList *color_list, const gchar* filename, gboolean selected){
+    return palette_file_save (filename, color_list);
 }
 
 int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
@@ -472,10 +481,11 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		int32_t (*export_function)(struct ColorList *color_list, const gchar* filename, gboolean selected);
 	};
 	struct export_formats formats[] = {
-		{ _("GIMP/Inkscape Palette *.gpl"), "*.gpl", palette_export_gpl },
-		{ _("Alias/WaveFront Material *.mtl"), "*.mtl", palette_export_mtl },
-		{ _("Adobe Swatch Exchange *.ase"), "*.ase", palette_export_ase },
-		{ _("Text file *.txt"), "*.txt", palette_export_txt },
+		{ _("Gpick Palette (*.gpa)"), "*.gpa", palette_export_gpa },
+		{ _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl", palette_export_gpl },
+		{ _("Alias/WaveFront Material (*.mtl)"), "*.mtl", palette_export_mtl },
+		{ _("Adobe Swatch Exchange (*.ase)"), "*.ase", palette_export_ase },
+		{ _("Text file (*.txt)"), "*.txt", palette_export_txt },
 	};
 
 
@@ -537,11 +547,38 @@ int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list,
 	return 0;
 }
 
+enum FileType{
+	GPA,
+	GPL,
+	ASE,
+	UNKNOWN,
+};
+
+static FileType get_file_type_from_ext(const char *filename){
+	const struct{
+		FileType type;
+		const char *extension;
+	}extensions[] = {
+		{GPA, ".gpa"},
+		{GPL, ".gpl"},
+		{ASE, ".ase"},
+		{UNKNOWN, 0},
+	};
+	const char *ext = g_strrstr(filename, ".");
+	if (ext){
+		for (int i = 0; extensions[i].type != UNKNOWN; ++i){
+			if (g_ascii_strcasecmp(ext, extensions[i].extension) == 0){
+				return extensions[i].type;
+			}
+		}
+	}
+	return UNKNOWN;
+}
 
 int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState *gs){
 
 	GtkWidget *dialog;
-
+	GtkWidget* message;
 	GtkFileFilter *filter;
 
 	dialog = gtk_file_chooser_dialog_new (_("Import"),	parent,
@@ -552,30 +589,46 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	struct import_formats{
+	const struct import_formats{
+		FileType type;
 		const gchar* name;
 		const gchar* pattern;
 		int32_t (*import_function)(struct ColorList *color_list, const gchar* filename);
+	}formats[] = {
+		{GPA, _("GPick Palette (*.gpa)"), "*.gpa", palette_import_gpa },
+		{GPL, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl", palette_import_gpl },
+		{ASE, _("Adobe Swatch Exchange (*.ase)"), "*.ase", palette_import_ase },
+		{UNKNOWN, NULL, NULL, NULL},
 	};
-	struct import_formats formats[] = {
-		{ _("GIMP/Inkscape Palette *.gpl"), "*.gpl", palette_import_gpl },
-		{ _("Adobe Swatch Exchange *.ase"), "*.ase", palette_import_ase },
-
-		/*{ _("Alias/WaveFront Material *.mtl"), "*.mtl", palette_export_mtl },
-
-		{ _("Text file *.txt"), "*.txt", palette_export_txt },*/
-	};
-
-
 
 	const char* default_path = dynv_get_string_wd(gs->params, "gpick.import.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	const char* selected_filter = dynv_get_string_wd(gs->params, "gpick.import.filter", "all_supported");
 
-	const char* selected_filter = dynv_get_string_wd(gs->params, "gpick.import.filter", "*.gpl");
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, _("All files"));
+	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all");
+	gtk_file_filter_add_pattern(filter, "*");
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	if (g_strcmp0(selected_filter, "all") == 0){
+		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	}
 
-	for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
+	filter = gtk_file_filter_new();
+	gtk_file_filter_set_name(filter, _("All supported formats"));
+	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all_supported");
+	for (gint i = 0; formats[i].name; ++i) {
+		gtk_file_filter_add_pattern(filter, formats[i].pattern);
+	}
+	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	if (g_strcmp0(selected_filter, "all_supported") == 0){
+		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	}
+
+	for (gint i = 0; formats[i].name; ++i) {
 		filter = gtk_file_filter_new();
 		gtk_file_filter_set_name(filter, formats[i].name);
+		g_object_set_data(G_OBJECT(filter), "identification", (gpointer)formats[i].pattern);
 		gtk_file_filter_add_pattern(filter, formats[i].pattern);
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 
@@ -584,7 +637,7 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		}
 	}
 
-	gboolean finished=FALSE;
+	gboolean finished = false;
 
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -596,21 +649,40 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 			dynv_set_string(gs->params, "gpick.import.path", path);
 			g_free(path);
 
-			const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
-			for (gint i = 0; i != sizeof(formats) / sizeof(struct import_formats); ++i) {
-				if (g_strcmp0(formats[i].name, format_name)==0){
-					struct ColorList *color_list_arg;
-					color_list_arg = gs->colors;
-					if (formats[i].import_function(color_list_arg, filename)==0){
-						finished=TRUE;
-					}else{
-						GtkWidget* message;
-						message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
-						gtk_window_set_title(GTK_WINDOW(dialog), _("Import"));
-						gtk_dialog_run(GTK_DIALOG(message));
-						gtk_widget_destroy(message);
+      FileType type = get_file_type_from_ext(filename);
+			if (type == UNKNOWN){
+				const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
+				for (int i = 0; formats[i].name; ++i) {
+					if (g_strcmp0(formats[i].name, format_name) == 0){
+						type = formats[i].type;
+						break;
 					}
-					dynv_set_string(gs->params, "gpick.import.filter", formats[i].pattern);
+				}
+			}
+
+			if (type == UNKNOWN){
+				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File format is not supported"));
+				gtk_window_set_title(GTK_WINDOW(message), _("Import"));
+				gtk_dialog_run(GTK_DIALOG(message));
+				gtk_widget_destroy(message);
+			}else{
+				for (int i = 0; formats[i].name; ++i) {
+					if (formats[i].type == type){
+						struct ColorList *color_list_arg;
+						color_list_arg = gs->colors;
+						if (formats[i].import_function(color_list_arg, filename) == 0){
+							finished = true;
+						}else{
+							message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
+							gtk_window_set_title(GTK_WINDOW(message), _("Import"));
+							gtk_dialog_run(GTK_DIALOG(message));
+							gtk_widget_destroy(message);
+						}
+
+						const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
+						dynv_set_string(gs->params, "gpick.import.filter", identification);
+						break;
+					}
 				}
 			}
 
