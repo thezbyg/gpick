@@ -292,7 +292,7 @@ void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<i
 	width	= right - left;
 	height	= bottom - top;
 
-	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, ns->width_height, ns->width_height, offset.x, offset.y, ns->width_height / (double)width, ns->width_height / (double)height, GDK_INTERP_NEAREST);
+	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, ns->width_height, ns->width_height, -offset.x * ns->width_height / (double)width, -offset.y * ns->width_height / (double)height, ns->width_height / (double)width, ns->width_height / (double)height, GDK_INTERP_NEAREST);
 
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 

@@ -38,6 +38,7 @@ int color_source_init(ColorSource* source, const char *identificator, const char
 	source->implement = 0;
 	source->widget = 0;
 	source->single_instance_only = false;
+	source->needs_viewport = true;
 	return 0;
 }
 

@@ -55,6 +55,7 @@ typedef struct ColorSource{
 	int (*destroy)(ColorSource *source);
 
 	bool single_instance_only;
+	bool needs_viewport;
 
 	GtkWidget *widget;
 	void* userdata;

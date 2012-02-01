@@ -78,6 +78,7 @@ typedef struct AppArgs{
 
 	ColorSource *secondary_color_source;
 	GtkWidget *secondary_source_widget;
+	GtkWidget *secondary_source_scrolled_viewpoint;
 	GtkWidget *secondary_source_container;
 
 	GtkWidget *color_list;
@@ -94,6 +95,7 @@ typedef struct AppArgs{
 
 	char* current_filename;
 	bool imported;
+	GtkWidget *precision_loss_icon;
 
 	gint x, y;
 	gint width, height;
@@ -342,12 +344,18 @@ static void updateProgramName(AppArgs *args){
 	stringstream prg_name;
 	if (args->current_filename == 0){
 		prg_name << _("New palette");
+		if (args->precision_loss_icon)
+			gtk_widget_hide(args->precision_loss_icon);
 	}else{
 		gchar* filename = g_path_get_basename(args->current_filename);
 		if (args->imported){
 			prg_name << filename << " " << _("(Imported)");
+			if (args->precision_loss_icon)
+				gtk_widget_show(args->precision_loss_icon);
 		}else{
 			prg_name << filename;
+			if (args->precision_loss_icon)
+				gtk_widget_hide(args->precision_loss_icon);
 		}
 		g_free(filename);
 	}
@@ -821,15 +829,18 @@ static void destroy_file_menu_items(FileMenuItems *items){
 
 static void activate_secondary_source(AppArgs *args, ColorSource *source){
 	if (args->secondary_color_source){
-		//gtk_container_remove(GTK_CONTAINER(args->secondary_source_container), args->secondary_source_widget);
 		color_source_deactivate(args->secondary_color_source);
 		color_source_destroy(args->secondary_color_source);
 		args->secondary_color_source = 0;
 		args->secondary_source_widget = 0;
+		if (args->secondary_source_scrolled_viewpoint)
+			gtk_container_remove(GTK_CONTAINER(args->secondary_source_container), args->secondary_source_scrolled_viewpoint);
+		args->secondary_source_scrolled_viewpoint= 0;
+		if (!source)
+			gtk_widget_hide(args->secondary_source_container);
 	}
 
 	if (source){
-
 		string namespace_str = "gpick.secondary_view.";
 		namespace_str += source->identificator;
 
@@ -841,9 +852,22 @@ static void activate_secondary_source(AppArgs *args, ColorSource *source){
 		args->secondary_color_source = source;
 		args->secondary_source_widget = new_widget;
 
-		gtk_box_pack_start(GTK_BOX(args->secondary_source_container), new_widget, true, true, 0);
+		if (source->needs_viewport){
+			GtkWidget *scrolled_window = gtk_scrolled_window_new(0,0);
+			gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+			gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_NONE);
+			gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), new_widget);
 
-		gtk_widget_show(new_widget);
+      args->secondary_source_scrolled_viewpoint = scrolled_window;
+			gtk_box_pack_start(GTK_BOX(args->secondary_source_container), args->secondary_source_scrolled_viewpoint, true, true, 0);
+
+			gtk_widget_show(args->secondary_source_scrolled_viewpoint);
+		}else{
+			gtk_box_pack_start(GTK_BOX(args->secondary_source_container), new_widget, true, true, 0);
+			gtk_widget_show(new_widget);
+		}
+
+		gtk_widget_show(args->secondary_source_container);
 		color_source_activate(source);
 
 	}
@@ -1501,9 +1525,11 @@ AppArgs* app_create_main(){
 
 	args->current_filename = 0;
 	args->imported = false;
+	args->precision_loss_icon = 0;
 	args->current_color_source = 0;
 	args->secondary_color_source = 0;
 	args->secondary_source_widget = 0;
+	args->secondary_source_scrolled_viewpoint= 0;
 
 	global_state_init(args->gs, GLOBALSTATE_ALL);
 
@@ -1602,21 +1628,14 @@ AppArgs* app_create_main(){
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Scheme _generation")));
 		gtk_widget_show(widget);
 
-/*		source = generate_scheme_new(args->gs, &widget);
-		args->secondary_color_source = source;
-		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
-		gtk_widget_show(widget);
-*/
-		widget = gtk_vbox_new(false, 0);
-		args->secondary_source_container = widget;
+		{
+			widget = gtk_vbox_new(false, 0);
+			gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
+			args->secondary_source_container = widget;
+			source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
+			if (source) activate_secondary_source(args, source);
+		}
 
-
-		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
-		gtk_widget_show_all(widget);
-
-
-		source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
-		if (source) activate_secondary_source(args, source);
 
 
 		dynv_namespace = dynv_get_dynv(gs->params, "gpick.layout_preview");
@@ -1677,6 +1696,13 @@ AppArgs* app_create_main(){
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
+
+	widget = gtk_image_new_from_stock(GTK_STOCK_DIALOG_WARNING, GTK_ICON_SIZE_MENU);
+	gtk_widget_set_tooltip_text(widget, _("File is currently in a non-native format, possible loss of precision and/or metadata."));
+	args->precision_loss_icon = widget;
+	if (args->imported)
+		gtk_widget_show(widget);
+	gtk_box_pack_end(GTK_BOX(statusbar), widget, false, false, 0);
 
 	gtk_widget_show(statusbar);
 

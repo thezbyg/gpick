@@ -739,6 +739,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 int layout_preview_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "layout_preview", _("Layout preview"));
+	color_source->needs_viewport = false;
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
