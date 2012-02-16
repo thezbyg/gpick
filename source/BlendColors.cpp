@@ -91,8 +91,9 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 	Color a,b;
 	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
 	vector3 d50, d65;
-	if (type == 3)
+	if (type == 3) {
 	    SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
+	}
 
 	struct ColorList *color_list;
 	color_list = args->preview_color_list;
@@ -181,10 +182,10 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 	}
 }
 
-static gint32 add_to_palette_cb_helper(struct ColorObject* color_object, void *userdata){
+static PaletteListCallbackReturn add_to_palette_cb_helper(struct ColorObject* color_object, void *userdata){
 	BlendColorsArgs *args = (BlendColorsArgs*)userdata;
 	color_list_add_color_object(args->gs->colors, color_object, 1);
-	return 0;
+	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 static gboolean add_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args) {
@@ -197,9 +198,9 @@ static gboolean add_all_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args) 
 	return true;
 }
 
-static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
+static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_object, void *userdata){
 	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
-	return 0;
+	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 typedef struct CopyMenuItem{

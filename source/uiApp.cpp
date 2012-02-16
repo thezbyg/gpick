@@ -708,9 +708,9 @@ static void menu_file_save(GtkWidget *widget, AppArgs *args) {
 	}
 }
 
-static gint32 color_list_selected(struct ColorObject* color_object, void *userdata){
+static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_object, void *userdata){
 	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
-	return 0;
+	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 static void menu_file_export_all(GtkWidget *widget, gpointer data) {
@@ -1177,9 +1177,9 @@ void converter_get_clipboard(const gchar* function, struct ColorObject* color_ob
 	}
 }
 
-gint32 color_list_mark_selected(struct ColorObject* color_object, void *userdata){
-	color_object->selected=1;
-	return 0;
+static PaletteListCallbackReturn color_list_mark_selected(struct ColorObject* color_object, void *userdata){
+	color_object->selected = 1;
+	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 static void palette_popup_menu_remove_all(GtkWidget *widget, AppArgs* args) {
@@ -1191,6 +1191,36 @@ static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args)
 	color_list_remove_selected(args->gs->colors);
 }
 
+static PaletteListCallbackReturn color_list_clear_names(struct ColorObject* color_object, void *userdata){
+	dynv_set_string(color_object->params, "name", "");
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs* args) {
+	palette_list_foreach_selected(args->color_list, color_list_clear_names, NULL);
+}
+
+
+typedef struct AutonumberState{
+	std::string name;
+	uint32_t index;
+}AutonumberState;
+
+static PaletteListCallbackReturn color_list_autonumber(struct ColorObject* color_object, void *userdata){
+	AutonumberState *state = (AutonumberState*)userdata;
+	stringstream ss;
+	ss << state->name << "-" << state->index++;
+	dynv_set_string(color_object->params, "name", ss.str().c_str());
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
+	AutonumberState state;
+	state.name = "some name";
+	//TODO: Show dialog to change state.name*/
+	state.index = 1;
+	palette_list_foreach_selected(args->color_list, color_list_autonumber, &state);
+}
 
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata){
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
@@ -1233,10 +1263,14 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	menu = gtk_menu_new ();
 
+	GtkAccelGroup *accel_group = gtk_accel_group_new();
+	gtk_menu_set_accel_group(GTK_MENU(menu), accel_group);
+
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
 
 	item = gtk_menu_item_new_with_mnemonic(_("_Copy to Clipboard"));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_c, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 
@@ -1269,9 +1303,25 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
+
+    item = gtk_menu_item_new_with_mnemonic (_("_Clear names"));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_clear_names), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+    gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+    item = gtk_menu_item_new_with_mnemonic (_("_Autonumber..."));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_autonumber), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_a, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+    gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
     item = gtk_menu_item_new_with_image (_("_Remove"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_remove_selected), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_Delete, GdkModifierType(0), GTK_ACCEL_VISIBLE);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
     item = gtk_menu_item_new_with_image (_("Remove _All"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
@@ -1290,6 +1340,10 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	}
 
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+
+	g_object_ref_sink(G_OBJECT(accel_group));
+	g_object_unref(G_OBJECT(accel_group));
+
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 
@@ -1383,6 +1437,13 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			palette_popup_menu_remove_selected(widget, args);
 			break;
 
+		case GDK_a:
+			palette_popup_menu_autonumber(widget, args);
+			break;
+		case GDK_e:
+			palette_popup_menu_clear_names(widget, args);
+			break;
+
 		default:
 			return false;
 		break;
@@ -1411,14 +1472,14 @@ static int color_list_on_clear(struct ColorList* color_list){
 	return 0;
 }
 
-static gint32 callback_color_list_on_get_positions(struct ColorObject* color_object, void *userdata){
-	color_object->position=*((unsigned long*)userdata);
+static PaletteListCallbackReturn callback_color_list_on_get_positions(struct ColorObject* color_object, void *userdata){
+	color_object->position = *((unsigned long*)userdata);
 	(*((unsigned long*)userdata))++;
-	return 0;
+	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 static int color_list_on_get_positions(struct ColorList* color_list){
-	unsigned long item=0;
+	unsigned long item = 0;
 	palette_list_foreach(((AppArgs*)color_list->userdata)->color_list, callback_color_list_on_get_positions, &item );
 	return 0;
 }

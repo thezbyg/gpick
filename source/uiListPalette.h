@@ -35,9 +35,16 @@ void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
 int palette_list_remove_entry(GtkWidget* widget, struct ColorObject *color_object);
 
-gint32 palette_list_foreach_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_forfirst_selected(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
-gint32 palette_list_foreach(GtkWidget* widget, gint32 (*callback)(struct ColorObject* color_object, void *userdata), void *userdata);
+enum PaletteListCallbackReturn{
+	PALETTE_LIST_CALLBACK_NO_UPDATE = 0,
+	PALETTE_LIST_CALLBACK_UPDATE_ROW = 1,
+};
+
+typedef PaletteListCallbackReturn (*PaletteListCallback)(struct ColorObject* color_object, void *userdata);
+
+gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
+gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
+gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata);
 
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
