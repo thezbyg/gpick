@@ -51,6 +51,7 @@ using namespace std;
 #define COMPONENT_ID_HSL_LIGHTNESS	3
 #define COMPONENT_ID_LAB_LIGHTNESS	4
 
+
 typedef struct VariationType{
 	const char *name;
 	const char *symbol;
@@ -104,8 +105,6 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 	Color color, hsl, lab, r, hsl_mod, lab_mod;
 	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
 	vector3 d50, d65;
-	vector3_set(&d50, 96.442, 100.000,  82.821);
-	vector3_set(&d65, 95.047, 100.000, 108.883);
 
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		gtk_color_get_color(GTK_COLOR(args->color[i].color), &color);
@@ -118,9 +117,7 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 			break;
 		case COMPONENT_ID_LAB_LIGHTNESS:
 			{
-				color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
-				color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-				matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inverted);
+				SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
 				color_rgb_to_lab(&color, &lab, &d50, &working_space_matrix);
 			}
 			break;

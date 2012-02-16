@@ -21,6 +21,9 @@
 
 #define PI 3.14159265
 
+#define MIX(r,a,b,component) r.component = mix_float(a.component, b.component, step_i/(float)(steps-1))
+#define MIX_COMPONENTS(r,a,b,ca,cb,cc) MIX(r,a,b,ca); MIX(r,a,b,cb); MIX(r,a,b,cc)
+
 float min_float_3(float a, float b, float c);
 
 float max_float_3(float a, float b, float c);

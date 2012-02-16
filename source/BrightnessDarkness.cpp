@@ -97,7 +97,6 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
         color_hsl_to_rgb(&hsl, &r);
-
 		snprintf(tmp, sizeof(tmp), "c%d", i);
 		box = args->layout_system->GetNamedBox(tmp);
 		if (box && box->style){

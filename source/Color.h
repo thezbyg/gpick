@@ -25,6 +25,12 @@
  * \brief Color structure and functions to convert colors from one colorspace to another
  */
 
+#define SETUP_LAB(d50,d65,adaptation,workingspace,wsinverted) vector3_set(&d50, 96.442, 100.000,  82.821); \
+	vector3_set(&d65, 95.047, 100.000, 108.883); \
+	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation); \
+	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &workingspace); \
+	matrix3x3_inverse(&workingspace, &wsinverted)
+
 /** \struct Color
  * \brief Color structure is an union of all available colorspaces
  */

@@ -44,6 +44,15 @@
 
 using namespace std;
 
+#define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
+	dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str()); \
+	color_list_add_color_object(color_list, color_object, 1); \
+	color_object_release(color_object)
+
+#define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
+	STORE_COLOR()
+
+
 typedef struct BlendColorsArgs{
 	ColorSource source;
 
@@ -82,11 +91,8 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 	Color a,b;
 	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
 	vector3 d50, d65;
-	vector3_set(&d50, 96.442, 100.000,  82.821);
-	vector3_set(&d65, 95.047, 100.000, 108.883);
-	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
-	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-	matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inverted);
+	if (type == 3)
+	    SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
 
 	struct ColorList *color_list;
 	color_list = args->preview_color_list;
@@ -105,19 +111,18 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 			gtk_color_get_color(GTK_COLOR(args->end_color), &b);
 		}
 
+		if (type == 0){
+			color_rgb_get_linear(&a, &a);
+			color_rgb_get_linear(&b, &b);
+		}
 		step_i = stage;
+
 
 		switch (type) {
 		case 0:
 			for (; step_i < steps; ++step_i) {
-				r.rgb.red = mix_float(a.rgb.red, b.rgb.red, step_i/(float)(steps-1));
-				r.rgb.green = mix_float(a.rgb.green, b.rgb.green, step_i/(float)(steps-1));
-				r.rgb.blue = mix_float(a.rgb.blue, b.rgb.blue, step_i/(float)(steps-1));
-
-				struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-				dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str());
-				color_list_add_color_object(color_list, color_object, 1);
-				color_object_release(color_object);
+				MIX_COMPONENTS(r.rgb, a.rgb, b.rgb, red, green, blue);
+				STORE_LINEARCOLOR();
 			}
 			break;
 
@@ -128,15 +133,10 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 				color_rgb_to_hsv(&b, &b_hsv);
 
 				for (; step_i < steps; ++step_i) {
-					r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-					r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-					r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
-
+					MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
 					color_hsv_to_rgb(&r_hsv, &r);
+					STORE_COLOR();
 
-					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-					dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str());
-					color_list_add_color_object(color_list, color_object, 1);
 				}
 			}
 			break;
@@ -155,16 +155,10 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 						b_hsv.hsv.hue-=1;
 				}
 				for (; step_i < steps; ++step_i) {
-					r_hsv.hsv.hue = mix_float(a_hsv.hsv.hue, b_hsv.hsv.hue, step_i/(float)(steps-1));
-					r_hsv.hsv.saturation = mix_float(a_hsv.hsv.saturation, b_hsv.hsv.saturation, step_i/(float)(steps-1));
-					r_hsv.hsv.value = mix_float(a_hsv.hsv.value, b_hsv.hsv.value, step_i/(float)(steps-1));
-
+					MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
 					if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
 					color_hsv_to_rgb(&r_hsv, &r);
-
-					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-					dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str());
-					color_list_add_color_object(color_list, color_object, 1);
+					STORE_COLOR();
 				}
 			}
 			break;
@@ -176,16 +170,10 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 				color_rgb_to_lab(&b, &b_lab, &d50, &working_space_matrix);
 
 				for (; step_i < steps; ++step_i) {
-					r_lab.lab.L = mix_float(a_lab.lab.L, b_lab.lab.L, step_i/(float)(steps-1));
-					r_lab.lab.a = mix_float(a_lab.lab.a, b_lab.lab.a, step_i/(float)(steps-1));
-					r_lab.lab.b = mix_float(a_lab.lab.b, b_lab.lab.b, step_i/(float)(steps-1));
-
+					MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
 					color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
 					color_rgb_normalize(&r);
-
-					struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-					dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str());
-					color_list_add_color_object(color_list, color_object, 1);
+					STORE_COLOR();
 				}
 			}
 			break;
