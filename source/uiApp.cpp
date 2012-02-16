@@ -1795,14 +1795,14 @@ int app_run(AppArgs *args){
 
 	gtk_widget_realize(args->window);
 
-	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
-	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
-
 	if (dynv_get_bool_wd(args->params, "start_in_tray", false)){
 		status_icon_set_visible (args->statusIcon, true);
 	}else{
 		main_show_window(args->window, args->params);
 	}
+
+	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
+	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
 
 	gtk_main();
 
