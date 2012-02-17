@@ -1201,6 +1201,25 @@ static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs* args) {
 	palette_list_foreach_selected(args->color_list, color_list_clear_names, NULL);
 }
 
+typedef struct AutonameState{
+	ColorNames *color_names;
+	bool imprecision_postfix;
+}AutonameState;
+
+static PaletteListCallbackReturn color_list_autoname(struct ColorObject* color_object, void *userdata){
+	AutonameState *state=(AutonameState *)(userdata);
+	Color c;
+	color_object_get_color (color_object, &c);
+	dynv_set_string(color_object->params, "name", color_names_get(state->color_names, &c, state->imprecision_postfix).c_str());
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args) {
+	AutonameState state;
+	state.color_names = args->gs->color_names;
+	state.imprecision_postfix = dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true);
+	palette_list_foreach_selected(args->color_list, color_list_autoname, &state);
+}
 
 typedef struct AutonumberState{
 	std::string name;
@@ -1325,13 +1344,19 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
 
-    item = gtk_menu_item_new_with_mnemonic (_("_Clear names"));
+    item = gtk_menu_item_new_with_mnemonic (_("C_lear names"));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_clear_names), args);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
-    item = gtk_menu_item_new_with_mnemonic (_("_Autonumber..."));
+	item = gtk_menu_item_new_with_mnemonic (_("Autona_me"));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_autoname), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_N, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_set_sensitive(item, (selected_count >= 1));
+
+    item = gtk_menu_item_new_with_mnemonic (_("Auto_number..."));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_autonumber), args);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_a, GdkModifierType(0), GTK_ACCEL_VISIBLE);
@@ -1464,7 +1489,9 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 		case GDK_e:
 			palette_popup_menu_clear_names(widget, args);
 			break;
-
+		case GDK_n:
+			palette_popup_menu_autoname(widget, args);
+			break;
 		default:
 			return false;
 		break;
