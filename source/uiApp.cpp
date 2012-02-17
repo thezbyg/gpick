@@ -39,6 +39,7 @@
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
+#include "uiDialogAutonumber.h"
 #include "uiTransformations.h"
 
 #include "tools/PaletteFromImage.h"
@@ -1204,22 +1205,42 @@ static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs* args) {
 typedef struct AutonumberState{
 	std::string name;
 	uint32_t index;
+	uint32_t nplaces;
+	bool append;
 }AutonumberState;
 
 static PaletteListCallbackReturn color_list_autonumber(struct ColorObject* color_object, void *userdata){
 	AutonumberState *state = (AutonumberState*)userdata;
 	stringstream ss;
-	ss << state->name << "-" << state->index++;
+	if (state->append == true){
+		ss << dynv_get_string_wd(color_object->params, "name","") << " ";
+	}
+	ss << state->name << "-";
+	ss.width(state->nplaces);
+	ss.fill('0');
+	ss << right << state->index++;
 	dynv_set_string(color_object->params, "name", ss.str().c_str());
 	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
 }
 
 static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 	AutonumberState state;
-	state.name = "some name";
-	//TODO: Show dialog to change state.name*/
-	state.index = 1;
-	palette_list_foreach_selected(args->color_list, color_list_autonumber, &state);
+	int response;
+	uint32_t selected_count = palette_list_get_selected_count(args->color_list);
+
+	response = dialog_autonumber_show(GTK_WINDOW(args->window), selected_count, args->gs);
+	if (response == GTK_RESPONSE_OK){
+		struct dynvSystem *params;
+
+		params = dynv_get_dynv(args->gs->params, "gpick.autonumber");
+		state.name = dynv_get_string_wd(params, "name",_("autonum"));
+		state.nplaces = dynv_get_int32_wd(params, "nplaces", 1);
+		state.index = dynv_get_int32_wd(params, "startindex", 1);
+		state.append = dynv_get_bool_wd(params, "append", true);
+
+		palette_list_foreach_selected(args->color_list, color_list_autonumber, &state);
+		dynv_system_release(params);
+	}
 }
 
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata){
