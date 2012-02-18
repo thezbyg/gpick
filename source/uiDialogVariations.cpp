@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "Internationalisation.h"
 
 #include <sstream>
@@ -67,6 +68,9 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 	else
 		color_list = args->gs->colors;
 
+	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(args->gs->params, "gpick.color_names.tool_color_naming", "tool_specific"));
+	bool imprecision_postfix = dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true);
+
 	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
 		Color in;
 		color_object_get_color(*i, &in);
@@ -95,9 +99,17 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 			color_hsl_to_rgb(&hsl, &r);
 
 			s.str("");
-			s<<name<<" variation "<<step_i;
-			//palette_list_add_entry_name(palette, s.str().c_str(), &r);
-			//color_list_add_color(color_list, &r);
+			switch (color_naming_type){
+				case TOOL_COLOR_NAMING_UNKNOWN:
+				case TOOL_COLOR_NAMING_EMPTY:
+					break;
+				case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
+					s << color_names_get(args->gs->color_names, &r, imprecision_postfix);
+					break;
+				case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
+					s << name << " variation " << step_i;
+					break;
+			}
 
 			struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
 			dynv_set_string(color_object->params, "name", s.str().c_str());

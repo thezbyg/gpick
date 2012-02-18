@@ -1484,13 +1484,19 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			break;
 
 		case GDK_a:
-			palette_popup_menu_autonumber(widget, args);
+			if ((event->state & GDK_CONTROL_MASK) == 0){
+				palette_popup_menu_autonumber(widget, args);
+			}
 			break;
 		case GDK_e:
-			palette_popup_menu_clear_names(widget, args);
+			if ((event->state & GDK_CONTROL_MASK) == 0){
+				palette_popup_menu_clear_names(widget, args);
+			}
 			break;
 		case GDK_n:
-			palette_popup_menu_autoname(widget, args);
+			if ((event->state & GDK_CONTROL_MASK) == 0){
+				palette_popup_menu_autoname(widget, args);
+			}
 			break;
 		default:
 			return false;
