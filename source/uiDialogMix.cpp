@@ -31,6 +31,7 @@ using namespace std;
 typedef struct DialogMixArgs{
 	GtkWidget *mix_type;
 	GtkWidget *mix_steps;
+	GtkWidget *toggle_endpoints;
 
 	struct ColorList *selected_color_list;
 	struct ColorList *preview_color_list;
@@ -55,10 +56,19 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 
 	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->mix_steps));
 	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
+	bool with_endpoints=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_endpoints));
+	gint start_step = 0;
+	gint max_step = steps;
 
 	if (!preview){
 		dynv_set_int32(args->params, "type", type);
 		dynv_set_int32(args->params, "steps", steps);
+		dynv_set_bool(args->params, "includeendpoints", with_endpoints);
+	}
+
+	if (with_endpoints == false){
+		start_step = 1;
+		max_step = steps - 1;
 	}
 
 	Color r;
@@ -103,7 +113,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 
 			switch (type) {
 			case 0:
-				for (step_i = 0; step_i < steps; ++step_i) {
+				for (step_i = start_step; step_i < max_step; ++step_i) {
 					MIX_COMPONENTS(r.rgb, a.rgb, b.rgb, red, green, blue);
 					STORE_LINEARCOLOR();
 				}
@@ -115,7 +125,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 					color_rgb_to_hsv(&a, &a_hsv);
 					color_rgb_to_hsv(&b, &b_hsv);
 
-					for (step_i = 0; step_i < steps; ++step_i) {
+					for (step_i = start_step; step_i < max_step; ++step_i) {
 						MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
 						color_hsv_to_rgb(&r_hsv, &r);
 						STORE_COLOR();
@@ -136,7 +146,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 						if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
 							b_hsv.hsv.hue-=1;
 					}
-					for (step_i = 0; step_i < steps; ++step_i) {
+					for (step_i = start_step; step_i < max_step; ++step_i) {
 						MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
 
 						if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
@@ -153,7 +163,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 					color_rgb_to_lab(&a, &a_lab, &d50, &working_space_matrix);
 					color_rgb_to_lab(&b, &b_lab, &d50, &working_space_matrix);
 
-					for (step_i = 0; step_i < steps; ++step_i) {
+					for (step_i = start_step; step_i < max_step; ++step_i) {
 						MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
 
 						color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
@@ -214,6 +224,12 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table_y++;
 	args->mix_steps = mix_steps;
 	g_signal_connect (G_OBJECT (mix_steps), "value-changed", G_CALLBACK (update), args);
+
+	args->toggle_endpoints = gtk_check_button_new_with_mnemonic (_("_Include Endpoints"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_endpoints), dynv_get_bool_wd(args->params, "includeendpoints", true));
+	gtk_table_attach(GTK_TABLE(table), args->toggle_endpoints,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	g_signal_connect (G_OBJECT(args->toggle_endpoints), "toggled", G_CALLBACK (update), args);
+	table_y++;
 
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
