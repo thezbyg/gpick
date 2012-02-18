@@ -595,7 +595,7 @@ int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list,
 		const gchar* pattern;
 		int32_t (*import_function)(struct ColorList *color_list, const gchar* filename);
 	}formats[] = {
-		{GPA, _("GPick Palette (*.gpa)"), "*.gpa", palette_import_gpa },
+		{GPA, _("Gpick Palette (*.gpa)"), "*.gpa", palette_import_gpa },
 		{GPL, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl", palette_import_gpl },
 		{ASE, _("Adobe Swatch Exchange (*.ase)"), "*.ase", palette_import_ase },
 		{UNKNOWN, NULL, NULL, NULL},

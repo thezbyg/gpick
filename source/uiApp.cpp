@@ -566,7 +566,7 @@ static void add_file_filters (GtkWidget *dialog, FileType preselect){
 		const char *label;
 		const char *filter;
 	}filters[] = {
-		{GPA, _("Gpick palette (*.gpa)"), "*.gpa"},
+		{GPA, _("Gpick Palette (*.gpa)"), "*.gpa"},
 		{GPL, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl"},
 		{ASE, _("Adobe Swatch Exchange (*.ase)"), "*.ase"},
 		{UNKNOWN, 0, 0},
@@ -1252,7 +1252,7 @@ static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 		struct dynvSystem *params;
 
 		params = dynv_get_dynv(args->gs->params, "gpick.autonumber");
-		state.name = dynv_get_string_wd(params, "name",_("autonum"));
+		state.name = dynv_get_string_wd(params, "name", "autonum");
 		state.nplaces = dynv_get_int32_wd(params, "nplaces", 1);
 		state.index = dynv_get_int32_wd(params, "startindex", 1);
 		state.append = dynv_get_bool_wd(params, "append", true);

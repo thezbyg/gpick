@@ -98,7 +98,7 @@ DialogAutonumberArgs *args = new DialogAutonumberArgs;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Name:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->name = gtk_entry_new();
 	// dynv_get_str_wd?
-	gtk_entry_set_text (GTK_ENTRY(args->name), dynv_get_string_wd (args->params, "name", _("autonum")));
+	gtk_entry_set_text (GTK_ENTRY(args->name), dynv_get_string_wd (args->params, "name", "autonum"));
 
 	g_signal_connect (G_OBJECT (args->name), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->name,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
