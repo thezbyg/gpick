@@ -1194,7 +1194,7 @@ static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args)
 
 static PaletteListCallbackReturn color_list_clear_names(struct ColorObject* color_object, void *userdata){
 	dynv_set_string(color_object->params, "name", "");
-	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+	return PALETTE_LIST_CALLBACK_UPDATE_NAME;
 }
 
 static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs* args) {
@@ -1211,7 +1211,7 @@ static PaletteListCallbackReturn color_list_autoname(struct ColorObject* color_o
 	Color c;
 	color_object_get_color (color_object, &c);
 	dynv_set_string(color_object->params, "name", color_names_get(state->color_names, &c, state->imprecision_postfix).c_str());
-	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+	return PALETTE_LIST_CALLBACK_UPDATE_NAME;
 }
 
 static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args) {
@@ -1239,7 +1239,7 @@ static PaletteListCallbackReturn color_list_autonumber(struct ColorObject* color
 	ss.fill('0');
 	ss << right << state->index++;
 	dynv_set_string(color_object->params, "name", ss.str().c_str());
-	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+	return PALETTE_LIST_CALLBACK_UPDATE_NAME;
 }
 
 static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {

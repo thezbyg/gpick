@@ -38,6 +38,7 @@ int palette_list_remove_entry(GtkWidget* widget, struct ColorObject *color_objec
 enum PaletteListCallbackReturn{
 	PALETTE_LIST_CALLBACK_NO_UPDATE = 0,
 	PALETTE_LIST_CALLBACK_UPDATE_ROW = 1,
+	PALETTE_LIST_CALLBACK_UPDATE_NAME = 2,
 };
 
 typedef PaletteListCallbackReturn (*PaletteListCallback)(struct ColorObject* color_object, void *userdata);
