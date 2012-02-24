@@ -1242,6 +1242,14 @@ static PaletteListCallbackReturn color_list_autonumber(struct ColorObject* color
 	return PALETTE_LIST_CALLBACK_UPDATE_NAME;
 }
 
+static PaletteListCallbackReturn color_list_set_color (struct ColorObject* color_object, void *userdata){
+	Color *source_color = (Color *)(userdata);
+	color_object_set_color (color_object, source_color);
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+
+
 static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 	AutonumberState state;
 	int response;
@@ -1446,7 +1454,17 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 						case GDK_KP_6:
 						case GDK_6: color_index = 5; break;
 					}
-					color_source_set_nth_color(color_source, color_index, *color_list->colors.begin());
+
+					if ((event->state&modifiers)==GDK_CONTROL_MASK){
+						struct ColorObject *source_color_object;
+						Color source_color;
+						color_source_get_nth_color(color_source, color_index, &source_color_object);
+						color_object_get_color (source_color_object, &source_color);
+						palette_list_forfirst_selected (args->color_list, color_list_set_color, &source_color);
+					}
+					else{
+						color_source_set_nth_color(color_source, color_index, *color_list->colors.begin());
+					}
 				}
 				color_list_destroy(color_list);
 			}

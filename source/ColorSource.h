@@ -69,7 +69,7 @@ int color_source_deactivate(ColorSource *source);
 int color_source_set_color(ColorSource *source, ColorObject *color);
 int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color);
 int color_source_get_color(ColorSource *source, ColorObject *color);
-int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color);
+int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject **color);
 
 ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 GtkWidget* color_source_get_widget(ColorSource* source);

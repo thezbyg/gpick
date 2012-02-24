@@ -98,6 +98,7 @@ struct ColorCompItem{
 
 static int source_set_color(ColorPickerArgs *args, ColorObject* color);
 static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject* color);
+static int source_get_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject** color);
 
 static void updateMainColorNow(ColorPickerArgs* args){
 	if (!dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
@@ -1008,6 +1009,22 @@ static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorOb
 	return 0;
 }
 
+static int source_get_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject** color){
+	if (color_n < 0 || color_n > 6) return -1;
+	Color c;
+
+	gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), color_n + 1, &c);
+
+	struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
+	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
+	dynv_set_string(color_object->params, "name", name.c_str());
+
+	*color = color_object;
+
+	return 0;
+}
+
+
 static int source_set_color(ColorPickerArgs *args, ColorObject* color){
 	Color c;
 	color_object_get_color(color, &c);
@@ -1144,6 +1161,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
+	args->source.get_nth_color = (int (*)(ColorSource *source, uint32_t color_n, ColorObject** color))source_get_nth_color;
 	args->source.set_nth_color = (int (*)(ColorSource *source, uint32_t color_n, ColorObject* color))source_set_nth_color;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
