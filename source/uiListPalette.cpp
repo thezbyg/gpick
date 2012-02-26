@@ -363,7 +363,18 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 		}
 
 		if (move){
-			if (colorobject->refcnt!=1){	//only one reference, can't be in palette
+			struct ColorObject *reference_color_object;
+			gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &reference_color_object, -1);
+			if (reference_color_object == colorobject){
+				// Reference item is going to be removed, so any further inserts
+				// will fail if the same iterator is used. Iterator is moved forward
+				// to avoid that.
+				if (!gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)){
+					path_is_valid = false;
+				}
+			}
+
+			if (colorobject->refcnt != 1){	//only one reference, can't be in palette
 				color_list_remove_color_object(args->gs->colors, colorobject);
 			}
 		}else{
