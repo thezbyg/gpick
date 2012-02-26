@@ -418,7 +418,10 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
 		gtk_tree_model_get_iter(model, &iter, path);
 
-		if (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+		GdkModifierType mask;
+		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), NULL, NULL, &mask);
+
+		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
 			Color color;
 			color_object_get_color(colorobject, &color);
 
@@ -455,12 +458,14 @@ static bool test_at(struct DragDrop* dd, int x, int y){
 	GtkTreeViewDropPosition pos;
 
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
+		GdkModifierType mask;
+		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), NULL, NULL, &mask);
 
-		if (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
 			pos = GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
-		}else	if (pos == GTK_TREE_VIEW_DROP_BEFORE){
+		}else	if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			pos = GTK_TREE_VIEW_DROP_BEFORE;
-		}else if (pos==GTK_TREE_VIEW_DROP_AFTER){
+		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			pos = GTK_TREE_VIEW_DROP_AFTER;
 		}
 
