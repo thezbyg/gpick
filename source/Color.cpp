@@ -23,6 +23,9 @@
 #include <iostream>
 using namespace std;
 
+// Constant used for lab->xyz transform. Should be calculated with maximum accuracy possible.
+#define EPSILON (216.0 / 24389.0)
+
 static vector3 d65={
 	{{95.047, 100.000, 108.883}}
 };
@@ -409,17 +412,17 @@ void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
 	Y = a->xyz.y / reference_white->y; //100.000f;
 	Z = a->xyz.z / reference_white->z; //108.883f;
 
-	if (X>0.008856){
+	if (X>EPSILON){
 		X=pow(X,1.0/3.0);
 	}else{
 		X=(7.787*X)+(16.0/116.0);
 	}
-	if (Y>0.008856){
+	if (Y>EPSILON){
 		Y=pow(Y,1.0/3.0);
 	}else{
 		Y=(7.787*Y)+(16.0/116.0);
 	}
-	if (Z>0.008856){
+	if (Z>EPSILON){
 		Z=pow(Z,1.0/3.0);
 	}else{
 		Z=(7.787*Z)+(16.0/116.0);
@@ -438,22 +441,21 @@ void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white) {
 	float fx = a->lab.a / 500 + fy;
 	float fz = fy - a->lab.b / 200;
 
-	float e=0.008856;
-	float K=903.3;
+	float K=(24389.0 / 27.0);
 
-	if (pow(fx, 3)>e){
+	if (pow(fx, 3)>EPSILON){
 		x=pow(fx, 3);
 	}else{
 		x=(116*fx-16)/K;
 	}
 
-	if (a->lab.L > K*e){
+	if (a->lab.L > K*EPSILON){
 		y=pow((a->lab.L+16)/116, 3);
 	}else{
 		y=a->lab.L/K;
 	}
 
-	if (pow(fz, 3)>e){
+	if (pow(fz, 3)>EPSILON){
 		z=pow(fz, 3);
 	}else{
 		z=(116*fz-16)/K;
