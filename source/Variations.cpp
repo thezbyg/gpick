@@ -103,8 +103,6 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 	}
 
 	Color color, hsl, lab, r, hsl_mod, lab_mod;
-	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
-	vector3 d50, d65;
 
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		gtk_color_get_color(GTK_COLOR(args->color[i].color), &color);
@@ -117,8 +115,7 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 			break;
 		case COMPONENT_ID_LAB_LIGHTNESS:
 			{
-				SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
-				color_rgb_to_lab(&color, &lab, &d50, &working_space_matrix);
+				color_rgb_to_lab_d50(&color, &lab);
 			}
 			break;
 		}
@@ -145,7 +142,7 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 			case COMPONENT_ID_LAB_LIGHTNESS:
 				color_copy(&lab, &lab_mod);
 				lab_mod.lab.L = clamp_float(lab.lab.L + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 4.0, 0, 100);
-				color_lab_to_rgb(&lab_mod, &r, &d50, &working_space_matrix_inverted);
+				color_lab_to_rgb_d50(&lab_mod, &r);
 				color_rgb_normalize(&r);
 				break;
 			}

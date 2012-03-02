@@ -25,12 +25,6 @@
  * \brief Color structure and functions to convert colors from one colorspace to another
  */
 
-#define SETUP_LAB(d50,d65,adaptation,workingspace,wsinverted) vector3_set(&d50, 96.442, 100.000,  82.821); \
-	vector3_set(&d65, 95.047, 100.000, 108.883); \
-	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation); \
-	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &workingspace); \
-	matrix3x3_inverse(&workingspace, &wsinverted)
-
 /** \struct Color
  * \brief Color structure is an union of all available colorspaces
  */
@@ -88,6 +82,11 @@ typedef struct Color{
 }Color;
 
 /**
+ * Initialize things needed for color conversion functions
+ */
+void color_init();
+
+/**
  * Convert RGB colorspace to HSL colorspace
  * @param[in] a Source color in RGB colorspace
  * @param[out] b Destination color in HSL colorspace
@@ -135,10 +134,11 @@ void color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted);
 void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white);
 void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white);
 
-void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation);
-void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted);
+void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation, matrix3x3* adaptation_matrix);
+void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted, matrix3x3* adaptation_matrix_inverted);
 
-void color_rgb_to_lab_d65(Color* a, Color* b);
+void color_rgb_to_lab_d50(Color* a, Color* b);
+void color_lab_to_rgb_d50(Color* a, Color* b);
 
 void color_lab_to_lch(Color* a, Color* b);
 void color_rgb_to_lch(Color* a, Color* b);
@@ -182,5 +182,13 @@ void color_get_contrasting(Color* a, Color* b);
 void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result);
 void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result);
 void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptation );
+
+vector3* color_get_d65();
+vector3* color_get_d50();
+
+matrix3x3* color_get_sRGB_transformation_matrix();
+matrix3x3* color_get_d65_d50_adaptation_matrix();
+matrix3x3* color_get_d50_d65_adaptation_matrix();
+
 
 #endif /* COLOR_H_ */

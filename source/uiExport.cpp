@@ -294,15 +294,6 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 		uint32_t block_size;
 		int color_supported;
 
-	    matrix3x3 adaptation_matrix, working_space_matrix;
-	    vector3 d50, d65;
-	    vector3_set(&d50, 96.442, 100.000,  82.821);    // D50 illuminant tristimulus values
-	    vector3_set(&d65, 95.047, 100.000, 108.883);    // D65 illuminant tristimulus values
-	    color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
-	    // constants used below are sRGB working space red, green and blue primaries for D65 reference white
-	    color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-	    matrix3x3_inverse(&working_space_matrix, &working_space_matrix);
-
 		for (uint32_t i=0; i<blocks; ++i){
 			f.read((char*)&block_type, 2);
 			block_type=UINT16_FROM_BE(block_type);
@@ -391,13 +382,11 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 						c2.lab.a = lab[1].f;
 						c2.lab.b = lab[2].f;
 
-					    color_lab_to_xyz(&c2, &c3, &d50);
-						color_xyz_chromatic_adaptation(&c3, &c3, &adaptation_matrix);
-					    color_xyz_to_rgb(&c3, &c, &working_space_matrix);
+						color_lab_to_rgb_d50(&c2, &c);
 
-					    c.rgb.red = clamp_float(c.rgb.red, 0, 1);
-					    c.rgb.green = clamp_float(c.rgb.green, 0, 1);
-					    c.rgb.blue = clamp_float(c.rgb.blue, 0, 1);
+						c.rgb.red = clamp_float(c.rgb.red, 0, 1);
+						c.rgb.green = clamp_float(c.rgb.green, 0, 1);
+						c.rgb.blue = clamp_float(c.rgb.blue, 0, 1);
 
 						color_supported = 1;
 

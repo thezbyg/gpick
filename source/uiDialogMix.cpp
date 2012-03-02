@@ -79,9 +79,6 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 	s.setf(ios::fixed,ios::floatfield);
 
 	Color a,b;
-	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
-	vector3 d50, d65;
-	SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
 
 	struct ColorList *color_list;
 	if (preview)
@@ -160,13 +157,13 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 			case 3:
 				{
 					Color a_lab, b_lab, r_lab;
-					color_rgb_to_lab(&a, &a_lab, &d50, &working_space_matrix);
-					color_rgb_to_lab(&b, &b_lab, &d50, &working_space_matrix);
+					color_rgb_to_lab_d50(&a, &a_lab);
+					color_rgb_to_lab_d50(&b, &b_lab);
 
 					for (step_i = start_step; step_i < max_step; ++step_i) {
 						MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
 
-						color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
+						color_lab_to_rgb_d50(&r_lab, &r);
 						color_rgb_normalize(&r);
 						STORE_COLOR();
 					}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -40,13 +40,35 @@ typedef struct DialogVariationsArgs{
 	GlobalState* gs;
 }DialogVariationsArgs;
 
+
+class VariationsColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_name;
+		uint32_t m_step_i;
+	public:
+		VariationsColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *name, uint32_t step_i){
+			m_name = name;
+			m_step_i = step_i;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << m_name << " variation " << m_step_i;
+			return m_stream.str();
+		}
+};
+
 static void calc( DialogVariationsArgs *args, bool preview, int limit){
-	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->range_steps));
-	gfloat lightness_from=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from));
-	gfloat lightness_to=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_to));
-	gfloat saturation_from=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_from));
-	gfloat saturation_to=gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_to));
-	gboolean multiplication=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_multiplication));
+	gint steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->range_steps));
+	gfloat lightness_from = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from));
+	gfloat lightness_to = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_to));
+	gfloat saturation_from = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_from));
+	gfloat saturation_to = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_to));
+	gboolean multiplication = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_multiplication));
 
 	if (!preview){
 		dynv_set_int32(args->params, "steps", steps);
@@ -57,8 +79,6 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 		dynv_set_bool(args->params, "multiplication", multiplication);
 	}
 
-	stringstream s;
-
 	Color r, hsl;
 	gint step_i;
 
@@ -68,8 +88,7 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 	else
 		color_list = args->gs->colors;
 
-	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(args->gs->params, "gpick.color_names.tool_color_naming", "tool_specific"));
-	bool imprecision_postfix = dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true);
+	VariationsColorNameAssigner name_assigner(args->gs);
 
 	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
 		Color in;
@@ -79,7 +98,7 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 		for (step_i = 0; step_i < steps; ++step_i) {
 
 			if (preview){
-				if (limit<=0) return;
+				if (limit <= 0) return;
 				limit--;
 			}
 
@@ -98,29 +117,12 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit){
 
 			color_hsl_to_rgb(&hsl, &r);
 
-			s.str("");
-			switch (color_naming_type){
-				case TOOL_COLOR_NAMING_UNKNOWN:
-				case TOOL_COLOR_NAMING_EMPTY:
-					break;
-				case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
-					s << color_names_get(args->gs->color_names, &r, imprecision_postfix);
-					break;
-				case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
-					s << name << " variation " << step_i;
-					break;
-			}
-
-			struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-			dynv_set_string(color_object->params, "name", s.str().c_str());
+			struct ColorObject *color_object = color_list_new_color_object(color_list, &r);
+			name_assigner.assign(color_object, &r, name, step_i);
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object_release(color_object);
 		}
-
-		//i=g_list_next(i);
 	}
-
-	//palette_list_free_color_list(colors);
 }
 
 static void update(GtkWidget *widget, DialogVariationsArgs *args ){

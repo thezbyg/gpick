@@ -40,7 +40,7 @@ ColorNames*
 color_names_new()
 {
 	ColorNames* cnames = new ColorNames;
-	cnames->colorspace_convert = color_rgb_to_lab_d65;
+	cnames->colorspace_convert = color_rgb_to_lab_d50;
 	cnames->colorspace_distance = color_names_distance_lch;
 	return cnames;
 }

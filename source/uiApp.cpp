@@ -1643,6 +1643,8 @@ bool app_is_autoload_enabled(AppArgs *args){
 AppArgs* app_create_main(){
 	AppArgs* args=new AppArgs;
 
+	color_init();
+
 	GlobalState *gs = global_state_create();
 	args->gs = gs;
 	global_state_init(args->gs, GLOBALSTATE_CONFIGURATION);

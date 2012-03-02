@@ -19,6 +19,9 @@
 #ifndef TOOL_COLOR_NAMING_H_
 #define TOOL_COLOR_NAMING_H_
 
+#include "GlobalStateStruct.h"
+#include "DynvHelpers.h"
+
 enum ToolColorNamingType {
 	TOOL_COLOR_NAMING_UNKNOWN = 0,
 	TOOL_COLOR_NAMING_EMPTY,
@@ -34,6 +37,20 @@ typedef struct ToolColorNamingOption{
 
 const ToolColorNamingOption* tool_color_naming_get_options();
 ToolColorNamingType tool_color_naming_name_to_type(const char *name);
+
+class ToolColorNameAssigner{
+	protected:
+		ToolColorNamingType m_color_naming_type;
+		GlobalState* m_gs;
+		bool m_imprecision_postfix;
+	public:
+		ToolColorNameAssigner(GlobalState *gs);
+		virtual ~ToolColorNameAssigner();
+
+		void assign(struct ColorObject *color_object, Color *color);
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color);
+};
 
 #endif /* TOOL_COLOR_NAMING_H_ */
 

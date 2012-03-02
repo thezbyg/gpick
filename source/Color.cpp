@@ -23,6 +23,31 @@
 #include <iostream>
 using namespace std;
 
+static vector3 d65={
+	{{95.047, 100.000, 108.883}}
+};
+static vector3 d50={
+	{{96.442, 100.000,  82.821}}
+};
+
+static matrix3x3 sRGB_transformation;
+static matrix3x3 sRGB_transformation_inverted;
+
+static matrix3x3 d65_d50_adaptation_matrix;
+static matrix3x3 d50_d65_adaptation_matrix;
+
+void color_init()
+{
+	// constants used below are sRGB working space red, green and blue primaries for D65 reference white
+	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &sRGB_transformation);
+	matrix3x3_inverse(&sRGB_transformation, &sRGB_transformation_inverted);
+
+	color_get_chromatic_adaptation_matrix(&d65, &d50, &d65_d50_adaptation_matrix);
+	color_get_chromatic_adaptation_matrix(&d50, &d65, &d50_d65_adaptation_matrix);
+
+}
+
+
 void
 color_rgb_to_hsv(Color* a, Color* b)
 {
@@ -178,24 +203,23 @@ color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted)
 
 
 
-void
-color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation)
+void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation, matrix3x3* adaptation_matrix)
 {
 	Color c;
 	color_rgb_to_xyz(a, &c, transformation);
+	color_xyz_chromatic_adaptation(&c, &c, adaptation_matrix);
 	color_xyz_to_lab(&c, b, reference_white);
 }
 
-void
-color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted)
+void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted, matrix3x3* adaptation_matrix_inverted)
 {
 	Color c;
 	color_lab_to_xyz(a, &c, reference_white);
+	color_xyz_chromatic_adaptation(&c, &c, adaptation_matrix_inverted);
 	color_xyz_to_rgb(&c, b, transformation_inverted);
 }
 
-void
-color_copy(Color* a, Color* b)
+void color_copy(Color* a, Color* b)
 {
 	b->m.m1=a->m.m1;
 	b->m.m2=a->m.m2;
@@ -203,8 +227,7 @@ color_copy(Color* a, Color* b)
 	b->m.m4=a->m.m4;
 }
 
-void
-color_add(Color* a, Color* b)
+void color_add(Color* a, Color* b)
 {
 	a->m.m1+=b->m.m1;
 	a->m.m2+=b->m.m2;
@@ -234,20 +257,9 @@ void
 color_get_contrasting(Color* a, Color* b)
 {
 	Color t;
+	color_rgb_to_lab(a, &t, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
 
-	static vector3 d65={
-		{{95.047, 100.000, 108.883}}
-	};
-    static matrix3x3 transformation={{		//sRGB transformation matrix
-    	{0.4124564,  0.3575761,  0.1804375},
-		{0.2126729,  0.7151522,  0.0721750},
-		{0.0193339,  0.1191920,  0.9503041},
-    }};
-
-	color_rgb_to_lab(a, &t, &d65, &transformation);
-
-
-	if (t.lab.L>3){
+	if (t.lab.L > 50){
 		t.hsv.value=0;
 	}else{
 		t.hsv.value=1;
@@ -377,31 +389,17 @@ void color_lab_to_lch(Color* a, Color* b) {
 
 void color_rgb_to_lch(Color* a, Color* b){
 	Color c;
-
-	static vector3 d65={
-		{{95.047, 100.000, 108.883}}
-	};
-	static matrix3x3 transformation={{		//sRGB transformation matrix
-		{0.4124564,  0.3575761,  0.1804375},
-		{0.2126729,  0.7151522,  0.0721750},
-		{0.0193339,  0.1191920,  0.9503041}
-	}};
-
-	color_rgb_to_lab(a, &c, &d65, &transformation);
+	color_rgb_to_lab(a, &c, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
 	color_lab_to_lch(&c, b);
 }
 
-void color_rgb_to_lab_d65(Color* a, Color* b){
-	static vector3 d65={
-		{{95.047, 100.000, 108.883}}
-	};
-	static matrix3x3 transformation={{		//sRGB transformation matrix
-		{0.4124564,  0.3575761,  0.1804375},
-		{0.2126729,  0.7151522,  0.0721750},
-		{0.0193339,  0.1191920,  0.9503041}
-	}};
 
-	color_rgb_to_lab(a, b, &d65, &transformation);
+void color_rgb_to_lab_d50(Color* a, Color* b){
+	color_rgb_to_lab(a, b, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
+}
+
+void color_lab_to_rgb_d50(Color* a, Color* b){
+	color_lab_to_rgb(a, b, &d50, &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
 }
 
 void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
@@ -629,6 +627,32 @@ void color_linear_get_rgb(Color* a, Color* b){
 	b->rgb.red = pow(a->rgb.red, 2.1);
 	b->rgb.green = pow(a->rgb.green, 2.0);
 	b->rgb.blue = pow(a->rgb.blue, 2.1);
+}
+
+
+vector3* color_get_d65()
+{
+	return &d65;
+}
+
+vector3* color_get_d50()
+{
+	return &d50;
+}
+
+matrix3x3* color_get_sRGB_transformation_matrix()
+{
+	return &sRGB_transformation;
+}
+
+matrix3x3* color_get_d65_d50_adaptation_matrix()
+{
+	return &d65_d50_adaptation_matrix;
+}
+
+matrix3x3* color_get_d50_d65_adaptation_matrix()
+{
+	return &d50_d65_adaptation_matrix;
 }
 
 

@@ -260,16 +260,9 @@ static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	stringstream ss;
 	ss.setf(ios::fixed, ios::floatfield);
 
-	matrix3x3 adaptation_matrix, working_space_matrix;
-	vector3 d50, d65;
-	vector3_set(&d50, 96.442, 100.000,  82.821);
-	vector3_set(&d65, 95.047, 100.000, 108.883);
-	color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
-	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-
 	Color c_lab, c2_lab;
-	color_rgb_to_lab(&c, &c_lab, &d50, &working_space_matrix);
-	color_rgb_to_lab(&c2, &c2_lab, &d50, &working_space_matrix);
+	color_rgb_to_lab_d50(&c, &c_lab);
+	color_rgb_to_lab_d50(&c2, &c2_lab);
 
 	const ColorWheelType *wheel = &color_wheel_types_get()[0];
 	Color hsl1, hsl2;

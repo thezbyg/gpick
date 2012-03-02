@@ -47,3 +47,37 @@ ToolColorNamingType tool_color_naming_name_to_type(const char *name){
 	return TOOL_COLOR_NAMING_UNKNOWN;
 }
 
+ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):m_gs(gs){
+	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->params, "gpick.color_names.tool_color_naming", "tool_specific"));
+	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
+		m_imprecision_postfix = dynv_get_bool_wd(m_gs->params, "gpick.color_names.imprecision_postfix", true);
+	}else{
+		m_imprecision_postfix = false;
+	}
+}
+
+ToolColorNameAssigner::~ToolColorNameAssigner(){
+}
+
+void ToolColorNameAssigner::assign(struct ColorObject *color_object, Color *color){
+	string name;
+	switch (m_color_naming_type){
+		case TOOL_COLOR_NAMING_UNKNOWN:
+		case TOOL_COLOR_NAMING_EMPTY:
+			dynv_set_string(color_object->params, "name", "");
+			break;
+		case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
+			name = color_names_get(m_gs->color_names, color, m_imprecision_postfix);
+			dynv_set_string(color_object->params, "name", name.c_str());
+			break;
+		case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
+			name = getToolSpecificName(color_object, color);
+			dynv_set_string(color_object->params, "name", name.c_str());
+			break;
+	}
+}
+
+std::string ToolColorNameAssigner::getToolSpecificName(struct ColorObject *color_object, Color *color){
+	return string("");
+}
+

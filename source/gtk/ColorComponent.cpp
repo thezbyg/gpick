@@ -242,18 +242,7 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 			color_rgb_to_cmyk(&ns->orig_color, &ns->color);
 			break;
 		case lab:
-			matrix3x3 adaptation_matrix, working_space_matrix;
-			vector3 d50, d65;
-			vector3_set(&d50, 96.442, 100.000,  82.821);
-			vector3_set(&d65, 95.047, 100.000, 108.883);
-			color_get_chromatic_adaptation_matrix(&d50, &d65, &adaptation_matrix);
-			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-
-			color_rgb_to_xyz(&ns->orig_color, &c1, &working_space_matrix);
-			color_xyz_chromatic_adaptation(&c1, &c1, &adaptation_matrix);
-
-			color_xyz_to_lab(&c1, &ns->color, &d50);
-
+			color_rgb_to_lab_d50(&ns->orig_color, &ns->color);
 			break;
 		case xyz:
 			/* todo */
@@ -464,38 +453,23 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 		case lab:
 			steps = 100;
 
-			matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inv;
-			vector3 d50, d65;
-			vector3_set(&d50, 96.442, 100.000,  82.821);
-			vector3_set(&d65, 95.047, 100.000, 108.883);
-			color_get_chromatic_adaptation_matrix(&d65, &d50, &adaptation_matrix);
-			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-
-			matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inv);
-
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[0].lab.L = (i / steps) * ns->range[0] + ns->offset[0];
-				color_lab_to_xyz(&c[0], &c2[0], &d50);
-				color_xyz_chromatic_adaptation(&c2[0], &c2[0], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[0], &rgb_points[0 * (int(steps) + 1) + i], &working_space_matrix_inv);
+        color_lab_to_rgb_d50(&c[0], &rgb_points[0 * (int(steps) + 1) + i]);
 				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
 			}
 
 			for (i = 0; i <= steps; ++i){
 				c[1].lab.a = (i / steps) * ns->range[1] + ns->offset[1];
-				color_lab_to_xyz(&c[1], &c2[1], &d50);
-				color_xyz_chromatic_adaptation(&c2[1], &c2[1], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[1], &rgb_points[1 * (int(steps) + 1) + i], &working_space_matrix_inv);
+        color_lab_to_rgb_d50(&c[1], &rgb_points[1 * (int(steps) + 1) + i]);
 				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[2].lab.b = (i / steps) * ns->range[2] + ns->offset[2];
-				color_lab_to_xyz(&c[2], &c2[2], &d50);
-				color_xyz_chromatic_adaptation(&c2[2], &c2[2], &adaptation_matrix);
-				color_xyz_to_rgb(&c2[2], &rgb_points[2 * (int(steps) + 1) + i], &working_space_matrix_inv);
+        color_lab_to_rgb_d50(&c[2], &rgb_points[2 * (int(steps) + 1) + i]);
 				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i < surface_width; ++i){
@@ -636,22 +610,8 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 			color_rgb_normalize(c);
 			break;
 		case lab:
-			matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inv;
-			vector3 d50, d65;
-			vector3_set(&d50, 96.442, 100.000,  82.821);
-			vector3_set(&d65, 95.047, 100.000, 108.883);
-			color_get_chromatic_adaptation_matrix(&d65, &d50, &adaptation_matrix);
-			color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &working_space_matrix);
-
-			matrix3x3_inverse(&working_space_matrix, &working_space_matrix_inv);
-
-			Color c2;
-
-			color_lab_to_xyz(&ns->color, &c2, &d50);
-			color_xyz_chromatic_adaptation(&c2, &c2, &adaptation_matrix);
-			color_xyz_to_rgb(&c2, c, &working_space_matrix_inv);
+			color_lab_to_rgb_d50(&ns->color, c);
 			color_rgb_normalize(c);
-
 			break;
 
 		case xyz:

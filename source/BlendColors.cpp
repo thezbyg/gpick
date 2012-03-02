@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -32,6 +32,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "uiApp.h"
+#include "ToolColorNaming.h"
 #include "Internationalisation.h"
 
 #include <math.h>
@@ -44,8 +45,8 @@
 
 using namespace std;
 
-#define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
-	dynv_set_string(color_object->params, "name", color_names_get(args->gs->color_names, &r, imprecision_postfix).c_str()); \
+#define STORE_COLOR() struct ColorObject *color_object = color_list_new_color_object(color_list, &r); \
+	name_assigner.assign(color_object, &r, "test", 0); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object_release(color_object)
 
@@ -73,6 +74,27 @@ typedef struct BlendColorsArgs{
 	GlobalState* gs;
 }BlendColorsArgs;
 
+class BlendColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_name;
+		uint32_t m_step_i;
+	public:
+		BlendColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *name, uint32_t step_i){
+			m_name = name;
+			m_step_i = step_i;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << m_name << " blend " << m_step_i;
+			return m_stream.str();
+		}
+};
+
 static int source_get_color(BlendColorsArgs *args, struct ColorObject** color);
 
 static void calc( BlendColorsArgs *args, bool preview, int limit){
@@ -89,16 +111,11 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 	s.setf(ios::fixed,ios::floatfield);
 
 	Color a,b;
-	matrix3x3 adaptation_matrix, working_space_matrix, working_space_matrix_inverted;
-	vector3 d50, d65;
-	if (type == 3) {
-	    SETUP_LAB (d50,d65,adaptation_matrix,working_space_matrix,working_space_matrix_inverted);
-	}
 
 	struct ColorList *color_list;
 	color_list = args->preview_color_list;
 
-	bool imprecision_postfix = dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true);
+	BlendColorNameAssigner name_assigner(args->gs);
 
 	int steps;
 	for (int stage = 0; stage < 2; stage++){
@@ -167,12 +184,12 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 		case 3:
 			{
 				Color a_lab, b_lab, r_lab;
-				color_rgb_to_lab(&a, &a_lab, &d50, &working_space_matrix);
-				color_rgb_to_lab(&b, &b_lab, &d50, &working_space_matrix);
+				color_rgb_to_lab_d50(&a, &a_lab);
+				color_rgb_to_lab_d50(&b, &b_lab);
 
 				for (; step_i < steps; ++step_i) {
 					MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
-					color_lab_to_rgb(&r_lab, &r, &d50, &working_space_matrix_inverted);
+					color_lab_to_rgb_d50(&r_lab, &r);
 					color_rgb_normalize(&r);
 					STORE_COLOR();
 				}
@@ -370,8 +387,8 @@ static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, struct Col
 
 	*color = color_list_new_color_object(args->gs->colors, &c);
 
-	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string((*color)->params, "name", name.c_str());
+	BlendColorNameAssigner name_assigner(args->gs);
+	name_assigner.assign(*color, &c, "test", 0);
 
 	return 0;
 }
@@ -384,8 +401,6 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 	}
 	return 0;
 }
-
-
 
 static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
 	BlendColorsArgs* args = static_cast<BlendColorsArgs*>(dd->userdata);
@@ -404,7 +419,6 @@ static int source_set_color(BlendColorsArgs *args, struct ColorObject* color){
 static int source_activate(BlendColorsArgs *args){
 	return 0;
 }
-
 
 static int source_deactivate(BlendColorsArgs *args){
 	return 0;
