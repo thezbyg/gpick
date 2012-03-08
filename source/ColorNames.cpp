@@ -20,6 +20,7 @@
 #include "MathUtil.h"
 
 #include <math.h>
+#include <string.h>
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -169,18 +170,28 @@ color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 	float result_delta=1e5;
 	ColorEntry* color_entry=NULL;
 
+	char skip_mask[8][8][8];
+	memset(&skip_mask, 0, sizeof(skip_mask));
+
 	/* Search expansion should be from 0 to 7, but this would only increase search time and return
 	 * wrong color names when no closely matching color is found. Search expansion is only usefull
 	 * when color name database is very small (16 colors)
 	 */
-	for (int expansion=0; expansion<2; ++expansion){
-		for (int x_i = max_int(x1 - expansion, 0); x_i <= min_int(x2 + expansion, 7); ++x_i) {
-			for (int y_i = max_int(y1 - expansion, 0); y_i <= min_int(y2 + expansion, 7); ++y_i) {
-				for (int z_i = max_int(z1 - expansion, 0); z_i <= min_int(z2 + expansion, 7); ++z_i) {
+	for (int expansion = 0; expansion < 7; ++expansion){
+    int x_start = std::max(x1 - expansion, 0), x_end = std::min(x2 + expansion, 7);
+    int y_start = std::max(y1 - expansion, 0), y_end = std::min(y2 + expansion, 7);
+    int z_start = std::max(z1 - expansion, 0), z_end = std::min(z2 + expansion, 7);
+
+		for (int x_i = x_start; x_i <= x_end; ++x_i) {
+			for (int y_i = y_start; y_i <= y_end; ++y_i) {
+				for (int z_i = z_start; z_i <= z_end; ++z_i) {
+					if (skip_mask[x_i][y_i][z_i]) continue; // skip checked items
+					skip_mask[x_i][y_i][z_i] = 1;
+
 					for (list<ColorEntry*>::iterator i=cnames->colors[x_i][y_i][z_i].begin(); i!=cnames->colors[x_i][y_i][z_i].end();++i){
 						float delta = cnames->colorspace_distance(&(*i)->color, &c1);
 						//float delta = pow((*i)->color.xyz.x-c1.xyz.x,2) + pow((*i)->color.xyz.y-c1.xyz.y,2) + pow((*i)->color.xyz.z-c1.xyz.z,2);
-						if (delta<result_delta)
+						if (delta < result_delta)
 						{
 							result_delta=delta;
 							color_entry=*i;
@@ -189,7 +200,7 @@ color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 				}
 			}
 		}
-		//no need for further expansion if we have found color
+		//no need for further expansion if we have found a match
 		if (color_entry) break;
 	}
 

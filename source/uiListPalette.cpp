@@ -369,8 +369,20 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 				// Reference item is going to be removed, so any further inserts
 				// will fail if the same iterator is used. Iterator is moved forward
 				// to avoid that.
-				if (!gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)){
-					path_is_valid = false;
+				if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+					if (!gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)){
+						path_is_valid = false;
+					}
+				}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+					GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(model), &iter);
+					if (gtk_tree_path_prev(path)) {
+						if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, path)){
+							path_is_valid = false;
+						}
+					}else{
+						path_is_valid = false;
+					}
+					gtk_tree_path_free(path);
 				}
 			}
 
