@@ -676,7 +676,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 		{hsl, 3, {{_("Hue"), 360, 0, 360, 0.01}, {_("Saturation"), 100, 0, 100, 0.01}, {_("Lightness"), 100, 0, 100, 0.01}}},
 		{rgb, 3, {{_("Red"), 255, 0, 255, 0.01}, {_("Green"), 255, 0, 255, 0.01}, {_("Blue"), 255, 0, 255, 0.01}}},
 		{cmyk, 4, {{_("Cyan"), 255, 0, 255, 0.01}, {_("Magenta"), 255, 0, 255, 0.01}, {_("Yellow"), 255, 0, 255, 0.01}, {_("Key"), 255, 0, 255, 0.01}}},
-		{lab, 3, {{_("Lightness"), 1, 0, 100, 0.01}, {"a", 1, -145, 145, 0.01}, {"b", 1, -145, 145, 0.01}}},
+		{lab, 3, {{_("Lightness"), 1, 0, 100, 0.0001}, {"a", 1, -145, 145, 0.0001}, {"b", 1, -145, 145, 0.0001}}},
 	};
 
 	struct ComponentTypeInputs *comp_type_input = 0;

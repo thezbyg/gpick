@@ -30,7 +30,7 @@ static vector3 d65={
 	{{95.047, 100.000, 108.883}}
 };
 static vector3 d50={
-	{{96.442, 100.000,  82.821}}
+	{{96.422, 100.000,  82.521}}
 };
 
 static matrix3x3 sRGB_transformation;
@@ -405,6 +405,8 @@ void color_lab_to_rgb_d50(Color* a, Color* b){
 	color_lab_to_rgb(a, b, &d50, &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
 }
 
+#define Kk (24389.0 / 27.0)
+
 void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
 	float X,Y,Z;
 
@@ -415,17 +417,17 @@ void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
 	if (X>EPSILON){
 		X=pow(X,1.0/3.0);
 	}else{
-		X=(7.787*X)+(16.0/116.0);
+		X=(Kk*X+16.0)/116.0;
 	}
 	if (Y>EPSILON){
 		Y=pow(Y,1.0/3.0);
 	}else{
-		Y=(7.787*Y)+(16.0/116.0);
+		Y=(Kk*Y+16.0)/116.0;
 	}
 	if (Z>EPSILON){
 		Z=pow(Z,1.0/3.0);
 	}else{
-		Z=(7.787*Z)+(16.0/116.0);
+		Z=(Kk*Z+16.0)/116.0;
 	}
 
 	b->lab.L=(116*Y)-16;
@@ -441,7 +443,7 @@ void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white) {
 	float fx = a->lab.a / 500 + fy;
 	float fz = fy - a->lab.b / 200;
 
-	float K=(24389.0 / 27.0);
+	const double K=(24389.0 / 27.0);
 
 	if (pow(fx, 3)>EPSILON){
 		x=pow(fx, 3);
