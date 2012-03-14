@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,7 @@
 using namespace std;
 
 //CIE94 color difference calculation
-float color_names_distance_lch(Color* a, Color* b){
+float color_names_distance_lch(const Color* a, const Color* b){
 	Color al, bl;
 	color_lab_to_lch(a, &al);
 	color_lab_to_lch(b, &bl);

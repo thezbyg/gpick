@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -26,11 +26,16 @@ using namespace std;
 // Constant used for lab->xyz transform. Should be calculated with maximum accuracy possible.
 #define EPSILON (216.0 / 24389.0)
 
-static vector3 d65={
-	{{95.047, 100.000, 108.883}}
-};
-static vector3 d50={
-	{{96.422, 100.000,  82.521}}
+static vector3 references[][2] = {
+	{{{{109.850, 100.000,  35.585}}}, {{{111.144, 100.000,  35.200}}}},
+	{{{{ 98.074, 100.000, 118.232}}}, {{{ 97.285, 100.000, 116.145}}}},
+	{{{{ 96.422, 100.000,  82.521}}}, {{{ 96.720, 100.000,  81.427}}}},
+	{{{{ 95.682, 100.000,  92.149}}}, {{{ 95.799, 100.000,  90.926}}}},
+	{{{{ 95.047, 100.000, 108.883}}}, {{{ 94.811, 100.000, 107.304}}}},
+	{{{{ 94.972, 100.000, 122.638}}}, {{{ 94.416, 100.000, 120.641}}}},
+	{{{{ 99.187, 100.000,  67.395}}}, {{{103.280, 100.000,  69.026}}}},
+	{{{{ 95.044, 100.000, 108.755}}}, {{{ 95.792, 100.000, 107.687}}}},
+	{{{{100.966, 100.000,  64.370}}}, {{{103.866, 100.000,  65.627}}}},
 };
 
 static matrix3x3 sRGB_transformation;
@@ -39,20 +44,20 @@ static matrix3x3 sRGB_transformation_inverted;
 static matrix3x3 d65_d50_adaptation_matrix;
 static matrix3x3 d50_d65_adaptation_matrix;
 
+
 void color_init()
 {
 	// constants used below are sRGB working space red, green and blue primaries for D65 reference white
-	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, &d65, &sRGB_transformation);
+	color_get_working_space_matrix(0.6400, 0.3300, 0.3000, 0.6000, 0.1500, 0.0600, color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &sRGB_transformation);
 	matrix3x3_inverse(&sRGB_transformation, &sRGB_transformation_inverted);
 
-	color_get_chromatic_adaptation_matrix(&d65, &d50, &d65_d50_adaptation_matrix);
-	color_get_chromatic_adaptation_matrix(&d50, &d65, &d50_d65_adaptation_matrix);
+	color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &d65_d50_adaptation_matrix);
+	color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &d50_d65_adaptation_matrix);
 
 }
 
 
-void
-color_rgb_to_hsv(Color* a, Color* b)
+void color_rgb_to_hsv(const Color* a, Color* b)
 {
 	float min, max, delta;
 
@@ -88,8 +93,7 @@ color_rgb_to_hsv(Color* a, Color* b)
 }
 
 
-void
-color_hsv_to_rgb(Color* a, Color* b)
+void color_hsv_to_rgb(const Color* a, Color* b)
 {
 	float h,v, f, x, y, z;
 	int i;
@@ -137,8 +141,7 @@ color_hsv_to_rgb(Color* a, Color* b)
 	}
 }
 
-void
-color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation)
+void color_rgb_to_xyz(const Color* a, Color* b, const matrix3x3* transformation)
 {
 	float R=a->rgb.red, G=a->rgb.green, B=a->rgb.blue;
 
@@ -172,8 +175,7 @@ color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation)
 	b->xyz.z = rgb.z;
 }
 
-void
-color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted)
+void color_xyz_to_rgb(const Color* a, Color* b, const matrix3x3* transformation_inverted)
 {
 	vector3 rgb;
 	float R,G,B;
@@ -206,7 +208,7 @@ color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted)
 
 
 
-void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation, matrix3x3* adaptation_matrix)
+void color_rgb_to_lab(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix)
 {
 	Color c;
 	color_rgb_to_xyz(a, &c, transformation);
@@ -214,7 +216,7 @@ void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* t
 	color_xyz_to_lab(&c, b, reference_white);
 }
 
-void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted, matrix3x3* adaptation_matrix_inverted)
+void color_lab_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted)
 {
 	Color c;
 	color_lab_to_xyz(a, &c, reference_white);
@@ -222,45 +224,43 @@ void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* t
 	color_xyz_to_rgb(&c, b, transformation_inverted);
 }
 
-void color_copy(Color* a, Color* b)
+void color_copy(const Color* a, Color* b)
 {
-	b->m.m1=a->m.m1;
-	b->m.m2=a->m.m2;
-	b->m.m3=a->m.m3;
-	b->m.m4=a->m.m4;
+	b->m.m1 = a->m.m1;
+	b->m.m2 = a->m.m2;
+	b->m.m3 = a->m.m3;
+	b->m.m4 = a->m.m4;
 }
 
-void color_add(Color* a, Color* b)
+void color_add(Color* a, const Color* b)
 {
-	a->m.m1+=b->m.m1;
-	a->m.m2+=b->m.m2;
-	a->m.m3+=b->m.m3;
-	a->m.m4+=b->m.m4;
+	a->m.m1 += b->m.m1;
+	a->m.m2 += b->m.m2;
+	a->m.m3 += b->m.m3;
+	a->m.m4 += b->m.m4;
+}
+
+void color_multiply(Color* a, float b)
+{
+	a->m.m1 *= b;
+	a->m.m2 *= b;
+	a->m.m3 *= b;
+	a->m.m4 *= b;
+}
+
+void color_zero(Color* a)
+{
+	a->m.m1 = 0;
+	a->m.m2 = 0;
+	a->m.m3 = 0;
+	a->m.m4 = 0;
 }
 
 void
-color_multiply(Color* a, float b)
-{
-	a->m.m1*=b;
-	a->m.m2*=b;
-	a->m.m3*=b;
-	a->m.m4*=b;
-}
-
-void
-color_zero(Color* a)
-{
-	a->m.m1=0;
-	a->m.m2=0;
-	a->m.m3=0;
-	a->m.m4=0;
-}
-
-void
-color_get_contrasting(Color* a, Color* b)
+color_get_contrasting(const Color* a, Color* b)
 {
 	Color t;
-	color_rgb_to_lab(a, &t, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
+	color_rgb_to_lab(a, &t, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
 
 	if (t.lab.L > 50){
 		t.hsv.value=0;
@@ -274,21 +274,23 @@ color_get_contrasting(Color* a, Color* b)
 	color_hsv_to_rgb(&t, b);
 }
 
-void
-color_set(Color* a, float value)
+void color_set(Color* a, float value)
 {
 	a->rgb.red = a->rgb.green = a->rgb.blue = value;
 }
 
-Color* color_new() {
+Color* color_new()
+{
 	return new Color;
 }
 
-void color_destroy(Color *a) {
+void color_destroy(Color *a)
+{
 	delete a;
 }
 
-void color_rgb_to_hsl(Color* a, Color* b) {
+void color_rgb_to_hsl(const Color* a, Color* b)
+{
 	float min, max, delta;
 
 	min = min_float_3(a->rgb.red, a->rgb.green, a->rgb.blue);
@@ -325,7 +327,7 @@ void color_rgb_to_hsl(Color* a, Color* b) {
 }
 
 
-void color_hsl_to_rgb(Color* a, Color* b) {
+void color_hsl_to_rgb(const Color* a, Color* b) {
 	if (a->hsl.saturation == 0) {
 		b->rgb.red = b->rgb.green = b->rgb.blue = a->hsl.lightness;
 	} else {
@@ -376,7 +378,7 @@ void color_hsl_to_rgb(Color* a, Color* b) {
 	}
 }
 
-void color_lab_to_lch(Color* a, Color* b) {
+void color_lab_to_lch(const Color* a, Color* b) {
 	float H;
 	H = atan2(a->lab.b, a->lab.a);
 
@@ -390,24 +392,24 @@ void color_lab_to_lch(Color* a, Color* b) {
 	b->lch.h = H;
 }
 
-void color_rgb_to_lch(Color* a, Color* b){
+void color_rgb_to_lch(const Color* a, Color* b){
 	Color c;
-	color_rgb_to_lab(a, &c, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
+	color_rgb_to_lab(a, &c, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
 	color_lab_to_lch(&c, b);
 }
 
 
-void color_rgb_to_lab_d50(Color* a, Color* b){
-	color_rgb_to_lab(a, b, &d50, &sRGB_transformation, &d65_d50_adaptation_matrix);
+void color_rgb_to_lab_d50(const Color* a, Color* b){
+	color_rgb_to_lab(a, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
 }
 
-void color_lab_to_rgb_d50(Color* a, Color* b){
-	color_lab_to_rgb(a, b, &d50, &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
+void color_lab_to_rgb_d50(const Color* a, Color* b){
+	color_lab_to_rgb(a, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
 }
 
 #define Kk (24389.0 / 27.0)
 
-void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
+void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white){
 	float X,Y,Z;
 
 	X = a->xyz.x / reference_white->x; //95.047f;
@@ -436,7 +438,7 @@ void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white){
 
 }
 
-void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white) {
+void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white) {
 	float x, y, z;
 
 	float fy = (a->lab.L + 16) / 116;
@@ -468,7 +470,7 @@ void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white) {
 	b->xyz.z = z * reference_white->z; //108.883f;
 }
 
-void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result){
+void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, const vector3* reference_white, matrix3x3* result){
 	float Xr,Yr,Zr;
 	float Xg,Yg,Zg;
 	float Xb,Yb,Zb;
@@ -504,7 +506,7 @@ void color_get_working_space_matrix(float xr, float yr, float xg, float yg, floa
 	result->m[0][2]=Xb*v.z;	result->m[1][2]=Yb*v.z;	result->m[2][2]=Zb*v.z;
 }
 
-void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result){
+void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white, const vector3* destination_reference_white, matrix3x3* result){
 
 	matrix3x3 Ma;
 	//Bradford matrix
@@ -532,7 +534,8 @@ void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vect
 	matrix3x3_multiply(&M, &Ma_inv, result);
 }
 
-void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptation ){
+void color_xyz_chromatic_adaptation(const Color* a, Color* result, const matrix3x3* adaptation)
+{
 	vector3 x;
 	x.x=a->xyz.x;
 	x.y=a->xyz.y;
@@ -543,19 +546,22 @@ void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptati
 	result->xyz.z=x.z;
 }
 
-void color_rgb_to_cmy(Color* a, Color* b){
+void color_rgb_to_cmy(const Color* a, Color* b)
+{
 	b->cmy.c = 1 - a->rgb.red;
 	b->cmy.m = 1 - a->rgb.green;
 	b->cmy.y = 1 - a->rgb.blue;
 }
 
-void color_cmy_to_rgb(Color* a, Color* b){
+void color_cmy_to_rgb(const Color* a, Color* b)
+{
 	b->rgb.red = 1 - a->cmy.c;
 	b->rgb.green = 1 - a->cmy.m;
 	b->rgb.blue = 1 - a->cmy.y;
 }
 
-void color_cmy_to_cmyk(Color* a, Color* b){
+void color_cmy_to_cmyk(const Color* a, Color* b)
+{
 	float k = 1;
 
 	if (a->cmy.c < k) k = a->cmy.c;
@@ -572,33 +578,38 @@ void color_cmy_to_cmyk(Color* a, Color* b){
 	b->cmyk.k = k;
 }
 
-void color_cmyk_to_cmy(Color* a, Color* b){
+void color_cmyk_to_cmy(const Color* a, Color* b)
+{
 	b->cmy.c = (a->cmyk.c * (1 - a->cmyk.k) + a->cmyk.k);
 	b->cmy.m = (a->cmyk.m * (1 - a->cmyk.k) + a->cmyk.k);
 	b->cmy.y = (a->cmyk.y * (1 - a->cmyk.k) + a->cmyk.k);
 }
 
-void color_rgb_to_cmyk(Color* a, Color* b){
+void color_rgb_to_cmyk(const Color* a, Color* b)
+{
 	Color c;
 	color_rgb_to_cmy(a, &c);
 	color_cmy_to_cmyk(&c, b);
 }
 
-void color_cmyk_to_rgb(Color* a, Color* b){
+void color_cmyk_to_rgb(const Color* a, Color* b)
+{
 	Color c;
 	color_cmyk_to_cmy(a, &c);
 	color_cmy_to_rgb(&c, b);
 }
 
 
-void color_rgb_normalize(Color* a){
+void color_rgb_normalize(Color* a)
+{
 	a->rgb.red = clamp_float(a->rgb.red, 0, 1);
 	a->rgb.green = clamp_float(a->rgb.green, 0, 1);
 	a->rgb.blue = clamp_float(a->rgb.blue, 0, 1);
 }
 
-void color_hsl_to_hsv(Color *a, Color *b){
-    float l = a->hsl.lightness * 2.0;
+void color_hsl_to_hsv(const Color *a, Color *b)
+{
+	float l = a->hsl.lightness * 2.0;
 	float s = a->hsl.saturation * ((l <= 1.0) ? (l) : (2.0 - l));
 
 	b->hsv.hue = a->hsl.hue;
@@ -611,7 +622,8 @@ void color_hsl_to_hsv(Color *a, Color *b){
 	}
 }
 
-void color_hsv_to_hsl(Color *a, Color *b){
+void color_hsv_to_hsl(const Color *a, Color *b)
+{
 	float l = (2.0 - a->hsv.saturation) * a->hsv.value;
 	float s = (a->hsv.saturation * a->hsv.value) / ((l <= 1.0) ? (l) : (2 - l));
     if (l == 0) s = 0;
@@ -621,42 +633,37 @@ void color_hsv_to_hsl(Color *a, Color *b){
 	b->hsl.lightness = l / 2.0;
 }
 
-void color_rgb_get_linear(Color* a, Color* b){
+void color_rgb_get_linear(const Color* a, Color* b)
+{
 	b->rgb.red = pow(a->rgb.red, 1.0 / 2.1);
 	b->rgb.green = pow(a->rgb.green, 1.0 / 2.0);
 	b->rgb.blue = pow(a->rgb.blue, 1.0 / 2.1);
 }
 
-void color_linear_get_rgb(Color* a, Color* b){
+void color_linear_get_rgb(const Color* a, Color* b)
+{
 	b->rgb.red = pow(a->rgb.red, 2.1);
 	b->rgb.green = pow(a->rgb.green, 2.0);
 	b->rgb.blue = pow(a->rgb.blue, 2.1);
 }
 
-
-vector3* color_get_d65()
-{
-	return &d65;
-}
-
-vector3* color_get_d50()
-{
-	return &d50;
-}
-
-matrix3x3* color_get_sRGB_transformation_matrix()
+const matrix3x3* color_get_sRGB_transformation_matrix()
 {
 	return &sRGB_transformation;
 }
 
-matrix3x3* color_get_d65_d50_adaptation_matrix()
+const matrix3x3* color_get_d65_d50_adaptation_matrix()
 {
 	return &d65_d50_adaptation_matrix;
 }
 
-matrix3x3* color_get_d50_d65_adaptation_matrix()
+const matrix3x3* color_get_d50_d65_adaptation_matrix()
 {
 	return &d50_d65_adaptation_matrix;
 }
 
+const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObserver observer)
+{
+	return &references[illuminant][observer];
+}
 

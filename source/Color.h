@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -81,6 +81,24 @@ typedef struct Color{
 	};
 }Color;
 
+enum ReferenceIlluminant {
+	REFERENCE_ILLUMINANT_A = 0,
+	REFERENCE_ILLUMINANT_C = 1,
+	REFERENCE_ILLUMINANT_D50 = 2,
+	REFERENCE_ILLUMINANT_D55 = 3,
+	REFERENCE_ILLUMINANT_D65 = 4,
+	REFERENCE_ILLUMINANT_D75 = 5,
+	REFERENCE_ILLUMINANT_F2 = 6,
+	REFERENCE_ILLUMINANT_F7 = 7,
+	REFERENCE_ILLUMINANT_F11 = 8,
+};
+
+enum ReferenceObserver {
+	REFERENCE_OBSERVER_2 = 0,
+	REFERENCE_OBSERVER_10 = 1,
+};
+
+
 /**
  * Initialize things needed for color conversion functions
  */
@@ -91,81 +109,81 @@ void color_init();
  * @param[in] a Source color in RGB colorspace
  * @param[out] b Destination color in HSL colorspace
  */
-void color_rgb_to_hsl(Color* a, Color* b);
+void color_rgb_to_hsl(const Color* a, Color* b);
 
 /**
  * Convert HSL colorspace to RGB colorspace
  * @param[in] a Source color in HSL colorspace
  * @param[out] b Destination color in RGB colorspace
  */
-void color_hsl_to_rgb(Color* a, Color* b);
+void color_hsl_to_rgb(const Color* a, Color* b);
 
 /**
  * Convert HSL colorspace to HSV colorspace
  * @param[in] a Source color in HSL colorspace
  * @param[out] b Destination color in HSV colorspace
  */
-void color_hsl_to_hsv(Color *a, Color *b);
+void color_hsl_to_hsv(const Color *a, Color *b);
 
 /**
  * Convert HSV colorspace to HSL colorspace
  * @param[in] a Source color in HSV colorspace
  * @param[out] b Destination color in HSL colorspace
  */
-void color_hsv_to_hsl(Color *a, Color *b);
+void color_hsv_to_hsl(const Color *a, Color *b);
 
 /**
  * Convert RGB colorspace to HSV colorspace
  * @param[in] a Source color in RGB colorspace
  * @param[out] b Destination color in HSV colorspace
  */
-void color_rgb_to_hsv(Color* a, Color* b);
+void color_rgb_to_hsv(const Color* a, Color* b);
 
 /**
  * Convert HSV colorspace to RGB colorspace
  * @param[in] a Source color in HSV colorspace
  * @param[out] b Destination color in RGB colorspace
  */
-void color_hsv_to_rgb(Color* a, Color* b);
+void color_hsv_to_rgb(const Color* a, Color* b);
 
-void color_rgb_to_xyz(Color* a, Color* b, matrix3x3* transformation);
-void color_xyz_to_rgb(Color* a, Color* b, matrix3x3* transformation_inverted);
+void color_rgb_to_xyz(const Color* a, Color* b, const matrix3x3* transformation);
+void color_xyz_to_rgb(const Color* a, Color* b, const matrix3x3* transformation_inverted);
 
-void color_xyz_to_lab(Color* a, Color* b, vector3* reference_white);
-void color_lab_to_xyz(Color* a, Color* b, vector3* reference_white);
+void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white);
+void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white);
 
-void color_rgb_to_lab(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation, matrix3x3* adaptation_matrix);
-void color_lab_to_rgb(Color* a, Color* b, vector3* reference_white, matrix3x3* transformation_inverted, matrix3x3* adaptation_matrix_inverted);
+void color_rgb_to_lab(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix);
+void color_lab_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted);
 
-void color_rgb_to_lab_d50(Color* a, Color* b);
-void color_lab_to_rgb_d50(Color* a, Color* b);
+void color_rgb_to_lab_d50(const Color* a, Color* b);
+void color_lab_to_rgb_d50(const Color* a, Color* b);
 
-void color_lab_to_lch(Color* a, Color* b);
-void color_rgb_to_lch(Color* a, Color* b);
+void color_lab_to_lch(const Color* a, Color* b);
+void color_rgb_to_lch(const Color* a, Color* b);
 
-void color_rgb_to_cmy(Color* a, Color* b);
-void color_cmy_to_rgb(Color* a, Color* b);
+void color_rgb_to_cmy(const Color* a, Color* b);
+void color_cmy_to_rgb(const Color* a, Color* b);
 
-void color_cmy_to_cmyk(Color* a, Color* b);
-void color_cmyk_to_cmy(Color* a, Color* b);
+void color_cmy_to_cmyk(const Color* a, Color* b);
+void color_cmyk_to_cmy(const Color* a, Color* b);
 
-void color_rgb_to_cmyk(Color* a, Color* b);
-void color_cmyk_to_rgb(Color* a, Color* b);
+void color_rgb_to_cmyk(const Color* a, Color* b);
+void color_cmyk_to_rgb(const Color* a, Color* b);
 
 
 void color_rgb_normalize(Color* a);
 
-void color_rgb_get_linear(Color* a, Color* b);
-void color_linear_get_rgb(Color* a, Color* b);
+void color_rgb_get_linear(const Color* a, Color* b);
+void color_linear_get_rgb(const Color* a, Color* b);
 
 /**
  * Copy color
  * @param[in] a Source color in any colorspace
  * @param[out] b Destination color
  */
-void color_copy(Color* a, Color* b);
+void color_copy(const Color* a, Color* b);
 
-void color_add(Color* a, Color* b);
+void color_add(Color* a, const Color* b);
 
 void color_multiply(Color* a, float b);
 
@@ -177,18 +195,17 @@ void color_destroy(Color* a);
 
 void color_set(Color* a, float value);
 
-void color_get_contrasting(Color* a, Color* b);
+void color_get_contrasting(const Color* a, Color* b);
 
-void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, vector3* reference_white, matrix3x3* result);
-void color_get_chromatic_adaptation_matrix(vector3* source_reference_white, vector3* destination_reference_white, matrix3x3* result);
-void color_xyz_chromatic_adaptation(Color* a, Color* result, matrix3x3* adaptation );
+void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, const vector3* reference_white, matrix3x3* result);
+void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white, const vector3* destination_reference_white, matrix3x3* result);
+void color_xyz_chromatic_adaptation(const Color* a, Color* result, const matrix3x3* adaptation );
 
-vector3* color_get_d65();
-vector3* color_get_d50();
+const matrix3x3* color_get_sRGB_transformation_matrix();
+const matrix3x3* color_get_d65_d50_adaptation_matrix();
+const matrix3x3* color_get_d50_d65_adaptation_matrix();
 
-matrix3x3* color_get_sRGB_transformation_matrix();
-matrix3x3* color_get_d65_d50_adaptation_matrix();
-matrix3x3* color_get_d50_d65_adaptation_matrix();
-
+const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObserver observer);
 
 #endif /* COLOR_H_ */
+

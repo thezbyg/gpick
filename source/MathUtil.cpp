@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -102,11 +102,11 @@ void matrix3x3_identity(matrix3x3* matrix) {
 	}
 }
 
-void matrix3x3_copy(matrix3x3* matrix, matrix3x3* result) {
+void matrix3x3_copy(const matrix3x3* matrix, matrix3x3* result) {
 	memcpy(result, matrix, sizeof(matrix3x3));
 }
 
-void matrix3x3_multiply(matrix3x3* matrix1, matrix3x3* matrix2, matrix3x3* result){
+void matrix3x3_multiply(const matrix3x3* matrix1, const matrix3x3* matrix2, matrix3x3* result){
 	int i,j,k;
 
 	matrix3x3 matrix_t;
@@ -129,7 +129,7 @@ void matrix3x3_multiply(matrix3x3* matrix1, matrix3x3* matrix2, matrix3x3* resul
 	}
 }
 
-double matrix3x3_determinant(matrix3x3* matrix) {
+double matrix3x3_determinant(const matrix3x3* matrix) {
 	double det=0;
 	double t;
 	int i,j;
@@ -150,7 +150,7 @@ double matrix3x3_determinant(matrix3x3* matrix) {
 	return det;
 }
 
-void matrix3x3_transpose(matrix3x3* matrix, matrix3x3* result) {
+void matrix3x3_transpose(const matrix3x3* matrix, matrix3x3* result) {
 	int i,j;
 	matrix3x3 matrix_t;
 
@@ -167,8 +167,8 @@ void matrix3x3_transpose(matrix3x3* matrix, matrix3x3* result) {
 
 }
 
-int matrix3x3_inverse(matrix3x3* matrix, matrix3x3* result){
-	double det=matrix3x3_determinant(matrix);
+int matrix3x3_inverse(const matrix3x3* matrix, matrix3x3* result){
+	double det = matrix3x3_determinant(matrix);
 	if (det==0) return -1;
 
 	double invdet=1/det;
@@ -201,17 +201,17 @@ void vector2_set(vector2* v1, float x, float y) {
 }
 
 
-float vector2_length(vector2* v1) {
+float vector2_length(const vector2* v1) {
 	return sqrt(v1->x * v1->x + v1->y * v1->y);
 }
 
-void vector2_normalize(vector2* v1, vector2* r) {
+void vector2_normalize(const vector2* v1, vector2* r) {
 	float l = vector2_length(v1);
 	r->x = v1->x / l;
 	r->y = v1->y / l;
 }
 
-float vector2_dot(vector2* v1, vector2* v2) {
+float vector2_dot(const vector2* v1, const vector2* v2) {
 	return v1->x * v2->x + v1->y * v2->y;
 }
 
@@ -237,7 +237,7 @@ int wrap_int(int x, int a, int b) {
 }
 
 
-void vector3_multiply_matrix3x3(vector3* vector, matrix3x3* matrix, vector3* result) {
+void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, vector3* result) {
 
 	vector3 vector_t;
 
@@ -257,11 +257,11 @@ void vector3_set(vector3* vector, float x, float y, float z) {
 	vector->z = z;
 }
 
-void vector3_copy(vector3* vector, vector3* result){
+void vector3_copy(const vector3* vector, vector3* result){
 	memcpy(result, vector, sizeof(vector3));
 }
 
-float vector3_length(vector3* vector) {
+float vector3_length(const vector3* vector) {
 	return sqrt(vector->x * vector->x + vector->y * vector->y + vector->z * vector->z);
 }
 

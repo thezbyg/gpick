@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -54,10 +54,10 @@ typedef struct matrix3x3{
 }matrix3x3;
 
 void matrix3x3_identity(matrix3x3* matrix);
-void matrix3x3_multiply(matrix3x3* matrix1, matrix3x3* matrix2, matrix3x3* result);
-double matrix3x3_determinant(matrix3x3* matrix);
-int matrix3x3_inverse(matrix3x3* matrix, matrix3x3* result);
-void matrix3x3_transpose(matrix3x3* matrix, matrix3x3* result);
+void matrix3x3_multiply(const matrix3x3* matrix1, const matrix3x3* matrix2, matrix3x3* result);
+double matrix3x3_determinant(const matrix3x3* matrix);
+int matrix3x3_inverse(const matrix3x3* matrix, matrix3x3* result);
+void matrix3x3_transpose(const matrix3x3* matrix, matrix3x3* result);
 
 typedef struct vector2{
 	float x;
@@ -66,11 +66,11 @@ typedef struct vector2{
 
 void vector2_set(vector2* v1, float x, float y);
 
-float vector2_length(vector2* v1);
+float vector2_length(const vector2* v1);
 
-void vector2_normalize(vector2* v1, vector2* r);
+void vector2_normalize(const vector2* v1, vector2* r);
 
-float vector2_dot(vector2* v1, vector2* v2);
+float vector2_dot(const vector2* v1, const vector2* v2);
 
 
 typedef struct vector3{
@@ -85,12 +85,13 @@ typedef struct vector3{
 }vector3;
 
 void vector3_set(vector3* vector, float x, float y, float z);
-void vector3_copy(vector3* vector, vector3* result);
+void vector3_copy(const vector3* vector, vector3* result);
 
-float vector3_length(vector3* vector);
+float vector3_length(const vector3* vector);
 
-void vector3_multiply_matrix3x3(vector3* vector, matrix3x3* matrix, vector3* result );
+void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, vector3* result );
 
 void vector3_clamp(vector3* vector, float a, float b);
 
 #endif /* MATHUTIL_H_ */
+

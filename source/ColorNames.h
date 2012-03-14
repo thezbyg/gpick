@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -38,8 +38,8 @@ typedef struct ColorEntry{
 typedef struct ColorNames{
 	list<ColorNameEntry*> names;
 	list<ColorEntry*> colors[8][8][8];
-	void (*colorspace_convert)(Color* a, Color* b);
-	float (*colorspace_distance)(Color* a, Color* b);
+	void (*colorspace_convert)(const Color* a, Color* b);
+	float (*colorspace_distance)(const Color* a, const Color* b);
 }ColorNames;
 
 ColorNames*
