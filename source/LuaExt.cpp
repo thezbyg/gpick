@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -244,6 +244,33 @@ static int lua_color_rgb_to_cmyk (lua_State *L) {
 	return 1;
 }
 
+static int lua_color_lch_lightness(lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lch.L = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lch.L);
+	return 1;
+}
+
+static int lua_color_lch_chroma(lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lch.C = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lch.C);
+	return 1;
+}
+
+static int lua_color_lch_hue(lua_State *L) {
+	Color *c = lua_checkcolor(L, 1);
+	if (lua_type(L, 2)==LUA_TNUMBER){
+		c->lch.h = luaL_checknumber(L, 2);
+	}
+	lua_pushnumber(L, c->lch.h);
+	return 1;
+}
+
 static const struct luaL_reg lua_colorlib_f [] = {
 	{"new", lua_newcolor},
 	{NULL, NULL}
@@ -271,6 +298,10 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{"lab_lightness",		lua_color_lab_lightness},
 	{"lab_a",		lua_color_lab_a},
 	{"lab_b",		lua_color_lab_b},
+
+	{"lch_lightness",		lua_color_lch_lightness},
+	{"lch_chroma",		lua_color_lch_chroma},
+	{"lch_hue",		lua_color_lch_hue},
 
 	{"rgb_to_hsl",	lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",	lua_color_hsl_to_rgb},

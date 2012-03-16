@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -148,6 +148,15 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 			ns->offset[1] = ns->offset[2] = -145;
 			break;
 
+		case lch:
+			ns->n_components = 3;
+			ns->range[0] = 100;
+			ns->offset[0] = 0;
+			ns->range[1] = 100;
+			ns->range[2] = 360;
+			ns->offset[1] = ns->offset[2] = 0;
+			break;
+
 		case xyz:
 
 			break;
@@ -246,6 +255,9 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 			break;
 		case xyz:
 			/* todo */
+			break;
+		case lch:
+      color_rgb_to_lch(&ns->orig_color, &ns->color);
 			break;
 	}
 
@@ -500,6 +512,56 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			}
 			break;
 
+		case lch:
+			steps = 100;
+
+			for (i = 0; i < 3; ++i){
+				color_copy(&ns->color, &c[i]);
+			}
+			for (i = 0; i <= steps; ++i){
+				c[0].lch.L = (i / steps) * ns->range[0] + ns->offset[0];
+        color_lch_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i]);
+				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
+			}
+
+			for (i = 0; i <= steps; ++i){
+				c[1].lch.C = (i / steps) * ns->range[1] + ns->offset[1];
+        color_lch_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i]);
+				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
+			}
+			for (i = 0; i <= steps; ++i){
+				c[2].lch.h = (i / steps) * ns->range[2] + ns->offset[2];
+        color_lch_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i]);
+				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
+			}
+			for (i = 0; i < surface_width; ++i){
+
+				float position = modf(i * steps / surface_width, &int_part);
+        int index = i * int(steps) / surface_width;
+
+				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+
+				col_ptr = data + i * 4;
+
+				for (int y = 0; y < ns->n_components * 16; ++y){
+          if ((y & 0x0f) != 0x0f){
+						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+						col_ptr[3] = 0xff;
+					}else{
+						col_ptr[0] = 0x00;
+						col_ptr[1] = 0x00;
+						col_ptr[2] = 0x00;
+						col_ptr[3] = 0x00;
+					}
+					col_ptr += stride;
+				}
+			}
+			break;
+
 		default:
 			break;
 	}
@@ -613,9 +675,12 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 			color_lab_to_rgb_d50(&ns->color, c);
 			color_rgb_normalize(c);
 			break;
-
 		case xyz:
-
+      /* TODO */
+			break;
+		case lch:
+			color_lch_to_rgb(&ns->color, c);
+			color_rgb_normalize(c);
 			break;
 
 	}

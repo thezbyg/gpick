@@ -266,5 +266,8 @@ gpick.component_to_text = function(component_type, color)
 	if component_type == 'lab' then
 		return {round(color:lab_lightness()) .. '', round(color:lab_a()) .. '', round(color:lab_b()) .. ''}
 	end
+	if component_type == 'lch' then
+		return {round(color:lch_lightness()) .. '', round(color:lch_chroma()) .. '', round(color:lch_hue()) .. ''}
+	end
 	return {}
 end

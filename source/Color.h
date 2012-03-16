@@ -159,7 +159,10 @@ void color_rgb_to_lab_d50(const Color* a, Color* b);
 void color_lab_to_rgb_d50(const Color* a, Color* b);
 
 void color_lab_to_lch(const Color* a, Color* b);
+void color_lch_to_lab(const Color* a, Color* b);
+
 void color_rgb_to_lch(const Color* a, Color* b);
+void color_lch_to_rgb(const Color* a, Color* b);
 
 void color_rgb_to_cmy(const Color* a, Color* b);
 void color_cmy_to_rgb(const Color* a, Color* b);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -59,6 +59,7 @@ typedef struct ColorPickerArgs{
 	GtkWidget* expanderCMYK;
 	GtkWidget* expanderXYZ;
 	GtkWidget* expanderLAB;
+	GtkWidget* expanderLCH;
 
 	GtkWidget* expanderInfo;
 	GtkWidget* expanderMain;
@@ -73,6 +74,7 @@ typedef struct ColorPickerArgs{
 	GtkWidget* rgb_control;
 	GtkWidget* cmyk_control;
 	GtkWidget* lab_control;
+	GtkWidget* lch_control;
 
 	GtkWidget* color_name;
 	GtkWidget* statusbar;
@@ -244,12 +246,14 @@ static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget){
 	if (except_widget != args->rgb_control)	gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->rgb_control), &c);
 	if (except_widget != args->cmyk_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->cmyk_control), &c);
 	if (except_widget != args->lab_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lab_control), &c);
+	if (except_widget != args->lch_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lch_control), &c);
 
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsl_control), "hsl");
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsv_control), "hsv");
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->rgb_control), "rgb");
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->cmyk_control), "cmyk");
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lch_control), "lch");
 
 	string color_name = color_names_get(args->gs->color_names, &c, true);
 	gtk_entry_set_text(GTK_ENTRY(args->color_name), color_name.c_str());
@@ -677,6 +681,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 		{rgb, 3, {{_("Red"), 255, 0, 255, 0.01}, {_("Green"), 255, 0, 255, 0.01}, {_("Blue"), 255, 0, 255, 0.01}}},
 		{cmyk, 4, {{_("Cyan"), 255, 0, 255, 0.01}, {_("Magenta"), 255, 0, 255, 0.01}, {_("Yellow"), 255, 0, 255, 0.01}, {_("Key"), 255, 0, 255, 0.01}}},
 		{lab, 3, {{_("Lightness"), 1, 0, 100, 0.0001}, {"a", 1, -145, 145, 0.0001}, {"b", 1, -145, 145, 0.0001}}},
+		{lch, 3, {{_("Lightness"), 1, 0, 100, 0.0001}, {"Chroma", 1, 0, 100, 0.0001}, {"Hue", 1, 0, 360, 0.0001}}},
 	};
 
 	struct ComponentTypeInputs *comp_type_input = 0;
@@ -964,6 +969,7 @@ static int source_destroy(ColorPickerArgs *args){
 	dynv_set_bool(args->params, "expander.hsv", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderHSV)));
 	dynv_set_bool(args->params, "expander.hsl", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderHSL)));
 	dynv_set_bool(args->params, "expander.lab", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderLAB)));
+	dynv_set_bool(args->params, "expander.lch", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderLAB)));
 	dynv_set_bool(args->params, "expander.cmyk", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderCMYK)));
 	dynv_set_bool(args->params, "expander.info", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderInfo)));
 
@@ -1334,6 +1340,20 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", NULL};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->lab_control = widget;
+				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
+				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
+				g_signal_connect(G_OBJECT(widget), "input-clicked", G_CALLBACK(color_component_input_clicked), args);
+				gtk_container_add(GTK_CONTAINER(expander), widget);
+
+			expander = gtk_expander_new("LCH");
+			gtk_expander_set_expanded(GTK_EXPANDER(expander), dynv_get_bool_wd(args->params, "expander.lch", false));
+			args->expanderLCH = expander;
+			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
+
+				widget = gtk_color_component_new(lch);
+				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", NULL};
+				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lch_labels);
+				args->lch_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args);
 				g_signal_connect(G_OBJECT(widget), "input-clicked", G_CALLBACK(color_component_input_clicked), args);

@@ -382,14 +382,22 @@ void color_lab_to_lch(const Color* a, Color* b) {
 	float H;
 	H = atan2(a->lab.b, a->lab.a);
 
-	if (H > 0)
-		H /= PI;
-	else
-		H = (2*PI - abs_float(H))/PI;
+	if (H < 0)
+		H += PI;
+	else if (H >= PI)
+		H -= PI;
+
+	H *= 360.0 / PI;
 
 	b->lch.L = a->lab.L;
 	b->lch.C = sqrt(a->lab.b * a->lab.b + a->lab.a * a->lab.a);
 	b->lch.h = H;
+}
+
+void color_lch_to_lab(const Color* a, Color* b) {
+	b->lab.L = a->lch.L;
+	b->lab.a = a->lch.C * cos(a->lch.h * PI / 360.0);
+	b->lab.b = a->lch.C * sin(a->lch.h * PI / 360.0);
 }
 
 void color_rgb_to_lch(const Color* a, Color* b){
@@ -398,6 +406,11 @@ void color_rgb_to_lch(const Color* a, Color* b){
 	color_lab_to_lch(&c, b);
 }
 
+void color_lch_to_rgb(const Color* a, Color* b){
+	Color c;
+	color_lch_to_lab(a, &c);
+	color_lab_to_rgb(&c, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
+}
 
 void color_rgb_to_lab_d50(const Color* a, Color* b){
 	color_rgb_to_lab(a, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
