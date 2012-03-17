@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -24,6 +24,20 @@
 
 #include "DynvHelpers.h"
 
+
+static const struct{
+	const char *label;
+	const char *setting;
+}available_colorspaces[] = {
+	{"CMYK", "picker.colorspace.cmyk"},
+	{"HSL", "picker.colorspace.hsl"},
+	{"HSV", "picker.colorspace.hsv"},
+	{"LAB", "picker.colorspace.lab"},
+	{"LCH", "picker.colorspace.lch"},
+	{"RGB", "picker.colorspace.rgb"},
+	{0, 0},
+};
+
 typedef struct DialogOptionsArgs{
 	GtkWidget *minimize_to_tray;
 	GtkWidget *close_to_tray;
@@ -39,6 +53,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *zoom_size;
 	GtkWidget *imprecision_postfix;
 	GtkWidget *tool_color_naming[3];
+	GtkWidget *colorspaces[6];
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -70,6 +85,10 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 			break;
 		}
 		i++;
+	}
+
+	for (int i = 0; available_colorspaces[i].label; i++){
+		dynv_set_bool(args->params, available_colorspaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->colorspaces[i])));
 	}
 }
 
@@ -149,7 +168,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 
 
 
-	table_m = gtk_table_new(3, 1, FALSE);
+	table_m = gtk_table_new(3, 2, FALSE);
 	table_m_y = 0;
 	frame = gtk_frame_new(_("Display"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
@@ -216,6 +235,23 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
+	table_m_y = 0;
+
+	frame = gtk_frame_new(_("Enabled color spaces"));
+	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
+	gtk_table_attach(GTK_TABLE(table_m), frame, 1, 2, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y++;
+	table = gtk_table_new(5, 3, FALSE);
+	table_y=0;
+	gtk_container_add(GTK_CONTAINER(frame), table);
+
+
+	for (int i = 0; available_colorspaces[i].label; i++){
+		args->colorspaces[i] = widget = gtk_check_button_new_with_label(available_colorspaces[i].label);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, available_colorspaces[i].setting, true));
+		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
+		table_y++;
+	}
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));
 

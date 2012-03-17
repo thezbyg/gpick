@@ -1040,6 +1040,25 @@ static int source_activate(ColorPickerArgs *args){
 		args->timeout_source_id = 0;
 	}
 
+  struct{
+		GtkWidget *widget;
+		const char *setting;
+	}colorspaces[] = {
+		{args->expanderCMYK, "colorspace.cmyk"},
+		{args->expanderHSL, "colorspace.hsl"},
+		{args->expanderHSV, "colorspace.hsv"},
+		{args->expanderLAB, "colorspace.lab"},
+		{args->expanderLCH, "colorspace.lch"},
+		{args->expanderRGB, "colorspace.rgb"},
+		{0, 0},
+	};
+	for (int i = 0; colorspaces[i].setting; i++){
+		if (dynv_get_bool_wd(args->params, colorspaces[i].setting, true))
+			gtk_widget_show(colorspaces[i].widget);
+		else
+			gtk_widget_hide(colorspaces[i].widget);
+	}
+
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
 	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);
 	gtk_color_set_transformation_chain(GTK_COLOR(args->color_code), chain);
