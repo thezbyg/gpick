@@ -379,25 +379,27 @@ void color_hsl_to_rgb(const Color* a, Color* b) {
 }
 
 void color_lab_to_lch(const Color* a, Color* b) {
-	float H;
-	H = atan2(a->lab.b, a->lab.a);
+	double H;
+	if (a->lab.a == 0 && a->lab.b == 0){
+		H = 0;
+	}else{
+		H = atan2(a->lab.b, a->lab.a);
+	}
 
-	if (H < 0)
-		H += PI;
-	else if (H >= PI)
-		H -= PI;
+	H *= 180.0 / PI;
 
-	H *= 360.0 / PI;
+	if (H < 0) H += 360;
+	if (H >= 360) H -= 360;
 
 	b->lch.L = a->lab.L;
-	b->lch.C = sqrt(a->lab.b * a->lab.b + a->lab.a * a->lab.a);
+	b->lch.C = sqrt(a->lab.a * a->lab.a + a->lab.b * a->lab.b);
 	b->lch.h = H;
 }
 
 void color_lch_to_lab(const Color* a, Color* b) {
 	b->lab.L = a->lch.L;
-	b->lab.a = a->lch.C * cos(a->lch.h * PI / 360.0);
-	b->lab.b = a->lch.C * sin(a->lch.h * PI / 360.0);
+	b->lab.a = a->lch.C * cos(a->lch.h * PI / 180.0);
+	b->lab.b = a->lch.C * sin(a->lch.h * PI / 180.0);
 }
 
 void color_rgb_to_lch(const Color* a, Color* b){
