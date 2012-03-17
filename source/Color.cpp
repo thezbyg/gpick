@@ -667,6 +667,11 @@ const matrix3x3* color_get_sRGB_transformation_matrix()
 	return &sRGB_transformation;
 }
 
+const matrix3x3* color_get_inverted_sRGB_transformation_matrix()
+{
+	return &sRGB_transformation_inverted;
+}
+
 const matrix3x3* color_get_d65_d50_adaptation_matrix()
 {
 	return &d65_d50_adaptation_matrix;
@@ -680,5 +685,48 @@ const matrix3x3* color_get_d50_d65_adaptation_matrix()
 const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObserver observer)
 {
 	return &references[illuminant][observer];
+}
+
+const ReferenceIlluminant color_get_illuminant(const char *illuminant)
+{
+	const struct{
+		const char *label;
+		ReferenceIlluminant illuminant;
+	}illuminants[] = {
+		{"A", REFERENCE_ILLUMINANT_A},
+		{"C", REFERENCE_ILLUMINANT_C},
+		{"D50", REFERENCE_ILLUMINANT_D50},
+		{"D55", REFERENCE_ILLUMINANT_D55},
+		{"D65", REFERENCE_ILLUMINANT_D65},
+		{"D75", REFERENCE_ILLUMINANT_D75},
+		{"F2", REFERENCE_ILLUMINANT_F2},
+		{"F7", REFERENCE_ILLUMINANT_F7},
+		{"F11", REFERENCE_ILLUMINANT_F11},
+		{0, REFERENCE_ILLUMINANT_D50},
+	};
+	for (int i = 0; illuminants[i].label; i++){
+		if (string(illuminants[i].label).compare(illuminant) == 0){
+			return illuminants[i].illuminant;
+		}
+	}
+	return REFERENCE_ILLUMINANT_D50;
+};
+
+const ReferenceObserver color_get_observer(const char *observer)
+{
+	const struct{
+		const char *label;
+		ReferenceObserver observer;
+	}observers[] = {
+		{"2", REFERENCE_OBSERVER_2},
+		{"10", REFERENCE_OBSERVER_10},
+		{0, REFERENCE_OBSERVER_2},
+	};
+	for (int i = 0; observers[i].label; i++){
+		if (string(observers[i].label).compare(observer) == 0){
+			return observers[i].observer;
+		}
+	}
+	return REFERENCE_OBSERVER_2;
 }
 

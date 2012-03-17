@@ -205,10 +205,14 @@ void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white
 void color_xyz_chromatic_adaptation(const Color* a, Color* result, const matrix3x3* adaptation );
 
 const matrix3x3* color_get_sRGB_transformation_matrix();
+const matrix3x3* color_get_inverted_sRGB_transformation_matrix();
 const matrix3x3* color_get_d65_d50_adaptation_matrix();
 const matrix3x3* color_get_d50_d65_adaptation_matrix();
 
 const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObserver observer);
+
+const ReferenceIlluminant color_get_illuminant(const char *illuminant);
+const ReferenceObserver color_get_observer(const char *observer);
 
 #endif /* COLOR_H_ */
 

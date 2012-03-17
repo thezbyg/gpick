@@ -60,6 +60,9 @@ typedef struct GtkColorComponentPrivate{
 	gint last_event_position;
 	bool changing_color;
 
+	ReferenceIlluminant lab_illuminant;
+	ReferenceObserver lab_observer;
+
 	const char *label[MaxNumberOfComponents][2];
 	gchar *text[MaxNumberOfComponents];
 	double range[MaxNumberOfComponents];
@@ -130,6 +133,8 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 	ns->component = component;
 	ns->last_event_position = -1;
 	ns->changing_color = false;
+	ns->lab_illuminant = REFERENCE_ILLUMINANT_D50;
+	ns->lab_observer= REFERENCE_OBSERVER_2;
 
 	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
 		ns->text[i] = 0;
@@ -251,7 +256,11 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 			color_rgb_to_cmyk(&ns->orig_color, &ns->color);
 			break;
 		case lab:
-			color_rgb_to_lab_d50(&ns->orig_color, &ns->color);
+			{
+				matrix3x3 adaptation_matrix;
+				color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), color_get_reference(ns->lab_illuminant, ns->lab_observer), &adaptation_matrix);
+				color_rgb_to_lab(&ns->orig_color, &ns->color, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_sRGB_transformation_matrix(), &adaptation_matrix);
+			}
 			break;
 		case xyz:
 			/* todo */
@@ -312,6 +321,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	Color *rgb_points = new Color[ns->n_components * 200];
 
 	double int_part;
+	matrix3x3 adaptation_matrix;
 
 	switch (ns->component) {
 		case rgb:
@@ -465,23 +475,25 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 		case lab:
 			steps = 100;
 
+			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[0].lab.L = (i / steps) * ns->range[0] + ns->offset[0];
-        color_lab_to_rgb_d50(&c[0], &rgb_points[0 * (int(steps) + 1) + i]);
+        color_lab_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
 			}
 
 			for (i = 0; i <= steps; ++i){
 				c[1].lab.a = (i / steps) * ns->range[1] + ns->offset[1];
-        color_lab_to_rgb_d50(&c[1], &rgb_points[1 * (int(steps) + 1) + i]);
+        color_lab_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[2].lab.b = (i / steps) * ns->range[2] + ns->offset[2];
-        color_lab_to_rgb_d50(&c[2], &rgb_points[2 * (int(steps) + 1) + i]);
+        color_lab_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i < surface_width; ++i){
@@ -672,8 +684,12 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 			color_rgb_normalize(c);
 			break;
 		case lab:
-			color_lab_to_rgb_d50(&ns->color, c);
-			color_rgb_normalize(c);
+			{
+				matrix3x3 adaptation_matrix;
+				color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+				color_lab_to_rgb(&ns->color, c, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
+				color_rgb_normalize(c);
+			}
 			break;
 		case xyz:
       /* TODO */
@@ -771,5 +787,19 @@ static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMo
 		return TRUE;
 	}
 	return FALSE;
+}
+
+void gtk_color_component_set_lab_illuminant(GtkColorComponent* color_component, ReferenceIlluminant illuminant){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+  ns->lab_illuminant = illuminant;
+	gtk_color_component_set_color(color_component, &ns->orig_color);
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
+}
+
+void gtk_color_component_set_lab_observer(GtkColorComponent* color_component, ReferenceObserver observer){
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+  ns->lab_observer = observer;
+	gtk_color_component_set_color(color_component, &ns->orig_color);
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
 

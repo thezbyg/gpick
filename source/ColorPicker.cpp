@@ -1059,6 +1059,10 @@ static int source_activate(ColorPickerArgs *args){
 			gtk_widget_hide(colorspaces[i].widget);
 	}
 
+	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lab_control), color_get_illuminant(dynv_get_string_wd(args->params, "lab.illuminant", "D50")));
+	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lab_control), color_get_observer(dynv_get_string_wd(args->params, "lab.observer", "2")));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
+
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
 	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);
 	gtk_color_set_transformation_chain(GTK_COLOR(args->color_code), chain);

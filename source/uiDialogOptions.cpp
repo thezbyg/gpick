@@ -55,6 +55,9 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *tool_color_naming[3];
 	GtkWidget *colorspaces[6];
 
+	GtkWidget *lab_illuminant;
+	GtkWidget *lab_observer;
+
 	struct dynvSystem *params;
 	GlobalState* gs;
 }DialogOptionsArgs;
@@ -90,6 +93,9 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	for (int i = 0; available_colorspaces[i].label; i++){
 		dynv_set_bool(args->params, available_colorspaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->colorspaces[i])));
 	}
+
+	dynv_set_string(args->params, "picker.lab.illuminant", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_illuminant)));
+	dynv_set_string(args->params, "picker.lab.observer", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_observer)));
 }
 
 
@@ -245,7 +251,6 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-
 	for (int i = 0; available_colorspaces[i].label; i++){
 		args->colorspaces[i] = widget = gtk_check_button_new_with_label(available_colorspaces[i].label);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, available_colorspaces[i].setting, true));
@@ -253,8 +258,63 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 		table_y++;
 	}
 
-	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));
+	frame = gtk_frame_new(_("Lab settings"));
+	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
+	gtk_table_attach(GTK_TABLE(table_m), frame, 1, 2, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y++;
+	table = gtk_table_new(5, 3, FALSE);
+	table_y=0;
+	gtk_container_add(GTK_CONTAINER(frame), table);
 
+	{
+		int selected;
+		const char *option;
+
+		gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Illuminant:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+		args->lab_illuminant = widget = gtk_combo_box_text_new();
+		const char *illuminants[] = {
+			"A",
+			"C",
+			"D50",
+			"D55",
+			"D65",
+			"D75",
+			"F2",
+			"F7",
+			"F11",
+			0,
+		};
+		selected = 0;
+		option = dynv_get_string_wd(args->params, "picker.lab.illuminant", "D50");
+		for (int i = 0; illuminants[i]; i++){
+			if (string(illuminants[i]).compare(option) == 0) selected = i;
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), illuminants[i]);
+		}
+		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), selected);
+		gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
+		table_y++;
+
+		gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Observer:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+		args->lab_observer = widget = gtk_combo_box_text_new();
+		const char *observers[] = {
+			"2",
+			"10",
+			0,
+		};
+		selected = 0;
+		option = dynv_get_string_wd(args->params, "picker.lab.observer", "2");
+		for (int i = 0; observers[i]; i++){
+			if (string(observers[i]).compare(option) == 0) selected = i;
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), observers[i]);
+		}
+		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), selected);
+		gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
+		table_y++;
+
+	}
+
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));
 
 
 	table_m = gtk_table_new(3, 1, FALSE);
