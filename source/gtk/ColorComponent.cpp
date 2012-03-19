@@ -240,8 +240,6 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
 	color_copy(color, &ns->orig_color);
 
-	Color c1;
-
 	switch (ns->component){
 		case rgb:
 			color_copy(&ns->orig_color, &ns->color);
@@ -266,7 +264,11 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 			/* todo */
 			break;
 		case lch:
-      color_rgb_to_lch(&ns->orig_color, &ns->color);
+			{
+				matrix3x3 adaptation_matrix;
+				color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), color_get_reference(ns->lab_illuminant, ns->lab_observer), &adaptation_matrix);
+				color_rgb_to_lch(&ns->orig_color, &ns->color, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_sRGB_transformation_matrix(), &adaptation_matrix);
+			}
 			break;
 	}
 
@@ -300,7 +302,6 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	cairo_clip(cr);
 
 	Color c[MaxNumberOfComponents];
-	Color c2[MaxNumberOfComponents];
 	double pointer_pos[MaxNumberOfComponents];
 
 	float steps;
@@ -314,7 +315,6 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_image_surface_get_stride(surface);
 	int surface_width = cairo_image_surface_get_width(surface);
-	int surface_height = cairo_image_surface_get_height(surface);
 
 	unsigned char *col_ptr;
 
@@ -527,23 +527,25 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 		case lch:
 			steps = 100;
 
+			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+
 			for (i = 0; i < 3; ++i){
 				color_copy(&ns->color, &c[i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[0].lch.L = (i / steps) * ns->range[0] + ns->offset[0];
-        color_lch_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i]);
+        color_lch_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
 			}
 
 			for (i = 0; i <= steps; ++i){
 				c[1].lch.C = (i / steps) * ns->range[1] + ns->offset[1];
-        color_lch_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i]);
+        color_lch_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i <= steps; ++i){
 				c[2].lch.h = (i / steps) * ns->range[2] + ns->offset[2];
-        color_lch_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i]);
+        color_lch_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
 				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
 			}
 			for (i = 0; i < surface_width; ++i){
@@ -695,8 +697,12 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
       /* TODO */
 			break;
 		case lch:
-			color_lch_to_rgb(&ns->color, c);
-			color_rgb_normalize(c);
+			{
+				matrix3x3 adaptation_matrix;
+				color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+				color_lch_to_rgb(&ns->color, c, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
+				color_rgb_normalize(c);
+			}
 			break;
 
 	}

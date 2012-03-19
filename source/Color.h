@@ -161,8 +161,11 @@ void color_lab_to_rgb_d50(const Color* a, Color* b);
 void color_lab_to_lch(const Color* a, Color* b);
 void color_lch_to_lab(const Color* a, Color* b);
 
-void color_rgb_to_lch(const Color* a, Color* b);
-void color_lch_to_rgb(const Color* a, Color* b);
+void color_rgb_to_lch(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix);
+void color_lch_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted);
+
+void color_rgb_to_lch_d50(const Color* a, Color* b);
+void color_lch_to_rgb_d50(const Color* a, Color* b);
 
 void color_rgb_to_cmy(const Color* a, Color* b);
 void color_cmy_to_rgb(const Color* a, Color* b);

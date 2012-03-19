@@ -175,7 +175,6 @@ static list<string> component_to_text(ColorPickerArgs* args, const char *type, C
 
   list<string> result;
 
-	size_t st;
 	int status;
 	int stack_top = lua_gettop(L);
 
@@ -658,9 +657,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-	gint table_y;
 	table = gtk_table_new(2, 2, FALSE);
-	table_y = 0;
 
   Color raw_color;
 	gtk_color_component_get_raw_color(color_component, &raw_color);
@@ -693,7 +690,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 	}
 
 	if (comp_type_input){
-		for (uint32_t i = 0; i < comp_type_input->n_items; i++){
+		for (int i = 0; i < comp_type_input->n_items; i++){
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(comp_type_input->items[i].name,0,0,0,0),0,1,i,i+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			args->value[i] = gtk_spin_button_new_with_range(comp_type_input->items[i].min_value, comp_type_input->items[i].max_value, comp_type_input->items[i].step);
 			gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
@@ -711,7 +708,7 @@ static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *c
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		if (comp_type_input){
-			for (uint32_t i = 0; i < comp_type_input->n_items; i++){
+			for (int i = 0; i < comp_type_input->n_items; i++){
 				raw_color.ma[i] = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / comp_type_input->items[i].raw_scale;
 			}
 			gtk_color_component_set_raw_color(color_component, &raw_color);
@@ -1062,6 +1059,10 @@ static int source_activate(ColorPickerArgs *args){
 	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lab_control), color_get_illuminant(dynv_get_string_wd(args->params, "lab.illuminant", "D50")));
 	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lab_control), color_get_observer(dynv_get_string_wd(args->params, "lab.observer", "2")));
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
+
+	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lch_control), color_get_illuminant(dynv_get_string_wd(args->params, "lab.illuminant", "D50")));
+	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lch_control), color_get_observer(dynv_get_string_wd(args->params, "lab.observer", "2")));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lch_control), "lab");
 
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
 	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);

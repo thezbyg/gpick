@@ -327,7 +327,8 @@ void color_rgb_to_hsl(const Color* a, Color* b)
 }
 
 
-void color_hsl_to_rgb(const Color* a, Color* b) {
+void color_hsl_to_rgb(const Color* a, Color* b)
+{
 	if (a->hsl.saturation == 0) {
 		b->rgb.red = b->rgb.green = b->rgb.blue = a->hsl.lightness;
 	} else {
@@ -378,7 +379,8 @@ void color_hsl_to_rgb(const Color* a, Color* b) {
 	}
 }
 
-void color_lab_to_lch(const Color* a, Color* b) {
+void color_lab_to_lch(const Color* a, Color* b)
+{
 	double H;
 	if (a->lab.a == 0 && a->lab.b == 0){
 		H = 0;
@@ -396,35 +398,55 @@ void color_lab_to_lch(const Color* a, Color* b) {
 	b->lch.h = H;
 }
 
-void color_lch_to_lab(const Color* a, Color* b) {
+void color_lch_to_lab(const Color* a, Color* b)
+{
 	b->lab.L = a->lch.L;
 	b->lab.a = a->lch.C * cos(a->lch.h * PI / 180.0);
 	b->lab.b = a->lch.C * sin(a->lch.h * PI / 180.0);
 }
 
-void color_rgb_to_lch(const Color* a, Color* b){
+void color_rgb_to_lch_d50(const Color* a, Color* b)
+{
 	Color c;
 	color_rgb_to_lab(a, &c, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
 	color_lab_to_lch(&c, b);
 }
 
-void color_lch_to_rgb(const Color* a, Color* b){
+void color_lch_to_rgb_d50(const Color* a, Color* b)
+{
 	Color c;
 	color_lch_to_lab(a, &c);
 	color_lab_to_rgb(&c, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
 }
 
-void color_rgb_to_lab_d50(const Color* a, Color* b){
+void color_rgb_to_lch(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix)
+{
+	Color c;
+	color_rgb_to_lab(a, &c, reference_white, transformation, adaptation_matrix);
+	color_lab_to_lch(&c, b);
+}
+
+void color_lch_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted)
+{
+	Color c;
+	color_lch_to_lab(a, &c);
+	color_lab_to_rgb(&c, b, reference_white, transformation_inverted, adaptation_matrix_inverted);
+}
+
+void color_rgb_to_lab_d50(const Color* a, Color* b)
+{
 	color_rgb_to_lab(a, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation, &d65_d50_adaptation_matrix);
 }
 
-void color_lab_to_rgb_d50(const Color* a, Color* b){
+void color_lab_to_rgb_d50(const Color* a, Color* b)
+{
 	color_lab_to_rgb(a, b, color_get_reference(REFERENCE_ILLUMINANT_D50, REFERENCE_OBSERVER_2), &sRGB_transformation_inverted, &d50_d65_adaptation_matrix);
 }
 
 #define Kk (24389.0 / 27.0)
 
-void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white){
+void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white)
+{
 	float X,Y,Z;
 
 	X = a->xyz.x / reference_white->x; //95.047f;
@@ -453,7 +475,8 @@ void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white){
 
 }
 
-void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white) {
+void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white)
+{
 	float x, y, z;
 
 	float fy = (a->lab.L + 16) / 116;
@@ -485,7 +508,8 @@ void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white) 
 	b->xyz.z = z * reference_white->z; //108.883f;
 }
 
-void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, const vector3* reference_white, matrix3x3* result){
+void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, const vector3* reference_white, matrix3x3* result)
+{
 	float Xr,Yr,Zr;
 	float Xg,Yg,Zg;
 	float Xb,Yb,Zb;
@@ -521,7 +545,8 @@ void color_get_working_space_matrix(float xr, float yr, float xg, float yg, floa
 	result->m[0][2]=Xb*v.z;	result->m[1][2]=Yb*v.z;	result->m[2][2]=Zb*v.z;
 }
 
-void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white, const vector3* destination_reference_white, matrix3x3* result){
+void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white, const vector3* destination_reference_white, matrix3x3* result)
+{
 
 	matrix3x3 Ma;
 	//Bradford matrix
