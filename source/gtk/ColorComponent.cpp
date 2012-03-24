@@ -718,6 +718,8 @@ void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color
 	color_copy(color, &ns->color);
 	Color c;
 	update_rgb_color(ns, &c);
+	color_copy(&c, &ns->orig_color);
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 	g_signal_emit(GTK_WIDGET(color_component), gtk_color_component_signals[COLOR_CHANGED], 0, &c);
 }
 
