@@ -12,6 +12,7 @@ import subprocess
 from lemon import *
 from flex import *
 from gettext import *
+from resource_template import *
 
 from SCons.Script import *
 from SCons.Util import *
@@ -59,7 +60,7 @@ class GpickEnvironment(SConsEnvironment):
 		addLemonBuilder(self)
 		addFlexBuilder(self)
 		addGettextBuilder(self)
-
+		addResourceTemplateBuilder(self)
 		
 	def DefineLibrary(self, library_name, library):
 		self.extern_libs[library_name] = library

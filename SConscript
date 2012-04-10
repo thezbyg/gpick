@@ -100,6 +100,12 @@ if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.env
 			CFLAGS = ['-Wall', '-O3'],
 			LINKFLAGS = ['-Wl,-as-needed', '-s'],
 			)
+
+if env['BUILD_TARGET'] == 'win32':
+	env.Append(	
+			LINKFLAGS = ['-Wl,--enable-auto-import'],
+			CPPDEFINES = ['_WIN32_WINNT=0x0501'],
+			)
 			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
 executable, parser_files  = SConscript(['source/SConscript'], exports='env')

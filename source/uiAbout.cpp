@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -42,7 +42,7 @@ static GtkWidget* new_page(const char *text){
 void show_about_box(GtkWidget *widget){
 
 	const char *license = {
-"Copyright \xc2\xa9 2009-2010, Albertas Vyšniauskas\n"
+"Copyright \xc2\xa9 2009-2012, Albertas Vyšniauskas\n"
 "\n"
 "All rights reserved.\n"
 "\n"
@@ -76,7 +76,14 @@ void show_about_box(GtkWidget *widget){
 "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
 	};
 
-	const char *program_authors = "Albertas Vyšniauskas <thezbyg@gmail.com>";
+	const char *program_authors = {
+"Albertas Vyšniauskas <thezbyg@gmail.com>\n"
+/* Add yourself here if you helped Gpick project in any way (patch, translation, etc).
+ * Everything is optional, if you do not want, you do not have to disclose your e-mail
+ * address, real name or any other information.
+ * Please keep this list sorted alphabetically.
+ */
+	};
 
 	GtkWidget* dialog = gtk_dialog_new_with_buttons(_("About Gpick"), GTK_WINDOW(gtk_widget_get_toplevel(widget)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL,
@@ -116,7 +123,7 @@ void show_about_box(GtkWidget *widget){
 	gtk_label_set_justify(GTK_LABEL(comments), GTK_JUSTIFY_CENTER);
 	gtk_box_pack_start(GTK_BOX(vbox2), comments, false, false, 0);
 
-	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", "Copyrights \xc2\xa9 2009-2010, Albertas Vyšniauskas");
+	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", "Copyrights \xc2\xa9 2009-2012, Albertas Vyšniauskas");
 	GtkWidget *copyright = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(copyright), true);
 	gtk_label_set_justify(GTK_LABEL(copyright), GTK_JUSTIFY_CENTER);

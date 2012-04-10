@@ -20,6 +20,7 @@
 #define UIEXPORT_H_
 
 #include <gtk/gtk.h>
+#include <stdint.h>
 #include "GlobalState.h"
 
 int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected);

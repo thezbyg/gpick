@@ -2,10 +2,25 @@
 
 import os
 import sys
+import re
 
 Import('*')
 local_env = env.Clone()
 
-sources = local_env.Glob('*.rc')
-objects = local_env.RES( sources )
+m = re.search('^([^:]+):.*$', env['GPICK_BUILD_REVISION'])
+
+local_env.Append (RESOURCE_TEMPLATE_VARS = [
+	'VERSION=%s.%s'%(env['GPICK_BUILD_VERSION'], m.group(1)),
+	'VERSION_COMMA=%s,%s'%(env['GPICK_BUILD_VERSION'].replace('.', ','), m.group(1)),
+	],
+)
+
+sources = local_env.Glob('*.rct')
+resources = local_env.AlwaysBuild(local_env.ResourceTemplate(sources))
+objects = local_env.RES(resources)
+
+Command("gpick-icon.ico", File("gpick-icon.ico").srcnode(), Copy("$TARGET", "${SOURCE}"))
+Depends(resources, 'gpick-icon.ico')
+
 Return('objects')
+
