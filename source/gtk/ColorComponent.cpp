@@ -21,10 +21,12 @@
 
 #include "../Color.h"
 #include "../MathUtil.h"
+#include "../Paths.h"
 #include <math.h>
 #include <string.h>
 
 #include <iostream>
+#include <vector>
 using namespace std;
 
 #define GTK_COLOR_COMPONENT_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentPrivate))
@@ -60,8 +62,13 @@ typedef struct GtkColorComponentPrivate{
 	gint last_event_position;
 	bool changing_color;
 
+	bool out_of_gamut_mask;
+
 	ReferenceIlluminant lab_illuminant;
 	ReferenceObserver lab_observer;
+
+	cairo_surface_t *pattern_surface;
+	cairo_pattern_t *pattern;
 
 	const char *label[MaxNumberOfComponents][2];
 	gchar *text[MaxNumberOfComponents];
@@ -121,6 +128,11 @@ static void gtk_color_component_finalize(GObject *color_obj){
 			ns->text[i] = 0;
 		}
 	}
+	if (ns->pattern_surface)
+		cairo_surface_destroy(ns->pattern_surface);
+	if (ns->pattern)
+		cairo_pattern_destroy(ns->pattern);
+
 	gpointer parent_class = g_type_class_peek_parent(G_OBJECT_CLASS(GTK_COLOR_COMPONENT_GET_CLASS(color_obj)));
 	G_OBJECT_CLASS(parent_class)->finalize(color_obj);
 }
@@ -130,11 +142,19 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, NULL);
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
+	gchar* pattern_filename = build_filename("gpick-gray-pattern.png");
+	ns->pattern_surface = cairo_image_surface_create_from_png(pattern_filename);
+	g_free(pattern_filename);
+
+	ns->pattern = cairo_pattern_create_for_surface(ns->pattern_surface);
+	cairo_pattern_set_extend(ns->pattern, CAIRO_EXTEND_REPEAT);
+
 	ns->component = component;
 	ns->last_event_position = -1;
 	ns->changing_color = false;
 	ns->lab_illuminant = REFERENCE_ILLUMINANT_D50;
 	ns->lab_observer= REFERENCE_OBSERVER_2;
+	ns->out_of_gamut_mask = false;
 
 	for (int i = 0; i != sizeof(ns->text) / sizeof(gchar*); i++){
 		ns->text[i] = 0;
@@ -323,6 +343,8 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 	double int_part;
 	matrix3x3 adaptation_matrix;
 
+	vector<vector<bool> > out_of_gamut(MaxNumberOfComponents, vector<bool>(false, 1));
+
 	switch (ns->component) {
 		case rgb:
 			steps = 1;
@@ -477,25 +499,22 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
 
-			for (i = 0; i < 3; ++i){
-				color_copy(&ns->color, &c[i]);
-			}
-			for (i = 0; i <= steps; ++i){
-				c[0].lab.L = (i / steps) * ns->range[0] + ns->offset[0];
-        color_lab_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
+			for (j = 0; j < 3; ++j){
+				color_copy(&ns->color, &c[j]);
+
+				out_of_gamut[j] = vector<bool>(steps + 1, false);
+
+				for (i = 0; i <= steps; ++i){
+					c[j].ma[j] = (i / steps) * ns->range[j] + ns->offset[j];
+					color_lab_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
+
+					if (color_is_rgb_out_of_gamut(&rgb_points[j * (int(steps) + 1) + i])){
+						out_of_gamut[j][i] = true;
+					}
+					color_rgb_normalize(&rgb_points[j * (int(steps) + 1) + i]);
+				}
 			}
 
-			for (i = 0; i <= steps; ++i){
-				c[1].lab.a = (i / steps) * ns->range[1] + ns->offset[1];
-        color_lab_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
-			}
-			for (i = 0; i <= steps; ++i){
-				c[2].lab.b = (i / steps) * ns->range[2] + ns->offset[2];
-        color_lab_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
-			}
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
@@ -529,24 +548,19 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
 
-			for (i = 0; i < 3; ++i){
-				color_copy(&ns->color, &c[i]);
-			}
-			for (i = 0; i <= steps; ++i){
-				c[0].lch.L = (i / steps) * ns->range[0] + ns->offset[0];
-        color_lch_to_rgb(&c[0], &rgb_points[0 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[0 * (int(steps) + 1) + i]);
-			}
+			for (j = 0; j < 3; ++j){
+				color_copy(&ns->color, &c[j]);
 
-			for (i = 0; i <= steps; ++i){
-				c[1].lch.C = (i / steps) * ns->range[1] + ns->offset[1];
-        color_lch_to_rgb(&c[1], &rgb_points[1 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[1 * (int(steps) + 1) + i]);
-			}
-			for (i = 0; i <= steps; ++i){
-				c[2].lch.h = (i / steps) * ns->range[2] + ns->offset[2];
-        color_lch_to_rgb(&c[2], &rgb_points[2 * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(&rgb_points[2 * (int(steps) + 1) + i]);
+				out_of_gamut[j] = vector<bool>(steps + 1, false);
+
+				for (i = 0; i <= steps; ++i){
+					c[j].ma[j] = (i / steps) * ns->range[j] + ns->offset[j];
+					color_lch_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
+					if (color_is_rgb_out_of_gamut(&rgb_points[j * (int(steps) + 1) + i])){
+						out_of_gamut[j][i] = true;
+					}
+					color_rgb_normalize(&rgb_points[j * (int(steps) + 1) + i]);
+				}
 			}
 			for (i = 0; i < surface_width; ++i){
 
@@ -597,7 +611,38 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 	cairo_restore(cr);
 
+
 	for (i = 0; i < ns->n_components; ++i){
+		if (ns->out_of_gamut_mask){
+			int first_out_of_gamut = 0;
+			bool out_of_gamut_found = false;
+
+			cairo_matrix_t matrix;
+			cairo_matrix_init_translate(&matrix, -offset_x, i * 8);
+			cairo_pattern_set_matrix(ns->pattern, &matrix);
+			cairo_set_source(cr, ns->pattern);
+
+			for (int j = 0; j < out_of_gamut[i].size(); j++){
+				if (out_of_gamut[i][j]){
+					if (!out_of_gamut_found){
+						out_of_gamut_found = true;
+						first_out_of_gamut = j;
+					}
+				}else{
+					if (out_of_gamut_found){
+						cairo_rectangle(cr, offset_x + (first_out_of_gamut * 200.0 / out_of_gamut[i].size()), 16 * i, (j - first_out_of_gamut) * 200.0 / out_of_gamut[i].size(), 15);
+						cairo_fill(cr);
+						out_of_gamut_found = false;
+					}
+				}
+			}
+
+			if (out_of_gamut_found){
+				cairo_rectangle(cr, offset_x + (first_out_of_gamut * 200.0 / out_of_gamut[i].size()), 16 * i, (out_of_gamut[i].size() - first_out_of_gamut) * 200.0 / out_of_gamut[i].size(), 15);
+				cairo_fill(cr);
+			}
+		}
+
 		cairo_move_to(cr, offset_x + 200 * pointer_pos[i], 16 * i + 9);
 		cairo_line_to(cr, offset_x + 200 * pointer_pos[i] + 3, 16 * i + 16);
 		cairo_line_to(cr, offset_x + 200 * pointer_pos[i] - 3, 16 * i + 16);
@@ -656,8 +701,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			pango_font_description_free(font_description);
 		}
 	}
-
-	cairo_destroy (cr);
+	cairo_destroy(cr);
 
 	return TRUE;
 }
@@ -809,5 +853,18 @@ void gtk_color_component_set_lab_observer(GtkColorComponent* color_component, Re
   ns->lab_observer = observer;
 	gtk_color_component_set_color(color_component, &ns->orig_color);
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
+}
+
+void gtk_color_component_set_out_of_gamut_mask(GtkColorComponent* color_component, bool mask_enabled)
+{
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	ns->out_of_gamut_mask = mask_enabled;
+	gtk_widget_queue_draw(GTK_WIDGET(color_component));
+}
+
+bool gtk_color_component_get_out_of_gamut_mask(GtkColorComponent* color_component)
+{
+	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
+	return ns->out_of_gamut_mask;
 }
 

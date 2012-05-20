@@ -1056,13 +1056,17 @@ static int source_activate(ColorPickerArgs *args){
 			gtk_widget_hide(colorspaces[i].widget);
 	}
 
+	bool out_of_gamut_mask = dynv_get_bool_wd(args->params, "out_of_gamut_mask", true);
+
+	gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(args->lab_control), out_of_gamut_mask);
 	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lab_control), color_get_illuminant(dynv_get_string_wd(args->params, "lab.illuminant", "D50")));
 	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lab_control), color_get_observer(dynv_get_string_wd(args->params, "lab.observer", "2")));
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
 
+	gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(args->lch_control), out_of_gamut_mask);
 	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lch_control), color_get_illuminant(dynv_get_string_wd(args->params, "lab.illuminant", "D50")));
 	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lch_control), color_get_observer(dynv_get_string_wd(args->params, "lab.observer", "2")));
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->lch_control), "lab");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lch_control), "lch");
 
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
 	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);

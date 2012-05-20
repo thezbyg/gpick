@@ -178,6 +178,7 @@ void color_cmyk_to_rgb(const Color* a, Color* b);
 
 
 void color_rgb_normalize(Color* a);
+bool color_is_rgb_out_of_gamut(const Color* a);
 
 void color_rgb_get_linear(const Color* a, Color* b);
 void color_linear_get_rgb(const Color* a, Color* b);

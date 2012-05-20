@@ -755,3 +755,11 @@ const ReferenceObserver color_get_observer(const char *observer)
 	return REFERENCE_OBSERVER_2;
 }
 
+bool color_is_rgb_out_of_gamut(const Color* a)
+{
+	if (a->rgb.red < 0 || a->rgb.red > 1) return true;
+	if (a->rgb.green < 0 || a->rgb.green > 1) return true;
+	if (a->rgb.blue < 0 || a->rgb.blue > 1) return true;
+	return false;
+}
+

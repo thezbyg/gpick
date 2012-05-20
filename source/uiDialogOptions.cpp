@@ -54,6 +54,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *imprecision_postfix;
 	GtkWidget *tool_color_naming[3];
 	GtkWidget *colorspaces[6];
+	GtkWidget *out_of_gamut_mask;
 
 	GtkWidget *lab_illuminant;
 	GtkWidget *lab_observer;
@@ -78,6 +79,7 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	dynv_set_bool(args->params, "picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
 	dynv_set_bool(args->params, "picker.sampler.copy_to_clipboard", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_to_clipboard)));
 	dynv_set_bool(args->params, "picker.sampler.rotate_swatch_after_sample", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch)));
+	dynv_set_bool(args->params, "picker.out_of_gamut_mask", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->out_of_gamut_mask)));
 
 	dynv_set_bool(args->params, "color_names.imprecision_postfix", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->imprecision_postfix)));
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
@@ -312,6 +314,20 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 		table_y++;
 
 	}
+
+	frame = gtk_frame_new(_("Other settings"));
+	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
+	gtk_table_attach(GTK_TABLE(table_m), frame, 1, 2, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y++;
+	table = gtk_table_new(5, 3, FALSE);
+	table_y=0;
+	gtk_container_add(GTK_CONTAINER(frame), table);
+
+
+		args->out_of_gamut_mask = widget = gtk_check_button_new_with_mnemonic(_("_Mask out of gamut colors"));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.out_of_gamut_mask", true));
+		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
+		table_y++;
 
 
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));

@@ -70,6 +70,9 @@ void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color
 void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color);
 
+void gtk_color_component_set_out_of_gamut_mask(GtkColorComponent* color_component, bool mask_enabled);
+bool gtk_color_component_get_out_of_gamut_mask(GtkColorComponent* color_component);
+
 void gtk_color_component_set_lab_illuminant(GtkColorComponent* color_component, ReferenceIlluminant illuminant);
 void gtk_color_component_set_lab_observer(GtkColorComponent* color_component, ReferenceObserver observer);
 
