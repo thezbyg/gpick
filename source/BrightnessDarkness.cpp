@@ -406,6 +406,7 @@ int brightness_darkness_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "brightness_darkness", _("Brightness Darkness"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->default_accelerator = GDK_d;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

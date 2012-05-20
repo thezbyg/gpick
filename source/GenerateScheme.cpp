@@ -898,6 +898,7 @@ int generate_scheme_source_register(ColorSourceManager *csm){
 
 	color_source_init(color_source, "generate_scheme", _("Scheme generation"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->default_accelerator = GDK_g;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

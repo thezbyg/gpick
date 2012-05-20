@@ -84,6 +84,15 @@ int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObjec
 	return -1;
 }
 
+int color_source_get_default_accelerator(ColorSource *source)
+{
+	if (source && source->default_accelerator)
+		return source->default_accelerator;
+	else if (!source)
+		cerr << "Color source undefined" << endl;
+	return 0;
+}
+
 int color_source_destroy(ColorSource* source){
 	if (source->destroy) return source->destroy(source);
 	g_free(source->identificator);

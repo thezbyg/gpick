@@ -30,6 +30,7 @@
 #include "ColorList.h"
 #include "MathUtil.h"
 
+#include <gdk/gdkkeysyms.h>
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
 #include "layout/Style.h"
@@ -741,6 +742,7 @@ int layout_preview_source_register(ColorSourceManager *csm){
 	color_source_init(color_source, "layout_preview", _("Layout preview"));
 	color_source->needs_viewport = false;
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->default_accelerator = GDK_l;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

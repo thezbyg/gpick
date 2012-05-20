@@ -56,6 +56,7 @@ typedef struct ColorSource{
 
 	bool single_instance_only;
 	bool needs_viewport;
+	int default_accelerator;
 
 	GtkWidget *widget;
 	void* userdata;
@@ -70,6 +71,8 @@ int color_source_set_color(ColorSource *source, ColorObject *color);
 int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color);
 int color_source_get_color(ColorSource *source, ColorObject *color);
 int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject **color);
+
+int color_source_get_default_accelerator(ColorSource *source);
 
 ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 GtkWidget* color_source_get_widget(ColorSource* source);

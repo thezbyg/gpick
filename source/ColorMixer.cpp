@@ -696,6 +696,7 @@ int color_mixer_source_register(ColorSourceManager *csm){
 
 	color_source_init(color_source, "color_mixer", _("Color mixer"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->default_accelerator = GDK_m;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

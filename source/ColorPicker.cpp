@@ -1456,6 +1456,7 @@ int color_picker_source_register(ColorSourceManager *csm){
 	color_source_init(color_source, "color_picker", _("Color picker"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->single_instance_only = true;
+	color_source->default_accelerator = GDK_c;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

@@ -1008,6 +1008,7 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 	g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_N, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
 
 
@@ -1020,6 +1021,8 @@ static void createMenu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel
 				gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 			g_object_set_data_full(G_OBJECT(item), "source", sources[i], (GDestroyNotify)NULL);
 			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
+			if (color_source_get_default_accelerator(sources[i]))
+				gtk_widget_add_accelerator(item, "activate", accel_group, color_source_get_default_accelerator(sources[i]), GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
 		}
 	}
