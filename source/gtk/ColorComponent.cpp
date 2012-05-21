@@ -611,15 +611,16 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 
 	cairo_restore(cr);
 
-
 	for (i = 0; i < ns->n_components; ++i){
+		cairo_matrix_t matrix;
+		cairo_matrix_init_translate(&matrix, -offset_x - 64, -64 + 5 * i);
+		cairo_pattern_set_matrix(ns->pattern, &matrix);
+
 		if (ns->out_of_gamut_mask){
 			int first_out_of_gamut = 0;
 			bool out_of_gamut_found = false;
 
 			cairo_matrix_t matrix;
-			cairo_matrix_init_translate(&matrix, -offset_x, i * 8);
-			cairo_pattern_set_matrix(ns->pattern, &matrix);
 			cairo_set_source(cr, ns->pattern);
 
 			for (int j = 0; j < out_of_gamut[i].size(); j++){
