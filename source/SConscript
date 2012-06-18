@@ -29,6 +29,7 @@ objects.append(SConscript(['unique/SConscript'], exports='env'))
 objects.append(SConscript(['gtk/SConscript'], exports='env'))
 objects.append(SConscript(['layout/SConscript'], exports='env'))
 objects.append(SConscript(['internationalisation/SConscript'], exports='env'))
+objects.append(SConscript(['dbus/SConscript'], exports='env'))
 
 parser_objects, generated_files = SConscript(['cssparser/SConscript'], exports='env')
 objects.append(parser_objects)

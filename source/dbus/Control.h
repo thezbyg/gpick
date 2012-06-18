@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,41 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIAPP_H_
-#define UIAPP_H_
+#ifndef UI_DBUS_CONTROL_H_
+#define UI_DBUS_CONTROL_H_
 
 #include <gtk/gtk.h>
-#include "GlobalState.h"
-#include "Color.h"
 
-int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
+guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata), bool (*on_single_instance_activate)(void *userdata), void *userdata);
+bool gpick_single_instance_activate();
+bool gpick_control_activate_floating_picker();
 
-enum ColorTextType{
-	COLOR_TEXT_TYPE_DISPLAY,
-	COLOR_TEXT_TYPE_COPY,
-	COLOR_TEXT_TYPE_COLOR_LIST,
-};
+#endif  /* UI_DBUS_CONTROL_H_ */
 
-char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
-int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
-int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object);
-
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
-
-typedef struct AppArgs AppArgs;
-
-typedef struct AppOptions {
-	bool floating_picker_mode;
-}AppOptions;
-
-AppArgs* app_create_main(const AppOptions *options);
-int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
-int app_run(AppArgs *args);
-int app_parse_geometry(AppArgs *args, const char *geometry);
-
-bool app_is_autoload_enabled(AppArgs *args);
-
-
-#endif /* UIAPP_H_ */

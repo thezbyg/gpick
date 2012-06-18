@@ -28,9 +28,11 @@
 
 static gchar **commandline_filename=NULL;
 static gchar *commandline_geometry=NULL;
+static gboolean pick_color=FALSE;
 static GOptionEntry commandline_entries[] =
 {
   { "geometry",	'g', 0, 		G_OPTION_ARG_STRING,			&commandline_geometry, "Window geometry", "GEOMETRY" },
+  { "pick", 'p', 0,				G_OPTION_ARG_NONE,				&pick_color, "Pick a color", NULL },
   { G_OPTION_REMAINING, 0, 0, 	G_OPTION_ARG_FILENAME_ARRAY, 	&commandline_filename, NULL, "[FILE...]" },
   { NULL }
 };
@@ -62,7 +64,10 @@ int main(int argc, char **argv){
 		return -1;
 	}
 
-	AppArgs *args = app_create_main();
+	AppOptions options;
+	options.floating_picker_mode = pick_color;
+
+	AppArgs *args = app_create_main(&options);
 	if (args){
 
 		if (commandline_filename){

@@ -45,6 +45,8 @@
 #include "tools/PaletteFromImage.h"
 #include "tools/PaletteFromCssFile.h"
 
+#include "dbus/Control.h"
+
 #include "uiDialogOptions.h"
 #include "uiConverter.h"
 #include "uiStatusIcon.h"
@@ -57,6 +59,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
+#include <string.h>
 
 #include <string>
 #include <sstream>
@@ -90,6 +93,8 @@ typedef struct AppArgs{
 
 	uiStatusIcon* statusIcon;
 	FloatingPicker floating_picker;
+	AppOptions options;
+	guint bus_id;
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -1643,8 +1648,24 @@ bool app_is_autoload_enabled(AppArgs *args){
 	return dynv_get_bool_wd(args->params, "main.save_restore_palette", true);
 }
 
-AppArgs* app_create_main(){
+static bool app_on_control_activate_floating_picker(void *userdata)
+{
+	AppArgs *args = reinterpret_cast<AppArgs*>(userdata);
+	floating_picker_activate(args->floating_picker, false);
+	return true;
+}
+
+static bool app_on_single_instance_activate(void *userdata)
+{
+	AppArgs *args = reinterpret_cast<AppArgs*>(userdata);
+	status_icon_set_visible(args->statusIcon, false);
+	main_show_window(args->window, args->params);
+	return true;
+}
+
+AppArgs* app_create_main(const AppOptions *options){
 	AppArgs* args=new AppArgs;
+	memcpy(&args->options, options, sizeof(AppOptions));
 
 	color_init();
 
@@ -1652,13 +1673,24 @@ AppArgs* app_create_main(){
 	args->gs = gs;
 	global_state_init(args->gs, GLOBALSTATE_CONFIGURATION);
 
-	if (dynv_get_bool_wd(gs->params, "gpick.main.single_instance", false)){
-		if (unique_init((unique_cb_t)unique_show_window, args)==0){
+	args->bus_id = gpick_own_name(app_on_control_activate_floating_picker, app_on_single_instance_activate, args);
 
-		}else{
-			delete args;
-			return 0;
+    bool cancel_startup = false;
+
+	if (!cancel_startup && args->options.floating_picker_mode){
+		if (gpick_control_activate_floating_picker()){
+			cancel_startup = true;
 		}
+	}
+	if (!cancel_startup && dynv_get_bool_wd(gs->params, "gpick.main.single_instance", false)){
+		if (gpick_single_instance_activate()){
+			cancel_startup = true;
+		}
+	}
+
+	if (cancel_startup){
+		delete args;
+		return 0;
 	}
 
 	args->current_filename = 0;
@@ -1668,6 +1700,7 @@ AppArgs* app_create_main(){
 	args->secondary_color_source = 0;
 	args->secondary_source_widget = 0;
 	args->secondary_source_scrolled_viewpoint= 0;
+
 
 	global_state_init(args->gs, GLOBALSTATE_ALL);
 
@@ -1872,7 +1905,7 @@ int app_run(AppArgs *args){
 
 	gtk_widget_realize(args->window);
 
-	if (dynv_get_bool_wd(args->params, "start_in_tray", false)){
+	if (args->options.floating_picker_mode || dynv_get_bool_wd(args->params, "start_in_tray", false)){
 		status_icon_set_visible (args->statusIcon, true);
 	}else{
 		main_show_window(args->window, args->params);
@@ -1880,6 +1913,9 @@ int app_run(AppArgs *args){
 
 	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
 	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
+
+	if (args->options.floating_picker_mode)
+		floating_picker_activate(args->floating_picker, false);
 
 	gtk_main();
 
@@ -1900,6 +1936,8 @@ int app_run(AppArgs *args){
 		dynv_set_string_array(args->gs->params, "gpick.recent.files", recent_array, recent_array_size);
 		delete [] recent_array;
 	}
+
+	g_bus_unown_name(args->bus_id);
 
 	unique_term();
 	status_icon_destroy(args->statusIcon);
