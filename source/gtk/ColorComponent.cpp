@@ -177,7 +177,7 @@ GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
 			ns->n_components = 3;
 			ns->range[0] = 100;
 			ns->offset[0] = 0;
-			ns->range[1] = 100;
+			ns->range[1] = 150;
 			ns->range[2] = 360;
 			ns->offset[1] = ns->offset[2] = 0;
 			break;
