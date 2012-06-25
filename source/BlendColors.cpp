@@ -47,7 +47,7 @@
 using namespace std;
 
 #define STORE_COLOR() struct ColorObject *color_object = color_list_new_color_object(color_list, &r); \
-	name_assigner.assign(color_object, &r, "test", 0); \
+	name_assigner.assign(color_object, &r, start_name.c_str(), end_name.c_str()); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object_release(color_object)
 
@@ -78,20 +78,34 @@ typedef struct BlendColorsArgs{
 class BlendColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
-		const char *m_name;
-		uint32_t m_step_i;
+		const char *m_color_start;
+		const char *m_color_end;
+		bool m_is_color_item;
 	public:
-		BlendColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){}
+		BlendColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+			m_is_color_item = false;
+		}
 
-		void assign(struct ColorObject *color_object, Color *color, const char *name, uint32_t step_i){
-			m_name = name;
-			m_step_i = step_i;
+		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name){
+			m_color_start = start_color_name;
+			m_color_end = end_color_name;
+			m_is_color_item = false;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *item_name){
+			m_color_start = item_name;
+			m_is_color_item = true;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << m_name << " blend " << m_step_i;
+			if (m_is_color_item){
+				m_stream << color_names_get(m_gs->color_names, color, false) << " blend " << m_color_start;
+			}else{
+				m_stream << m_color_start << " blend " << m_color_end;
+			}
 			return m_stream.str();
 		}
 };
@@ -130,12 +144,14 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 			gtk_color_get_color(GTK_COLOR(args->end_color), &b);
 		}
 
+		string start_name = color_names_get(args->gs->color_names, &a, false);
+		string end_name = color_names_get(args->gs->color_names, &b, false);
+
 		if (type == 0){
 			color_rgb_get_linear(&a, &a);
 			color_rgb_get_linear(&b, &b);
 		}
 		step_i = stage;
-
 
 		switch (type) {
 		case 0:
@@ -389,7 +405,12 @@ static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, struct Col
 	*color = color_list_new_color_object(args->gs->colors, &c);
 
 	BlendColorNameAssigner name_assigner(args->gs);
-	name_assigner.assign(*color, &c, "test", 0);
+	const char *item_name[] = {
+		"start",
+		"middle",
+		"end",
+	};
+	name_assigner.assign(*color, &c, item_name[color_index - 1]);
 
 	return 0;
 }
@@ -418,6 +439,7 @@ static int source_set_color(BlendColorsArgs *args, struct ColorObject* color){
 }
 
 static int source_activate(BlendColorsArgs *args){
+	update(0, args);
 	return 0;
 }
 

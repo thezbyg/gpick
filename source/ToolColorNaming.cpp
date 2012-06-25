@@ -29,9 +29,9 @@ static ToolColorNamingOption options[] = {
 };
 
 const ToolColorNamingOption* tool_color_naming_get_options(){
-  options[0].label = _("_Empty");
-  options[1].label = _("_Automatic name");
-  options[2].label = _("_Tool specific");
+	options[0].label = _("_Empty");
+	options[1].label = _("_Automatic name");
+	options[2].label = _("_Tool specific");
 	return options;
 }
 

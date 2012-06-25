@@ -20,6 +20,7 @@
 #include "DragDrop.h"
 
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
@@ -66,6 +67,25 @@ typedef struct BrightnessDarknessArgs{
 	GlobalState* gs;
 }BrightnessDarknessArgs;
 
+class BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_ident;
+	public:
+		BrightnessDarknessColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+			m_ident = ident;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << color_names_get(m_gs->color_names, color, false) << " brightness darkness " << m_ident;
+			return m_stream.str();
+		}
+};
 
 static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings){
 	double brightness = gtk_range_2d_get_x(GTK_RANGE_2D(args->brightness_darkness));
@@ -114,12 +134,16 @@ static void update(GtkWidget *widget, BrightnessDarknessArgs *args ){
 }
 
 static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** color){
+	Style* style = 0;
 	Color c;
 	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout_view), &c) == 0){
+		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout_view), &style) != 0){
+			return -1;
+		}
 		*color = color_list_new_color_object(args->gs->colors, &c);
 
-		string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-		dynv_set_string((*color)->params, "name", name.c_str());
+		BrightnessDarknessColorNameAssigner name_assigner(args->gs);
+		name_assigner.assign(*color, &c, style->ident_name.c_str());
 		return 0;
 	}
 	return -1;
@@ -191,20 +215,18 @@ static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
 
 	struct ColorObject *color_object;
 	if (source_get_color(args, &color_object)==0){
-		dynv_set_string(color_object->params, "name", "");
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
 	}
 }
 
 static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *args) {
-
 	struct ColorObject *color_object;
+	BrightnessDarknessColorNameAssigner name_assigner(args->gs);
 
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-
 		color_object = color_list_new_color_object(args->gs->colors, &(*i)->color);
-		dynv_set_string(color_object->params, "name", (*i)->ident_name.c_str());
+		name_assigner.assign(color_object, &(*i)->color, (*i)->ident_name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
 	}
