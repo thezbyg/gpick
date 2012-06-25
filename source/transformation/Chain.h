@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,8 +23,15 @@
 #include <boost/shared_ptr.hpp>
 #include <list>
 
+/** \file source/transformation/Chain.h
+ * \brief Class for transformation object list handling.
+ */
+
 namespace transformation {
 
+/** \class Chain
+ * \brief Transformation object chain management class.
+ */
 class Chain{
 	public:
 		typedef std::list<boost::shared_ptr<Transformation> > TransformationList;
@@ -32,16 +39,45 @@ class Chain{
 		TransformationList transformation_chain;
 		bool enabled;
 	public:
+		/**
+		 * Chain constructor.
+		 */
 		Chain();
 
-		void apply(Color *input, Color *output);
+		/**
+		 * Apply transformation chain to color.
+		 * @param[in] input Source color in RGB color space.
+		 * @param[out] output Destination color in RGB color space.
+		 */
+		void apply(const Color *input, Color *output);
 
+		/**
+		 * Add transformation object into the list.
+		 * @param[in] transformation Transformation object.
+		 */
 		void add(boost::shared_ptr<Transformation> transformation);
+
+		/**
+		 * Remove transformation object from the list.
+		 * @param[in] transformation Transformation object.
+		 */
 		void remove(const Transformation *transformation);
+
+		/**
+		 * Clear transformation object list.
+		 */
 		void clear();
 
+		/**
+		 * Enable/disable transformation chain.
+		 * @param[in] enabled Enabled.
+		 */
 		void setEnabled(bool enabled);
 
+		/**
+		 * Get the list of transformation objects.
+		 * @return Transformation object list.
+		 */
 		TransformationList& getAll();
 };
 

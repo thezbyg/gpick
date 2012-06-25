@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -29,13 +29,13 @@ struct MemoryPage{
 	uint32_t total_free;
 	uint32_t atom_size;
 	struct MemoryPage* next_page;
-	
+
 	uint8_t *map;
 	uint8_t *raw_memory;
 };
 
 struct Memory{
-	struct MemoryPage* pages;	
+	struct MemoryPage* pages;
 };
 
 struct Memory* memory_new();

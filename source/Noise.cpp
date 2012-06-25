@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -63,6 +63,10 @@ static double grad(int hash, double x, double y, double z){
 	return ((h&1) == 0 ? u : -u) + ((h&2) == 0 ? v : -v);
 }
 
+/**
+ * Improved Perlin noise algorithm implemented by using reference Java implementation from.
+ * \see http://mrl.nyu.edu/~perlin/noise/
+ */
 double noise(double x, double y, double z){
 	int X = (int)floor(x) & 255,
 	Y = (int)floor(y) & 255,

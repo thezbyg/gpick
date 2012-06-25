@@ -27,7 +27,8 @@
 using namespace std;
 
 //CIE94 color difference calculation
-float color_names_distance_lch(const Color* a, const Color* b){
+float color_names_distance_lch(const Color* a, const Color* b)
+{
 	Color al, bl;
 	color_lab_to_lch(a, &al);
 	color_lab_to_lch(b, &bl);
@@ -37,17 +38,16 @@ float color_names_distance_lch(const Color* a, const Color* b){
 			pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2));
 }
 
-ColorNames*
-color_names_new()
+ColorNames* color_names_new()
 {
 	ColorNames* cnames = new ColorNames;
-	cnames->colorspace_convert = color_rgb_to_lab_d50;
-	cnames->colorspace_distance = color_names_distance_lch;
+	cnames->color_space_convert = color_rgb_to_lab_d50;
+	cnames->color_space_distance = color_names_distance_lch;
 	return cnames;
 }
 
 
-void color_names_strip_spaces(string& string_x, string& stripchars){
+static void color_names_strip_spaces(string& string_x, string& stripchars){
    if(string_x.empty()) return;
    if (stripchars.empty()) return;
 
@@ -61,8 +61,8 @@ void color_names_strip_spaces(string& string_x, string& stripchars){
    string_x = string_x.substr(startIndex, (endIndex-startIndex)+1 );
 }
 
-void
-color_names_get_color_xyz(ColorNames* cnames, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2){
+void color_names_get_color_xyz(ColorNames* cnames, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
+{
 	*x1=clamp_int(int(c->xyz.x*8-0.5),0,7);
 	*y1=clamp_int(int(c->xyz.y*8-0.5),0,7);
 	*z1=clamp_int(int(c->xyz.z*8-0.5),0,7);
@@ -72,8 +72,8 @@ color_names_get_color_xyz(ColorNames* cnames, Color* c, int* x1, int* y1, int* z
 	*z2=clamp_int(int(c->xyz.z*8+0.5),0,7);
 }
 
-list<ColorEntry*>*
-color_names_get_color_list(ColorNames* cnames, Color* c){
+list<ColorEntry*>* color_names_get_color_list(ColorNames* cnames, Color* c)
+{
 	int x,y,z;
 	x=clamp_int(int(c->xyz.x*8),0,7);
 	y=clamp_int(int(c->xyz.y*8),0,7);
@@ -82,8 +82,7 @@ color_names_get_color_list(ColorNames* cnames, Color* c){
 	return &cnames->colors[x][y][z];
 }
 
-int
-color_names_load_from_file(ColorNames* cnames, const char* filename)
+int color_names_load_from_file(ColorNames* cnames, const char* filename)
 {
 	ifstream file(filename, ifstream::in);
 
@@ -129,7 +128,7 @@ color_names_load_from_file(ColorNames* cnames, const char* filename)
 			ColorEntry* color_entry = new ColorEntry;
 			color_entry->name=name_entry;
 
-			cnames->colorspace_convert(&color, &color_entry->color);
+			cnames->color_space_convert(&color, &color_entry->color);
 			color_names_get_color_list(cnames, &color_entry->color)->push_back(color_entry);
 
 		}
@@ -140,8 +139,7 @@ color_names_load_from_file(ColorNames* cnames, const char* filename)
 	return -1;
 }
 
-void
-color_names_destroy(ColorNames* cnames)
+void color_names_destroy(ColorNames* cnames)
 {
 	for (list<ColorNameEntry*>::iterator i=cnames->names.begin();i!=cnames->names.end();++i){
 		delete (*i);
@@ -158,11 +156,10 @@ color_names_destroy(ColorNames* cnames)
 	delete cnames;
 }
 
-string
-color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
+string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 {
 	Color c1;
-	cnames->colorspace_convert(color, &c1);
+	cnames->color_space_convert(color, &c1);
 
 	int x1,y1,z1,x2,y2,z2;
 	color_names_get_color_xyz(cnames, &c1, &x1, &y1, &z1, &x2, &y2, &z2);
@@ -174,7 +171,7 @@ color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 	memset(&skip_mask, 0, sizeof(skip_mask));
 
 	/* Search expansion should be from 0 to 7, but this would only increase search time and return
-	 * wrong color names when no closely matching color is found. Search expansion is only usefull
+	 * wrong color names when no closely matching color is found. Search expansion is only useful
 	 * when color name database is very small (16 colors)
 	 */
 	for (int expansion = 0; expansion < 7; ++expansion){
@@ -189,7 +186,7 @@ color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 					skip_mask[x_i][y_i][z_i] = 1;
 
 					for (list<ColorEntry*>::iterator i=cnames->colors[x_i][y_i][z_i].begin(); i!=cnames->colors[x_i][y_i][z_i].end();++i){
-						float delta = cnames->colorspace_distance(&(*i)->color, &c1);
+						float delta = cnames->color_space_distance(&(*i)->color, &c1);
 						//float delta = pow((*i)->color.xyz.x-c1.xyz.x,2) + pow((*i)->color.xyz.y-c1.xyz.y,2) + pow((*i)->color.xyz.z-c1.xyz.z,2);
 						if (delta < result_delta)
 						{
@@ -213,3 +210,4 @@ color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
 
 	return string("");
 }
+

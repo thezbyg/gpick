@@ -24,17 +24,20 @@
 
 #include "DynvHelpers.h"
 
+#include <string>
+
+using namespace std;
 
 static const struct{
 	const char *label;
 	const char *setting;
-}available_colorspaces[] = {
-	{"CMYK", "picker.colorspace.cmyk"},
-	{"HSL", "picker.colorspace.hsl"},
-	{"HSV", "picker.colorspace.hsv"},
-	{"LAB", "picker.colorspace.lab"},
-	{"LCH", "picker.colorspace.lch"},
-	{"RGB", "picker.colorspace.rgb"},
+}available_color_spaces[] = {
+	{"CMYK", "picker.color_space.cmyk"},
+	{"HSL", "picker.color_space.hsl"},
+	{"HSV", "picker.color_space.hsv"},
+	{"LAB", "picker.color_space.lab"},
+	{"LCH", "picker.color_space.lch"},
+	{"RGB", "picker.color_space.rgb"},
 	{0, 0},
 };
 
@@ -53,7 +56,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *zoom_size;
 	GtkWidget *imprecision_postfix;
 	GtkWidget *tool_color_naming[3];
-	GtkWidget *colorspaces[6];
+	GtkWidget *color_spaces[6];
 	GtkWidget *out_of_gamut_mask;
 
 	GtkWidget *lab_illuminant;
@@ -92,8 +95,8 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 		i++;
 	}
 
-	for (int i = 0; available_colorspaces[i].label; i++){
-		dynv_set_bool(args->params, available_colorspaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->colorspaces[i])));
+	for (int i = 0; available_color_spaces[i].label; i++){
+		dynv_set_bool(args->params, available_color_spaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->color_spaces[i])));
 	}
 
 	dynv_set_string(args->params, "picker.lab.illuminant", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_illuminant)));
@@ -253,9 +256,9 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	for (int i = 0; available_colorspaces[i].label; i++){
-		args->colorspaces[i] = widget = gtk_check_button_new_with_label(available_colorspaces[i].label);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, available_colorspaces[i].setting, true));
+	for (int i = 0; available_color_spaces[i].label; i++){
+		args->color_spaces[i] = widget = gtk_check_button_new_with_label(available_color_spaces[i].label);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, available_color_spaces[i].setting, true));
 		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
 		table_y++;
 	}

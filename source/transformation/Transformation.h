@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -25,23 +25,67 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
+/** \file source/transformation/Transformation.h
+ * \brief Color transformation class.
+ */
+
 namespace transformation {
 
+/** \class Transformation
+ * \brief Transformation object class.
+ */
 class Transformation{
 	protected:
-		std::string name;
-		std::string readable_name;
+		std::string name;             /**< System name */
+		std::string readable_name;    /**< Human readable name */
+
+		/**
+		 * Apply transformation to color.
+		 * @param[in] input Source color in RGB color space.
+		 * @param[out] output Destination color in RGB color space.
+		 */
 		virtual void apply(Color *input, Color *output);
 	public:
+		/**
+		 * Transformation object constructor.
+		 * @param[in] name Transformation object system name.
+		 * @param[in] readable_name Transformation object human readable name.
+		 */
 		Transformation(const char *name, const char *readable_name);
+
+		/**
+		 * Transformation object destructor.
+		 */
 		virtual ~Transformation();
 
+		/**
+		 * Serialize settings into configuration system.
+		 * @param[in,out] dynv Configuration system.
+		 */
 		virtual void serialize(struct dynvSystem *dynv);
+
+		/**
+		 * Deserialize settings from configuration system.
+		 * @param[in] dynv Configuration system.
+		 */
 		virtual void deserialize(struct dynvSystem *dynv);
 
+		/**
+		 * Get configuration for transformation object.
+		 * @return Configuration for transformation object.
+		 */
 		virtual boost::shared_ptr<Configuration> getConfig();
 
+		/**
+		 * Get transformation object system name.
+		 * @return Transformation object system name.
+		 */
 		std::string getName() const;
+
+		/**
+		 * Get transformation object human readable name.
+		 * @return Transformation object human readable name.
+		 */
 		std::string getReadableName() const;
 
 		friend class Chain;

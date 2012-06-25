@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,8 +23,15 @@
 #include <boost/shared_ptr.hpp>
 #include <vector>
 
+/** \file source/transformation/Factory.h
+ * \brief Class for transformation object creation.
+ */
+
 namespace transformation {
 
+/** \class Factory
+ * \brief Transformation object creation management class.
+ */
 class Factory{
 	public:
     typedef struct TypeInfo{
@@ -33,12 +40,21 @@ class Factory{
 			TypeInfo(const char *name, const char *human_name);
 		}TypeInfo;
 
+		/**
+		 * Create new transformation object.
+		 * @param[in] type Name of transformation object type.
+		 * @return New transformation object.
+		 */
 		static boost::shared_ptr<Transformation> create(const char *type);
+
+		/**
+		 * Get all transformation object types.
+		 * @return Vector of transformation object type information structures.
+		 */
 		static std::vector<TypeInfo> getAllTypes();
 };
 
 }
 
 #endif /* TRANSFORMATION_FACTORY_H_ */
-
 

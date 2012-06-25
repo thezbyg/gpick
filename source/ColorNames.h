@@ -24,10 +24,9 @@
 
 #include <string>
 #include <list>
-using namespace std;
 
 typedef struct ColorNameEntry{
-	string name;
+	std::string name;
 }ColorNameEntry;
 
 typedef struct ColorEntry{
@@ -36,22 +35,18 @@ typedef struct ColorEntry{
 }ColorEntry;
 
 typedef struct ColorNames{
-	list<ColorNameEntry*> names;
-	list<ColorEntry*> colors[8][8][8];
-	void (*colorspace_convert)(const Color* a, Color* b);
-	float (*colorspace_distance)(const Color* a, const Color* b);
+	std::list<ColorNameEntry*> names;
+	std::list<ColorEntry*> colors[8][8][8];
+	void (*color_space_convert)(const Color* a, Color* b);
+	float (*color_space_distance)(const Color* a, const Color* b);
 }ColorNames;
 
-ColorNames*
-color_names_new();
+ColorNames* color_names_new();
 
-int
-color_names_load_from_file(ColorNames* cnames, const char* filename);
+int color_names_load_from_file(ColorNames* cnames, const char* filename);
 
-void
-color_names_destroy(ColorNames* cnames);
+void color_names_destroy(ColorNames* cnames);
 
-string
-color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix);
+std::string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix);
 
 #endif /* COLORNAMES_H_ */

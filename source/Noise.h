@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,6 +19,18 @@
 #ifndef NOISE_H_
 #define NOISE_H_
 
+/** \file source/Noise.h
+ * \brief Improved Perlin noise implementation.
+ */
+
+/**
+ * Returns noise value for specified position.
+ * @param[in] x X coordinate.
+ * @param[in] y y coordinate.
+ * @param[in] z Z coordinate.
+ * @return Noise value.
+ */
 double noise(double x, double y, double z);
 
 #endif /* NOISE_H_ */
+

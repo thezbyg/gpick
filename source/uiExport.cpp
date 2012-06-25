@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2011, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -316,11 +316,11 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 
 					Color c;
 
-					char colorspace[4];
-					f.read(colorspace, 4);
+					char color_space[4];
+					f.read(color_space, 4);
 					color_supported = 0;
 
-					if (memcmp(colorspace, "RGB ", 4)==0){
+					if (memcmp(color_space, "RGB ", 4)==0){
 						FloatInt rgb[3];
 						f.read((char*)&rgb[0], 4);
 						f.read((char*)&rgb[1], 4);
@@ -336,7 +336,7 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 
 						color_supported = 1;
 
-					}else if (memcmp(colorspace, "CMYK", 4)==0){
+					}else if (memcmp(color_space, "CMYK", 4)==0){
 						Color c2;
 						FloatInt cmyk[4];
 
@@ -359,7 +359,7 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 
 						color_supported = 1;
 
-					}else if (memcmp(colorspace, "Gray", 4)==0){
+					}else if (memcmp(color_space, "Gray", 4)==0){
 						FloatInt gray;
 						f.read((char*)&gray, 4);
 						gray.i = UINT32_FROM_BE(gray.i);
@@ -367,8 +367,8 @@ int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename){
 
 						color_supported = 1;
 
-					}else if (memcmp(colorspace, "LAB ", 4)==0){
-						Color c2, c3;
+					}else if (memcmp(color_space, "LAB ", 4)==0){
+						Color c2;
 						FloatInt lab[3];
 						f.read((char*)&lab[0], 4);
 						f.read((char*)&lab[1], 4);

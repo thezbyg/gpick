@@ -7,7 +7,7 @@ Import('*')
 local_env = env.Clone()
 
 if not local_env.GetOption('clean'):
-	local_env.ParseConfig('pkg-config --cflags $GTK_PC')
+	local_env.ParseConfig('pkg-config --cflags $GIO_PC')
 
 sources = local_env.Glob('*.c') + local_env.Glob('*.cpp')
 

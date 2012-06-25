@@ -21,8 +21,23 @@
 
 #include <gtk/gtk.h>
 
+/** \file source/dbus/Control.h
+ * \brief D-Bus interface and functions.
+ */
+
+/**
+ * Try to get ownership of a bus.
+ */
 guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata), bool (*on_single_instance_activate)(void *userdata), void *userdata);
+
+/**
+ * Activate main window in a remove Gpick instance.
+ */
 bool gpick_single_instance_activate();
+
+/**
+ * Activate floating color picker in a remote Gpick instance.
+ */
 bool gpick_control_activate_floating_picker();
 
 #endif  /* UI_DBUS_CONTROL_H_ */

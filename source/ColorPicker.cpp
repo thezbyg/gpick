@@ -1040,20 +1040,20 @@ static int source_activate(ColorPickerArgs *args){
   struct{
 		GtkWidget *widget;
 		const char *setting;
-	}colorspaces[] = {
-		{args->expanderCMYK, "colorspace.cmyk"},
-		{args->expanderHSL, "colorspace.hsl"},
-		{args->expanderHSV, "colorspace.hsv"},
-		{args->expanderLAB, "colorspace.lab"},
-		{args->expanderLCH, "colorspace.lch"},
-		{args->expanderRGB, "colorspace.rgb"},
+	}color_spaces[] = {
+		{args->expanderCMYK, "color_space.cmyk"},
+		{args->expanderHSL, "color_space.hsl"},
+		{args->expanderHSV, "color_space.hsv"},
+		{args->expanderLAB, "color_space.lab"},
+		{args->expanderLCH, "color_space.lch"},
+		{args->expanderRGB, "color_space.rgb"},
 		{0, 0},
 	};
-	for (int i = 0; colorspaces[i].setting; i++){
-		if (dynv_get_bool_wd(args->params, colorspaces[i].setting, true))
-			gtk_widget_show(colorspaces[i].widget);
+	for (int i = 0; color_spaces[i].setting; i++){
+		if (dynv_get_bool_wd(args->params, color_spaces[i].setting, true))
+			gtk_widget_show(color_spaces[i].widget);
 		else
-			gtk_widget_hide(colorspaces[i].widget);
+			gtk_widget_hide(color_spaces[i].widget);
 	}
 
 	bool out_of_gamut_mask = dynv_get_bool_wd(args->params, "out_of_gamut_mask", true);

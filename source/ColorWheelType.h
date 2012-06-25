@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2010, Albertas Vyšniauskas
+ * Copyright (c) 2009-2012, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,13 +22,40 @@
 #include "Color.h"
 #include <stdint.h>
 
+/** \file source/ColorWheelType.h
+ * \brief Color wheel type description structure and functions
+ */
+
+/** \struct ColorWheelType
+ * \brief ColorWheelType structure contains color wheel type name and conversion functions
+ */
 typedef struct ColorWheelType{
-	const char *name;
+	const char *name;                                   /**< Name of a color wheel */
+/**
+ * Callback used to convert color wheel specific hue into the color in a HSL color space
+ * @param[in] hue Color wheel specific hue value
+ * @param[out] hsl Result as a color in HSL color space
+ */
 	void (*hue_to_hsl)(double hue, Color* hsl);
+
+/**
+ * Callback used to convert HSL color space hue into color wheel specific hue
+ * @param[in] rgbhue HSL color space hue value
+ * @param[out] hue Color wheel specific hue value
+ */
 	void (*rgbhue_to_hue)(double rgbhue, double *hue);
 }ColorWheelType;
 
+/**
+ * Get available color wheel types
+ * @return Constant array of available color wheel types
+ */
 const ColorWheelType* color_wheel_types_get();
+
+/**
+ * Get the number of available color wheel types
+ * @return Number of available color wheel types
+ */
 const uint32_t color_wheel_types_get_n();
 
 #endif /* COLOR_WHEEL_TYPE_H_ */

@@ -59,6 +59,7 @@ if not env.GetOption('clean'):
 
 	libs = {
 		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
+		'GIO_PC': 			{'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}},
 	}
 
 	if not env['INTERNAL_LUA']:
