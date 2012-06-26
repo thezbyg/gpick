@@ -20,6 +20,7 @@
 #include "DragDrop.h"
 
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
@@ -36,6 +37,7 @@
 #include "uiApp.h"
 
 #include <gdk/gdkkeysyms.h>
+#include <boost/lexical_cast.hpp>
 
 #include <math.h>
 #include <string.h>
@@ -90,6 +92,25 @@ typedef struct VariationsArgs{
 	GlobalState* gs;
 }VariationsArgs;
 
+class VariationsColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_ident;
+	public:
+		VariationsColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+			m_ident = ident;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << color_names_get(m_gs->color_names, color, false) << " variations " << m_ident;
+			return m_stream.str();
+		}
+};
 
 static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* color, GtkWidget* color_widget);
@@ -191,37 +212,54 @@ static void on_color_edit(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
+static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
+{
+	if (args->all_colors == widget){
+		return "all colors";
+	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
+		if (args->color[i].color == widget){
+			return "primary " + boost::lexical_cast<string>(i + 1);
+		}
+		for (int j = 0; j <= VAR_COLOR_WIDGETS; ++j){
+			if (args->color[i].var_colors[j] == widget){
+				if (j > VAR_COLOR_WIDGETS / 2)
+					j--;
+				return "result " + boost::lexical_cast<string>(j + 1) + " line " + boost::lexical_cast<string>(i + 1);
+			}
+		}
+	}
+	return "unknown";
+}
 
-static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
-	VariationsArgs* args=(VariationsArgs*)item;
+static void add_color_to_palette(GtkWidget *color_widget, VariationsColorNameAssigner &name_assigner, VariationsArgs *args)
+{
 	Color c;
-
-	gtk_color_get_color(GTK_COLOR(g_object_get_data(G_OBJECT(widget), "color_widget")), &c);
-
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
-	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
+	struct ColorObject *color_object;
+	string widget_ident;
+	gtk_color_get_color(GTK_COLOR(color_widget), &c);
+	color_object = color_list_new_color_object(args->gs->colors, &c);
+	widget_ident = identify_color_widget(color_widget, args);
+	name_assigner.assign(color_object, &c, widget_ident.c_str());
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
 }
 
+static void on_color_add_to_palette(GtkWidget *widget,  gpointer item) {
+	VariationsArgs* args = (VariationsArgs*)item;
+    GtkWidget *color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	VariationsColorNameAssigner name_assigner(args->gs);
+	add_color_to_palette(color_widget, name_assigner, args);
+}
+
 static void on_color_add_all_to_palette(GtkWidget *widget,  gpointer item) {
-	VariationsArgs* args=(VariationsArgs*)item;
-	Color c;
+	VariationsArgs* args = (VariationsArgs*)item;
+	VariationsColorNameAssigner name_assigner(args->gs);
 
 	for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
-
-			gtk_color_get_color(GTK_COLOR(args->color[i].var_colors[j]), &c);
-
-			struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
-			string name=color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-			dynv_set_string(color_object->params, "name", name.c_str());
-			color_list_add_color_object(args->gs->colors, color_object, 1);
-			color_object_release(color_object);
+			add_color_to_palette(args->color[i].var_colors[j], name_assigner, args);
 		}
 	}
-
 }
 
 static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, VariationsArgs *args){
@@ -443,16 +481,18 @@ static int source_destroy(VariationsArgs *args){
 }
 
 static int source_get_color(VariationsArgs *args, ColorObject** color){
+	VariationsColorNameAssigner name_assigner(args->gs);
 	Color c;
+	string widget_ident;
 	if (args->last_focused_color){
 		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
+		widget_ident = identify_color_widget(args->last_focused_color, args);
 	}else{
 		gtk_color_get_color(GTK_COLOR(args->color[0].color), &c);
+		widget_ident = identify_color_widget(args->color[0].color, args);
 	}
 	*color = color_list_new_color_object(args->gs->colors, &c);
-
-	string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string((*color)->params, "name", name.c_str());
+	name_assigner.assign(*color, &c, widget_ident.c_str());
 	return 0;
 }
 
@@ -473,7 +513,7 @@ static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* col
 static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index){
 	Color c;
 	color_object_get_color(color, &c);
-	if (color_index == -1){
+	if (color_index == (uint32_t)-1){
 		gtk_color_set_color(GTK_COLOR(args->all_colors), &c, "");
 		for (int i = 0; i < MAX_COLOR_LINES; ++i){
 			gtk_color_set_color(GTK_COLOR(args->color[i].color), &c, args->color[i].type->symbol);
@@ -588,8 +628,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
+	for (intptr_t i = 0; i < MAX_COLOR_LINES; ++i){
+		for (intptr_t j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
 
 			widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);

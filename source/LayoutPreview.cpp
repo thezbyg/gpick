@@ -26,6 +26,7 @@
 #include "Internationalisation.h"
 
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
@@ -58,6 +59,26 @@ typedef struct LayoutPreviewArgs{
 	struct dynvSystem *params;
 	GlobalState *gs;
 }LayoutPreviewArgs;
+
+class LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_ident;
+	public:
+		LayoutPreviewColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+			m_ident = ident;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << color_names_get(m_gs->color_names, color, false) << " layout preview " << m_ident;
+			return m_stream.str();
+		}
+};
 
 typedef enum{
 	LAYOUTLIST_HUMAN_NAME = 0,
@@ -248,15 +269,12 @@ static int source_destroy(LayoutPreviewArgs *args){
 }
 
 static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color){
-	Color c;
-	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c)==0){
-
-		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &c);
-		string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-		dynv_set_string(color_object->params, "name", name.c_str());
-
+	Style *style = 0;
+	if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout), &style) == 0){
+		struct ColorObject *color_object = color_list_new_color_object(args->gs->colors, &style->color);
+        LayoutPreviewColorNameAssigner name_assigner(args->gs);
+		name_assigner.assign(color_object, &style->color, style->ident_name.c_str());
 		*color = color_object;
-
 		return 0;
 	}
 	return -1;
@@ -343,29 +361,28 @@ static void paste_cb(GtkWidget *widget, LayoutPreviewArgs* args) {
 	}
 }
 
-static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
-	LayoutPreviewArgs* args=(LayoutPreviewArgs*)item;
+static void add_color_to_palette(Style *style, LayoutPreviewColorNameAssigner &name_assigner, LayoutPreviewArgs *args)
+{
+	struct ColorObject *color_object;
+	color_object = color_list_new_color_object(args->gs->colors, &style->color);
+	name_assigner.assign(color_object, &style->color, style->ident_name.c_str());
+	color_list_add_color_object(args->gs->colors, color_object, 1);
+	color_object_release(color_object);
+}
 
+static void add_to_palette_cb(GtkWidget *widget,  gpointer item) {
+	LayoutPreviewArgs* args = (LayoutPreviewArgs*)item;
+	LayoutPreviewColorNameAssigner name_assigner(args->gs);
 	Style* style = 0;
 	if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout), &style) == 0){
-		struct ColorObject *color_object;
-		color_object = color_list_new_color_object(args->gs->colors, &style->color);
-		dynv_set_string(color_object->params, "name", style->ident_name.c_str());
-		color_list_add_color_object(args->gs->colors, color_object, 1);
-		color_object_release(color_object);
+		add_color_to_palette(style, name_assigner, args);
 	}
 }
 
 static void add_all_to_palette_cb(GtkWidget *widget, LayoutPreviewArgs *args) {
-
-	struct ColorObject *color_object;
-
+	LayoutPreviewColorNameAssigner name_assigner(args->gs);
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-
-		color_object = color_list_new_color_object(args->gs->colors, &(*i)->color);
-		dynv_set_string(color_object->params, "name", (*i)->ident_name.c_str());
-		color_list_add_color_object(args->gs->colors, color_object, 1);
-		color_object_release(color_object);
+		add_color_to_palette(*i, name_assigner, args);
 	}
 }
 
