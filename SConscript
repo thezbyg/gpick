@@ -18,8 +18,6 @@ vars.Add(BoolVariable('WITH_DBUSGLIB', 'Compile with DBus support', True))
 vars.Add(BoolVariable('ENABLE_NLS', 'Compile with gettext support', True))
 vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
-vars.Add(BoolVariable('INTERNAL_EXPAT', 'Use internal Expat library', True))
-vars.Add(BoolVariable('INTERNAL_LUA', 'Use internal Lua library', True))
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
 
@@ -58,12 +56,11 @@ if not env.GetOption('clean'):
 	env.ConfirmPrograms(conf, programs)
 
 	libs = {
-		'GTK_PC': 			{'checks':{'gtk+-2.0':'>= 2.12.0'}},
-		'GIO_PC': 			{'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}},
+		'GTK_PC': {'checks':{'gtk+-2.0':'>= 2.12.0'}},
+		'GIO_PC': {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}},
+		'LUA_PC':	{'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}},
 	}
 
-	if not env['INTERNAL_LUA']:
-		libs['LUA_PC'] = {'checks':{'lua':'>= 5.1', 'lua5.1':'>= 5.1'}}
 	if env['WITH_UNIQUE']:
 		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
 	elif env['WITH_DBUSGLIB']:

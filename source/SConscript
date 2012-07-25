@@ -10,8 +10,7 @@ local_env = env.Clone()
 
 if not local_env.GetOption('clean'):
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
-	if not env['INTERNAL_LUA']:
-		local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
 	if local_env.has_key('UNIQUE_PC'):
 		local_env.ParseConfig('pkg-config --libs $UNIQUE_PC')
 	if local_env.has_key('DBUSGLIB_PC'):
@@ -40,17 +39,11 @@ if local_env['BUILD_TARGET'] == 'win32':
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt'])
 
-if not env['INTERNAL_EXPAT']:
-	local_env.Append(LIBS=['expat'])
+local_env.Append(LIBS=['expat'])
 
 executable = local_env.Program(
 	'gpick',
 	source = [sources, objects])
-
-if env['INTERNAL_EXPAT']:
-	Depends(executable, local_env.UseLibrary('expat'))
-if env['INTERNAL_LUA']:
-	Depends(executable, local_env.UseLibrary('lua'))
 
 Return('executable', 'generated_files')
 

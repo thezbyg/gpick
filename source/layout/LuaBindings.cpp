@@ -77,13 +77,14 @@ int lua_lstyle_humanname (lua_State *L) {
 }
 
 
-static const struct luaL_reg lua_lstylelib_f [] = {
+static const struct luaL_Reg lua_lstylelib_f [] = {
 	{"new", lua_lstyle_new},
 	{NULL, NULL}
 };
 
-static const struct luaL_reg lua_lstylelib_m [] = {
+static const struct luaL_Reg lua_lstylelib_m [] = {
 	{"humanname", lua_lstyle_humanname},
+	{"__gc", lua_lstyle_gc},
 	{NULL, NULL}
 };
 
@@ -209,23 +210,24 @@ int lua_box_locked (lua_State *L) {
 	}
 }
 
-int lua_gclbox (lua_State *L) {
+int lua_box_gc(lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
 	Box::unref(box);
 	return 0;
 }
 
-static const struct luaL_reg lua_lboxlib_f [] = {
+static const struct luaL_Reg lua_lboxlib_f [] = {
 	{"new_box", lua_new_box},
 	{"new_text", lua_new_text},
 	{"new_fill", lua_new_fill},
 	{NULL, NULL}
 };
 
-static const struct luaL_reg lua_lboxlib_m [] = {
+static const struct luaL_Reg lua_lboxlib_m [] = {
 	{"add", lua_add},
 	{"helper_only", lua_box_helper_only},
 	{"locked", lua_box_locked},
+	{"__gc", lua_box_gc},
 	{NULL, NULL}
 };
 
@@ -261,7 +263,7 @@ int lua_lsystem_setbox (lua_State *L) {
 	return 0;
 }
 
-static const struct luaL_reg lua_systemlib_m [] = {
+static const struct luaL_Reg lua_systemlib_m [] = {
 	{"addstyle", lua_lsystem_addstyle},
 	{"setbox", lua_lsystem_setbox},
 	{NULL, NULL}
@@ -270,41 +272,29 @@ static const struct luaL_reg lua_systemlib_m [] = {
 
 int luaopen_lbox (lua_State *L) {
 	luaL_newmetatable(L, "layout");
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_lboxlib_m, 0);
+	lua_pop(L, 1);
 
-	lua_pushstring(L, "__index");
-	lua_pushvalue(L, -2);  /* pushes the metatable */
-	lua_settable(L, -3);  /* metatable.__index = metatable */
-
-	lua_pushstring(L, "__gc");
-	lua_pushcfunction(L, lua_gclbox);
-	lua_settable(L, -3);
-
-	luaL_register(L, NULL, lua_lboxlib_m);
-	luaL_register(L, "layout", lua_lboxlib_f);
-	lua_pop(L, 2);
-
+	luaL_newlibtable(L, lua_lboxlib_f);
+	luaL_setfuncs(L, lua_lboxlib_f, 0);
+	lua_setglobal(L, "layout");
 
 	luaL_newmetatable(L, "layout_style");
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_lstylelib_m, 0);
+	lua_pop(L, 1);
 
-	lua_pushstring(L, "__index");
-	lua_pushvalue(L, -2);  /* pushes the metatable */
-	lua_settable(L, -3);  /* metatable.__index = metatable */
-
-	lua_pushstring(L, "__gc");
-	lua_pushcfunction(L, lua_lstyle_gc);
-	lua_settable(L, -3);
-
-	luaL_register(L, NULL, lua_lstylelib_m);
-	luaL_register(L, "layout_style", lua_lstylelib_f);
-	lua_pop(L, 2);
+	luaL_newlibtable(L, lua_lstylelib_f);
+	luaL_setfuncs(L, lua_lstylelib_f, 0);
+	lua_setglobal(L, "layout_style");
 
 	luaL_newmetatable(L, "layout_system");
-
-	lua_pushstring(L, "__index");
-	lua_pushvalue(L, -2);  /* pushes the metatable */
-	lua_settable(L, -3);  /* metatable.__index = metatable */
-
-	luaL_register(L, NULL, lua_systemlib_m);
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_systemlib_m, 0);
 	lua_pop(L, 1);
 
 	return 1;

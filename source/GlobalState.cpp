@@ -196,8 +196,7 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 
 		gchar* lua_path = g_strjoin(";", lua_root_path, lua_user_path, (void*)0);
 
-		lua_pushstring(L, "package");
-		lua_gettable(L, LUA_GLOBALSINDEX);
+		lua_getglobal(L, "package");
 		lua_pushstring(L, "path");
 		lua_pushstring(L, lua_path);
 		lua_settable(L, -3);

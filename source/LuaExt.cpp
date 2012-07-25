@@ -271,12 +271,12 @@ static int lua_color_lch_hue(lua_State *L) {
 	return 1;
 }
 
-static const struct luaL_reg lua_colorlib_f [] = {
+static const struct luaL_Reg lua_colorlib_f [] = {
 	{"new", lua_newcolor},
 	{NULL, NULL}
 };
 
-static const struct luaL_reg lua_colorlib_m [] = {
+static const struct luaL_Reg lua_colorlib_m [] = {
 	{"__tostring", lua_color2string},
 	{"red",			lua_color_red},
 	{"green",		lua_color_green},
@@ -309,23 +309,18 @@ static const struct luaL_reg lua_colorlib_m [] = {
 	{NULL, NULL}
 };
 
-
-static int luaopen_color (lua_State *L) {
+static int luaopen_color(lua_State *L) {
 	luaL_newmetatable(L, "color");
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_colorlib_m, 0);
+	lua_pop(L, 1);
 
-	lua_pushstring(L, "__index");
-	lua_pushvalue(L, -2);  /* pushes the metatable */
-	lua_settable(L, -3);  /* metatable.__index = metatable */
-
-	luaL_register(L, NULL, lua_colorlib_m);
-	luaL_register(L, "color", lua_colorlib_f);
-
-	lua_pop(L, 2);
-
+	luaL_newlibtable(L, lua_colorlib_f);
+	luaL_setfuncs(L, lua_colorlib_f, 0);
+	lua_setglobal(L, "color");
 	return 1;
 }
-
-
 
 static int lua_newcolorobject (lua_State *L) {
 	struct ColorObject** c = (struct ColorObject**)lua_newuserdata(L, sizeof(struct ColorObject*));
@@ -364,12 +359,12 @@ int lua_colorobject_set_color(lua_State *L) {
 	return 0;
 }
 
-static const struct luaL_reg lua_colorobjectlib_f [] = {
+static const struct luaL_Reg lua_colorobjectlib_f [] = {
 	{"new", lua_newcolorobject},
 	{NULL, NULL}
 };
 
-static const struct luaL_reg lua_colorobjectlib_m [] = {
+static const struct luaL_Reg lua_colorobjectlib_m [] = {
 	{"get_color", lua_colorobject_get_color},
 	{"set_color", lua_colorobject_set_color},
 	{NULL, NULL}
@@ -378,16 +373,14 @@ static const struct luaL_reg lua_colorobjectlib_m [] = {
 
 int luaopen_colorobject (lua_State *L) {
 	luaL_newmetatable(L, "colorobject");
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_colorobjectlib_m, 0);
+	lua_pop(L, 1);
 
-	lua_pushstring(L, "__index");
-	lua_pushvalue(L, -2);  /* pushes the metatable */
-	lua_settable(L, -3);  /* metatable.__index = metatable */
-
-	luaL_register(L, NULL, lua_colorobjectlib_m);
-	luaL_register(L, "colorobject", lua_colorobjectlib_f);
-
-	lua_pop(L, 2);
-
+	luaL_newlibtable(L, lua_colorobjectlib_f);
+	luaL_setfuncs(L, lua_colorobjectlib_f, 0);
+	lua_setglobal(L, "colorobject");
 	return 1;
 }
 
@@ -395,6 +388,6 @@ int luaopen_colorobject (lua_State *L) {
 int lua_ext_colors_openlib(lua_State *L){
 	luaopen_color(L);
 	luaopen_colorobject(L);
-    return 0;
+	return 0;
 }
 
