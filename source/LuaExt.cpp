@@ -42,7 +42,7 @@ Color *lua_checkcolor (lua_State *L, int index) {
 	return (Color *)ud;
 }
 
-int lua_pushcolor (lua_State *L, Color* color) {
+int lua_pushcolor (lua_State *L, const Color* color) {
 	Color *c = (Color*)lua_newuserdata(L, sizeof(Color));
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);

@@ -20,8 +20,11 @@
 #define UICOLORINPUT_H_
 
 #include <gtk/gtk.h>
+#include "gtk/ColorComponent.h"
 #include "GlobalState.h"
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object);
+
+void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params);
 
 #endif /* UICOLORINPUT_H_ */

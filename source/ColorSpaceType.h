@@ -16,8 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
+#ifndef COLORSPACETYPE_H_
+#define COLORSPACETYPE_H_
+
+#include "gtk/ColorComponent.h"
+#include "Color.h"
+#include <gtk/gtk.h>
+#include <stdint.h>
 
 extern "C"{
 #include <lua.h>
@@ -26,16 +31,26 @@ extern "C"{
 #include <luaconf.h>
 }
 
-#include "Color.h"
-#include "ColorObject.h"
+#include <string>
+#include <list>
 
-int lua_ext_colors_openlib(lua_State *lua);
+typedef struct ColorSpaceType
+{
+	GtkColorComponentComp comp_type;
+	int8_t n_items;
+	struct {
+		const char *name;
+		double raw_scale;
+		double min_value;
+		double max_value;
+		double step;
+	}items[4];
+}ColorSpaceType;
 
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
+const ColorSpaceType* color_space_get_types();
+uint32_t color_space_count_types();
 
-int lua_pushcolor (lua_State *L, const Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
+std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L);
 
+#endif /* COLORSPACETYPE_H_ */
 
-#endif /* LUAEXT_H_ */

@@ -25,6 +25,7 @@
 #include "FloatingPicker.h"
 #include "ColorRYB.h"
 #include "ColorWheelType.h"
+#include "ColorSpaceType.h"
 
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
@@ -170,60 +171,11 @@ static gboolean updateMainColorTimer(ColorPickerArgs* args){
 	return true;
 }
 
-static list<string> component_to_text(ColorPickerArgs* args, const char *type, Color *color){
-	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(args->gs->params, "lua_State", 0));
-
-  list<string> result;
-
-	int status;
-	int stack_top = lua_gettop(L);
-
-	lua_getglobal(L, "gpick");
-	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1) != LUA_TNIL){
-
-		lua_pushstring(L, "component_to_text");
-		lua_gettable(L, gpick_namespace);
-		if (lua_type(L, -1) != LUA_TNIL){
-
-			lua_pushstring(L, type);
-			lua_pushcolor(L, color);
-
-			status = lua_pcall(L, 2, 1, 0);
-			if (status == 0){
-				if (lua_type(L, -1) == LUA_TTABLE){
-
-					for (int i = 0; i < 4; i++){
-						lua_pushinteger(L, i + 1);
-						lua_gettable(L, -2);
-						if (lua_type(L, -1) == LUA_TSTRING){
-							const char* converted = lua_tostring(L, -1);
-							result.push_back(string(converted));
-						}
-						lua_pop(L, 1);
-					}
-
-					lua_settop(L, stack_top);
-					return result;
-				}else{
-					cerr << "gpick.component_to_text: returned not a table value, type is \"" << type << "\"" << endl;
-				}
-			}else{
-				cerr << "gpick.component_to_text: " << lua_tostring (L, -1) << endl;
-			}
-		}else{
-			cerr << "gpick.component_to_text: no such function" << endl;
-		}
-	}
-
-	lua_settop(L, stack_top);
-	return result;
-}
-
 static void updateComponentText(ColorPickerArgs *args, GtkColorComponent *component, const char *type){
 	Color transformed_color;
 	gtk_color_component_get_transformed_color(component, &transformed_color);
-	list<string> str = component_to_text(args, type, &transformed_color);
+	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(args->gs->params, "lua_State", 0));
+	list<string> str = color_space_color_to_text(type, &transformed_color, L);
 	int j = 0;
 	const char *text[4];
 	memset(text, 0, sizeof(text));
@@ -628,106 +580,8 @@ static void color_component_change_value(GtkWidget *widget, Color* c, ColorPicke
 	updateDisplays(args, widget);
 }
 
-typedef struct ColorPickerComponentEditArgs{
-	ColorPickerArgs *color_picker;
-	GtkWidget* value[4];
-	GtkColorComponentComp component;
-	int component_id;
-	struct dynvSystem *params;
-}ColorPickerComponentEditArgs;
-
-static void color_component_input_dialog(GtkWindow* parent, GtkColorComponent *color_component, int component_id, ColorPickerArgs *color_picker_args){
-  GtkColorComponentComp component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(color_component));
-
-	ColorPickerComponentEditArgs *args = new ColorPickerComponentEditArgs;
-  args->color_picker = color_picker_args;
-	args->params = dynv_get_dynv(color_picker_args->params, "component_edit");
-	args->component = component;
-	args->component_id = component_id;
-	memset(args->value, 0, sizeof(args->value));
-
-	GtkWidget *table;
-
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
-
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
-
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
-	table = gtk_table_new(2, 2, FALSE);
-
-  Color raw_color;
-	gtk_color_component_get_raw_color(color_component, &raw_color);
-
-	struct ComponentTypeInputs{
-		GtkColorComponentComp comp_type;
-		int8_t n_items;
-		struct {
-			const char *name;
-			double raw_scale;
-			double min_value;
-			double max_value;
-			double step;
-		}items[4];
-	}comp_type_inputs[] = {
-		{hsv, 3, {{_("Hue"), 360, 0, 360, 0.01}, {_("Saturation"), 100, 0, 100, 0.01}, {_("Value"), 100, 0, 100, 0.01}}},
-		{hsl, 3, {{_("Hue"), 360, 0, 360, 0.01}, {_("Saturation"), 100, 0, 100, 0.01}, {_("Lightness"), 100, 0, 100, 0.01}}},
-		{rgb, 3, {{_("Red"), 255, 0, 255, 0.01}, {_("Green"), 255, 0, 255, 0.01}, {_("Blue"), 255, 0, 255, 0.01}}},
-		{cmyk, 4, {{_("Cyan"), 255, 0, 255, 0.01}, {_("Magenta"), 255, 0, 255, 0.01}, {_("Yellow"), 255, 0, 255, 0.01}, {_("Key"), 255, 0, 255, 0.01}}},
-		{lab, 3, {{_("Lightness"), 1, 0, 100, 0.0001}, {"a", 1, -145, 145, 0.0001}, {"b", 1, -145, 145, 0.0001}}},
-		{lch, 3, {{_("Lightness"), 1, 0, 100, 0.0001}, {"Chroma", 1, 0, 100, 0.0001}, {"Hue", 1, 0, 360, 0.0001}}},
-	};
-
-	struct ComponentTypeInputs *comp_type_input = 0;
-	for (uint32_t i = 0; i < sizeof(comp_type_inputs) / sizeof(ComponentTypeInputs); i++){
-		if (comp_type_inputs[i].comp_type == component){
-			comp_type_input = &comp_type_inputs[i];
-			break;
-		}
-	}
-
-	if (comp_type_input){
-		for (int i = 0; i < comp_type_input->n_items; i++){
-			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(comp_type_input->items[i].name,0,0,0,0),0,1,i,i+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-			args->value[i] = gtk_spin_button_new_with_range(comp_type_input->items[i].min_value, comp_type_input->items[i].max_value, comp_type_input->items[i].step);
-			gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
-			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), raw_color.ma[i] * comp_type_input->items[i].raw_scale);
-			gtk_table_attach(GTK_TABLE(table), args->value[i],1,2,i,i+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-			if (i == component_id)
-				gtk_widget_grab_focus(args->value[i]);
-		}
-	}
-
-	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
-
-	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
-		if (comp_type_input){
-			for (int i = 0; i < comp_type_input->n_items; i++){
-				raw_color.ma[i] = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / comp_type_input->items[i].raw_scale;
-			}
-			gtk_color_component_set_raw_color(color_component, &raw_color);
-		}
-	}
-
-	gint width, height;
-	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-
-	gtk_widget_destroy(dialog);
-
-	dynv_system_release(args->params);
-	delete args;
-}
-
 static void color_component_input_clicked(GtkWidget *widget, int component_id, ColorPickerArgs* args){
-	color_component_input_dialog(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(widget), component_id, args);
+	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(widget), component_id, dynv_get_dynv(args->params, "component_edit"));
 }
 
 static void ser_decimal_get(GtkColorComponentComp component, int component_id, Color* color, const char *text){
@@ -804,7 +658,7 @@ static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 
 static void color_component_edit(GtkWidget *widget, ColorPickerArgs* args){
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
-	color_component_input_dialog(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id, args);
+	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id, dynv_get_dynv(args->params, "component_edit"));
 }
 
 static void destroy_comp_item(struct ColorCompItem *comp_item){
