@@ -19,6 +19,8 @@
 #include "ColorCell.h"
 #include "../ColorObject.h"
 
+#include <boost/math/special_functions/round.hpp>
+
 static void custom_cell_renderer_color_init(CustomCellRendererColor *cellcolor);
 
 static void custom_cell_renderer_color_class_init(CustomCellRendererColorClass *klass);
@@ -191,7 +193,7 @@ static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable
 	cairo_rectangle(cr, expose_area->x, expose_area->y, expose_area->width, expose_area->height);
 	Color c;
 	color_object_get_color(cellcolor->color, &c);
-	cairo_set_source_rgb(cr, c.rgb.red, c.rgb.green, c.rgb.blue);
+	cairo_set_source_rgb(cr, boost::math::round(c.rgb.red * 255.0) / 255.0, boost::math::round(c.rgb.green * 255.0) / 255.0, boost::math::round(c.rgb.blue * 255.0) / 255.0);
 	cairo_fill(cr);
 
 	cairo_destroy(cr);

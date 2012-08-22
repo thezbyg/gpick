@@ -21,6 +21,9 @@
 #include <string>
 #include <typeinfo>
 #include <iostream>
+
+#include <boost/math/special_functions/round.hpp>
+
 using namespace std;
 using namespace math;
 
@@ -132,7 +135,8 @@ void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
 			}else{
         color_copy(&style->color, &color);
 			}
-			cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+
+			cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 		}else{
 			cairo_set_font_size(cr, draw_rect.getHeight());
 			cairo_set_source_rgb(cr, 0, 0, 0);
@@ -168,7 +172,7 @@ void Fill::Draw(Context *context, const Rect2<float>& parent_rect ){
 	}else{
 		color_copy(&style->color, &color);
 	}
-	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
 	cairo_fill(cr);
 

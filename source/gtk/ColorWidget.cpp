@@ -21,6 +21,8 @@
 #include "../MathUtil.h"
 #include <math.h>
 
+#include <boost/math/special_functions/round.hpp>
+
 #include <iostream>
 using namespace std;
 
@@ -242,7 +244,8 @@ static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event) {
 		}else{
 			color_copy(&ns->color, &color);
 		}
-		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+
+		cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 		cairo_fill_preserve(cr);
 
 		if (GTK_WIDGET_HAS_FOCUS(widget)){

@@ -21,6 +21,8 @@
 #include "../MathUtil.h"
 #include <math.h>
 
+#include <boost/math/special_functions/round.hpp>
+
 #define GTK_SWATCH_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_SWATCH, GtkSwatchPrivate))
 
 G_DEFINE_TYPE (GtkSwatch, gtk_swatch, GTK_TYPE_DRAWING_AREA);
@@ -259,7 +261,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 		}else{
 			color_copy(&ns->color[i], &color);
 		}
-		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+		cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 
 		gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 25.5);
 		cairo_fill(cr);
@@ -270,7 +272,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	}else{
 		color_copy(&ns->color[ns->current_color], &color);
 	}
-	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	gtk_swatch_draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2 * PI) / edges), 25.5);
 	cairo_fill(cr);
 
@@ -280,7 +282,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 	}else{
 		color_copy(&ns->color[0], &color);
 	}
-	cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	gtk_swatch_draw_hexagon(cr, 0, 0, 25.5);
 	cairo_fill(cr);
 
@@ -299,7 +301,7 @@ static gboolean gtk_swatch_expose(GtkWidget *widget, GdkEventExpose *event) {
 		cairo_text_extents_t extends;
 		numb[0] = '0' + i;
 		cairo_text_extents(cr, numb, &extends);
-		cairo_set_source_rgb(cr, c.rgb.red, c.rgb.green, c.rgb.blue);
+		cairo_set_source_rgb(cr, boost::math::round(c.rgb.red * 255.0) / 255.0, boost::math::round(c.rgb.green * 255.0) / 255.0, boost::math::round(c.rgb.blue * 255.0) / 255.0);
 		cairo_move_to(cr, radius_multi * cos(rotation + i * (2 * PI) / edges) - extends.width / 2, radius_multi * sin(rotation + i * (2 * PI) / edges)
 				+ extends.height / 2);
 		cairo_show_text(cr, numb);
