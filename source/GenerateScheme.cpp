@@ -102,25 +102,29 @@ static SchemeType scheme_types[]={
 class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
-		const char *m_ident;
+		int32_t m_ident;
+                int32_t m_schemetype;
 	public:
 		GenerateSchemeColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 		}
 
-		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype){
 			m_ident = ident;
+                        m_schemetype = schemetype;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false) << " scheme generator " << m_ident;
+			m_stream << "scheme " << generate_scheme_get_scheme_type(m_schemetype)->name << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
 			return m_stream.str();
 		}
 };
 
 static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color, GtkWidget* color_widget);
+
+// XXX needs to have name assignment in here.
 
 static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 
@@ -387,10 +391,11 @@ static void add_color_to_palette(GtkWidget *color_widget, GenerateSchemeColorNam
 	Color c;
 	struct ColorObject *color_object;
 	string widget_ident;
+        int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
 	color_object = color_list_new_color_object(args->gs->colors, &c);
 	widget_ident = identify_color_widget(color_widget, args);
-	name_assigner.assign(color_object, &c, widget_ident.c_str());
+	name_assigner.assign(color_object, &c, atoi(widget_ident.c_str()+7), type);
 	color_list_add_color_object(args->gs->colors, color_object, 1);
 	color_object_release(color_object);
 }
@@ -578,6 +583,7 @@ static int source_get_color(GenerateSchemeArgs *args, ColorObject** color){
 	GenerateSchemeColorNameAssigner name_assigner(args->gs);
 	Color c;
 	string widget_ident;
+        int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	if (args->last_focused_color){
 		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
 		widget_ident = identify_color_widget(args->last_focused_color, args);
@@ -586,7 +592,7 @@ static int source_get_color(GenerateSchemeArgs *args, ColorObject** color){
 		widget_ident = identify_color_widget(args->colors[0], args);
 	}
 	*color = color_list_new_color_object(args->gs->colors, &c);
-	name_assigner.assign(*color, &c, widget_ident.c_str());
+	name_assigner.assign(*color, &c, atoi(widget_ident.c_str() + 7), type);
 	return 0;
 }
 

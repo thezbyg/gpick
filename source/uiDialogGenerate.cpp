@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
@@ -54,6 +55,28 @@ typedef struct ColorWheelType{
 	void (*hue_to_hsl)(double hue, Color* hsl);
 	void (*rgbhue_to_hue)(double rgbhue, double *hue);
 }ColorWheelType;
+
+class GenerateColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		int32_t m_ident;
+                int32_t m_schemetype;
+	public:
+		GenerateColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype){
+			m_ident = ident;
+                        m_schemetype = schemetype;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+			m_stream << "scheme " << generate_scheme_get_scheme_type(m_schemetype)->name << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
+			return m_stream.str();
+		}
+};
 
 static void rgb_hue2hue(double hue, Color* hsl){
 	hsl->hsl.hue = hue;
@@ -100,6 +123,7 @@ static void calc( DialogGenerateArgs *args, bool preview, int limit){
 	double chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
 	int32_t chaos_seed = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos_seed)));
 	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
+        GenerateColorNameAssigner name_assigner(args->gs);
 
 	if (!preview){
 		dynv_set_int32(args->params, "type", type);
@@ -158,6 +182,7 @@ static void calc( DialogGenerateArgs *args, bool preview, int limit){
 
 			color_hsl_to_rgb(&hsl, &r);
 			struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
+                        name_assigner.assign (color_object, &r, i, type);
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object_release(color_object);
 

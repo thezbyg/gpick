@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "DragDrop.h"
 #include "ColorList.h"
 #include "MathUtil.h"
@@ -47,7 +48,8 @@
 using namespace std;
 
 #define STORE_COLOR() struct ColorObject *color_object = color_list_new_color_object(color_list, &r); \
-	name_assigner.assign(color_object, &r, start_name.c_str(), end_name.c_str()); \
+	float mixfactor = step_i/(float)(steps-1); \
+	name_assigner.assign(color_object, &r, start_name.c_str(), end_name.c_str(), (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), (((step_i == 0 || step_i == steps - 1) && stage == 0) || (stage == 1 && step_i == steps - 1))); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object_release(color_object)
 
@@ -80,16 +82,20 @@ class BlendColorNameAssigner: public ToolColorNameAssigner {
 		stringstream m_stream;
 		const char *m_color_start;
 		const char *m_color_end;
+		int m_start_percent;
+		int m_end_percent;
 		bool m_is_color_item;
 	public:
 		BlendColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 			m_is_color_item = false;
 		}
 
-		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name){
+		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name, int start_percent, int end_percent, bool is_color_item){
 			m_color_start = start_color_name;
 			m_color_end = end_color_name;
-			m_is_color_item = false;
+			m_start_percent = start_percent;
+			m_end_percent = end_percent;
+			m_is_color_item = is_color_item;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
@@ -102,9 +108,13 @@ class BlendColorNameAssigner: public ToolColorNameAssigner {
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
 			if (m_is_color_item){
-				m_stream << color_names_get(m_gs->color_names, color, false) << " blend " << m_color_start;
+                            if (m_end_percent == 100){
+                                m_stream << m_color_end <<  " blend node"; 
+                            }else{
+                                m_stream << m_color_start <<  " blend node"; 
+                            }
 			}else{
-				m_stream << m_color_start << " blend " << m_color_end;
+				m_stream << m_color_start << " " << m_start_percent << " blend " << m_end_percent << " " << m_color_end;
 			}
 			return m_stream.str();
 		}

@@ -22,6 +22,7 @@
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
+#include "ToolColorNaming.h"
 #include "Internationalisation.h"
 
 #include <stdbool.h>
@@ -40,12 +41,54 @@ typedef struct DialogMixArgs{
 	GlobalState* gs;
 }DialogMixArgs;
 
-#define STORE_COLOR() s.str(""); \
-    s<<name_a<<" "<<(step_i/float(steps-1))*100<< " mix " <<100-(step_i/float(steps-1))*100<<" "<< name_b; \
-    struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
-    dynv_set_string(color_object->params, "name", s.str().c_str()); \
-    color_list_add_color_object(color_list, color_object, 1); \
-    color_object_release(color_object)
+class MixColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_color_start;
+		const char *m_color_end;
+		int m_start_percent;
+		int m_end_percent;
+                int m_is_node;
+	public:
+		MixColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name, int start_percent, int end_percent, bool is_node){
+			m_color_start = start_color_name;
+			m_color_end = end_color_name;
+			m_start_percent = start_percent;
+			m_end_percent = end_percent;
+                        m_is_node = is_node;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *item_name){
+			m_color_start = item_name;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+                        if (m_is_node){
+                            if (m_end_percent == 100){
+                                m_stream << m_color_end << " mix node";
+                            }else{
+                                m_stream << m_color_start << " mix node";
+                            }
+                            
+                        }else{
+                            m_stream << m_color_start << " " << m_start_percent << " mix " << m_end_percent << " " << m_color_end;
+                        }
+			return m_stream.str();
+		}
+};
+
+
+#define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
+    float mixfactor = step_i/(float)(steps-1); \
+    name_assigner.assign(color_object, &r, name_a, name_b, (int)(mixfactor*100), (int)((1.0 - mixfactor)*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
+	color_list_add_color_object(color_list, color_object, 1); \
+	color_object_release(color_object)
 
 #define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
 	STORE_COLOR()
@@ -59,6 +102,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 	bool with_endpoints=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_endpoints));
 	gint start_step = 0;
 	gint max_step = steps;
+	MixColorNameAssigner name_assigner(args->gs);
 
 	if (!preview){
 		dynv_set_int32(args->params, "type", type);

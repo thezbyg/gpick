@@ -20,6 +20,7 @@
 #include "../uiUtilities.h"
 #include "../uiListPalette.h"
 #include "../GlobalStateStruct.h"
+#include "../ToolColorNaming.h"
 #include "../DynvHelpers.h"
 #include "../Internationalisation.h"
 
@@ -70,8 +71,8 @@ typedef struct PaletteFromImageArgs{
 	string filename;
 	uint32_t n_colors;
 
-    string previuos_filename;
-    Node *previuos_node;
+    string previous_filename;
+    Node *previous_node;
 
 	struct ColorList *color_list;
 	struct ColorList *preview_color_list;
@@ -79,6 +80,29 @@ typedef struct PaletteFromImageArgs{
 	struct dynvSystem *params;
 	GlobalState* gs;
 }PaletteFromImageArgs;
+
+class PaletteColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+		const char *m_filename;
+		int m_index;
+	public:
+		PaletteColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+			m_index = 0;
+		}
+
+		void assign(struct ColorObject *color_object, Color *color, const char *filename, const int index){
+			m_filename = filename;
+                        m_index = index;
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+                        m_stream <<  m_filename << " #" << m_index;
+			return m_stream.str();
+		}
+};
 
 /**
  * Allocate and initialize a new node with specified parent
@@ -307,17 +331,17 @@ static void leaf_cb(Node *node, void *userdata){
 
 static Node* process_image(PaletteFromImageArgs *args, const char *filename, Node* node){
 
-	if (args->previuos_filename == filename){
-		if (args->previuos_node)
-			return node_copy(args->previuos_node, 0);
+	if (args->previous_filename == filename){
+		if (args->previous_node)
+			return node_copy(args->previous_node, 0);
 		else
 			return 0;
 	}
 
-	args->previuos_filename = filename;
-	if (args->previuos_node){
-		node_delete(args->previuos_node);
-		args->previuos_node = 0;
+	args->previous_filename = filename;
+	if (args->previous_node){
+		node_delete(args->previous_node);
+		args->previous_node = 0;
 	}
 
 	GError *error = NULL;
@@ -345,7 +369,7 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 
 	Color color;
 
-	args->previuos_node = node_new(0);
+	args->previous_node = node_new(0);
 
 	for (int y = 0; y < height; y++){
 		ptr = image_data + rowstride * y;
@@ -355,7 +379,7 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 			color.xyz.y = ptr[1] / 255.0;
 			color.xyz.z = ptr[2] / 255.0;
 
-			node_update(args->previuos_node, &color, &cube, 5);
+			node_update(args->previous_node, &color, &cube, 5);
 
 			ptr += channels;
 		}
@@ -363,9 +387,9 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 
 	g_object_unref(pixbuf);
 
-	node_reduce(args->previuos_node, 200);
+	node_reduce(args->previous_node, 200);
 
-	return node_copy(args->previuos_node, 0);
+	return node_copy(args->previous_node, 0);
 }
 
 
@@ -399,6 +423,9 @@ static void save_settings(PaletteFromImageArgs *args){
 static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 	Node *root_node = 0;
+        int index = 0;
+        gchar *name = g_path_get_basename(args->filename.c_str());
+	PaletteColorNameAssigner name_assigner(args->gs);
     if (!args->filename.empty())
 		root_node = process_image(args, args->filename.c_str(), root_node);
 
@@ -419,10 +446,10 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
 		struct ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
-		string name = color_names_get(args->gs->color_names, &(*i), dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-		dynv_set_string(color_object->params, "name", name.c_str());
+                name_assigner.assign(color_object, &(*i), name, index);
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object_release(color_object);
+                index++;
 	}
 
 }
@@ -441,7 +468,7 @@ static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 
 static void destroy_cb(GtkWidget* widget, PaletteFromImageArgs *args){
 
-	if (args->previuos_node) node_delete(args->previuos_node);
+	if (args->previous_node) node_delete(args->previous_node);
 
 	color_list_destroy(args->preview_color_list);
 	dynv_system_release(args->params);
@@ -478,10 +505,10 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	PaletteFromImageArgs *args = new PaletteFromImageArgs;
 
-    args->previuos_filename = "";
+    args->previous_filename = "";
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.tools.palette_from_image");
-	args->previuos_node = 0;
+	args->previous_node = 0;
 
 	GtkWidget *table, *table_m, *widget;
 

@@ -75,7 +75,7 @@ class LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false) << " layout preview " << m_ident;
+			m_stream << "layout preview " << m_ident << " [" << color_names_get(m_gs->color_names, color, false) << "]";
 			return m_stream.str();
 		}
 };

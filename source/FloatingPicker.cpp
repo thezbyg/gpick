@@ -27,9 +27,11 @@
 #include "ColorPicker.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "ToolColorNaming.h"
 #include <gdk/gdkkeysyms.h>
 
 #include <string>
+#include <sstream>
 
 using namespace math;
 using namespace std;
@@ -50,6 +52,24 @@ typedef struct FloatingPickerArgs{
 	bool release_mode;
 	bool click_mode;
 }FloatingPickerArgs;
+
+class PickerColorNameAssigner: public ToolColorNameAssigner {
+	protected:
+		stringstream m_stream;
+	public:
+		PickerColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		}
+
+		void assign(struct ColorObject *color_object, Color *color){
+			ToolColorNameAssigner::assign(color_object, color);
+		}
+
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+			m_stream.str("");
+                        m_stream << color_names_get(m_gs->color_names, color, false);
+			return m_stream.str();
+		}
+};
 
 static void get_color_sample(FloatingPickerArgs *args, bool updateWidgets, Color* c){
 
@@ -227,8 +247,8 @@ static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, Floa
 
 			if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.add_on_release", false)){
 
-				string name = color_names_get(args->gs->color_names, &c, dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true));
-				dynv_set_string(color_object->params, "name", name.c_str());
+                                PickerColorNameAssigner name_assigner(args->gs);
+                                name_assigner.assign(color_object, &c);
 				color_list_add_color_object(args->gs->colors, color_object, 1);
 
 			}
