@@ -86,7 +86,7 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 
 #define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
     float mixfactor = step_i/(float)(steps-1); \
-    name_assigner.assign(color_object, &r, name_a, name_b, (int)(mixfactor*100), (int)((1.0 - mixfactor)*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
+    name_assigner.assign(color_object, &r, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object_release(color_object)
 
