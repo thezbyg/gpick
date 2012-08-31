@@ -19,6 +19,8 @@
 #ifndef VECTOR2_H_
 #define VECTOR2_H_
 
+#include <math.h>
+
 namespace math{
 
 /** \class Vec2
@@ -72,6 +74,10 @@ public:
 		if (lhs.x != rhs.x) return false;
 		if (lhs.y != rhs.y) return false;
 		return true;
+	};
+
+	static T distance(const Vec2&a, const Vec2& b){
+    	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
 	};
 
 	T x;

@@ -268,6 +268,7 @@ static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, Floa
 static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, FloatingPickerArgs *args){
 
 	GdkEventButton event2;
+	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
 	switch(event->keyval){
 	case GDK_Escape:
@@ -277,6 +278,18 @@ static gboolean key_up_cb (GtkWidget *widget, GdkEventKey *event, FloatingPicker
 		args->click_mode = false;
 		button_release_cb(widget, &event2, args);
 		return TRUE;
+		break;
+	case GDK_m:
+		{
+			int x, y;
+			gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
+			math::Vec2<int> position(x, y);
+			if ((event->state&modifiers)==GDK_CONTROL_MASK){
+				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
+			}else{
+				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 0, position);
+			}
+		}
 		break;
 	default:
 		if (color_picker_key_up(args->color_source, event)){

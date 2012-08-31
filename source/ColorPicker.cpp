@@ -426,8 +426,6 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 }
 
 
-
-
 static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
@@ -436,6 +434,19 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
 	switch(event->keyval)
 	{
+		case GDK_m:
+			{
+				int x, y;
+				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
+				math::Vec2<int> position(x, y);
+				if ((event->state&modifiers)==GDK_CONTROL_MASK){
+					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 1, position);
+				}else{
+					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 0, position);
+				}
+			}
+			break;
+
 		case GDK_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 
