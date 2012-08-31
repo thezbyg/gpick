@@ -313,8 +313,10 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
 				if (name){
 					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-          tran->deserialize(config_array[i]);
-					chain->add(tran);
+					if (tran){
+						tran->deserialize(config_array[i]);
+						chain->add(tran);
+					}
 				}
 			}
 

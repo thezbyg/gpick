@@ -103,14 +103,16 @@ static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 		gtk_tree_model_get(model, &iter, AVAILABLE_TRANSFORMATIONS_NAME, &name, -1);
 
 		boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-		transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
-		chain->add(tran);
+		if (tran){
+			transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+			chain->add(tran);
 
-		configure_transformation(args, tran.get());
+			configure_transformation(args, tran.get());
 
-		model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
-		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-		tranformations_update_row(model, &iter, tran.get(), args);
+			model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
+			gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+			tranformations_update_row(model, &iter, tran.get(), args);
+		}
 	}
 }
 
@@ -381,8 +383,10 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 			const char *name = dynv_get_string_wd(config_array[i], "name", 0);
 			if (name){
 				boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-				tran->deserialize(config_array[i]);
-				chain->add(tran);
+				if (tran){
+					tran->deserialize(config_array[i]);
+					chain->add(tran);
+				}
 			}
 		}
 
