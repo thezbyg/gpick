@@ -16,44 +16,52 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Factory.h"
+#ifndef TRANSFORMATION_QUANTIZATION_H_
+#define TRANSFORMATION_QUANTIZATION_H_
 
-#include "ColorVisionDeficiency.h"
-#include "GammaModification.h"
-#include "Quantization.h"
-
-#include <string.h>
+#include "Transformation.h"
 
 namespace transformation {
 
-boost::shared_ptr<Transformation> Factory::create(const char *type)
-{
-	if (strcmp(ColorVisionDeficiency::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new ColorVisionDeficiency());
-	}
-	if (strcmp(GammaModification::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new GammaModification());
-	}
-	if (strcmp(Quantization::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new Quantization());
-	}
-	return boost::shared_ptr<Transformation>();
+class Quantization;
+
+class QuantizationConfig: public Configuration{
+	protected:
+		GtkWidget *main;
+		GtkWidget *value;
+		GtkWidget *clip_top;
+	public:
+		QuantizationConfig(Quantization &transformation);
+		virtual ~QuantizationConfig();
+
+		virtual GtkWidget* getWidget();
+		virtual void applyConfig(dynvSystem *dynv);
+};
+
+class Quantization: public Transformation{
+	public:
+		static const char *getName();
+		static const char *getReadableName();
+	protected:
+		float value;
+		bool clip_top;
+		virtual void apply(Color *input, Color *output);
+	public:
+		Quantization();
+		Quantization(float value);
+		virtual ~Quantization();
+
+		virtual void serialize(struct dynvSystem *dynv);
+		virtual void deserialize(struct dynvSystem *dynv);
+
+		virtual boost::shared_ptr<Configuration> getConfig();
+
+	friend class QuantizationConfig;
+};
+
 }
 
-std::vector<Factory::TypeInfo> Factory::getAllTypes()
-{
-	std::vector<TypeInfo> result;
-	result.push_back(TypeInfo(ColorVisionDeficiency::getName(), ColorVisionDeficiency::getReadableName()));
-	result.push_back(TypeInfo(GammaModification::getName(), GammaModification::getReadableName()));
-	result.push_back(TypeInfo(Quantization::getName(), Quantization::getReadableName()));
-	return result;
-}
+#endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */
 
-Factory::TypeInfo::TypeInfo(const char *name_, const char *human_name_):
-	name(name_), human_name(human_name_)
-{
-}
-
-}
 
 
