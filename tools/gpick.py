@@ -125,6 +125,7 @@ class GpickEnvironment(SConsEnvironment):
 			obj = self.Install(path, f)
 			for i in obj:
 				self.AddPostAction(i, Chmod(i, perm))
+		return dir
 
 	InstallProgram = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0755)
 	InstallData = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0644)
