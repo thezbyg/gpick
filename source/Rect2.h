@@ -64,21 +64,54 @@ public:
 		return *this;
 	};
 
-	const Rect2 impose(const Rect2 &rect){
-		x1 = rect.x1 + x1 * rect.getWidth();
-		y1 = rect.y1 + y1 * rect.getHeight();
-
-		x2 = rect.x1 + x2 * rect.getWidth();
-		y2 = rect.y1 + y2 * rect.getHeight();
-
-		return *this;
+	Rect2 impose(const Rect2 &rect) const{
+		Rect2 r;
+		r.x1 = rect.x1 + x1 * rect.getWidth();
+		r.y1 = rect.y1 + y1 * rect.getHeight();
+		r.x2 = rect.x1 + x2 * rect.getWidth();
+		r.y2 = rect.y1 + y2 * rect.getHeight();
+		r.empty = false;
+		return r;
 	}
 
-	bool isInside(const T &x, const T &y){
+	bool isInside(const T &x, const T &y) const{
 		if (x<x1 || x>x2 || y<y1 || y>y2)
 			return false;
 		else
 			return true;
+	}
+
+	bool isInside(const Rect2 &r) const{
+		if (empty || r.empty) return false;
+		if (x1 < r.x1 || x2 > r.x2) return false;
+		if (y1 < r.y1 || y2 > r.y2) return false;
+		return true;
+	}
+
+	Rect2 positionInside(const Rect2& rect) const{
+		Rect2 r;
+		r.empty = false;
+		if (rect.x1 < x1){
+			r.x1 = x1;
+			r.x2 = x1 + rect.getWidth();
+		}else if (rect.x2 > x2){
+			r.x1 = x2 - rect.getWidth();
+			r.x2 = x2;
+		}else{
+			r.x1 = rect.x1;
+			r.x2 = rect.x2;
+		}
+		if (rect.y1 < y1){
+			r.y1 = y1;
+			r.y2 = y1 + rect.getHeight();
+		}else if (rect.y2 > y2){
+			r.y1 = y2 - rect.getHeight();
+			r.y2 = y2;
+		}else{
+			r.y1 = rect.y1;
+			r.y2 = rect.y2;
+		}
+		return r;
 	}
 
 	bool isEmpty() const{
@@ -96,6 +129,12 @@ public:
 	};
 	T getHeight() const{
 		return y2-y1;
+	};
+	T getCenterX() const{
+		return (x1 + x2) / 2;
+	};
+	T getCenterY() const{
+		return (y1 + y2) / 2;
 	};
 
 private:

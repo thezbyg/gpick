@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
+#include <vector>
 using namespace std;
 
 #define GTK_ZOOMED_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
@@ -262,7 +263,7 @@ void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, mat
 	*rect = math::Rect2<int>(left, top, right, bottom);
 }
 
-math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed* zoomed, math::Vec2<int>& position){
+math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed* zoomed, const math::Vec2<int>& position){
 	GtkZoomedPrivate *ns=GTK_ZOOMED_GET_PRIVATE(zoomed);
 
 	gint32 x = ns->pointer.x, y = ns->pointer.y;
@@ -419,59 +420,111 @@ static gboolean gtk_zoomed_expose (GtkWidget *widget, GdkEventExpose *event){
 	layout = pango_cairo_create_layout(cr);
 
 	pango_font_description_set_family(font_description, "sans");
-	pango_font_description_set_absolute_size(font_description, 10 * PANGO_SCALE);
+	pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
 	pango_layout_set_font_description(layout, font_description);
 
 	math::Rect2<int> area_rect;
+	math::Rect2<int> widget_rect = math::Rect2<int>(5, 5, ns->width_height - 5, ns->width_height - 5);
 	gtk_zoomed_get_current_screen_rect(GTK_ZOOMED(widget), &area_rect);
 
   cairo_rectangle(cr, widget->style->xthickness, widget->style->ythickness, ns->width_height - widget->style->xthickness * 2, ns->width_height - widget->style->ythickness * 2);
 	cairo_clip(cr);
 
+	vector<math::Vec2<int> > relative_positions(2);
+
 	bool draw_distance = true;
 	for (int i = 0; i < 2; i++){
 		if (ns->marks[i].valid){
-			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), ns->marks[i].position);
-
-			cairo_set_source_rgba(cr, 0,0,0,1);
-			cairo_arc(cr, relative_position.x, relative_position.y, 2, -PI, PI);
-			cairo_fill(cr);
-
-			stringstream ss;
-			ss << ns->marks[i].position.x << "x" << ns->marks[i].position.y;
-
-			pango_layout_set_text(layout, ss.str().c_str(), -1);
-			pango_cairo_update_layout(cr, layout);
-
-			cairo_move_to(cr, relative_position.x, relative_position.y);
-			pango_cairo_show_layout(cr, layout);
+			relative_positions[i] = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), ns->marks[i].position);
 		}else{
 			draw_distance = false;
 		}
 	}
-	if (draw_distance){
-		double distance = math::Vec2<double>::distance(
-				math::Vec2<double>(ns->marks[0].position.x, ns->marks[0].position.y),
-				math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
-				);
-		math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
 
-		cairo_set_source_rgba(cr, 0,0,0,1);
-		for (int i = 0; i < 2; i++){
-			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), ns->marks[i].position);
-			cairo_line_to(cr, relative_position.x, relative_position.y);
+  for (int layer = 0; layer != 2; layer++){
+		if (draw_distance){
+			cairo_move_to(cr, relative_positions[0].x, relative_positions[0].y);
+			for (int i = 1; i < 2; i++){
+				cairo_line_to(cr, relative_positions[i].x, relative_positions[i].y);
+			}
+			if (layer == 0){
+				cairo_set_source_rgba(cr, 0, 0, 0, 1);
+				cairo_set_line_width(cr, 3);
+			}else{
+				cairo_set_source_rgba(cr, 1, 1, 1, 1);
+				cairo_set_line_width(cr, 1);
+			}
+			cairo_stroke(cr);
 		}
-		cairo_stroke(cr);
+		for (int i = 0; i < 2; i++){
+			if (ns->marks[i].valid){
+				cairo_arc(cr, relative_positions[i].x, relative_positions[i].y, 2, -PI, PI);
 
-		stringstream ss;
-		ss << fixed << setprecision(1) << distance;
+				if (layer == 0){
+					cairo_set_source_rgba(cr, 0, 0, 0, 1);
+					cairo_set_line_width(cr, 2);
+					cairo_stroke(cr);
+				}else{
+					cairo_set_source_rgba(cr, 1, 1, 1, 1);
+					cairo_fill(cr);
+				}
 
-		pango_layout_set_text(layout, ss.str().c_str(), -1);
-		pango_cairo_update_layout(cr, layout);
+				stringstream ss;
+				ss << ns->marks[i].position.x << "x" << ns->marks[i].position.y;
 
-		math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
-		cairo_move_to(cr, relative_position.x, relative_position.y);
-		pango_cairo_show_layout(cr, layout);
+				pango_layout_set_text(layout, ss.str().c_str(), -1);
+				pango_cairo_update_layout(cr, layout);
+
+				cairo_move_to(cr, relative_positions[i].x + 5, relative_positions[i].y);
+				if (layer == 0){
+					cairo_set_source_rgba(cr, 0, 0, 0, 1);
+					pango_cairo_layout_path(cr, layout);
+					cairo_set_line_width(cr, 1.5);
+					cairo_stroke(cr);
+				}else{
+					cairo_set_source_rgba(cr, 1, 1, 1, 1);
+					pango_cairo_show_layout(cr, layout);
+				}
+			}
+		}
+	}
+  for (int layer = 0; layer != 2; layer++){
+		if (draw_distance){
+			double distance = math::Vec2<double>::distance(
+					math::Vec2<double>(ns->marks[0].position.x, ns->marks[0].position.y),
+					math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
+					);
+			math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
+
+			stringstream ss;
+			ss << fixed << setprecision(1) << distance << endl << 1 + abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + abs(ns->marks[0].position.y - ns->marks[1].position.y);
+			pango_layout_set_text(layout, ss.str().c_str(), -1);
+			pango_cairo_update_layout(cr, layout);
+
+
+			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
+
+			PangoRectangle rect;
+			pango_layout_get_pixel_extents(layout, NULL, &rect);
+			int text_width = rect.width;
+			int text_height = rect.height;
+
+			math::Rect2<int> text_rect(relative_position.x + 10, relative_position.y, relative_position.x + 10 + text_width, relative_position.y + text_height);
+			if (!text_rect.isInside(widget_rect))
+				text_rect = widget_rect.positionInside(text_rect);
+
+			cairo_move_to(cr, text_rect.getX(), text_rect.getY());
+
+			if (layer == 0){
+				cairo_set_source_rgba(cr, 0, 0, 0, 1);
+				pango_cairo_layout_path(cr, layout);
+				cairo_set_line_width(cr, 1.5);
+				cairo_stroke(cr);
+			}else{
+				cairo_set_source_rgba(cr, 1, 1, 1, 1);
+				pango_cairo_show_layout(cr, layout);
+			}
+		}
 	}
 
 	g_object_unref(layout);
