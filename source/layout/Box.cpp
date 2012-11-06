@@ -40,19 +40,11 @@ void Box::SetStyle(Style *_style){
 }
 
 void Box::Draw(Context *context, const Rect2<float>& parent_rect ){
-	/*Rect2<float> draw_rect = rect;
-	draw_rect.impose( parent_rect );
-
-	cairo_set_source_rgb(cr, 1, 1, 1);
-	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
-	cairo_fill(cr);*/
-
 	DrawChildren(context, parent_rect);
 }
 
 void Box::DrawChildren(Context *context, const math::Rect2<float>& parent_rect ){
-	Rect2<float> child_rect = rect;
-	child_rect.impose( parent_rect );
+	Rect2<float> child_rect = rect.impose( parent_rect );
 
 	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
 		(*i)->Draw(context, child_rect);
@@ -116,8 +108,7 @@ Box* Box::GetBoxAt(const Vec2<float>& point){
 }
 
 void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
-	Rect2<float> draw_rect = rect;
-	draw_rect.impose( parent_rect );
+	Rect2<float> draw_rect = rect.impose( parent_rect );
 
 	cairo_t *cr = context->getCairo();
 
@@ -161,8 +152,7 @@ void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
 }
 
 void Fill::Draw(Context *context, const Rect2<float>& parent_rect ){
-	Rect2<float> draw_rect = rect;
-	draw_rect.impose( parent_rect );
+	Rect2<float> draw_rect = rect.impose( parent_rect );
 
 	cairo_t *cr = context->getCairo();
 
