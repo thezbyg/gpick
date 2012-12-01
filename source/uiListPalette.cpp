@@ -821,6 +821,29 @@ static void execute_callback(GtkListStore *store, GtkTreeIter *iter, ListPalette
 	}
 }
 
+static void execute_replace_callback(GtkListStore *store, GtkTreeIter *iter, ListPaletteArgs* args, PaletteListReplaceCallback callback, void *userdata){
+
+	struct ColorObject *color_object, *orig_color_object;
+	gtk_tree_model_get(GTK_TREE_MODEL(store), iter, 0, &color_object, -1);
+	orig_color_object = color_object;
+
+	color_object_ref(color_object);
+	PaletteListCallbackReturn r = callback(&color_object, userdata);
+	if (color_object != orig_color_object){
+		gtk_list_store_set(store, iter, 0, color_object, -1);
+	}
+	switch (r){
+		case PALETTE_LIST_CALLBACK_UPDATE_NAME:
+			palette_list_entry_update_name(store, iter, color_object);
+			break;
+		case PALETTE_LIST_CALLBACK_UPDATE_ROW:
+			palette_list_entry_update_row(store, iter, color_object, args);
+			break;
+		case PALETTE_LIST_CALLBACK_NO_UPDATE:
+			break;
+	}
+	color_object_release(color_object);
+}
 
 gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata){
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
@@ -863,7 +886,30 @@ gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback call
 	return 0;
 }
 
-gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata){
+gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata){
+	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	GtkListStore *store;
+	GtkTreeIter iter;
+
+	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
+
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *i = list;
+
+	while (i) {
+		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
+		execute_replace_callback(store, &iter, args, callback, userdata);
+		i = g_list_next(i);
+	}
+
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(list);
+	return 0;
+}
+
+gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata)
+{
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
 	GtkListStore *store;

@@ -60,14 +60,14 @@ class GenerateColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
 		int32_t m_ident;
-                int32_t m_schemetype;
+		int32_t m_schemetype;
 	public:
 		GenerateColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 		}
 
 		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype){
 			m_ident = ident;
-                        m_schemetype = schemetype;
+			m_schemetype = schemetype;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
@@ -117,7 +117,7 @@ const ColorWheelType color_wheel_types[]={
 
 
 static void calc( DialogGenerateArgs *args, bool preview, int limit){
-	int32_t type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
+	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	int32_t color_count = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors)));
 	double chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));

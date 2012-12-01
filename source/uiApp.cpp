@@ -40,6 +40,7 @@
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
 #include "uiDialogAutonumber.h"
+#include "uiDialogSort.h"
 #include "uiTransformations.h"
 
 #include "tools/PaletteFromImage.h"
@@ -1287,6 +1288,27 @@ static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 	}
 }
 
+
+typedef struct ReplaceState{
+	std::list<struct ColorObject*>::reverse_iterator iter;
+} ReplaceState;
+
+static PaletteListCallbackReturn color_list_reverse_replace(struct ColorObject** color_object, void *userdata)
+{
+	ReplaceState *state = reinterpret_cast<ReplaceState*>(userdata);
+	*color_object = color_object_ref(*(state->iter));
+	state->iter++;
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs* args) {
+	struct ColorList *color_list = color_list_new(NULL);
+	ReplaceState state;
+	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
+	state.iter = color_list->colors.rbegin();
+	palette_list_foreach_selected(args->color_list, color_list_reverse_replace, &state);
+}
+
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata){
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
 	return 0;
@@ -1319,6 +1341,32 @@ static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args) {
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_generate_show(GTK_WINDOW(args->window), color_list, args->gs);
 	color_list_destroy(color_list);
+}
+
+typedef struct GroupAndSortState{
+	std::list<struct ColorObject*>::iterator iter;
+} GroupAndSortState;
+
+static PaletteListCallbackReturn color_list_group_and_sort_replace(struct ColorObject** color_object, void *userdata)
+{
+	GroupAndSortState *state = reinterpret_cast<GroupAndSortState*>(userdata);
+	*color_object = color_object_ref(*(state->iter));
+	state->iter++;
+	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
+}
+
+static void palette_popup_menu_group_and_sort(GtkWidget *widget, AppArgs* args)
+{
+	struct ColorList *color_list = color_list_new(NULL);
+	struct ColorList *sorted_color_list = color_list_new(NULL);
+	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
+	if (dialog_sort_show(GTK_WINDOW(args->window), color_list, sorted_color_list, args->gs)){
+		GroupAndSortState state;
+		state.iter = sorted_color_list->colors.begin();
+		palette_list_foreach_selected(args->color_list, color_list_group_and_sort_replace, &state);
+	}
+	color_list_destroy(color_list);
+	color_list_destroy(sorted_color_list);
 }
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, AppArgs *args) {
@@ -1388,6 +1436,20 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
     gtk_widget_set_sensitive(item, (selected_count >= 1));
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+
+    item = gtk_menu_item_new_with_mnemonic(_("Re_verse"));
+    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+    g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_reverse), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_v, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+    gtk_widget_set_sensitive(item, (selected_count >= 2));
+
+    item = gtk_menu_item_new_with_mnemonic(_("Group and _sort..."));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_group_and_sort), args);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_g, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+    gtk_widget_set_sensitive(item, (selected_count >= 2));
+
+		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
     item = gtk_menu_item_new_with_image (_("_Remove"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -1484,6 +1546,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 					}
 				}
 				color_list_destroy(color_list);
+				return true;
 			}
 			return false;
 			break;
@@ -1510,8 +1573,16 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 					color_object_release(color_object);
 				}
 				return true;
+			}else{
+				palette_popup_menu_reverse(widget, args);
+				return true;
 			}
 			return false;
+			break;
+
+		case GDK_g:
+			palette_popup_menu_group_and_sort(widget, args);
+			return true;
 			break;
 
 		case GDK_Delete:
@@ -1521,16 +1592,19 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 		case GDK_a:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_autonumber(widget, args);
+				return true;
 			}
 			break;
 		case GDK_e:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_clear_names(widget, args);
+				return true;
 			}
 			break;
 		case GDK_n:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_autoname(widget, args);
+				return true;
 			}
 			break;
 		default:
