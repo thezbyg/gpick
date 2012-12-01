@@ -1233,6 +1233,7 @@ typedef struct AutonumberState{
 	std::string name;
 	uint32_t index;
 	uint32_t nplaces;
+	bool decreasing;
 	bool append;
 }AutonumberState;
 
@@ -1245,7 +1246,14 @@ static PaletteListCallbackReturn color_list_autonumber(struct ColorObject* color
 	ss << state->name << "-";
 	ss.width(state->nplaces);
 	ss.fill('0');
-	ss << right << state->index++;
+	if (state->decreasing){
+		ss << right << state->index;
+		state->index--;
+	}
+	else{
+		ss << right << state->index++;
+	}
+
 	dynv_set_string(color_object->params, "name", ss.str().c_str());
 	return PALETTE_LIST_CALLBACK_UPDATE_NAME;
 }
@@ -1271,6 +1279,7 @@ static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 		state.name = dynv_get_string_wd(params, "name", "autonum");
 		state.nplaces = dynv_get_int32_wd(params, "nplaces", 1);
 		state.index = dynv_get_int32_wd(params, "startindex", 1);
+		state.decreasing = dynv_get_bool_wd(params, "decreasing", true);
 		state.append = dynv_get_bool_wd(params, "append", true);
 
 		palette_list_foreach_selected(args->color_list, color_list_autonumber, &state);

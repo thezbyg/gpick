@@ -36,7 +36,9 @@ typedef struct DialogAutonumberArgs{
 	GtkWidget *name;
 	GtkWidget *nplaces;
 	GtkWidget *startindex;
+	GtkWidget *toggle_decreasing;
 	GtkWidget *toggle_append;
+	uint32_t selected_count;
 
 	GtkWidget *sample;
 
@@ -45,8 +47,8 @@ typedef struct DialogAutonumberArgs{
 }DialogAutonumberArgs;
 
 static int default_nplaces (uint32_t selected_count){
-	int places = 1;
-	int ncolors = selected_count;
+	uint32_t places = 1;
+	uint32_t ncolors = selected_count;
 	// technically this can be implemented as `places = 1 + (int) (trunc(log (ncolors,10)));`
 	// however I don't know the exact function names, and this has minimal dependencies and acceptable speed.
 	while (ncolors > 10) {
@@ -57,7 +59,7 @@ static int default_nplaces (uint32_t selected_count){
 }
 
 static void update(GtkWidget *widget, DialogAutonumberArgs *args ){
-	int nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
+	uint32_t nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
 	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
 	const char *name = gtk_entry_get_text(GTK_ENTRY(args->name));
 	stringstream ss;
@@ -65,12 +67,33 @@ static void update(GtkWidget *widget, DialogAutonumberArgs *args ){
 	ss.fill('0');
 	ss.width(nplaces);
 	ss << right << startindex;
-	// update sample
 	gtk_entry_set_text(GTK_ENTRY(args->sample), ss.str().c_str());
 	dynv_set_string (args->params, "name", name);
 	dynv_set_bool (args->params, "append", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_append)));
+	dynv_set_bool (args->params, "decreasing", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing)));
 	dynv_set_int32 (args->params, "nplaces", nplaces);
 	dynv_set_int32 (args->params, "startindex", startindex);
+}
+
+static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args ){
+	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
+	int newindex;
+	gdouble min, max;
+	gtk_spin_button_get_range(GTK_SPIN_BUTTON(args->startindex), &min, &max);
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))){
+		if (startindex == 0){
+			newindex = args->selected_count;
+		}else{
+			newindex = args->selected_count + (startindex - 1);
+		}
+		min = args->selected_count;
+	}else{
+		newindex = (startindex + 1) - args->selected_count;
+		min = 1;
+	}
+	gtk_spin_button_set_range(GTK_SPIN_BUTTON(args->startindex), min, max);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->startindex), newindex);
+	update(widget, args);
 }
 
 int dialog_autonumber_show(GtkWindow* parent, uint32_t selected_count, GlobalState* gs){
@@ -78,6 +101,7 @@ DialogAutonumberArgs *args = new DialogAutonumberArgs;
     int return_val;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->params, "gpick.autonumber");
+	args->selected_count = selected_count;
 
 	GtkWidget *table;
 
@@ -117,6 +141,12 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->startindex), dynv_get_int32_wd(args->params, "startindex", 1));
 	gtk_table_attach(GTK_TABLE(table), args->startindex,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT (args->startindex), "value-changed", G_CALLBACK (update), args);
+	table_y++;
+
+	args->toggle_decreasing = gtk_check_button_new_with_mnemonic (_("_Decreasing"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing), dynv_get_bool_wd(args->params, "decreasing", false));
+	gtk_table_attach(GTK_TABLE(table), args->toggle_decreasing,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
+	g_signal_connect (G_OBJECT(args->toggle_decreasing), "toggled", G_CALLBACK (update_startindex), args);
 	table_y++;
 
 	args->toggle_append = gtk_check_button_new_with_mnemonic (_("_Append"));
