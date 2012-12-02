@@ -1437,7 +1437,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
-    item = gtk_menu_item_new_with_mnemonic(_("Re_verse"));
+    item = gtk_menu_item_new_with_mnemonic(_("R_everse"));
     gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
     g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (palette_popup_menu_reverse), args);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_v, GdkModifierType(0), GTK_ACCEL_VISIBLE);
