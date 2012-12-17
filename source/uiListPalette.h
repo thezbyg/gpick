@@ -25,7 +25,7 @@
 #include "GlobalState.h"
 
 
-GtkWidget* palette_list_new(GlobalState* gs);
+GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label);
 void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
 
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);

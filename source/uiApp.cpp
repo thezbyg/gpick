@@ -1847,6 +1847,7 @@ AppArgs* app_create_main(const AppOptions *options){
 	statusbar=gtk_statusbar_new();
 	dynv_set_pointer(args->gs->params, "StatusBar", statusbar);
 
+
 	gtk_paned_pack1(GTK_PANED(vpaned), notebook, false, false);
 
 	if (color_list_visible){
@@ -1901,7 +1902,9 @@ AppArgs* app_create_main(const AppOptions *options){
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Lay_out preview")));
 		gtk_widget_show(widget);
 
-		widget = palette_list_new(args->gs);
+
+		GtkWidget *count_label = gtk_label_new("");
+		widget = palette_list_new(args->gs, count_label);
 		args->color_list = widget;
 		gtk_widget_show(widget);
 
@@ -1950,6 +1953,9 @@ AppArgs* app_create_main(const AppOptions *options){
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
+
+	gtk_box_pack_end(GTK_BOX(statusbar), count_label, false, false, 0);
+	gtk_widget_show_all(count_label);
 
 	widget = gtk_image_new_from_stock(GTK_STOCK_DIALOG_WARNING, GTK_ICON_SIZE_MENU);
 	gtk_widget_set_tooltip_text(widget, _("File is currently in a non-native format, possible loss of precision and/or metadata."));

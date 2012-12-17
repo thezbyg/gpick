@@ -42,7 +42,7 @@ typedef struct ListPaletteArgs{
 
 	Vec2<int> last_click_position;
 	bool disable_selection;
-
+	GtkWidget* count_label;
 	GlobalState* gs;
 }ListPaletteArgs;
 
@@ -57,6 +57,7 @@ static void remove_scroll_timeout(ListPaletteArgs *args);
 static gboolean scroll_row_timeout(ListPaletteArgs *args);
 static void palette_list_vertical_autoscroll(GtkTreeView *treeview);
 
+static void update_counts(ListPaletteArgs *args);
 
 static gboolean scroll_row_timeout(ListPaletteArgs *args){
   palette_list_vertical_autoscroll(GTK_TREE_VIEW(args->treeview));
@@ -78,7 +79,81 @@ static void remove_scroll_timeout(ListPaletteArgs *args){
 
 static bool drag_end(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context){
 	remove_scroll_timeout((ListPaletteArgs*)dd->userdata);
+	update_counts((ListPaletteArgs*)dd->userdata);
 	return true;
+}
+
+typedef struct SelectionBoundsArgs{
+	int min_index;
+	int max_index;
+	int last_index;
+	bool discontinuous;
+} SelectionBoundsArgs;
+
+
+static void find_selection_bounds(GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, gpointer data){
+	gint *indices = gtk_tree_path_get_indices(path);
+	SelectionBoundsArgs *args = (SelectionBoundsArgs *) data;
+	int index = indices[0]; // currently indices are all 1d.
+	int diff = index - args->last_index;
+	if ((args->last_index != 0x7fffffff) && (diff != 1) && (diff != -1)){
+		args->discontinuous = true;
+	}
+	if (index > args->max_index){
+		args->max_index = index;
+	}
+	if (index < args->min_index){
+		args->min_index = index;
+	}
+	args->last_index = index;
+}
+
+static void update_counts(ListPaletteArgs *args){
+	stringstream s;
+	GtkTreeSelection *sel;
+	SelectionBoundsArgs bounds;
+	int selected_count;
+	int total_colors;
+
+	if (!args->count_label){
+	    return;
+	}
+	
+	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->treeview));
+	selected_count = gtk_tree_selection_count_selected_rows(sel);
+	total_colors = color_list_get_count(args->gs->colors);
+
+	bounds.discontinuous = false;
+	bounds.min_index = 0x7fffffff;
+	bounds.last_index = 0x7fffffff;
+	bounds.max_index = 0;
+	if (selected_count > 0){
+	        s.str("");
+	        s << "#";
+	        gtk_tree_selection_selected_foreach(sel, &find_selection_bounds, &bounds);
+	        if (bounds.min_index < bounds.max_index){
+	        	s << bounds.min_index;
+	        	if (bounds.discontinuous){
+	        		s << "..";
+	        	}else{
+	        		s << "-";
+	        	}
+	        	s << bounds.max_index;
+	        }else{
+	        	s << bounds.min_index;
+	        }
+
+	        s << " (" << selected_count;
+	        if (selected_count > 1){
+	        	s << " colors) selected. ";
+	        }else{
+	        	s << " color) selected. ";
+	        }
+	}
+        s << "    Total  " << total_colors << " colors.";
+        const char *str = s.str().c_str();
+
+        gtk_label_set_text(GTK_LABEL(args->count_label), str);
 }
 
 static void palette_list_vertical_autoscroll(GtkTreeView *treeview){
@@ -160,6 +235,7 @@ static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path
 
 	ColorSource *color_source = (ColorSource*)dynv_get_pointer_wd(args->gs->params, "CurrentColorSource", 0);
 	color_source_set_color(color_source, color_object);
+	update_counts(args);
 }
 
 static int palette_list_preview_on_insert(struct ColorList* color_list, struct ColorObject* color_object){
@@ -175,6 +251,11 @@ static int palette_list_preview_on_clear(struct ColorList* color_list){
 static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
 	remove_scroll_timeout(args);
 	palette_list_remove_all_entries(widget);
+	// for some reason, the total count of items is not returned correctly, so we manually adjust the label.
+	if (args->count_label){
+		gtk_label_set_text(GTK_LABEL(args->count_label), "    Total  0 colors.");
+	}
+//	update_counts(args);
 }
 
 GtkWidget* palette_list_get_widget(struct ColorList *color_list){
@@ -186,6 +267,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
 	args->scroll_timeout = 0;
+	args->count_label = NULL;
 
 	GtkListStore  		*store;
 	GtkCellRenderer     *renderer;
@@ -414,6 +496,7 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 			if (copy) color_object_release(colorobject);
 		}
 	}
+	update_counts(args);
 	return 0;
 }
 
@@ -464,14 +547,17 @@ static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobj
 			color_list_add_color_object(args->gs->colors, colorobject, false);
 		}else{
 			if (copy) color_object_release(colorobject);
+			update_counts(args);
 			return -1;
 		}
 
 		if (copy) color_object_release(colorobject);
 	}else{
 		color_list_add_color_object(args->gs->colors, colorobject, true);
+		update_counts(args);
 		if (copy) color_object_release(colorobject);
 	}
+	update_counts(args);
 	return 0;
 }
 
@@ -541,6 +627,7 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 	}
 	if (path)
 		gtk_tree_path_free(path);
+	update_counts((ListPaletteArgs*)args);
 	return false;
 }
 
@@ -558,13 +645,19 @@ static gboolean on_palette_button_release(GtkWidget *widget, GdkEventButton *eve
 				gtk_tree_path_free(path);
 		}
 	}
+	update_counts((ListPaletteArgs*)args);
 	return false;
 }
 
-GtkWidget* palette_list_new(GlobalState* gs){
+static void on_palette_cursor_changed(GtkTreeView *treeview, ListPaletteArgs *args){
+	update_counts((ListPaletteArgs*)args);
+}
+
+GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
 	args->gs = gs;
+	args->count_label = count_label;
 	args->scroll_timeout = 0;
 
 	GtkListStore  		*store;
@@ -619,6 +712,7 @@ GtkWidget* palette_list_new(GlobalState* gs){
 	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(palette_list_row_activated), args);
 	g_signal_connect(G_OBJECT(view), "button-press-event",G_CALLBACK (on_palette_button_press), args);
 	g_signal_connect(G_OBJECT(view), "button-release-event",G_CALLBACK (on_palette_button_release), args);
+	g_signal_connect(G_OBJECT(view), "cursor-changed",G_CALLBACK (on_palette_cursor_changed), args);
 
 	///gtk_tree_view_set_reorderable(GTK_TREE_VIEW (view), TRUE);
 	gtk_drag_dest_set( view, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GdkDragAction(GDK_ACTION_COPY | GDK_ACTION_MOVE | GDK_ACTION_ASK));
@@ -640,6 +734,10 @@ GtkWidget* palette_list_new(GlobalState* gs){
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
 	g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
+	
+	if (count_label){
+		update_counts(args);
+	}
 
 	return view;
 }
@@ -703,8 +801,9 @@ gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color) {
 	return 0;
 }
 
-void palette_list_remove_selected_entries(GtkWidget* widget) {
 
+void palette_list_remove_selected_entries(GtkWidget* widget) {
+	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
 	GtkListStore *store;
 	gboolean valid;
@@ -724,6 +823,7 @@ void palette_list_remove_selected_entries(GtkWidget* widget) {
 		}
 	}
 
+	update_counts((ListPaletteArgs*)args);
 /*
 	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(widget) );
 	GtkListStore *store;
@@ -779,9 +879,11 @@ void palette_list_add_entry(GtkWidget* widget, struct ColorObject* color_object)
 
 	gtk_list_store_append(store, &iter1);
 	palette_list_entry_fill(store, &iter1, color_object, args);
+	update_counts((ListPaletteArgs*)args);
 }
 
 int palette_list_remove_entry(GtkWidget* widget, struct ColorObject* r_color_object){
+	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
 	GtkListStore *store;
 	gboolean valid;
@@ -800,6 +902,7 @@ int palette_list_remove_entry(GtkWidget* widget, struct ColorObject* r_color_obj
 		}
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 	}
+	update_counts((ListPaletteArgs*)args);
 	return -1;
 }
 
