@@ -126,7 +126,7 @@ if env['ENABLE_NLS']:
 
 	template = env.Xgettext("template.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'))
 
-	env.Append(XGETTEXT_FLAGS = ['--package-version="$GPICK_BUILD_VERSION"'])
+	env.Append(XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 
 	env.Alias(target="template", source=[
 		template

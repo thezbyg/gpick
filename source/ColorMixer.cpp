@@ -62,14 +62,14 @@ typedef struct ColorMixerType{
 	int mode_id;
 }ColorMixerType;
 
-static ColorMixerType color_mixer_types[] = {
-	{"Normal", "normal", MODE_ID_NORMAL},
-	{"Multiply", "multiply", MODE_ID_MULTIPLY},
-	{"Add", "add", MODE_ID_ADD},
-	{"Difference", "difference", MODE_ID_DIFFERENCE},
-	{"Hue", "hue", MODE_ID_HUE},
-	{"Saturation", "saturation", MODE_ID_SATURATION},
-	{"Lightness", "lightness", MODE_ID_LIGHTNESS},
+const ColorMixerType color_mixer_types[] = {
+	{N_("Normal"), "normal", MODE_ID_NORMAL},
+	{N_("Multiply"), "multiply", MODE_ID_MULTIPLY},
+	{N_("Add"), "add", MODE_ID_ADD},
+	{N_("Difference"), "difference", MODE_ID_DIFFERENCE},
+	{N_("Hue"), "hue", MODE_ID_HUE},
+	{N_("Saturation"), "saturation", MODE_ID_SATURATION},
+	{N_("Lightness"), "lightness", MODE_ID_LIGHTNESS},
 };
 
 typedef struct ColorMixerArgs{
@@ -111,7 +111,7 @@ class ColorMixerColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false) << " color mixer " << m_ident;
+			m_stream << color_names_get(m_gs->color_names, color, false) << " " << _("color mixer") << " " << m_ident;
 			return m_stream.str();
 		}
 };
@@ -341,7 +341,7 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 		if (secondary_color){
 			GSList *group = 0;
 			for (uint32_t i = 0; i < sizeof(color_mixer_types) / sizeof(ColorMixerType); i++){
-				item = gtk_radio_menu_item_new_with_label(group, color_mixer_types[i].name);
+				item = gtk_radio_menu_item_new_with_label(group, _(color_mixer_types[i].name));
 				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
 				if (args->mixer_type == &color_mixer_types[i]){
 					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
@@ -713,15 +713,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int color_mixer_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-
-	color_mixer_types[0].name = _("Normal");
-	color_mixer_types[1].name = _("Multiply");
-	color_mixer_types[2].name = _("Add");
-	color_mixer_types[3].name = _("Difference");
-	color_mixer_types[4].name = _("Hue");
-	color_mixer_types[5].name = _("Saturation");
-	color_mixer_types[6].name = _("Lightness");
-
 	color_source_init(color_source, "color_mixer", _("Color mixer"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->default_accelerator = GDK_m;

@@ -57,7 +57,7 @@ class VariationsColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << m_name << " variation " << m_step_i;
+			m_stream << m_name << " " << _("variation") << " " << m_step_i;
 			return m_stream.str();
 		}
 };

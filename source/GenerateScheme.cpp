@@ -86,37 +86,37 @@ typedef struct GenerateSchemeArgs{
 	struct ColorList *preview_color_list;
 }GenerateSchemeArgs;
 
-static SchemeType scheme_types[]={
-	{"Complementary", 1, 1, {180}},
-	{"Analogous", 5, 1, {30}},
-	{"Triadic", 2, 1, {120}},
-	{"Split-Complementary", 2, 2, {150, 60}},
-	{"Rectangle (tetradic)", 3, 2, {60, 120}},
-	{"Square", 3, 1, {90}},
-	{"Neutral", 5, 1, {15}},
-	{"Clash", 2, 2, {90, 180}},
-	{"Five-Tone", 4, 4, {115, 40, 50, 40}},
-	{"Six-Tone", 5, 2, {30, 90}},
+const SchemeType scheme_types[]={
+	{N_("Complementary"), 1, 1, {180}},
+	{N_("Analogous"), 5, 1, {30}},
+	{N_("Triadic"), 2, 1, {120}},
+	{N_("Split-Complementary"), 2, 2, {150, 60}},
+	{N_("Rectangle (tetradic)"), 3, 2, {60, 120}},
+	{N_("Square"), 3, 1, {90}},
+	{N_("Neutral"), 5, 1, {15}},
+	{N_("Clash"), 2, 2, {90, 180}},
+	{N_("Five-Tone"), 4, 4, {115, 40, 50, 40}},
+	{N_("Six-Tone"), 5, 2, {30, 90}},
 };
 
 class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
 		int32_t m_ident;
-                int32_t m_schemetype;
+		int32_t m_schemetype;
 	public:
 		GenerateSchemeColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 		}
 
 		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype){
 			m_ident = ident;
-                        m_schemetype = schemetype;
+			m_schemetype = schemetype;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << "scheme " << generate_scheme_get_scheme_type(m_schemetype)->name << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
+			m_stream << _("scheme") << " " << _(generate_scheme_get_scheme_type(m_schemetype)->name) << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
 			return m_stream.str();
 		}
 };
@@ -875,7 +875,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0.5,0,0),0,1,table_y,table_y+1, GTK_FILL, GTK_SHRINK, 5, 5);
 	args->gen_type = gtk_combo_box_new_text();
 	for (uint32_t i = 0; i < generate_scheme_get_n_scheme_types(); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), generate_scheme_get_scheme_type(i)->name);
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
 	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK(update), args);
@@ -886,7 +886,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->wheel_type = gtk_combo_box_new_text();
 
 	for (uint32_t i = 0; i < color_wheel_types_get_n(); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->wheel_type), color_wheel_types_get()[i].name);
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->wheel_type), _(color_wheel_types_get()[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), dynv_get_int32_wd(args->params, "wheel_type", 0));
 	g_signal_connect (G_OBJECT (args->wheel_type), "changed", G_CALLBACK(update), args);
@@ -916,18 +916,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int generate_scheme_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-
-  scheme_types[0].name = _("Complementary");
-	scheme_types[1].name = _("Analogous");
-	scheme_types[2].name = _("Triadic");
-	scheme_types[3].name = _("Split-Complementary");
-	scheme_types[4].name = _("Rectangle (tetradic)");
-	scheme_types[5].name = _("Square");
-	scheme_types[6].name = _("Neutral");
-	scheme_types[7].name = _("Clash");
-	scheme_types[8].name = _("Five-Tone");
-	scheme_types[9].name = _("Six-Tone");
-
 	color_source_init(color_source, "generate_scheme", _("Scheme generation"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->default_accelerator = GDK_g;

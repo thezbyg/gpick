@@ -367,7 +367,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
 	int i = 0;
 	while (color_naming_options[i].name){
-		args->tool_color_naming[i] = widget = gtk_radio_button_new_with_mnemonic(group, color_naming_options[i].label);
+		args->tool_color_naming[i] = widget = gtk_radio_button_new_with_mnemonic(group, _(color_naming_options[i].label));
 		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
 
 		if (color_naming_type == color_naming_options[i].type)

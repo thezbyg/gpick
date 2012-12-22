@@ -22,8 +22,10 @@
 #ifdef ENABLE_NLS
 #include <libintl.h>
 #define _(STRING) gettext(STRING)
+#define N_(STRING) STRING
 #else
 #define _(STRING) STRING
+#define N_(STRING) STRING
 #endif
 
 void initialize_internationalisation();

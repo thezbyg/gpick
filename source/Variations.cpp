@@ -62,11 +62,11 @@ typedef struct VariationType{
 	double strength_mult;
 }VariationType;
 
-static VariationType variation_types[] = {
-	{"Hue", "H<span font='8' rise='8000'>HSL</span>", "hsl_hue", COMPONENT_ID_HSL_HUE, 1},
-	{"Saturation", "S<span font='8' rise='8000'>HSL</span>", "hsl_saturation", COMPONENT_ID_HSL_SATURATION, 1},
-	{"Lightness", "L<span font='8' rise='8000'>HSL</span>", "hsl_lightness", COMPONENT_ID_HSL_LIGHTNESS, 1},
-	{"Lightness (Lab)", "L<span font='8' rise='8000'>Lab</span>", "lab_lightness", COMPONENT_ID_LAB_LIGHTNESS, 1},
+const VariationType variation_types[] = {
+	{N_("Hue"), "H<span font='8' rise='8000'>HSL</span>", "hsl_hue", COMPONENT_ID_HSL_HUE, 1},
+	{N_("Saturation"), "S<span font='8' rise='8000'>HSL</span>", "hsl_saturation", COMPONENT_ID_HSL_SATURATION, 1},
+	{N_("Lightness"), "L<span font='8' rise='8000'>HSL</span>", "hsl_lightness", COMPONENT_ID_HSL_LIGHTNESS, 1},
+	{N_("Lightness (Lab)"), "L<span font='8' rise='8000'>Lab</span>", "lab_lightness", COMPONENT_ID_LAB_LIGHTNESS, 1},
 };
 
 typedef struct VariationsArgs{
@@ -107,7 +107,7 @@ class VariationsColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false) << " variations " << m_ident;
+			m_stream << color_names_get(m_gs->color_names, color, false) << " " << _("variations") << " " << m_ident;
 			return m_stream.str();
 		}
 };
@@ -352,7 +352,7 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 		if (!all_colors){
 			GSList *group = 0;
 			for (uint32_t i = 0; i < sizeof(variation_types) / sizeof(VariationType); i++){
-				item = gtk_radio_menu_item_new_with_label(group, variation_types[i].name);
+				item = gtk_radio_menu_item_new_with_label(group, _(variation_types[i].name));
 				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
 				if (args->color[line_id].type == &variation_types[i]){
 					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
@@ -727,12 +727,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 int variations_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
-
-	variation_types[0].name = _("Hue");
-	variation_types[1].name = _("Saturation");
-	variation_types[2].name = _("Lightness");
-	variation_types[3].name = _("Lightness (Lab)");
-
 	color_source_init(color_source, "variations", _("Variations"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->default_accelerator = GDK_v;

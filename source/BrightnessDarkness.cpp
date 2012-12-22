@@ -82,7 +82,7 @@ class BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false) << " brightness darkness " << m_ident;
+			m_stream << color_names_get(m_gs->color_names, color, false) << " " << _("brightness darkness") << " " << m_ident;
 			return m_stream.str();
 		}
 };

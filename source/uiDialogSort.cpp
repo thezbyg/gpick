@@ -132,19 +132,19 @@ static double sort_lch_hue(Color *color)
 }
 
 const SortType sort_types[] = {
-	{"RGB Red", sort_rgb_red},
-	{"RGB Green", sort_rgb_green},
-	{"RGB Blue", sort_rgb_blue},
-	{"RGB Grayscale", sort_rgb_grayscale},
-	{"HSL Hue", sort_hsl_hue},
-	{"HSL Saturation", sort_hsl_saturation},
-	{"HSL Lightness", sort_hsl_lightness},
-	{"Lab Lightness", sort_lab_lightness},
-	{"Lab A", sort_lab_a},
-	{"Lab B", sort_lab_b},
-	{"LCh Lightness", sort_lch_lightness},
-	{"LCh Chroma", sort_lch_chroma},
-	{"LCh Hue", sort_lch_hue},
+	{N_("RGB Red"), sort_rgb_red},
+	{N_("RGB Green"), sort_rgb_green},
+	{N_("RGB Blue"), sort_rgb_blue},
+	{N_("RGB Grayscale"), sort_rgb_grayscale},
+	{N_("HSL Hue"), sort_hsl_hue},
+	{N_("HSL Saturation"), sort_hsl_saturation},
+	{N_("HSL Lightness"), sort_hsl_lightness},
+	{N_("Lab Lightness"), sort_lab_lightness},
+	{N_("Lab A"), sort_lab_a},
+	{N_("Lab B"), sort_lab_b},
+	{N_("LCh Lightness"), sort_lch_lightness},
+	{N_("LCh Chroma"), sort_lch_chroma},
+	{N_("LCh Hue"), sort_lch_hue},
 };
 
 static double group_rgb_red(Color *color)
@@ -219,20 +219,20 @@ static double group_lch_hue(Color *color)
 }
 
 const GroupType group_types[] = {
-	{"None", NULL},
-	{"RGB Red", group_rgb_red},
-	{"RGB Green", group_rgb_green},
-	{"RGB Blue", group_rgb_blue},
-	{"RGB Grayscale", group_rgb_grayscale},
-	{"HSL Hue", group_hsl_hue},
-	{"HSL Saturation", group_hsl_saturation},
-	{"HSL Lightness", group_hsl_lightness},
-	{"Lab Lightness", group_lab_lightness},
-	{"Lab A", group_lab_a},
-	{"Lab B", group_lab_b},
-	{"LCh Lightness", group_lch_lightness},
-	{"LCh Chroma", group_lch_chroma},
-	{"LCh Hue", group_lch_hue},
+	{N_("None"), NULL},
+	{N_("RGB Red"), group_rgb_red},
+	{N_("RGB Green"), group_rgb_green},
+	{N_("RGB Blue"), group_rgb_blue},
+	{N_("RGB Grayscale"), group_rgb_grayscale},
+	{N_("HSL Hue"), group_hsl_hue},
+	{N_("HSL Saturation"), group_hsl_saturation},
+	{N_("HSL Lightness"), group_hsl_lightness},
+	{N_("Lab Lightness"), group_lab_lightness},
+	{N_("Lab A"), group_lab_a},
+	{N_("Lab B"), group_lab_b},
+	{N_("LCh Lightness"), group_lch_lightness},
+	{N_("LCh Chroma"), group_lch_chroma},
+	{N_("LCh Hue"), group_lch_hue},
 };
 
 
@@ -564,7 +564,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Group type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->group_type = gtk_combo_box_new_text();
 	for (uint32_t i = 0; i < sizeof(group_types) / sizeof(GroupType); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->group_type), group_types[i].name);
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->group_type), _(group_types[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->group_type), dynv_get_int32_wd(args->params, "group_type", 0));
 	g_signal_connect(G_OBJECT(args->group_type), "changed", G_CALLBACK(update), args);
@@ -588,7 +588,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Sort type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->sort_type = gtk_combo_box_new_text();
 	for (uint32_t i = 0; i < sizeof(sort_types) / sizeof(SortType); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->sort_type), sort_types[i].name);
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->sort_type), _(sort_types[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->sort_type), dynv_get_int32_wd(args->params, "sort_type", 0));
 	g_signal_connect (G_OBJECT (args->sort_type), "changed", G_CALLBACK(update), args);

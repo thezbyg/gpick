@@ -108,13 +108,13 @@ class BlendColorNameAssigner: public ToolColorNameAssigner {
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
 			if (m_is_color_item){
-                            if (m_end_percent == 100){
-                                m_stream << m_color_end <<  " blend node"; 
-                            }else{
-                                m_stream << m_color_start <<  " blend node"; 
-                            }
+				if (m_end_percent == 100){
+					m_stream << m_color_end << " " << _("blend node");
+				}else{
+					m_stream << m_color_start << " " << _("blend node");
+				}
 			}else{
-				m_stream << m_color_start << " " << m_start_percent << " blend " << m_end_percent << " " << m_color_end;
+				m_stream << m_color_start << " " << m_start_percent << " " << _("blend") << " " << m_end_percent << " " << m_color_end;
 			}
 			return m_stream.str();
 		}

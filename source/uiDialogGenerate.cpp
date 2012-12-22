@@ -73,7 +73,7 @@ class GenerateColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream << "scheme " << generate_scheme_get_scheme_type(m_schemetype)->name << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
+			m_stream << _("scheme") << " " << generate_scheme_get_scheme_type(m_schemetype)->name << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
 			return m_stream.str();
 		}
 };

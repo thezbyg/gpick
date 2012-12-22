@@ -58,7 +58,7 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 			m_color_end = end_color_name;
 			m_start_percent = start_percent;
 			m_end_percent = end_percent;
-                        m_is_node = is_node;
+			m_is_node = is_node;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
 
@@ -69,16 +69,15 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-                        if (m_is_node){
-                            if (m_end_percent == 100){
-                                m_stream << m_color_end << " mix node";
-                            }else{
-                                m_stream << m_color_start << " mix node";
-                            }
-                            
-                        }else{
-                            m_stream << m_color_start << " " << m_start_percent << " mix " << m_end_percent << " " << m_color_end;
-                        }
+			if (m_is_node){
+				if (m_end_percent == 100){
+					m_stream << m_color_end << " " << _("mix node");
+				}else{
+					m_stream << m_color_start << " " << _("mix node");
+				}
+			}else{
+				m_stream << m_color_start << " " << m_start_percent << " " << _("mix") << " " << m_end_percent << " " << m_color_end;
+			}
 			return m_stream.str();
 		}
 };

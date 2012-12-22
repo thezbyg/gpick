@@ -21,17 +21,14 @@
 #include <string>
 using namespace std;
 
-static ToolColorNamingOption options[] = {
-	{TOOL_COLOR_NAMING_EMPTY, "empty", 0},
-	{TOOL_COLOR_NAMING_AUTOMATIC_NAME, "automatic_name", 0},
-	{TOOL_COLOR_NAMING_TOOL_SPECIFIC, "tool_specific", 0},
+const ToolColorNamingOption options[] = {
+	{TOOL_COLOR_NAMING_EMPTY, "empty", N_("_Empty")},
+	{TOOL_COLOR_NAMING_AUTOMATIC_NAME, "automatic_name", N_("_Automatic name")},
+	{TOOL_COLOR_NAMING_TOOL_SPECIFIC, "tool_specific", N_("_Tool specific")},
 	{TOOL_COLOR_NAMING_UNKNOWN, 0, 0},
 };
 
 const ToolColorNamingOption* tool_color_naming_get_options(){
-	options[0].label = _("_Empty");
-	options[1].label = _("_Automatic name");
-	options[2].label = _("_Tool specific");
 	return options;
 }
 

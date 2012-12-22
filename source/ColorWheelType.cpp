@@ -19,6 +19,7 @@
 #include "ColorWheelType.h"
 #include "ColorRYB.h"
 #include "MathUtil.h"
+#include "Internationalisation.h"
 
 
 static void rgb_hue2hue(double hue, Color* hsl){
@@ -52,9 +53,9 @@ static void ryb2_rgbhue2hue(double rgbhue, double *hue){
 }
 
 const ColorWheelType color_wheel_types[]={
-	{"RGB", rgb_hue2hue, rgb_rgbhue2hue},
-	{"RYB v1", ryb1_hue2hue, ryb1_rgbhue2hue},
-	{"RYB v2", ryb2_hue2hue, ryb2_rgbhue2hue},
+	{N_("RGB"), rgb_hue2hue, rgb_rgbhue2hue},
+	{N_("RYB v1"), ryb1_hue2hue, ryb1_rgbhue2hue},
+	{N_("RYB v2"), ryb2_hue2hue, ryb2_rgbhue2hue},
 };
 
 const ColorWheelType* color_wheel_types_get(){
