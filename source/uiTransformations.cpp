@@ -388,6 +388,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 					chain->add(tran);
 				}
 			}
+			dynv_system_release(config_array[i]);
 		}
 
 		delete [] config_array;

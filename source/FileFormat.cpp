@@ -69,6 +69,8 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 		file.read((char*) &header, sizeof(header));
 		if (file.fail()){
 			file.close();
+
+			dynv_io_free(mem_io);
 			return -1;
 		}
 
@@ -143,6 +145,7 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 		}
 
 		dynv_handler_map_release(handler_map);
+		dynv_io_free(mem_io);
 
 		file.close();
 		return 0;
@@ -151,6 +154,8 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 }
 
 int palette_file_save(const char* filename, struct ColorList* color_list){
+	if (!filename || !color_list) return -1;
+
 	ofstream file(filename, ios::binary);
 	if (file.is_open()){
 		struct dynvIO* mem_io=dynv_io_memory_new();
@@ -222,7 +227,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 
 		prepare_chunk_header(&header, CHUNK_TYPE_COLOR_POSITIONS, color_list->colors.size()*sizeof(uint32_t));
 		file.write((char*)&header, sizeof(header));
-		file.write((char*)positions, color_list->colors.size()*sizeof(long));
+		file.write((char*)positions, color_list->colors.size()*sizeof(uint32_t));
 
 		delete [] positions;
 

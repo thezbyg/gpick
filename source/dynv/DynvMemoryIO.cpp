@@ -98,7 +98,7 @@ static int dynv_io_memory_seek(struct dynvIO* io, uint32_t offset, int type, uin
 
 static int dynv_io_memory_free(struct dynvIO* io){
 	struct dynvMemoryIO* mem_io=(struct dynvMemoryIO*)io->userdata;
-	if (mem_io->buffer) delete mem_io->buffer;
+	if (mem_io->buffer) delete [] mem_io->buffer;
 	delete mem_io;
 	return 0;
 }

@@ -233,6 +233,7 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args){
 		g_free(autosave_file);
 	}
 
+	color_list_remove_all(args->gs->colors);
 	gtk_main_quit();
 }
 
@@ -2034,6 +2035,7 @@ int app_run(AppArgs *args){
 	dynv_system_release(args->params);
 	global_state_destroy(args->gs);
 	if (args->current_filename) g_free(args->current_filename);
+	color_source_manager_destroy(args->csm);
 	delete args;
 
 	return 0;

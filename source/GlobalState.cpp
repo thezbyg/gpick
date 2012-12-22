@@ -318,6 +318,7 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 						chain->add(tran);
 					}
 				}
+				dynv_system_release(config_array[i]);
 			}
 
 			delete [] config_array;
