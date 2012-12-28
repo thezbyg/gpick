@@ -20,7 +20,9 @@
 #define DYNVVARIABLE_H_
 
 #include <stdint.h>
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 
 struct dynvHandler;
 

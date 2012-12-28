@@ -24,7 +24,6 @@
 #include "Paths.h"
 #include "Converter.h"
 #include "CopyPaste.h"
-#include "unique/Unique.h"
 
 #include "RegisterSources.h"
 
@@ -67,6 +66,7 @@
 #include <map>
 #include <vector>
 #include <algorithm>
+#include <functional>
 #include <iostream>
 using namespace std;
 
@@ -1722,12 +1722,6 @@ static void set_main_window_icon() {
 	}
 }
 
-static int unique_show_window(AppArgs* args){
-	status_icon_set_visible(args->statusIcon, false);
-	main_show_window(args->window, args->params);
-	return 0;
-}
-
 bool app_is_autoload_enabled(AppArgs *args){
 	return dynv_get_bool_wd(args->params, "main.save_restore_palette", true);
 }
@@ -2027,9 +2021,8 @@ int app_run(AppArgs *args){
 		delete [] recent_array;
 	}
 
-	g_bus_unown_name(args->bus_id);
+	gpick_unown_name(args->bus_id);
 
-	unique_term();
 	status_icon_destroy(args->statusIcon);
 	global_state_term(args->gs);
 	dynv_system_release(args->params);

@@ -7,17 +7,17 @@ import sys
 from tools.gpick import *
 
 env = GpickEnvironment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = WriteNsisVersion, suffix = ".nsi")})
-env.AddCustomBuilders()
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
 vars.Add('LOCALEDIR', 'Path to locale directory', '')
 vars.Add('DEBARCH', 'Debian package architecture', 'i386')
-vars.Add(BoolVariable('WITH_UNIQUE', 'Use libunique instead of pure DBus', False))
-vars.Add(BoolVariable('WITH_DBUSGLIB', 'Compile with DBus support', True))
 vars.Add(BoolVariable('ENABLE_NLS', 'Compile with gettext support', True))
 vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
+vars.Add('TOOLCHAIN', 'Toolchain', 'gcc')
+vars.Add(BoolVariable('EXPERIMENTAL_CSS_PARSER', 'Compile with experimental CSS parser', False))
+vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
 
@@ -32,9 +32,18 @@ if not env['BUILD_TARGET']:
 	env['BUILD_TARGET'] = sys.platform
 
 if env['BUILD_TARGET'] == 'win32':
-	if sys.platform != 'win32':
-		env.Tool('crossmingw', toolpath = ['tools'])
+	if env['TOOLCHAIN'] == 'msvc':
+		env['TARGET_ARCH'] = 'x86'
+		env['MSVS'] = {'VERSION': env['MSVS_VERSION']} 
+		env['MSVS_VERSION'] = env['MSVS_VERSION']
+		Tool('msvc')(env)
+	else:
+		if sys.platform != 'win32':
+			env.Tool('crossmingw', toolpath = ['tools'])
+		else:
+			env.Tool('mingw')
 
+env.AddCustomBuilders()
 env.GetVersionInfo()
 
 try:
@@ -49,22 +58,18 @@ if not env.GetOption('clean'):
 	programs = {}
 	if env['ENABLE_NLS']:
 		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
-		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}}
-	if not env['PREBUILD_GRAMMAR']:
+		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}, 'required':False}
+	if env['EXPERIMENTAL_CSS_PARSER'] and not env['PREBUILD_GRAMMAR']:
 		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
 		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
 	env.ConfirmPrograms(conf, programs)
 
-	libs = {
-		'GTK_PC': {'checks':{'gtk+-2.0':'>= 2.12.0'}},
-		'GIO_PC': {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}},
-		'LUA_PC':	{'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}},
-	}
+	libs = {}
 
-	if env['WITH_UNIQUE']:
-		libs['UNIQUE_PC'] = {'checks':{'unique-1.0':'>= 1.0.8'}}
-	elif env['WITH_DBUSGLIB']:
-		libs['DBUSGLIB_PC'] = {'checks':{'dbus-glib-1':'>= 0.76'}}
+	if not env['TOOLCHAIN'] == 'msvc':
+		libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
+		libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
+		libs['LUA_PC'] = {'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
 
 	env.ConfirmLibs(conf, libs)
 
@@ -83,30 +88,43 @@ if os.environ.has_key('LDFLAGS'):
 	
 Decider('MD5-timestamp')
 
-if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
+if not env['TOOLCHAIN'] == 'msvc':
+	if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
+		if env['DEBUG']:
+			env.Append(
+				CPPFLAGS = ['-Wall', '-g3', '-O0'],
+				CFLAGS = ['-Wall', '-g3', '-O0'],
+				LINKFLAGS = ['-Wl,-as-needed'],
+				)
+		else:
+			env.Append(
+				CPPDEFINES = ['NDEBUG'],
+				CDEFINES = ['NDEBUG'],
+				CPPFLAGS = ['-Wall', '-O3'],
+				CFLAGS = ['-Wall', '-O3'],
+				LINKFLAGS = ['-Wl,-as-needed', '-s'],
+				)
+
+	if env['BUILD_TARGET'] == 'win32':
+		env.Append(	
+				LINKFLAGS = ['-Wl,--enable-auto-import', '-static-libgcc', '-static-libstdc++'],
+				CPPDEFINES = ['_WIN32_WINNT=0x0501'],
+				)
+else:
+	env['LINKCOM'] = [env['LINKCOM'], 'mt.exe -nologo -manifest ${TARGET}.manifest -outputresource:$TARGET;1']
 	if env['DEBUG']:
 		env.Append(
-			CPPFLAGS = ['-Wall', '-g3', '-O0'],
-			CFLAGS = ['-Wall', '-g3', '-O0'],
-			LINKFLAGS = ['-Wl,-as-needed'],
+				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD'],
+				LINKFLAGS = ['/LTCG', '/MANIFEST'],
 			)
 	else:
 		env.Append(
-			CPPDEFINES = ['NDEBUG'],
-			CDEFINES = ['NDEBUG'],
-			CPPFLAGS = ['-Wall', '-O3'],
-			CFLAGS = ['-Wall', '-O3'],
-			LINKFLAGS = ['-Wl,-as-needed', '-s'],
-			)
-
-if env['BUILD_TARGET'] == 'win32':
-	env.Append(	
-			LINKFLAGS = ['-Wl,--enable-auto-import'],
-			CPPDEFINES = ['_WIN32_WINNT=0x0501'],
+				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD'],
+				LINKFLAGS = ['/LTCG', '/MANIFEST'],
 			)
 			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
-executable, parser_files  = SConscript(['source/SConscript'], exports='env')
+executable, parser_files = SConscript(['source/SConscript'], exports='env')
 
 env.Alias(target="build", source=[
 	executable
@@ -147,17 +165,17 @@ env.Alias(target="nsis", source=[
 	env.WriteNsisVersion("version.py")
 ])
 
-tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
 
 for item in parser_files:
 	tarFiles.append(str(item))
 
-env.Alias(target="tar", source=[
-	env.Append(TARFLAGS = ['-z']),
-	env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
-	env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)
-])
-
+if 'TAR' in env:
+	env.Alias(target="tar", source=[
+		env.Append(TARFLAGS = ['-z']),
+		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
+		env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)
+	])
 
 env.Default(executable)
 

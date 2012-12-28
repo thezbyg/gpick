@@ -31,6 +31,11 @@
 guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata), bool (*on_single_instance_activate)(void *userdata), void *userdata);
 
 /**
+ * Release ownership of a bus.
+ */
+void gpick_unown_name(guint bus_id);
+
+/**
  * Activate main window in a remove Gpick instance.
  */
 bool gpick_single_instance_activate();

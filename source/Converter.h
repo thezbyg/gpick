@@ -20,7 +20,9 @@
 #define CONVERTER_H_
 
 #include "dynv/DynvSystem.h"
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 
 class Converters;

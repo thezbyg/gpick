@@ -51,12 +51,12 @@ bool ChangeNotification::unregisterSource(const char *location, ColorSource *sou
 	return false;
 }
 
-bool ChangeNotification::addLink(shared_ptr<NotificationLink> notification_link){
-	links.insert(pair<string, shared_ptr<NotificationLink> >(notification_link->source_name, notification_link));
+bool ChangeNotification::addLink(boost::shared_ptr<NotificationLink> notification_link){
+	links.insert(pair<string, boost::shared_ptr<NotificationLink> >(notification_link->source_name, notification_link));
 	return true;
 }
 
-bool ChangeNotification::removeLink(shared_ptr<NotificationLink> notification_link){
+bool ChangeNotification::removeLink(boost::shared_ptr<NotificationLink> notification_link){
 
 	return true;
 }

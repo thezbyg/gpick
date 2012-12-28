@@ -20,7 +20,9 @@
 #define LAYOUT_REFERENCECOUNTER_H_
 
 #include <stdint.h>
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 
 namespace layout{
 

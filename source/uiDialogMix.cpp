@@ -25,7 +25,9 @@
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
 
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <sstream>
 using namespace std;
 

@@ -40,6 +40,7 @@
 #include "uiApp.h"
 
 #include <gdk/gdkkeysyms.h>
+#include <boost/format.hpp>
 
 #include <math.h>
 #include <string.h>
@@ -101,14 +102,14 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 	color_rgb_to_hsl(&color, &hsl_orig);
 
 	Box* box;
-	char tmp[4];
+	string name;
 	for (int i = 1; i <= 4; i++){
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
         color_hsl_to_rgb(&hsl, &r);
 
-		snprintf(tmp, sizeof(tmp), "b%d", i);
-		box = args->layout_system->GetNamedBox(tmp);
+		name = boost::str(boost::format("b%d") % i);
+		box = args->layout_system->GetNamedBox(name.c_str());
 		if (box && box->style){
 			color_copy(&r, &box->style->color);
 		}
@@ -117,8 +118,9 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
         color_hsl_to_rgb(&hsl, &r);
-		snprintf(tmp, sizeof(tmp), "c%d", i);
-		box = args->layout_system->GetNamedBox(tmp);
+
+		name = boost::str(boost::format("c%d") % i);
+		box = args->layout_system->GetNamedBox(name.c_str());
 		if (box && box->style){
 			color_copy(&r, &box->style->color);
 		}

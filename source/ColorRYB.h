@@ -21,7 +21,9 @@
 
 #include "Color.h"
 
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 
 double color_ryb_transform_lightness(double hue1, double hue2);

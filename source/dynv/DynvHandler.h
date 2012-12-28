@@ -25,7 +25,9 @@
 #include <istream>
 
 #include <stdint.h>
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 
 struct dynvIO;
 

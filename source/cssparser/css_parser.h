@@ -19,7 +19,9 @@
 #ifndef CSS_PARSER_H
 #define CSS_PARSER_H
 
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 #include <stdio.h>
 

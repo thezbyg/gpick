@@ -20,6 +20,9 @@
 #include "../Color.h"
 #include "../MathUtil.h"
 #include <math.h>
+#ifdef _MSC_VER
+#define M_PI 3.14159265359
+#endif
 #include <stdlib.h>
 
 #include <string>

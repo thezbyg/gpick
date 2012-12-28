@@ -131,7 +131,7 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 	int center_y = y-top;
 
 
-	float max_distance = 1 / sqrt(2 * pow(sampler->oversample, 2));
+	float max_distance = 1 / sqrt(2 * pow((double)sampler->oversample, 2));
 
 	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
 		for (int y=-sampler->oversample; y <= sampler->oversample; ++y){
@@ -143,7 +143,7 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 
 			float f;
 			if (sampler->oversample){
-				f = sampler->falloff_fnc(sqrt(x * x + y * y) * max_distance);
+				f = sampler->falloff_fnc(sqrt((double)(x * x + y * y)) * max_distance);
 			}else{
 				f = 1;
 			}

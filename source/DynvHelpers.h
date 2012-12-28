@@ -23,7 +23,9 @@
 #include "Color.h"
 
 #include <stdint.h>
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 
 int32_t dynv_get_int32_wd(struct dynvSystem* dynv_system, const char *path, int32_t default_value);
 float dynv_get_float_wd(struct dynvSystem* dynv_system, const char *path, float default_value);

@@ -26,7 +26,6 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
-using namespace boost;
 
 class ChangeNotification;
 
@@ -47,7 +46,7 @@ public:
 class ChangeNotification{
 protected:
 	std::map<std::string, ColorSource*> sources;
-	std::multimap<std::string, shared_ptr<NotificationLink> > links;
+	std::multimap<std::string, boost::shared_ptr<NotificationLink> > links;
 public:
 	ChangeNotification();
 	~ChangeNotification();
@@ -55,8 +54,8 @@ public:
 	bool registerSource(const char *location, ColorSource *source);
 	bool unregisterSource(const char *location, ColorSource *source);
 
-	bool addLink(shared_ptr<NotificationLink> notification_link);
-	bool removeLink(shared_ptr<NotificationLink> notification_link);
+	bool addLink(boost::shared_ptr<NotificationLink> notification_link);
+	bool removeLink(boost::shared_ptr<NotificationLink> notification_link);
 };
 
 #endif /* CHANGENOTIFICATION_H_ */

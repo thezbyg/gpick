@@ -42,7 +42,9 @@
 #include <sstream>
 #include <iostream>
 
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <sstream>
 
 using namespace std;

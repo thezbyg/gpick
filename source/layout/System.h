@@ -27,7 +27,9 @@
 #include "ReferenceCounter.h"
 
 #include <gtk/gtk.h>
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 #include <list>
 #include <string>

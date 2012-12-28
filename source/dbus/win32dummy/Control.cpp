@@ -16,12 +16,24 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UNIQUE_H_
-#define UNIQUE_H_
+#include <gio/gio.h>
 
-typedef int (*unique_cb_t)(void* user_data);
+guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata), bool (*on_single_instance_activate)(void *userdata), void *userdata)
+{
+	return 0;
+}
 
-int unique_init(unique_cb_t unique_cb, void* user_data);
-int unique_term();
+void gpick_unown_name(guint bus_id)
+{
+}
 
-#endif /* UNIQUE_H_ */
+bool gpick_control_activate_floating_picker()
+{
+	return false;
+}
+
+bool gpick_single_instance_activate()
+{
+	return false;
+}
+

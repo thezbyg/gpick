@@ -20,7 +20,11 @@ resources = local_env.AlwaysBuild(local_env.ResourceTemplate(sources))
 objects = local_env.RES(resources)
 
 Command("gpick-icon.ico", File("gpick-icon.ico").srcnode(), Copy("$TARGET", "${SOURCE}"))
+if not env['TOOLCHAIN'] == 'msvc':
+	Command("gpick.exe.manifest", File("gpick.exe.manifest").srcnode(), Copy("$TARGET", "${SOURCE}"))
+
 Depends(resources, 'gpick-icon.ico')
+if not env['TOOLCHAIN'] == 'msvc':
+	Depends(resources, 'gpick.exe.manifest')
 
 Return('objects')
-

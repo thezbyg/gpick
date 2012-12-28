@@ -6,11 +6,13 @@ import sys
 Import('*')
 local_env = env.Clone()
 
-if not local_env.GetOption('clean'):
+if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	local_env.ParseConfig('pkg-config --cflags $GIO_PC')
 
-sources = local_env.Glob('*.c') + local_env.Glob('*.cpp')
+if not env['BUILD_TARGET'] == 'win32':
+	sources = local_env.Glob('*.c') + local_env.Glob('*.cpp')
+else:
+	sources = local_env.Glob('win32dummy/*.cpp')
 
 objects = local_env.StaticObject(source = [sources])
-
 Return('objects')

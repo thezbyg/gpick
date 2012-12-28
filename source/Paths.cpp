@@ -38,7 +38,7 @@ static gchar* get_data_dir(){
 	}
 
 	i=paths;
-	struct stat sb;
+	GStatBuf sb;
 	while (i){
 		tmp = g_build_filename((gchar*)i->data, "gpick", NULL);
 

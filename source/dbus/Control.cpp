@@ -91,6 +91,11 @@ guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata)
 	return g_bus_own_name(G_BUS_TYPE_SESSION, "com.google.code.gpick", GBusNameOwnerFlags(G_BUS_NAME_OWNER_FLAGS_REPLACE), on_bus_acquired, on_name_acquired, on_name_lost, &dbus_interface, NULL);
 }
 
+void gpick_unown_name(guint bus_id)
+{
+	g_bus_unown_name(bus_id);
+}
+
 GDBusObjectManager* gpick_get_manager()
 {
 	GDBusObjectManager *manager;

@@ -19,7 +19,9 @@
 #ifndef MEMORY_MANAGER_H
 #define MEMORY_MANAGER_H
 
+#ifndef _MSC_VER
 #include <stdbool.h>
+#endif
 #include <stdint.h>
 
 struct MemoryPage;

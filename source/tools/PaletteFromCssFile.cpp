@@ -29,9 +29,9 @@ int parse_file(const char *filename);
 
 void tools_palette_from_css_file_show(GtkWindow* parent, GlobalState* gs)
 {
+#ifdef EXPERIMENTAL_CSS_PARSER
 	parse_file("test.css");
-
-
+#endif
 }
 
 

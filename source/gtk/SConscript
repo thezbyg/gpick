@@ -6,7 +6,7 @@ import sys
 Import('*')
 local_env = env.Clone()
 
-if not local_env.GetOption('clean'):
+if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
 	

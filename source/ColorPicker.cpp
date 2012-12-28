@@ -41,6 +41,9 @@
 #include <gdk/gdkkeysyms.h>
 
 #include <math.h>
+#ifdef _MSC_VER
+#define M_PI 3.14159265359
+#endif
 #include <string.h>
 #include <sstream>
 #include <iostream>

@@ -99,10 +99,14 @@ int global_state_term(GlobalState *gs){
 int global_state_init(GlobalState *gs, GlobalStateLevel level){
 
 	//Create configuration directory if it doesn't exit
-	struct stat st;
+	GStatBuf st;
 	gchar* config_dir = build_config_path(NULL);
 	if (g_stat(config_dir, &st)!=0){
+#ifndef _MSC_VER
 		g_mkdir(config_dir, S_IRWXU);
+#else
+		g_mkdir(config_dir, NULL);
+#endif
 	}
 	g_free(config_dir);
 
