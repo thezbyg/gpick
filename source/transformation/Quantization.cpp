@@ -93,7 +93,7 @@ QuantizationConfig::QuantizationConfig(Quantization &transformation){
 	int table_y = 0;
 
 	table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:")),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	value = widget = gtk_spin_button_new_with_range(2, 256, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
