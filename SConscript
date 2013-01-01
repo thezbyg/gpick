@@ -35,7 +35,7 @@ if env['BUILD_TARGET'] == 'win32':
 	if env['TOOLCHAIN'] == 'msvc':
 		env['TARGET_ARCH'] = 'x86'
 		env['MSVS'] = {'VERSION': env['MSVS_VERSION']} 
-		env['MSVS_VERSION'] = env['MSVS_VERSION']
+		env['MSVC_VERSION'] = env['MSVS_VERSION']
 		Tool('msvc')(env)
 	else:
 		if sys.platform != 'win32':
@@ -114,12 +114,12 @@ else:
 	env['LINKCOM'] = [env['LINKCOM'], 'mt.exe -nologo -manifest ${TARGET}.manifest -outputresource:$TARGET;1']
 	if env['DEBUG']:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD'],
+				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/ignore:4819'],
 				LINKFLAGS = ['/LTCG', '/MANIFEST'],
 			)
 	else:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD'],
+				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/ignore:4819'],
 				LINKFLAGS = ['/LTCG', '/MANIFEST'],
 			)
 			

@@ -215,7 +215,7 @@ static void gtk_zoomed_finalize(GObject *zoomed_obj){
 
 static double zoom_transformation(double value)
 {
-	return (1 - log(1 + value * 0.01 * 3) / log(1 + 3)) / 2;
+	return (1 - log(1 + value * 0.01 * 3) / log((double)(1 + 3))) / 2;
 }
 
 void gtk_zoomed_get_current_screen_rect(GtkZoomed* zoomed, math::Rect2<int> *rect)

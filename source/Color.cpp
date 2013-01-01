@@ -186,17 +186,17 @@ void color_xyz_to_rgb(const Color* a, Color* b, const matrix3x3* transformation_
 	B=rgb.z;
 
 	if (R>0.0031308){
-		R=1.055*(pow(R,1/2.4))-0.055;
+		R=1.055*(pow(R,1/2.4f))-0.055;
 	}else{
 		R=12.92*R;
 	}
 	if (G>0.0031308){
-		G=1.055*(pow(G,1/2.4))-0.055;
+		G=1.055*(pow(G,1/2.4f))-0.055;
 	}else{
 		G=12.92*G;
 	}
 	if(B>0.0031308){
-		B=1.055*(pow(B,1/2.4))-0.055;
+		B=1.055*(pow(B,1/2.4f))-0.055;
 	}else{
 		B=12.92*B;
 	}
@@ -454,19 +454,19 @@ void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white)
 	Z = a->xyz.z / reference_white->z; //108.883f;
 
 	if (X>EPSILON){
-		X=pow(X,1.0/3.0);
+		X=pow(X,1.0f/3.0f);
 	}else{
-		X=(Kk*X+16.0)/116.0;
+		X=(Kk*X+16.0f)/116.0f;
 	}
 	if (Y>EPSILON){
-		Y=pow(Y,1.0/3.0);
+		Y=pow(Y,1.0f/3.0f);
 	}else{
-		Y=(Kk*Y+16.0)/116.0;
+		Y=(Kk*Y+16.0f)/116.0f;
 	}
 	if (Z>EPSILON){
-		Z=pow(Z,1.0/3.0);
+		Z=pow(Z,1.0f/3.0f);
 	}else{
-		Z=(Kk*Z+16.0)/116.0;
+		Z=(Kk*Z+16.0f)/116.0f;
 	}
 
 	b->lab.L=(116*Y)-16;
@@ -675,16 +675,16 @@ void color_hsv_to_hsl(const Color *a, Color *b)
 
 void color_rgb_get_linear(const Color* a, Color* b)
 {
-	b->rgb.red = pow(a->rgb.red, 1.0 / 2.1);
-	b->rgb.green = pow(a->rgb.green, 1.0 / 2.0);
-	b->rgb.blue = pow(a->rgb.blue, 1.0 / 2.1);
+	b->rgb.red = pow(a->rgb.red, 1.0f / 2.1f);
+	b->rgb.green = pow(a->rgb.green, 1.0f / 2.0f);
+	b->rgb.blue = pow(a->rgb.blue, 1.0f / 2.1f);
 }
 
 void color_linear_get_rgb(const Color* a, Color* b)
 {
-	b->rgb.red = pow(a->rgb.red, 2.1);
-	b->rgb.green = pow(a->rgb.green, 2.0);
-	b->rgb.blue = pow(a->rgb.blue, 2.1);
+	b->rgb.red = pow(a->rgb.red, 2.1f);
+	b->rgb.green = pow(a->rgb.green, 2.0f);
+	b->rgb.blue = pow(a->rgb.blue, 2.1f);
 }
 
 const matrix3x3* color_get_sRGB_transformation_matrix()

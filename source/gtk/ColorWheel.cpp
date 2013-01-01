@@ -331,7 +331,7 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 
 				if ((dist >= inner_radius_sq) && (dist <= radius_sq)){
 
-					double angle = atan2(dx, dy) + M_PI;
+					double angle = atan2((double)dx, (double)dy) + M_PI;
 
 					wheel->hue_to_hsl(angle / (M_PI * 2), &c);
 					color_hsl_to_rgb(&c, &c);
