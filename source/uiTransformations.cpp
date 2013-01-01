@@ -242,7 +242,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	args->transformations_params = dynv_get_dynv(args->gs->params, "gpick.transformations");
 	args->transformation = 0;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons("Transformations", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	GtkWidget *dialog = gtk_dialog_new_with_buttons("Display filters", parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
