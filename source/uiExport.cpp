@@ -75,11 +75,11 @@ static vector<struct ColorObject*> get_ordered_list(struct ColorList *color_list
 }
 
 int32_t palette_import_gpa(struct ColorList *color_list, const gchar* filename){
-    return palette_file_load (filename, color_list);
+	return palette_file_load (filename, color_list);
 }
 
 int32_t palette_export_gpa(struct ColorList *color_list, const gchar* filename, gboolean selected){
-    return palette_file_save (filename, color_list);
+	return palette_file_save (filename, color_list);
 }
 
 int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected){
@@ -95,7 +95,7 @@ int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, 
 
 		g_free(name);
 
-    vector<struct ColorObject*> ordered = get_ordered_list(color_list);
+		vector<struct ColorObject*> ordered = get_ordered_list(color_list);
 		for (vector<struct ColorObject*>::iterator i=ordered.begin(); i!=ordered.end(); ++i){
 			palette_export_gpl_color(*i, &f);
 		}
@@ -130,19 +130,16 @@ int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 		if (f.good() && line=="GIMP Palette"){
 			do{
 				getline(f, line);
-			}while (f.good() && line!="#");
+			}while (f.good() && ((line.size() < 1) || (line[0] > '9') || (line[0] < '0')));
 
-			if (line=="#"){
-				int r, g, b;
-				Color c;
-				struct ColorObject* color_object;
-				string strip_chars = " \t";
+			int r, g, b;
+			Color c;
+			struct ColorObject* color_object;
+			string strip_chars = " \t";
 
-				for(;;){
-					getline(f, line);
-					if (!f.good()) break;
-					if (line[0]=='#') continue;
-
+			for(;;){
+				if (!f.good()) break;
+				if (line[0]!='#'){
 					stringstream ss(line);
 
 					ss >> r >> g >> b;
@@ -159,8 +156,9 @@ int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 					color_list_add_color_object(color_list, color_object, TRUE);
 					color_object_release(color_object);
 				}
+				getline(f, line);
+			}
 
-			}else r = -1;
 		}else r = -1;
 
 		f.close();
