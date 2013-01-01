@@ -42,7 +42,7 @@ const char *Quantization::getReadableName()
 
 void Quantization::apply(Color *input, Color *output)
 {
-	if (clip_top) { 
+	if (clip_top) {
 		float max_intensity = (value - 1) / value;
 		output->rgb.red = MIN(max_intensity, boost::math::round(input->rgb.red * value) / value);
 		output->rgb.green = MIN(max_intensity, boost::math::round(input->rgb.green * value) / value);
@@ -98,7 +98,7 @@ QuantizationConfig::QuantizationConfig(Quantization &transformation){
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
-	clip_top = widget = gtk_check_button_new_with_label("Clip top-end");
+	clip_top = widget = gtk_check_button_new_with_label(_("Clip top-end"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), transformation.clip_top);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 

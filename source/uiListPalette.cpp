@@ -146,14 +146,20 @@ static void update_counts(ListPaletteArgs *args){
 			s << bounds.min_index;
 		}
 
-		s << " (" << selected_count;
-		if (selected_count > 1){
-			s << " colors) selected. ";
-		}else{
-			s << " color) selected. ";
-		}
+#ifdef ENABLE_NLS
+		s << " (" << boost::format(ngettext("%d color", "%d colors", selected_count)) % selected_count << ")";
+#else
+		s << " (" << ((selected_count == 1) ? "color" : "colors") << ")";
+#endif
+		s << " " << _("selected") << ". ";
 	}
-	s << "    Total  " << total_colors << " colors.";
+
+#ifdef ENABLE_NLS
+	s << boost::format(ngettext("Total %d color", "Total %d colors", total_colors)) % total_colors;
+#else
+	s << "Total " << total_colors << " colors.";
+#endif
+
 	gtk_label_set_text(GTK_LABEL(args->count_label), s.str().c_str());
 }
 

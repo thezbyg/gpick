@@ -605,7 +605,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 
     /*
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Threshold:",0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Threshold:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->merge_threshold = widget = gtk_hscale_new_with_range(0, 100, 0.1);
 	gtk_range_set_value(GTK_RANGE(widget), dynv_get_float_wd(args->params, "merge_threshold", 20));
 	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(update), args);
