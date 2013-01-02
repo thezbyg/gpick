@@ -291,7 +291,7 @@ static void type_toggled_cb(GtkWidget *widget, ColorMixerArgs *args) {
 
 		Color c;
 		gtk_color_get_color(GTK_COLOR(color_widget), &c);
-		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, args->mixer_type->name);
+		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, _(args->mixer_type->name));
 		update(0, args);
 	}
 }
@@ -504,7 +504,7 @@ static int set_rgb_color(ColorMixerArgs *args, struct ColorObject* color, uint32
 	Color c;
 	color_object_get_color(color, &c);
 	if (color_index == (uint32_t)-1){
-		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, args->mixer_type->name);
+		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, _(args->mixer_type->name));
 	}else{
 		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), &c, "");
 	}
@@ -674,7 +674,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 		sprintf(tmp, "color%d", i);
 		gtk_color_set_color(GTK_COLOR(args->color[i].input), dynv_get_color_wdc(args->params, tmp, &c), "");
 	}
-	gtk_color_set_color(GTK_COLOR(args->secondary_color), dynv_get_color_wdc(args->params, "secondary_color", &c), args->mixer_type->name);
+	gtk_color_set_color(GTK_COLOR(args->secondary_color), dynv_get_color_wdc(args->params, "secondary_color", &c), _(args->mixer_type->name));
 
 
 	hbox2 = gtk_hbox_new(FALSE, 0);
