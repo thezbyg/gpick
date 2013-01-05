@@ -142,9 +142,9 @@ class GpickEnvironment(SConsEnvironment):
 		try:
 			revision = subprocess.Popen(['hg', 'log', '--template', '"{rev}:{node}\\n"', '-r', 'tip',  self.GetLaunchDir()], shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
 			match = re.search('([\d]+):([\d\w]+)', str(revision))
-			revision = match.group(0)
+			revision = match.group(2)
 		except:
-			revision = ''
+			revision = 'not under version control system'
 
 		self.Replace(GPICK_BUILD_REVISION = revision,
 			GPICK_BUILD_DATE =  time.strftime ("%Y-%m-%d"),

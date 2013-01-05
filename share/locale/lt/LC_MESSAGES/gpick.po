@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-03 00:05+0200\n"
-"PO-Revision-Date: 2013-01-03 00:15+0300\n"
+"POT-Creation-Date: 2013-01-05 16:16+0200\n"
+"PO-Revision-Date: 2013-01-05 16:16+0300\n"
 "Last-Translator: Albertas Vyšniauskas <thezbyg@gmail.com>\n"
 "Language-Team: \n"
 "Language: Lithuanian\n"
@@ -454,9 +454,9 @@ msgid "Advanced color picker"
 msgstr "Pažangi spalvų rinkyklė"
 
 #: source/uiAbout.cpp:126
-msgid "Copyrights © 2009-2012, Albertas Vyšniauskas and Gpick development team"
+msgid "Copyrights © 2009-2013, Albertas Vyšniauskas and Gpick development team"
 msgstr ""
-"Autorinės teisės priklauso © 2009-2012, Albertui Vyšniauskui ir Gpick kūrimo "
+"Autorinės teisės priklauso © 2009-2013, Albertui Vyšniauskui ir Gpick kūrimo "
 "komandai"
 
 #: source/uiAbout.cpp:141
