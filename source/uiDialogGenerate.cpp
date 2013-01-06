@@ -237,7 +237,7 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_li
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->gen_type = gtk_combo_box_new_text();
 	for (uint32_t i = 0; i < generate_scheme_get_n_scheme_types(); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), generate_scheme_get_scheme_type(i)->name);
+		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
 	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK(update), args);
