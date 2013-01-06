@@ -36,10 +36,10 @@ if env['TOOLCHAIN'] == 'msvc':
 	local_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'pango-1.0', 'pangocairo-1.0', 'intl'])
 
 if local_env['BUILD_TARGET'] == 'win32':
-	if not env['TOOLCHAIN'] == 'msvc':
+	if not (env['TOOLCHAIN'] == 'msvc'):
 		local_env.Append(LINKFLAGS = '-mwindows')
 	else:
-		local_env.Append(LINKFLAGS = ['/SUBSYSTEM:WINDOWS', '/ENTRY:mainCRTStartup'])
+		local_env.Append(LINKFLAGS = ['/SUBSYSTEM:WINDOWS', '/ENTRY:mainCRTStartup'], CPPDEFINES = ['XML_STATIC'])
 	objects.append(SConscript(['winres/SConscript'], exports='env'))
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt'])
