@@ -110,6 +110,12 @@ static void find_selection_bounds(GtkTreeModel *model, GtkTreePath *path, GtkTre
 	args->last_index = index;
 }
 
+static boost::format format_ignore_arg_errors(const std::string &f_string) {
+	boost::format fmter(f_string);
+	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+	return fmter;
+}
+
 static void update_counts(ListPaletteArgs *args){
 	stringstream s;
 	GtkTreeSelection *sel;
@@ -147,7 +153,13 @@ static void update_counts(ListPaletteArgs *args){
 		}
 
 #ifdef ENABLE_NLS
-		s << " (" << boost::format(ngettext("%d color", "%d colors", selected_count)) % selected_count << ")";
+		string selected_color_count;
+		try{
+			selected_color_count = (format_ignore_arg_errors(ngettext("%d color", "%d colors", selected_count)) % selected_count).str();
+		}catch(const boost::io::format_error &e){
+			selected_color_count = ngettext("%d color", "%d colors", selected_count);
+		}
+		s << " (" << selected_color_count << ")";
 #else
 		s << " (" << ((selected_count == 1) ? "color" : "colors") << ")";
 #endif
@@ -155,7 +167,13 @@ static void update_counts(ListPaletteArgs *args){
 	}
 
 #ifdef ENABLE_NLS
-	s << boost::format(ngettext("Total %d color", "Total %d colors", total_colors)) % total_colors;
+	string total_color_count;
+	try{
+		total_color_count = (format_ignore_arg_errors(ngettext("Total %d color", "Total %d colors", total_colors)) % total_colors).str();
+	}catch(const boost::io::format_error &e){
+		total_color_count = ngettext("Total %d color", "Total %d colors", total_colors);
+	}
+	s << total_color_count;
 #else
 	s << "Total " << total_colors << " colors.";
 #endif
