@@ -11,10 +11,11 @@ local_env = env.Clone()
 if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
-	if local_env['ENABLE_NLS']:
-		local_env.Append(
-			CPPDEFINES = ['ENABLE_NLS'],
-			)
+
+if local_env['ENABLE_NLS']:
+	local_env.Append(
+		CPPDEFINES = ['ENABLE_NLS'],
+	)
 
 sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('transformation/*.cpp')
 
