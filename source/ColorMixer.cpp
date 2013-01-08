@@ -37,7 +37,7 @@
 #include "uiApp.h"
 
 #include <gdk/gdkkeysyms.h>
-#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include <math.h>
 #include <string.h>
@@ -118,6 +118,8 @@ class ColorMixerColorNameAssigner: public ToolColorNameAssigner {
 
 static int set_rgb_color(ColorMixerArgs *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(ColorMixerArgs *args, struct ColorObject* color, GtkWidget* color_widget);
+
+
 
 static void calc(ColorMixerArgs *args, bool preview, bool save_settings){
 
@@ -220,15 +222,29 @@ static void on_color_edit(GtkWidget *widget,  gpointer item) {
 	color_object_release(color_object);
 }
 
+static boost::format format_ignore_arg_errors(const std::string &f_string) {
+	boost::format fmter(f_string);
+	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+	return fmter;
+}
+
 static string identify_color_widget(GtkWidget *widget, ColorMixerArgs *args)
 {
 	if (args->secondary_color == widget){
-		return "secondary";
+		return _("secondary");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].input == widget){
-			return "primary " + boost::lexical_cast<string>(i + 1);
+			try{
+				return (format_ignore_arg_errors(_("primary %d")) % (i + 1)).str();
+			}catch(const boost::io::format_error &e){
+				return (format_ignore_arg_errors("primary %d") % (i + 1)).str();
+			}
 		}else if (args->color[i].output == widget){
-			return "result " + boost::lexical_cast<string>(i + 1);
+			try{
+				return (format_ignore_arg_errors(_("result %d")) % (i + 1)).str();
+			}catch(const boost::io::format_error &e){
+				return (format_ignore_arg_errors("result %d") % (i + 1)).str();
+			}
 		}
 	}
 	return "unknown";

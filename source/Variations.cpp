@@ -37,7 +37,7 @@
 #include "uiApp.h"
 
 #include <gdk/gdkkeysyms.h>
-#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 #include <math.h>
 #include <string.h>
@@ -111,6 +111,13 @@ class VariationsColorNameAssigner: public ToolColorNameAssigner {
 			return m_stream.str();
 		}
 };
+
+static boost::format format_ignore_arg_errors(const std::string &f_string) {
+	boost::format fmter(f_string);
+	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
+	return fmter;
+}
+
 
 static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* color, GtkWidget* color_widget);
@@ -215,16 +222,24 @@ static void on_color_edit(GtkWidget *widget,  gpointer item) {
 static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
 {
 	if (args->all_colors == widget){
-		return "all colors";
+		return _("all colors");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == widget){
-			return "primary " + boost::lexical_cast<string>(i + 1);
+			try{
+				return (format_ignore_arg_errors(_("primary %d")) % (i + 1)).str();
+			}catch(const boost::io::format_error &e){
+				return (format_ignore_arg_errors("primary %d") % (i + 1)).str();
+			}
 		}
 		for (int j = 0; j <= VAR_COLOR_WIDGETS; ++j){
 			if (args->color[i].var_colors[j] == widget){
 				if (j > VAR_COLOR_WIDGETS / 2)
 					j--;
-				return "result " + boost::lexical_cast<string>(j + 1) + " line " + boost::lexical_cast<string>(i + 1);
+				try{
+					return (format_ignore_arg_errors(_("result %d line %d")) % (j + 1) % (i + 1)).str();
+				}catch(const boost::io::format_error &e){
+					return (format_ignore_arg_errors("result %d line %d") % (j + 1) % (i + 1)).str();
+				}
 			}
 		}
 	}

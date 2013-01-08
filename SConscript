@@ -59,6 +59,8 @@ if not env.GetOption('clean'):
 	if env['ENABLE_NLS']:
 		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
 		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}, 'required':False}
+		programs['MSGMERGE'] = {'checks':{'msgmerge':'MSGMERGE'}, 'required':False}
+		programs['MSGCAT'] = {'checks':{'msgcat':'MSGCAT'}, 'required':False}
 	if env['EXPERIMENTAL_CSS_PARSER'] and not env['PREBUILD_GRAMMAR']:
 		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
 		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
@@ -144,9 +146,10 @@ if env['ENABLE_NLS']:
 		locales
 	])
 
-	template = env.Xgettext("template.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'))
+	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
+	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 
-	env.Append(XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
+	template = env.Msgcat("template.pot", [template_c, template_lua], MSGCAT_FLAGS = ['--use-first'])
 
 	env.Alias(target="template", source=[
 		template
