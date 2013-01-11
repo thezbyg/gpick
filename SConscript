@@ -116,15 +116,15 @@ else:
 	env['LINKCOM'] = [env['LINKCOM'], 'mt.exe -nologo -manifest ${TARGET}.manifest -outputresource:$TARGET;1']
 	if env['DEBUG']:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/Zi', '/wd4819'],
-				CPPDEFINES = {'_BIND_TO_CURRENT_VCLIBS_VERSION': '1'},
-				LINKFLAGS = ['/LTCG', '/MANIFEST', '/DEBUG'],
+				CPPFLAGS = ['/Od', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CPPDEFINES = ['WIN32', '_DEBUG'],
+				LINKFLAGS = ['/MANIFEST', '/DEBUG'],
 			)
 	else:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/Zi', '/wd4819'],
-				CPPDEFINES = {'_BIND_TO_CURRENT_VCLIBS_VERSION': '1'},
-				LINKFLAGS = ['/LTCG', '/MANIFEST', '/DEBUG'],
+				CPPFLAGS = ['/O2', '/Oi', '/GL', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CPPDEFINES = ['WIN32', 'NDEBUG'],
+				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
 			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
