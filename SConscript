@@ -17,6 +17,7 @@ vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Add('TOOLCHAIN', 'Toolchain', 'gcc')
 vars.Add(BoolVariable('EXPERIMENTAL_CSS_PARSER', 'Compile with experimental CSS parser', False))
+vars.Add(BoolVariable('DOWNLOAD_RESENE_COLOR_LIST', 'Download Resene color list file at program startup', False))
 vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
@@ -72,6 +73,9 @@ if not env.GetOption('clean'):
 		libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
 		libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
 		libs['LUA_PC'] = {'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
+
+	if env['DOWNLOAD_RESENE_COLOR_LIST']:
+		libs['CURL_PC'] = {'checks':{'libcurl':'>= 7'}}
 
 	env.ConfirmLibs(conf, libs)
 

@@ -17,7 +17,7 @@
  */
 
 #include "ColorNames.h"
-#include "MathUtil.h"
+#include "../MathUtil.h"
 
 #include <math.h>
 #include <string.h>

@@ -11,6 +11,8 @@ local_env = env.Clone()
 if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	if env['DOWNLOAD_RESENE_COLOR_LIST']:
+		local_env.ParseConfig('pkg-config --libs $CURL_PC')
 
 if local_env['ENABLE_NLS']:
 	local_env.Append(
@@ -32,6 +34,9 @@ if env['EXPERIMENTAL_CSS_PARSER']:
 	objects.append(parser_objects)
 else:
 	generated_files = []
+
+if env['DOWNLOAD_RESENE_COLOR_LIST']:
+	objects.append(SConscript(['color_names/SConscript'], exports='env'))
 
 if env['TOOLCHAIN'] == 'msvc':
 	local_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'expat2.1', 'pango-1.0', 'pangocairo-1.0', 'intl'])
