@@ -3,663 +3,662 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2012-02-18 12:51+0200\n"
-"PO-Revision-Date: 2012-02-18 12:52+0300\n"
+"POT-Creation-Date: 2013-01-05 16:16+0200\n"
+"PO-Revision-Date: 2013-01-05 16:16+0300\n"
 "Last-Translator: Albertas Vyšniauskas <thezbyg@gmail.com>\n"
 "Language-Team: \n"
-"Language: \n"
+"Language: Lithuanian\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.4\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"Plural-Forms: nplurals=3; plural=((n%10==1) && (n%100!=11) ? 0 : ((n%10>=2) "
+"&& (n%100<10) || (n%100>=20)) ? 1 : 2);\n"
 
-#: source/BlendColors.cpp:262
-#: source/BrightnessDarkness.cpp:236
-#: source/ColorMixer.cpp:280
-#: source/ColorPicker.cpp:415
-#: source/GenerateScheme.cpp:415
-#: source/LayoutPreview.cpp:387
-#: source/Variations.cpp:281
-#: source/uiDialogOptions.cpp:185
-#: source/uiDialogOptions.cpp:204
+#: source/BlendColors.cpp:114 source/BlendColors.cpp:116
+msgid "blend node"
+msgstr "suliejimo mazgas"
+
+#: source/BlendColors.cpp:119
+msgid "blend"
+msgstr "suliejimas"
+
+#: source/BlendColors.cpp:308 source/BrightnessDarkness.cpp:260
+#: source/ColorMixer.cpp:305 source/ColorPicker.cpp:367
+#: source/GenerateScheme.cpp:444 source/LayoutPreview.cpp:405
+#: source/Variations.cpp:316 source/uiDialogOptions.cpp:215
+#: source/uiDialogOptions.cpp:234
 msgid "_Add to palette"
 msgstr "_Įkelti į paletę"
 
-#: source/BlendColors.cpp:268
-#: source/BrightnessDarkness.cpp:241
-#: source/ColorMixer.cpp:285
-#: source/ColorPicker.cpp:419
-#: source/GenerateScheme.cpp:420
-#: source/LayoutPreview.cpp:392
-#: source/Variations.cpp:286
+#: source/BlendColors.cpp:314 source/BrightnessDarkness.cpp:265
+#: source/ColorMixer.cpp:310 source/ColorPicker.cpp:371
+#: source/GenerateScheme.cpp:449 source/LayoutPreview.cpp:410
+#: source/Variations.cpp:321
 msgid "A_dd all to palette"
 msgstr "Į_kelti visas į paletę"
 
-#: source/BlendColors.cpp:274
-#: source/BrightnessDarkness.cpp:247
-#: source/ColorMixer.cpp:292
-#: source/ColorPicker.cpp:425
-#: source/GenerateScheme.cpp:427
-#: source/LayoutPreview.cpp:398
-#: source/Variations.cpp:293
-#: source/uiDialogOptions.cpp:190
-#: source/uiDialogOptions.cpp:209
+#: source/BlendColors.cpp:320 source/BrightnessDarkness.cpp:271
+#: source/ColorMixer.cpp:317 source/ColorPicker.cpp:377
+#: source/GenerateScheme.cpp:456 source/LayoutPreview.cpp:416
+#: source/Variations.cpp:328 source/uiDialogOptions.cpp:220
+#: source/uiDialogOptions.cpp:239
 msgid "_Copy to clipboard"
 msgstr "_Kopijuoti"
 
-#: source/BlendColors.cpp:328
-#: source/GenerateScheme.cpp:456
+#: source/BlendColors.cpp:374 source/GenerateScheme.cpp:485
 msgid "_Reset"
 msgstr "_Atstatyti"
 
-#: source/BlendColors.cpp:468
+#: source/BlendColors.cpp:517
 msgid "Start:"
 msgstr "Pradžia:"
 
-#: source/BlendColors.cpp:484
+#: source/BlendColors.cpp:533
 msgid "Middle:"
 msgstr "Vidurys:"
 
-#: source/BlendColors.cpp:502
+#: source/BlendColors.cpp:551
 msgid "End:"
 msgstr "Pabaiga:"
 
-#: source/BlendColors.cpp:519
-#: source/GenerateScheme.cpp:843
-#: source/uiDialogGenerate.cpp:212
-#: source/uiDialogMix.cpp:197
+#: source/BlendColors.cpp:568 source/GenerateScheme.cpp:875
+#: source/uiDialogGenerate.cpp:237 source/uiDialogMix.cpp:249
 #: source/transformation/ColorVisionDeficiency.cpp:363
 msgid "Type:"
 msgstr "Tipas:"
 
-#: source/BlendColors.cpp:521
-#: source/uiDialogMix.cpp:199
+#: source/BlendColors.cpp:570 source/ColorWheelType.cpp:56
+#: source/uiDialogMix.cpp:251
 msgid "RGB"
 msgstr "RGB"
 
-#: source/BlendColors.cpp:522
-#: source/uiDialogMix.cpp:200
+#: source/BlendColors.cpp:571 source/uiDialogMix.cpp:252
 msgid "HSV"
 msgstr "HSV"
 
-#: source/BlendColors.cpp:523
-#: source/uiDialogMix.cpp:201
+#: source/BlendColors.cpp:572 source/uiDialogMix.cpp:253
 msgid "HSV shortest hue distance"
 msgstr "HSV su mažiausiu atspalvio skirumu"
 
-#: source/BlendColors.cpp:524
-#: source/uiDialogMix.cpp:202
+#: source/BlendColors.cpp:573 source/uiDialogMix.cpp:254
 msgid "LAB"
 msgstr "LAB"
 
-#: source/BlendColors.cpp:533
+#: source/BlendColors.cpp:582
 msgid "Start steps:"
 msgstr "Pradiniai žingsniai:"
 
-#: source/BlendColors.cpp:541
+#: source/BlendColors.cpp:590
 msgid "End steps:"
 msgstr "Pabaigos žingsniai:"
 
-#: source/BlendColors.cpp:578
+#: source/BlendColors.cpp:627
 msgid "Blend colors"
 msgstr "Sulieti spalvas"
 
-#: source/BrightnessDarkness.cpp:263
-#: source/ColorMixer.cpp:332
-#: source/ColorPicker.cpp:435
-#: source/GenerateScheme.cpp:440
-#: source/LayoutPreview.cpp:412
-#: source/Variations.cpp:333
+#: source/BrightnessDarkness.cpp:86
+msgid "brightness darkness"
+msgstr "šviesumas tamsumas"
+
+#: source/BrightnessDarkness.cpp:287 source/ColorMixer.cpp:357
+#: source/ColorPicker.cpp:387 source/GenerateScheme.cpp:469
+#: source/LayoutPreview.cpp:430 source/Variations.cpp:368
 msgid "_Edit..."
 msgstr "_Keisti..."
 
-#: source/BrightnessDarkness.cpp:268
-#: source/ColorMixer.cpp:337
-#: source/ColorPicker.cpp:439
-#: source/GenerateScheme.cpp:445
-#: source/LayoutPreview.cpp:417
-#: source/Variations.cpp:338
+#: source/BrightnessDarkness.cpp:292 source/ColorMixer.cpp:362
+#: source/ColorPicker.cpp:391 source/GenerateScheme.cpp:474
+#: source/LayoutPreview.cpp:435 source/Variations.cpp:373
 msgid "_Paste"
 msgstr "_Įdėti"
 
-#: source/BrightnessDarkness.cpp:361
+#: source/BrightnessDarkness.cpp:385
 msgid "Brightness"
 msgstr "Šviesumas"
 
-#: source/BrightnessDarkness.cpp:361
+#: source/BrightnessDarkness.cpp:385
 msgid "Darkness"
 msgstr "Tamsumas"
 
-#: source/BrightnessDarkness.cpp:407
+#: source/BrightnessDarkness.cpp:431
 msgid "Brightness Darkness"
 msgstr "Šviesumas, tamsumas"
 
-#: source/ColorMixer.cpp:660
-msgid "Opacity:"
-msgstr "Nepermatomumas:"
-
-#: source/ColorMixer.cpp:689
+#: source/ColorMixer.cpp:66
 msgid "Normal"
 msgstr "Paprastas"
 
-#: source/ColorMixer.cpp:690
+#: source/ColorMixer.cpp:67
 msgid "Multiply"
 msgstr "Daugyba"
 
-#: source/ColorMixer.cpp:691
+#: source/ColorMixer.cpp:68
 msgid "Add"
 msgstr "Sudėtis"
 
-#: source/ColorMixer.cpp:692
+#: source/ColorMixer.cpp:69
 msgid "Difference"
 msgstr "Skirtumas"
 
-#: source/ColorMixer.cpp:693
-#: source/ColorPicker.cpp:681
-#: source/ColorPicker.cpp:682
-#: source/ColorPicker.cpp:1267
-#: source/ColorPicker.cpp:1281
-#: source/Variations.cpp:694
+#: source/ColorMixer.cpp:70 source/ColorPicker.cpp:1180
+#: source/ColorPicker.cpp:1194 source/ColorSpaceType.cpp:30
+#: source/ColorSpaceType.cpp:37 source/Variations.cpp:66
 msgid "Hue"
 msgstr "Atspalvis"
 
-#: source/ColorMixer.cpp:694
-#: source/ColorPicker.cpp:681
-#: source/ColorPicker.cpp:682
-#: source/ColorPicker.cpp:1267
-#: source/ColorPicker.cpp:1281
-#: source/Variations.cpp:695
+#: source/ColorMixer.cpp:71 source/ColorPicker.cpp:1180
+#: source/ColorPicker.cpp:1194 source/ColorSpaceType.cpp:31
+#: source/ColorSpaceType.cpp:38 source/Variations.cpp:67
 msgid "Saturation"
 msgstr "Įsotinimas"
 
-#: source/ColorMixer.cpp:695
-#: source/ColorPicker.cpp:682
-#: source/ColorPicker.cpp:685
-#: source/ColorPicker.cpp:1281
-#: source/ColorPicker.cpp:1323
-#: source/Variations.cpp:696
+#: source/ColorMixer.cpp:72 source/ColorPicker.cpp:1194
+#: source/ColorPicker.cpp:1236 source/ColorPicker.cpp:1250
+#: source/ColorSpaceType.cpp:39 source/ColorSpaceType.cpp:59
+#: source/ColorSpaceType.cpp:66 source/Variations.cpp:68
 msgid "Lightness"
 msgstr "Šviesumas"
 
-#: source/ColorMixer.cpp:697
+#: source/ColorMixer.cpp:114
+msgid "color mixer"
+msgstr "spalvų maišyklė"
+
+#: source/ColorMixer.cpp:688
+msgid "Opacity:"
+msgstr "Nepermatomumas:"
+
+#: source/ColorMixer.cpp:716
 msgid "Color mixer"
 msgstr "Spalvų maišyklė"
 
-#: source/ColorPicker.cpp:472
+#: source/ColorPicker.cpp:424
 msgid "Press Spacebar to sample color under mouse pointer"
 msgstr "Paspauskite Tarpą norėdami gauti spalvą esančią po pelės kursoriu"
 
-#: source/ColorPicker.cpp:654
-#: source/ColorPicker.cpp:845
-msgid "Edit"
-msgstr "Keisti"
-
-#: source/ColorPicker.cpp:681
-#: source/ColorPicker.cpp:1267
-msgid "Value"
-msgstr "Reikšmė"
-
-#: source/ColorPicker.cpp:683
-#: source/ColorPicker.cpp:1295
-msgid "Red"
-msgstr "Raudona"
-
-#: source/ColorPicker.cpp:683
-#: source/ColorPicker.cpp:1295
-msgid "Green"
-msgstr "Žalia"
-
-#: source/ColorPicker.cpp:683
-#: source/ColorPicker.cpp:1295
-msgid "Blue"
-msgstr "Mėlyna"
-
-#: source/ColorPicker.cpp:684
-#: source/ColorPicker.cpp:1309
-msgid "Cyan"
-msgstr "Žydra"
-
-#: source/ColorPicker.cpp:684
-#: source/ColorPicker.cpp:1309
-msgid "Magenta"
-msgstr "Purpurinė"
-
-#: source/ColorPicker.cpp:684
-#: source/ColorPicker.cpp:1309
-msgid "Yellow"
-msgstr "Geltona"
-
-#: source/ColorPicker.cpp:684
-#: source/ColorPicker.cpp:1309
-msgid "Key"
-msgstr "Juoda"
-
-#: source/ColorPicker.cpp:835
-#: source/uiConverter.cpp:163
+#: source/ColorPicker.cpp:699 source/uiConverter.cpp:163
 msgid "Copy"
 msgstr "Kopijavimas"
 
-#: source/ColorPicker.cpp:839
-#: source/uiConverter.cpp:172
+#: source/ColorPicker.cpp:703 source/uiConverter.cpp:172
 msgid "Paste"
 msgstr "Įdėjimas"
 
-#: source/ColorPicker.cpp:907
-#: source/uiApp.cpp:1005
+#: source/ColorPicker.cpp:709 source/uiColorInput.cpp:119
+msgid "Edit"
+msgstr "Keisti"
+
+#: source/ColorPicker.cpp:771 source/uiApp.cpp:1012
+#: source/uiDialogSort.cpp:222
 msgid "None"
 msgstr "Joks"
 
-#: source/ColorPicker.cpp:908
+#: source/ColorPicker.cpp:772
 msgid "Linear"
 msgstr "Tiesinis"
 
-#: source/ColorPicker.cpp:909
+#: source/ColorPicker.cpp:773
 msgid "Quadratic"
 msgstr "Kvardatinis"
 
-#: source/ColorPicker.cpp:910
+#: source/ColorPicker.cpp:774
 msgid "Cubic"
 msgstr "Kubinis"
 
-#: source/ColorPicker.cpp:911
+#: source/ColorPicker.cpp:775
 msgid "Exponential"
 msgstr "Eksponentinis"
 
-#: source/ColorPicker.cpp:1230
+#: source/ColorPicker.cpp:951
+msgid "Click on swatch area to begin adding colors to palette"
+msgstr "Paspauskite mėginio plote norėdami pradėti spalvų rinkimą į paletę"
+
+#: source/ColorPicker.cpp:1143
 msgid "Settings"
 msgstr "Nustatymai"
 
-#: source/ColorPicker.cpp:1240
+#: source/ColorPicker.cpp:1153
 msgid "Oversample:"
 msgstr "Mėginio vidurkis"
 
-#: source/ColorPicker.cpp:1247
+#: source/ColorPicker.cpp:1160
 msgid "Falloff:"
 msgstr "Nuožulnumas:"
 
-#: source/ColorPicker.cpp:1254
+#: source/ColorPicker.cpp:1167
 msgid "Zoom:"
 msgstr "Priartinimas:"
 
-#: source/ColorPicker.cpp:1331
+#: source/ColorPicker.cpp:1180 source/ColorSpaceType.cpp:32
+msgid "Value"
+msgstr "Reikšmė"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:44
+msgid "Red"
+msgstr "Raudona"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:45
+msgid "Green"
+msgstr "Žalia"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:46
+msgid "Blue"
+msgstr "Mėlyna"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:51
+msgid "Cyan"
+msgstr "Žydra"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:52
+msgid "Magenta"
+msgstr "Purpurinė"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:53
+msgid "Yellow"
+msgstr "Geltona"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:54
+msgid "Key"
+msgstr "Juoda"
+
+#: source/ColorPicker.cpp:1258
 msgid "Info"
 msgstr "Informacija"
 
-#: source/ColorPicker.cpp:1340
+#: source/ColorPicker.cpp:1267
 msgid "Color name:"
 msgstr "Spalvos pavadinimas:"
 
-#: source/ColorPicker.cpp:1353
+#: source/ColorPicker.cpp:1280
 msgid "Contrast:"
 msgstr "Kontrastas:"
 
-#: source/ColorPicker.cpp:1358
-#: source/ColorPicker.cpp:1364
+#: source/ColorPicker.cpp:1285 source/ColorPicker.cpp:1291
 msgid "Sample"
 msgstr "Pavyzdys"
 
-#: source/ColorPicker.cpp:1397
+#: source/ColorPicker.cpp:1324
 msgid "Color picker"
 msgstr "Spalvų rinkyklė"
 
-#: source/GenerateScheme.cpp:266
-msgid "_Locked"
-msgstr "_Užrakinta"
+#: source/ColorWheelType.cpp:57
+msgid "RYB v1"
+msgstr "RYB v1"
 
-#: source/GenerateScheme.cpp:273
-msgid "_Reset scheme"
-msgstr "_Atstatyti schemą"
+#: source/ColorWheelType.cpp:58
+msgid "RYB v2"
+msgstr "RYB v2"
 
-#: source/GenerateScheme.cpp:819
-msgid "Hue:"
-msgstr "Atspalvis:"
-
-#: source/GenerateScheme.cpp:826
-#: source/uiDialogVariations.cpp:169
-msgid "Saturation:"
-msgstr "Įsotinimas:"
-
-#: source/GenerateScheme.cpp:834
-#: source/uiDialogVariations.cpp:154
-msgid "Lightness:"
-msgstr "Šviesumas:"
-
-#: source/GenerateScheme.cpp:853
-#: source/uiDialogGenerate.cpp:221
-msgid "Color wheel:"
-msgstr "Spalvų ratas:"
-
-#: source/GenerateScheme.cpp:888
+#: source/GenerateScheme.cpp:90
 msgid "Complementary"
 msgstr "Papildanti"
 
-#: source/GenerateScheme.cpp:889
+#: source/GenerateScheme.cpp:91
 msgid "Analogous"
 msgstr "Analogiška"
 
-#: source/GenerateScheme.cpp:890
+#: source/GenerateScheme.cpp:92
 msgid "Triadic"
 msgstr "Triada"
 
-#: source/GenerateScheme.cpp:891
+#: source/GenerateScheme.cpp:93
 msgid "Split-Complementary"
 msgstr "Perskirtas papildantis"
 
-#: source/GenerateScheme.cpp:892
+#: source/GenerateScheme.cpp:94
 msgid "Rectangle (tetradic)"
 msgstr "Keturkampis (tetrada)"
 
-#: source/GenerateScheme.cpp:893
+#: source/GenerateScheme.cpp:95
 msgid "Square"
 msgstr "Kvadratas"
 
-#: source/GenerateScheme.cpp:894
+#: source/GenerateScheme.cpp:96
 msgid "Neutral"
 msgstr "Neutralus"
 
-#: source/GenerateScheme.cpp:895
+#: source/GenerateScheme.cpp:97
 msgid "Clash"
 msgstr "Nedarna"
 
-#: source/GenerateScheme.cpp:896
+#: source/GenerateScheme.cpp:98
 msgid "Five-Tone"
 msgstr "Penki tonai"
 
-#: source/GenerateScheme.cpp:897
+#: source/GenerateScheme.cpp:99
 msgid "Six-Tone"
 msgstr "Šeši tonai"
 
-#: source/GenerateScheme.cpp:899
+#: source/GenerateScheme.cpp:119 source/uiDialogGenerate.cpp:76
+msgid "scheme"
+msgstr "schema"
+
+#: source/GenerateScheme.cpp:292
+msgid "_Locked"
+msgstr "_Užrakinta"
+
+#: source/GenerateScheme.cpp:299
+msgid "_Reset scheme"
+msgstr "_Atstatyti schemą"
+
+#: source/GenerateScheme.cpp:851
+msgid "Hue:"
+msgstr "Atspalvis:"
+
+#: source/GenerateScheme.cpp:858 source/uiDialogVariations.cpp:171
+msgid "Saturation:"
+msgstr "Įsotinimas:"
+
+#: source/GenerateScheme.cpp:866 source/uiDialogVariations.cpp:156
+msgid "Lightness:"
+msgstr "Šviesumas:"
+
+#: source/GenerateScheme.cpp:885 source/uiDialogGenerate.cpp:246
+msgid "Color wheel:"
+msgstr "Spalvų ratas:"
+
+#: source/GenerateScheme.cpp:919
 msgid "Scheme generation"
 msgstr "Schemos generavimas"
 
-#: source/LayoutPreview.cpp:131
+#: source/LayoutPreview.cpp:78
+msgid "layout preview"
+msgstr "išdėstymo peržiūra"
+
+#: source/LayoutPreview.cpp:153
 msgid "Style item"
 msgstr "Stiliaus objektas"
 
-#: source/LayoutPreview.cpp:140
+#: source/LayoutPreview.cpp:162
 msgid "CSS selector"
 msgstr "CSS selectorius"
 
-#: source/LayoutPreview.cpp:162
+#: source/LayoutPreview.cpp:184
 msgid "Assign CSS selectors"
 msgstr "Priskirti CSS selektorius"
 
-#: source/LayoutPreview.cpp:529
-#: source/LayoutPreview.cpp:577
-#: source/uiApp.cpp:683
-#: source/uiApp.cpp:704
+#: source/LayoutPreview.cpp:547 source/LayoutPreview.cpp:595
+#: source/uiApp.cpp:690 source/uiApp.cpp:711
 msgid "File could not be saved"
 msgstr "Nepavyko išsaugoti failą"
 
-#: source/LayoutPreview.cpp:540
-#: source/uiExport.cpp:468
-#: source/uiExport.cpp:534
+#: source/LayoutPreview.cpp:558 source/uiExport.cpp:457
+#: source/uiExport.cpp:523
 msgid "Export"
 msgstr "Eksportuoti"
 
-#: source/LayoutPreview.cpp:554
+#: source/LayoutPreview.cpp:572
 msgid "Cascading Style Sheets *.css"
 msgstr "Cascading Style Sheets *.css"
 
-#: source/LayoutPreview.cpp:648
+#: source/LayoutPreview.cpp:666
 msgid "Layout:"
 msgstr "Išdėstymas:"
 
-#: source/LayoutPreview.cpp:654
+#: source/LayoutPreview.cpp:672
 msgid "Export CSS File"
 msgstr "Eksportuoti CSS failą"
 
-#: source/LayoutPreview.cpp:655
+#: source/LayoutPreview.cpp:673
 msgid "Export CSS file"
 msgstr "Eksportuoti CSS failą"
 
-#: source/LayoutPreview.cpp:664
+#: source/LayoutPreview.cpp:682
 msgid "_Export CSS File As..."
 msgstr "_Eksportuoti CSS failą kaip..."
 
-#: source/LayoutPreview.cpp:668
+#: source/LayoutPreview.cpp:686
 msgid "_Assign CSS Selectors..."
 msgstr "_Priskirti CSS selektorius..."
 
-#: source/LayoutPreview.cpp:741
+#: source/LayoutPreview.cpp:759
 msgid "Layout preview"
 msgstr "Išdėstymo peržiūra"
 
-#: source/ToolColorNaming.cpp:32
+#: source/ToolColorNaming.cpp:25
 msgid "_Empty"
 msgstr "_Tuščia"
 
-#: source/ToolColorNaming.cpp:33
+#: source/ToolColorNaming.cpp:26
 msgid "_Automatic name"
 msgstr "_Automatinis pavadinimas"
 
-#: source/ToolColorNaming.cpp:34
+#: source/ToolColorNaming.cpp:27
 msgid "_Tool specific"
 msgstr "_Priklausomai nuo įrankio"
 
-#: source/Variations.cpp:665
+#: source/Variations.cpp:69
+msgid "Lightness (Lab)"
+msgstr "Šviesumas (Lab)"
+
+#: source/Variations.cpp:110
+msgid "variations"
+msgstr "pokyčiai"
+
+#: source/Variations.cpp:702
 #: source/transformation/ColorVisionDeficiency.cpp:386
 msgid "Strength:"
 msgstr "Stiprumas:"
 
-#: source/Variations.cpp:697
-msgid "Lightness (Lab)"
-msgstr "Šviesumas (Lab)"
-
-#: source/Variations.cpp:699
-#: source/uiDialogVariations.cpp:140
+#: source/Variations.cpp:730 source/uiDialogVariations.cpp:142
 msgid "Variations"
 msgstr "Pokyčiai"
 
-#: source/uiAbout.cpp:81
+#: source/uiAbout.cpp:88
 msgid "About Gpick"
 msgstr "Apie Gpick"
 
-#: source/uiAbout.cpp:114
+#: source/uiAbout.cpp:121
 msgid "Advanced color picker"
 msgstr "Pažangi spalvų rinkyklė"
 
-#: source/uiAbout.cpp:133
+#: source/uiAbout.cpp:126
+msgid "Copyrights © 2009-2013, Albertas Vyšniauskas and Gpick development team"
+msgstr ""
+"Autorinės teisės priklauso © 2009-2013, Albertui Vyšniauskui ir Gpick kūrimo "
+"komandai"
+
+#: source/uiAbout.cpp:141
 msgid "License"
 msgstr "Licencija"
 
-#: source/uiAbout.cpp:134
+#: source/uiAbout.cpp:142
 msgid "Credits"
 msgstr "Padėkos"
 
-#: source/uiAbout.cpp:135
+#: source/uiAbout.cpp:143
 msgid "Expat License"
 msgstr "Expat licencija"
 
-#: source/uiAbout.cpp:136
+#: source/uiAbout.cpp:144
 msgid "Lua License"
 msgstr "Lua licencija"
 
-#: source/uiApp.cpp:347
+#: source/uiApp.cpp:354
 msgid "New palette"
 msgstr "Nauja paletė"
 
-#: source/uiApp.cpp:353
+#: source/uiApp.cpp:360
 msgid "(Imported)"
 msgstr "(Importuotas)"
 
-#: source/uiApp.cpp:523
-#: source/uiApp.cpp:538
-#: source/uiApp.cpp:556
-#: source/uiApp.cpp:634
+#: source/uiApp.cpp:530 source/uiApp.cpp:545 source/uiApp.cpp:563
+#: source/uiApp.cpp:641
 msgid "File could not be opened"
 msgstr "Nepavyko atidaryti failo"
 
-#: source/uiApp.cpp:524
-#: source/uiApp.cpp:539
-#: source/uiApp.cpp:557
-#: source/uiApp.cpp:635
+#: source/uiApp.cpp:531 source/uiApp.cpp:546 source/uiApp.cpp:564
+#: source/uiApp.cpp:642
 msgid "Open"
 msgstr "Atidaryti"
 
-#: source/uiApp.cpp:569
-#: source/uiExport.cpp:484
-#: source/uiExport.cpp:598
+#: source/uiApp.cpp:576 source/uiExport.cpp:473 source/uiExport.cpp:587
 msgid "Gpick Palette (*.gpa)"
 msgstr "Gpick paletė (*.gpa)"
 
-#: source/uiApp.cpp:570
-#: source/uiExport.cpp:485
-#: source/uiExport.cpp:599
+#: source/uiApp.cpp:577 source/uiExport.cpp:474 source/uiExport.cpp:588
 msgid "GIMP/Inkscape Palette (*.gpl)"
 msgstr "GIMP/Inkscape paletė (*.gpl)"
 
-#: source/uiApp.cpp:571
-#: source/uiExport.cpp:487
-#: source/uiExport.cpp:600
+#: source/uiApp.cpp:578 source/uiExport.cpp:476 source/uiExport.cpp:589
 msgid "Adobe Swatch Exchange (*.ase)"
 msgstr "Adobe Swatch Exchange (*.ase)"
 
-#: source/uiApp.cpp:577
-#: source/uiExport.cpp:609
-#: source/tools/PaletteFromImage.cpp:522
+#: source/uiApp.cpp:584 source/uiExport.cpp:598
+#: source/tools/PaletteFromImage.cpp:548
 msgid "All files"
 msgstr "Visi failai"
 
-#: source/uiApp.cpp:582
-#: source/uiExport.cpp:618
+#: source/uiApp.cpp:589 source/uiExport.cpp:607
 msgid "All supported formats"
 msgstr "Visi palaikomi formatai"
 
-#: source/uiApp.cpp:603
+#: source/uiApp.cpp:610
 msgid "Open File"
 msgstr "Atidaryti failą"
 
-#: source/uiApp.cpp:652
-#: source/uiApp.cpp:684
+#: source/uiApp.cpp:659 source/uiApp.cpp:691
 msgid "Save As"
 msgstr "Išsaugoti kaip"
 
-#: source/uiApp.cpp:705
+#: source/uiApp.cpp:712
 msgid "Save"
 msgstr "Išsaugoti"
 
-#: source/uiApp.cpp:764
+#: source/uiApp.cpp:771
 msgid "Open Last File"
 msgstr "Atidaryti vėliausią failą"
 
-#: source/uiApp.cpp:909
+#: source/uiApp.cpp:916
 msgid "Recent _files"
 msgstr "Paskutiniai _failai"
 
-#: source/uiApp.cpp:939
+#: source/uiApp.cpp:946
 msgid "Ex_port..."
 msgstr "Eksportuoti..."
 
-#: source/uiApp.cpp:947
+#: source/uiApp.cpp:954
 msgid "Expo_rt Selected..."
 msgstr "Eksportuoti _pažymėtas..."
 
-#: source/uiApp.cpp:955
+#: source/uiApp.cpp:962
 msgid "_Import..."
 msgstr "_Importuoti..."
 
-#: source/uiApp.cpp:970
+#: source/uiApp.cpp:977
 msgid "_File"
 msgstr "_Failas"
 
-#: source/uiApp.cpp:978
+#: source/uiApp.cpp:985
 msgid "Edit _Converters..."
 msgstr "Keisti _keitėjus..."
 
-#: source/uiApp.cpp:982
-msgid "Edit _Transformations..."
-msgstr "Keisti _transformacijas..."
+#: source/uiApp.cpp:989
+msgid "Display _Filters..."
+msgstr "Rodymo _Filtrai..."
 
-#: source/uiApp.cpp:994
+#: source/uiApp.cpp:1001
 msgid "_Edit"
 msgstr "_Keisti"
 
-#: source/uiApp.cpp:1027
+#: source/uiApp.cpp:1037
 msgid "_Secondary View"
 msgstr "_Antrinis vaizdas"
 
-#: source/uiApp.cpp:1033
+#: source/uiApp.cpp:1043
 msgid "Palette"
 msgstr "Paletė"
 
-#: source/uiApp.cpp:1039
+#: source/uiApp.cpp:1049
 msgid "_View"
 msgstr "_Rodymas"
 
-#: source/uiApp.cpp:1045
+#: source/uiApp.cpp:1055
 msgid "Palette From _Image..."
 msgstr "Paletė iš paveikslėlio..."
 
-#: source/uiApp.cpp:1053
+#: source/uiApp.cpp:1063
 msgid "_Tools"
 msgstr "_Įrankiai"
 
-#: source/uiApp.cpp:1068
+#: source/uiApp.cpp:1078
 msgid "_Help"
 msgstr "_Pagalba"
 
-#: source/uiApp.cpp:1312
+#: source/uiApp.cpp:1386
 msgid "_Copy to Clipboard"
 msgstr "_Kopijuoti"
 
-#: source/uiApp.cpp:1328
+#: source/uiApp.cpp:1402
 msgid "_Mix Colors..."
 msgstr "_Maišyti spalvas..."
 
-#: source/uiApp.cpp:1333
+#: source/uiApp.cpp:1407
 msgid "_Variations..."
 msgstr "_Pokyčiai..."
 
-#: source/uiApp.cpp:1338
+#: source/uiApp.cpp:1412
 msgid "_Generate..."
 msgstr "_Generuoti..."
 
-#: source/uiApp.cpp:1347
+#: source/uiApp.cpp:1421
 msgid "C_lear names"
 msgstr "I_švalyti pavadinimus"
 
-#: source/uiApp.cpp:1353
+#: source/uiApp.cpp:1427
 msgid "Autona_me"
 msgstr "Auto. pavadinimai"
 
-#: source/uiApp.cpp:1359
+#: source/uiApp.cpp:1433
 msgid "Auto_number..."
 msgstr "Auto. _numeracija..."
 
-#: source/uiApp.cpp:1367
+#: source/uiApp.cpp:1441
+msgid "R_everse"
+msgstr "_Atvirkščiai"
+
+#: source/uiApp.cpp:1447
+msgid "Group and _sort..."
+msgstr "_Grupavimas ir rūšiavimas..."
+
+#: source/uiApp.cpp:1455
 msgid "_Remove"
 msgstr "_Pašalinti"
 
-#: source/uiApp.cpp:1373
+#: source/uiApp.cpp:1461
 msgid "Remove _All"
 msgstr "Pašalinti _visas"
 
-#: source/uiApp.cpp:1734
+#: source/uiApp.cpp:1869
 msgid "Color pic_ker"
 msgstr "Spalvų rin_kyklė"
 
-#: source/uiApp.cpp:1743
+#: source/uiApp.cpp:1878
 msgid "Scheme _generation"
 msgstr "Schemos _generavimas"
 
-#: source/uiApp.cpp:1762
+#: source/uiApp.cpp:1897
 msgid "Lay_out preview"
 msgstr "Maket_o peržiūra"
 
-#: source/uiApp.cpp:1810
+#: source/uiApp.cpp:1947
 msgid "Pick colors (Ctrl+P)"
 msgstr "Rinkti spalvas (Vald+P)"
 
-#: source/uiApp.cpp:1816
-msgid "File is currently in a non-native format, possible loss of precision and/or metadata."
-msgstr "Šiuo metu failas išsaugotas ne pagrindiniu formatu, galimas tinkslumo ir/ar metaduomenų praradimas."
+#: source/uiApp.cpp:1956
+msgid ""
+"File is currently in a non-native format, possible loss of precision and/or "
+"metadata."
+msgstr ""
+"Šiuo metu failas išsaugotas ne pagrindiniu formatu, galimas tinkslumo ir/ar "
+"metaduomenų praradimas."
 
-#: source/uiColorInput.cpp:39
+#: source/uiColorInput.cpp:45
 msgid "Edit color"
 msgstr "Keisti spalvą"
 
-#: source/uiColorInput.cpp:52
+#: source/uiColorInput.cpp:69
 msgid "Color:"
 msgstr "Spalva:"
 
@@ -691,182 +690,319 @@ msgstr "Rodymas:"
 msgid "Color list:"
 msgstr "Spalvų sąrašas::"
 
-#: source/uiDialogAutonumber.cpp:84
+#: source/uiDialogAutonumber.cpp:108
 msgid "Autonumber colors"
 msgstr "Sunumeruoti spalvas"
 
-#: source/uiDialogAutonumber.cpp:98
+#: source/uiDialogAutonumber.cpp:122
 msgid "Name:"
 msgstr "Pavadinimas:"
 
-#: source/uiDialogAutonumber.cpp:108
+#: source/uiDialogAutonumber.cpp:132
 msgid "Decimal places:"
 msgstr "Skaitmenys:"
 
-#: source/uiDialogAutonumber.cpp:115
+#: source/uiDialogAutonumber.cpp:139
 msgid "Starting number:"
 msgstr "Pradėti nuo:"
 
-#: source/uiDialogAutonumber.cpp:122
+#: source/uiDialogAutonumber.cpp:146
+msgid "_Decreasing"
+msgstr "Mažėjantis"
+
+#: source/uiDialogAutonumber.cpp:152
 msgid "_Append"
 msgstr "_Pridėti"
 
-#: source/uiDialogAutonumber.cpp:128
+#: source/uiDialogAutonumber.cpp:158
 msgid "Sample:"
 msgstr "Pavyzdys:"
 
-#: source/uiDialogGenerate.cpp:191
+#: source/uiDialogGenerate.cpp:216
 msgid "Generate colors"
 msgstr "Generuoti spalvas"
 
-#: source/uiDialogGenerate.cpp:205
-#: source/tools/PaletteFromImage.cpp:573
+#: source/uiDialogGenerate.cpp:230 source/tools/PaletteFromImage.cpp:599
 msgid "Colors:"
 msgstr "Spalvos:"
 
-#: source/uiDialogGenerate.cpp:232
+#: source/uiDialogGenerate.cpp:257
 msgid "Chaos:"
 msgstr "Chaosas:"
 
-#: source/uiDialogGenerate.cpp:238
+#: source/uiDialogGenerate.cpp:263
 msgid "Seed:"
 msgstr "Sėkla:"
 
-#: source/uiDialogGenerate.cpp:246
+#: source/uiDialogGenerate.cpp:271
 msgid "_Reverse"
 msgstr "_Atvirkščiai"
 
-#: source/uiDialogMix.cpp:183
+#: source/uiDialogMix.cpp:76 source/uiDialogMix.cpp:78
+msgid "mix node"
+msgstr "maišymo mazgas"
+
+#: source/uiDialogMix.cpp:81
+msgid "mix"
+msgstr "maišymas"
+
+#: source/uiDialogMix.cpp:235
 msgid "Mix colors"
 msgstr "Maišyti spalvas"
 
-#: source/uiDialogMix.cpp:210
-#: source/uiDialogVariations.cpp:184
+#: source/uiDialogMix.cpp:262 source/uiDialogVariations.cpp:186
 msgid "Steps:"
 msgstr "Žingsniai:"
 
-#: source/uiDialogOptions.cpp:87
-#: source/tools/PaletteFromImage.cpp:563
+#: source/uiDialogMix.cpp:270
+msgid "_Include Endpoints"
+msgstr "Įtraukti _galinius taškus"
+
+#: source/uiDialogOptions.cpp:117 source/tools/PaletteFromImage.cpp:589
 msgid "Options"
 msgstr "Nustatymai"
 
-#: source/uiDialogOptions.cpp:104
+#: source/uiDialogOptions.cpp:134
 msgid "System"
 msgstr "Sistema"
 
-#: source/uiDialogOptions.cpp:113
+#: source/uiDialogOptions.cpp:143
 msgid "_Single instance"
 msgstr "_Vienas egzempliorius"
 
-#: source/uiDialogOptions.cpp:118
+#: source/uiDialogOptions.cpp:148
 msgid "Save/_Restore palette"
 msgstr "I6saugoti/_Atstatyti paletę"
 
-#: source/uiDialogOptions.cpp:124
+#: source/uiDialogOptions.cpp:154
 msgid "System tray"
 msgstr "Sisteminis dėklas"
 
-#: source/uiDialogOptions.cpp:132
+#: source/uiDialogOptions.cpp:162
 msgid "_Minimize to system tray"
 msgstr "_Nuleisti į sisteminį dėklą"
 
-#: source/uiDialogOptions.cpp:137
+#: source/uiDialogOptions.cpp:167
 msgid "_Close to system tray"
 msgstr "_Uždaryti į sisteminį dėklą"
 
-#: source/uiDialogOptions.cpp:142
+#: source/uiDialogOptions.cpp:172
 msgid "_Start in system tray"
 msgstr "_Paleisti sisteminiame dėkle"
 
-#: source/uiDialogOptions.cpp:148
+#: source/uiDialogOptions.cpp:178
 msgid "_Main"
 msgstr "_Pagrindiniai"
 
-#: source/uiDialogOptions.cpp:154
+#: source/uiDialogOptions.cpp:184
 msgid "Display"
 msgstr "Rodymas"
 
-#: source/uiDialogOptions.cpp:163
+#: source/uiDialogOptions.cpp:193
 msgid "_Refresh rate:"
 msgstr "_Atnaujinimo dažnis:"
 
-#: source/uiDialogOptions.cpp:171
+#: source/uiDialogOptions.cpp:201
 msgid "_Magnified area size:"
 msgstr "_Padidinto ploto dydis:"
 
-#: source/uiDialogOptions.cpp:177
+#: source/uiDialogOptions.cpp:207
 msgid "Floating picker click behaviour"
 msgstr "Slankaus rinkėjo elgsena"
 
-#: source/uiDialogOptions.cpp:196
+#: source/uiDialogOptions.cpp:226
 msgid "'Spacebar' button behaviour"
 msgstr "'Tarpo' mygtuko elgsena"
 
-#: source/uiDialogOptions.cpp:214
+#: source/uiDialogOptions.cpp:244
 msgid "_Rotate swatch"
 msgstr "_Pasukti mėginį"
 
-#: source/uiDialogOptions.cpp:220
+#: source/uiDialogOptions.cpp:251
+msgid "Enabled color spaces"
+msgstr "Aktyvios spalvų erdvės"
+
+#: source/uiDialogOptions.cpp:266
+msgid "Lab settings"
+msgstr "Lab nustatymai"
+
+#: source/uiDialogOptions.cpp:278
+msgid "_Illuminant:"
+msgstr "_Apšvietimas:"
+
+#: source/uiDialogOptions.cpp:302
+msgid "_Observer:"
+msgstr "_Stebėtojas:"
+
+#: source/uiDialogOptions.cpp:321
+msgid "Other settings"
+msgstr "Kiti nustatymai"
+
+#: source/uiDialogOptions.cpp:330
+msgid "_Mask out of gamut colors"
+msgstr "Maskuoti spalvas esančias už gamos ribų"
+
+#: source/uiDialogOptions.cpp:336
 msgid "_Picker"
 msgstr "_Rinkėjas"
 
-#: source/uiDialogOptions.cpp:226
+#: source/uiDialogOptions.cpp:341
 msgid "Color name generation"
 msgstr "Spalvų pavadinimų generavimas"
 
-#: source/uiDialogOptions.cpp:235
+#: source/uiDialogOptions.cpp:350
 msgid "_Imprecision postfix"
 msgstr "_Netikslumo ženklas"
 
-#: source/uiDialogOptions.cpp:241
+#: source/uiDialogOptions.cpp:356
 msgid "Tool color naming"
 msgstr "Įrankių spalvų pavadinimai"
 
-#: source/uiDialogOptions.cpp:266
+#: source/uiDialogOptions.cpp:381
 msgid "_Color names"
 msgstr "_Spalvų pavadinimai"
 
-#: source/uiDialogVariations.cpp:192
+#: source/uiDialogSort.cpp:135 source/uiDialogSort.cpp:223
+msgid "RGB Red"
+msgstr "RGB Raudona"
+
+#: source/uiDialogSort.cpp:136 source/uiDialogSort.cpp:224
+msgid "RGB Green"
+msgstr "RGB Žalia"
+
+#: source/uiDialogSort.cpp:137 source/uiDialogSort.cpp:225
+msgid "RGB Blue"
+msgstr "RGB Mėlyna"
+
+#: source/uiDialogSort.cpp:138 source/uiDialogSort.cpp:226
+msgid "RGB Grayscale"
+msgstr "RGB Pustonis"
+
+#: source/uiDialogSort.cpp:139 source/uiDialogSort.cpp:227
+msgid "HSL Hue"
+msgstr "HSL Atspalvis"
+
+#: source/uiDialogSort.cpp:140 source/uiDialogSort.cpp:228
+msgid "HSL Saturation"
+msgstr "HSL Įsotinimas"
+
+#: source/uiDialogSort.cpp:141 source/uiDialogSort.cpp:229
+msgid "HSL Lightness"
+msgstr "HSL Šviesumas"
+
+#: source/uiDialogSort.cpp:142 source/uiDialogSort.cpp:230
+msgid "Lab Lightness"
+msgstr "Lab Šviesumas"
+
+#: source/uiDialogSort.cpp:143 source/uiDialogSort.cpp:231
+msgid "Lab A"
+msgstr "Lab A"
+
+#: source/uiDialogSort.cpp:144 source/uiDialogSort.cpp:232
+msgid "Lab B"
+msgstr "Lab B"
+
+#: source/uiDialogSort.cpp:145 source/uiDialogSort.cpp:233
+msgid "LCh Lightness"
+msgstr "LCh Šviesumas"
+
+#: source/uiDialogSort.cpp:146 source/uiDialogSort.cpp:234
+msgid "LCh Chroma"
+msgstr "LCh Chroma"
+
+#: source/uiDialogSort.cpp:147 source/uiDialogSort.cpp:235
+msgid "LCh Hue"
+msgstr "LCh Atspalvis"
+
+#: source/uiDialogSort.cpp:556
+msgid "Group and sort"
+msgstr "Grupuoti ir rūšiuoti"
+
+#: source/uiDialogSort.cpp:564
+msgid "Group type:"
+msgstr "Grupavimo tipas:"
+
+#: source/uiDialogSort.cpp:574
+msgid "Grouping sensitivity:"
+msgstr "Grupavimo jautrumas:"
+
+#: source/uiDialogSort.cpp:581
+msgid "Maximum number of groups:"
+msgstr "Maksimalus grupių skaičius:"
+
+#: source/uiDialogSort.cpp:588
+msgid "Sort type:"
+msgstr "Rūšiavimo tipas:"
+
+#: source/uiDialogSort.cpp:598
+msgid "_Reverse group order"
+msgstr "_Atvirkščia grupių tvarka"
+
+#: source/uiDialogSort.cpp:604
+msgid "_Reverse order inside groups"
+msgstr "_Atvirkščia tvarka grupėse"
+
+#: source/uiDialogVariations.cpp:60
+msgid "variation"
+msgstr "pokyčiai"
+
+#: source/uiDialogVariations.cpp:194
 msgid "_Use multiplication"
 msgstr "_Naudoti daugybą"
 
-#: source/uiExport.cpp:486
+#: source/uiExport.cpp:475
 msgid "Alias/WaveFront Material (*.mtl)"
 msgstr "Alias/WaveFront Material (*.mtl)"
 
-#: source/uiExport.cpp:488
+#: source/uiExport.cpp:477
 msgid "Text file (*.txt)"
 msgstr "Tekstinis failas (*.txt)"
 
-#: source/uiExport.cpp:533
+#: source/uiExport.cpp:522
 msgid "File could not be exported"
 msgstr "Nepavyko eksportuoti failą"
 
-#: source/uiExport.cpp:584
-#: source/uiExport.cpp:665
-#: source/uiExport.cpp:677
+#: source/uiExport.cpp:573 source/uiExport.cpp:654 source/uiExport.cpp:666
 msgid "Import"
 msgstr "Importuoti"
 
-#: source/uiExport.cpp:664
+#: source/uiExport.cpp:653
 msgid "File format is not supported"
 msgstr "Failo formatas nėra palaikomas"
 
-#: source/uiExport.cpp:676
+#: source/uiExport.cpp:665
 msgid "File could not be imported"
 msgstr "Nepavyko importuoti failą"
 
-#: source/uiListPalette.cpp:242
+#: source/uiListPalette.cpp:150
+#, c-format
+msgid "%d color"
+msgid_plural "%d colors"
+msgstr[0] "%d spalva"
+msgstr[1] "%d spalvos"
+msgstr[2] "%d spalvų"
+
+#: source/uiListPalette.cpp:154
+msgid "selected"
+msgstr "pasirinkta"
+
+#: source/uiListPalette.cpp:158
+#, c-format
+msgid "Total %d color"
+msgid_plural "Total %d colors"
+msgstr[0] "Viso %d spalva"
+msgstr[1] "Viso %d spalvos"
+msgstr[2] "Viso %d spalvų"
+
+#: source/uiListPalette.cpp:335
 msgid "Preview"
 msgstr "Peržiūra"
 
-#: source/uiListPalette.cpp:535
-#: source/uiListPalette.cpp:544
+#: source/uiListPalette.cpp:690 source/uiListPalette.cpp:699
 msgid "Color"
 msgstr "Spalva"
 
-#: source/uiListPalette.cpp:553
-#: source/uiTransformations.cpp:181
+#: source/uiListPalette.cpp:708 source/uiTransformations.cpp:183
 msgid "Name"
 msgstr "Pavadinimas"
 
@@ -878,23 +1014,27 @@ msgstr "_Rodyti pagrindinį langą"
 msgid "_Quit"
 msgstr "_Išeiti"
 
-#: source/uiTransformations.cpp:257
+#: source/uiTransformations.cpp:245
+msgid "Display filters"
+msgstr "Rodymo filtrai"
+
+#: source/uiTransformations.cpp:259
 msgid "_Enabled"
 msgstr "_Įjungta"
 
-#: source/tools/PaletteFromImage.cpp:488
+#: source/tools/PaletteFromImage.cpp:514
 msgid "Palette from image"
 msgstr "Paletė iš paveikslėlio"
 
-#: source/tools/PaletteFromImage.cpp:501
+#: source/tools/PaletteFromImage.cpp:527
 msgid "Image"
 msgstr "Paveikslėlis"
 
-#: source/tools/PaletteFromImage.cpp:510
+#: source/tools/PaletteFromImage.cpp:536
 msgid "Image file"
 msgstr "Paveikslėlio failas"
 
-#: source/tools/PaletteFromImage.cpp:530
+#: source/tools/PaletteFromImage.cpp:556
 msgid "All images"
 msgstr "Visi paveikslėliai"
 
@@ -955,11 +1095,14 @@ msgid "Gamma modification"
 msgstr "Gamos pakeitimas"
 
 #: source/transformation/GammaModification.cpp:88
+#: source/transformation/Quantization.cpp:96
 msgid "Value:"
 msgstr "Reikšmė:"
 
-#~ msgid "Gpick palette (*.gpa)"
-#~ msgstr "Gpick paletė (*.gpa)"
+#: source/transformation/Quantization.cpp:40
+msgid "Quantization"
+msgstr "Kvantavimas"
 
-#~ msgid "GPick Palette (*.gpa)"
-#~ msgstr "Gpick paletė (*.gpa)"
+#: source/transformation/Quantization.cpp:101
+msgid "Clip top-end"
+msgstr "Apkirpti viršutinę dalį"

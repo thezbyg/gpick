@@ -42,7 +42,7 @@ static GtkWidget* new_page(const char *text){
 void show_about_box(GtkWidget *widget){
 
 	const char *license = {
-"Copyright \xc2\xa9 2009-2012, Albertas Vyšniauskas\n"
+"Copyright \xc2\xa9 2009-2013, Albertas Vyšniauskas\n"
 "\n"
 "All rights reserved.\n"
 "\n"
@@ -123,7 +123,7 @@ void show_about_box(GtkWidget *widget){
 	gtk_label_set_justify(GTK_LABEL(comments), GTK_JUSTIFY_CENTER);
 	gtk_box_pack_start(GTK_BOX(vbox2), comments, false, false, 0);
 
-	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyrights © 2009-2012, Albertas Vyšniauskas and Gpick development team"));
+	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyrights © 2009-2013, Albertas Vyšniauskas and Gpick development team"));
 	GtkWidget *copyright = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(copyright), true);
 	gtk_label_set_justify(GTK_LABEL(copyright), GTK_JUSTIFY_CENTER);
