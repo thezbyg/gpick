@@ -1,0 +1,179 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'>
+	<?define ProductName = "Gpick" ?>
+	<?define Description = "Gpick - advanced color picker" ?>
+	<?define Manufacturer = "Albertas Vyšniauskas" ?>
+	<?define Platform = "x86" ?>
+
+	<!-- Platform specific variables -->
+	<?if $(var.Platform) = x64 ?>
+		 <?define Win64 = "yes" ?>
+		 <?define PlatformProgramFilesFolder = "ProgramFiles64Folder" ?>
+	<?else ?>
+		 <?define Win64 = "no" ?>
+		 <?define PlatformProgramFilesFolder = "ProgramFilesFolder" ?>
+	<?endif ?>
+
+	<Product Name='$(var.ProductName) $(var.VersionFull)' Id='*' UpgradeCode='4392F4E5-609F-455B-9F50-45BD536CAF9E' Language='1033' Codepage='1252' Version='$(var.Version)' Manufacturer='$(var.Manufacturer)'>
+		<Package Id='*' Keywords='Installer' Description="$(var.ProductName) $(var.VersionFull) Installer" Comments='$(var.Description)' Manufacturer='$(var.Manufacturer)' InstallerVersion='405' Languages='1033' Compressed='yes' SummaryCodepage='1252' InstallPrivileges='elevated' Platform='$(var.Platform)' InstallScope='perMachine' />
+
+		<Condition Message="You need to be an administrator to install this product.">
+			Privileged
+		</Condition>
+
+		<MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+
+		<DirectoryRef Id="TARGETDIR">
+			<Merge Id="VCRedist" SourceFile="Microsoft_VC110_CRT_x86.msm" DiskId="1" Language="0"/>
+		</DirectoryRef>
+
+		<Feature Id="VCRedist" Title="Visual C++ 11.0 Runtime" AllowAdvertise="no" Display="hidden" Level="1">
+			<MergeRef Id="VCRedist"/>
+		</Feature>
+
+    <Media Id='1' Cabinet='Data1.cab' EmbedCab='yes' DiskPrompt='Disk #1' />
+    <Property Id='DiskPrompt' Value="$(var.ProductName) $(var.VersionFull) Installation [1]" />
+
+		<UIRef Id="WixUI_FeatureTreeNoLicense" />
+		<Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+		<Feature Id='Ft.Gpick' Title='Gpick' AllowAdvertise="no" Absent="disallow" Description='The complete package.' Display='expand' Level='1' ConfigurableDirectory='INSTALLDIR'>
+			<Feature Id='Ft.ProgramFiles' Title='Program files' AllowAdvertise="no" Absent="disallow" Description='Program files.' Display='expand' Level='1'>
+				<ComponentRef Id='C.Gpick.exe' />
+				<ComponentRef Id='C.AssociateGPAFile' />
+				<ComponentRef Id='C.Gpick.ico' />
+				<ComponentRef Id='C.GpickRegInstallDir' />
+				<ComponentGroupRef Id='C.Files.gpick_files' />
+			</Feature>
+			<Feature Id='Ft.GtkLibraries' Title='GTK+ libraries' AllowAdvertise="no" Description='GTK+ libraries required to run Gpick.' Display='expand' Level='1'>
+				<ComponentGroupRef Id='C.Files.gtk_files' />
+			</Feature>
+			<Feature Id='Ft.ProgramShortcuts' Title='Program shortcuts' AllowAdvertise="no" Description='Shortcuts in the start menu.' Display='expand' Level='1'>
+				<ComponentRef Id='C.ApplicationShortcut' />
+			</Feature>
+			<Feature Id='Ft.DesktopShortcuts' Title='Desktop shortcut' AllowAdvertise="no" Description='Shortcut to Gpick in the desktop.' Display='expand' Level='1'>
+				<ComponentRef Id='C.ApplicationDesktopShortcut' />
+			</Feature>
+			<ComponentRef Id='C.Empty' />
+    </Feature>
+
+		<Property Id="INSTALLDIR">
+			<RegistrySearch Id='GpickRegistryCurrentUser' Type='raw' Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' />
+			<RegistrySearch Id='GpickRegistryLocalMachine' Type='raw' Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' Name='InstallDir' />
+		</Property>
+		
+		<Icon Id="GpickIcon" SourceFile="$(var.FilePath)/gpick.ico" />
+
+		<Directory Id='TARGETDIR' Name='SourceDir'>
+			<Directory Id="ProgramMenuFolder">
+				<Directory Id="ApplicationProgramsFolder" Name="$(var.ProductName)" />
+			</Directory>
+
+			<Directory Id='$(var.PlatformProgramFilesFolder)'>
+				<Directory Id='INSTALLDIR' Name='$(var.ProductName)' />
+			</Directory>
+
+			<Directory Id="DesktopFolder" />
+		</Directory>
+
+		<DirectoryRef Id="INSTALLDIR">
+			<Component Id="C.Empty" Guid='*'>
+				<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="Empty" Type="integer" Value="1" KeyPath="yes"/>
+			</Component>
+
+			<Component Id='C.Gpick.exe' Guid='*'>
+				<File Id='F.Gpick.exe' Name='Gpick.exe' DiskId='1' Source='$(var.FilePath)/gpick.exe' KeyPath='yes' />
+			</Component>
+
+			<Component Id='C.Gpick.ico' Guid='*'>
+				<File Id='F.Gpick.ico' Name='Gpick.ico' DiskId='1' Source='$(var.FilePath)/gpick.ico' KeyPath='yes' />
+			</Component>
+
+			<Component Id='C.AssociateGPAFile' Guid='E220FB1E-1198-4CE0-B292-551569EDAC35'>
+				<ProgId Id='Gpick.gpafile' Description='Gpick palette file' Icon='F.Gpick.ico'>
+					<Extension Id='gpa' ContentType='application/gpick'>
+						<Verb Id='open' Command='Open' TargetFile='F.Gpick.exe' Argument='"%1"' />
+					</Extension>
+				</ProgId>
+				<RegistryValue Root="HKLM" Key="Software\[Manufacturer]\[ProductName]" Name="AssociateGPAFile" Type="integer" Value="1" KeyPath="yes"/>
+			</Component>
+
+			<Component Id='C.GpickRegInstallDir' Guid='*'>
+				<RegistryKey Id='GpickRegInstallDir' Root='HKLM' Key='Software\[Manufacturer]\[ProductName]' ForceDeleteOnUninstall='yes'>
+					<RegistryValue Type='string' Name='InstallDir' Value='[INSTALLDIR]' />
+				</RegistryKey>
+			</Component>
+		</DirectoryRef>
+
+		<DirectoryRef Id="DesktopFolder">
+			<Component Id="C.ApplicationDesktopShortcut" Guid="89CADEA8-2BD0-4A22-BCDB-C7E709490578">
+				<Shortcut Id="desktopGpick" Name="$(var.ProductName)" Description="Start Gpick" Target="[INSTALLDIR]Gpick.exe" WorkingDirectory='INSTALLDIR' Icon="GpickIcon" />
+				<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="DesktopFolder" Type="integer" Value="1" KeyPath="yes"/>
+			</Component>
+		</DirectoryRef>
+
+		<DirectoryRef Id="ApplicationProgramsFolder">
+			<Component Id="C.ApplicationShortcut" Guid="4FCED9B2-B2A3-4CA9-B3F3-A55649D775DE">
+				<Shortcut Id="startmenuGpick" Name="$(var.ProductName)" Description="Start Gpick" Target="[INSTALLDIR]Gpick.exe" WorkingDirectory='INSTALLDIR' Icon="GpickIcon" />
+				<Shortcut Id="uninstallGpick" Name="Uninstall" Description="Uninstalls Gpick" Target="[SystemFolder]msiexec.exe" Arguments="/x [ProductCode]"/>
+				<RegistryValue Root="HKCU" Key="Software\[Manufacturer]\[ProductName]" Name="ApplicationShortcut" Type="integer" Value="1" KeyPath="yes"/>
+				<RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+			</Component>
+		</DirectoryRef>
+	</Product>
+
+	<Fragment>
+		<UI Id="WixUI_FeatureTreeNoLicense">
+			<TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+			<TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+			<TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+			<Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+			<Property Id="WixUI_Mode" Value="FeatureTree" />
+
+			<DialogRef Id="ErrorDlg" />
+			<DialogRef Id="FatalError" />
+			<DialogRef Id="FilesInUse" />
+			<DialogRef Id="MsiRMFilesInUse" />
+			<DialogRef Id="PrepareDlg" />
+			<DialogRef Id="ProgressDlg" />
+			<DialogRef Id="ResumeDlg" />
+			<DialogRef Id="UserExit" />
+
+			<Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+
+			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg">NOT Installed</Publish>
+			<Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+
+			<Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">Installed</Publish>
+			<Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">NOT Installed</Publish>
+			<Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="1">NOT Installed OR WixUI_InstallMode = "Change"</Publish>
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+			<Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="3">Installed AND PATCH</Publish>
+
+			<Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+
+			<Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+			<Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+		</UI>
+
+		<UIRef Id="WixUI_Common" />
+	</Fragment>
+
+
+	<Fragment>
+		<Property Id="ARPCOMMENTS" Value="$(var.Description)" />
+		<Property Id="ARPPRODUCTICON" Value="GpickIcon" />
+		<Property Id="ARPURLINFOABOUT" Value="http://gpick.googlecode.com/" />
+		<Property Id="ARPHELPLINK" Value="http://gpick.googlecode.com/" />
+		<CustomAction Id="SetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+		<InstallExecuteSequence>
+			<Custom Action="SetARPINSTALLLOCATION" After="InstallValidate" />
+		</InstallExecuteSequence>
+	</Fragment>
+
+</Wix>

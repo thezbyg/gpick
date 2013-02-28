@@ -3,8 +3,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-01-05 16:16+0200\n"
-"PO-Revision-Date: 2013-01-05 16:16+0300\n"
+"POT-Creation-Date: 2013-01-09 00:06+0200\n"
+"PO-Revision-Date: 2013-01-09 00:07+0300\n"
 "Last-Translator: Albertas Vyšniauskas <thezbyg@gmail.com>\n"
 "Language-Team: \n"
 "Language: Lithuanian\n"
@@ -25,24 +25,24 @@ msgid "blend"
 msgstr "suliejimas"
 
 #: source/BlendColors.cpp:308 source/BrightnessDarkness.cpp:260
-#: source/ColorMixer.cpp:305 source/ColorPicker.cpp:367
+#: source/ColorMixer.cpp:321 source/ColorPicker.cpp:367
 #: source/GenerateScheme.cpp:444 source/LayoutPreview.cpp:405
-#: source/Variations.cpp:316 source/uiDialogOptions.cpp:215
+#: source/Variations.cpp:331 source/uiDialogOptions.cpp:215
 #: source/uiDialogOptions.cpp:234
 msgid "_Add to palette"
 msgstr "_Įkelti į paletę"
 
 #: source/BlendColors.cpp:314 source/BrightnessDarkness.cpp:265
-#: source/ColorMixer.cpp:310 source/ColorPicker.cpp:371
+#: source/ColorMixer.cpp:326 source/ColorPicker.cpp:371
 #: source/GenerateScheme.cpp:449 source/LayoutPreview.cpp:410
-#: source/Variations.cpp:321
+#: source/Variations.cpp:336
 msgid "A_dd all to palette"
 msgstr "Į_kelti visas į paletę"
 
 #: source/BlendColors.cpp:320 source/BrightnessDarkness.cpp:271
-#: source/ColorMixer.cpp:317 source/ColorPicker.cpp:377
+#: source/ColorMixer.cpp:333 source/ColorPicker.cpp:377
 #: source/GenerateScheme.cpp:456 source/LayoutPreview.cpp:416
-#: source/Variations.cpp:328 source/uiDialogOptions.cpp:220
+#: source/Variations.cpp:343 source/uiDialogOptions.cpp:220
 #: source/uiDialogOptions.cpp:239
 msgid "_Copy to clipboard"
 msgstr "_Kopijuoti"
@@ -102,15 +102,15 @@ msgstr "Sulieti spalvas"
 msgid "brightness darkness"
 msgstr "šviesumas tamsumas"
 
-#: source/BrightnessDarkness.cpp:287 source/ColorMixer.cpp:357
+#: source/BrightnessDarkness.cpp:287 source/ColorMixer.cpp:373
 #: source/ColorPicker.cpp:387 source/GenerateScheme.cpp:469
-#: source/LayoutPreview.cpp:430 source/Variations.cpp:368
+#: source/LayoutPreview.cpp:430 source/Variations.cpp:383
 msgid "_Edit..."
 msgstr "_Keisti..."
 
-#: source/BrightnessDarkness.cpp:292 source/ColorMixer.cpp:362
+#: source/BrightnessDarkness.cpp:292 source/ColorMixer.cpp:378
 #: source/ColorPicker.cpp:391 source/GenerateScheme.cpp:474
-#: source/LayoutPreview.cpp:435 source/Variations.cpp:373
+#: source/LayoutPreview.cpp:435 source/Variations.cpp:388
 msgid "_Paste"
 msgstr "_Įdėti"
 
@@ -165,11 +165,25 @@ msgstr "Šviesumas"
 msgid "color mixer"
 msgstr "spalvų maišyklė"
 
-#: source/ColorMixer.cpp:688
+#: source/ColorMixer.cpp:234
+msgid "secondary"
+msgstr "antrinė"
+
+#: source/ColorMixer.cpp:238 source/Variations.cpp:229
+#, c-format
+msgid "primary %d"
+msgstr "pirminė %d"
+
+#: source/ColorMixer.cpp:244
+#, c-format
+msgid "result %d"
+msgstr "rezultatas %d"
+
+#: source/ColorMixer.cpp:704
 msgid "Opacity:"
 msgstr "Nepermatomumas:"
 
-#: source/ColorMixer.cpp:716
+#: source/ColorMixer.cpp:732
 msgid "Color mixer"
 msgstr "Spalvų maišyklė"
 
@@ -436,12 +450,21 @@ msgstr "Šviesumas (Lab)"
 msgid "variations"
 msgstr "pokyčiai"
 
-#: source/Variations.cpp:702
+#: source/Variations.cpp:225
+msgid "all colors"
+msgstr "visos spalvos"
+
+#: source/Variations.cpp:239
+#, c-format
+msgid "result %d line %d"
+msgstr "rezultatas %d eilutėje %d"
+
+#: source/Variations.cpp:717
 #: source/transformation/ColorVisionDeficiency.cpp:386
 msgid "Strength:"
 msgstr "Stiprumas:"
 
-#: source/Variations.cpp:730 source/uiDialogVariations.cpp:142
+#: source/Variations.cpp:745 source/uiDialogVariations.cpp:142
 msgid "Variations"
 msgstr "Pokyčiai"
 
@@ -974,7 +997,7 @@ msgstr "Failo formatas nėra palaikomas"
 msgid "File could not be imported"
 msgstr "Nepavyko importuoti failą"
 
-#: source/uiListPalette.cpp:150
+#: source/uiListPalette.cpp:158 source/uiListPalette.cpp:160
 #, c-format
 msgid "%d color"
 msgid_plural "%d colors"
@@ -982,11 +1005,11 @@ msgstr[0] "%d spalva"
 msgstr[1] "%d spalvos"
 msgstr[2] "%d spalvų"
 
-#: source/uiListPalette.cpp:154
+#: source/uiListPalette.cpp:166
 msgid "selected"
 msgstr "pasirinkta"
 
-#: source/uiListPalette.cpp:158
+#: source/uiListPalette.cpp:172 source/uiListPalette.cpp:174
 #, c-format
 msgid "Total %d color"
 msgid_plural "Total %d colors"
@@ -994,15 +1017,15 @@ msgstr[0] "Viso %d spalva"
 msgstr[1] "Viso %d spalvos"
 msgstr[2] "Viso %d spalvų"
 
-#: source/uiListPalette.cpp:335
+#: source/uiListPalette.cpp:353
 msgid "Preview"
 msgstr "Peržiūra"
 
-#: source/uiListPalette.cpp:690 source/uiListPalette.cpp:699
+#: source/uiListPalette.cpp:708 source/uiListPalette.cpp:717
 msgid "Color"
 msgstr "Spalva"
 
-#: source/uiListPalette.cpp:708 source/uiTransformations.cpp:183
+#: source/uiListPalette.cpp:726 source/uiTransformations.cpp:183
 msgid "Name"
 msgstr "Pavadinimas"
 
@@ -1106,3 +1129,128 @@ msgstr "Kvantavimas"
 #: source/transformation/Quantization.cpp:101
 msgid "Clip top-end"
 msgstr "Apkirpti viršutinę dalį"
+
+#: share/gpick/init.lua:173
+msgid "Web: hex code"
+msgstr "Tinklas: šešioliktainis kodas"
+
+#: share/gpick/init.lua:178
+msgid "Web: hex code (3 digits)"
+msgstr "Tinklas: šešioliktainis kodas (3 skaitmenys)"
+
+#: share/gpick/init.lua:183
+msgid "Web: hex code (no hash symbol)"
+msgstr "Tinklas: šešioliktainis kodas (be grotelių simbolio)"
+
+#: share/gpick/init.lua:188
+msgid "CSS: hue saturation lightness"
+msgstr "CSS: atspalvis įsotinimas šviesumas"
+
+#: share/gpick/init.lua:193
+msgid "CSS: red green blue"
+msgstr "CSS: raudona žalia mėlyna"
+
+#: share/gpick/layouts.lua:15
+msgid "Homepage"
+msgstr "Namų puslapis"
+
+#: share/gpick/layouts.lua:15
+msgid "About us"
+msgstr "Apie mus"
+
+#: share/gpick/layouts.lua:15
+msgid "Links to us"
+msgstr "Nuorodos"
+
+#: share/gpick/layouts.lua:15
+msgid "Privacy"
+msgstr "Privatumas"
+
+#: share/gpick/layouts.lua:15
+msgid "Terms"
+msgstr "Sąlygos"
+
+#: share/gpick/layouts.lua:15
+msgid "Contact us"
+msgstr "Kontaktai"
+
+#: share/gpick/layouts.lua:15
+msgid "RSS"
+msgstr "RSS"
+
+#: share/gpick/layouts.lua:30
+msgid "The quick brown fox jumps over the lazy dog"
+msgstr "Greita ruda lapė šoka per tingų šunį"
+
+#: share/gpick/layouts.lua:46
+msgid "Webpage"
+msgstr "Puslapis"
+
+#: share/gpick/layouts.lua:51 share/gpick/layouts.lua:73
+msgid "Header"
+msgstr "Antraštė"
+
+#: share/gpick/layouts.lua:52
+msgid "Header text"
+msgstr "Antraštės tekstas"
+
+#: share/gpick/layouts.lua:54
+msgid "Content"
+msgstr "Turinys"
+
+#: share/gpick/layouts.lua:55
+msgid "Content text"
+msgstr "Turinio tekstas"
+
+#: share/gpick/layouts.lua:57
+msgid "Sidebar"
+msgstr "Šonas"
+
+#: share/gpick/layouts.lua:59 share/gpick/layouts.lua:87
+msgid "Button"
+msgstr "Mygtukas"
+
+#: share/gpick/layouts.lua:60 share/gpick/layouts.lua:88
+msgid "Button (hover)"
+msgstr "Mygtukas (pažymėtas)"
+
+#: share/gpick/layouts.lua:61 share/gpick/layouts.lua:89
+msgid "Button text"
+msgstr "Mygtuko tekstas"
+
+#: share/gpick/layouts.lua:62 share/gpick/layouts.lua:90
+msgid "Button text (hover)"
+msgstr "Mytuko tekstas (pažymėtas)"
+
+#: share/gpick/layouts.lua:64
+msgid "Footer"
+msgstr "Paraštė"
+
+#: share/gpick/layouts.lua:82 share/gpick/layouts.lua:86
+msgid "Menu"
+msgstr "Meniu"
+
+#: share/gpick/layouts.lua:106
+msgid "Brightness-Darkness"
+msgstr "Šviesumas-Tamsumas"
+
+#: share/gpick/layouts.lua:110
+msgid "main"
+msgstr "pagrindinis"
+
+#: share/gpick/layouts.lua:144
+msgid "Grid (4x3)"
+msgstr "Tinklas (4x3)"
+
+#: share/gpick/layouts.lua:153 share/gpick/layouts.lua:159
+#: share/gpick/layouts.lua:180 share/gpick/layouts.lua:186
+msgid "Item"
+msgstr "Lauk."
+
+#: share/gpick/layouts.lua:154 share/gpick/layouts.lua:181
+msgid "Item text"
+msgstr "Laukelio tekstas"
+
+#: share/gpick/layouts.lua:171
+msgid "Grid (5x4)"
+msgstr "Tinklas (5x4)"

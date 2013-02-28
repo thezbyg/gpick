@@ -170,27 +170,27 @@ end;
 
 
 gpick.converters['color_web_hex'] = {
-	human_readable = 'Web: hex code',
+	human_readable = _("Web: hex code"),
 	serialize = gpick.serialize_web_hex,
 	deserialize = gpick.deserialize_web_hex
 }
 gpick.converters['color_web_hex_3_digit'] = {
-	human_readable = 'Web: hex code (3 digits)',
+	human_readable = _("Web: hex code (3 digits)"),
 	serialize = gpick.serialize_web_hex_3_digit,
 	deserialize = gpick.deserialize_web_hex_3_digit
 }
 gpick.converters['color_web_hex_no_hash'] = {
-	human_readable = 'Web: hex code (no hash)',
+	human_readable = _("Web: hex code (no hash symbol)"),
 	serialize = gpick.serialize_web_hex_no_hash,
 	deserialize = gpick.deserialize_web_hex_no_hash
 }
 gpick.converters['color_css_hsl'] = {
-	human_readable = 'CSS: hue saturation lightness',
+	human_readable = _("CSS: hue saturation lightness"),
 	serialize = gpick.serialize_css_hsl,
 	deserialize = nil
 }
 gpick.converters['color_css_rgb'] = {
-	human_readable = 'CSS: red green blue',
+	human_readable = _("CSS: red green blue"),
 	serialize = gpick.serialize_css_rgb,
 	deserialize = gpick.deserialize_css_rgb
 }
@@ -236,12 +236,6 @@ gpick.converters['color_csv'] = {
 	deserialize = nil
 };
 
-gpick.converters['color_csv'] = {
-	human_readable = 'CSV',
-	serialize = gpick.serialize_color_csv,
-	deserialize = nil
-};
-
 gpick.color_serialize = function(converter, color_object)
 	return gpick.converters[converter].serialize(color_object)
 end
@@ -271,3 +265,4 @@ gpick.component_to_text = function(component_type, color)
 	end
 	return {}
 end
+

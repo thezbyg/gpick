@@ -1,0 +1,21 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+Import('*')
+local_env = env.Clone()
+
+if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
+	if local_env['DOWNLOAD_RESENE_COLOR_LIST']:
+		local_env.ParseConfig('pkg-config --cflags --libs $CURL_PC')
+
+if local_env['DOWNLOAD_RESENE_COLOR_LIST']:
+	local_env.Append(
+		CPPDEFINES = ['DOWNLOAD_RESENE_COLOR_LIST'],
+	)
+
+sources = local_env.Glob('*.cpp')
+objects = local_env.StaticObject(source = [sources])
+Return('objects')
+

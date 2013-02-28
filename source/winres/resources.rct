@@ -9,13 +9,14 @@ BEGIN
     BLOCK "040904E4"
     BEGIN
       VALUE "CompanyName", "Gpick developers"
-      VALUE "FileDescription", "Advanced color picker"
+      VALUE "FileDescription", "Gpick - Advanced color picker"
       VALUE "FileVersion", "%VERSION%"
       VALUE "InternalName", "gpick"
       VALUE "LegalCopyright", "New BSD License"
       VALUE "OriginalFilename", "gpick.exe"
       VALUE "ProductName", "Gpick"
       VALUE "ProductVersion", "%VERSION%"
+      VALUE "Comments", "Revision %REVISION%, built at %BUILD_DATE%"
     END
   END
 

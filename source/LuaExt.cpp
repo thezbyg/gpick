@@ -18,6 +18,7 @@
 
 #include "LuaExt.h"
 #include <glib.h>
+#include "Internationalisation.h"
 
 #include <iostream>
 using namespace std;
@@ -384,10 +385,25 @@ int luaopen_colorobject (lua_State *L) {
 	return 1;
 }
 
+int lua_i18n_gettext(lua_State *L)
+{
+  const char *text = luaL_checkstring(L, 1);
+	lua_pushstring(L, _(text));
+	return 1;
+}
+
+int luaopen_i18n(lua_State *L)
+{
+	lua_pushcclosure(L, lua_i18n_gettext, 0);
+	lua_setglobal(L, "_");
+	return 1;
+}
+
 
 int lua_ext_colors_openlib(lua_State *L){
 	luaopen_color(L);
 	luaopen_colorobject(L);
+	luaopen_i18n(L);
 	return 0;
 }
 

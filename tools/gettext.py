@@ -27,3 +27,30 @@ def addGettextBuilder(env):
 		single_source = False)
 
 	env.Append(BUILDERS = {'Xgettext': builder})
+
+	MsgmergeAction = SCons.Action.Action("$MSGMERGECOM", "$MSGMERGECOMSTR")
+	
+	env["MSGMERGE"]    = env.Detect("msgmerge")
+	env["MSGMERGECOM"] = "$MSGMERGE $MSGMERGE_FLAGS --output-file=$TARGET $SOURCES"
+	
+	builder = Builder(
+		action = MsgmergeAction,
+		suffix = '.pot',
+		src_suffix = '.pot',
+		single_source = False)
+
+	env.Append(BUILDERS = {'Msgmerge': builder})
+
+	MsgcatAction = SCons.Action.Action("$MSGCATCOM", "$MSGCATCOMSTR")
+	
+	env["MSGCAT"]    = env.Detect("msgcat")
+	env["MSGCATCOM"] = "$MSGCAT $MSGCAT_FLAGS --output-file=$TARGET $SOURCES"
+	
+	builder = Builder(
+		action = MsgcatAction,
+		suffix = '.pot',
+		src_suffix = '.pot',
+		single_source = False)
+
+	env.Append(BUILDERS = {'Msgcat': builder})
+
