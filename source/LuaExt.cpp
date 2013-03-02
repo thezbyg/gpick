@@ -17,8 +17,16 @@
  */
 
 #include "LuaExt.h"
+#include "Color.h"
+#include "ColorObject.h"
+#include "DynvHelpers.h"
 #include <glib.h>
 #include "Internationalisation.h"
+
+extern "C"{
+#include <lualib.h>
+#include <lauxlib.h>
+}
 
 #include <iostream>
 using namespace std;
@@ -399,10 +407,57 @@ int luaopen_i18n(lua_State *L)
 	return 1;
 }
 
+struct dynvSystem* lua_checkdynvsystem(lua_State *L, int index)
+{
+	void *ud = luaL_checkudata(L, index, "dynvsystem");
+	luaL_argcheck(L, ud != NULL, index, "`dynvsystem' expected");
+	return dynv_system_ref(*(struct dynvSystem**)ud);
+}
+
+int lua_pushdynvsystem(lua_State *L, struct dynvSystem* params)
+{
+	struct dynvSystem** c = (struct dynvSystem**)lua_newuserdata(L, sizeof(struct dynvSystem*));
+	luaL_getmetatable(L, "dynvsystem");
+	lua_setmetatable(L, -2);
+	*c = dynv_system_ref(params);
+	return 1;
+}
+
+int lua_dynvsystem_get_string(lua_State *L) {
+	struct dynvSystem* params = lua_checkdynvsystem(L, 1);
+	const char *name = luaL_checkstring(L, 2);
+	const char *default_value = luaL_checkstring(L, 3);
+	lua_pushstring(L, dynv_get_string_wd(params, name, default_value));
+	dynv_system_release(params);
+	return 1;
+}
+
+static const struct luaL_Reg lua_dynvsystemlib_f [] = {
+	{NULL, NULL}
+};
+
+static const struct luaL_Reg lua_dynvsystemlib_m [] = {
+	{"get_string", lua_dynvsystem_get_string},
+	{NULL, NULL}
+};
+
+int luaopen_dynvsystem(lua_State *L) {
+	luaL_newmetatable(L, "dynvsystem");
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, lua_dynvsystemlib_m, 0);
+	lua_pop(L, 1);
+
+	luaL_newlibtable(L, lua_dynvsystemlib_f);
+	luaL_setfuncs(L, lua_dynvsystemlib_f, 0);
+	lua_setglobal(L, "dynvsystem");
+	return 1;
+}
 
 int lua_ext_colors_openlib(lua_State *L){
 	luaopen_color(L);
 	luaopen_colorobject(L);
+	luaopen_dynvsystem(L);
 	luaopen_i18n(L);
 	return 0;
 }

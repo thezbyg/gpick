@@ -21,21 +21,22 @@
 
 extern "C"{
 #include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
 }
 
-#include "Color.h"
-#include "ColorObject.h"
+struct ColorObject;
+struct dynvSystem;
+typedef struct Color Color;
 
 int lua_ext_colors_openlib(lua_State *lua);
 
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index);
+int lua_pushcolorobject(lua_State *L, struct ColorObject* color_object);
+struct ColorObject** lua_checkcolorobject(lua_State *L, int index);
 
-int lua_pushcolor (lua_State *L, const Color* color);
-Color *lua_checkcolor (lua_State *L, int index);
+int lua_pushdynvsystem(lua_State *L, struct dynvSystem* params);
+struct dynvSystem* lua_checkdynvsystem(lua_State *L, int index);
+
+int lua_pushcolor(lua_State *L, const Color* color);
+Color* lua_checkcolor(lua_State *L, int index);
 
 
 #endif /* LUAEXT_H_ */

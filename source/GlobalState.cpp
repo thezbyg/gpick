@@ -45,6 +45,11 @@
 #include <stdlib.h>
 #include <glib/gstdio.h>
 
+extern "C"{
+#include <lualib.h>
+#include <lauxlib.h>
+}
+
 #include <fstream>
 #include <iostream>
 using namespace std;
