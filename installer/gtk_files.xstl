@@ -1,0 +1,11 @@
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:msxsl="urn:schemas-microsoft-com:xslt" exclude-result-prefixes="msxsl" xmlns:wix="http://schemas.microsoft.com/wix/2006/wi">
+	<xsl:output method="xml" indent="yes" />
+	<xsl:strip-space elements="*"/>
+	<xsl:template match="@*|node()">
+		<xsl:copy>
+			<xsl:apply-templates select="@*|node()"/>
+		</xsl:copy>
+	</xsl:template>
+	<xsl:template match='wix:Wix/wix:Fragment/wix:ComponentGroup/wix:Component[(@Id and @Directory) and (@Id = "gpick.exe" or @Id = "gpick.ico" or @Id = "lua5.2.dll" or @Id = "expat2.1.dll" or @Directory = "gpick")]' />
+	<xsl:template match='wix:Wix/wix:Fragment[wix:DirectoryRef/wix:Directory[@Id and (@Id = "gpick")]]' />
+</xsl:stylesheet>

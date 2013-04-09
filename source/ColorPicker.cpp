@@ -650,6 +650,7 @@ static void color_component_copy(GtkWidget *widget, ColorPickerArgs* args){
 	if (text){
 		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, strlen(text));
 		gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text, strlen(text));
 	}
 }
 

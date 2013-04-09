@@ -1178,12 +1178,13 @@ void converter_get_text(const gchar* function, struct ColorObject* color_object,
 	}
 }
 
-
 void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params){
 	gchar* text;
 	converter_get_text(function, color_object, palette_widget, params, &text);
 	if (text){
 		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
+		gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
+		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text, -1);
 		g_free(text);
 	}
 }

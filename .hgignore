@@ -12,6 +12,12 @@ diff
 *.pyc
 *.log
 *.mo
+*.msm
+*.wixobj
+*.wixpdb
+*.msi
+*.pdb
+installer/files/*
 user-config.py
 build
 tags

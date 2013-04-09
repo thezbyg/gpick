@@ -9,9 +9,8 @@ def addResourceTemplateBuilder(env):
 		source_dest = SCons.Util.splitext(str(target[0]))[0] + ".rc"
 		wfile = open(source_dest,"w")
 		data = open(str(File(source[0]).srcnode())).read()
-		for var in env['RESOURCE_TEMPLATE_VARS']:
-			m = re.search('([^=]+)=(.+)', var)
-			data = re.sub("%" + m.group(1) + "%", m.group(2), data)
+		for key, var in env['RESOURCE_TEMPLATE_VARS'].iteritems():
+			data = re.sub("%" + key + "%", var, data)
 		wfile.write(data)
 		wfile.close()
 		return 0

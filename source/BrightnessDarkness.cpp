@@ -145,7 +145,7 @@ static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** c
 		*color = color_list_new_color_object(args->gs->colors, &c);
 
 		BrightnessDarknessColorNameAssigner name_assigner(args->gs);
-		name_assigner.assign(*color, &c, style->ident_name.c_str());
+		name_assigner.assign(*color, &c, style->human_name.c_str());
 		return 0;
 	}
 	return -1;
@@ -228,7 +228,7 @@ static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *arg
 
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
 		color_object = color_list_new_color_object(args->gs->colors, &(*i)->color);
-		name_assigner.assign(color_object, &(*i)->color, (*i)->ident_name.c_str());
+		name_assigner.assign(color_object, &(*i)->color, (*i)->human_name.c_str());
 		color_list_add_color_object(args->gs->colors, color_object, 1);
 		color_object_release(color_object);
 	}

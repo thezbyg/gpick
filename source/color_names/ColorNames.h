@@ -20,7 +20,7 @@
 #ifndef COLORNAMES_H_
 #define COLORNAMES_H_
 
-#include "Color.h"
+#include "../Color.h"
 
 #include <string>
 #include <list>

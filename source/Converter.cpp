@@ -34,6 +34,10 @@
 #include <iostream>
 using namespace std;
 
+extern "C"{
+#include <lualib.h>
+#include <lauxlib.h>
+}
 
 class ConverterKeyCompare{
 public:
@@ -57,6 +61,7 @@ public:
 	Converter* display_converter;
 	Converter* color_list_converter;
 	lua_State *L;
+	struct dynvSystem* params; 
 	~Converters();
 };
 
@@ -121,8 +126,9 @@ int converters_color_deserialize(Converters* converters, const char* function, c
 			lua_pushstring(L, function);
 			lua_pushstring(L, text);
 			lua_pushcolorobject (L, color_object);
+			lua_pushdynvsystem(L, converters->params);
 
-			status=lua_pcall(L, 3, 1, 0);
+			status=lua_pcall(L, 4, 1, 0);
 			if (status==0){
 				if (lua_type(L, -1)==LUA_TNUMBER){
 					double result = luaL_checknumber(L, -1);
@@ -164,8 +170,9 @@ int converters_color_serialize(Converters* converters, const char* function, str
 			lua_pushstring(L, function);
 			//lua_gettable(L, -2);
 			lua_pushcolorobject (L, color_object);
+			lua_pushdynvsystem(L, converters->params);
 
-			status=lua_pcall(L, 2, 1, 0);
+			status=lua_pcall(L, 3, 1, 0);
 			if (status==0){
 				if (lua_type(L, -1)==LUA_TSTRING){
 					const char* converted = luaL_checklstring(L, -1, &st);
@@ -195,6 +202,7 @@ Converters* converters_init(struct dynvSystem* params){
 	Converters *converters = new Converters;
 	converters->L = L;
 	converters->display_converter = 0;
+	converters->params = dynv_system_ref(params);
 
 	int stack_top = lua_gettop(L);
 	lua_getglobal(L, "gpick");
@@ -242,6 +250,7 @@ Converters* converters_init(struct dynvSystem* params){
 }
 
 int converters_term(Converters *converters){
+	dynv_system_release(converters->params);
 	delete converters;
 	return 0;
 }

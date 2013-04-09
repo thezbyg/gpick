@@ -22,7 +22,7 @@
 #include "GlobalState.h"
 
 #include "Sampler.h"
-#include "ColorNames.h"
+#include "color_names/ColorNames.h"
 #include "Random.h"
 #include "dynv/DynvSystem.h"
 #include "ColorList.h"

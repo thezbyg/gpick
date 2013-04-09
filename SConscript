@@ -17,6 +17,7 @@ vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Add('TOOLCHAIN', 'Toolchain', 'gcc')
 vars.Add(BoolVariable('EXPERIMENTAL_CSS_PARSER', 'Compile with experimental CSS parser', False))
+vars.Add(BoolVariable('DOWNLOAD_RESENE_COLOR_LIST', 'Download Resene color list file at program startup', False))
 vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Update(env)
@@ -59,6 +60,8 @@ if not env.GetOption('clean'):
 	if env['ENABLE_NLS']:
 		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
 		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}, 'required':False}
+		programs['MSGMERGE'] = {'checks':{'msgmerge':'MSGMERGE'}, 'required':False}
+		programs['MSGCAT'] = {'checks':{'msgcat':'MSGCAT'}, 'required':False}
 	if env['EXPERIMENTAL_CSS_PARSER'] and not env['PREBUILD_GRAMMAR']:
 		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
 		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
@@ -70,6 +73,9 @@ if not env.GetOption('clean'):
 		libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
 		libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
 		libs['LUA_PC'] = {'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
+
+	if env['DOWNLOAD_RESENE_COLOR_LIST']:
+		libs['CURL_PC'] = {'checks':{'libcurl':'>= 7'}}
 
 	env.ConfirmLibs(conf, libs)
 
@@ -114,13 +120,15 @@ else:
 	env['LINKCOM'] = [env['LINKCOM'], 'mt.exe -nologo -manifest ${TARGET}.manifest -outputresource:$TARGET;1']
 	if env['DEBUG']:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/ignore:4819'],
-				LINKFLAGS = ['/LTCG', '/MANIFEST'],
+				CPPFLAGS = ['/Od', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CPPDEFINES = ['WIN32', '_DEBUG'],
+				LINKFLAGS = ['/MANIFEST', '/DEBUG'],
 			)
 	else:
 		env.Append(
-				CPPFLAGS = ['/EHsc', '/O2', '/GL', '/MD', '/ignore:4819'],
-				LINKFLAGS = ['/LTCG', '/MANIFEST'],
+				CPPFLAGS = ['/O2', '/Oi', '/GL', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CPPDEFINES = ['WIN32', 'NDEBUG'],
+				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
 			
 extern_libs = SConscript(['extern/SConscript'], exports='env')
@@ -142,9 +150,10 @@ if env['ENABLE_NLS']:
 		locales
 	])
 
-	template = env.Xgettext("template.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'))
+	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
+	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 
-	env.Append(XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
+	template = env.Msgcat("template.pot", [template_c, template_lua], MSGCAT_FLAGS = ['--use-first'])
 
 	env.Alias(target="template", source=[
 		template

@@ -20,6 +20,11 @@
 #include "Box.h"
 #include "System.h"
 
+extern "C"{
+#include <lualib.h>
+#include <lauxlib.h>
+}
+
 #include <typeinfo>
 #include <iostream>
 using namespace std;

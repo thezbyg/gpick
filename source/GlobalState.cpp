@@ -22,6 +22,8 @@
 #include "ScreenReader.h"
 #include "Converter.h"
 
+#include "color_names/DownloadNameFile.h"
+
 #include "layout/LuaBindings.h"
 #include "layout/Layout.h"
 
@@ -42,6 +44,11 @@
 
 #include <stdlib.h>
 #include <glib/gstdio.h>
+
+extern "C"{
+#include <lualib.h>
+#include <lauxlib.h>
+}
 
 #include <fstream>
 #include <iostream>
@@ -141,7 +148,14 @@ int global_state_init(GlobalState *gs, GlobalStateLevel level){
 		//create and load color names
 		gs->color_names = color_names_new();
 		gchar* tmp;
-		color_names_load_from_file(gs->color_names, tmp=build_filename("colors.txt"));
+		if (color_names_load_from_file(gs->color_names, tmp=build_filename("colors.txt")) != 0){
+			g_free(tmp);
+
+			if (color_names_load_from_file(gs->color_names, tmp=build_config_path("colors.txt")) != 0){
+				download_name_file(tmp);
+				color_names_load_from_file(gs->color_names, tmp);
+			}
+		}
 		g_free(tmp);
 		color_names_load_from_file(gs->color_names, tmp=build_filename("colors0.txt"));
 		g_free(tmp);
