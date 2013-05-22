@@ -224,6 +224,30 @@ static void calc( BlendColorsArgs *args, bool preview, int limit){
 				}
 			}
 			break;
+		
+		case 4:
+			{
+				Color a_lch, b_lch, r_lch;
+				color_rgb_to_lch_d50(&a, &a_lch);
+				color_rgb_to_lch_d50(&b, &b_lch);
+
+				if (a_lch.lch.h>b_lch.lch.h){
+					if (a_lch.lch.h-b_lch.lch.h>180)
+						a_lch.lch.h-=360;
+				}else{
+					if (b_lch.lch.h-a_lch.lch.h>180)
+						b_lch.lch.h-=360;
+				}
+				for (; step_i < steps; ++step_i) {
+					MIX_COMPONENTS(r_lch.lch, a_lch.lch, b_lch.lch, L, C, h);
+					if (r_lch.lch.h<0) r_lch.lch.h+=360;
+					color_lch_to_rgb_d50(&r_lch, &r);
+					color_rgb_normalize(&r);
+					STORE_COLOR();
+
+				}
+			}
+			break;
 		}
 	}
 }
@@ -571,6 +595,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV shortest hue distance"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LCH shortest h distance"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), mix_type, false, false, 0);
 	g_signal_connect(G_OBJECT(mix_type), "changed", G_CALLBACK (update), args);
