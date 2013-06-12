@@ -675,16 +675,39 @@ void color_hsv_to_hsl(const Color *a, Color *b)
 
 void color_rgb_get_linear(const Color* a, Color* b)
 {
-	b->rgb.red = pow(a->rgb.red, 1.0f / 2.1f);
-	b->rgb.green = pow(a->rgb.green, 1.0f / 2.0f);
-	b->rgb.blue = pow(a->rgb.blue, 1.0f / 2.1f);
+	if (a->rgb.red > 0.04045f)
+		b->rgb.red = pow((a->rgb.red + 0.055f) / 1.055f, 2.4f);
+	else
+		b->rgb.red = a->rgb.red / 12.92f;
+
+	if (a->rgb.green > 0.04045f)
+		b->rgb.green = pow((a->rgb.green + 0.055f) / 1.055f, 2.4f);
+	else
+		b->rgb.green = a->rgb.green / 12.92f;
+
+	if (a->rgb.blue > 0.04045f)
+		b->rgb.blue = pow((a->rgb.blue + 0.055f) / 1.055f, 2.4f);
+	else
+		b->rgb.blue = a->rgb.blue / 12.92f;
+
 }
 
 void color_linear_get_rgb(const Color* a, Color* b)
 {
-	b->rgb.red = pow(a->rgb.red, 2.1f);
-	b->rgb.green = pow(a->rgb.green, 2.0f);
-	b->rgb.blue = pow(a->rgb.blue, 2.1f);
+	if (a->rgb.red > 0.0031308f)
+		b->rgb.red = (1.055f * pow(a->rgb.red, 1.0f / 2.4f)) - 0.055f;
+	else
+		b->rgb.red = a->rgb.red * 12.92f;
+
+	if (a->rgb.green > 0.0031308f)
+		b->rgb.green = (1.055f * pow(a->rgb.green, 1.0f / 2.4f)) - 0.055f;
+	else
+		b->rgb.green = a->rgb.green * 12.92f;
+
+	if (a->rgb.blue > 0.0031308f)
+		b->rgb.blue = (1.055f * pow(a->rgb.blue, 1.0f / 2.4f)) - 0.055f;
+	else
+		b->rgb.blue = a->rgb.blue * 12.92f;
 }
 
 const matrix3x3* color_get_sRGB_transformation_matrix()
