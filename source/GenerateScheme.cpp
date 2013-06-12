@@ -289,7 +289,7 @@ static void color_wheel_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, G
 
 	menu = gtk_menu_new();
 
-	item = gtk_check_menu_item_new_with_mnemonic(_("_Locked"));
+	item = gtk_check_menu_item_new_with_mnemonic(_("_Linked"));
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), args->wheel_locked);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(color_wheel_locked_toggled_cb), args);
