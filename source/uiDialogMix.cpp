@@ -167,20 +167,6 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 					color_rgb_to_hsv(&a, &a_hsv);
 					color_rgb_to_hsv(&b, &b_hsv);
 
-					for (step_i = start_step; step_i < max_step; ++step_i) {
-						MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
-						color_hsv_to_rgb(&r_hsv, &r);
-						STORE_COLOR();
-					}
-				}
-				break;
-
-			case 2:
-				{
-					Color a_hsv, b_hsv, r_hsv;
-					color_rgb_to_hsv(&a, &a_hsv);
-					color_rgb_to_hsv(&b, &b_hsv);
-
 					if (a_hsv.hsv.hue>b_hsv.hsv.hue){
 						if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
 							a_hsv.hsv.hue-=1;
@@ -199,7 +185,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 				}
 				break;
 
-			case 3:
+			case 2:
 				{
 					Color a_lab, b_lab, r_lab;
 					color_rgb_to_lab_d50(&a, &a_lab);
@@ -215,7 +201,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 				}
 				break;
 
-			case 4:
+			case 3:
 				{
 					Color a_lch, b_lch, r_lch;
 					color_rgb_to_lch_d50(&a, &a_lch);
@@ -272,7 +258,6 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_type = gtk_combo_box_new_text();
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("RGB"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV shortest hue distance"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LCH shortest h distance"));
