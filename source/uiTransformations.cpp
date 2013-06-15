@@ -45,9 +45,10 @@ typedef enum{
 
 typedef struct TransformationsArgs{
 	GtkWidget *available_transformations;
-	GtkWidget *list;
+	GtkWidget *transformation_list;
 	GtkWidget *config_vbox;
-	GtkWidget *hpaned;
+	GtkWidget *vpaned;
+	GtkWidget *configuration_label;
 
 	GtkWidget *enabled;
 
@@ -75,29 +76,44 @@ static void available_tranformations_update_row(GtkTreeModel *model, GtkTreeIter
 			-1);
 }
 
-static GtkWidget* available_transformations_list_new(TransformationsArgs *args)
-{
-	GtkListStore *store;
-	GtkCellRenderer *renderer;
-	GtkWidget *widget;
-	store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
-	widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
+static void available_transformation_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args) {
+	GtkTreeModel* model;
+	GtkTreeIter iter;
 
-	renderer = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget),renderer,0);
-	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", AVAILABLE_TRANSFORMATIONS_HUMAN_NAME, NULL);
+	model = gtk_tree_view_get_model(tree_view);
+	gtk_tree_model_get_iter(model, &iter, path);
 
-	g_object_unref(GTK_TREE_MODEL(store));
+	gchar *name = 0;
+	gtk_tree_model_get(model, &iter, AVAILABLE_TRANSFORMATIONS_NAME, &name, -1);
 
-	return widget;
+	boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+	if (tran){
+		transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+		chain->add(tran);
+
+		configure_transformation(args, tran.get());
+
+		model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+		tranformations_update_row(model, &iter, tran.get(), args);
+	}
 }
 
 static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 {
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->available_transformations));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->available_transformations));
 	GtkTreeIter iter;
-	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(args->available_transformations), &iter)) {
-		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(args->available_transformations));
+
+	if (gtk_tree_selection_count_selected_rows(selection) == 0){
+		return;
+	}
+
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+
+	GList *i = list;
+	while (i) {
+		gtk_tree_model_get_iter(model, &iter, (GtkTreePath*)i->data);
 
 		gchar *name = 0;
 		gtk_tree_model_get(model, &iter, AVAILABLE_TRANSFORMATIONS_NAME, &name, -1);
@@ -109,17 +125,22 @@ static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 
 			configure_transformation(args, tran.get());
 
-			model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
+			model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
 			gtk_list_store_append(GTK_LIST_STORE(model), &iter);
 			tranformations_update_row(model, &iter, tran.get(), args);
 		}
+
+		i = g_list_next(i);
 	}
+
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(list);
 }
 
 static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 {
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->list));
-	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->list));
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->transformation_list));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
 	GtkTreeIter iter;
 
 	if (gtk_tree_selection_count_selected_rows(selection) == 0){
@@ -163,7 +184,7 @@ static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *arg
 	g_list_free(list);
 }
 
-static GtkWidget* transformations_list_new(TransformationsArgs *args)
+static GtkWidget* transformations_list_new(bool selection_list)
 {
 	GtkListStore *store;
 	GtkCellRenderer *renderer;
@@ -171,27 +192,37 @@ static GtkWidget* transformations_list_new(TransformationsArgs *args)
 	GtkWidget *view;
 
 	view = gtk_tree_view_new();
-	args->list = view;
 
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 1);
 
-	store = gtk_list_store_new(TRANSFORMATIONS_N_COLUMNS, G_TYPE_STRING, G_TYPE_POINTER);
+	if (selection_list){
+		store = gtk_list_store_new(AVAILABLE_TRANSFORMATIONS_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING);
+	}else{
+		store = gtk_list_store_new(TRANSFORMATIONS_N_COLUMNS, G_TYPE_STRING, G_TYPE_POINTER);
+	}
 
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 	gtk_tree_view_column_set_resizable(col, 1);
-	gtk_tree_view_column_set_title(col, _("Name"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, true);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", TRANSFORMATIONS_HUMAN_NAME);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	if (selection_list){
+		gtk_tree_view_column_set_title(col, _("Available filters"));
+		gtk_tree_view_column_add_attribute(col, renderer, "text", AVAILABLE_TRANSFORMATIONS_HUMAN_NAME);
+	}else{
+		gtk_tree_view_column_set_title(col, _("Active filters"));
+		gtk_tree_view_column_add_attribute(col, renderer, "text", TRANSFORMATIONS_HUMAN_NAME);
+	}
 
 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
 	g_object_unref(GTK_TREE_MODEL(store));
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-	gtk_tree_view_set_reorderable(GTK_TREE_VIEW(view), true);
+	if (!selection_list){
+		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+		gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
+		gtk_tree_view_set_reorderable(GTK_TREE_VIEW(view), true);
+	}
 
 	return view;
 }
@@ -215,13 +246,44 @@ static void configure_transformation(TransformationsArgs *args, transformation::
 		args->configuration = boost::shared_ptr<transformation::Configuration>();
 	}
 	if (transformation){
+		gtk_label_set_text(GTK_LABEL(args->configuration_label), transformation->getReadableName().c_str());
 		args->configuration = transformation->getConfig();
 		args->transformation = transformation;
 		gtk_box_pack_start(GTK_BOX(args->config_vbox), args->configuration->getWidget(), true, true, 0);
+	}else{
+		gtk_label_set_text(GTK_LABEL(args->configuration_label), _("No filter selected"));
 	}
 }
 
-static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args) {
+static void	transformation_chain_cursor_changed(GtkWidget *widget, TransformationsArgs *args) 
+{ 
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->transformation_list));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
+	GtkTreeIter iter;
+
+	if (gtk_tree_selection_count_selected_rows(selection) == 0){
+		return;
+	}
+
+	configure_transformation(args, NULL);
+
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+
+	GList *i = list;
+	if (i) {
+		gtk_tree_model_get_iter(model, &iter, (GtkTreePath*)i->data);
+
+		transformation::Transformation *transformation;
+		gtk_tree_model_get(model, &iter, TRANSFORMATIONS_TRANSFORMATION_PTR, &transformation, -1);
+		configure_transformation(args, transformation);
+	}
+
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(list);
+}
+
+static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args) 
+{
 	GtkTreeModel* model;
 	GtkTreeIter iter;
 
@@ -256,62 +318,68 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
 	GtkWidget *vbox2 = gtk_vbox_new(false, 5);
 
-	args->enabled = widget = gtk_check_button_new_with_mnemonic (_("_Enabled"));
+	args->enabled = widget = gtk_check_button_new_with_mnemonic (_("_Enable display filters"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
 
 
- 	args->hpaned = gtk_hpaned_new();
-	gtk_box_pack_start(GTK_BOX(vbox), args->hpaned, true, true, 0);
+ 	args->vpaned = gtk_vpaned_new();
+	gtk_box_pack_start(GTK_BOX(vbox), args->vpaned, true, true, 0);
 
 
 	GtkWidget *list, *scrolled;
 	GtkTreeIter iter1;
 	GtkTreeModel *model;
 
+	GtkWidget *hbox = gtk_hbox_new(false, 5);
 
-	args->available_transformations = list = available_transformations_list_new(args);
+	args->available_transformations = list = transformations_list_new(true);
+	g_signal_connect(G_OBJECT(list), "row-activated", G_CALLBACK(available_transformation_row_activated), args);
+	scrolled = gtk_scrolled_window_new(0, 0);
+	gtk_container_add(GTK_CONTAINER(scrolled), list);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_box_pack_start(GTK_BOX(hbox), scrolled, true, true, 0);
 
-
-	GtkWidget* hbox2 = gtk_hbox_new(false, 0);
-	gtk_box_pack_start(GTK_BOX(vbox2), hbox2, false, false, 0);
-	gtk_box_pack_start(GTK_BOX(hbox2), list, true, true, 0);
-
-	GtkWidget *button = gtk_button_new_from_stock(GTK_STOCK_ADD);
-	gtk_box_pack_start(GTK_BOX(hbox2), button, false, false, 0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(add_transformation_cb), args);
-
-	button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
-	gtk_box_pack_start(GTK_BOX(hbox2), button, false, false, 0);
-	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(remove_transformation_cb), args);
-
-	model = gtk_combo_box_get_model(GTK_COMBO_BOX(list));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
 	for (int i = 0; i != types.size(); i++){
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		available_tranformations_update_row(model, &iter1, &types[i], args);
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(list), 0);
+
+	GtkWidget *vbox3 = gtk_vbox_new(5, true);
+
+	GtkWidget *button = gtk_button_new_from_stock(GTK_STOCK_ADD);
+	gtk_box_pack_start(GTK_BOX(vbox3), button, false, false, 0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(add_transformation_cb), args);
+
+	button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
+	gtk_box_pack_start(GTK_BOX(vbox3), button, false, false, 0);
+	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(remove_transformation_cb), args);
+
+	gtk_box_pack_start(GTK_BOX(hbox), vbox3, false, false, 0);
 
 
-	args->list = list = transformations_list_new(args);
+	args->transformation_list = list = transformations_list_new(false);
 	g_signal_connect(G_OBJECT(list), "row-activated", G_CALLBACK(transformation_chain_row_activated), args);
+	g_signal_connect(G_OBJECT(list), "cursor-changed", G_CALLBACK(transformation_chain_cursor_changed), args);
 	scrolled = gtk_scrolled_window_new(0, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled), list);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_box_pack_start(GTK_BOX(vbox2), scrolled, true, true, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), scrolled, true, true, 0);
 
-	gtk_paned_pack1(GTK_PANED(args->hpaned), vbox2, false, false);
+	gtk_paned_pack1(GTK_PANED(args->vpaned), hbox, false, false);
+
+	GtkWidget *config_wrap_vbox = gtk_vbox_new(false, 5);
+  args->configuration_label = gtk_label_new(_("No filter selected"));
+	gtk_box_pack_start(GTK_BOX(config_wrap_vbox), gtk_widget_aligned_new(args->configuration_label, 0, 0.5, 0, 0), false, false, 5);
 
 	args->config_vbox = gtk_vbox_new(false, 5);
-	gtk_paned_pack2(GTK_PANED(args->hpaned), args->config_vbox, false, false);
+	gtk_box_pack_start(GTK_BOX(config_wrap_vbox), args->config_vbox, true, true, 0);
+
+	gtk_paned_pack2(GTK_PANED(args->vpaned), config_wrap_vbox, false, false);
 
 	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
-
-	/*boost::shared_ptr<transformation::ColorVisionDeficiency> color_vision_deficiency = boost::shared_ptr<transformation::ColorVisionDeficiency>(new transformation::ColorVisionDeficiency(transformation::ColorVisionDeficiency::DEUTERANOMALY, 0.8));
-	chain->clear();
-	chain->add(color_vision_deficiency);
-  */
 
 	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	for (transformation::Chain::TransformationList::iterator i = chain->getAll().begin(); i != chain->getAll().end(); i++){
@@ -319,7 +387,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		tranformations_update_row(model, &iter1, (*i).get(), args);
 	}
 
-	gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
+	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
 
 	gtk_widget_show_all(vbox);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
@@ -398,7 +466,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
 	dynv_set_int32(args->params, "transformations.window.width", width);
 	dynv_set_int32(args->params, "transformations.window.height", height);
-	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
+	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->vpaned)));
 
 	gtk_widget_destroy(dialog);
 
