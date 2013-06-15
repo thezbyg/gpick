@@ -576,9 +576,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"),0,0,0,0), false, false, 0);
 	args->mix_type = mix_type = gtk_combo_box_new_text();
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("RGB"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV shortest hue distance"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
 	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LCH shortest h distance"));
+	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LCH"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), mix_type, false, false, 0);
 	g_signal_connect(G_OBJECT(mix_type), "changed", G_CALLBACK (update), args);
