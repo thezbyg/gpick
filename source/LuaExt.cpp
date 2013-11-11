@@ -22,6 +22,7 @@
 #include "DynvHelpers.h"
 #include <glib.h>
 #include "Internationalisation.h"
+#include "version/Version.h"
 
 extern "C"{
 #include <lualib.h>
@@ -368,6 +369,22 @@ int lua_colorobject_set_color(lua_State *L) {
 	return 0;
 }
 
+int lua_colorobject_get_params(lua_State *L) {
+	struct ColorObject** color_object = lua_checkcolorobject(L, 1);
+	lua_pushdynvsystem(L, (*color_object)->params);
+	return 1;
+}
+
+int lua_colorobject_get_name(lua_State *L) {
+	struct ColorObject** color_object = lua_checkcolorobject(L, 1);
+	const char* name = dynv_get_string_wd((*color_object)->params, "name", NULL);
+	if (name){
+		lua_pushstring(L, name);
+		return 1;
+	}
+	return 0;
+}
+
 static const struct luaL_Reg lua_colorobjectlib_f [] = {
 	{"new", lua_newcolorobject},
 	{NULL, NULL}
@@ -376,6 +393,8 @@ static const struct luaL_Reg lua_colorobjectlib_f [] = {
 static const struct luaL_Reg lua_colorobjectlib_m [] = {
 	{"get_color", lua_colorobject_get_color},
 	{"set_color", lua_colorobject_set_color},
+	{"get_params", lua_colorobject_get_params},
+	{"get_name", lua_colorobject_get_name},
 	{NULL, NULL}
 };
 
@@ -454,11 +473,20 @@ int luaopen_dynvsystem(lua_State *L) {
 	return 1;
 }
 
+int luaopen_gpick(lua_State *L) {
+	lua_newtable(L);
+	lua_pushstring(L, gpick_build_version);
+	lua_setfield(L, -2, "version");
+	lua_setglobal(L, "gpick");
+	return 1;
+}
+
 int lua_ext_colors_openlib(lua_State *L){
 	luaopen_color(L);
 	luaopen_colorobject(L);
 	luaopen_dynvsystem(L);
 	luaopen_i18n(L);
+	luaopen_gpick(L);
 	return 0;
 }
 

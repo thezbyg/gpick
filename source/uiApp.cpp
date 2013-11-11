@@ -470,7 +470,6 @@ int app_save_file(AppArgs *args, const char *filename){
 
 int app_load_file(AppArgs *args, const char *filename, bool autoload){
 	int return_value = -1;
-	int index;
 	bool imported = false;
 
 	switch (get_file_type_from_ext(filename)){
@@ -774,7 +773,7 @@ static void menu_file_activate(GtkWidget *widget, gpointer data) {
 
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), gtk_separator_menu_item_new ());
 
-		uint32_t j = 0;
+		uintptr_t j = 0;
 		for (list<string>::iterator i = args->recent_files.begin(); i != args->recent_files.end(); i++){
 			item = gtk_menu_item_new_with_label ((*i).c_str());
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
@@ -1099,15 +1098,19 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->params);
 }
 
-
-static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs){
+static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs)
+{
 	GtkWidget* item=0;
-	gchar* converted;
+	string text_line;
+	ConverterSerializePosition position;
+	position.first = true;
+	position.last = true;
+	position.index = 0;
+	position.count = 1;
 
-	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, &converted)==0){
-		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, position, text_line) == 0){
+		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
-
 		CopyMenuItem* itemdata=new CopyMenuItem;
 		itemdata->function_name=g_strdup(function);
 		itemdata->palette_widget=palette_widget;
@@ -1115,10 +1118,7 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 		itemdata->gs = gs;
 
 		g_object_set_data_full(G_OBJECT(item), "item_data", itemdata, (GDestroyNotify)converter_destroy_params);
-
-		g_free(converted);
 	}
-
 	return item;
 }
 
@@ -1142,36 +1142,36 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 
 void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params, gchar** out_text){
 	stringstream text(ios::out);
-
-	int first=true;
-
 	struct ColorList *color_list = color_list_new(NULL);
 	if (palette_widget){
 		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
 	}else{
 		color_list_add_color_object(color_list, color_object, 1);
 	}
-
-	Converters* converters = (Converters*)dynv_get_pointer_wd(params, "Converters", 0);
-
-	for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
-
-		gchar* converted;
-
-		if (converters_color_serialize(converters, function, *i, &converted)==0){
-			if (first){
-				text<<converted;
-				first=false;
-			}else{
-				text<<endl<<converted;
+	ConverterSerializePosition position;
+	position.first = true;
+	position.last = false;
+	position.index = 0;
+	position.count = color_list->colors.size();
+	if (position.count > 0){
+		string text_line;
+		Converters* converters = (Converters*)dynv_get_pointer_wd(params, "Converters", 0);
+		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
+			if (position.index + 1 == position.count)
+				position.last = true;
+			if (converters_color_serialize(converters, function, *i, position, text_line) == 0){
+				if (position.first){
+					text << text_line;
+					position.first = false;
+				}else{
+					text << endl << text_line;
+				}
+				position.index++;
 			}
-			g_free(converted);
 		}
 	}
-
 	color_list_destroy(color_list);
-
-	if (first!=true){
+	if (text.str().length() > 0){
 		*out_text = g_strdup(text.str().c_str());
 	}else{
 		*out_text = 0;
@@ -1968,7 +1968,7 @@ AppArgs* app_create_main(const AppOptions *options){
 		char** recent_array;
 		uint32_t recent_array_size;
 		if ((recent_array = (char**)dynv_get_string_array_wd(args->gs->params, "gpick.recent.files", 0, 0, &recent_array_size))){
-			for (int i = 0; i < recent_array_size; i++){
+			for (uint32_t i = 0; i < recent_array_size; i++){
 				args->recent_files.push_back(string(recent_array[i]));
 			}
 			delete [] recent_array;

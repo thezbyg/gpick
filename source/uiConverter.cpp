@@ -46,7 +46,12 @@ typedef struct ConverterArgs{
 }ConverterArgs;
 
 static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Converter *converter, ConverterArgs *args) {
-	gchar* converted;
+	string text_line;
+	ConverterSerializePosition position;
+	position.first = true;
+	position.last = true;
+	position.index = 0;
+	position.count = 1;
 
 	Color c;
 	c.rgb.red=0.75;
@@ -57,17 +62,16 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 
 	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
 
-	if (converters_color_serialize(converters, converter->function_name, color_object, &converted) == 0) {
+	if (converters_color_serialize(converters, converter->function_name, color_object, position, text_line) == 0) {
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 			CONVERTERLIST_HUMAN_NAME, converter->human_readable,
-			CONVERTERLIST_EXAMPLE, converted,
+			CONVERTERLIST_EXAMPLE, text_line.c_str(),
 			CONVERTERLIST_CONVERTER_PTR, converter,
 			CONVERTERLIST_COPY, converter->copy,
 			CONVERTERLIST_COPY_ENABLED, converter->serialize_available,
 			CONVERTERLIST_PASTE, converter->paste,
 			CONVERTERLIST_PASTE_ENABLED, converter->deserialize_available,
 		-1);
-		g_free(converted);
 	}else{
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 			CONVERTERLIST_HUMAN_NAME, converter->human_readable,

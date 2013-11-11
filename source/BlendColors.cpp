@@ -278,12 +278,16 @@ static void converter_callback_copy(GtkWidget *widget,  gpointer item) {
 
 static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs){
 	GtkWidget* item=0;
-	gchar* converted;
+	string text_line;
+	ConverterSerializePosition position;
+	position.first = true;
+	position.last = true;
+	position.index = 0;
+	position.count = 1;
 
-	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, &converted)==0){
-		item = gtk_menu_item_new_with_image(converted, gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, position, text_line) == 0){
+		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
-
 		CopyMenuItem* itemdata=new CopyMenuItem;
 		itemdata->function_name=g_strdup(function);
 		itemdata->palette_widget=palette_widget;
@@ -291,10 +295,7 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 		itemdata->gs = gs;
 
 		g_object_set_data_full(G_OBJECT(item), "item_data", itemdata, (GDestroyNotify)converter_destroy_params);
-
-		g_free(converted);
 	}
-
 	return item;
 }
 

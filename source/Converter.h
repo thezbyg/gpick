@@ -20,6 +20,7 @@
 #define CONVERTER_H_
 
 #include "dynv/DynvSystem.h"
+#include <string>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
@@ -53,7 +54,14 @@ Converter* converters_get_first(Converters *converters, ConvertersArrayType type
 Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size);
 Converter** converters_get_all(Converters *converters, uint32_t *size);
 
-int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, char** result);
+typedef struct ConverterSerializePosition{
+	bool first;
+	bool last;
+	size_t index;
+	size_t count;
+}ConverterSerializePosition;
+
+int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
 int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality);
 
 int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type);

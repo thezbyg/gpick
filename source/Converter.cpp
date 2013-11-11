@@ -152,44 +152,47 @@ int converters_color_deserialize(Converters* converters, const char* function, c
 	return -1;
 }
 
-int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, char** result){
+int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, string& result)
+{
 	lua_State* L = converters->L;
-
-	size_t st;
 	int status;
 	int stack_top = lua_gettop(L);
 
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1)!=LUA_TNIL){
-
+	if (lua_type(L, -1) != LUA_TNIL){
 		lua_pushstring(L, "color_serialize");
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
-
 			lua_pushstring(L, function);
-			//lua_gettable(L, -2);
 			lua_pushcolorobject (L, color_object);
 			lua_pushdynvsystem(L, converters->params);
+      lua_newtable(L);
+			lua_pushboolean(L, position.first);
+			lua_setfield(L, -2, "first");
+			lua_pushboolean(L, position.last);
+			lua_setfield(L, -2, "last");
+			lua_pushinteger(L, position.index);
+			lua_setfield(L, -2, "index");
+			lua_pushinteger(L, position.count);
+			lua_setfield(L, -2, "count");
 
-			status=lua_pcall(L, 3, 1, 0);
-			if (status==0){
-				if (lua_type(L, -1)==LUA_TSTRING){
-					const char* converted = luaL_checklstring(L, -1, &st);
-					*result = g_strdup(converted);
+			status = lua_pcall(L, 4, 1, 0);
+			if (status == 0){
+				if (lua_type(L, -1) == LUA_TSTRING){
+					result = luaL_checkstring(L, -1);
 					lua_settop(L, stack_top);
 					return 0;
 				}else{
-					cerr<<"gpick.color_serialize: returned not a string value \""<<function<<"\""<<endl;
+					cerr << "gpick.color_serialize: returned not a string value \"" << function << "\"" << endl;
 				}
 			}else{
-				cerr<<"gpick.color_serialize: "<<lua_tostring (L, -1)<<endl;
+				cerr << "gpick.color_serialize: " << lua_tostring(L, -1) << endl;
 			}
 		}else{
-			cerr<<"gpick.color_serialize: no such function \""<<function<<"\""<<endl;
+			cerr << "gpick.color_serialize: no such function \"" << function << "\"" <<endl;
 		}
 	}
-
 	lua_settop(L, stack_top);
 	return -1;
 }
