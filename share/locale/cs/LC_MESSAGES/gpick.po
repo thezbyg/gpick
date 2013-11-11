@@ -1,0 +1,1263 @@
+# Pavel Fric <pavelfric@seznam.cz>, 2013.
+msgid ""
+msgstr ""
+"Project-Id-Version: gpick 0.2.5rc1\n"
+"POT-Creation-Date: 2013-01-05 16:16+0200\n"
+"PO-Revision-Date: 2013-06-25 18:37+0200\n"
+"Last-Translator: Pavel Fric <pavelfric@seznam.cz>\n"
+"Language-Team: Czech <kde-i18n-doc@kde.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms:  nplurals=2; plural=(n != 1);\n"
+"Language: cs\n"
+"X-Generator: Lokalize 1.5\n"
+
+#: source/BlendColors.cpp:114 source/BlendColors.cpp:116
+msgid "blend node"
+msgstr "Uzel míchání"
+
+#: source/BlendColors.cpp:119
+msgid "blend"
+msgstr "Míchání"
+
+#: source/BlendColors.cpp:308 source/BrightnessDarkness.cpp:260
+#: source/ColorMixer.cpp:321 source/ColorPicker.cpp:367
+#: source/GenerateScheme.cpp:444 source/LayoutPreview.cpp:405
+#: source/Variations.cpp:331 source/uiDialogOptions.cpp:215
+#: source/uiDialogOptions.cpp:234
+msgid "_Add to palette"
+msgstr "_Přidat do palety"
+
+#: source/BlendColors.cpp:314 source/BrightnessDarkness.cpp:265
+#: source/ColorMixer.cpp:326 source/ColorPicker.cpp:371
+#: source/GenerateScheme.cpp:449 source/LayoutPreview.cpp:410
+#: source/Variations.cpp:336
+msgid "A_dd all to palette"
+msgstr "Při_dat všedo palety"
+
+#: source/BlendColors.cpp:320 source/BrightnessDarkness.cpp:271
+#: source/ColorMixer.cpp:333 source/ColorPicker.cpp:377
+#: source/GenerateScheme.cpp:456 source/LayoutPreview.cpp:416
+#: source/Variations.cpp:343 source/uiDialogOptions.cpp:220
+#: source/uiDialogOptions.cpp:239
+msgid "_Copy to clipboard"
+msgstr "_Kopírovat do schránky"
+
+#: source/BlendColors.cpp:374 source/GenerateScheme.cpp:485
+msgid "_Reset"
+msgstr "_Nastavit znovu"
+
+#: source/BlendColors.cpp:517
+msgid "Start:"
+msgstr "Začátek:"
+
+#: source/BlendColors.cpp:533
+msgid "Middle:"
+msgstr "Střed:"
+
+#: source/BlendColors.cpp:551
+msgid "End:"
+msgstr "Konec:"
+
+#: source/BlendColors.cpp:568 source/GenerateScheme.cpp:875
+#: source/uiDialogGenerate.cpp:237 source/uiDialogMix.cpp:249
+#: source/transformation/ColorVisionDeficiency.cpp:363
+msgid "Type:"
+msgstr "Typ:"
+
+#: source/BlendColors.cpp:570 source/ColorWheelType.cpp:56
+#: source/uiDialogMix.cpp:251
+msgid "RGB"
+msgstr "RGB"
+
+#: source/BlendColors.cpp:571 source/uiDialogMix.cpp:252
+msgid "HSV"
+msgstr "HSV"
+
+#: source/BlendColors.cpp:572 source/uiDialogMix.cpp:253
+msgid "HSV shortest hue distance"
+msgstr "Nejkratší vzdálenost odstínu HSV"
+
+#: source/BlendColors.cpp:573 source/uiDialogMix.cpp:254
+msgid "LAB"
+msgstr "LAB"
+
+#: source/BlendColors.cpp:582
+msgid "Start steps:"
+msgstr "Kroky:"
+
+#: source/BlendColors.cpp:590
+msgid "End steps:"
+msgstr "Kroky:"
+
+#: source/BlendColors.cpp:627
+msgid "Blend colors"
+msgstr "Míchat barvy"
+
+#: source/BrightnessDarkness.cpp:86
+msgid "brightness darkness"
+msgstr "jas tma"
+
+#: source/BrightnessDarkness.cpp:287 source/ColorMixer.cpp:373
+#: source/ColorPicker.cpp:387 source/GenerateScheme.cpp:469
+#: source/LayoutPreview.cpp:430 source/Variations.cpp:383
+msgid "_Edit..."
+msgstr "_Upravit..."
+
+#: source/BrightnessDarkness.cpp:292 source/ColorMixer.cpp:378
+#: source/ColorPicker.cpp:391 source/GenerateScheme.cpp:474
+#: source/LayoutPreview.cpp:435 source/Variations.cpp:388
+msgid "_Paste"
+msgstr "_Vložit"
+
+#: source/BrightnessDarkness.cpp:385
+msgid "Brightness"
+msgstr "Jas"
+
+#: source/BrightnessDarkness.cpp:385
+msgid "Darkness"
+msgstr "Tma"
+
+#: source/BrightnessDarkness.cpp:431
+msgid "Brightness Darkness"
+msgstr "Jas - Tma"
+
+#: source/ColorMixer.cpp:66
+msgid "Normal"
+msgstr "Normální"
+
+#: source/ColorMixer.cpp:67
+msgid "Multiply"
+msgstr "Násobit"
+
+#: source/ColorMixer.cpp:68
+msgid "Add"
+msgstr "Přidat"
+
+#: source/ColorMixer.cpp:69
+msgid "Difference"
+msgstr "Rozdíl"
+
+#: source/ColorMixer.cpp:70 source/ColorPicker.cpp:1180
+#: source/ColorPicker.cpp:1194 source/ColorSpaceType.cpp:30
+#: source/ColorSpaceType.cpp:37 source/Variations.cpp:66
+msgid "Hue"
+msgstr "Odstín"
+
+#: source/ColorMixer.cpp:71 source/ColorPicker.cpp:1180
+#: source/ColorPicker.cpp:1194 source/ColorSpaceType.cpp:31
+#: source/ColorSpaceType.cpp:38 source/Variations.cpp:67
+msgid "Saturation"
+msgstr "Sytost"
+
+#: source/ColorMixer.cpp:72 source/ColorPicker.cpp:1194
+#: source/ColorPicker.cpp:1236 source/ColorPicker.cpp:1250
+#: source/ColorSpaceType.cpp:39 source/ColorSpaceType.cpp:59
+#: source/ColorSpaceType.cpp:66 source/Variations.cpp:68
+msgid "Lightness"
+msgstr "Světlost"
+
+#: source/ColorMixer.cpp:114
+msgid "color mixer"
+msgstr "Mísič barev"
+
+#: source/ColorMixer.cpp:234
+msgid "secondary"
+msgstr "Doplňkový"
+
+#: source/ColorMixer.cpp:238 source/Variations.cpp:229
+#, c-format
+msgid "primary %d"
+msgstr "Základní %d"
+
+#: source/ColorMixer.cpp:244
+#, c-format
+msgid "result %d"
+msgstr "Výsledek %d"
+
+#: source/ColorMixer.cpp:704
+msgid "Opacity:"
+msgstr "Neprůhlednost:"
+
+#: source/ColorMixer.cpp:732
+msgid "Color mixer"
+msgstr "Mísič barev"
+
+#: source/ColorPicker.cpp:424
+msgid "Press Spacebar to sample color under mouse pointer"
+msgstr ""
+"Stisknout mezerník pro odebrání vzorku zachycením barvy pod ukazovátkem myši"
+
+#: source/ColorPicker.cpp:699 source/uiConverter.cpp:163
+msgid "Copy"
+msgstr "Kopírovat"
+
+#: source/ColorPicker.cpp:703 source/uiConverter.cpp:172
+msgid "Paste"
+msgstr "Vložit"
+
+#: source/ColorPicker.cpp:709 source/uiColorInput.cpp:119
+msgid "Edit"
+msgstr "Upravit"
+
+#: source/ColorPicker.cpp:771 source/uiApp.cpp:1012
+#: source/uiDialogSort.cpp:222
+msgid "None"
+msgstr "Žádný"
+
+#: source/ColorPicker.cpp:772
+msgid "Linear"
+msgstr "Lineární"
+
+#: source/ColorPicker.cpp:773
+msgid "Quadratic"
+msgstr "Kvadratický"
+
+#: source/ColorPicker.cpp:774
+msgid "Cubic"
+msgstr "Kubický"
+
+#: source/ColorPicker.cpp:775
+msgid "Exponential"
+msgstr "Exponenciální"
+
+#: source/ColorPicker.cpp:951
+msgid "Click on swatch area to begin adding colors to palette"
+msgstr "Klepnout na oblast se vzorky pro započetí s přidáváním barev do palety"
+
+#: source/ColorPicker.cpp:1143
+msgid "Settings"
+msgstr "Nastavení"
+
+#: source/ColorPicker.cpp:1153
+msgid "Oversample:"
+msgstr "Oblast vzorku:"
+
+#: source/ColorPicker.cpp:1160
+msgid "Falloff:"
+msgstr "Pokles:"
+
+#: source/ColorPicker.cpp:1167
+msgid "Zoom:"
+msgstr "Zvětšení:"
+
+#: source/ColorPicker.cpp:1180 source/ColorSpaceType.cpp:32
+msgid "Value"
+msgstr "Hodnota"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:44
+msgid "Red"
+msgstr "Červená"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:45
+msgid "Green"
+msgstr "Zelená"
+
+#: source/ColorPicker.cpp:1208 source/ColorSpaceType.cpp:46
+msgid "Blue"
+msgstr "Modrá"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:51
+msgid "Cyan"
+msgstr "Azurová"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:52
+msgid "Magenta"
+msgstr "Purpurová"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:53
+msgid "Yellow"
+msgstr "Žlutá"
+
+#: source/ColorPicker.cpp:1222 source/ColorSpaceType.cpp:54
+msgid "Key"
+msgstr "Černá (key)"
+
+#: source/ColorPicker.cpp:1258
+msgid "Info"
+msgstr "Informace"
+
+#: source/ColorPicker.cpp:1267
+msgid "Color name:"
+msgstr "Název barvy:"
+
+#: source/ColorPicker.cpp:1280
+msgid "Contrast:"
+msgstr "Kontrast:"
+
+#: source/ColorPicker.cpp:1285 source/ColorPicker.cpp:1291
+msgid "Sample"
+msgstr "Vzorek"
+
+#: source/ColorPicker.cpp:1324
+msgid "Color picker"
+msgstr "Kapátko"
+
+#: source/ColorWheelType.cpp:57
+msgid "RYB v1"
+msgstr "RYB v1"
+
+#: source/ColorWheelType.cpp:58
+msgid "RYB v2"
+msgstr "RYB v2"
+
+#: source/GenerateScheme.cpp:90
+msgid "Complementary"
+msgstr "Doplňkový"
+
+#: source/GenerateScheme.cpp:91
+msgid "Analogous"
+msgstr "Analogový"
+
+#: source/GenerateScheme.cpp:92
+msgid "Triadic"
+msgstr "Trojičný"
+
+#: source/GenerateScheme.cpp:93
+msgid "Split-Complementary"
+msgstr "Rozdělit - doplňkový"
+
+#: source/GenerateScheme.cpp:94
+msgid "Rectangle (tetradic)"
+msgstr "Obdélník (čtverný)"
+
+#: source/GenerateScheme.cpp:95
+msgid "Square"
+msgstr "Čtverec"
+
+#: source/GenerateScheme.cpp:96
+msgid "Neutral"
+msgstr "Neutrální"
+
+#: source/GenerateScheme.cpp:97
+msgid "Clash"
+msgstr "Doplňkový - střetnutí"
+
+#: source/GenerateScheme.cpp:98
+msgid "Five-Tone"
+msgstr "Pět tónů"
+
+#: source/GenerateScheme.cpp:99
+msgid "Six-Tone"
+msgstr "Šest tónů"
+
+#: source/GenerateScheme.cpp:119 source/uiDialogGenerate.cpp:76
+msgid "scheme"
+msgstr "Sada"
+
+#: source/GenerateScheme.cpp:292
+msgid "_Locked"
+msgstr "_Uzamknuto"
+
+#: source/GenerateScheme.cpp:299
+msgid "_Reset scheme"
+msgstr "_Nastavit sadu znovu"
+
+#: source/GenerateScheme.cpp:851
+msgid "Hue:"
+msgstr "Odstín:"
+
+#: source/GenerateScheme.cpp:858 source/uiDialogVariations.cpp:171
+msgid "Saturation:"
+msgstr "Sytost:"
+
+#: source/GenerateScheme.cpp:866 source/uiDialogVariations.cpp:156
+msgid "Lightness:"
+msgstr "Světlost:"
+
+#: source/GenerateScheme.cpp:885 source/uiDialogGenerate.cpp:246
+msgid "Color wheel:"
+msgstr "Kolo barev:"
+
+#: source/GenerateScheme.cpp:919
+msgid "Scheme generation"
+msgstr "Vytvoření sady"
+
+#: source/LayoutPreview.cpp:78
+msgid "layout preview"
+msgstr "Náhled na rozvržení"
+
+#: source/LayoutPreview.cpp:153
+msgid "Style item"
+msgstr "Položka stylu"
+
+#: source/LayoutPreview.cpp:162
+msgid "CSS selector"
+msgstr "Volič CSS"
+
+#: source/LayoutPreview.cpp:184
+msgid "Assign CSS selectors"
+msgstr "Přiřadit voliče CSS"
+
+#: source/LayoutPreview.cpp:547 source/LayoutPreview.cpp:595
+#: source/uiApp.cpp:690 source/uiApp.cpp:711
+msgid "File could not be saved"
+msgstr "Soubor se nepodařilo uložit"
+
+#: source/LayoutPreview.cpp:558 source/uiExport.cpp:457
+#: source/uiExport.cpp:523
+msgid "Export"
+msgstr "Vyvést"
+
+#: source/LayoutPreview.cpp:572
+msgid "Cascading Style Sheets *.css"
+msgstr "Listy s kaskádovými styly *.css"
+
+#: source/LayoutPreview.cpp:666
+msgid "Layout:"
+msgstr "Rozvržení:"
+
+#: source/LayoutPreview.cpp:672
+msgid "Export CSS File"
+msgstr "Vyvést soubor CSS"
+
+#: source/LayoutPreview.cpp:673
+msgid "Export CSS file"
+msgstr "Vyvést soubor CSS"
+
+#: source/LayoutPreview.cpp:682
+msgid "_Export CSS File As..."
+msgstr "_Vyvést soubor CSS jako..."
+
+#: source/LayoutPreview.cpp:686
+msgid "_Assign CSS Selectors..."
+msgstr "_Přiřadit voliče CSS..."
+
+#: source/LayoutPreview.cpp:759
+msgid "Layout preview"
+msgstr "Náhled na rozvržení"
+
+#: source/ToolColorNaming.cpp:25
+msgid "_Empty"
+msgstr "_Prázdný"
+
+#: source/ToolColorNaming.cpp:26
+msgid "_Automatic name"
+msgstr "_Automatický název"
+
+#: source/ToolColorNaming.cpp:27
+msgid "_Tool specific"
+msgstr "Zvláštní _nástroj"
+
+#: source/Variations.cpp:69
+msgid "Lightness (Lab)"
+msgstr "Světlost (Lab)"
+
+#: source/Variations.cpp:110
+msgid "variations"
+msgstr "Obměny"
+
+#: source/Variations.cpp:225
+msgid "all colors"
+msgstr "Všechny barvy"
+
+#: source/Variations.cpp:239
+#, c-format
+msgid "result %d line %d"
+msgstr "Výsledek %d řádek %d"
+
+#: source/Variations.cpp:717
+#: source/transformation/ColorVisionDeficiency.cpp:386
+msgid "Strength:"
+msgstr "Síla:"
+
+#: source/Variations.cpp:745 source/uiDialogVariations.cpp:142
+msgid "Variations"
+msgstr "Obměny"
+
+#: source/uiAbout.cpp:88
+msgid "About Gpick"
+msgstr "O programu Gpick"
+
+#: source/uiAbout.cpp:121
+msgid "Advanced color picker"
+msgstr "Pokročilý sběrač barev"
+
+#: source/uiAbout.cpp:126
+msgid "Copyrights © 2009-2013, Albertas Vyšniauskas and Gpick development team"
+msgstr ""
+"Autorské právo © 2009-2013, Albertas Vyšniauskas a vývojářská skupina pro"
+"Gpick"
+
+#: source/uiAbout.cpp:141
+msgid "License"
+msgstr "Povolení"
+
+#: source/uiAbout.cpp:142
+msgid "Credits"
+msgstr "Zásluhy"
+
+#: source/uiAbout.cpp:143
+msgid "Expat License"
+msgstr "Licence Expat"
+
+#: source/uiAbout.cpp:144
+msgid "Lua License"
+msgstr "Licence Lua"
+
+#: source/uiApp.cpp:354
+msgid "New palette"
+msgstr "Nová paleta"
+
+#: source/uiApp.cpp:360
+msgid "(Imported)"
+msgstr "(Zavedeno)"
+
+#: source/uiApp.cpp:530 source/uiApp.cpp:545 source/uiApp.cpp:563
+#: source/uiApp.cpp:641
+msgid "File could not be opened"
+msgstr "Soubor se nepodařilo otevřít"
+
+#: source/uiApp.cpp:531 source/uiApp.cpp:546 source/uiApp.cpp:564
+#: source/uiApp.cpp:642
+msgid "Open"
+msgstr "Otevřít"
+
+#: source/uiApp.cpp:576 source/uiExport.cpp:473 source/uiExport.cpp:587
+msgid "Gpick Palette (*.gpa)"
+msgstr "Paleta Gpick (*.gpa)"
+
+#: source/uiApp.cpp:577 source/uiExport.cpp:474 source/uiExport.cpp:588
+msgid "GIMP/Inkscape Palette (*.gpl)"
+msgstr "Paleta GIMP/Inkscape (*.gpl)"
+
+#: source/uiApp.cpp:578 source/uiExport.cpp:476 source/uiExport.cpp:589
+msgid "Adobe Swatch Exchange (*.ase)"
+msgstr "Adobe Swatch Exchange (*.ase)"
+
+#: source/uiApp.cpp:584 source/uiExport.cpp:598
+#: source/tools/PaletteFromImage.cpp:548
+msgid "All files"
+msgstr "Všechny soubory"
+
+#: source/uiApp.cpp:589 source/uiExport.cpp:607
+msgid "All supported formats"
+msgstr "Všechny podporované formáty"
+
+#: source/uiApp.cpp:610
+msgid "Open File"
+msgstr "Otevřít soubor"
+
+#: source/uiApp.cpp:659 source/uiApp.cpp:691
+msgid "Save As"
+msgstr "Uložit jako"
+
+#: source/uiApp.cpp:712
+msgid "Save"
+msgstr "Uložit"
+
+#: source/uiApp.cpp:771
+msgid "Open Last File"
+msgstr "Otevřít poslední soubor"
+
+#: source/uiApp.cpp:916
+msgid "Recent _files"
+msgstr "_Nedávné soubory"
+
+#: source/uiApp.cpp:946
+msgid "Ex_port..."
+msgstr "Vy_vést..."
+
+#: source/uiApp.cpp:954
+msgid "Expo_rt Selected..."
+msgstr "Vy_vést vybrané..."
+
+#: source/uiApp.cpp:962
+msgid "_Import..."
+msgstr "_Zavést..."
+
+#: source/uiApp.cpp:977
+msgid "_File"
+msgstr "_Soubor"
+
+#: source/uiApp.cpp:985
+msgid "Edit _Converters..."
+msgstr "Upravit _převodníky..."
+
+#: source/uiApp.cpp:989
+msgid "Display _Filters..."
+msgstr "Zobrazit _filtry..."
+
+#: source/uiApp.cpp:1001
+msgid "_Edit"
+msgstr "Úp_ravy"
+
+#: source/uiApp.cpp:1037
+msgid "_Secondary View"
+msgstr "_Doplňkový pohled"
+
+#: source/uiApp.cpp:1043
+msgid "Palette"
+msgstr "Paleta"
+
+#: source/uiApp.cpp:1049
+msgid "_View"
+msgstr "_Pohled"
+
+#: source/uiApp.cpp:1055
+msgid "Palette From _Image..."
+msgstr "Paleta z _obrázku..."
+
+#: source/uiApp.cpp:1063
+msgid "_Tools"
+msgstr "_Nástroje"
+
+#: source/uiApp.cpp:1078
+msgid "_Help"
+msgstr "Nápo_věda"
+
+#: source/uiApp.cpp:1386
+msgid "_Copy to Clipboard"
+msgstr "_Kopírovat do schránky"
+
+#: source/uiApp.cpp:1402
+msgid "_Mix Colors..."
+msgstr "_Smíchat barvy..."
+
+#: source/uiApp.cpp:1407
+msgid "_Variations..."
+msgstr "_Obměny..."
+
+#: source/uiApp.cpp:1412
+msgid "_Generate..."
+msgstr "Vy_tvořit..."
+
+#: source/uiApp.cpp:1421
+msgid "C_lear names"
+msgstr "_Smazat názvy"
+
+#: source/uiApp.cpp:1427
+msgid "Autona_me"
+msgstr "Po_jmenovat automaticky"
+
+#: source/uiApp.cpp:1433
+msgid "Auto_number..."
+msgstr "Čís_lovat automaticky"
+
+#: source/uiApp.cpp:1441
+msgid "R_everse"
+msgstr "_Obrátit"
+
+#: source/uiApp.cpp:1447
+msgid "Group and _sort..."
+msgstr "Seskupit a třídit"
+
+#: source/uiApp.cpp:1455
+msgid "_Remove"
+msgstr "O_dstranit"
+
+#: source/uiApp.cpp:1461
+msgid "Remove _All"
+msgstr "Odstranit _vše"
+
+#: source/uiApp.cpp:1869
+msgid "Color pic_ker"
+msgstr "Volič _barvy"
+
+#: source/uiApp.cpp:1878
+msgid "Scheme _generation"
+msgstr "_Vytvoření sady"
+
+#: source/uiApp.cpp:1897
+msgid "Lay_out preview"
+msgstr "Náhled na _rozvržení"
+
+#: source/uiApp.cpp:1947
+msgid "Pick colors (Ctrl+P)"
+msgstr "Zvolit si barvu (CTRL+P)"
+
+#: source/uiApp.cpp:1956
+msgid ""
+"File is currently in a non-native format, possible loss of precision and/or "
+"metadata."
+msgstr ""
+"Soubor je v současnosti v nenativním formátu. Je možná ztráta přesnosti "
+"a/nebo popisných dat."
+
+#: source/uiColorInput.cpp:45
+msgid "Edit color"
+msgstr "Upravit barvu"
+
+#: source/uiColorInput.cpp:69
+msgid "Color:"
+msgstr "Barva:"
+
+#: source/uiConverter.cpp:56
+msgid "Test color"
+msgstr "Vyzkoušet barvu"
+
+#: source/uiConverter.cpp:74
+msgid "error"
+msgstr "Chyba"
+
+#: source/uiConverter.cpp:145
+msgid "Function name"
+msgstr "Název funkce"
+
+#: source/uiConverter.cpp:154
+msgid "Example"
+msgstr "Příklad"
+
+#: source/uiConverter.cpp:196
+msgid "Converters"
+msgstr "Převodníky"
+
+#: source/uiConverter.cpp:224
+msgid "Displays:"
+msgstr "Zobrazení:"
+
+#: source/uiConverter.cpp:230
+msgid "Color list:"
+msgstr "Seznam barev:"
+
+#: source/uiDialogAutonumber.cpp:108
+msgid "Autonumber colors"
+msgstr "Automatické číslování barev"
+
+#: source/uiDialogAutonumber.cpp:122
+msgid "Name:"
+msgstr "Název:"
+
+#: source/uiDialogAutonumber.cpp:132
+msgid "Decimal places:"
+msgstr "Desetinná místa:"
+
+#: source/uiDialogAutonumber.cpp:139
+msgid "Starting number:"
+msgstr "Počáteční číslo:"
+
+#: source/uiDialogAutonumber.cpp:146
+msgid "_Decreasing"
+msgstr "_Klesající"
+
+#: source/uiDialogAutonumber.cpp:152
+msgid "_Append"
+msgstr "_Připojit"
+
+#: source/uiDialogAutonumber.cpp:158
+msgid "Sample:"
+msgstr "Vzorek:"
+
+#: source/uiDialogGenerate.cpp:216
+msgid "Generate colors"
+msgstr "Vytvořit barvy"
+
+#: source/uiDialogGenerate.cpp:230 source/tools/PaletteFromImage.cpp:599
+msgid "Colors:"
+msgstr "Barvy:"
+
+#: source/uiDialogGenerate.cpp:257
+msgid "Chaos:"
+msgstr "Chaos:"
+
+#: source/uiDialogGenerate.cpp:263
+msgid "Seed:"
+msgstr "Semeno:"
+
+#: source/uiDialogGenerate.cpp:271
+msgid "_Reverse"
+msgstr "__Otočit"
+
+#: source/uiDialogMix.cpp:76 source/uiDialogMix.cpp:78
+msgid "mix node"
+msgstr "Uzel směsi"
+
+#: source/uiDialogMix.cpp:81
+msgid "mix"
+msgstr "Směs"
+
+#: source/uiDialogMix.cpp:235
+msgid "Mix colors"
+msgstr "Smíchat barvy"
+
+#: source/uiDialogMix.cpp:262 source/uiDialogVariations.cpp:186
+msgid "Steps:"
+msgstr "Kroky:"
+
+#: source/uiDialogMix.cpp:270
+msgid "_Include Endpoints"
+msgstr "_Zahrnout koncové body"
+
+#: source/uiDialogOptions.cpp:117 source/tools/PaletteFromImage.cpp:589
+msgid "Options"
+msgstr "Volby"
+
+#: source/uiDialogOptions.cpp:134
+msgid "System"
+msgstr "Systém"
+
+#: source/uiDialogOptions.cpp:143
+msgid "_Single instance"
+msgstr "_Jedna instance"
+
+#: source/uiDialogOptions.cpp:148
+msgid "Save/_Restore palette"
+msgstr "Uložit/Obnovit paletu"
+
+#: source/uiDialogOptions.cpp:154
+msgid "System tray"
+msgstr "Oznamovací oblast panelu"
+
+#: source/uiDialogOptions.cpp:162
+msgid "_Minimize to system tray"
+msgstr "_Zmenšit do oznamovací oblasti panelu"
+
+#: source/uiDialogOptions.cpp:167
+msgid "_Close to system tray"
+msgstr "Z_avřít do oznamovací oblasti panelu"
+
+#: source/uiDialogOptions.cpp:172
+msgid "_Start in system tray"
+msgstr "_Spustit v oznamovací oblasti panelu"
+
+#: source/uiDialogOptions.cpp:178
+msgid "_Main"
+msgstr "_Hlavní"
+
+#: source/uiDialogOptions.cpp:184
+msgid "Display"
+msgstr "Zobrazení"
+
+#: source/uiDialogOptions.cpp:193
+msgid "_Refresh rate:"
+msgstr "_Obnovovací rychlost:"
+
+#: source/uiDialogOptions.cpp:201
+msgid "_Magnified area size:"
+msgstr "Velikost z_většené oblasti:"
+
+#: source/uiDialogOptions.cpp:207
+msgid "Floating picker click behaviour"
+msgstr "Chování klepnutí u plovoucího sběrače"
+
+#: source/uiDialogOptions.cpp:226
+msgid "'Spacebar' button behaviour"
+msgstr "Chování mezerníku"
+
+#: source/uiDialogOptions.cpp:244
+msgid "_Rotate swatch"
+msgstr "_Otočit vzorky"
+
+#: source/uiDialogOptions.cpp:251
+msgid "Enabled color spaces"
+msgstr "Povoleny barevné prostory"
+
+#: source/uiDialogOptions.cpp:266
+msgid "Lab settings"
+msgstr "Nastavení Lab"
+
+#: source/uiDialogOptions.cpp:278
+msgid "_Illuminant:"
+msgstr "_Světlo:"
+
+#: source/uiDialogOptions.cpp:302
+msgid "_Observer:"
+msgstr "_Pozorovatel:"
+
+#: source/uiDialogOptions.cpp:321
+msgid "Other settings"
+msgstr "Jiná nastavení"
+
+#: source/uiDialogOptions.cpp:330
+msgid "_Mask out of gamut colors"
+msgstr "Za_krýt barvy mimo rozsah"
+
+#: source/uiDialogOptions.cpp:336
+msgid "_Picker"
+msgstr "_Kapátko"
+
+#: source/uiDialogOptions.cpp:341
+msgid "Color name generation"
+msgstr "Vytvoření názvu barvy"
+
+#: source/uiDialogOptions.cpp:350
+msgid "_Imprecision postfix"
+msgstr "Připojení _nepřesnosti"
+
+#: source/uiDialogOptions.cpp:356
+msgid "Tool color naming"
+msgstr "Přiřazení názvu barvy"
+
+#: source/uiDialogOptions.cpp:381
+msgid "_Color names"
+msgstr "_Názvy barev"
+
+#: source/uiDialogSort.cpp:135 source/uiDialogSort.cpp:223
+msgid "RGB Red"
+msgstr "Červená RGB"
+
+#: source/uiDialogSort.cpp:136 source/uiDialogSort.cpp:224
+msgid "RGB Green"
+msgstr "Zelená RGB"
+
+#: source/uiDialogSort.cpp:137 source/uiDialogSort.cpp:225
+msgid "RGB Blue"
+msgstr "Modrá RGB"
+
+#: source/uiDialogSort.cpp:138 source/uiDialogSort.cpp:226
+msgid "RGB Grayscale"
+msgstr "Odstíny šedé RGB"
+
+#: source/uiDialogSort.cpp:139 source/uiDialogSort.cpp:227
+msgid "HSL Hue"
+msgstr "Odstín HSL"
+
+#: source/uiDialogSort.cpp:140 source/uiDialogSort.cpp:228
+msgid "HSL Saturation"
+msgstr "Sytost HSL"
+
+#: source/uiDialogSort.cpp:141 source/uiDialogSort.cpp:229
+msgid "HSL Lightness"
+msgstr "Světlost HSL"
+
+#: source/uiDialogSort.cpp:142 source/uiDialogSort.cpp:230
+msgid "Lab Lightness"
+msgstr "Světlost Lab"
+
+#: source/uiDialogSort.cpp:143 source/uiDialogSort.cpp:231
+msgid "Lab A"
+msgstr "Lab A"
+
+#: source/uiDialogSort.cpp:144 source/uiDialogSort.cpp:232
+msgid "Lab B"
+msgstr "Lab B"
+
+#: source/uiDialogSort.cpp:145 source/uiDialogSort.cpp:233
+msgid "LCh Lightness"
+msgstr "Světlost LCh"
+
+#: source/uiDialogSort.cpp:146 source/uiDialogSort.cpp:234
+msgid "LCh Chroma"
+msgstr "Chroma LCh (barevná čistota)"
+
+#: source/uiDialogSort.cpp:147 source/uiDialogSort.cpp:235
+msgid "LCh Hue"
+msgstr "Odstín LCh"
+
+#: source/uiDialogSort.cpp:556
+msgid "Group and sort"
+msgstr "Seskupit a třídit"
+
+#: source/uiDialogSort.cpp:564
+msgid "Group type:"
+msgstr "Typ skupiny:"
+
+#: source/uiDialogSort.cpp:574
+msgid "Grouping sensitivity:"
+msgstr "Citlivost seskupení:"
+
+#: source/uiDialogSort.cpp:581
+msgid "Maximum number of groups:"
+msgstr "Největší počet skupin:"
+
+#: source/uiDialogSort.cpp:588
+msgid "Sort type:"
+msgstr "Typ třídění:"
+
+#: source/uiDialogSort.cpp:598
+msgid "_Reverse group order"
+msgstr "O_brácený pořádek skupin"
+
+#: source/uiDialogSort.cpp:604
+msgid "_Reverse order inside groups"
+msgstr "O_brácený pořádek skupin uvnitř skupin"
+
+#: source/uiDialogVariations.cpp:60
+msgid "variation"
+msgstr "Obměna"
+
+#: source/uiDialogVariations.cpp:194
+msgid "_Use multiplication"
+msgstr "_Použít násobení"
+
+#: source/uiExport.cpp:475
+msgid "Alias/WaveFront Material (*.mtl)"
+msgstr "Materiál Alias/WaveFront (*.mtl)"
+
+#: source/uiExport.cpp:477
+msgid "Text file (*.txt)"
+msgstr "Textový soubor (*.txt)"
+
+#: source/uiExport.cpp:522
+msgid "File could not be exported"
+msgstr "Soubor se nepodařilo vyvést"
+
+#: source/uiExport.cpp:573 source/uiExport.cpp:654 source/uiExport.cpp:666
+msgid "Import"
+msgstr "Zavést"
+
+#: source/uiExport.cpp:653
+msgid "File format is not supported"
+msgstr "Formát souboru není podporován"
+
+#: source/uiExport.cpp:665
+msgid "File could not be imported"
+msgstr "Soubor se nepodařilo zavést"
+
+#: source/uiListPalette.cpp:158 source/uiListPalette.cpp:160
+#, c-format
+msgid "%d color"
+msgid_plural "%d colors"
+msgstr[0] "%d barva"
+msgstr[1] "%d barev"
+
+#: source/uiListPalette.cpp:166
+msgid "selected"
+msgstr "vybráno"
+
+#: source/uiListPalette.cpp:172 source/uiListPalette.cpp:174
+#, c-format
+msgid "Total %d color"
+msgid_plural "Total %d colors"
+msgstr[0] "Celkem %d barva"
+msgstr[1] "Celkem %d barev"
+
+#: source/uiListPalette.cpp:353
+msgid "Preview"
+msgstr "Náhled"
+
+#: source/uiListPalette.cpp:708 source/uiListPalette.cpp:717
+msgid "Color"
+msgstr "Barva"
+
+#: source/uiListPalette.cpp:726 source/uiTransformations.cpp:183
+msgid "Name"
+msgstr "Název"
+
+#: source/uiStatusIcon.cpp:67
+msgid "_Show Main Window"
+msgstr "_Ukázat hlavní okno"
+
+#: source/uiStatusIcon.cpp:74
+msgid "_Quit"
+msgstr "_Ukončit"
+
+#: source/uiTransformations.cpp:245
+msgid "Display filters"
+msgstr "Filtry zobrazení"
+
+#: source/uiTransformations.cpp:259
+msgid "_Enabled"
+msgstr "_Zapnuto"
+
+#: source/tools/PaletteFromImage.cpp:514
+msgid "Palette from image"
+msgstr "Paleta z obrázku"
+
+#: source/tools/PaletteFromImage.cpp:527
+msgid "Image"
+msgstr "Obrázek"
+
+#: source/tools/PaletteFromImage.cpp:536
+msgid "Image file"
+msgstr "Obrázkový soubor"
+
+#: source/tools/PaletteFromImage.cpp:556
+msgid "All images"
+msgstr "Všechny obrázky"
+
+#: source/transformation/ColorVisionDeficiency.cpp:41
+msgid "Color vision deficiency"
+msgstr "Nedostatek ve vidění barvy"
+
+#: source/transformation/ColorVisionDeficiency.cpp:330
+msgid "Protanomaly"
+msgstr "Částečně bez červené"
+
+#: source/transformation/ColorVisionDeficiency.cpp:331
+msgid "Deuteranomaly"
+msgstr "Částečně bez zelené"
+
+#: source/transformation/ColorVisionDeficiency.cpp:332
+msgid "Tritanomaly"
+msgstr "Částečně bez modré"
+
+#: source/transformation/ColorVisionDeficiency.cpp:333
+msgid "Protanopia"
+msgstr "Bez červené"
+
+#: source/transformation/ColorVisionDeficiency.cpp:334
+msgid "Deuteranopia"
+msgstr "Bez zelené"
+
+#: source/transformation/ColorVisionDeficiency.cpp:335
+msgid "Tritanopia"
+msgstr "Bez modré"
+
+#: source/transformation/ColorVisionDeficiency.cpp:422
+msgid "Altered spectral sensitivity of red receptors"
+msgstr ""
+"Změněná spektrální citlivost čidel červené barvy. Částečná barvoslepost pro "
+"červenou barvu"
+
+#: source/transformation/ColorVisionDeficiency.cpp:423
+msgid "Altered spectral sensitivity of green receptors"
+msgstr ""
+"Změněná spektrální citlivost čidel zelené barvy. Částečná barvoslepost pro "
+"zelenou barvu"
+
+#: source/transformation/ColorVisionDeficiency.cpp:424
+msgid "Altered spectral sensitivity of blue receptors"
+msgstr ""
+"Změněná spektrální citlivost čidel modré barvy. Částečná barvoslepost pro "
+"modrou barvu"
+
+#: source/transformation/ColorVisionDeficiency.cpp:425
+msgid "Absence of red receptors"
+msgstr "Nepřítomnost čidel červené barvy. Barvoslepost na červenou barvu"
+
+#: source/transformation/ColorVisionDeficiency.cpp:426
+msgid "Absence of green receptors"
+msgstr "Nepřítomnost čidel zelené barvy. Barvoslepost na zelenou barvu"
+
+#: source/transformation/ColorVisionDeficiency.cpp:427
+msgid "Absence of blue receptors"
+msgstr "Nepřítomnost čidel modré barvy. Barvoslepost na modrou barvu"
+
+#: source/transformation/GammaModification.cpp:38
+msgid "Gamma modification"
+msgstr "Pozměnění gamy"
+
+#: source/transformation/GammaModification.cpp:88
+#: source/transformation/Quantization.cpp:96
+msgid "Value:"
+msgstr "Hodnota:"
+
+#: source/transformation/Quantization.cpp:40
+msgid "Quantization"
+msgstr "Kvantizace"
+
+#: source/transformation/Quantization.cpp:101
+msgid "Clip top-end"
+msgstr "Oříznout horní okraj"
+
+#: share/gpick/init.lua:173
+msgid "Web: hex code"
+msgstr "Web: šestnáctkový kód"
+
+#: share/gpick/init.lua:178
+msgid "Web: hex code (3 digits)"
+msgstr "Web: šestnáctkový kód (3 číslice)"
+
+#: share/gpick/init.lua:183
+msgid "Web: hex code (no hash symbol)"
+msgstr "Web: šestnáctkový kód (žádný hash symbol)"
+
+#: share/gpick/init.lua:188
+msgid "CSS: hue saturation lightness"
+msgstr "CSS: odstín sytost světlost"
+
+#: share/gpick/init.lua:193
+msgid "CSS: red green blue"
+msgstr "CSS: červená zelená modrá"
+
+#: share/gpick/layouts.lua:15
+msgid "Homepage"
+msgstr "Stránky projektu"
+
+#: share/gpick/layouts.lua:15
+msgid "About us"
+msgstr "O nás"
+
+#: share/gpick/layouts.lua:15
+msgid "Links to us"
+msgstr "Odkazy"
+
+#: share/gpick/layouts.lua:15
+msgid "Privacy"
+msgstr "Soukromí"
+
+#: share/gpick/layouts.lua:15
+msgid "Terms"
+msgstr "Podmínky"
+
+#: share/gpick/layouts.lua:15
+msgid "Contact us"
+msgstr "Spojení"
+
+#: share/gpick/layouts.lua:15
+msgid "RSS"
+msgstr "RSS"
+
+#: share/gpick/layouts.lua:30
+msgid "The quick brown fox jumps over the lazy dog"
+msgstr ""
+"Maličká včelka vydávala při letu nad svazenkovým polem bzučivé "
+"tóny. My také zpíváme a toužíme po krásně chutnajícím medu."
+
+#: share/gpick/layouts.lua:46
+msgid "Webpage"
+msgstr "Stránky"
+
+#: share/gpick/layouts.lua:51 share/gpick/layouts.lua:73
+msgid "Header"
+msgstr "Záhlaví"
+
+#: share/gpick/layouts.lua:52
+msgid "Header text"
+msgstr "Text záhlaví"
+
+#: share/gpick/layouts.lua:54
+msgid "Content"
+msgstr "Obsah"
+
+#: share/gpick/layouts.lua:55
+msgid "Content text"
+msgstr "Text obsahu"
+
+#: share/gpick/layouts.lua:57
+msgid "Sidebar"
+msgstr "Postranní panel"
+
+#: share/gpick/layouts.lua:59 share/gpick/layouts.lua:87
+msgid "Button"
+msgstr "Tlačítko"
+
+#: share/gpick/layouts.lua:60 share/gpick/layouts.lua:88
+msgid "Button (hover)"
+msgstr "Tlačítko (přejetí)"
+
+#: share/gpick/layouts.lua:61 share/gpick/layouts.lua:89
+msgid "Button text"
+msgstr "Text tlačítka"
+
+#: share/gpick/layouts.lua:62 share/gpick/layouts.lua:90
+msgid "Button text (hover)"
+msgstr "Text tlačítka (přejetí)"
+
+#: share/gpick/layouts.lua:64
+msgid "Footer"
+msgstr "Zápatí"
+
+#: share/gpick/layouts.lua:82 share/gpick/layouts.lua:86
+msgid "Menu"
+msgstr "Nabídka"
+
+#: share/gpick/layouts.lua:106
+msgid "Brightness-Darkness"
+msgstr "Jas - Tma"
+
+#: share/gpick/layouts.lua:110
+msgid "main"
+msgstr "Hlavní"
+
+#: share/gpick/layouts.lua:144
+msgid "Grid (4x3)"
+msgstr "Mřížka (4x3)"
+
+#: share/gpick/layouts.lua:153 share/gpick/layouts.lua:159
+#: share/gpick/layouts.lua:180 share/gpick/layouts.lua:186
+msgid "Item"
+msgstr "Položka"
+
+#: share/gpick/layouts.lua:154 share/gpick/layouts.lua:181
+msgid "Item text"
+msgstr "Text položky"
+
+#: share/gpick/layouts.lua:171
+msgid "Grid (5x4)"
+msgstr "Mřížka (5x4)"
+
+#~ msgid "Edit _Transformations..."
+#~ msgstr "Editar _Transformaciones..."
