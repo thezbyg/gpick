@@ -27,6 +27,7 @@ int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, 
 int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename);
 int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected);
 int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename);
+int32_t palette_export_css(struct ColorList *color_list, const gchar* filename, gboolean selected);
 
 int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list, gboolean selected, GlobalState *gs);
 
