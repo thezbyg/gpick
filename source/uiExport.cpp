@@ -132,7 +132,7 @@ int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename){
 		if (f.good() && line=="GIMP Palette"){
 			do{
 				getline(f, line);
-			}while (f.good() && ((line.size() < 1) || (line[0] > '9') || (line[0] < '0')));
+			}while (f.good() && ((line.size() < 1) || (((line[0] > '9') || (line[0] < '0')) && line[0] != ' ')));
 
 			int r, g, b;
 			Color c;
