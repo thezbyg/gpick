@@ -47,6 +47,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *start_in_tray;
 	GtkWidget *refresh_rate;
 	GtkWidget *single_instance;
+	GtkWidget *default_drag_action[2];
 	GtkWidget *hex_case[2];
 	GtkWidget *save_restore_palette;
 	GtkWidget *add_on_release;
@@ -75,6 +76,12 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit){
 	dynv_set_bool(args->params, "main.start_in_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray)));
 	dynv_set_bool(args->params, "main.single_instance", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance)));
 	dynv_set_bool(args->params, "main.save_restore_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->save_restore_palette)));
+
+
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->default_drag_action[0])))
+		dynv_set_bool(args->params, "main.dragging_moves", true);
+	else
+		dynv_set_bool(args->params, "main.dragging_moves", false);
 
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hex_case[0])))
 		dynv_set_string(args->params, "options.hex_case", "lower");
@@ -180,6 +187,32 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
+	frame = gtk_frame_new(_("Default drag action"));
+	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
+	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y++;
+	table = gtk_table_new(5, 3, FALSE);
+	table_y=0;
+	gtk_container_add(GTK_CONTAINER(frame), table);
+
+	GSList *group = NULL;
+	bool dragging_moves = dynv_get_bool_wd(args->params, "main.dragging_moves", true);
+	args->default_drag_action[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("M_ove"));
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
+	if (dragging_moves)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), true);
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+
+	args->default_drag_action[1] = widget = gtk_radio_button_new_with_mnemonic(group, _("Cop_y"));
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
+	if (dragging_moves == false)
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), true);
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+
+
+
 
 	table_m_y = 0;
 	frame = gtk_frame_new(_("Hex format"));
@@ -190,7 +223,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs) {
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-	GSList *group = NULL;
+	group = NULL;
 	string hex_format = dynv_get_string_wd(args->params, "options.hex_case", "upper");
 	args->hex_case[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("Lower case"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));

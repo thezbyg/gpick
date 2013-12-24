@@ -17,6 +17,7 @@
  */
 
 #include "DragDrop.h"
+#include "GlobalStateStruct.h"
 #include "gtk/ColorWidget.h"
 #include "uiApp.h"
 #include "dynv/DynvXml.h"
@@ -273,12 +274,32 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 
 	struct DragDrop *dd = (struct DragDrop*)user_data;
 
+	GdkDragAction suggested_action;
+	bool suggested_action_set = true;
+
+	bool dragging_moves = dynv_get_bool_wd(dd->gs->params, "gpick.main.dragging_moves", true);
+	if (dragging_moves){
+		if ((gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE) == GDK_ACTION_MOVE)
+			suggested_action = GDK_ACTION_MOVE;
+		else if ((gdk_drag_context_get_actions(context) & GDK_ACTION_COPY) == GDK_ACTION_COPY)
+			suggested_action = GDK_ACTION_COPY;
+		else
+			suggested_action_set = false;
+	}else{
+		if ((gdk_drag_context_get_actions(context) & GDK_ACTION_COPY) == GDK_ACTION_COPY)
+			suggested_action = GDK_ACTION_COPY;
+		else if ((gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE) == GDK_ACTION_MOVE)
+			suggested_action = GDK_ACTION_MOVE;
+		else
+			suggested_action_set = false;
+	}
+
 	if (!dd->test_at){
 		GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
 		if (target){
-			gdk_drag_status(context, context->action, time);
+			gdk_drag_status(context, suggested_action_set ? suggested_action : gdk_drag_context_get_selected_action(context), time);
 		}else{
-			gdk_drag_status(context, GdkDragAction(0), time);
+			gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 		}
 		return TRUE;
 	}
@@ -286,12 +307,12 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 	if (dd->test_at(dd, x, y)){
 		GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
 		if (target){
-			gdk_drag_status(context, context->action, time);
+			gdk_drag_status(context, suggested_action_set ? suggested_action : gdk_drag_context_get_selected_action(context), time);
 		}else{
-			gdk_drag_status(context, GdkDragAction(0), time);
+			gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 		}
 	}else{
-		gdk_drag_status(context, GdkDragAction(0), time);
+		gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 	}
 	return TRUE;
 }
