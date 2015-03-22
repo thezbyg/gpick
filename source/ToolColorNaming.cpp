@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,12 +27,12 @@ const ToolColorNamingOption options[] = {
 	{TOOL_COLOR_NAMING_TOOL_SPECIFIC, "tool_specific", N_("_Tool specific")},
 	{TOOL_COLOR_NAMING_UNKNOWN, 0, 0},
 };
-
-const ToolColorNamingOption* tool_color_naming_get_options(){
+const ToolColorNamingOption* tool_color_naming_get_options()
+{
 	return options;
 }
-
-ToolColorNamingType tool_color_naming_name_to_type(const char *name){
+ToolColorNamingType tool_color_naming_name_to_type(const char *name)
+{
 	string n = name;
 	int i = 0;
 	while (options[i].name){
@@ -43,8 +43,9 @@ ToolColorNamingType tool_color_naming_name_to_type(const char *name){
 	}
 	return TOOL_COLOR_NAMING_UNKNOWN;
 }
-
-ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):m_gs(gs){
+ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
+	m_gs(gs)
+{
 	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->params, "gpick.color_names.tool_color_naming", "tool_specific"));
 	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
 		m_imprecision_postfix = dynv_get_bool_wd(m_gs->params, "gpick.color_names.imprecision_postfix", true);
@@ -52,11 +53,11 @@ ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):m_gs(gs){
 		m_imprecision_postfix = false;
 	}
 }
-
-ToolColorNameAssigner::~ToolColorNameAssigner(){
+ToolColorNameAssigner::~ToolColorNameAssigner()
+{
 }
-
-void ToolColorNameAssigner::assign(struct ColorObject *color_object, Color *color){
+void ToolColorNameAssigner::assign(struct ColorObject *color_object, Color *color)
+{
 	string name;
 	switch (m_color_naming_type){
 		case TOOL_COLOR_NAMING_UNKNOWN:
@@ -73,8 +74,8 @@ void ToolColorNameAssigner::assign(struct ColorObject *color_object, Color *colo
 			break;
 	}
 }
-
-std::string ToolColorNameAssigner::getToolSpecificName(struct ColorObject *color_object, Color *color){
+std::string ToolColorNameAssigner::getToolSpecificName(struct ColorObject *color_object, Color *color)
+{
 	return string("");
 }
 

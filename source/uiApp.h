@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIAPP_H_
-#define UIAPP_H_
+#ifndef GPICK_UI_APP_H_
+#define GPICK_UI_APP_H_
 
 #include <gtk/gtk.h>
 #include "GlobalState.h"
@@ -43,6 +43,8 @@ typedef struct AppArgs AppArgs;
 
 typedef struct AppOptions {
 	bool floating_picker_mode;
+	bool output_picked_color;
+	bool single_color_pick_mode;
 }AppOptions;
 
 AppArgs* app_create_main(const AppOptions *options);
@@ -52,5 +54,4 @@ int app_parse_geometry(AppArgs *args, const char *geometry);
 
 bool app_is_autoload_enabled(AppArgs *args);
 
-
-#endif /* UIAPP_H_ */
+#endif /* GPICK_UI_APP_H_ */

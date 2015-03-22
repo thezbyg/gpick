@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGABOUT_H_
-#define UIDIALOGABOUT_H_
+#ifndef GPICK_UI_DIALOG_ABOUT_H_
+#define GPICK_UI_DIALOG_ABOUT_H_
 
 #include <gtk/gtk.h>
-
 void show_about_box(GtkWidget *widget);
-
 extern const gchar* program_name;
 
-#endif /* UIDIALOGABOUT_H_ */
+#endif /* GPICK_UI_DIALOG_ABOUT_H_ */

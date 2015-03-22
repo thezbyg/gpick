@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TOOL_COLOR_NAMING_H_
-#define TOOL_COLOR_NAMING_H_
+#ifndef GPICK_TOOL_COLOR_NAMING_H_
+#define GPICK_TOOL_COLOR_NAMING_H_
 
 #include "GlobalStateStruct.h"
 #include "DynvHelpers.h"
@@ -46,11 +46,9 @@ class ToolColorNameAssigner{
 	public:
 		ToolColorNameAssigner(GlobalState *gs);
 		virtual ~ToolColorNameAssigner();
-
 		void assign(struct ColorObject *color_object, Color *color);
-
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color);
 };
 
-#endif /* TOOL_COLOR_NAMING_H_ */
+#endif /* GPICK_TOOL_COLOR_NAMING_H_ */
 

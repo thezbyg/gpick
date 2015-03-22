@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORSOURCE_H_
-#define COLORSOURCE_H_
+#ifndef GPICK_COLOR_SOURCE_H_
+#define GPICK_COLOR_SOURCE_H_
 
 #include "ColorObject.h"
 #include "GlobalStateStruct.h"
@@ -26,9 +26,7 @@
 typedef struct ColorSourceSlot{
 	const char *identificator;
 	const char *hr_name;
-
 	uint32_t id;
-
 	struct{
 		bool read;
 		bool write;
@@ -38,45 +36,34 @@ typedef struct ColorSourceSlot{
 typedef struct ColorSource{
 	char *identificator;
 	char *hr_name;
-
 	int (*set_color)(ColorSource *source, ColorObject *color);
 	int (*get_color)(ColorSource *source, ColorObject **color);
-
 	int (*set_nth_color)(ColorSource *source, uint32_t color_n, ColorObject *color);
 	int (*get_nth_color)(ColorSource *source, uint32_t color_n, ColorObject **color);
-
 	int (*activate)(ColorSource *source);
 	int (*deactivate)(ColorSource *source);
-
 	int (*query_slots)(ColorSource *source, ColorSourceSlot *slot);
 	int (*set_slot_color)(ColorSource *source, uint32_t slot_id, ColorObject *color);
-
 	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 	int (*destroy)(ColorSource *source);
-
 	bool single_instance_only;
 	bool needs_viewport;
 	int default_accelerator;
-
 	GtkWidget *widget;
 	void* userdata;
 }ColorSource;
 
 int color_source_init(ColorSource* source, const char *identificator, const char *name);
-
 int color_source_activate(ColorSource *source);
 int color_source_deactivate(ColorSource *source);
-
 int color_source_set_color(ColorSource *source, ColorObject *color);
 int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color);
 int color_source_get_color(ColorSource *source, ColorObject *color);
 int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject **color);
-
 int color_source_get_default_accelerator(ColorSource *source);
-
 ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 GtkWidget* color_source_get_widget(ColorSource* source);
 int color_source_destroy(ColorSource* source);
 
-#endif /* COLORSOURCE_H_ */
+#endif /* GPICK_COLOR_SOURCE_H_ */
 

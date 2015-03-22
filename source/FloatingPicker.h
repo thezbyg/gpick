@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,20 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FLOATINGPICKER_H_
-#define FLOATINGPICKER_H_
+#ifndef GPICK_FLOATING_PICKER_H_
+#define GPICK_FLOATING_PICKER_H_
 
 #include "ColorSource.h"
 #include "GlobalState.h"
+#include <signals/Signal.h>
 #include <gtk/gtk.h>
 
 typedef struct FloatingPickerArgs* FloatingPicker;
-
-FloatingPicker floating_picker_new(GtkWidget *parent, GlobalState *gs, ColorSource* color_source);
-
+FloatingPicker floating_picker_new(GlobalState *gs);
+void floating_picker_set_picker_source(FloatingPicker fp, ColorSource* color_source);
 void floating_picker_free(FloatingPicker fp);
-
-void floating_picker_activate(FloatingPicker fp, bool hide_on_mouse_release);
+void floating_picker_activate(FloatingPicker fp, bool hide_on_mouse_release, bool single_pick_mode);
 void floating_picker_deactivate(FloatingPicker fp);
+Gallant::Signal2<FloatingPicker, const Color &>& floating_picker_get_custom_pick_action(FloatingPicker fp);
+Gallant::Signal1<FloatingPicker>& floating_picker_get_custom_done_action(FloatingPickerArgs *args);
+void floating_picker_enable_custom_pick_action(FloatingPicker fp);
 
-#endif /* FLOATINGPICKER_H_ */
+#endif /* GPICK_FLOATING_PICKER_H_ */

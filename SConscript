@@ -130,7 +130,11 @@ else:
 				CPPDEFINES = ['WIN32', 'NDEBUG'],
 				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
-			
+
+env.Append(
+	CPPPATH = ['#extern'],
+)
+
 extern_libs = SConscript(['extern/SConscript'], exports='env')
 executable, parser_files = SConscript(['source/SConscript'], exports='env')
 

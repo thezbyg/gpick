@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,18 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORPICKER_H_
-#define COLORPICKER_H_
+#ifndef GPICK_COLOR_PICKER_H_
+#define GPICK_COLOR_PICKER_H_
 
 #include "FloatingPicker.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-
 #include <gtk/gtk.h>
 
 int color_picker_source_register(ColorSourceManager *csm);
-
 int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
 
-#endif /* COLORPICKER_H_ */
+#endif /* GPICK_COLOR_PICKER_H_ */

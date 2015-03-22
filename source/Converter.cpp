@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,13 +18,10 @@
 
 #include "Converter.h"
 #include "DynvHelpers.h"
-
 #include "LuaExt.h"
 #include <string.h>
 #include <stdlib.h>
-
 #include <glib.h>
-
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -33,7 +30,6 @@
 #include <vector>
 #include <iostream>
 using namespace std;
-
 extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
@@ -43,31 +39,26 @@ class ConverterKeyCompare{
 public:
 	bool operator() (const char* const& x, const char* const& y) const;
 };
-
-
 bool ConverterKeyCompare::operator() (const char* const& x, const char* const& y) const
 {
 	return strcmp(x,y)<0;
 }
-
 class Converters{
 public:
 	typedef std::map<const char*, Converter*, ConverterKeyCompare> ConverterMap;
 	ConverterMap converters;
 	list<Converter*> all_converters;
-
 	vector<Converter*> copy_converters;
 	vector<Converter*> paste_converters;
 	Converter* display_converter;
 	Converter* color_list_converter;
 	lua_State *L;
-	struct dynvSystem* params; 
+	struct dynvSystem* params;
 	~Converters();
 };
-
-Converters::~Converters(){
+Converters::~Converters()
+{
 	Converters::ConverterMap::iterator i;
-
 	for (i=converters.begin(); i!=converters.end(); ++i){
 		g_free(((*i).second)->human_readable);
 		g_free(((*i).second)->function_name);
@@ -75,61 +66,24 @@ Converters::~Converters(){
 	}
 	converters.clear();
 }
-
-/*static int get_human_readable_name(lua_State *L, const char* function, char** human_readable){
-	if (L==NULL) return -1;
-
-	size_t st;
-	int status;
-	int stack_top = lua_gettop(L);
-
-	lua_getglobal(L, "gpick");
-	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1)!=LUA_TNIL){
-
-		lua_pushstring(L, "converters");
-		lua_gettable(L, gpick_namespace);
-		int converters_table = lua_gettop(L);
-		if (lua_type(L, -1)!=LUA_TNIL){
-
-			lua_pushstring(L, function);
-			lua_gettable(L, converters_table);
-			if (lua_type(L, -1)!=LUA_TNIL){
-
-				lua_pushstring(L, "human_readable");
-				lua_gettable(L, -2);
-
-				*human_readable = strdup(lua_tostring(L, -1));
-				lua_settop(L, stack_top);
-				return 0;
-			}
-		}
-	}
-	lua_settop(L, stack_top);
-	return -1;
-}*/
-
-int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality){
+int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality)
+{
 	lua_State* L = converters->L;
-
 	int status;
 	int stack_top = lua_gettop(L);
-
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
 	if (lua_type(L, -1)!=LUA_TNIL){
-
 		lua_pushstring(L, "color_deserialize");
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
-
 			lua_pushstring(L, function);
 			lua_pushstring(L, text);
 			lua_pushcolorobject (L, color_object);
 			lua_pushdynvsystem(L, converters->params);
-
 			status=lua_pcall(L, 4, 1, 0);
-			if (status==0){
+			dynv_system_release(converters->params);
+			if (status == 0){
 				if (lua_type(L, -1)==LUA_TNUMBER){
 					double result = luaL_checknumber(L, -1);
 					*conversion_quality = result;
@@ -141,23 +95,18 @@ int converters_color_deserialize(Converters* converters, const char* function, c
 			}else{
 				cerr<<"gpick.color_deserialize: "<<lua_tostring (L, -1)<<endl;
 			}
-
-
 		}else{
 			cerr<<"gpick.color_deserialize: no such function \""<<function<<"\""<<endl;
 		}
 	}
-
 	lua_settop(L, stack_top);
 	return -1;
 }
-
 int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, string& result)
 {
 	lua_State* L = converters->L;
 	int status;
 	int stack_top = lua_gettop(L);
-
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
 	if (lua_type(L, -1) != LUA_TNIL){
@@ -167,7 +116,7 @@ int converters_color_serialize(Converters* converters, const char* function, str
 			lua_pushstring(L, function);
 			lua_pushcolorobject (L, color_object);
 			lua_pushdynvsystem(L, converters->params);
-      lua_newtable(L);
+			lua_newtable(L);
 			lua_pushboolean(L, position.first);
 			lua_setfield(L, -2, "first");
 			lua_pushboolean(L, position.last);
@@ -176,8 +125,8 @@ int converters_color_serialize(Converters* converters, const char* function, str
 			lua_setfield(L, -2, "index");
 			lua_pushinteger(L, position.count);
 			lua_setfield(L, -2, "count");
-
 			status = lua_pcall(L, 4, 1, 0);
+			dynv_system_release(converters->params);
 			if (status == 0){
 				if (lua_type(L, -1) == LUA_TSTRING){
 					result = luaL_checkstring(L, -1);
@@ -196,26 +145,21 @@ int converters_color_serialize(Converters* converters, const char* function, str
 	lua_settop(L, stack_top);
 	return -1;
 }
-
-Converters* converters_init(struct dynvSystem* params){
-
+Converters* converters_init(struct dynvSystem* params)
+{
 	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
 	if (L==NULL) return 0;
-
 	Converters *converters = new Converters;
 	converters->L = L;
 	converters->display_converter = 0;
 	converters->params = dynv_system_ref(params);
-
 	int stack_top = lua_gettop(L);
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
 	if (lua_type(L, -1)!=LUA_TNIL){
-
 		lua_pushstring(L, "converters");
 		lua_gettable(L, gpick_namespace);
 		int converters_table = lua_gettop(L);
-
 		lua_pushnil(L);
 		while (lua_next(L, converters_table) != 0){
 			if (lua_type(L, -2) == LUA_TSTRING){
@@ -223,42 +167,36 @@ Converters* converters_init(struct dynvSystem* params){
 				converter->function_name = g_strdup(lua_tostring(L, -2));
 				converters->converters[converter->function_name] = converter;
 				converters->all_converters.push_back(converter);
-
 				lua_pushstring(L, "human_readable");
 				lua_gettable(L, -2);
 				converter->human_readable = g_strdup(lua_tostring(L, -1));
 				lua_pop(L, 1);
-
 				lua_pushstring(L, "serialize");
 				lua_gettable(L, -2);
 				converter->serialize_available = !lua_isnil(L, -1);
 				converter->copy = false;
 				lua_pop(L, 1);
-
 				lua_pushstring(L, "deserialize");
 				lua_gettable(L, -2);
 				converter->deserialize_available = !lua_isnil(L, -1);
 				converter->paste = false;
 				lua_pop(L, 1);
-
 			}
 			lua_pop(L, 1);      //pop value from stack, but leave key
 		}
 	}
 	lua_settop(L, stack_top);
-
 	dynv_set_pointer(params, "Converters", converters);
-
 	return converters;
 }
-
-int converters_term(Converters *converters){
+int converters_term(Converters *converters)
+{
 	dynv_system_release(converters->params);
 	delete converters;
 	return 0;
 }
-
-Converter* converters_get(Converters *converters, const char* name){
+Converter* converters_get(Converters *converters, const char* name)
+{
 	Converters::ConverterMap::iterator i;
 	i=converters->converters.find( name);
 	if (i!=converters->converters.end()){
@@ -267,8 +205,8 @@ Converter* converters_get(Converters *converters, const char* name){
 		return 0;
 	}
 }
-
-Converter* converters_get_first(Converters *converters, ConvertersArrayType type){
+Converter* converters_get_first(Converters *converters, ConvertersArrayType type)
+{
 	switch (type){
 	case CONVERTERS_ARRAY_TYPE_COPY:
 		if (converters->copy_converters.size()>0)
@@ -287,8 +225,8 @@ Converter* converters_get_first(Converters *converters, ConvertersArrayType type
 	}
 	return 0;
 }
-
-Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size){
+Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size)
+{
 	switch (type){
 	case CONVERTERS_ARRAY_TYPE_COPY:
 		if (converters->copy_converters.size()>0){
@@ -313,63 +251,48 @@ Converter** converters_get_all_type(Converters *converters, ConvertersArrayType 
 	}
 	return 0;
 }
-
-Converter** converters_get_all(Converters *converters, uint32_t *size){
+Converter** converters_get_all(Converters *converters, uint32_t *size)
+{
 	uint32_t total_converters = converters->all_converters.size();
 	Converter** converter_table = new Converter* [total_converters+1];
 	uint32_t table_i = 0;
-
 	for (list<Converter*>::iterator i=converters->all_converters.begin(); i!=converters->all_converters.end(); ++i){
 		converter_table[table_i] = *i;
 		++table_i;
 	}
-
 	if (size) *size = total_converters;
 	return converter_table;
 }
-
-int converters_reorder(Converters *converters, const char** priority_names, uint32_t priority_names_size){
-
-	//uint32_t total_converters = converters->converters.size();
-	//Converter** converter_table = new Converter* [total_converters+1];
-	//uint32_t table_i = 0;
+int converters_reorder(Converters *converters, const char** priority_names, uint32_t priority_names_size)
+{
 	Converter* c;
-	//converter_table[total_converters] = 0;
-
 	Converters::ConverterMap used_converters;
 	Converters::ConverterMap::iterator used_i;
-
 	converters->all_converters.clear();
-
 	if (priority_names && priority_names_size>0){
 		for (uint32_t i=0; i<priority_names_size; ++i){
 			used_i = used_converters.find( priority_names[i] );
 			if (used_i==used_converters.end()){
 				if ((c = converters_get(converters, priority_names[i]))){
-					//converter_table[table_i++] = c;
 					converters->all_converters.push_back(c);
 					used_converters[c->function_name] = c;
 				}
 			}
 		}
 	}
-
 	Converters::ConverterMap::iterator i;
 	for (i=converters->converters.begin(); i!=converters->converters.end(); ++i){
 		used_i = used_converters.find( ((*i).second)->function_name );
 		if (used_i==used_converters.end()){
-			//converter_table[table_i++] = ((*i).second);
 			converters->all_converters.push_back(((*i).second));
 			used_converters[((*i).second)->function_name] = ((*i).second);
 		}
 	}
-
 	return 0;
 }
-
-int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type){
+int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type)
+{
 	list<Converter*>::iterator i;
-
 	switch (type){
 	case CONVERTERS_ARRAY_TYPE_COPY:
 		converters->copy_converters.clear();
@@ -394,10 +317,8 @@ int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type){
 	}
 	return -1;
 }
-
-
-
-int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type){
+int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type)
+{
 	switch (type){
 	case CONVERTERS_ARRAY_TYPE_DISPLAY:
 		converters->display_converter = converter;
@@ -410,3 +331,4 @@ int converters_set(Converters *converters, Converter* converter, ConvertersArray
 	}
 	return 0;
 }
+

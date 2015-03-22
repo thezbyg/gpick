@@ -43,18 +43,15 @@ static void status_icon_destroy_parent(GtkWidget *widget, gpointer user_data){
 	gtk_widget_destroy(GTK_WIDGET(si->parent));
 }
 
-static void status_icon_show_parent(GtkWidget *widget, gpointer user_data){
+static void status_icon_show_parent(GtkWidget *widget, gpointer user_data)
+{
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-
 	floating_picker_deactivate(si->floating_picker);
-
 	status_icon_set_visible(si, false);
-
 	struct dynvSystem *params = dynv_get_dynv(si->gs->params, "gpick.main");
 	main_show_window(si->parent, params);
 	dynv_system_release(params);
 }
-
 
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint activate_time, gpointer user_data) {
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
@@ -86,15 +83,15 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 }
 
 
-static void status_icon_activate(GtkWidget *widget, gpointer user_data){
+static void status_icon_activate(GtkWidget *widget, gpointer user_data)
+{
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-
-	floating_picker_activate(si->floating_picker, false);
-
+	floating_picker_activate(si->floating_picker, false, false);
 }
 
-void status_icon_set_visible(struct uiStatusIcon* si, bool visible){
-	if (visible==false){
+void status_icon_set_visible(struct uiStatusIcon* si, bool visible)
+{
+	if (visible == false){
 		floating_picker_deactivate(si->floating_picker);
 	}
 	gtk_status_icon_set_visible(si->status_icon, visible);
