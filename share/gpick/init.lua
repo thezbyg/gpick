@@ -5,109 +5,88 @@ gpick = {}
 gpick.converters = {}
 gpick.user = {}
 gpick.global = gpick_module
+gpick.options = {}
 
 require('helpers')
 require('layouts')
 suggest('user_init')
 
-gpick.serialize_web_hex = function (color_object, params)
+gpick.serialize_web_hex = function(color_object, params)
 	if not color_object then return nil end
 	if not params then return nil end
 	local c = color_object:get_color()
-	if params:get_string('gpick.options.hex_case', 'upper') == 'upper' then
-		return '#' .. string.format('%02X%02X%02X', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
+	if gpick.options.upper_case then
+		return '#' .. string.format('%02X%02X%02X', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255))
 	else
-		return '#' .. string.format('%02x%02x%02x', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
+		return '#' .. string.format('%02x%02x%02x', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255))
 	end
 end
-
-gpick.deserialize_web_hex = function (text, color_object)
+gpick.deserialize_web_hex = function(text, color_object)
 	local c = color:new()
-
 	local find_start, find_end, red, green, blue = string.find(text, '#([%x][%x])([%x][%x])([%x][%x])[^%x]?')
-
 	if find_start~=nil then
-
 		red = tonumber(red, 16)
 		green = tonumber(green, 16)
 		blue = tonumber(blue, 16)
-
-		c:red(red/255)
-		c:green(green/255)
-		c:blue(blue/255)
-
+		c:red(red / 255)
+		c:green(green / 255)
+		c:blue(blue / 255)
 		color_object:set_color(c)
-
-		return 1-(math.atan(find_start-1)/math.pi)-(math.atan(string.len(text)-find_end)/math.pi)
+		return 1 - (math.atan(find_start - 1)/math.pi) - (math.atan(string.len(text) - find_end) / math.pi)
 	else
 		return -1
 	end
 end
 
-
-gpick.serialize_web_hex_no_hash = function (color_object, params)
+gpick.serialize_web_hex_no_hash = function(color_object, params)
 	if not color_object then return nil end
 	if not params then return nil end
 	local c = color_object:get_color()
-	if params:get_string('gpick.options.hex_case', 'upper') == 'upper' then
-		return string.format('%02X%02X%02X', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
+	if gpick.options.upper_case then
+		return string.format('%02X%02X%02X', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255))
 	else
-		return string.format('%02x%02x%02x', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
+		return string.format('%02x%02x%02x', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255))
 	end
 end
-
 gpick.deserialize_web_hex_no_hash = function (text, color_object)
 	local c = color:new()
-
 	local find_start, find_end, red, green, blue = string.find(text, '([%x][%x])([%x][%x])([%x][%x])[^%x]?')
-
-	if find_start~=nil then
-
+	if find_start ~= nil then
 		red = tonumber(red, 16)
 		green = tonumber(green, 16)
 		blue = tonumber(blue, 16)
-
-		c:red(red/255)
-		c:green(green/255)
-		c:blue(blue/255)
-
+		c:red(red / 255)
+		c:green(green / 255)
+		c:blue(blue / 255)
 		color_object:set_color(c)
-
-		return 1-(math.atan(find_start-1)/math.pi)-(math.atan(string.len(text)-find_end)/math.pi)
+		return 1 - (math.atan(find_start - 1) / math.pi) - (math.atan(string.len(text) - find_end) / math.pi)
 	else
 		return -1
 	end
 end
 
-gpick.serialize_web_hex_3_digit = function (color_object, params)
+gpick.serialize_web_hex_3_digit = function(color_object, params)
 	if not color_object then return nil end
 	if not params then return nil end
 	local c = color_object:get_color()
-	if params:get_string('gpick.options.hex_case', 'upper') == 'upper' then
-		return '#' .. string.format('%01X%01X%01X', round(c:red()*15), round(c:green()*15), round(c:blue()*15))
+	if gpick.options.upper_case then
+		return '#' .. string.format('%01X%01X%01X', round(c:red() * 15), round(c:green() * 15), round(c:blue() * 15))
 	else
-		return '#' .. string.format('%01x%01x%01x', round(c:red()*15), round(c:green()*15), round(c:blue()*15))
+		return '#' .. string.format('%01x%01x%01x', round(c:red() * 15), round(c:green() * 15), round(c:blue() * 15))
 	end
 end
-
-gpick.deserialize_web_hex_3_digit = function (text, color_object)
+gpick.deserialize_web_hex_3_digit = function(text, color_object)
 	local c = color:new()
-
 	local find_start, find_end, red, green, blue = string.find(text, '#([%x])([%x])([%x])[^%x]?')
-
-	if find_start~=nil then
-
+	if find_start ~= nil then
 		red = tonumber(red, 16)
 		green = tonumber(green, 16)
 		blue = tonumber(blue, 16)
-
-		c:red(red/15)
-		c:green(green/15)
-		c:blue(blue/15)
-
+		c:red(red / 15)
+		c:green(green / 15)
+		c:blue(blue / 15)
 		color_object:set_color(c)
-
-		return 1-(math.atan(find_start-1)/math.pi)-(math.atan(string.len(text)-find_end)/math.pi)
+		return 1 - (math.atan(find_start - 1) / math.pi) - (math.atan(string.len(text) - find_end) / math.pi)
 	else
 		return -1
 	end
@@ -116,13 +95,12 @@ end
 gpick.serialize_css_hsl = function (color_object)
 	local c = color_object:get_color()
 	c = c:rgb_to_hsl()
-	return 'hsl(' .. string.format('%d, %d%%, %d%%', round(c:hue()*360), round(c:saturation()*100), round(c:lightness()*100)) .. ')'
+	return 'hsl(' .. string.format('%d, %d%%, %d%%', round(c:hue() * 360), round(c:saturation() * 100), round(c:lightness() * 100)) .. ')'
 end
-
 
 gpick.serialize_css_rgb = function (color_object)
 	local c = color_object:get_color()
-	return 'rgb(' .. string.format('%d, %d, %d', round(c:red()*255), round(c:green()*255), round(c:blue()*255)) .. ')'
+	return 'rgb(' .. string.format('%d, %d, %d', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255)) .. ')'
 end
 
 gpick.serialize_color_css_block = function(color_object, params, position)
@@ -138,8 +116,8 @@ gpick.serialize_color_css_block = function(color_object, params, position)
 	if not name then
 		name = ''
 	end
-  result = result .. ' * ' .. name 
-	if params:get_string('gpick.options.hex_case', 'upper') == 'upper' then
+	result = result .. ' * ' .. name
+	if gpick.options.upper_case then
 		result = result .. '#' .. string.format('%02X%02X%02X', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
 	else
 		result = result .. '#' .. string.format('%02x%02x%02x', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
@@ -151,69 +129,53 @@ gpick.serialize_color_css_block = function(color_object, params, position)
 	return result
 end
 
-gpick.deserialize_css_rgb = function (text, color_object)
+gpick.deserialize_css_rgb = function(text, color_object)
 	local c = color:new()
-
 	local find_start, find_end, red, green, blue = string.find(text, 'rgb%(([%d]*)[%s]*,[%s]*([%d]*)[%s]*,[%s]*([%d]*)%)')
-
-	if find_start~=nil then
-
-		c:rgb(math.min(1, red/255), math.min(1, green/255), math.min(1, blue/255))
-
+	if find_start ~= nil then
+		c:rgb(math.min(1, red / 255), math.min(1, green / 255), math.min(1, blue / 255))
 		color_object:set_color(c)
-
-		return 1-(math.atan(find_start-1)/math.pi)-(math.atan(string.len(text)-find_end)/math.pi)
+		return 1 - (math.atan(find_start - 1) / math.pi) - (math.atan(string.len(text) - find_end) / math.pi)
 	else
 		return -1
 	end
 end
 
-
-
-gpick.serialize_css_color_hex = function (color_object, params)
+gpick.serialize_css_color_hex = function(color_object, params)
 	return 'color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_background_color_hex = function (color_object, params)
+gpick.serialize_css_background_color_hex = function(color_object, params)
 	return 'background-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_border_color_hex = function (color_object, params)
+gpick.serialize_css_border_color_hex = function(color_object, params)
 	return 'border-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_border_top_color_hex = function (color_object, params)
+gpick.serialize_css_border_top_color_hex = function(color_object, params)
 	return 'border-top-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_border_right_color_hex = function (color_object, params)
+gpick.serialize_css_border_right_color_hex = function(color_object, params)
 	return 'border-right-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_border_bottom_color_hex = function (color_object, params)
+gpick.serialize_css_border_bottom_color_hex = function(color_object, params)
 	return 'border-bottom-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_css_border_left_hex = function (color_object, params)
+gpick.serialize_css_border_left_hex = function(color_object, params)
 	return 'border-left-color: ' .. gpick.serialize_web_hex(color_object, params)
 end
 
-gpick.serialize_color_csv = function (color_object)
-	local c = color_object:get_color();
-	os.setlocale("C", "numeric");
-	local r = string.format('%f\t%f\t%f', c:red(), c:green(), c:blue());
-	os.setlocale("", "numeric");
-	return r;
-end;
-
-gpick.serialize_color_csv = function (color_object)
-	local c = color_object:get_color();
-	os.setlocale("C", "numeric");
-	local r = string.format('%f\t%f\t%f', c:red(), c:green(), c:blue());
-	os.setlocale("", "numeric");
-	return r;
-end;
-
+gpick.serialize_color_csv = function(color_object)
+	local c = color_object:get_color()
+	os.setlocale("C", "numeric")
+	local r = string.format('%f\t%f\t%f', c:red(), c:green(), c:blue())
+	os.setlocale("", "numeric")
+	return r
+end
 
 gpick.converters['color_web_hex'] = {
 	human_readable = _("Web: hex code"),
@@ -314,5 +276,9 @@ gpick.component_to_text = function(component_type, color)
 		return {round(color:lch_lightness()) .. '', round(color:lch_chroma()) .. '', round(color:lch_hue()) .. ''}
 	end
 	return {}
+end
+
+gpick.options_update = function(params)
+	gpick.options.upper_case = params:get_string('gpick.options.hex_case', 'upper') == 'upper'
 end
 

@@ -1569,6 +1569,7 @@ static void app_initialize_variables(AppArgs *args)
 	args->secondary_source_scrolled_viewpoint = 0;
 	global_state_init(args->gs, GLOBALSTATE_ALL);
 	dynv_set_pointer(args->gs->params, "MainWindowStruct", args);
+	dialog_options_update(args->gs->params);
 	args->params = dynv_get_dynv(args->gs->params, "gpick.main");
 	args->csm = color_source_manager_create();
 	register_sources(args->csm);
