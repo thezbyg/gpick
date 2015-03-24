@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLOROBJECT_H_
-#define COLOROBJECT_H_
+#ifndef GPICK_COLOR_OBJECT_H_
+#define GPICK_COLOR_OBJECT_H_
 
 #include "Color.h"
 #include "ColorAction.h"
@@ -29,23 +29,19 @@ struct ColorObject;
 struct ColorObject{
 	uint32_t refcnt;
 	struct dynvSystem* params;
-	struct ColorList* childs;	//color objects depending on current object
+	struct ColorList* childs; //color objects depending on current object
 	uint32_t position;
-
-	//Color color;
 	struct ColorAction* action;
 	int recalculate;
 	int selected;
 	int visited;
 };
 
-struct ColorObject* color_object_new(struct dynvHandlerMap* handler_map);
-int color_object_release(struct ColorObject* color_object);
-struct ColorObject* color_object_ref(struct ColorObject* color_object);
+struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map);
+int color_object_release(struct ColorObject *color_object);
+struct ColorObject* color_object_ref(struct ColorObject *color_object);
+int color_object_get_color(struct ColorObject *color_object, Color *color);
+int color_object_set_color(struct ColorObject *color_object, const Color *color);
+struct ColorObject* color_object_copy(struct ColorObject *color_object);
 
-int color_object_get_color(struct ColorObject* color_object, Color* color);
-int color_object_set_color(struct ColorObject* color_object, Color* color);
-
-struct ColorObject* color_object_copy(struct ColorObject* color_object);
-
-#endif /* COLOROBJECT_H_ */
+#endif /* GPICK_COLOR_OBJECT_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,27 +18,26 @@
 
 #include "ColorObject.h"
 #include "DynvHelpers.h"
-
 #include <iostream>
 using namespace std;
 
-
-struct ColorObject* color_object_new(struct dynvHandlerMap* handler_map){
-	struct ColorObject* color_object=new struct ColorObject;
-	color_object->action=NULL;
-	color_object->refcnt=0;
-	color_object->selected=0;
-	color_object->position=~(uint32_t)0;
-	color_object->recalculate=1;
+struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map)
+{
+	struct ColorObject* color_object = new struct ColorObject;
+	color_object->action = NULL;
+	color_object->refcnt = 0;
+	color_object->selected = 0;
+	color_object->position = ~(uint32_t)0;
+	color_object->recalculate = 1;
 	if (handler_map){
-		color_object->params=dynv_system_create(handler_map);
+		color_object->params = dynv_system_create(handler_map);
 	}else{
-		color_object->params=NULL;
+		color_object->params = NULL;
 	}
 	return color_object;
 }
-
-int color_object_release(struct ColorObject* color_object){
+int color_object_release(struct ColorObject *color_object)
+{
 	if (color_object->refcnt){
 		color_object->refcnt--;
 		return -1;
@@ -48,13 +47,13 @@ int color_object_release(struct ColorObject* color_object){
 		return 0;
 	}
 }
-
-struct ColorObject* color_object_ref(struct ColorObject* color_object){
+struct ColorObject* color_object_ref(struct ColorObject *color_object)
+{
 	color_object->refcnt++;
 	return color_object;
 }
-
-int color_object_get_color(struct ColorObject* color_object, Color* color){
+int color_object_get_color(struct ColorObject *color_object, Color *color)
+{
 	if (!color_object->action){
 		const Color* c = dynv_get_color_wd(color_object->params, "color", 0);
 		if (c){
@@ -67,10 +66,9 @@ int color_object_get_color(struct ColorObject* color_object, Color* color){
 	}
 	return -1;
 }
-
-int color_object_set_color(struct ColorObject* color_object, Color* color){
+int color_object_set_color(struct ColorObject *color_object, const Color *color)
+{
 	if (!color_object->action){
-		//color_copy(color, &color_object->color);
 		dynv_set_color(color_object->params, "color", color);
 		return 0;
 	}else{
@@ -78,15 +76,13 @@ int color_object_set_color(struct ColorObject* color_object, Color* color){
 	}
 	return -1;
 }
-
-struct ColorObject* color_object_copy(struct ColorObject* color_object){
+struct ColorObject* color_object_copy(struct ColorObject *color_object)
+{
 	struct ColorObject* new_color_object = color_object_new(0);
 	new_color_object->params = dynv_system_copy(color_object->params);
-
 	new_color_object->recalculate = color_object->recalculate;
 	new_color_object->selected = color_object->selected;
 	new_color_object->visited = color_object->visited;
-
 	return new_color_object;
 }
 

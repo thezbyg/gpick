@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -44,6 +44,7 @@ typedef struct FloatingPickerArgs{
 	bool single_pick_mode;
 	bool click_mode;
 	bool perform_custom_pick_action;
+	bool menu_button_pressed;
 	Gallant::Signal2<FloatingPicker, const Color &> custom_pick_action;
 	Gallant::Signal1<FloatingPicker> custom_done_action;
 }FloatingPickerArgs;
@@ -214,11 +215,35 @@ static void complete_picking(FloatingPickerArgs *args)
 		}
 	}
 }
+static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
+{
+	Color c;
+	get_color_sample(args, false, &c);
+	GtkWidget *menu;
+	struct ColorList *color_list = color_list_new_with_one_color(args->gs->colors, &c);
+	menu = converter_create_copy_menu(*color_list->colors.begin(), NULL, args->gs);
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
+	color_list_destroy(color_list);
+}
 static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, FloatingPickerArgs *args)
 {
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 1)) {
 		complete_picking(args);
 		finish_picking(args);
+	}else if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3) && args->menu_button_pressed) {
+		args->menu_button_pressed = false;
+		show_copy_menu(event->button, event->time, args);
+		finish_picking(args);
+	}
+	return false;
+}
+static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, FloatingPickerArgs *args)
+{
+	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
+		args->menu_button_pressed = true;
 	}
 	return false;
 }
@@ -226,45 +251,57 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	gint add_x = 0, add_y = 0;
-	switch(event->keyval){
-	case GDK_Return:
-		complete_picking(args);
-		finish_picking(args);
-		return TRUE;
-		break;
-	case GDK_Escape:
-		finish_picking(args);
-		return TRUE;
-		break;
-	case GDK_m:
-		{
-			int x, y;
-			gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
-			math::Vec2<int> position(x, y);
-			if ((event->state & modifiers) == GDK_CONTROL_MASK){
-				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
-			}else{
-				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 0, position);
-			}
-		}
-		break;
-	case GDK_Left:
-		add_x--;
-		break;
-	case GDK_Right:
-		add_x++;
-		break;
-	case GDK_Up:
-		add_y--;
-		break;
-	case GDK_Down:
-		add_y++;
-		break;
-	default:
-		if (args->color_source && color_picker_key_up(args->color_source, event)){
-			args->release_mode = false; //key pressed and color picked, disable copy on mouse button release
+	switch (event->keyval){
+		case GDK_Return:
+			complete_picking(args);
+			finish_picking(args);
 			return TRUE;
-		}
+			break;
+		case GDK_Escape:
+			finish_picking(args);
+			return TRUE;
+			break;
+		case GDK_m:
+			{
+				int x, y;
+				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
+				math::Vec2<int> position(x, y);
+				if ((event->state & modifiers) == GDK_CONTROL_MASK){
+					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
+				}else{
+					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 0, position);
+				}
+			}
+			break;
+		case GDK_Left:
+			if ((event->state & modifiers) == GDK_SHIFT_MASK)
+				add_x -= 10;
+			else
+				add_x--;
+			break;
+		case GDK_Right:
+			if ((event->state & modifiers) == GDK_SHIFT_MASK)
+				add_x += 10;
+			else
+				add_x++;
+			break;
+		case GDK_Up:
+			if ((event->state & modifiers) == GDK_SHIFT_MASK)
+				add_y -= 10;
+			else
+				add_y--;
+			break;
+		case GDK_Down:
+			if ((event->state & modifiers) == GDK_SHIFT_MASK)
+				add_y += 10;
+			else
+				add_y++;
+			break;
+		default:
+			if (args->color_source && color_picker_key_up(args->color_source, event)){
+				args->release_mode = false; //key pressed and color picked, disable copy on mouse button release
+				return TRUE;
+			}
 	}
 	if (add_x || add_y){
 		gint x, y;
@@ -290,6 +327,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	args->window = gtk_window_new(GTK_WINDOW_POPUP);
 	args->color_source = NULL;
 	args->perform_custom_pick_action = false;
+	args->menu_button_pressed = false;
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(args->window), true);
 	gtk_window_set_skip_taskbar_hint(GTK_WINDOW(args->window), true);
 	gtk_window_set_decorated(GTK_WINDOW(args->window), false);
@@ -304,6 +342,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	gtk_widget_show(args->color_widget);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_widget, true, true, 0);
 	g_signal_connect(G_OBJECT(args->window), "scroll_event", G_CALLBACK(scroll_event_cb), args);
+	g_signal_connect(G_OBJECT(args->window), "button-press-event", G_CALLBACK(button_press_cb), args);
 	g_signal_connect(G_OBJECT(args->window), "button-release-event", G_CALLBACK(button_release_cb), args);
 	g_signal_connect(G_OBJECT(args->window), "key_press_event", G_CALLBACK(key_up_cb), args);
 	g_signal_connect(G_OBJECT(args->window), "destroy", G_CALLBACK(destroy_cb), args);

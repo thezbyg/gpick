@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORLIST_H_
-#define COLORLIST_H_
+#ifndef GPICK_COLOR_LIST_H_
+#define GPICK_COLOR_LIST_H_
 
 #include "ColorObject.h"
 #include "dynv/DynvSystem.h"
@@ -26,28 +26,27 @@
 struct ColorList{
 	std::list<struct ColorObject*> colors;
 	typedef std::list<struct ColorObject*>::iterator iter;
-	struct dynvSystem* params;
-
-	int (*on_insert)(struct ColorList* color_list, struct ColorObject* color_object);
-	int (*on_delete)(struct ColorList* color_list, struct ColorObject* color_object);
-	int (*on_delete_selected)(struct ColorList* color_list);
-	int (*on_change)(struct ColorList* color_list, struct ColorObject* color_object);
-	int (*on_clear)(struct ColorList* color_list);
-
-	int (*on_get_positions)(struct ColorList* color_list);
-
+	struct dynvSystem *params;
+	int (*on_insert)(struct ColorList *color_list, struct ColorObject *color_object);
+	int (*on_delete)(struct ColorList *color_list, struct ColorObject *color_object);
+	int (*on_delete_selected)(struct ColorList *color_list);
+	int (*on_change)(struct ColorList *color_list, struct ColorObject *color_object);
+	int (*on_clear)(struct ColorList *color_list);
+	int (*on_get_positions)(struct ColorList *color_list);
 	void* userdata;
 };
 
-struct ColorList* color_list_new(struct dynvHandlerMap* handler_map);
-void color_list_destroy(struct ColorList* color_list);
-struct ColorObject* color_list_new_color_object(struct ColorList* color_list, Color* color);
-struct ColorObject* color_list_add_color(struct ColorList* color_list, Color* color);
-int color_list_add_color_object(struct ColorList* color_list, struct ColorObject* color_object, int add_to_palette);
-int color_list_remove_color_object(struct ColorList* color_list, struct ColorObject* color_object);
-int color_list_remove_selected(struct ColorList* color_list);
-int color_list_remove_all(struct ColorList* color_list);
-unsigned long color_list_get_count(struct ColorList* color_list);
-int color_list_get_positions(struct ColorList* color_list);
+struct ColorList* color_list_new(struct dynvHandlerMap *handler_map);
+struct ColorList* color_list_new_with_one_color(struct ColorList *template_color_list, const Color *color);
+void color_list_destroy(struct ColorList *color_list);
+struct ColorObject* color_list_new_color_object(struct ColorList *color_list, const Color *color);
+struct ColorObject* color_list_add_color(struct ColorList *color_list, const Color *color);
+int color_list_add_color_object(struct ColorList *color_list, struct ColorObject *color_object, int add_to_palette);
+int color_list_remove_color_object(struct ColorList *color_list, struct ColorObject *color_object);
+int color_list_remove_selected(struct ColorList *color_list);
+int color_list_remove_all(struct ColorList *color_list);
+unsigned long color_list_get_count(struct ColorList *color_list);
+int color_list_get_positions(struct ColorList *color_list);
 
-#endif /* COLORLIST_H_ */
+#endif /* GPICK_COLOR_LIST_H_ */
+

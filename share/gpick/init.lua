@@ -116,7 +116,7 @@ gpick.serialize_color_css_block = function(color_object, params, position)
 	if not name then
 		name = ''
 	end
-	result = result .. ' * ' .. name
+	result = result .. ' * ' .. name .. ': '
 	if gpick.options.upper_case then
 		result = result .. '#' .. string.format('%02X%02X%02X', round(c:red()*255), round(c:green()*255), round(c:blue()*255))
 	else
