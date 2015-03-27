@@ -45,7 +45,7 @@ int color_list_add_color_object(struct ColorList *color_list, struct ColorObject
 int color_list_remove_color_object(struct ColorList *color_list, struct ColorObject *color_object);
 int color_list_remove_selected(struct ColorList *color_list);
 int color_list_remove_all(struct ColorList *color_list);
-unsigned long color_list_get_count(struct ColorList *color_list);
+size_t color_list_get_count(struct ColorList *color_list);
 int color_list_get_positions(struct ColorList *color_list);
 
 #endif /* GPICK_COLOR_LIST_H_ */
