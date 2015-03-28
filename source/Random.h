@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,22 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RANDOM_H_
-#define RANDOM_H_
+#ifndef GPICK_RANDOM_H_
+#define GPICK_RANDOM_H_
 
-struct Random {
+struct Random
+{
 	unsigned long (*function)(struct Random* r, unsigned long seed_offset);
 	unsigned long *seed;
 	unsigned long seed_size;
 };
-
 struct Random* random_new(const char* random_function);
-
+struct Random* random_new(const char* random_function, unsigned long seed);
 unsigned long random_get(struct Random* r);
-
+double random_get_double(struct Random* r);
 void random_seed(struct Random* r, void* seed);
-
 void random_destroy(struct Random* r);
 
-
-#endif /* RANDOM_H_ */
+#endif /* GPICK_RANDOM_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,74 +17,81 @@
  */
 
 #include "Random.h"
-
 #include <string.h>
 
-static unsigned long random_function_znew(struct Random* r, unsigned long seed_offset) {
+static unsigned long random_function_znew(struct Random* r, unsigned long seed_offset)
+{
 	return (r->seed[seed_offset] = 36969 * (r->seed[seed_offset] & 65535) + (r->seed[seed_offset] >> 16));
 }
-static unsigned long random_function_wnew(struct Random* r, unsigned long seed_offset) {
+static unsigned long random_function_wnew(struct Random* r, unsigned long seed_offset)
+{
 	return (r->seed[seed_offset] = 18000 * (r->seed[seed_offset] & 65535) + (r->seed[seed_offset] >> 16));
 }
-
-static unsigned long random_function_MWC(struct Random* r, unsigned long seed_offset) {
-	return (random_function_znew(r, 0)<<16) + random_function_wnew(r, 1);
+static unsigned long random_function_MWC(struct Random* r, unsigned long seed_offset)
+{
+	return (random_function_znew(r, 0) << 16) + random_function_wnew(r, 1);
 }
-
-static unsigned long random_function_SHR3(struct Random* r, unsigned long seed_offset) {
+static unsigned long random_function_SHR3(struct Random* r, unsigned long seed_offset)
+{
 	r->seed[seed_offset] ^= r->seed[seed_offset] << 17;
-	r->seed[seed_offset] ^= (r->seed[seed_offset]&0xFFFFFFFF) >> 13;
+	r->seed[seed_offset] ^= (r->seed[seed_offset] & 0xFFFFFFFF) >> 13;
 	return (r->seed[seed_offset] ^= r->seed[seed_offset] << 5);
 }
-
-
-
-struct Random* random_new(const char* random_function){
-	struct Random* r=new struct Random;
-
-	struct RandomFunction{
+struct Random* random_new(const char* random_function)
+{
+	struct Random* r = new struct Random;
+	struct RandomFunction
+	{
 		const char* name;
 		unsigned long (*function)(struct Random* r, unsigned long seed_offset);
 		unsigned long seed_size;
 	};
-
-	struct RandomFunction functions[]={
-		{"znew",	random_function_znew,	1},
-		{"wnew",	random_function_wnew,	1},
-		{"MWC",		random_function_MWC,	2},
-		{"SHR3",	random_function_SHR3,	1},
+	struct RandomFunction functions[] = {
+		{"znew", random_function_znew, 1},
+		{"wnew", random_function_wnew, 1},
+		{"MWC", random_function_MWC, 2},
+		{"SHR3", random_function_SHR3, 1},
 	};
-
-	int found=0;
-
-	for (unsigned long i=0; i<sizeof(functions)/sizeof(struct RandomFunction); ++i){
-		if (strcmp(random_function, functions[i].name)==0){
-			r->function= functions[i].function;
-			r->seed_size=functions[i].seed_size;
-			r->seed=new unsigned long [r->seed_size];
-			found=1;
+	bool found = false;
+	for (unsigned long i = 0; i < sizeof(functions) / sizeof(struct RandomFunction); ++i){
+		if (strcmp(random_function, functions[i].name) == 0){
+			r->function = functions[i].function;
+			r->seed_size = functions[i].seed_size;
+			r->seed = new unsigned long [r->seed_size];
+			found = true;
 			break;
 		}
 	}
-
 	if (found) return r;
 	delete r;
 	return 0;
 }
-
-unsigned long random_get(struct Random* r){
+struct Random* random_new(const char* random_function, unsigned long seed)
+{
+	struct Random* random = random_new(random_function);
+	random_seed(random, &seed);
+	random_get(random);
+	return random;
+}
+unsigned long random_get(struct Random* r)
+{
 	if (!r) return 0;
 	return r->function(r, 0);
 }
-
-void random_seed(struct Random* r, void* seed){
-	if (!r) return;
-	memcpy(r->seed, seed, r->seed_size*sizeof(unsigned long));
+double random_get_double(struct Random* r)
+{
+	return (random_get(r) & 0xFFFFFFFF) / (double)0xFFFFFFFF;
 }
-
-void random_destroy(struct Random* r){
+void random_seed(struct Random* r, void* seed)
+{
+	if (!r) return;
+	memcpy(r->seed, seed, r->seed_size * sizeof(unsigned long));
+}
+void random_destroy(struct Random* r)
+{
 	if (r){
 		delete [] r->seed;
 		delete r;
 	}
 }
+
