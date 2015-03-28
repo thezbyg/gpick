@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGVARIATIONS_H_
-#define UIDIALOGVARIATIONS_H_
+#ifndef GPICK_UI_DIALOG_VARIATIONS_H_
+#define GPICK_UI_DIALOG_VARIATIONS_H_
 
 #include <gtk/gtk.h>
-#include "ColorList.h"
 #include "GlobalState.h"
-
 void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState *gs);
 
-#endif /* UIDIALOGVARIATIONS_H_ */
+#endif /* GPICK_UI_DIALOG_VARIATIONS_H_ */
