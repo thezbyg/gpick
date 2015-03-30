@@ -19,7 +19,6 @@
 #include "GlobalStateStruct.h"
 #include "CopyPaste.h"
 #include "uiApp.h"
-
 #include <string.h>
 
 enum {
@@ -121,16 +120,14 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 
 				if (g_strcmp0(targets[j].target, atom_name)==0){
 					GtkSelectionData *selection_data = gtk_clipboard_wait_for_contents(clipboard, avail_targets[i]);
-
 					bool success = false;
-
 					if (selection_data){
 
 						switch (targets[j].info){
 						case TARGET_COLOR_OBJECT:
 							{
 								struct ColorObject* color_object;
-								memcpy(&color_object, selection_data->data, sizeof(struct ColorObject*));
+								memcpy(&color_object, gtk_selection_data_get_data(selection_data), sizeof(struct ColorObject*));
 								*out_color_object = color_object;
 								success = true;
 							}
@@ -138,9 +135,8 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 
 						case TARGET_STRING:
 							{
-								gchar* data = (gchar*)selection_data->data;
-								if (data[selection_data->length]!=0) break;	//not null terminated
-
+								gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
+								if (data[gtk_selection_data_get_length(selection_data)] !=0) break; //not null terminated
 								struct ColorObject* color_object;
 								if (main_get_color_object_from_text(gs, data, &color_object)==0){
 									*out_color_object = color_object;
@@ -151,10 +147,8 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 
 						case TARGET_COLOR:
 							{
-								guint16* data = (guint16*)selection_data->data;
-
+								guint16* data = (guint16*)gtk_selection_data_get_data(selection_data);
 								Color color;
-
 								color.rgb.red = data[0] / (double)0xFFFF;
 								color.rgb.green = data[1] / (double)0xFFFF;
 								color.rgb.blue = data[2] / (double)0xFFFF;

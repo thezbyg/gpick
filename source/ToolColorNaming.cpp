@@ -18,6 +18,8 @@
 
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
+#include "color_names/ColorNames.h"
+#include "ColorObject.h"
 #include <string>
 using namespace std;
 

@@ -26,6 +26,9 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "ToolColorNaming.h"
+#include "ScreenReader.h"
+#include "Sampler.h"
+#include "color_names/ColorNames.h"
 #include <signals/Signal.h>
 #include <gdk/gdkkeysyms.h>
 #include <string>
@@ -252,16 +255,16 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	gint add_x = 0, add_y = 0;
 	switch (event->keyval){
-		case GDK_Return:
+		case GDK_KEY_Return:
 			complete_picking(args);
 			finish_picking(args);
 			return TRUE;
 			break;
-		case GDK_Escape:
+		case GDK_KEY_Escape:
 			finish_picking(args);
 			return TRUE;
 			break;
-		case GDK_m:
+		case GDK_KEY_m:
 			{
 				int x, y;
 				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
@@ -273,25 +276,25 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 				}
 			}
 			break;
-		case GDK_Left:
+		case GDK_KEY_Left:
 			if ((event->state & modifiers) == GDK_SHIFT_MASK)
 				add_x -= 10;
 			else
 				add_x--;
 			break;
-		case GDK_Right:
+		case GDK_KEY_Right:
 			if ((event->state & modifiers) == GDK_SHIFT_MASK)
 				add_x += 10;
 			else
 				add_x++;
 			break;
-		case GDK_Up:
+		case GDK_KEY_Up:
 			if ((event->state & modifiers) == GDK_SHIFT_MASK)
 				add_y -= 10;
 			else
 				add_y--;
 			break;
-		case GDK_Down:
+		case GDK_KEY_Down:
 			if ((event->state & modifiers) == GDK_SHIFT_MASK)
 				add_y += 10;
 			else

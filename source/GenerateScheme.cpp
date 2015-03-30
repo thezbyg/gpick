@@ -18,7 +18,6 @@
 
 #include "GenerateScheme.h"
 #include "DragDrop.h"
-
 #include "GlobalStateStruct.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -33,12 +32,11 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
-
+#include "Random.h"
+#include "color_names/ColorNames.h"
 #include "uiApp.h"
-
 #include <gdk/gdkkeysyms.h>
 #include <boost/lexical_cast.hpp>
-
 #include <math.h>
 #include <string.h>
 #include <sstream>
@@ -105,16 +103,17 @@ class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 		int32_t m_ident;
 		int32_t m_schemetype;
 	public:
-		GenerateSchemeColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		GenerateSchemeColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs)
+		{
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype){
+		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype)
+		{
 			m_ident = ident;
 			m_schemetype = schemetype;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		{
 			m_stream.str("");
 			m_stream << _("scheme") << " " << _(generate_scheme_get_scheme_type(m_schemetype)->name) << " #" << m_ident << "[" << color_names_get(m_gs->color_names, color, false) << "]";
 			return m_stream.str();
@@ -391,7 +390,7 @@ static void add_color_to_palette(GtkWidget *color_widget, GenerateSchemeColorNam
 	Color c;
 	struct ColorObject *color_object;
 	string widget_ident;
-        int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
+	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
 	color_object = color_list_new_color_object(args->gs->colors, &c);
 	widget_ident = identify_color_widget(color_widget, args);
@@ -523,7 +522,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 	GtkWidget* color_widget = widget;
 
 	switch(event->keyval){
-		case GDK_c:
+		case GDK_KEY_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);
@@ -542,7 +541,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 			return false;
 			break;
 
-		case GDK_v:
+		case GDK_KEY_v:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 				if (copypaste_get_color_object(&color_object, args->gs)==0){
 					set_rgb_color_by_widget(args, color_object, color_widget);
@@ -873,20 +872,20 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	//table_y=0;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0.5,0,0),0,1,table_y,table_y+1, GTK_FILL, GTK_SHRINK, 5, 5);
-	args->gen_type = gtk_combo_box_new_text();
+	args->gen_type = gtk_combo_box_text_new();
 	for (uint32_t i = 0; i < generate_scheme_get_n_scheme_types(); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
 	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->gen_type,1,2,table_y,table_y+1, GTK_FILL, GTK_SHRINK,5,0);
-    table_y++;
+	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Color wheel:"),0,0.5,0,0),0,1,table_y,table_y+1, GTK_FILL, GTK_SHRINK, 5, 5);
-	args->wheel_type = gtk_combo_box_new_text();
+	args->wheel_type = gtk_combo_box_text_new();
 
 	for (uint32_t i = 0; i < color_wheel_types_get_n(); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->wheel_type), _(color_wheel_types_get()[i].name));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->wheel_type), _(color_wheel_types_get()[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), dynv_get_int32_wd(args->params, "wheel_type", 0));
 	g_signal_connect (G_OBJECT (args->wheel_type), "changed", G_CALLBACK(update), args);
@@ -918,7 +917,7 @@ int generate_scheme_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "generate_scheme", _("Scheme generation"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
-	color_source->default_accelerator = GDK_g;
+	color_source->default_accelerator = GDK_KEY_g;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

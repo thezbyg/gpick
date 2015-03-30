@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,28 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GLOBALSTATESTRUCT_H_
-#define GLOBALSTATESTRUCT_H_
+#ifndef GPICK_GLOBAL_STATE_STRUCT_H_
+#define GPICK_GLOBAL_STATE_STRUCT_H_
 
 #include "GlobalState.h"
-
-#include "Sampler.h"
-#include "color_names/ColorNames.h"
-#include "Random.h"
-#include "dynv/DynvSystem.h"
-#include "ColorList.h"
-#include "LuaExt.h"
-
-typedef struct GlobalState{
+typedef struct lua_State lua_State;
+typedef struct ColorNames ColorNames;
+typedef struct GlobalState
+{
 	GlobalStateLevel loaded_levels;
-
 	ColorNames* color_names;
 	struct Sampler* sampler;
 	struct ScreenReader* screen_reader;
 	struct ColorList* colors;
 	struct dynvSystem* params;
 	lua_State *lua;
-	Random* random;
+	struct Random* random;
 }GlobalState;
 
-#endif /* GLOBALSTATESTRUCT_H_ */
+#endif /* GPICK_GLOBAL_STATE_STRUCT_H_ */

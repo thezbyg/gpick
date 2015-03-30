@@ -157,7 +157,7 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Sample:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GtkAttachOptions(GTK_FILL | GTK_EXPAND),5,5);
 	args->sample = gtk_entry_new();
-	gtk_entry_set_editable (GTK_ENTRY(args->sample), false);
+	gtk_editable_set_editable(GTK_EDITABLE(args->sample), false);
 	gtk_widget_set_sensitive(args->sample, false);
 
 	gtk_table_attach(GTK_TABLE(table), args->sample,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -165,7 +165,7 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 	update(0, args);
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
 
 	return_val = gtk_dialog_run(GTK_DIALOG(dialog));
 

@@ -562,9 +562,9 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 	table_y = 0;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Group type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->group_type = gtk_combo_box_new_text();
+	args->group_type = gtk_combo_box_text_new();
 	for (uint32_t i = 0; i < sizeof(group_types) / sizeof(GroupType); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->group_type), _(group_types[i].name));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->group_type), _(group_types[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->group_type), dynv_get_int32_wd(args->params, "group_type", 0));
 	g_signal_connect(G_OBJECT(args->group_type), "changed", G_CALLBACK(update), args);
@@ -586,9 +586,9 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Sort type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->sort_type = gtk_combo_box_new_text();
+	args->sort_type = gtk_combo_box_text_new();
 	for (uint32_t i = 0; i < sizeof(sort_types) / sizeof(SortType); i++){
-		gtk_combo_box_append_text(GTK_COMBO_BOX(args->sort_type), _(sort_types[i].name));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->sort_type), _(sort_types[i].name));
 	}
 	gtk_combo_box_set_active(GTK_COMBO_BOX(args->sort_type), dynv_get_int32_wd(args->params, "sort_type", 0));
 	g_signal_connect (G_OBJECT (args->sort_type), "changed", G_CALLBACK(update), args);
@@ -619,7 +619,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 	update(0, args);
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
 
 	bool retval = false;
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){

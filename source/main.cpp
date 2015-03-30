@@ -45,7 +45,7 @@ static GOptionEntry commandline_entries[] =
 };
 int main(int argc, char **argv)
 {
-	gtk_set_locale();
+	setlocale(LC_ALL, "");
 	gtk_init(&argc, &argv);
 	initialize_internationalisation();
 	g_set_application_name(program_name);

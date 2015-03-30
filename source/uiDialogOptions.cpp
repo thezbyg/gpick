@@ -395,7 +395,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	}
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Color names")));
 	gtk_widget_show_all(notebook);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), notebook);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), notebook);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		calc(args, false, 0);
 		dialog_options_update(args->gs->params);

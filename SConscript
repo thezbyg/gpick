@@ -35,8 +35,9 @@ if not env['BUILD_TARGET']:
 if env['BUILD_TARGET'] == 'win32':
 	if env['TOOLCHAIN'] == 'msvc':
 		env['TARGET_ARCH'] = 'x86'
-		env['MSVS'] = {'VERSION': env['MSVS_VERSION']} 
+		env['MSVS'] = {'VERSION': env['MSVS_VERSION']}
 		env['MSVC_VERSION'] = env['MSVS_VERSION']
+		env["MSVC_SETUP_RUN"] = False
 		Tool('msvc')(env)
 	else:
 		if sys.platform != 'win32':
@@ -121,13 +122,13 @@ else:
 	if env['DEBUG']:
 		env.Append(
 				CPPFLAGS = ['/Od', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
-				CPPDEFINES = ['WIN32', '_DEBUG'],
+				CPPDEFINES = ['WIN32', '_DEBUG', 'NOMINMAX'],
 				LINKFLAGS = ['/MANIFEST', '/DEBUG'],
 			)
 	else:
 		env.Append(
 				CPPFLAGS = ['/O2', '/Oi', '/GL', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
-				CPPDEFINES = ['WIN32', 'NDEBUG'],
+				CPPDEFINES = ['WIN32', 'NDEBUG', 'NOMINMAX'],
 				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
 

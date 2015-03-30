@@ -26,6 +26,7 @@
 #include "Internationalisation.h"
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
+#include "ColorObject.h"
 
 #include "ColorSpaceType.h"
 #include <string.h>
@@ -78,7 +79,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	}
 
 	gtk_widget_show_all(vbox);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), vbox);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
@@ -151,7 +152,7 @@ void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *col
 	}
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 

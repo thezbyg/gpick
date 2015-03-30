@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,24 +16,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORSPACETYPE_H_
-#define COLORSPACETYPE_H_
+#ifndef GPICK_COLOR_SPACE_TYPE_H_
+#define GPICK_COLOR_SPACE_TYPE_H_
 
 #include "gtk/ColorComponent.h"
 #include "Color.h"
 #include <gtk/gtk.h>
 #include <stdint.h>
-
-extern "C"{
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-#include <luaconf.h>
-}
-
 #include <string>
 #include <list>
 
+typedef struct lua_State lua_State;
 typedef struct ColorSpaceType
 {
 	GtkColorComponentComp comp_type;
@@ -49,8 +42,7 @@ typedef struct ColorSpaceType
 
 const ColorSpaceType* color_space_get_types();
 uint32_t color_space_count_types();
-
 std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L);
 
-#endif /* COLORSPACETYPE_H_ */
+#endif /* GPICK_COLOR_SPACE_TYPE_H_ */
 

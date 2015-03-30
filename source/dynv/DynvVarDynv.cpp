@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,24 +22,24 @@
 #include "DynvXml.h"
 #include "DynvVarDynv.h"
 #include "../Endian.h"
-
 #include <iostream>
 using namespace std;
 
-static int create(struct dynvVariable* variable){
+static int dynv_var_dynv_create(struct dynvVariable* variable)
+{
 	variable->ptr_value = 0;
 	return 0;
 }
-
-static int destroy(struct dynvVariable* variable){
+static int dynv_var_dynv_destroy(struct dynvVariable* variable)
+{
 	if (variable->ptr_value){
 		dynv_system_release((struct dynvSystem*)variable->ptr_value);
 		return 0;
 	}
 	return -1;
 }
-
-static int set(struct dynvVariable* variable, void* value, bool deref){
+static int dynv_var_dynv_set(struct dynvVariable* variable, void* value, bool deref)
+{
 	if (variable->ptr_value) dynv_system_release((struct dynvSystem*)variable->ptr_value);
 	if (deref)
 		variable->ptr_value = dynv_system_ref(*((struct dynvSystem**)value));
@@ -47,8 +47,8 @@ static int set(struct dynvVariable* variable, void* value, bool deref){
 		variable->ptr_value = dynv_system_ref((struct dynvSystem*)value);
 	return 0;
 }
-
-static int get(struct dynvVariable* variable, void** value, bool *deref){
+static int dynv_var_dynv_get(struct dynvVariable* variable, void** value, bool *deref)
+{
 	if (variable->ptr_value){
 		*value= dynv_system_ref((struct dynvSystem*)variable->ptr_value);
 		*deref = false;
@@ -56,27 +56,23 @@ static int get(struct dynvVariable* variable, void** value, bool *deref){
 	}
 	return -1;
 }
-
-static int serialize_xml(struct dynvVariable* variable, ostream& out){
+static int serialize_xml(struct dynvVariable* variable, ostream& out)
+{
 	if (variable->ptr_value){
 		out << endl;
 		dynv_xml_serialize((struct dynvSystem*)variable->ptr_value, out);
 	}
 	return 0;
 }
-
-struct dynvHandler* dynv_var_dynv_new(){
-	struct dynvHandler* handler=dynv_handler_create("dynv");
-
-	handler->create=create;
-	handler->destroy=destroy;
-	handler->set=set;
-	handler->get=get;
-	//handler->serialize=serialize;
-	//handler->deserialize=deserialize;
-
+struct dynvHandler* dynv_var_dynv_new()
+{
+	struct dynvHandler* handler = dynv_handler_create("dynv");
+	handler->create = dynv_var_dynv_create;
+	handler->destroy = dynv_var_dynv_destroy;
+	handler->set = dynv_var_dynv_set;
+	handler->get = dynv_var_dynv_get;
 	handler->serialize_xml = serialize_xml;
-
 	handler->data_size = sizeof(struct dynvSystem*);
 	return handler;
 }
+

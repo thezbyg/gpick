@@ -23,6 +23,7 @@
 #include "DynvHelpers.h"
 #include "GlobalStateStruct.h"
 #include "Internationalisation.h"
+#include "ColorObject.h"
 
 #include <iostream>
 using namespace std;

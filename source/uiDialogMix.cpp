@@ -256,17 +256,16 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table_y=0;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	mix_type = gtk_combo_box_new_text();
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("RGB"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("HSV"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LAB"));
-	gtk_combo_box_append_text(GTK_COMBO_BOX(mix_type), _("LCH"));
+	mix_type = gtk_combo_box_text_new();
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("RGB"));
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("HSV"));
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("LAB"));
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("LCH"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
 	gtk_table_attach(GTK_TABLE(table), mix_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	args->mix_type = mix_type;
-	g_signal_connect (G_OBJECT (mix_type), "changed", G_CALLBACK (update), args);
-
+	g_signal_connect(G_OBJECT(mix_type), "changed", G_CALLBACK (update), args);
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Steps:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range (3,255,1);
@@ -287,15 +286,13 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
-
 	args->selected_color_list = selected_color_list;
 	args->preview_color_list = preview_color_list;
 
 	update(0, args);
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
-
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 
 	gint width, height;

@@ -33,6 +33,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
+#include "color_names/ColorNames.h"
 
 #include "uiApp.h"
 
@@ -435,7 +436,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 	GtkWidget* color_widget = widget;
 
 	switch(event->keyval){
-		case GDK_c:
+		case GDK_KEY_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);
@@ -454,7 +455,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 			return false;
 			break;
 
-		case GDK_v:
+		case GDK_KEY_v:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 				if (copypaste_get_color_object(&color_object, args->gs)==0){
 					set_rgb_color_by_widget(args, color_object, color_widget);
@@ -744,7 +745,7 @@ int variations_source_register(ColorSourceManager *csm){
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "variations", _("Variations"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
-	color_source->default_accelerator = GDK_v;
+	color_source->default_accelerator = GDK_KEY_v;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

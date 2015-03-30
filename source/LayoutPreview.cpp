@@ -24,6 +24,7 @@
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
+#include "color_names/ColorNames.h"
 
 #include "GlobalStateStruct.h"
 #include "ToolColorNaming.h"
@@ -224,7 +225,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args) 
 	}
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(GTK_DIALOG(dialog)->vbox), table);
+	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 
@@ -759,7 +760,7 @@ int layout_preview_source_register(ColorSourceManager *csm){
 	color_source_init(color_source, "layout_preview", _("Layout preview"));
 	color_source->needs_viewport = false;
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
-	color_source->default_accelerator = GDK_l;
+	color_source->default_accelerator = GDK_KEY_l;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

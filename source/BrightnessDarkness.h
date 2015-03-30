@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BRIGHTNESS_DARKNESS_H_
-#define BRIGHTNESS_DARKNESS_H_
+#ifndef GPICK_BRIGHTNESS_DARKNESS_H_
+#define GPICK_BRIGHTNESS_DARKNESS_H_
 
 #include "ColorSourceManager.h"
-
 int brightness_darkness_source_register(ColorSourceManager *csm);
 
-#endif /* BRIGHTNESS_DARKNESS_H_ */
-
+#endif /* GPICK_BRIGHTNESS_DARKNESS_H_ */
 

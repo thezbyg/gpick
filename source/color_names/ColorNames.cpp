@@ -23,6 +23,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 using namespace std;
 
 //CIE94 color difference calculation

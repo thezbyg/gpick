@@ -46,6 +46,7 @@
 #include "FileFormat.h"
 #include "MathUtil.h"
 #include "Internationalisation.h"
+#include "color_names/ColorNames.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -140,8 +141,8 @@ static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *ev
 
 static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event, AppArgs *args)
 {
-	if (GTK_WIDGET_VISIBLE(widget)){
-		if (gdk_window_get_state(widget->window) & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_ICONIFIED)) {
+	if (gtk_widget_get_visible(widget)){
+		if (gdk_window_get_state(gtk_widget_get_window(widget)) & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_ICONIFIED)) {
 			return false;
 		}
 		gint x, y;
@@ -158,7 +159,7 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 	return false;
 }
 
-static void notebook_switch_cb(GtkNotebook *notebook, GtkNotebookPage *page, guint page_num, AppArgs *args)
+static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint page_num, AppArgs *args)
 {
 	if (args->current_color_source) color_source_deactivate(args->current_color_source);
 	args->current_color_source = NULL;
@@ -820,8 +821,8 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	if (gtk_stock_lookup(GTK_STOCK_REVERT_TO_SAVED, &stock_item)){
 		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_r, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
-		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_F5, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_r, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_F5, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_revert), args);
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new ());
@@ -839,17 +840,17 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	}
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = gtk_image_menu_item_new_with_mnemonic(_("Ex_port..."));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_e, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_e, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export_all), args);
 	items->export_all = item;
 	item = gtk_image_menu_item_new_with_mnemonic(_("Expo_rt Selected..."));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_e, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_e, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_export), args);
 	items->export_selected = item;
 	item = gtk_image_menu_item_new_with_mnemonic(_("_Import..."));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_i, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_i, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_import), args);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
@@ -890,7 +891,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 	g_object_set_data_full(G_OBJECT(item), "source", 0, (GDestroyNotify)NULL);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_N, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_N, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
 	vector<ColorSource*> sources = color_source_manager_get_all(args->csm);
 	for (uint32_t i = 0; i < sources.size(); i++){
@@ -913,7 +914,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	item = gtk_check_menu_item_new_with_mnemonic(_("Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.palette", true));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
 	file_item = gtk_menu_item_new_with_mnemonic (_("_View"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
@@ -1238,7 +1239,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
 	item = gtk_menu_item_new_with_mnemonic(_("_Copy to Clipboard"));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_c, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_c, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	if (total_count>0){
@@ -1266,34 +1267,34 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	item = gtk_menu_item_new_with_mnemonic (_("C_lear names"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_clear_names), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	item = gtk_menu_item_new_with_mnemonic (_("Autona_me"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_autoname), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_N, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_N, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	item = gtk_menu_item_new_with_mnemonic (_("Auto_number..."));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_autonumber), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_a, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_a, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = gtk_menu_item_new_with_mnemonic(_("R_everse"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_reverse), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_v, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_v, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
 	item = gtk_menu_item_new_with_mnemonic(_("Group and _sort..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_group_and_sort), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_g, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_g, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = gtk_menu_item_new_with_image (_("_Remove"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_selected), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_Delete, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_Delete, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	item = gtk_menu_item_new_with_image (_("Remove _All"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
@@ -1333,18 +1334,18 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	switch(event->keyval)
 	{
-		case GDK_1:
-		case GDK_KP_1:
-		case GDK_2:
-		case GDK_KP_2:
-		case GDK_3:
-		case GDK_KP_3:
-		case GDK_4:
-		case GDK_KP_4:
-		case GDK_5:
-		case GDK_KP_5:
-		case GDK_6:
-		case GDK_KP_6:
+		case GDK_KEY_1:
+		case GDK_KEY_KP_1:
+		case GDK_KEY_2:
+		case GDK_KEY_KP_2:
+		case GDK_KEY_3:
+		case GDK_KEY_KP_3:
+		case GDK_KEY_4:
+		case GDK_KEY_KP_4:
+		case GDK_KEY_5:
+		case GDK_KEY_KP_5:
+		case GDK_KEY_6:
+		case GDK_KEY_KP_6:
 			{
 				struct ColorList *color_list = color_list_new(NULL);
 				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
@@ -1353,18 +1354,18 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 					uint32_t color_index = 0;
 					switch(event->keyval)
 					{
-						case GDK_KP_1:
-						case GDK_1: color_index = 0; break;
-						case GDK_KP_2:
-						case GDK_2: color_index = 1; break;
-						case GDK_KP_3:
-						case GDK_3: color_index = 2; break;
-						case GDK_KP_4:
-						case GDK_4: color_index = 3; break;
-						case GDK_KP_5:
-						case GDK_5: color_index = 4; break;
-						case GDK_KP_6:
-						case GDK_6: color_index = 5; break;
+						case GDK_KEY_KP_1:
+						case GDK_KEY_1: color_index = 0; break;
+						case GDK_KEY_KP_2:
+						case GDK_KEY_2: color_index = 1; break;
+						case GDK_KEY_KP_3:
+						case GDK_KEY_3: color_index = 2; break;
+						case GDK_KEY_KP_4:
+						case GDK_KEY_4: color_index = 3; break;
+						case GDK_KEY_KP_5:
+						case GDK_KEY_5: color_index = 4; break;
+						case GDK_KEY_KP_6:
+						case GDK_KEY_6: color_index = 5; break;
 					}
 					if ((event->state&modifiers) == GDK_CONTROL_MASK){
 						struct ColorObject *source_color_object;
@@ -1382,7 +1383,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			}
 			return false;
 			break;
-		case GDK_c:
+		case GDK_KEY_c:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
@@ -1393,7 +1394,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			}
 			return false;
 			break;
-		case GDK_v:
+		case GDK_KEY_v:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				struct ColorObject* color_object;
 				if (copypaste_get_color_object(&color_object, args->gs) == 0){
@@ -1407,26 +1408,26 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			}
 			return false;
 			break;
-		case GDK_g:
+		case GDK_KEY_g:
 			palette_popup_menu_group_and_sort(widget, args);
 			return true;
 			break;
-		case GDK_Delete:
+		case GDK_KEY_Delete:
 			palette_popup_menu_remove_selected(widget, args);
 			break;
-		case GDK_a:
+		case GDK_KEY_a:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_autonumber(widget, args);
 				return true;
 			}
 			break;
-		case GDK_e:
+		case GDK_KEY_e:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_clear_names(widget, args);
 				return true;
 			}
 			break;
-		case GDK_n:
+		case GDK_KEY_n:
 			if ((event->state & GDK_CONTROL_MASK) == 0){
 				palette_popup_menu_autoname(widget, args);
 				return true;
@@ -1479,7 +1480,7 @@ static int color_list_on_get_positions(struct ColorList* color_list)
 
 int main_show_window(GtkWidget* window, struct dynvSystem *main_params)
 {
-	if (GTK_WIDGET_VISIBLE(window)){
+	if (gtk_widget_get_visible(window)){
 		gtk_window_deiconify(GTK_WINDOW(window));
 		return -1; //already visible
 	}
@@ -1741,7 +1742,7 @@ AppArgs* app_create_main(const AppOptions *options)
 	GtkWidget *button = gtk_button_new();
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
-	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_KEY_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	gtk_widget_set_tooltip_text(button, _("Pick colors (Ctrl+P)"));
 	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
@@ -1849,7 +1850,7 @@ class FloatingPickerAction {
 			}
 			color_object_release(color_object);
 		}
-		static gboolean close_application(FloatingPickerArgs *args)
+		static gboolean close_application(gpointer user_data)
 		{
 			gtk_main_quit();
 			return FALSE;
@@ -1857,7 +1858,7 @@ class FloatingPickerAction {
 		void done(FloatingPicker fp)
 		{
 			if (clipboard_touched)
-				gtk_timeout_add(100, (GtkFunction)close_application, args); // quiting main gtk loop early will not give enough time for clipboard manager to retrieve the clipboard contents
+				g_timeout_add(100, close_application, args); // quiting main gtk loop early will not give enough time for clipboard manager to retrieve the clipboard contents
 			else
 				gtk_main_quit();
 		}

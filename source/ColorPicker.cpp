@@ -35,6 +35,8 @@
 #include "uiColorInput.h"
 #include "uiConverter.h"
 #include "Internationalisation.h"
+#include "color_names/ColorNames.h"
+#include "Sampler.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #ifdef _MSC_VER
@@ -375,7 +377,7 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
 	switch(event->keyval)
 	{
-		case GDK_m:
+		case GDK_KEY_m:
 			{
 				int x, y;
 				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
@@ -388,7 +390,7 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			}
 			break;
 
-		case GDK_c:
+		case GDK_KEY_c:
 			if ((event->state&modifiers)==GDK_CONTROL_MASK){
 
 				Color c;
@@ -410,55 +412,55 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			return FALSE;
 			break;
 
-		case GDK_1:
+		case GDK_KEY_1:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_2:
+		case GDK_KEY_2:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_3:
+		case GDK_KEY_3:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_4:
+		case GDK_KEY_4:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_5:
+		case GDK_KEY_5:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_6:
+		case GDK_KEY_6:
 			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_Right:
+		case GDK_KEY_Right:
 			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_Left:
+		case GDK_KEY_Left:
 			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),-1);
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
-		case GDK_space:
+		case GDK_KEY_space:
 			updateMainColor(args);
 			gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
 
@@ -496,12 +498,12 @@ static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			return TRUE;
 			break;
 
-		case GDK_a:
+		case GDK_KEY_a:
 			on_swatch_menu_add_all_to_palette(NULL, args);
 			return TRUE;
 			break;
 
-		case GDK_e:
+		case GDK_KEY_e:
 			on_swatch_color_edit(NULL, args);
 			return TRUE;
 			break;
@@ -1252,7 +1254,7 @@ int color_picker_source_register(ColorSourceManager *csm)
 	color_source_init(color_source, "color_picker", _("Color picker"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
 	color_source->single_instance_only = true;
-	color_source->default_accelerator = GDK_c;
+	color_source->default_accelerator = GDK_KEY_c;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }

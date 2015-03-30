@@ -21,8 +21,12 @@
 #include "Paths.h"
 #include "ScreenReader.h"
 #include "Converter.h"
+#include "Random.h"
 
 #include "color_names/DownloadNameFile.h"
+#include "color_names/ColorNames.h"
+#include "Sampler.h"
+#include "ColorList.h"
 
 #include "layout/LuaBindings.h"
 #include "layout/Layout.h"
