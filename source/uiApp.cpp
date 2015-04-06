@@ -41,6 +41,7 @@
 #include "uiStatusIcon.h"
 #include "tools/PaletteFromImage.h"
 #include "tools/PaletteFromCssFile.h"
+#include "tools/ColorSpaceSampler.h"
 #include "dbus/Control.h"
 #include "DynvHelpers.h"
 #include "FileFormat.h"
@@ -737,10 +738,13 @@ static void palette_from_image_cb(GtkWidget *widget, AppArgs* args)
 {
 	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
 }
-
 static void palette_from_css_file_cb(GtkWidget *widget, AppArgs* args)
 {
 	tools_palette_from_css_file_show(GTK_WINDOW(args->window), args->gs);
+}
+static void color_space_sampler_cb(GtkWidget *widget, AppArgs* args)
+{
+	tools_color_space_sampler_show(GTK_WINDOW(args->window), args->gs);
 }
 
 static void destroy_file_menu_items(FileMenuItems *items)
@@ -923,6 +927,9 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	item = gtk_menu_item_new_with_mnemonic(_("Palette From _Image..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);
+	item = gtk_menu_item_new_with_mnemonic(_("Color Space _Sampler..."));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_space_sampler_cb), args);
 	file_item = gtk_menu_item_new_with_mnemonic(_("_Tools"));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);

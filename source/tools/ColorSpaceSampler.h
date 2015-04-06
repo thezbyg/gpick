@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,15 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIUTILITIES_H_
-#define UIUTILITIES_H_
+#ifndef GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
+#define GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
 
 #include <gtk/gtk.h>
+typedef struct GlobalState GlobalState;
+void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs);
 
-GtkWidget* gtk_menu_item_new_with_image(const gchar* label, GtkWidget *image);
-GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign = 0, gfloat yalign = 0, gfloat xscale = 0, gfloat yscale = 0);
-GtkWidget* gtk_label_mnemonic_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
+#endif /* GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_ */
 
-GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
-
-#endif /* UIUTILITIES_H_ */
