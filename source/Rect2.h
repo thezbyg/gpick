@@ -136,6 +136,18 @@ public:
 	T getCenterY() const{
 		return (y1 + y2) / 2;
 	};
+	const T& getLeft() const{
+		return x1;
+	};
+	const T& getTop() const{
+		return y1;
+	};
+	const T& getRight() const{
+		return x2;
+	};
+	const T& getBottom() const{
+		return y2;
+	};
 
 private:
 	bool empty;

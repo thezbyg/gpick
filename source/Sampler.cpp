@@ -92,55 +92,39 @@ void sampler_set_oversample(struct Sampler *sampler, int oversample){
 	sampler->oversample = oversample;
 }
 
-static void get_pixel(GdkPixbuf *pixbuf, int x, int y, Color* color){
-	int rowstride;
-	guchar *pixels, *p;
-
-	rowstride = gdk_pixbuf_get_rowstride(pixbuf);
-	pixels = gdk_pixbuf_get_pixels(pixbuf);
-	p = pixels + y * rowstride + x * 3;
-
-	color->rgb.red = p[0]/255.0;
-	color->rgb.green = p[1]/255.0;
-	color->rgb.blue = p[2]/255.0;
+static void get_pixel(const guchar *pixels, int row_stride, int x, int y, Color* color)
+{
+	const guchar *p;
+	p = pixels + y * row_stride + x * 3;
+	color->rgb.red = p[0] / 255.0;
+	color->rgb.green = p[1] / 255.0;
+	color->rgb.blue = p[2] / 255.0;
 }
-
-
-int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<int>& screen_size, Vec2<int>& offset, Color* color) {
+int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<int>& screen_rect, Vec2<int>& offset, Color* color)
+{
 	Color sample;
 	Color result;
 	float divider = 0;
-
 	color_zero(&result);
-
 	GdkPixbuf* pixbuf = screen_reader_get_pixbuf(sampler->screen_reader);
-
 	int x = pointer.x, y = pointer.y;
-	int width = screen_size.x, height = screen_size.y;
-
 	int left, right, top, bottom;
-
-	left = max_int(0, x - sampler->oversample);
-	right = min_int(width, x + sampler->oversample + 1);
-	top = max_int(0, y - sampler->oversample);
-	bottom = min_int(height, y + sampler->oversample + 1);
-	width = right - left;
-	height = bottom - top;
-
-	int center_x = x-left;
-	int center_y = y-top;
-
-
+	left = max_int(screen_rect.getLeft(), x - sampler->oversample);
+	right = min_int(screen_rect.getRight(), x + sampler->oversample + 1);
+	top = max_int(screen_rect.getTop(), y - sampler->oversample);
+	bottom = min_int(screen_rect.getBottom(), y + sampler->oversample + 1);
+	int width = right - left;
+	int height = bottom - top;
+	int center_x = x - left;
+	int center_y = y - top;
+	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+	const guchar *pixels = gdk_pixbuf_read_pixels(pixbuf);
 	float max_distance = 1 / sqrt(2 * pow((double)sampler->oversample, 2));
-
 	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
 		for (int y=-sampler->oversample; y <= sampler->oversample; ++y){
-
-			if ((center_x+x<0) || (center_y+y<0)) continue;
-			if ((center_x+x>=width) || (center_y+y>=height)) continue;
-
-			get_pixel(pixbuf, offset.x + center_x+x, offset.y + center_y+y, &sample);
-
+			if ((center_x + x < 0) || (center_y + y < 0)) continue;
+			if ((center_x + x >= width) || (center_y + y >= height)) continue;
+			get_pixel(pixels, row_stride, offset.x + center_x+x, offset.y + center_y+y, &sample);
 			float f;
 			if (sampler->oversample){
 				f = sampler->falloff_fnc(sqrt((double)(x * x + y * y)) * max_distance);
@@ -150,13 +134,11 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Vec2<i
 			color_multiply(&sample, f);
 			color_add(&result, &sample);
 			divider+=f;
-
 		}
 	}
-
-	color_multiply(&result, 1/divider);
+	if (divider > 0)
+		color_multiply(&result, 1 / divider);
 	color_copy(&result, color);
-
 	return 0;
 }
 
@@ -168,23 +150,13 @@ int sampler_get_oversample(struct Sampler *sampler) {
 	return sampler->oversample;
 }
 
-
-void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect){
-
-
-	int x=pointer.x, y=pointer.y;
-	int width=screen_size.x, height=screen_size.y;
-
+void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
+{
 	int left, right, top, bottom;
-
-	left = max_int(0, x - sampler->oversample);
-	right = min_int(width, x + sampler->oversample + 1);
-	top = max_int(0, y - sampler->oversample);
-	bottom = min_int(height, y + sampler->oversample + 1);
-	width = right - left;
-	height = bottom - top;
-
+	left = max_int(screen_rect.getLeft(), pointer.x - sampler->oversample);
+	right = min_int(screen_rect.getRight(), pointer.x + sampler->oversample + 1);
+	top = max_int(screen_rect.getTop(), pointer.y - sampler->oversample);
+	bottom = min_int(screen_rect.getBottom(), pointer.y + sampler->oversample + 1);
 	*rect = math::Rect2<int>(left, top, right, bottom);
-
 }
 

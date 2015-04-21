@@ -44,7 +44,7 @@ int sampler_get_oversample(struct Sampler *sampler);
 
 void sampler_destroy(struct Sampler *sampler);
 
-int sampler_get_color_sample(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Vec2<int>& offset, Color* color);
-void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect);
+int sampler_get_color_sample(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, Color* color);
+void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
 
 #endif /* SAMPLER_H_ */

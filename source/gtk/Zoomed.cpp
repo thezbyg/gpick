@@ -57,7 +57,7 @@ typedef struct GtkZoomedPrivate
 		math::Vec2<int> position;
 	}marks[2];
 	math::Vec2<int> pointer;
-	math::Vec2<int> screen_size;
+	math::Rect2<int> screen_rect;
 	bool fade;
 }GtkZoomedPrivate;
 
@@ -156,13 +156,12 @@ static double zoom_transformation(double value)
 void gtk_zoomed_get_current_screen_rect(GtkZoomed* zoomed, math::Rect2<int> *rect)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
-	gtk_zoomed_get_screen_rect(zoomed, ns->pointer, ns->screen_size, rect);
+	gtk_zoomed_get_screen_rect(zoomed, ns->pointer, ns->screen_rect, rect);
 }
-void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect)
+void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
 	gint32 x = pointer.x, y = pointer.y;
-	gint32 width = screen_size.x, height = screen_size.y;
 	gint32 left, right, top, bottom;
 	gint32 area_width = uint32_t(ns->width_height * zoom_transformation(ns->zoom));
 	if (!area_width) area_width = 1;
@@ -170,31 +169,28 @@ void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, mat
 	top = y - area_width / 2;
 	right = x + (area_width - area_width / 2);
 	bottom = y + (area_width - area_width / 2);
-	if (left < 0){
-		right += -left;
-		left = 0;
+	if (left < screen_rect.getLeft()){
+		right += -(left - screen_rect.getLeft());
+		left = screen_rect.getLeft();
 	}
-	if (right > width){
-		left -= right - width;
-		right = width;
+	if (right > screen_rect.getRight()){
+		left -= right - screen_rect.getRight();
+		right = screen_rect.getRight();
 	}
-	if (top < 0){
-		bottom += -top;
-		top = 0;
+	if (top < screen_rect.getTop()){
+		bottom += -(top - screen_rect.getTop());
+		top = screen_rect.getTop();
 	}
-	if (bottom > height){
-		top -= bottom - height;
-		bottom = height;
+	if (bottom > screen_rect.getBottom()){
+		top -= bottom - screen_rect.getBottom();
+		bottom = screen_rect.getBottom();
 	}
-	width	= right - left;
-	height	= bottom - top;
 	*rect = math::Rect2<int>(left, top, right, bottom);
 }
 math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Vec2<int>& position)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
 	gint32 x = ns->pointer.x, y = ns->pointer.y;
-	gint32 width = ns->screen_size.x, height = ns->screen_size.y;
 	gint32 left, right, top, bottom;
 	gint32 area_width = uint32_t(ns->width_height * zoom_transformation(ns->zoom));
 	if (!area_width) area_width = 1;
@@ -202,21 +198,21 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 	top = y - area_width / 2;
 	right = x + (area_width - area_width / 2);
 	bottom = y + (area_width - area_width / 2);
-	if (left < 0){
-		right += -left;
-		left=0;
+	if (left < ns->screen_rect.getLeft()){
+		right += -(left - ns->screen_rect.getLeft());
+		left = ns->screen_rect.getLeft();
 	}
-	if (right > width){
-		left -= right - width;
-		right = width;
+	if (right > ns->screen_rect.getRight()){
+		left -= right - ns->screen_rect.getRight();
+		right = ns->screen_rect.getRight();
 	}
-	if (top < 0){
-		bottom += -top;
-		top = 0;
+	if (top < ns->screen_rect.getTop()){
+		bottom += -(top - ns->screen_rect.getTop());
+		top = ns->screen_rect.getTop();
 	}
-	if (bottom > height){
-		top -= bottom - height;
-		bottom = height;
+	if (bottom > ns->screen_rect.getBottom()){
+		top -= bottom - ns->screen_rect.getBottom();
+		bottom = ns->screen_rect.getBottom();
 	}
 	gint32 xl = ((position.x - left) * ns->width_height) / area_width;
 	gint32 xh = (((position.x + 1) - left) * ns->width_height) / area_width;
@@ -225,13 +221,12 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 	math::Vec2<int> result((xl + xh) / 2.0, (yl + yh) / 2.0);
 	return result;
 }
-void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Vec2<int>& offset, GdkPixbuf *pixbuf)
+void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, GdkPixbuf *pixbuf)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
 	ns->pointer = pointer;
-	ns->screen_size = screen_size;
+	ns->screen_rect = screen_rect;
 	gint32 x = pointer.x, y = pointer.y;
-	gint32 width = screen_size.x, height = screen_size.y;
 	gint32 left, right, top, bottom;
 	gint32 area_width = uint32_t(ns->width_height * zoom_transformation(ns->zoom));
 	if (!area_width) area_width = 1;
@@ -239,21 +234,21 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Vec2<i
 	top = y - area_width / 2;
 	right = x + (area_width - area_width / 2);
 	bottom = y + (area_width - area_width / 2);
-	if (left < 0){
-		right += -left;
-		left=0;
+	if (left < ns->screen_rect.getLeft()){
+		right += -(left - ns->screen_rect.getLeft());
+		left = ns->screen_rect.getLeft();
 	}
-	if (right > width){
-		left -= right - width;
-		right = width;
+	if (right > ns->screen_rect.getRight()){
+		left -= right - ns->screen_rect.getRight();
+		right = ns->screen_rect.getRight();
 	}
-	if (top < 0){
-		bottom += -top;
-		top = 0;
+	if (top < ns->screen_rect.getTop()){
+		bottom += -(top - ns->screen_rect.getTop());
+		top = ns->screen_rect.getTop();
 	}
-	if (bottom > height){
-		top -= bottom - height;
-		bottom = height;
+	if (bottom > ns->screen_rect.getBottom()){
+		top -= bottom - ns->screen_rect.getBottom();
+		bottom = ns->screen_rect.getBottom();
 	}
 	gint32 xl = ((x - left) * ns->width_height) / area_width;
 	gint32 xh = (((x + 1) - left) * ns->width_height) / area_width;
@@ -263,8 +258,8 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Vec2<i
 	ns->point.y = (yl + yh) / 2.0;
 	ns->point_size.x = xh - xl;
 	ns->point_size.y = yh - yl;
-	width	= right - left;
-	height	= bottom - top;
+	int width = right - left;
+	int height = bottom - top;
 	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, ns->width_height, ns->width_height, -offset.x * ns->width_height / (double)width, -offset.y * ns->width_height / (double)height, ns->width_height / (double)width, ns->width_height / (double)height, GDK_INTERP_NEAREST);
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }

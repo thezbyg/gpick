@@ -68,8 +68,8 @@ void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height);
 void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vec2<int>& position);
 void gtk_zoomed_clear_mark(GtkZoomed *zoomed, int index);
 
-void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Vec2<int>& offset, GdkPixbuf* pixbuf);
-void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Vec2<int>& screen_size, math::Rect2<int> *rect);
+void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, GdkPixbuf* pixbuf);
+void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
 
 GType gtk_zoomed_get_type(void);
 

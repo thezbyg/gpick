@@ -76,27 +76,27 @@ static void get_color_sample(FloatingPickerArgs *args, bool update_widgets, Colo
 	GdkScreen *screen;
 	GdkModifierType state;
 	int x, y;
-	int width, height;
 	gdk_display_get_pointer(gdk_display_get_default(), &screen, &x, &y, &state);
-	width = gdk_screen_get_width(screen);
-	height = gdk_screen_get_height(screen);
+	int monitor = gdk_screen_get_monitor_at_point(screen, x, y);
+	GdkRectangle monitor_geometry;
+	gdk_screen_get_monitor_geometry(screen, monitor, &monitor_geometry);
 	Vec2<int> pointer(x,y);
-	Vec2<int> window_size(width, height);
+	Rect2<int> screen_rect(monitor_geometry.x, monitor_geometry.y, monitor_geometry.x + monitor_geometry.width, monitor_geometry.y + monitor_geometry.height);
 	screen_reader_reset_rect(args->gs->screen_reader);
 	Rect2<int> sampler_rect, zoomed_rect, final_rect;
-	sampler_get_screen_rect(args->gs->sampler, pointer, window_size, &sampler_rect);
+	sampler_get_screen_rect(args->gs->sampler, pointer, screen_rect, &sampler_rect);
 	screen_reader_add_rect(args->gs->screen_reader, screen, sampler_rect);
 	if (update_widgets){
-		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed), pointer, window_size, &zoomed_rect);
+		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed), pointer, screen_rect, &zoomed_rect);
 		screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
 	}
 	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
 	Vec2<int> offset;
-	offset = Vec2<int>(sampler_rect.getX()-final_rect.getX(), sampler_rect.getY()-final_rect.getY());
-	sampler_get_color_sample(args->gs->sampler, pointer, window_size, offset, c);
+	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
+	sampler_get_color_sample(args->gs->sampler, pointer, screen_rect, offset, c);
 	if (update_widgets){
-		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
-		gtk_zoomed_update(GTK_ZOOMED(args->zoomed), pointer, window_size, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
+		offset = Vec2<int>(zoomed_rect.getX() - final_rect.getX(), zoomed_rect.getY() - final_rect.getY());
+		gtk_zoomed_update(GTK_ZOOMED(args->zoomed), pointer, screen_rect, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
 	}
 }
 static gboolean update_display(FloatingPickerArgs *args)
