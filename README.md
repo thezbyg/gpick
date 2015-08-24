@@ -14,18 +14,18 @@ You can find a reference to Gpick's features on the
 
 To build Gpick on Linux, run:
 
-$ scons
-$ sudo scons install
+	$ scons
+	$ sudo scons install
 
 To remove an installed copy of Gpick, run:
 
-$ sudo scons -c install
+	$ sudo scons -c install
 
 To rebuild and install Gpick from Git, run:
 
-$ sudo scons -c install
-$ scons -c
-$ git pull --rebase
-$ scons
-$ sudo scons install
+	$ sudo scons -c install
+	$ scons -c
+	$ git pull --rebase
+	$ scons
+	$ sudo scons install
 
