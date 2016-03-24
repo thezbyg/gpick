@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -100,6 +100,7 @@ static void get_pixel(const guchar *pixels, int row_stride, int x, int y, Color*
 	color->rgb.green = p[1] / 255.0;
 	color->rgb.blue = p[2] / 255.0;
 }
+#define GDK_PIXBUF_VERSION_GE(a, b) (GDK_PIXBUF_MAJOR > a || (GDK_PIXBUF_MAJOR == a && GDK_PIXBUF_MINOR >= b))
 int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<int>& screen_rect, Vec2<int>& offset, Color* color)
 {
 	Color sample;
@@ -118,7 +119,11 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<
 	int center_x = x - left;
 	int center_y = y - top;
 	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
+#if GDK_PIXBUF_VERSION_GE(2, 32)
 	const guchar *pixels = gdk_pixbuf_read_pixels(pixbuf);
+#else
+	const guchar *pixels = gdk_pixbuf_get_pixels(pixbuf);
+#endif
 	float max_distance = 1 / sqrt(2 * pow((double)sampler->oversample, 2));
 	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
 		for (int y=-sampler->oversample; y <= sampler->oversample; ++y){
