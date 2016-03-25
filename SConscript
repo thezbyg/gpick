@@ -111,6 +111,9 @@ if not env['TOOLCHAIN'] == 'msvc':
 				CFLAGS = ['-Wall', '-O3'],
 				LINKFLAGS = ['-Wl,-as-needed', '-s'],
 				)
+		env.Append(
+			CPPFLAGS = ['-std=c++14'],
+		)
 
 	if env['BUILD_TARGET'] == 'win32':
 		env.Append(	

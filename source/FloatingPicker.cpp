@@ -29,7 +29,6 @@
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include "color_names/ColorNames.h"
-#include <signals/Signal.h>
 #include <gdk/gdkkeysyms.h>
 #include <string>
 #include <sstream>
@@ -48,8 +47,8 @@ typedef struct FloatingPickerArgs{
 	bool click_mode;
 	bool perform_custom_pick_action;
 	bool menu_button_pressed;
-	Gallant::Signal2<FloatingPicker, const Color &> custom_pick_action;
-	Gallant::Signal1<FloatingPicker> custom_done_action;
+	function<void(FloatingPicker, const Color&)> custom_pick_action;
+	function<void(FloatingPicker)> custom_done_action;
 }FloatingPickerArgs;
 
 class PickerColorNameAssigner: public ToolColorNameAssigner
@@ -182,7 +181,8 @@ static void finish_picking(FloatingPickerArgs *args)
 {
 	floating_picker_deactivate(args);
 	dynv_set_float(args->gs->params, "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
-	args->custom_done_action(args);
+	if (args->custom_done_action)
+		args->custom_done_action(args);
 }
 static void complete_picking(FloatingPickerArgs *args)
 {
@@ -190,7 +190,8 @@ static void complete_picking(FloatingPickerArgs *args)
 		Color c;
 		get_color_sample(args, false, &c);
 		if (args->perform_custom_pick_action){
-			args->custom_pick_action(args, c);
+			if (args->custom_pick_action)
+				args->custom_pick_action(args, c);
 		}else{
 			struct ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->colors, &c);
@@ -359,16 +360,16 @@ void floating_picker_free(FloatingPickerArgs *args)
 {
 	gtk_widget_destroy(args->window);
 }
-Gallant::Signal2<FloatingPicker, const Color &>& floating_picker_get_custom_pick_action(FloatingPickerArgs *args)
-{
-	return args->custom_pick_action;
-}
-Gallant::Signal1<FloatingPicker>& floating_picker_get_custom_done_action(FloatingPickerArgs *args)
-{
-	return args->custom_done_action;
-}
 void floating_picker_enable_custom_pick_action(FloatingPickerArgs *args)
 {
 	args->perform_custom_pick_action = true;
+}
+void floating_picker_set_custom_pick_action(FloatingPickerArgs *args, std::function<void(FloatingPicker, const Color&)> action)
+{
+	args->custom_pick_action = action;
+}
+void floating_picker_set_custom_done_action(FloatingPickerArgs *args, std::function<void(FloatingPicker)> action)
+{
+	args->custom_done_action = action;
 }
 

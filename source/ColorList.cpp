@@ -142,17 +142,16 @@ size_t color_list_get_count(struct ColorList *color_list)
 }
 int color_list_get_positions(struct ColorList *color_list)
 {
-	ColorList::iter i;
 	if (color_list->on_get_positions){
-		for (i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			(*i)->position = ~(uint32_t)0;
+		for (auto color: color_list->colors){
+			color->position_set = false;
 		}
 		color_list->on_get_positions(color_list);
 	}else{
-		uint32_t j = 0;
-		for (i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			(*i)->position = j;
-			j++;
+		size_t position = 0;
+		for (auto color: color_list->colors){
+			color->position = position++;
+			color->position_set = true;
 		}
 	}
 	return 0;

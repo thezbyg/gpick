@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,35 +16,40 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_OBJECT_H_
-#define GPICK_COLOR_OBJECT_H_
+#include "StringUtils.h"
+using namespace std;
 
-#include "Color.h"
-#include "ColorAction.h"
-#include "dynv/DynvSystem.h"
-#include <list>
+void split(const std::string &str, char separator, bool skip_empty, std::function<void(const std::string &)> function)
+{
+	size_t start = 0;
+	size_t separator_position = str.find(separator);
+	if (separator_position == string::npos){
+		if (skip_empty && str.empty()) return;
+		function(str);
+		return;
+	}
+	do{
+		if (!skip_empty || separator_position - start > 0)
+			function(str.substr(start, separator_position - start));
+		start = separator_position + 1;
+		separator_position = str.find(separator, start);
+	}while (separator_position != string::npos);
+	if (start != str.length()){
+		function(str.substr(start, str.length() - start));
+	}else if (!skip_empty){
+		function(string());
+	}
+}
+void stripLeadingTrailingChars(std::string &str, const std::string &strip_chars)
+{
+	if (str.empty()) return;
+	if (strip_chars.empty()) return;
+	size_t start = str.find_first_not_of(strip_chars);
+	size_t end = str.find_last_not_of(strip_chars);
+	if ((start == string::npos) || (end == string::npos)){
+		str.erase();
+		return;
+	}
+	str = str.substr(start, end - start + 1);
+}
 
-struct ColorObject;
-
-struct ColorObject{
-	uint32_t refcnt;
-	struct dynvSystem* params;
-	struct ColorList* childs; //color objects depending on current object
-	size_t position;
-	bool position_set;
-	struct ColorAction* action;
-	int recalculate;
-	int selected;
-	int visited;
-};
-
-struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map);
-int color_object_release(struct ColorObject *color_object);
-struct ColorObject* color_object_ref(struct ColorObject *color_object);
-int color_object_get_color(struct ColorObject *color_object, Color *color);
-int color_object_set_color(struct ColorObject *color_object, const Color *color);
-struct ColorObject* color_object_copy(struct ColorObject *color_object);
-const char* color_object_get_name(struct ColorObject *color_object);
-void color_object_set_name(struct ColorObject *color_object, const char *name);
-
-#endif /* GPICK_COLOR_OBJECT_H_ */

@@ -40,6 +40,7 @@ typedef struct Converter{
 	char* human_readable;
 	bool copy, serialize_available;
 	bool paste, deserialize_available;
+	Converters *converters;
 }Converter;
 
 Converters* converters_init(struct dynvSystem* params);
@@ -58,7 +59,8 @@ typedef struct ConverterSerializePosition{
 }ConverterSerializePosition;
 
 int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
-int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality);
+int converters_color_serialize(Converter* converter, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
+int converters_color_deserialize(Converters* converters, const char* function, const char* text, struct ColorObject* color_object, float* conversion_quality);
 int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type);
 int converters_reorder(Converters *converters, const char** priority_names, uint32_t priority_names_size);
 

@@ -27,7 +27,8 @@ struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map)
 	color_object->action = NULL;
 	color_object->refcnt = 0;
 	color_object->selected = 0;
-	color_object->position = ~(uint32_t)0;
+	color_object->position = 0;
+	color_object->position_set = false;
 	color_object->recalculate = 1;
 	if (handler_map){
 		color_object->params = dynv_system_create(handler_map);
@@ -84,5 +85,13 @@ struct ColorObject* color_object_copy(struct ColorObject *color_object)
 	new_color_object->selected = color_object->selected;
 	new_color_object->visited = color_object->visited;
 	return new_color_object;
+}
+const char* color_object_get_name(struct ColorObject *color_object)
+{
+	return dynv_get_string_wd(color_object->params, "name", "");
+}
+void color_object_set_name(struct ColorObject *color_object, const char *name)
+{
+	return dynv_set_string(color_object->params, "name", name);
 }
 

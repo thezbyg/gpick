@@ -26,6 +26,7 @@
 #include "GenerateScheme.h"
 #include "ColorPicker.h"
 #include "LayoutPreview.h"
+#include "ImportExport.h"
 #include "uiAbout.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
@@ -345,38 +346,8 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args)
 	app_update_program_name(args);
 }
 
-enum FileType{
-	GPA,
-	GPL,
-	ASE,
-	UNKNOWN,
-};
-
-static FileType get_file_type_from_ext(const char *filename)
-{
-	const struct{
-		FileType type;
-		const char *extension;
-	}extensions[] = {
-		{GPA, ".gpa"},
-		{GPL, ".gpl"},
-		{ASE, ".ase"},
-		{UNKNOWN, 0},
-	};
-	const char *ext = g_strrstr(filename, ".");
-	if (ext){
-		for (int i = 0; extensions[i].type != UNKNOWN; ++i){
-			if (g_ascii_strcasecmp(ext, extensions[i].extension) == 0){
-				return extensions[i].type;
-			}
-		}
-	}
-	return UNKNOWN;
-}
-
 int app_save_file(AppArgs *args, const char *filename)
 {
-	int return_value = -1;
 	if (filename == NULL){
 		if (args->current_filename){
 			filename = args->current_filename;
@@ -385,20 +356,23 @@ int app_save_file(AppArgs *args, const char *filename)
 		}
 	}
 	FileType filetype;
-	switch (filetype = get_file_type_from_ext(filename)){
-		case GPL:
-			return_value = palette_export_gpl(args->gs->colors, filename, false);
+	ImportExport import_export(args->gs->colors, filename);
+	bool return_value = false;
+	switch (filetype = ImportExport::getFileType(filename)){
+		case FileType::gpl:
+			return_value = import_export.exportGPL();
 			break;
-		case ASE:
-			return_value = palette_export_ase(args->gs->colors, filename, false);
+		case FileType::ase:
+			return_value = import_export.exportASE();
 			break;
-		case UNKNOWN:
-		case GPA:
-			return_value = palette_file_save(filename, args->gs->colors);
+		case FileType::gpa:
+			return_value = import_export.exportGPA();
 			break;
+		default:
+			return_value = import_export.exportGPA();
 	}
-	if (return_value == 0){
-		if (filetype == GPA || filetype == UNKNOWN){
+	if (return_value){
+		if (filetype == FileType::gpa || filetype == FileType::unknown){
 			args->imported = false;
 		}else{
 			args->imported = true;
@@ -419,25 +393,27 @@ int app_save_file(AppArgs *args, const char *filename)
 
 int app_load_file(AppArgs *args, const char *filename, bool autoload)
 {
-	int return_value = -1;
 	bool imported = false;
-	switch (get_file_type_from_ext(filename)){
-		case GPL:
-			return_value = palette_import_gpl(args->gs->colors, filename);
+	bool return_value = false;
+	ImportExport import_export(args->gs->colors, filename);
+	switch (ImportExport::getFileType(filename)){
+		case FileType::gpl:
+			return_value = import_export.importGPL();
 			imported = true;
 			break;
-		case ASE:
-			return_value = palette_import_ase(args->gs->colors, filename);
+		case FileType::ase:
+			return_value = import_export.importASE();
 			imported = true;
 			break;
-		case GPA:
-		case UNKNOWN:
-			return_value = palette_file_load(filename, args->gs->colors);
+		case FileType::gpa:
+			return_value = import_export.importGPA();
 			break;
+		default:
+			return_value = import_export.importGPA();
 	}
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename = NULL;
-	if (return_value == 0){
+	if (return_value){
 		if (imported){
 			args->imported = true;
 		}else{
@@ -511,17 +487,17 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args)
 	}
 }
 
-static void add_file_filters (GtkWidget *dialog, FileType preselect)
+static void add_file_filters(GtkWidget *dialog, FileType preselect)
 {
 	const struct{
 		FileType type;
 		const char *label;
 		const char *filter;
 	}filters[] = {
-		{GPA, _("Gpick Palette (*.gpa)"), "*.gpa"},
-		{GPL, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl"},
-		{ASE, _("Adobe Swatch Exchange (*.ase)"), "*.ase"},
-		{UNKNOWN, 0, 0},
+		{FileType::gpa, _("Gpick Palette (*.gpa)"), "*.gpa"},
+		{FileType::gpl, _("GIMP/Inkscape Palette (*.gpl)"), "*.gpl"},
+		{FileType::ase, _("Adobe Swatch Exchange (*.ase)"), "*.ase"},
+		{FileType::unknown, 0, 0},
 	};
 	GtkFileFilter *filter;
 	filter = gtk_file_filter_new();
@@ -530,12 +506,12 @@ static void add_file_filters (GtkWidget *dialog, FileType preselect)
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All supported formats"));
-	for (gint i = 0; filters[i].type != UNKNOWN; ++i) {
+	for (gint i = 0; filters[i].type != FileType::unknown; ++i) {
 		gtk_file_filter_add_pattern(filter, filters[i].filter);
 	}
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
-	for (gint i = 0; filters[i].type != UNKNOWN; ++i) {
+	for (gint i = 0; filters[i].type != FileType::unknown; ++i) {
 		filter = gtk_file_filter_new();
 		gtk_file_filter_set_name(filter, filters[i].label);
 		gtk_file_filter_add_pattern(filter, filters[i].filter);
@@ -557,7 +533,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	const gchar* default_path = dynv_get_string_wd(args->params, "open.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	add_file_filters(dialog, UNKNOWN);
+	add_file_filters(dialog, FileType::unknown);
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -595,7 +571,7 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
 	const gchar* default_path = dynv_get_string_wd(args->params, "save.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	add_file_filters(dialog, UNKNOWN);
+	add_file_filters(dialog, FileType::unknown);
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -1471,17 +1447,18 @@ static int color_list_on_clear(struct ColorList* color_list)
 	return 0;
 }
 
-static PaletteListCallbackReturn callback_color_list_on_get_positions(struct ColorObject* color_object, void *userdata)
+static PaletteListCallbackReturn callback_color_list_on_get_positions(struct ColorObject* color_object, size_t *position)
 {
-	color_object->position = *((unsigned long*)userdata);
-	(*((unsigned long*)userdata))++;
+	color_object->position = *position;
+	color_object->position_set = true;
+	(*position)++;
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
 static int color_list_on_get_positions(struct ColorList* color_list)
 {
-	unsigned long item = 0;
-	palette_list_foreach(((AppArgs*)color_list->userdata)->color_list, callback_color_list_on_get_positions, &item );
+	size_t position = 0;
+	palette_list_foreach(((AppArgs*)color_list->userdata)->color_list, (PaletteListCallback)callback_color_list_on_get_positions, &position);
 	return 0;
 }
 
@@ -1875,8 +1852,12 @@ int app_run(AppArgs *args)
 {
 	if (args->options.single_color_pick_mode){
 		FloatingPickerAction pick_action(args);
-		floating_picker_get_custom_pick_action(args->floating_picker).Connect(&pick_action, &FloatingPickerAction::colorPicked);
-		floating_picker_get_custom_done_action(args->floating_picker).Connect(&pick_action, &FloatingPickerAction::done);
+		floating_picker_set_custom_pick_action(args->floating_picker, [&pick_action](FloatingPicker fp, const Color &color){
+			pick_action.colorPicked(fp, color);
+		});
+		floating_picker_set_custom_done_action(args->floating_picker, [&pick_action](FloatingPicker fp){
+			pick_action.done(fp);
+		});
 		floating_picker_enable_custom_pick_action(args->floating_picker);
 		floating_picker_activate(args->floating_picker, false, true);
 		gtk_main();

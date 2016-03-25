@@ -21,8 +21,8 @@
 
 #include "ColorSource.h"
 #include "GlobalState.h"
-#include <signals/Signal.h>
 #include <gtk/gtk.h>
+#include <functional>
 
 typedef struct FloatingPickerArgs* FloatingPicker;
 FloatingPicker floating_picker_new(GlobalState *gs);
@@ -30,8 +30,8 @@ void floating_picker_set_picker_source(FloatingPicker fp, ColorSource* color_sou
 void floating_picker_free(FloatingPicker fp);
 void floating_picker_activate(FloatingPicker fp, bool hide_on_mouse_release, bool single_pick_mode);
 void floating_picker_deactivate(FloatingPicker fp);
-Gallant::Signal2<FloatingPicker, const Color &>& floating_picker_get_custom_pick_action(FloatingPicker fp);
-Gallant::Signal1<FloatingPicker>& floating_picker_get_custom_done_action(FloatingPickerArgs *args);
+void floating_picker_set_custom_pick_action(FloatingPicker fp, std::function<void(FloatingPicker, const Color&)> action);
+void floating_picker_set_custom_done_action(FloatingPicker fp, std::function<void(FloatingPicker)> action);
 void floating_picker_enable_custom_pick_action(FloatingPicker fp);
 
 #endif /* GPICK_FLOATING_PICKER_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,18 +20,10 @@
 #define UIEXPORT_H_
 
 #include <gtk/gtk.h>
-#include <stdint.h>
-#include "GlobalState.h"
-
-int32_t palette_export_gpl(struct ColorList *color_list, const gchar* filename, gboolean selected);
-int32_t palette_import_gpl(struct ColorList *color_list, const gchar* filename);
-int32_t palette_export_ase(struct ColorList *color_list, const gchar* filename, gboolean selected);
-int32_t palette_import_ase(struct ColorList *color_list, const gchar* filename);
-int32_t palette_export_css(struct ColorList *color_list, const gchar* filename, gboolean selected);
-
-int dialog_export_show(GtkWindow* parent, struct ColorList *selected_color_list, gboolean selected, GlobalState *gs);
-
-int dialog_import_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState *gs);
-
+struct GlobalState;
+struct ColorList;
+int dialog_export_show(GtkWindow* parent, ColorList *selected_color_list, bool selected, GlobalState *gs);
+int dialog_import_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState *gs);
 
 #endif /* UIEXPORT_H_ */
+

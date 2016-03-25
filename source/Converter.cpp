@@ -66,7 +66,7 @@ Converters::~Converters()
 	}
 	converters.clear();
 }
-int converters_color_deserialize(Converters* converters, const char* function, char* text, struct ColorObject* color_object, float* conversion_quality)
+int converters_color_deserialize(Converters* converters, const char* function, const char* text, struct ColorObject* color_object, float* conversion_quality)
 {
 	lua_State* L = converters->L;
 	int status;
@@ -145,6 +145,49 @@ int converters_color_serialize(Converters* converters, const char* function, str
 	lua_settop(L, stack_top);
 	return -1;
 }
+int converters_color_serialize(Converter* converter, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result)
+{
+	lua_State* L = converter->converters->L;
+	int status;
+	int stack_top = lua_gettop(L);
+	lua_getglobal(L, "gpick");
+	int gpick_namespace = lua_gettop(L);
+	if (lua_type(L, -1) != LUA_TNIL){
+		lua_pushstring(L, "color_serialize");
+		lua_gettable(L, gpick_namespace);
+		if (lua_type(L, -1) != LUA_TNIL){
+			lua_pushstring(L, converter->function_name);
+			lua_pushcolorobject (L, color_object);
+			lua_pushdynvsystem(L, converter->converters->params);
+			lua_newtable(L);
+			lua_pushboolean(L, position.first);
+			lua_setfield(L, -2, "first");
+			lua_pushboolean(L, position.last);
+			lua_setfield(L, -2, "last");
+			lua_pushinteger(L, position.index);
+			lua_setfield(L, -2, "index");
+			lua_pushinteger(L, position.count);
+			lua_setfield(L, -2, "count");
+			status = lua_pcall(L, 4, 1, 0);
+			dynv_system_release(converter->converters->params);
+			if (status == 0){
+				if (lua_type(L, -1) == LUA_TSTRING){
+					result = luaL_checkstring(L, -1);
+					lua_settop(L, stack_top);
+					return 0;
+				}else{
+					cerr << "gpick.color_serialize: returned not a string value \"" << converter->function_name << "\"" << endl;
+				}
+			}else{
+				cerr << "gpick.color_serialize: " << lua_tostring(L, -1) << endl;
+			}
+		}else{
+			cerr << "gpick.color_serialize: no such function \"" << converter->function_name << "\"" <<endl;
+		}
+	}
+	lua_settop(L, stack_top);
+	return -1;
+}
 Converters* converters_init(struct dynvSystem* params)
 {
 	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
@@ -164,6 +207,7 @@ Converters* converters_init(struct dynvSystem* params)
 		while (lua_next(L, converters_table) != 0){
 			if (lua_type(L, -2) == LUA_TSTRING){
 				Converter *converter = new Converter;
+				converter->converters = converters;
 				converter->function_name = g_strdup(lua_tostring(L, -2));
 				converters->converters[converter->function_name] = converter;
 				converters->all_converters.push_back(converter);

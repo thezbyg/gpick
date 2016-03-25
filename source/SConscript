@@ -39,6 +39,8 @@ objects.append(SConscript(['color_names/SConscript'], exports='env'))
 
 if env['TOOLCHAIN'] == 'msvc':
 	local_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'expat2.1', 'pango-1.0', 'pangocairo-1.0', 'intl'])
+else:
+	local_env.Append(LIBS = ['boost_filesystem', 'boost_system'])
 
 if local_env['BUILD_TARGET'] == 'win32':
 	if not (env['TOOLCHAIN'] == 'msvc'):
