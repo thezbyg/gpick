@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+	<id>gpick.desktop</id>
+	<metadata_license>CC0-1.0</metadata_license>
+	<project_license>BSD-3-Clause</project_license>
+	<name>Gpick</name>
+	<summary>Advanced color picker and palette editor</summary>
+	<description>
+		<p>
+			Gpick is an application that allows you to sample any color from anywhere
+			on the desktop, and use it to create palettes (i.e. collections of colors)
+			for use in graphic design applications.
+			Gpick also has other features that help in the creation of color palettes,
+			such as: the ability to create a palette from an imported image, automatic
+			naming of colors, and a scheme generator.
+		</p>
+	</description>
+	<screenshots>
+		<screenshot type="default">
+			<image>http://static.gpick.org/image/appdata-screenshot.png</image>
+			<caption>The main window showing the application in action</caption>
+		</screenshot>
+	</screenshots>
+	<url type="homepage">http://www.gpick.org</url>
+	<url type="bugtracker">https://github.com/thezbyg/gpick</url>
+	<update_contact>albertas.vysniauskas@gpick.org</update_contact>
+</component>

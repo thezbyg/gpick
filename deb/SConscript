@@ -13,14 +13,14 @@ Import('*')
 
 DEBNAME = "gpick"
 DEBVERSION = str(env['GPICK_BUILD_VERSION'])+"-1"
-DEBMAINT = "Albertas Vyšniauskas <thezbyg@gmail.com>"
+DEBMAINT = "Albertas Vyšniauskas <albertas.vysniauskas@gpick.org>"
 DEBARCH = env['DEBARCH']
 DEBDEPENDS = "libgtk2.0-0 (>= 2.24), libc6 (>= 2.13), liblua5.2-0 (>= 5.2), libcairo2 (>=1.8), libglib2.0-0 (>=2.24)"
 DEBPRIORITY = "optional"
 DEBSECTION = "graphics"
 DEBDESC = "Advanced color picker"
-DEBDESCLONG = """ gpick is a program used to pick colors
- from anythere on the screen, mix them to
+DEBDESCLONG = """ Gpick is a program used to pick colors
+ from anywhere on the screen, mix them to
  get new colors, generate shades and tints
  and export palettes to common file formats
  or simply copy them to the clipboard
