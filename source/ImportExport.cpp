@@ -387,6 +387,7 @@ bool ImportExport::exportHTML()
 		}
 		f << "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>"
 			<< path.filename().string() << "</title>" << endl
+			<< "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << endl
 			<< "<style>" << endl
 			<< "div#colors div{float: left; width: " << item_size << "px; height: " << item_size << "px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}" << endl
 			<< "div#colors div span{font-weight: bold; cursor: pointer}" << endl
