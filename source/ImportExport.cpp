@@ -52,7 +52,8 @@ ImportExport::ImportExport(ColorList *color_list, const char* filename, GlobalSt
 	m_filename(filename),
 	m_item_size(ItemSize::medium),
 	m_background(Background::none),
-	m_gs(gs)
+	m_gs(gs),
+	m_include_color_names(true)
 {
 }
 void ImportExport::setConverter(Converter *converter)
@@ -104,6 +105,10 @@ void ImportExport::setBackground(const char *background)
 		m_background = Background::controllable;
 	else
 		m_background = Background::none;
+}
+void ImportExport::setIncludeColorNames(bool include_color_names)
+{
+	m_include_color_names = include_color_names;
 }
 static void gplColor(ColorObject* color_object, ostream &stream)
 {
@@ -313,16 +318,18 @@ bool ImportExport::exportCSS()
 	}
 	return false;
 }
-static void htmlColor(ColorObject* color_object, ostream &stream)
+static void htmlColor(ColorObject* color_object, bool include_color_name, ostream &stream)
 {
 	Color color, text_color;
 	color_object_get_color(color_object, &color);
 	color_get_contrasting(&color, &text_color);
-	string name = color_object_get_name(color_object);
-	escapeHtmlInplace(name);
 	stream << "<div style=\"background-color:" << HtmlRGB{&color} << "; color:" << HtmlRGB{&text_color} << "\">";
-	if (!name.empty())
-		stream << name << ":<br/>";
+	if (include_color_name){
+		string name = color_object_get_name(color_object);
+		escapeHtmlInplace(name);
+		if (!name.empty())
+			stream << name << ":<br/>";
+	}
 	stream << HtmlHEX{&color} << "</div>";
 }
 static string getHtmlColor(ColorObject* color_object)
@@ -405,7 +412,7 @@ bool ImportExport::exportHTML()
 			f << nouppercase;
 		}
 		for (auto color: ordered){
-			htmlColor(color, f);
+			htmlColor(color, m_include_color_names, f);
 			if (!f.good()){
 				f.close();
 				return false;

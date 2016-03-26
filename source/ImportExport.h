@@ -61,6 +61,7 @@ class ImportExport
 		void setItemSize(const char *item_size);
 		void setBackground(Background background);
 		void setBackground(const char *background);
+		void setIncludeColorNames(bool include_color_names);
 		bool exportGPL();
 		bool importGPL();
 		bool exportASE();
@@ -83,6 +84,7 @@ class ImportExport
 		ItemSize m_item_size;
 		Background m_background;
 		GlobalState *m_gs;
+		bool m_include_color_names;
 };
 
 #endif /* GPICK_IMPORT_EXPORT_H_ */

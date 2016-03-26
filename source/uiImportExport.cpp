@@ -45,7 +45,7 @@ class ImportExportDialogOptions
 {
 	public:
 		GtkWidget *m_dialog;
-		GtkWidget *m_converters, *m_item_sizes, *m_backgrounds;
+		GtkWidget *m_converters, *m_item_sizes, *m_backgrounds, *m_include_color_names;
 		GlobalState *m_gs;
 		ImportExportDialogOptions(GtkWidget *dialog, GlobalState *gs)
 		{
@@ -93,18 +93,27 @@ class ImportExportDialogOptions
 			};
 			m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(gs->params, "gpick.import.background", "none"));
 
+			m_include_color_names = newCheckbox(_("Include color names"), dynv_get_bool_wd(m_gs->params, "gpick.import.include_color_names", true));
+
 			afterFilterChanged();
 			int y = 0;
 			GtkWidget *table = gtk_table_new(2, 3, false);
 			addOption(_("Converter:"), m_converters, y, table);
 			addOption(_("Item size:"), m_item_sizes, y, table);
 			addOption(_("Background:"), m_backgrounds, y, table);
+			addOption(m_include_color_names, y, table);
 			gtk_widget_show_all(table);
 			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog), table);
 		}
 		GtkWidget *addOption(const char *label, GtkWidget *widget, int &y, GtkWidget *table)
 		{
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(label, 0, 0.5, 0, 0), 0, 1, y, y + 1, GTK_FILL, GTK_FILL, 3, 1);
+			gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
+			y++;
+			return widget;
+		}
+		GtkWidget *addOption(GtkWidget *widget, int &y, GtkWidget *table)
+		{
 			gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
 			y++;
 			return widget;
@@ -141,6 +150,10 @@ class ImportExportDialogOptions
 		{
 			return getOptionValue(m_backgrounds);
 		}
+		bool isIncludeColorNamesEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_include_color_names));
+		}
 		void saveState()
 		{
 			Converter *converter = getSelectedConverter();
@@ -150,6 +163,7 @@ class ImportExportDialogOptions
 			dynv_set_string(m_gs->params, "gpick.import.item_size", item_size.c_str());
 			string background = getSelectedBackground();
 			dynv_set_string(m_gs->params, "gpick.import.background", background.c_str());
+			dynv_set_bool(m_gs->params, "gpick.import.include_color_names", isIncludeColorNamesEnabled());
 		}
 		GtkWidget* newConverterList()
 		{
@@ -183,6 +197,12 @@ class ImportExportDialogOptions
 			}
 			g_object_unref(store);
 			return list;
+		}
+		GtkWidget *newCheckbox(const char *label, bool value)
+		{
+			GtkWidget *widget = gtk_check_button_new_with_label(label);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
+			return widget;
 		}
 		void afterFilterChanged()
 		{
@@ -354,6 +374,7 @@ bool ImportExportDialog::showExport()
 					import_export.setItemSize(item_size.c_str());
 					string background = import_export_dialog_options.getSelectedBackground();
 					import_export.setBackground(background.c_str());
+					import_export.setIncludeColorNames(import_export_dialog_options.isIncludeColorNamesEnabled());
 					if (import_export.exportType(formats[i].type)){
 						finished = true;
 					}else{
