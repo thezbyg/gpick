@@ -66,16 +66,17 @@ typedef struct ColorPickerArgs{
 	GtkWidget *swatch_display;
 	GtkWidget *zoomed_display;
 	GtkWidget *color_code;
-	GtkWidget* hsl_control;
-	GtkWidget* hsv_control;
-	GtkWidget* rgb_control;
-	GtkWidget* cmyk_control;
-	GtkWidget* lab_control;
-	GtkWidget* lch_control;
-	GtkWidget* color_name;
-	GtkWidget* statusbar;
-	GtkWidget* contrastCheck;
-	GtkWidget* contrastCheckMsg;
+	GtkWidget *hsl_control;
+	GtkWidget *hsv_control;
+	GtkWidget *rgb_control;
+	GtkWidget *cmyk_control;
+	GtkWidget *lab_control;
+	GtkWidget *lch_control;
+	GtkWidget *color_name;
+	GtkWidget *statusbar;
+	GtkWidget *contrastCheck;
+	GtkWidget *contrastCheckMsg;
+	GtkWidget *pick_button;
 	guint timeout_source_id;
 	FloatingPicker floating_picker;
 	struct dynvSystem *params;
@@ -248,8 +249,17 @@ static void on_swatch_color_activated(GtkWidget *widget, gpointer item)
 }
 static void on_swatch_center_activated(GtkWidget *widget, gpointer item)
 {
-	ColorPickerArgs* args=(ColorPickerArgs*)item;
+	ColorPickerArgs* args = (ColorPickerArgs*)item;
 	floating_picker_activate(args->floating_picker, true, false);
+}
+static void on_picker_toggled(GtkWidget *widget, gpointer item)
+{
+	ColorPickerArgs* args = (ColorPickerArgs*)item;
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))){
+		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
+	}else{
+		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), false);
+	}
 }
 static void on_swatch_color_edit(GtkWidget *widget, gpointer item)
 {
@@ -353,28 +363,24 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 	}
 	return false;
 }
-
-
-
-static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointer data) {
-	ColorPickerArgs* args=(ColorPickerArgs*)data;
-
-
+static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, gpointer data)
+{
+	ColorPickerArgs* args = (ColorPickerArgs*)data;
 	if (event->in){
 		gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"), _("Press Spacebar to sample color under mouse pointer"));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->pick_button), true);
+		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
 	}else{
 		gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->pick_button), false);
+		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), false);
 	}
 	return FALSE;
 }
-
-
-static gboolean on_key_up (GtkWidget *widget, GdkEventKey *event, gpointer data)
+static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
-
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
-
 	switch(event->keyval)
 	{
 		case GDK_KEY_m:
@@ -1005,8 +1011,15 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	main_hbox = gtk_hbox_new(false, 5);
 
-		vbox = gtk_vbox_new(false, 5);
+		vbox = gtk_vbox_new(false, 0);
 		gtk_box_pack_start(GTK_BOX(main_hbox), vbox, false, false, 0);
+
+			widget = gtk_toggle_button_new_with_label(_("Pick color"));
+			g_signal_connect(G_OBJECT(widget), "toggled", G_CALLBACK(on_picker_toggled), args);
+			g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_key_up), args);
+			g_signal_connect(G_OBJECT(widget), "focus-out-event", G_CALLBACK(on_swatch_focus_change), args);
+			gtk_box_pack_start(GTK_BOX(vbox), widget, false, false, 0);
+			args->pick_button = widget;
 
 			widget = gtk_swatch_new();
 			gtk_box_pack_start(GTK_BOX(vbox), widget, false, false, 0);
