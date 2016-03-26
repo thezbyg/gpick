@@ -330,7 +330,7 @@ static void htmlColor(ColorObject* color_object, bool include_color_name, ostrea
 		if (!name.empty())
 			stream << name << ":<br/>";
 	}
-	stream << HtmlHEX{&color} << "</div>";
+	stream << "<span>" << HtmlHEX{&color} << "</span>" << "</div>";
 }
 static string getHtmlColor(ColorObject* color_object)
 {
@@ -389,6 +389,8 @@ bool ImportExport::exportHTML()
 			<< path.filename().string() << "</title>" << endl
 			<< "<style>" << endl
 			<< "div#colors div{float: left; width: " << item_size << "px; height: " << item_size << "px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}" << endl
+			<< "div#colors div span{font-weight: bold; cursor: pointer}" << endl
+			<< "div#colors div span:hover{text-decoration: underline}" << endl
 			<< "html{" << background << "}" << endl
 			<< "input{margin-left: 1em;}" << endl
 			<< "</style>"
@@ -419,6 +421,10 @@ bool ImportExport::exportHTML()
 			}
 		}
 		f << "</div>" << endl;
+		f << "<script>" << endl
+			<< "function selectText(element){ if (document.selection){ var range = document.body.createTextRange(); range.moveToElementText(element); range.select(); }else if (window.getSelection){ var range = document.createRange(); range.selectNode(element); window.getSelection().addRange(range); } }" << endl
+			<< "document.getElementById('colors').addEventListener('click', function(event){ if (event.target.tagName.toLowerCase() == 'span'){ event.preventDefault(); selectText(event.target); document.execCommand('copy'); }});" << endl
+			<< "</script>";
 		f << "</body></html>" << endl;
 		if (!f.good()){
 			f.close();
