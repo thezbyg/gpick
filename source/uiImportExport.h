@@ -16,14 +16,24 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIEXPORT_H_
-#define UIEXPORT_H_
+#ifndef GPICK_UI_IMPORT_EXPORT_H_
+#define GPICK_UI_IMPORT_EXPORT_H_
 
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorList;
-int dialog_export_show(GtkWindow* parent, ColorList *selected_color_list, bool selected, GlobalState *gs);
-int dialog_import_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState *gs);
+class ImportExportDialog
+{
+	public:
+		ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs);
+		~ImportExportDialog();
+		bool showImport();
+		bool showExport();
+	private:
+		GtkWindow *m_parent;
+		ColorList *m_color_list;
+		GlobalState *m_gs;
+};
 
-#endif /* UIEXPORT_H_ */
+#endif /* GPICK_UI_IMPORT_EXPORT_H_ */
 

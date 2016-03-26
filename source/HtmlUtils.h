@@ -16,75 +16,30 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IMPORT_EXPORT_H_
-#define GPICK_IMPORT_EXPORT_H_
+#ifndef GPICK_HTML_UTILS_H_
+#define GPICK_HTML_UTILS_H_
 
-struct ColorList;
-struct Converter;
-struct Converters;
-struct GlobalState;
-enum class FileType
+#include <string>
+#include <iostream>
+std::string &escapeHtmlInplace(std::string &str);
+std::string escapeHtml(const std::string &str);
+
+struct Color;
+struct HtmlRGB
 {
-	gpa,
-	gpl,
-	ase,
-	txt,
-	mtl,
-	css,
-	html,
-	unknown,
+	Color *color;
 };
-class ImportExport
+struct HtmlHEX
 {
-	public:
-		enum class ItemSize
-		{
-			small,
-			medium,
-			big,
-			controllable,
-		};
-		enum class Background
-		{
-			none,
-			white,
-			gray,
-			black,
-			first_color,
-			last_color,
-			controllable,
-		};
-		ImportExport(ColorList *color_list, const char* filename, GlobalState *gs);
-		void setConverter(Converter *converter);
-		void setConverters(Converters *converters);
-		void setItemSize(ItemSize item_size);
-		void setItemSize(const char *item_size);
-		void setBackground(Background background);
-		void setBackground(const char *background);
-		bool exportGPL();
-		bool importGPL();
-		bool exportASE();
-		bool importASE();
-		bool exportCSS();
-		bool importTXT();
-		bool exportTXT();
-		bool importGPA();
-		bool exportGPA();
-		bool exportMTL();
-		bool exportHTML();
-		bool importType(FileType type);
-		bool exportType(FileType type);
-		static FileType getFileType(const char *filename);
-	private:
-		ColorList *m_color_list;
-		Converter *m_converter;
-		Converters *m_converters;
-		const char* m_filename;
-		ItemSize m_item_size;
-		Background m_background;
-		GlobalState *m_gs;
+	Color *color;
 };
+struct HtmlHSL
+{
+	Color *color;
+};
+std::ostream& operator<<(std::ostream& os, const HtmlRGB color);
+std::ostream& operator<<(std::ostream& os, const HtmlHEX color);
+std::ostream& operator<<(std::ostream& os, const HtmlHSL color);
 
-#endif /* GPICK_IMPORT_EXPORT_H_ */
-
+#endif /* GPICK_HTML_UTILS_H_ */
 

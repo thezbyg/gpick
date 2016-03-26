@@ -4,6 +4,9 @@
 #include "Endian.h"
 #include "Internationalisation.h"
 #include "StringUtils.h"
+#include "HtmlUtils.h"
+#include "GlobalStateStruct.h"
+#include "DynvHelpers.h"
 #include "version/Version.h"
 #include <glib.h>
 #include <fstream>
@@ -42,11 +45,14 @@ static bool getOrderedColors(ColorList *color_list, vector<ColorObject*> &ordere
 		return true;
 	}
 }
-ImportExport::ImportExport(ColorList *color_list, const char* filename):
+ImportExport::ImportExport(ColorList *color_list, const char* filename, GlobalState *gs):
 	m_color_list(color_list),
 	m_converter(nullptr),
 	m_converters(nullptr),
-	m_filename(filename)
+	m_filename(filename),
+	m_item_size(ItemSize::medium),
+	m_background(Background::none),
+	m_gs(gs)
 {
 }
 void ImportExport::setConverter(Converter *converter)
@@ -56,6 +62,48 @@ void ImportExport::setConverter(Converter *converter)
 void ImportExport::setConverters(Converters *converters)
 {
 	m_converters = converters;
+}
+void ImportExport::setItemSize(ItemSize item_size)
+{
+	m_item_size = item_size;
+}
+void ImportExport::setItemSize(const char *item_size)
+{
+	string v(item_size);
+	if (v == "small")
+		m_item_size = ItemSize::small;
+	else if (v == "medium")
+		m_item_size = ItemSize::medium;
+	else if (v == "big")
+		m_item_size = ItemSize::big;
+	else if (v == "controllable")
+		m_item_size = ItemSize::controllable;
+	else
+		m_item_size = ItemSize::medium;
+}
+void ImportExport::setBackground(Background background)
+{
+	m_background = background;
+}
+void ImportExport::setBackground(const char *background)
+{
+	string v(background);
+	if (v == "none")
+		m_background = Background::none;
+	else if (v == "white")
+		m_background = Background::white;
+	else if (v == "gray")
+		m_background = Background::gray;
+	else if (v == "black")
+		m_background = Background::black;
+	else if (v == "first_color")
+		m_background = Background::first_color;
+	else if (v == "last_color")
+		m_background = Background::last_color;
+	else if (v == "controllable")
+		m_background = Background::controllable;
+	else
+		m_background = Background::none;
 }
 static void gplColor(ColorObject* color_object, ostream &stream)
 {
@@ -231,22 +279,15 @@ bool ImportExport::importTXT()
 }
 static void cssColor(ColorObject* color_object, ostream &stream)
 {
-	using boost::math::iround;
 	Color color, hsl;
 	color_object_get_color(color_object, &color);
 	const char* name = color_object_get_name(color_object);
-	int r, g, b, h, s, l;
-	r = iround(color.rgb.red * 255);
-	g = iround(color.rgb.green * 255);
-	b = iround(color.rgb.blue * 255);
 	color_rgb_to_hsl(&color, &hsl);
-	h = iround(hsl.hsl.hue * 360);
-	s = iround(hsl.hsl.saturation * 100);
-	l = iround(hsl.hsl.lightness * 100);
 	stream << " * " << name
-		<< ": #" << hex << r << g << b
-		<< ", rgb(" << dec << r << ", " << g << ", " << b
-		<< "), hsl(" << dec << h << ", " << s << "%, " << l << "%)" << endl;
+		<< ": " << HtmlHEX{&color}
+		<< ", " << HtmlRGB{&color}
+		<< ", " << HtmlHSL{&color}
+		<< endl;
 }
 bool ImportExport::exportCSS()
 {
@@ -274,19 +315,23 @@ bool ImportExport::exportCSS()
 }
 static void htmlColor(ColorObject* color_object, ostream &stream)
 {
-	using boost::math::iround;
 	Color color, text_color;
 	color_object_get_color(color_object, &color);
 	color_get_contrasting(&color, &text_color);
-	const char *name = color_object_get_name(color_object);
-	int r, g, b, tr, tg, tb;
-	r = iround(color.rgb.red * 255);
-	g = iround(color.rgb.green * 255);
-	b = iround(color.rgb.blue * 255);
-	tr = iround(text_color.rgb.red * 255);
-	tg = iround(text_color.rgb.green * 255);
-	tb = iround(text_color.rgb.blue * 255);
-	stream << "<div style=\"background-color:rgb(" << dec << r << ", " << g << ", " << b << "); color:rgb(" << dec << tr << ", " << tg << ", " << tb << ")\">" << name << "</div>";
+	string name = color_object_get_name(color_object);
+	escapeHtmlInplace(name);
+	stream << "<div style=\"background-color:" << HtmlRGB{&color} << "; color:" << HtmlRGB{&text_color} << "\">";
+	if (!name.empty())
+		stream << name << ":<br/>";
+	stream << HtmlHEX{&color} << "</div>";
+}
+static string getHtmlColor(ColorObject* color_object)
+{
+	Color color;
+	color_object_get_color(color_object, &color);
+	stringstream ss;
+	ss << HtmlRGB{&color};
+	return ss.str();
 }
 bool ImportExport::exportHTML()
 {
@@ -295,11 +340,70 @@ bool ImportExport::exportHTML()
 		boost::filesystem::path path(m_filename);
 		vector<ColorObject*> ordered;
 		getOrderedColors(m_color_list, ordered);
+		int item_size = 64;
+		switch (m_item_size){
+			case ItemSize::small:
+				item_size = 32;
+				break;
+			case ItemSize::medium:
+				item_size = 64;
+				break;
+			case ItemSize::big:
+				item_size = 96;
+				break;
+			case ItemSize::controllable:
+				break;
+		}
+		string background = "";
+		switch (m_background){
+			case Background::none:
+				break;
+			case Background::white:
+				background = "background-color:white;";
+				break;
+			case Background::gray:
+				background = "background-color:gray;";
+				break;
+			case Background::black:
+				background = "background-color:black;";
+				break;
+			case Background::first_color:
+				if (!ordered.empty())
+					background = "background-color:" + getHtmlColor(ordered.front()) + ";";
+				break;
+			case Background::last_color:
+				if (!ordered.empty())
+					background = "background-color:" + getHtmlColor(ordered.back()) + ";";
+				break;
+			case Background::controllable:
+				break;
+		}
 		f << "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>"
-			<< path.filename().string() << "</title>"
-			<< "<style>div{float: left; width: 64px; height: 64px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}</style>"
-			<< "</head>"
+			<< path.filename().string() << "</title>" << endl
+			<< "<style>" << endl
+			<< "div#colors div{float: left; width: " << item_size << "px; height: " << item_size << "px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}" << endl
+			<< "html{" << background << "}" << endl
+			<< "input{margin-left: 1em;}" << endl
+			<< "</style>"
+			<< "</head>" << endl
 			<< "<body>" << endl;
+		if (m_item_size == ItemSize::controllable || m_background == Background::controllable){
+			f << "<form>" << endl;
+			if (m_item_size == ItemSize::controllable){
+				f << "<div>" << _("Item size") << ":<input type=\"range\" id=\"item_size\" min=\"16\" max=\"128\" value=\"64\" oninput=\"var elements = document.querySelectorAll('div#colors div'); for (var i = 0; i < elements.length; i++){ elements[i].style.width = this.value + 'px'; elements[i].style.height = this.value + 'px'; }\" />" << "</div>" << endl;
+			}
+			if (m_background == Background::controllable){
+				f << "<div>" << _("Background color") << ":<input type=\"color\" id=\"background\" oninput=\"document.body.style.backgroundColor = this.value;\" />" << "</div>" << endl;
+			}
+			f << "</form>" << endl;
+		}
+		f << "<div id=\"colors\">" << endl;
+		string hex_case = dynv_get_string_wd(m_gs->params, "gpick.options.hex_case", "upper");
+		if (hex_case == "upper"){
+			f << uppercase;
+		}else{
+			f << nouppercase;
+		}
 		for (auto color: ordered){
 			htmlColor(color, f);
 			if (!f.good()){
@@ -307,6 +411,7 @@ bool ImportExport::exportHTML()
 				return false;
 			}
 		}
+		f << "</div>" << endl;
 		f << "</body></html>" << endl;
 		if (!f.good()){
 			f.close();

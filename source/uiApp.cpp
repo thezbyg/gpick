@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -30,7 +30,7 @@
 #include "uiAbout.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "uiExport.h"
+#include "uiImportExport.h"
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
@@ -356,7 +356,7 @@ int app_save_file(AppArgs *args, const char *filename)
 		}
 	}
 	FileType filetype;
-	ImportExport import_export(args->gs->colors, filename);
+	ImportExport import_export(args->gs->colors, filename, args->gs);
 	bool return_value = false;
 	switch (filetype = ImportExport::getFileType(filename)){
 		case FileType::gpl:
@@ -395,7 +395,7 @@ int app_load_file(AppArgs *args, const char *filename, bool autoload)
 {
 	bool imported = false;
 	bool return_value = false;
-	ImportExport import_export(args->gs->colors, filename);
+	ImportExport import_export(args->gs->colors, filename, args->gs);
 	switch (ImportExport::getFileType(filename)){
 		case FileType::gpl:
 			return_value = import_export.importGPL();
@@ -622,13 +622,15 @@ static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_o
 static void menu_file_export_all(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	dialog_export_show(GTK_WINDOW(args->window), 0, false, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	import_export_dialog.showExport();
 }
 
 static void menu_file_import(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	dialog_import_show(GTK_WINDOW(args->window), 0, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	import_export_dialog.showImport();
 }
 
 static void menu_file_export(GtkWidget *widget, gpointer data)
@@ -638,7 +640,8 @@ static void menu_file_export(GtkWidget *widget, gpointer data)
 	struct ColorList *color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
-	dialog_export_show(GTK_WINDOW(args->window), color_list, true, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), color_list, args->gs);
+	import_export_dialog.showExport();
 	color_list_destroy(color_list);
 }
 
