@@ -16,30 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_NAMES_COLOR_NAMES_H_
-#define GPICK_COLOR_NAMES_COLOR_NAMES_H_
+#ifndef GPICK_COPY_MENU_ITEM_H_
+#define GPICK_COPY_MENU_ITEM_H_
 
-#include "../Color.h"
-#include <string>
-#include <list>
+#include <gtk/gtk.h>
+struct GlobalState;
+struct ColorObject;
+class CopyMenuItem
+{
+	public:
+		static GtkWidget* newItem(ColorObject* color_object, GlobalState *gs, bool include_name);
+};
 
-typedef struct ColorNameEntry{
-	std::string name;
-}ColorNameEntry;
-typedef struct ColorEntry{
-	Color color;
-	ColorNameEntry* name;
-}ColorEntry;
-typedef struct ColorNames{
-	std::list<ColorNameEntry*> names;
-	std::list<ColorEntry*> colors[8][8][8];
-	void (*color_space_convert)(const Color* a, Color* b);
-	float (*color_space_distance)(const Color* a, const Color* b);
-}ColorNames;
-ColorNames* color_names_new();
-int color_names_load_from_file(ColorNames* cnames, const char* filename);
-void color_names_destroy(ColorNames* cnames);
-std::string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix);
-
-#endif /* GPICK_COLOR_NAMES_COLOR_NAMES_H_ */
-
+#endif /* GPICK_COPY_MENU_ITEM_H_ */

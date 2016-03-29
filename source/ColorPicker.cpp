@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -34,6 +34,7 @@
 #include "uiUtilities.h"
 #include "uiColorInput.h"
 #include "uiConverter.h"
+#include "CopyMenuItem.h"
 #include "Internationalisation.h"
 #include "color_names/ColorNames.h"
 #include "Sampler.h"
@@ -300,64 +301,79 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 }
+static GtkWidget* createNearestFromPaletteMenu(const Color *color, GlobalState* gs)
+{
+	GtkWidget *menu = gtk_menu_new();
+	map<float, ColorObject *> color_distances;
+	for (auto color_object: gs->colors->colors){
+		Color target_color;
+		color_object_get_color(color_object, &target_color);
+		color_distances[color_distance_lch(color, &target_color)] = color_object;
+	}
+	int count = 0;
+	for (auto item: color_distances){
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), CopyMenuItem::newItem(item.second, gs, true));
+		if (++count >= 3) break;
+	}
+	return menu;
+}
 static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args){
 
 	GtkWidget *menu;
 	int color_index = gtk_swatch_get_color_at(GTK_SWATCH(widget), event->x, event->y);
 
 	if (event->button == 3 && event->type == GDK_BUTTON_PRESS && color_index>0){
-		GtkWidget* item ;
+		GtkWidget* item;
 		gint32 button, event_time;
-
-		menu = gtk_menu_new ();
-
+		menu = gtk_menu_new();
 		Color c;
 		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
-	    item = gtk_menu_item_new_with_image (_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
-	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_to_palette), args);
+		item = gtk_menu_item_new_with_image(_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_to_palette), args);
 
-	    item = gtk_menu_item_new_with_image (_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
-	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	    g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_menu_add_all_to_palette), args);
+		item = gtk_menu_item_new_with_image(_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_all_to_palette), args);
 
-	    gtk_menu_shell_append (GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	    item = gtk_menu_item_new_with_mnemonic (_("_Copy to clipboard"));
-	    gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
+		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-	    struct ColorObject* color_object;
-	    color_object = color_list_new_color_object(args->gs->colors, &c);
-	    gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
+		struct ColorObject* color_object;
+		color_object = color_list_new_color_object(args->gs->colors, &c);
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(color_object, 0, args->gs));
 		color_object_release(color_object);
 
-		gtk_menu_shell_append (GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-		item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_swatch_color_edit), args);
+		item = gtk_menu_item_new_with_image(_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_color_edit), args);
 
-		item = gtk_menu_item_new_with_image (_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
+		item = gtk_menu_item_new_with_image(_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
 
 		if (copypaste_is_color_object_available(args->gs)!=0){
 			gtk_widget_set_sensitive(item, false);
 		}
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+		item = gtk_menu_item_new_with_mnemonic(_("_Nearest from palette"));
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), createNearestFromPaletteMenu(&c, args->gs));
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-	    gtk_widget_show_all (GTK_WIDGET(menu));
-
+		gtk_widget_show_all(GTK_WIDGET(menu));
 		if (event){
 			button = event->button;
 			event_time = event->time;
 		}else{
 			button = 0;
-			event_time = gtk_get_current_event_time ();
+			event_time = gtk_get_current_event_time();
 		}
-
 		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
-
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
 	}

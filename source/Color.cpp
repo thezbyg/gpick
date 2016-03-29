@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -784,5 +784,29 @@ bool color_is_rgb_out_of_gamut(const Color* a)
 	if (a->rgb.green < 0 || a->rgb.green > 1) return true;
 	if (a->rgb.blue < 0 || a->rgb.blue > 1) return true;
 	return false;
+}
+
+float color_distance(const Color* a, const Color* b)
+{
+	Color al, bl;
+	color_rgb_get_linear(a, &al);
+	color_rgb_get_linear(b, &bl);
+	return sqrt(
+		pow(bl.rgb.red - al.rgb.red, 2) +
+		pow(bl.rgb.green - al.rgb.green, 2) +
+		pow(bl.rgb.blue - al.rgb.blue, 2)
+	);
+}
+
+float color_distance_lch(const Color* a, const Color* b)
+{
+	Color al, bl;
+	color_lab_to_lch(a, &al);
+	color_lab_to_lch(b, &bl);
+	return sqrt(
+		pow((bl.lch.L - al.lch.L) / 1, 2) +
+		pow((bl.lch.C - al.lch.C) / (1 + 0.045 * al.lch.C), 2) +
+		pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2)
+	);
 }
 

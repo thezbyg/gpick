@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,31 +17,17 @@
  */
 
 #include "ColorNames.h"
-#include "../MathUtil.h"
-#include <math.h>
+#include "../Color.h"
 #include <string.h>
 #include <sstream>
 #include <fstream>
-#include <iostream>
-#include <algorithm>
 using namespace std;
 
-//CIE94 color difference calculation
-float color_names_distance_lch(const Color* a, const Color* b)
-{
-	Color al, bl;
-	color_lab_to_lch(a, &al);
-	color_lab_to_lch(b, &bl);
-	return sqrt(
-		pow((bl.lch.L - al.lch.L) / 1, 2) +
-		pow((bl.lch.C - al.lch.C) / (1 + 0.045 * al.lch.C), 2) +
-		pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2));
-}
 ColorNames* color_names_new()
 {
 	ColorNames* cnames = new ColorNames;
 	cnames->color_space_convert = color_rgb_to_lab_d50;
-	cnames->color_space_distance = color_names_distance_lch;
+	cnames->color_space_distance = color_distance_lch;
 	return cnames;
 }
 static void color_names_strip_spaces(string& string_x, string& stripchars)

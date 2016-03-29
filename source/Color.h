@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLOR_H_
-#define COLOR_H_
+#ifndef GPICK_COLOR_H_
+#define GPICK_COLOR_H_
 
 #include "MathUtil.h"
 
@@ -465,5 +465,21 @@ const ReferenceIlluminant color_get_illuminant(const char *illuminant);
  */
 const ReferenceObserver color_get_observer(const char *observer);
 
-#endif /* COLOR_H_ */
+/**
+ * Get distance between two colors.
+ * @param[in] a First color.
+ * @param[in] b Second color.
+ * @return Distance.
+ */
+float color_distance(const Color* a, const Color* b);
+
+/**
+ * Get distance between two colors using CIE94 color difference calculation.
+ * @param[in] a First color.
+ * @param[in] b Second color.
+ * @return Distance.
+ */
+float color_distance_lch(const Color* a, const Color* b);
+
+#endif /* GPICK_COLOR_H_ */
 
