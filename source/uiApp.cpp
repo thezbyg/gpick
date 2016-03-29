@@ -619,18 +619,20 @@ static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_o
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 
-static void menu_file_export_all(GtkWidget *widget, gpointer data)
+static void menu_file_export_all(GtkWidget *widget, AppArgs *args)
 {
-	AppArgs* args = (AppArgs*)data;
 	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
 	import_export_dialog.showExport();
 }
-
-static void menu_file_import(GtkWidget *widget, gpointer data)
+static void menu_file_import(GtkWidget *widget, AppArgs *args)
 {
-	AppArgs* args = (AppArgs*)data;
 	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
 	import_export_dialog.showImport();
+}
+static void menu_file_import_text_file(GtkWidget *widget, AppArgs *args)
+{
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	import_export_dialog.showImportTextFile();
 }
 
 static void menu_file_export(GtkWidget *widget, gpointer data)
@@ -798,7 +800,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 		if (stock_item.keyval) gtk_widget_add_accelerator(item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open), args);
 	}
-	item = gtk_menu_item_new_with_mnemonic(_("Recent _files"));
+	item = gtk_menu_item_new_with_mnemonic(_("Recent _Files"));
 	items->recent_files = item;
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	if (gtk_stock_lookup(GTK_STOCK_REVERT_TO_SAVED, &stock_item)){
@@ -836,6 +838,12 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_i, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK (menu_file_import), args);
+
+	item = gtk_image_menu_item_new_with_mnemonic(_("Import _Text File..."));
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_i, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_import_text_file), args);
+
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	if (gtk_stock_lookup(GTK_STOCK_QUIT, &stock_item)){
 		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));

@@ -37,6 +37,14 @@ enum class FileType
 class ImportExport
 {
 	public:
+		enum class Error
+		{
+			none,
+			could_not_open_file,
+			file_read_error,
+			file_write_error,
+			no_colors_imported,
+		};
 		enum class ItemSize
 		{
 			small,
@@ -75,6 +83,7 @@ class ImportExport
 		bool exportHTML();
 		bool importType(FileType type);
 		bool exportType(FileType type);
+		Error getLastError() const;
 		static FileType getFileType(const char *filename);
 	private:
 		ColorList *m_color_list;
@@ -85,6 +94,7 @@ class ImportExport
 		Background m_background;
 		GlobalState *m_gs;
 		bool m_include_color_names;
+		Error m_last_error;
 };
 
 #endif /* GPICK_IMPORT_EXPORT_H_ */

@@ -28,6 +28,7 @@ class ImportExportDialog
 		ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs);
 		~ImportExportDialog();
 		bool showImport();
+		bool showImportTextFile();
 		bool showExport();
 	private:
 		GtkWindow *m_parent;

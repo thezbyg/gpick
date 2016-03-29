@@ -256,14 +256,14 @@ bool ImportExportDialog::showImport()
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All supported formats"));
 	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all_supported");
-	for (size_t i = 0; i != n_formats; ++i) {
+	for (size_t i = 0; i != n_formats; ++i){
 		gtk_file_filter_add_pattern(filter, formats[i].pattern);
 	}
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	if (g_strcmp0(selected_filter, "all_supported") == 0){
 		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
-	for (size_t i = 0; i != n_formats; ++i) {
+	for (size_t i = 0; i != n_formats; ++i){
 		filter = gtk_file_filter_new();
 		gtk_file_filter_set_name(filter, formats[i].name);
 		g_object_set_data(G_OBJECT(filter), "identification", (gpointer)formats[i].pattern);
@@ -275,7 +275,7 @@ bool ImportExportDialog::showImport()
 	}
 	bool finished = false;
 	while (!finished){
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(m_gs->params, "gpick.import.path", path);
@@ -283,7 +283,7 @@ bool ImportExportDialog::showImport()
 			FileType type = ImportExport::getFileType(filename);
 			if (type == FileType::unknown){
 				const gchar *format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
-				for (size_t i = 0; i != n_formats; ++i) {
+				for (size_t i = 0; i != n_formats; ++i){
 					if (g_strcmp0(formats[i].name, format_name) == 0){
 						type = formats[i].type;
 						break;
@@ -298,7 +298,7 @@ bool ImportExportDialog::showImport()
 				gtk_widget_destroy(message);
 			}else{
 				Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(m_gs->params, "Converters", 0));
-				for (size_t i = 0; i != n_formats; ++i) {
+				for (size_t i = 0; i != n_formats; ++i){
 					if (formats[i].type == type){
 						ImportExport import_export(m_color_list, filename, m_gs);
 						import_export.setConverters(converters);
@@ -315,6 +315,41 @@ bool ImportExportDialog::showImport()
 						break;
 					}
 				}
+			}
+			g_free(filename);
+		}else break;
+	}
+	gtk_widget_destroy(dialog);
+	return finished;
+}
+bool ImportExportDialog::showImportTextFile()
+{
+	GtkWidget *dialog = gtk_file_chooser_dialog_new(_("Import text file"), m_parent,
+		GTK_FILE_CHOOSER_ACTION_OPEN,
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_OPEN, GTK_RESPONSE_OK,
+		nullptr);
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+	const char* default_path = dynv_get_string_wd(m_gs->params, "gpick.import_text_file.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	bool finished = false;
+	while (!finished){
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
+			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
+			dynv_set_string(m_gs->params, "gpick.import_text_file.path", path);
+			g_free(path);
+			GtkWidget* message;
+			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
+			ImportExport import_export(m_color_list, filename, m_gs);
+			Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(m_gs->params, "Converters", 0));
+			import_export.setConverters(converters);
+			if (import_export.importTXT()){
+				finished = true;
+			}else{
+				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
+				gtk_window_set_title(GTK_WINDOW(message), _("Import text file"));
+				gtk_dialog_run(GTK_DIALOG(message));
+				gtk_widget_destroy(message);
 			}
 			g_free(filename);
 		}else break;
