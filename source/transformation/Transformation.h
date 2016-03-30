@@ -36,8 +36,8 @@ namespace transformation {
  */
 class Transformation{
 	protected:
-		std::string name;             /**< System name */
-		std::string readable_name;    /**< Human readable name */
+		std::string name; /**< System name */
+		std::string readable_name; /**< Human readable name */
 
 		/**
 		 * Apply transformation to color.

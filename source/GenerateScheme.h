@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,20 +16,19 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GENERATESCHEME_H_
-#define GENERATESCHEME_H_
+#ifndef GPICK_GENERATE_SCHEME_H_
+#define GPICK_GENERATE_SCHEME_H_
 
-#include "ColorSourceManager.h"
-
+#include <cstddef>
+struct ColorSourceManager;
 typedef struct SchemeType{
 	const char *name;
-	int32_t colors;
-	int32_t turn_types;
+	int colors;
+	int turn_types;
 	double turn[4];
 }SchemeType;
-
 int generate_scheme_source_register(ColorSourceManager *csm);
-const SchemeType* generate_scheme_get_scheme_type(uint32_t index);
-uint32_t generate_scheme_get_n_scheme_types();
+const SchemeType* generate_scheme_get_scheme_type(size_t index);
+size_t generate_scheme_get_n_scheme_types();
 
-#endif /* GENERATESCHEME_H_ */
+#endif /* GPICK_GENERATE_SCHEME_H_ */

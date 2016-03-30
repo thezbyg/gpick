@@ -27,7 +27,7 @@ System::System(){
 }
 
 System::~System(){
-	for (list<Style*>::iterator i=styles.begin(); i!=styles.end(); i++){
+	for (list<Style*>::iterator i=styles.begin(); i != styles.end(); i++){
 		Style::unref(*i);
 	}
 	styles.clear();

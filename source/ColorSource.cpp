@@ -67,7 +67,7 @@ int color_source_get_color(ColorSource *source, ColorObject **color)
 		cerr << "Color source undefined" << endl;
 	return -1;
 }
-int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObject *color)
+int color_source_set_nth_color(ColorSource *source, size_t color_n, ColorObject *color)
 {
 	if (source && source->set_nth_color)
 		return source->set_nth_color(source, color_n, color);
@@ -75,7 +75,7 @@ int color_source_set_nth_color(ColorSource *source, uint32_t color_n, ColorObjec
 		cerr << "Color source undefined" << endl;
 	return -1;
 }
-int color_source_get_nth_color(ColorSource *source, uint32_t color_n, ColorObject **color)
+int color_source_get_nth_color(ColorSource *source, size_t color_n, ColorObject **color)
 {
 	if (source && source->get_nth_color)
 		return source->get_nth_color(source, color_n, color);

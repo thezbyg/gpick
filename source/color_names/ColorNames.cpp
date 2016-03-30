@@ -36,7 +36,7 @@ static void color_names_strip_spaces(string& string_x, string& stripchars)
 	if (stripchars.empty()) return;
 	size_t startIndex = string_x.find_first_not_of(stripchars);
 	size_t endIndex = string_x.find_last_not_of(stripchars);
-	if ((startIndex==string::npos)||(endIndex==string::npos)){
+	if ((startIndex == string::npos) || (endIndex == string::npos)){
 		string_x.erase();
 		return;
 	}
@@ -99,13 +99,13 @@ int color_names_load_from_file(ColorNames* cnames, const char* filename)
 }
 void color_names_destroy(ColorNames* cnames)
 {
-	for (list<ColorNameEntry*>::iterator i=cnames->names.begin();i!=cnames->names.end();++i){
+	for (list<ColorNameEntry*>::iterator i=cnames->names.begin();i != cnames->names.end();++i){
 		delete (*i);
 	}
 	for (int x=0;x<8;x++){
 		for (int y=0;y<8;y++){
 			for (int z=0;z<8;z++){
-				for (list<ColorEntry*>::iterator i=cnames->colors[x][y][z].begin();i!=cnames->colors[x][y][z].end();++i){
+				for (list<ColorEntry*>::iterator i=cnames->colors[x][y][z].begin();i != cnames->colors[x][y][z].end();++i){
 					delete (*i);
 				}
 			}
@@ -136,7 +136,7 @@ string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfi
 				for (int z_i = z_start; z_i <= z_end; ++z_i) {
 					if (skip_mask[x_i][y_i][z_i]) continue; // skip checked items
 					skip_mask[x_i][y_i][z_i] = 1;
-					for (list<ColorEntry*>::iterator i=cnames->colors[x_i][y_i][z_i].begin(); i!=cnames->colors[x_i][y_i][z_i].end();++i){
+					for (list<ColorEntry*>::iterator i=cnames->colors[x_i][y_i][z_i].begin(); i != cnames->colors[x_i][y_i][z_i].end();++i){
 						float delta = cnames->color_space_distance(&(*i)->color, &c1);
 						if (delta < result_delta) {
 							result_delta=delta;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,14 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGAUTONUMBER_H_
-#define UIDIALOGAUTONUMBER_H_
+#ifndef GPICK_UI_DIALOG_AUTONUMBER_H_
+#define GPICK_UI_DIALOG_AUTONUMBER_H_
 
+class GlobalState;
 #include <gtk/gtk.h>
-#include <stdint.h>
-#include "GlobalState.h"
+int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState* gs);
 
-int dialog_autonumber_show(GtkWindow* parent, uint32_t selected_count, GlobalState* gs);
-
-#endif /* UIDIALOGAUTONUMBER_H_ */
+#endif /* GPICK_UI_DIALOG_AUTONUMBER_H_ */
 

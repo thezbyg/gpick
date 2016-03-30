@@ -21,12 +21,11 @@
 #include "uiUtilities.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
 #include "Internationalisation.h"
-
 #include <math.h>
 #include <sstream>
 #include <iostream>
@@ -39,14 +38,13 @@ typedef struct DialogAutonumberArgs{
 	GtkWidget *toggle_decreasing;
 	GtkWidget *toggle_append;
 	uint32_t selected_count;
-
 	GtkWidget *sample;
-
-	struct dynvSystem *params;
+	dynvSystem *params;
 	GlobalState* gs;
 }DialogAutonumberArgs;
 
-static int default_nplaces (uint32_t selected_count){
+static int default_nplaces(uint32_t selected_count)
+{
 	uint32_t places = 1;
 	uint32_t ncolors = selected_count;
 	// technically this can be implemented as `places = 1 + (int) (trunc(log (ncolors,10)));`
@@ -57,8 +55,8 @@ static int default_nplaces (uint32_t selected_count){
 	}
 	return places;
 }
-
-static void update(GtkWidget *widget, DialogAutonumberArgs *args ){
+static void update(GtkWidget *widget, DialogAutonumberArgs *args)
+{
 	uint32_t nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
 	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
 	const char *name = gtk_entry_get_text(GTK_ENTRY(args->name));
@@ -74,8 +72,8 @@ static void update(GtkWidget *widget, DialogAutonumberArgs *args ){
 	dynv_set_int32 (args->params, "nplaces", nplaces);
 	dynv_set_int32 (args->params, "startindex", startindex);
 }
-
-static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args ){
+static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args)
+{
 	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
 	int newindex;
 	gdouble min, max;
@@ -95,16 +93,13 @@ static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args ){
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->startindex), newindex);
 	update(widget, args);
 }
-
-int dialog_autonumber_show(GtkWindow* parent, uint32_t selected_count, GlobalState* gs){
-DialogAutonumberArgs *args = new DialogAutonumberArgs;
-    int return_val;
+int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState* gs)
+{
+	DialogAutonumberArgs *args = new DialogAutonumberArgs;
+	int return_val;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.autonumber");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.autonumber");
 	args->selected_count = selected_count;
-
-	GtkWidget *table;
-
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Autonumber colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
@@ -116,6 +111,7 @@ DialogAutonumberArgs *args = new DialogAutonumberArgs;
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
+	GtkWidget *table;
 	table = gtk_table_new(4, 4, FALSE);
 	table_y=0;
 

@@ -75,8 +75,8 @@ static int dynv_var_color_serialize(struct dynvVariable* variable, struct dynvIO
 	value[2]=UINT32_TO_LE(value[2]);
 	value[3]=UINT32_TO_LE(value[3]);
 
-	if (dynv_io_write(io, value, 16, &written)==0){
-		if (written!=16) return -1;
+	if (dynv_io_write(io, value, 16, &written) == 0){
+		if (written != 16) return -1;
 	}else return -1;
 	return 0;
 }
@@ -89,8 +89,8 @@ static int dynv_var_color_deserialize(struct dynvVariable* variable, struct dynv
 	uint32_t value[4];
 	dynv_io_read(io, &length, 4, &read);
 
-	if (dynv_io_read(io, value, 16, &read)==0){
-		if (read==16){
+	if (dynv_io_read(io, value, 16, &read) == 0){
+		if (read == 16){
 			value[0]=UINT32_FROM_LE(value[0]);
 			value[1]=UINT32_FROM_LE(value[1]);
 			value[2]=UINT32_FROM_LE(value[2]);

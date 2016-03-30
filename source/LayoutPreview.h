@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUTPREVIEW_H_
-#define LAYOUTPREVIEW_H_
+#ifndef GPICK_LAYOUT_PREVIEW_H_
+#define GPICK_LAYOUT_PREVIEW_H_
 
-#include "ColorSourceManager.h"
-
+struct ColorSourceManager;
 int layout_preview_source_register(ColorSourceManager *csm);
 
-#endif /* LAYOUTPREVIEW_H_ */
+#endif /* GPICK_LAYOUT_PREVIEW_H_ */
+

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,9 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORWIDGET_H_
-#define COLORWIDGET_H_
-
+#ifndef GPICK_GTK_COLOR_WIDGET_H_
+#define GPICK_GTK_COLOR_WIDGET_H_
 
 #include <gtk/gtk.h>
 #include "../Color.h"
@@ -26,33 +25,28 @@
 
 G_BEGIN_DECLS
 
-#define GTK_TYPE_COLOR		(gtk_color_get_type ())
-#define GTK_COLOR(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_COLOR, GtkColor))
-#define GTK_COLOR_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_COLOR, GtkColorClass))
-#define GTK_IS_COLOR(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_COLOR))
-#define GTK_IS_COLOR_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_COLOR))
-#define GTK_COLOR_GET_CLASS	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_COLOR, GtkColorClass))
+#define GTK_TYPE_COLOR (gtk_color_get_type())
+#define GTK_COLOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR, GtkColor))
+#define GTK_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), GTK_COLOR, GtkColorClass))
+#define GTK_IS_COLOR(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_COLOR))
+#define GTK_IS_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_COLOR))
+#define GTK_COLOR_GET_CLASS (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_COLOR, GtkColorClass))
 
-typedef struct GtkColor			GtkColor;
-typedef struct GtkColorClass		GtkColorClass;
-
+typedef struct GtkColor GtkColor;
+typedef struct GtkColorClass GtkColorClass;
 typedef gpointer GtkColorObject;
-
 typedef struct GtkColor
 {
 	GtkDrawingArea parent;
-
-	/* < private > */
 }GtkColor;
 
 typedef struct GtkColorClass
 {
 	GtkDrawingAreaClass parent_class;
-
-	void  (*activated)(GtkWidget* widget, gpointer userdata);
+	void (*activated)(GtkWidget* widget, gpointer userdata);
 }GtkColorClass;
 
-GtkWidget* gtk_color_new (void);
+GtkWidget* gtk_color_new(void);
 void gtk_color_set_color(GtkColor* widget, Color* color, const char* text);
 void gtk_color_set_text_color(GtkColor* widget, Color* color);
 void gtk_color_get_color(GtkColor* widget, Color* color);
@@ -60,10 +54,9 @@ void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);
 void gtk_color_set_roundness(GtkColor* widget, double roundness);
 void gtk_color_set_hcenter(GtkColor* widget, bool hcenter);
 void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain);
-
 GType gtk_color_get_type(void);
 
 G_END_DECLS
 
+#endif /* GPICK_GTK_COLOR_WIDGET_H_ */
 
-#endif /* COLORWIDGET_H_ */

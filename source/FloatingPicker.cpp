@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,11 +17,12 @@
  */
 
 #include "FloatingPicker.h"
+#include "ColorList.h"
 #include "gtk/Zoomed.h"
 #include "gtk/ColorWidget.h"
 #include "uiUtilities.h"
 #include "uiApp.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ColorPicker.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
@@ -35,7 +36,8 @@
 using namespace math;
 using namespace std;
 
-typedef struct FloatingPickerArgs{
+typedef struct FloatingPickerArgs
+{
 	GtkWidget* window;
 	GtkWidget* zoomed;
 	GtkWidget* color_widget;
@@ -66,7 +68,7 @@ class PickerColorNameAssigner: public ToolColorNameAssigner
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
 		{
 			m_stream.str("");
-			m_stream << color_names_get(m_gs->color_names, color, false);
+			m_stream << color_names_get(m_gs->getColorNames(), color, false);
 			return m_stream.str();
 		}
 };
@@ -81,21 +83,22 @@ static void get_color_sample(FloatingPickerArgs *args, bool update_widgets, Colo
 	gdk_screen_get_monitor_geometry(screen, monitor, &monitor_geometry);
 	Vec2<int> pointer(x,y);
 	Rect2<int> screen_rect(monitor_geometry.x, monitor_geometry.y, monitor_geometry.x + monitor_geometry.width, monitor_geometry.y + monitor_geometry.height);
-	screen_reader_reset_rect(args->gs->screen_reader);
+	auto screen_reader = args->gs->getScreenReader();
+	screen_reader_reset_rect(screen_reader);
 	Rect2<int> sampler_rect, zoomed_rect, final_rect;
-	sampler_get_screen_rect(args->gs->sampler, pointer, screen_rect, &sampler_rect);
-	screen_reader_add_rect(args->gs->screen_reader, screen, sampler_rect);
+	sampler_get_screen_rect(args->gs->getSampler(), pointer, screen_rect, &sampler_rect);
+	screen_reader_add_rect(screen_reader, screen, sampler_rect);
 	if (update_widgets){
 		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed), pointer, screen_rect, &zoomed_rect);
-		screen_reader_add_rect(args->gs->screen_reader, screen, zoomed_rect);
+		screen_reader_add_rect(screen_reader, screen, zoomed_rect);
 	}
-	screen_reader_update_pixbuf(args->gs->screen_reader, &final_rect);
+	screen_reader_update_pixbuf(screen_reader, &final_rect);
 	Vec2<int> offset;
 	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
-	sampler_get_color_sample(args->gs->sampler, pointer, screen_rect, offset, c);
+	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, c);
 	if (update_widgets){
 		offset = Vec2<int>(zoomed_rect.getX() - final_rect.getX(), zoomed_rect.getY() - final_rect.getY());
-		gtk_zoomed_update(GTK_ZOOMED(args->zoomed), pointer, screen_rect, offset, screen_reader_get_pixbuf(args->gs->screen_reader));
+		gtk_zoomed_update(GTK_ZOOMED(args->zoomed), pointer, screen_rect, offset, screen_reader_get_pixbuf(screen_reader));
 	}
 }
 static gboolean update_display(FloatingPickerArgs *args)
@@ -126,12 +129,12 @@ static gboolean update_display(FloatingPickerArgs *args)
 	Color c;
 	get_color_sample(args, true, &c);
 	struct ColorObject* color_object;
-	color_object = color_list_new_color_object(args->gs->colors, &c);
+	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	gchar* text = 0;
-	Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+	auto converters = args->gs->getConverters();
 	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	if (converter){
-		converter_get_text(converter->function_name, color_object, 0, args->gs->params, &text);
+		converter_get_text(converter->function_name, color_object, 0, args->gs->getConverters(), &text);
 	}
 	color_object_release(color_object);
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text);
@@ -146,12 +149,12 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	args->click_mode = true;
 	GdkCursor* cursor;
 	cursor = gdk_cursor_new(GDK_TCROSS);
-	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->params, "gpick.picker.zoom", 2));
+	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.zoom", 2));
 	update_display(args);
 	gtk_widget_show(args->window);
 	gdk_pointer_grab(args->window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), NULL, cursor, GDK_CURRENT_TIME);
 	gdk_keyboard_grab(args->window->window, false, GDK_CURRENT_TIME);
-	float refresh_rate = dynv_get_float_wd(args->gs->params, "gpick.picker.refresh_rate", 30);
+	float refresh_rate = dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000 / refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)NULL);
 	gdk_cursor_destroy(cursor);
 #endif
@@ -180,7 +183,7 @@ static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, Floati
 static void finish_picking(FloatingPickerArgs *args)
 {
 	floating_picker_deactivate(args);
-	dynv_set_float(args->gs->params, "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
+	dynv_set_float(args->gs->getSettings(), "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
 	if (args->custom_done_action)
 		args->custom_done_action(args);
 }
@@ -194,25 +197,25 @@ static void complete_picking(FloatingPickerArgs *args)
 				args->custom_pick_action(args, c);
 		}else{
 			struct ColorObject* color_object;
-			color_object = color_list_new_color_object(args->gs->colors, &c);
+			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 			if (args->single_pick_mode){
-				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+				auto converters = args->gs->getConverters();
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
+					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
 			}else{
-				if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.copy_on_release", false)){
-					Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", false)){
+					auto converters = args->gs->getConverters();
 					Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 					if (converter){
-						converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
+						converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 					}
 				}
-				if (dynv_get_bool_wd(args->gs->params, "gpick.picker.sampler.add_on_release", false)){
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", false)){
 					PickerColorNameAssigner name_assigner(args->gs);
 					name_assigner.assign(color_object, &c);
-					color_list_add_color_object(args->gs->colors, color_object, 1);
+					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
 			}
 			color_object_release(color_object);
@@ -224,7 +227,7 @@ static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
 	Color c;
 	get_color_sample(args, false, &c);
 	GtkWidget *menu;
-	struct ColorList *color_list = color_list_new_with_one_color(args->gs->colors, &c);
+	struct ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
 	menu = converter_create_copy_menu(*color_list->colors.begin(), NULL, args->gs);
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);

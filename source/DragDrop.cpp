@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,11 +17,12 @@
  */
 
 #include "DragDrop.h"
-#include "GlobalStateStruct.h"
+#include "ColorObject.h"
+#include "DynvHelpers.h"
+#include "GlobalState.h"
 #include "gtk/ColorWidget.h"
 #include "uiApp.h"
 #include "dynv/DynvXml.h"
-
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -41,7 +42,7 @@ static GtkTargetEntry targets[] = {
 	{ (char*)"application/x-colorobject-list", GTK_TARGET_OTHER_APP, TARGET_COLOR_OBJECT_LIST_SERIALIZED },
 	{ (char*)"application/x-color", 0, TARGET_COLOR },
 	{ (char*)"text/plain", 0, TARGET_STRING },
-	{ (char*)"STRING",     0, TARGET_STRING },
+	{ (char*)"STRING", 0, TARGET_STRING },
 	{ (char*)"application/x-rootwin-drop", 0, TARGET_ROOTWIN }
 };
 
@@ -223,7 +224,7 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 				gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
 				if (data[gtk_selection_data_get_length(selection_data)] != 0) break; //not null terminated
 				Color color;
-				if (main_get_color_from_text(dd->gs, data, &color)!=0){
+				if (main_get_color_from_text(dd->gs, data, &color) != 0){
 					gtk_drag_finish (context, false, false, time);
 					return;
 				}
@@ -266,7 +267,7 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 	GdkDragAction suggested_action;
 	bool suggested_action_set = true;
 
-	bool dragging_moves = dynv_get_bool_wd(dd->gs->params, "gpick.main.dragging_moves", true);
+	bool dragging_moves = dynv_get_bool_wd(dd->gs->getSettings(), "gpick.main.dragging_moves", true);
 	if (dragging_moves){
 		if ((gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE) == GDK_ACTION_MOVE)
 			suggested_action = GDK_ACTION_MOVE;
@@ -436,7 +437,7 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 						struct ColorObject* color_object[1];
 					};
 					uint32_t data_length = sizeof(uint64_t) + sizeof(struct ColorObject*) * color_object_n;
-          struct ColorList *data = (struct ColorList*)new char [data_length];
+					struct ColorList *data = (struct ColorList*)new char [data_length];
 
 					data->color_object_n = color_object_n;
 					memcpy(&data->color_object[0], color_objects, sizeof(struct ColorObject*) * color_object_n);
@@ -521,7 +522,7 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 	struct DragDrop *dd = (struct DragDrop*)user_data;
 
 	if (dd->get_color_object_list){
-		uint32_t color_object_n;
+		size_t color_object_n;
 		struct ColorObject** color_objects = dd->get_color_object_list(dd, &color_object_n);
 		if (color_objects){
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECTS;
@@ -531,9 +532,9 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
 			GtkWidget* hbox = gtk_vbox_new(true, 0);
 			gtk_container_add(GTK_CONTAINER(dragwindow), hbox);
-			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24 * std::min(color_object_n, (uint32_t)5));
+			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24 * std::min(color_object_n, (size_t)5));
 
-			for (int i = 0; i < std::min(color_object_n, (uint32_t)5); i++){
+			for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
 				Color color;
 				color_object_get_color(color_objects[i], &color);
 

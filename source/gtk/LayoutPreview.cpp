@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -184,12 +184,6 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 	Box* box = ns->system->GetBoxAt(point);
 	if (box && box->style && !box->locked){
 		color_copy(color, &box->style->color);
-
-		/*if (typeid(*box)==typeid(Fill)){
-			color_copy(color, &box->style->background_color);
-		}else if (typeid(*box)==typeid(Text)){
-			color_copy(color, &box->style->text_color);
-		}*/
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}
@@ -259,20 +253,11 @@ int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color)
 	return -1;
 }
 
-
 int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color){
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
-
 	if (ns->system && ns->selected_style && !ns->selected_box->locked){
 		Box* box = ns->selected_box;
-
 		color_copy(color, &box->style->color);
-
-		/*if (typeid(*box)==typeid(Fill)){
-			color_copy(color, &box->style->background_color);
-		}else if (typeid(*box)==typeid(Text)){
-			color_copy(color, &box->style->text_color);
-		}*/
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}

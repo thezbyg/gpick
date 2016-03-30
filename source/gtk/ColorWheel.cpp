@@ -302,7 +302,7 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 	double inner_radius = radius - width;
 
 	if (ns->cache_color_wheel){
-        surface = ns->cache_color_wheel;
+		surface = ns->cache_color_wheel;
 	}else{
 		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(radius * 2), ceil(radius * 2));
 		if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS){
@@ -412,7 +412,7 @@ int gtk_color_wheel_get_at(GtkColorWheel *color_wheel, int x, int y){
 static gboolean gtk_color_wheel_motion_notify(GtkWidget *widget, GdkEventMotion *event){
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
 
-    if (ns->grab_active){
+	if (ns->grab_active){
 		double dx = -((event->x - widget->style->xthickness) - ns->radius);
 		double dy = (event->y - widget->style->ythickness) - ns->radius;
 
@@ -506,7 +506,7 @@ static gboolean gtk_color_wheel_button_press(GtkWidget *widget, GdkEventButton *
 
 	gtk_widget_grab_focus(widget);
 
-    ColorPoint *p;
+	ColorPoint *p;
 	if (is_inside_block(ns, x, y)){
 		if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
 			if (ns->block_editable && ns->selected){

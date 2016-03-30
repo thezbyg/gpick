@@ -62,7 +62,7 @@ css_selector::css_selector(){
 }
 
 void css_selector::addSimpleSelector(css_simple_selector* simple_selector){
-  simple_selectors_.push_back(simple_selector);
+	simple_selectors_.push_back(simple_selector);
 }
 void css_selector::addSelector(css_selector* selector){
 	for (list<css_simple_selector*>::iterator i = selector->simple_selectors_.begin(); i != selector->simple_selectors_.end(); i++){
@@ -71,7 +71,7 @@ void css_selector::addSelector(css_selector* selector){
 }
 
 void css_selector::prependSimpleSelector(css_simple_selector* simple_selector){
-  simple_selectors_.push_front(simple_selector);
+	simple_selectors_.push_front(simple_selector);
 }
 
 css_selectors::css_selectors(){
@@ -79,16 +79,15 @@ css_selectors::css_selectors(){
 }
 
 void css_selectors::addSelector(css_selector* selector){
-  selectors_.push_back(selector);
+	selectors_.push_back(selector);
 }
-
 
 css_ruleset::css_ruleset(){
 
 }
 
 void css_ruleset::addSelector(css_selector* selector){
-  selectors_.push_back(selector);
+	selectors_.push_back(selector);
 }
 
 void css_ruleset::setSelectors(std::list<css_selector*> &selectors){
@@ -96,7 +95,7 @@ void css_ruleset::setSelectors(std::list<css_selector*> &selectors){
 }
 
 void css_ruleset::addProperty(css_property* property){
-  properties_.push_back(property);
+	properties_.push_back(property);
 }
 
 void css_ruleset::addProperties(css_properties* properties){
@@ -105,25 +104,21 @@ void css_ruleset::addProperties(css_properties* properties){
 	}
 }
 
-
 css_file::css_file(){
 
 }
 
 void css_file::addRuleset(css_ruleset* ruleset){
-  rulesets_.push_back(ruleset);
+	rulesets_.push_back(ruleset);
 }
-
-
 
 css_function::css_function(const char* name){
 	name_ = name;
 }
 
 void css_function::addArgument(css_base* argument){
-  arguments_.push_back(argument);
+	arguments_.push_back(argument);
 }
-
 
 css_hex::css_hex(uint32_t value){
 	value_ = value;
@@ -131,9 +126,9 @@ css_hex::css_hex(uint32_t value){
 
 css_hex::css_hex(const char *value){
 	uint32_t x;
-  std::stringstream ss;
-  ss << (value + 1);
-  ss << hex;
+	std::stringstream ss;
+	ss << (value + 1);
+	ss << hex;
 	ss >> x;
 
 	value_ = x;
@@ -160,7 +155,7 @@ css_properties::css_properties(){
 }
 
 void css_properties::addProperty(css_property* property){
-  properties_.push_back(property);
+	properties_.push_back(property);
 }
 
 }
@@ -218,7 +213,7 @@ int parse_file(const char *filename){
 
 	yyscan_t scanner;
 	css_yystype stype;
-	parse_parm  pp;
+	parse_parm pp;
 
 	struct Memory* memory = memory_new();
 	pp.memory = memory;

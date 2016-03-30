@@ -66,24 +66,6 @@ Color* dynv_get_color_wdc(struct dynvSystem* dynv_system, const char *path, Colo
 	}else return *(Color**)r;
 }
 
-const void* dynv_get_pointer_wd(struct dynvSystem* dynv_system, const char *path, const void* default_value){
-	int error;
-	void* r = dynv_get(dynv_system, "ptr", path, &error);
-	if (error){
-		return default_value;
-	}else return *(const void**)r;
-}
-
-void* dynv_get_pointer_wdc(struct dynvSystem* dynv_system, const char *path, void* default_value){
-	int error;
-	void* r = dynv_get(dynv_system, "ptr", path, &error);
-	if (error){
-		return default_value;
-	}else return *(void**)r;
-}
-
-
-
 void dynv_set_int32(struct dynvSystem* dynv_system, const char *path, int32_t value){
 	dynv_set(dynv_system, "int32", path, &value);
 }
@@ -102,10 +84,6 @@ void dynv_set_string(struct dynvSystem* dynv_system, const char *path, const cha
 
 void dynv_set_color(struct dynvSystem* dynv_system, const char *path, const Color* value){
 	dynv_set(dynv_system, "color", path, &value);
-}
-
-void dynv_set_pointer(struct dynvSystem* dynv_system, const char *path, const void* value){
-	dynv_set(dynv_system, "ptr", path, &value);
 }
 
 struct dynvSystem* dynv_get_dynv(struct dynvSystem* dynv_system, const char *path){

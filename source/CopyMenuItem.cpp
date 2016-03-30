@@ -19,7 +19,7 @@
 #include "CopyMenuItem.h"
 #include "ColorObject.h"
 #include "Converter.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "DynvHelpers.h"
 #include "uiUtilities.h"
 #include <string>
@@ -68,7 +68,7 @@ GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GlobalState *gs, boo
 	position.last = true;
 	position.index = 0;
 	position.count = 1;
-	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
+	auto converters = gs->getConverters();
 	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
 		if (include_name){

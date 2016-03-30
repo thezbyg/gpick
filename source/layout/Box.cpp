@@ -46,7 +46,7 @@ void Box::Draw(Context *context, const Rect2<float>& parent_rect ){
 void Box::DrawChildren(Context *context, const math::Rect2<float>& parent_rect ){
 	Rect2<float> child_rect = rect.impose( parent_rect );
 
-	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+	for (list<Box*>::iterator i = child.begin(); i != child.end(); i++){
 		(*i)->Draw(context, child_rect);
 	}
 }
@@ -65,7 +65,7 @@ Box::Box(const char* _name, float x, float y, float width, float height){
 
 Box::~Box(){
 	SetStyle(0);
-	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+	for (list<Box*>::iterator i = child.begin(); i != child.end(); i++){
 		unref(*i);
 	}
 }
@@ -76,7 +76,7 @@ Box* Box::GetNamedBox(const char *name_){
 	}
 
 	Box* r;
-	for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+	for (list<Box*>::iterator i = child.begin(); i != child.end(); i++){
 		if ((r = (*i)->GetNamedBox(name_))){
 			if (!r->helper_only)
 				return r;
@@ -91,14 +91,14 @@ Box* Box::GetBoxAt(const Vec2<float>& point){
 		Vec2<float> transformed_point = Vec2<float>((point.x-rect.getX()) / rect.getWidth(), (point.y-rect.getY()) / rect.getHeight());
 
 		Box* r;
-		for (list<Box*>::iterator i = child.begin(); i!=child.end(); i++){
+		for (list<Box*>::iterator i = child.begin(); i != child.end(); i++){
 			if ((r = (*i)->GetBoxAt(transformed_point))){
 				if (!r->helper_only)
 					return r;
 			}
 		}
 
-		if (typeid(*this)==typeid(Box))		//do not match Box, because it is invisible
+		if (typeid(*this) == typeid(Box)) //do not match Box, because it is invisible
 			return 0;
 		else
 			return this;
@@ -112,7 +112,7 @@ void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
 
 	cairo_t *cr = context->getCairo();
 
-	if (text!=""){
+	if (text != ""){
 		if (helper_only){
 			cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_ITALIC, CAIRO_FONT_WEIGHT_NORMAL);
 		}else{
@@ -124,7 +124,7 @@ void Text::Draw(Context *context, const Rect2<float>& parent_rect ){
 			if (context->getTransformationChain()){
 				context->getTransformationChain()->apply(&style->color, &color);
 			}else{
-        color_copy(&style->color, &color);
+				color_copy(&style->color, &color);
 			}
 
 			cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);

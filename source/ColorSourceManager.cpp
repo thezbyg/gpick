@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,16 +17,13 @@
  */
 
 #include "ColorSourceManager.h"
-
+#include "ColorSource.h"
 #include <glib.h>
 #include <iostream>
 using namespace std;
 
-
 ColorSourceManager* color_source_manager_create(){
 	ColorSourceManager *csm = new ColorSourceManager;
-
-
 	return csm;
 }
 
@@ -47,8 +44,7 @@ ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name)
 vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm){
 	vector<ColorSource*> ret;
 	ret.resize(csm->colorsource.size());
-
-	uint32_t j = 0;
+	size_t j = 0;
 	for (map<string, ColorSource*>::iterator i = csm->colorsource.begin(); i != csm->colorsource.end(); ++i){
 		ret[j] = (*i).second;
 		j++;
@@ -64,8 +60,4 @@ int color_source_manager_destroy(ColorSourceManager *csm){
 	delete csm;
 	return 0;
 }
-
-
-
-
 

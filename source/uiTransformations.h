@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UI_TRANSFORMATIONS_H_
-#define UI_TRANSFORMATIONS_H_
+#ifndef GPICK_UI_TRANSFORMATIONS_H_
+#define GPICK_UI_TRANSFORMATIONS_H_
 
+class GlobalState;
 #include <gtk/gtk.h>
-#include "GlobalState.h"
-
 void dialog_transformations_show(GtkWindow* parent, GlobalState* gs);
 
-#endif /* UI_TRANSFORMATIONS_H_ */
+#endif /* GPICK_UI_TRANSFORMATIONS_H_ */
 

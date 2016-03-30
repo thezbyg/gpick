@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,7 +19,7 @@
 #include "uiDialogOptions.h"
 #include "uiUtilities.h"
 #include "ToolColorNaming.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "Internationalisation.h"
 #include "LuaExt.h"
 #include "DynvHelpers.h"
@@ -69,9 +69,10 @@ typedef struct DialogOptionsArgs{
 	GlobalState* gs;
 }DialogOptionsArgs;
 
-int dialog_options_update(struct dynvSystem *params)
+int dialog_options_update(lua_State *lua, dynvSystem *settings)
 {
-	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
+	if (lua == nullptr || settings == nullptr) return -1;
+	lua_State* L = lua;
 	int status;
 	int stack_top = lua_gettop(L);
 	lua_getglobal(L, "gpick");
@@ -80,9 +81,9 @@ int dialog_options_update(struct dynvSystem *params)
 		lua_pushstring(L, "options_update");
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
-			lua_pushdynvsystem(L, params);
+			lua_pushdynvsystem(L, settings);
 			status = lua_pcall(L, 1, 0, 0);
-			dynv_system_release(params);
+			dynv_system_release(settings);
 			if (status == 0){
 				lua_settop(L, stack_top);
 				return 0;
@@ -142,7 +143,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 {
 	DialogOptionsArgs *args = new DialogOptionsArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
 	GtkWidget *table, *table_m, *widget;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Options"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "options.window.width", -1), dynv_get_int32_wd(args->params, "options.window.height", -1));
@@ -398,7 +399,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), notebook);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		calc(args, false, 0);
-		dialog_options_update(args->gs->params);
+		dialog_options_update(args->gs->getLua(), args->gs->getSettings());
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

@@ -48,8 +48,8 @@ typedef struct GtkColorWheel
 
 typedef struct GtkColorWheelClass{
 	GtkDrawingAreaClass parent_class;
-	void  (*hue_changed)(GtkWidget *widget, gint color_id, gpointer userdata);
-	void  (*saturation_value_changed)(GtkWidget *widget, gint color_id, gpointer userdata);
+	void (*hue_changed)(GtkWidget *widget, gint color_id, gpointer userdata);
+	void (*saturation_value_changed)(GtkWidget *widget, gint color_id, gpointer userdata);
 }GtkColorWheelClass;
 
 GtkWidget* gtk_color_wheel_new(void);

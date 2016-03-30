@@ -30,7 +30,7 @@
  * \brief ColorWheelType structure contains color wheel type name and conversion functions
  */
 typedef struct ColorWheelType{
-	const char *name;                                   /**< Name of a color wheel */
+	const char *name; /**< Name of a color wheel */
 /**
  * Callback used to convert color wheel specific hue into the color in a HSL color space
  * @param[in] hue Color wheel specific hue value

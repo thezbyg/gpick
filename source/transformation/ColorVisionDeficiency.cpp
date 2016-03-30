@@ -208,57 +208,57 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	}
 
 	switch (type){
-  case PROTANOMALY:
-		load_matrix(protanomaly[index], &matrix1);
-		load_matrix(protanomaly[index_secondary], &matrix2);
-		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
-		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
-		break;
-  case DEUTERANOMALY:
-		load_matrix(deuteranomaly[index], &matrix1);
-		load_matrix(deuteranomaly[index_secondary], &matrix2);
-		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
-		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
-		break;
-  case TRITANOMALY:
-		load_matrix(tritanomaly[index], &matrix1);
-		load_matrix(tritanomaly[index_secondary], &matrix2);
-		vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
-		vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
-		break;
-	case PROTANOPIA:
-		if (lms.z / lms.y < rgb_anchor[2] / rgb_anchor[1]){
-			lms.x = -(protanopia_abc[0].y * lms.y + protanopia_abc[0].z * lms.z) / protanopia_abc[0].x;
-		}else{
-			lms.x = -(protanopia_abc[1].y * lms.y + protanopia_abc[1].z * lms.z) / protanopia_abc[1].x;
-		}
-		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
-		load_vector(&linear_input, &vo2);
-		interpolation_factor = strength;
-		break;
-	case DEUTERANOPIA:
-		if (lms.z / lms.x < rgb_anchor[2] / rgb_anchor[0]){
-			lms.y = -(deuteranopia_abc[0].x * lms.x + deuteranopia_abc[0].z * lms.z) / deuteranopia_abc[0].y;
-		}else{
-			lms.y = -(deuteranopia_abc[1].x * lms.x + deuteranopia_abc[1].z * lms.z) / deuteranopia_abc[1].y;
-		}
-		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
-		load_vector(&linear_input, &vo2);
-		interpolation_factor = strength;
-		break;
-	case TRITANOPIA:
-		if (lms.y / lms.x < rgb_anchor[1] / rgb_anchor[0]){
-			lms.z = -(tritanopia_abc[0].x * lms.x + tritanopia_abc[0].y * lms.y) / tritanopia_abc[0].z;
-		}else{
-			lms.z = -(tritanopia_abc[1].x * lms.x + tritanopia_abc[1].y * lms.y) / tritanopia_abc[1].z;
-		}
-		vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
-		load_vector(&linear_input, &vo2);
-		interpolation_factor = strength;
-		break;
-  default:
-		color_copy(input, output);
-		return;
+		case PROTANOMALY:
+			load_matrix(protanomaly[index], &matrix1);
+			load_matrix(protanomaly[index_secondary], &matrix2);
+			vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+			vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
+			break;
+		case DEUTERANOMALY:
+			load_matrix(deuteranomaly[index], &matrix1);
+			load_matrix(deuteranomaly[index_secondary], &matrix2);
+			vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+			vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
+			break;
+		case TRITANOMALY:
+			load_matrix(tritanomaly[index], &matrix1);
+			load_matrix(tritanomaly[index_secondary], &matrix2);
+			vector3_multiply_matrix3x3(&vi, &matrix1, &vo1);
+			vector3_multiply_matrix3x3(&vi, &matrix2, &vo2);
+			break;
+		case PROTANOPIA:
+			if (lms.z / lms.y < rgb_anchor[2] / rgb_anchor[1]){
+				lms.x = -(protanopia_abc[0].y * lms.y + protanopia_abc[0].z * lms.z) / protanopia_abc[0].x;
+			}else{
+				lms.x = -(protanopia_abc[1].y * lms.y + protanopia_abc[1].z * lms.z) / protanopia_abc[1].x;
+			}
+			vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+			load_vector(&linear_input, &vo2);
+			interpolation_factor = strength;
+			break;
+		case DEUTERANOPIA:
+			if (lms.z / lms.x < rgb_anchor[2] / rgb_anchor[0]){
+				lms.y = -(deuteranopia_abc[0].x * lms.x + deuteranopia_abc[0].z * lms.z) / deuteranopia_abc[0].y;
+			}else{
+				lms.y = -(deuteranopia_abc[1].x * lms.x + deuteranopia_abc[1].z * lms.z) / deuteranopia_abc[1].y;
+			}
+			vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+			load_vector(&linear_input, &vo2);
+			interpolation_factor = strength;
+			break;
+		case TRITANOPIA:
+			if (lms.y / lms.x < rgb_anchor[1] / rgb_anchor[0]){
+				lms.z = -(tritanopia_abc[0].x * lms.x + tritanopia_abc[0].y * lms.y) / tritanopia_abc[0].z;
+			}else{
+				lms.z = -(tritanopia_abc[1].x * lms.x + tritanopia_abc[1].y * lms.y) / tritanopia_abc[1].z;
+			}
+			vector3_multiply_matrix3x3(&lms, &matrix2, &vo1);
+			load_vector(&linear_input, &vo2);
+			interpolation_factor = strength;
+			break;
+		default:
+			color_copy(input, output);
+			return;
 	}
 
 	linear_output.rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
@@ -323,7 +323,7 @@ static GtkWidget* create_type_list(void){
 	g_object_unref(GTK_TREE_MODEL(store));
 	GtkTreeIter iter1;
 
-  struct {
+	struct {
 		const char *name;
 		int type;
 	} types[] = {
@@ -370,7 +370,7 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 	info_label = gtk_label_new("");
 	gtk_label_set_line_wrap(GTK_LABEL(info_label), true);
 	gtk_label_set_justify(GTK_LABEL(info_label), GTK_JUSTIFY_LEFT);
-  gtk_label_set_single_line_mode(GTK_LABEL(info_label), false);
+	gtk_label_set_single_line_mode(GTK_LABEL(info_label), false);
 	gtk_misc_set_alignment(GTK_MISC(info_label), 0, 0.5);
 	gtk_widget_set_size_request(info_label, 1, -1);
 	GtkWidget *content_area = gtk_info_bar_get_content_area(GTK_INFO_BAR(info_bar));

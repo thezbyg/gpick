@@ -42,7 +42,7 @@ static gchar* get_data_dir(){
 	while (i){
 		tmp = g_build_filename((gchar*)i->data, "gpick", NULL);
 
-		if (g_stat( tmp, &sb )==0){
+		if (g_stat( tmp, &sb ) == 0){
 			data_dir=g_strdup(tmp);
 			g_free(tmp);
 			break;
@@ -53,7 +53,7 @@ static gchar* get_data_dir(){
 
 	g_list_free(paths);
 
-	if (data_dir==NULL){
+	if (data_dir == NULL){
 		data_dir=g_strdup("");
 		return data_dir;
 	}

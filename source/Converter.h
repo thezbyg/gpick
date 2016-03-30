@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,14 +19,15 @@
 #ifndef GPICK_CONVERTER_H_
 #define GPICK_CONVERTER_H_
 
-#include "dynv/DynvSystem.h"
+class Converters;
+struct lua_State;
+struct dynvSystem;
+struct ColorObject;
 #include <string>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
 #include <stdint.h>
-
-class Converters;
 
 enum ConvertersArrayType{
 	CONVERTERS_ARRAY_TYPE_COPY,
@@ -43,13 +44,13 @@ typedef struct Converter{
 	Converters *converters;
 }Converter;
 
-Converters* converters_init(struct dynvSystem* params);
+Converters* converters_init(lua_State *lua, dynvSystem *settings);
 int converters_term(Converters *converters);
 Converter* converters_get(Converters *converters, const char* name);
 int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type);
 Converter* converters_get_first(Converters *converters, ConvertersArrayType type);
-Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, uint32_t *size);
-Converter** converters_get_all(Converters *converters, uint32_t *size);
+Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, size_t *size);
+Converter** converters_get_all(Converters *converters, size_t *size);
 
 typedef struct ConverterSerializePosition{
 	bool first;
@@ -58,10 +59,11 @@ typedef struct ConverterSerializePosition{
 	size_t count;
 }ConverterSerializePosition;
 
-int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
-int converters_color_serialize(Converter* converter, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
-int converters_color_deserialize(Converters* converters, const char* function, const char* text, struct ColorObject* color_object, float* conversion_quality);
+int converters_color_serialize(Converters* converters, const char* function, ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
+int converters_color_serialize(Converter* converter, ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
+int converters_color_deserialize(Converters* converters, const char* function, const char* text, ColorObject* color_object, float* conversion_quality);
 int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type);
-int converters_reorder(Converters *converters, const char** priority_names, uint32_t priority_names_size);
+int converters_reorder(Converters *converters, const char** priority_names, size_t priority_names_size);
 
 #endif /* GPICK_CONVERTER_H_ */
+

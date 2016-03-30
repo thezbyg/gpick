@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,12 +19,13 @@
 #include "uiDialogMix.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
+#include "ColorList.h"
+#include "ColorObject.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
-
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
@@ -50,7 +51,7 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 		const char *m_color_end;
 		int m_start_percent;
 		int m_end_percent;
-                int m_is_node;
+		int m_is_node;
 	public:
 		MixColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 		}
@@ -86,15 +87,13 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 
 
 #define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
-    float mixfactor = step_i/(float)(steps-1); \
-    name_assigner.assign(color_object, &r, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
+	float mixfactor = step_i/(float)(steps-1); \
+	name_assigner.assign(color_object, &r, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object_release(color_object)
 
 #define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
 	STORE_COLOR()
-
-
 
 static void calc( DialogMixArgs *args, bool preview, int limit){
 
@@ -129,10 +128,10 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 	if (preview)
 		color_list = args->preview_color_list;
 	else
-		color_list = args->gs->colors;
+		color_list = args->gs->getColorList();
 
 	ColorList::iter j;
-	for (ColorList::iter i=args->selected_color_list->colors.begin(); i!=args->selected_color_list->colors.end(); ++i){
+	for (ColorList::iter i=args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 
 		color_object_get_color(*i, &a);
 		if (type == 0)
@@ -141,7 +140,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 		const char* name_a = dynv_get_string_wd((*i)->params, "name", 0);
 		j=i;
 		++j;
-		for (; j!=args->selected_color_list->colors.end(); ++j){
+		for (; j != args->selected_color_list->colors.end(); ++j){
 
 			if (preview){
 				if (limit<=0) return;
@@ -236,7 +235,7 @@ static void update(GtkWidget *widget, DialogMixArgs *args ){
 void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs) {
 	DialogMixArgs *args = new DialogMixArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.mix");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.mix");
 
 	GtkWidget *table;
 	GtkWidget *mix_type, *mix_steps;
@@ -283,7 +282,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list=NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander=palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
 	args->selected_color_list = selected_color_list;

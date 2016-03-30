@@ -34,7 +34,7 @@ namespace transformation {
  */
 class Factory{
 	public:
-    typedef struct TypeInfo{
+		typedef struct TypeInfo{
 			const char *name;
 			const char *human_name;
 			TypeInfo(const char *name, const char *human_name);

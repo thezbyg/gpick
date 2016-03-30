@@ -31,9 +31,9 @@
 typedef struct Color{
 	union{
 		struct{
-			float red;               /**< Red component */
-			float green;             /**< Green component */
-			float blue;              /**< Blue component */
+			float red; /**< Red component */
+			float green; /**< Green component */
+			float blue; /**< Blue component */
 		}rgb;
 		struct{
 			float hue;
@@ -76,8 +76,8 @@ typedef struct Color{
 			float m2;
 			float m3;
 			float m4;
-		}m;                        /**< General data access structure */
-		float ma[4];               /**< General data access array */
+		}m; /**< General data access structure */
+		float ma[4]; /**< General data access array */
 	};
 }Color;
 

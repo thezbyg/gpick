@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,35 +16,29 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_LAYOUT_H_
-#define LAYOUT_LAYOUT_H_
+#ifndef GPICK_LAYOUT_LAYOUT_H_
+#define GPICK_LAYOUT_LAYOUT_H_
 
-#include "../dynv/DynvSystem.h"
+struct dynvSystem;
+struct lua_State;
+#include <cstddef>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
 #include <stdint.h>
-
-#include "System.h"
-
 namespace layout{
-
 class Layouts;
-
+class System;
 typedef struct Layout{
 	char* name;
 	char* human_readable;
 	uint32_t mask;
 }Layout;
-
-Layouts* layouts_init(struct dynvSystem* params);
+Layouts* layouts_init(lua_State *lua, dynvSystem* params);
 int layouts_term(Layouts *layouts);
-
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size);
-
+Layout** layouts_get_all(Layouts *layouts, size_t *size);
 System* layouts_get(Layouts *layouts, const char* name);
-
 }
 
-#endif /* LAYOUT_LAYOUT_H_ */
+#endif /* GPICK_LAYOUT_LAYOUT_H_ */
 

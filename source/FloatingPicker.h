@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,11 +19,11 @@
 #ifndef GPICK_FLOATING_PICKER_H_
 #define GPICK_FLOATING_PICKER_H_
 
-#include "ColorSource.h"
-#include "GlobalState.h"
-#include <gtk/gtk.h>
+struct Color;
 #include <functional>
 
+class GlobalState;
+struct ColorSource;
 typedef struct FloatingPickerArgs* FloatingPicker;
 FloatingPicker floating_picker_new(GlobalState *gs);
 void floating_picker_set_picker_source(FloatingPicker fp, ColorSource* color_source);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,9 +19,11 @@
 #include "uiDialogVariations.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
+#include "ColorList.h"
+#include "ColorObject.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
 #include <sstream>
@@ -86,7 +88,7 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit)
 	if (preview)
 		color_list = args->preview_color_list;
 	else
-		color_list = args->gs->colors;
+		color_list = args->gs->getColorList();
 	VariationsColorNameAssigner name_assigner(args->gs);
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		Color in;
@@ -138,7 +140,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 {
 	DialogVariationsArgs *args = new DialogVariationsArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.variations");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.variations");
 	GtkWidget *table, *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
@@ -200,7 +202,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 3, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 3, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
 	args->selected_color_list = selected_color_list;

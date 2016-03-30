@@ -20,10 +20,10 @@
 #define GPICK_COLOR_PICKER_H_
 
 #include "FloatingPicker.h"
-#include "ColorSource.h"
-#include "ColorSourceManager.h"
 #include <gtk/gtk.h>
 
+struct ColorSource;
+struct ColorSourceManager;
 int color_picker_source_register(ColorSourceManager *csm);
 int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);

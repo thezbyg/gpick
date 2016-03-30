@@ -153,7 +153,7 @@ static void draw_sat_val_block(GtkRange2DPrivate *ns, cairo_t *cr, double pos_x,
 	cairo_surface_t *surface;
 
 	if (ns->cache_range_2d){
-        surface = ns->cache_range_2d;
+		surface = ns->cache_range_2d;
 	}else{
 		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(size), ceil(size));
 		unsigned char *data = cairo_image_surface_get_data(surface);
@@ -262,7 +262,7 @@ static gboolean gtk_range_2d_expose(GtkWidget *widget, GdkEventExpose *event){
 		pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
 		pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
 		pango_layout_set_font_description(layout, font_description);
-        pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+		pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 
 		cairo_set_source_rgb(cr, 1, 1, 1);
 

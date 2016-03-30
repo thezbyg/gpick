@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,13 +17,14 @@
  */
 
 #include "PaletteFromImage.h"
+#include "../ColorList.h"
+#include "../ColorObject.h"
 #include "../uiUtilities.h"
 #include "../uiListPalette.h"
-#include "../GlobalStateStruct.h"
+#include "../GlobalState.h"
 #include "../ToolColorNaming.h"
 #include "../DynvHelpers.h"
 #include "../Internationalisation.h"
-
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -41,25 +42,24 @@ using namespace std;
  * Each node can b
  */
 typedef struct Node{
-	uint32_t n_pixels;          /**< Number of colors in current Node and its children */
-	uint32_t n_pixels_in;       /**< Number of colors in current Node */
-	float color[3];             /**< Sum of color values */
-	float distance;             /**< Squared distances from Node center of colors in Node */
-
-	Node *child[8];             /**< Pointers to child Nodes */
-	Node *parent;               /**< Pointer to parent Node */
+	uint32_t n_pixels; /**< Number of colors in current Node and its children */
+	uint32_t n_pixels_in; /**< Number of colors in current Node */
+	float color[3]; /**< Sum of color values */
+	float distance; /**< Squared distances from Node center of colors in Node */
+	Node *child[8]; /**< Pointers to child Nodes */
+	Node *parent; /**< Pointer to parent Node */
 }Node;
 
 /** \struct Cube
  * \brief Cube structure holds all information necessary to define cube size and position in space
  */
 typedef struct Cube{
-	float x;                 /**< X position */
-	float w;                 /**< Width */
-	float y;                 /**< Y position */
-	float h;                 /**< Height */
-	float z;                 /**< Z position */
-	float d;                 /**< Depth */
+	float x; /**< X position */
+	float w; /**< Width */
+	float y; /**< Y position */
+	float h; /**< Height */
+	float z; /**< Z position */
+	float d; /**< Depth */
 }Cube;
 
 typedef struct PaletteFromImageArgs{
@@ -67,16 +67,12 @@ typedef struct PaletteFromImageArgs{
 	GtkWidget *range_colors;
 	GtkWidget *merge_threshold;
 	GtkWidget *preview_expander;
-
 	string filename;
 	uint32_t n_colors;
-
 	string previous_filename;
 	Node *previous_node;
-
 	struct ColorList *color_list;
 	struct ColorList *preview_color_list;
-
 	struct dynvSystem *params;
 	GlobalState* gs;
 }PaletteFromImageArgs;
@@ -99,7 +95,7 @@ class PaletteColorNameAssigner: public ToolColorNameAssigner {
 
 		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
 			m_stream.str("");
-			m_stream <<  m_filename << " #" << m_index;
+			m_stream << m_filename << " #" << m_index;
 			return m_stream.str();
 		}
 };
@@ -383,14 +379,10 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 			ptr += channels;
 		}
 	}
-
 	g_object_unref(pixbuf);
-
 	node_reduce(args->previous_node, 200);
-
 	return node_copy(args->previous_node, 0);
 }
-
 
 static void get_settings(PaletteFromImageArgs *args){
 
@@ -433,7 +425,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	if (preview)
 		color_list = args->preview_color_list;
 	else
-		color_list = args->gs->colors;
+		color_list = args->gs->getColorList();
 
 	list<Color> tmp_list;
 
@@ -450,16 +442,13 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 		color_object_release(color_object);
 		index++;
 	}
-
 }
-
 
 static void update(GtkWidget *widget, PaletteFromImageArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	get_settings(args);
 	calc(args, true, 100);
 }
-
 
 static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 	return g_strdup_printf("%0.01f%%", value);
@@ -499,25 +488,18 @@ static void response_cb(GtkWidget* widget, gint response_id, PaletteFromImageArg
 	}
 }
 
-
-void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
-
+void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
+{
 	PaletteFromImageArgs *args = new PaletteFromImageArgs;
-
-    args->previous_filename = "";
+	args->previous_filename = "";
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.tools.palette_from_image");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.tools.palette_from_image");
 	args->previous_node = 0;
-
 	GtkWidget *table, *table_m, *widget;
-
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
-
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
-
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
-
 
 	GtkWidget *frame;
 	gint table_y, table_m_y;
@@ -538,7 +520,6 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	gtk_table_attach(GTK_TABLE(table), widget, 0, 3, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	g_signal_connect(G_OBJECT(args->file_browser), "file-set", G_CALLBACK(update), args);
 	table_y++;
-
 
 	const char* selected_filter = dynv_get_string_wd(args->params, "filter", "all_images");
 	GtkFileFilter *filter;
@@ -568,7 +549,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 		gtk_file_filter_set_name(filter, gdk_pixbuf_format_get_description(format));
 
 		gchar **extensions = gdk_pixbuf_format_get_extensions(format);
-        if (extensions){
+		if (extensions){
 			for (int j = 0; extensions[j]; j++){
 				ss.str("");
 				ss << "*." << extensions[j];
@@ -585,7 +566,6 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	}
 	if (formats) g_slist_free(formats);
 
-
 	frame = gtk_frame_new(_("Options"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
@@ -594,8 +574,6 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
-
-
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Colors:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_colors = widget = gtk_spin_button_new_with_range (1, 100, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), dynv_get_int32_wd(args->params, "colors", 3));
@@ -603,20 +581,8 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 	g_signal_connect(G_OBJECT(args->range_colors), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
-
-    /*
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Threshold:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->merge_threshold = widget = gtk_hscale_new_with_range(0, 100, 0.1);
-	gtk_range_set_value(GTK_RANGE(widget), dynv_get_float_wd(args->params, "merge_threshold", 20));
-	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(update), args);
-	g_signal_connect(G_OBJECT(widget), "format-value", G_CALLBACK(format_threshold_value_cb), args);
-	gtk_scale_set_value_pos(GTK_SCALE(widget), GTK_POS_RIGHT);
-	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
-	table_y++;
-    */
-
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
 	args->preview_color_list = preview_color_list;
@@ -629,5 +595,4 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs){
 
 	gtk_widget_show(dialog);
 }
-
 

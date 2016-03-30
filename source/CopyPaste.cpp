@@ -16,7 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "GlobalStateStruct.h"
+#include "ColorObject.h"
+#include "GlobalState.h"
 #include "CopyPaste.h"
 #include "uiApp.h"
 #include <string.h>
@@ -32,7 +33,7 @@ static GtkTargetEntry targets[] = {
 	//{ (char*)"colorobject", GTK_TARGET_SAME_APP, TARGET_COLOR_OBJECT },
 	{ (char*)"application/x-color", 0, TARGET_COLOR },
 	{ (char*)"text/plain", 0, TARGET_STRING },
-	{ (char*)"STRING",     0, TARGET_STRING },
+	{ (char*)"STRING", 0, TARGET_STRING },
 	//{ (char*)"application/x-rootwin-drop", 0, TARGET_ROOTWIN }
 };
 
@@ -118,7 +119,7 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 			for (int32_t i = 0; i < avail_n_targets; ++i){
 				gchar* atom_name = gdk_atom_name(avail_targets[i]);
 
-				if (g_strcmp0(targets[j].target, atom_name)==0){
+				if (g_strcmp0(targets[j].target, atom_name) == 0){
 					GtkSelectionData *selection_data = gtk_clipboard_wait_for_contents(clipboard, avail_targets[i]);
 					bool success = false;
 					if (selection_data){
@@ -138,7 +139,7 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
 								if (data[gtk_selection_data_get_length(selection_data)] !=0) break; //not null terminated
 								struct ColorObject* color_object;
-								if (main_get_color_object_from_text(gs, data, &color_object)==0){
+								if (main_get_color_object_from_text(gs, data, &color_object) == 0){
 									*out_color_object = color_object;
 									success = true;
 								}
@@ -153,7 +154,7 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								color.rgb.green = data[1] / (double)0xFFFF;
 								color.rgb.blue = data[2] / (double)0xFFFF;
 
-								struct ColorObject* color_object = color_list_new_color_object(gs->colors, &color);
+								struct ColorObject* color_object = color_list_new_color_object(gs->getColorList(), &color);
 								*out_color_object = color_object;
 								success = true;
 							}
@@ -191,7 +192,7 @@ int copypaste_is_color_object_available(GlobalState* gs){
 			for (int32_t i = 0; i < avail_n_targets; ++i){
 				gchar* atom_name = gdk_atom_name(avail_targets[i]);
 
-				if (g_strcmp0(targets[j].target, atom_name)==0){
+				if (g_strcmp0(targets[j].target, atom_name) == 0){
 
 					g_free(atom_name);
 					g_free(avail_targets);

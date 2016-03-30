@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,15 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UICOLORINPUT_H_
-#define UICOLORINPUT_H_
+#ifndef GPICK_UI_COLOR_INPUT_H_
+#define GPICK_UI_COLOR_INPUT_H_
 
+class GlobalState;
+struct GtkColorComponent;
 #include <gtk/gtk.h>
-#include "gtk/ColorComponent.h"
-#include "GlobalState.h"
-
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object);
-
 void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params);
 
-#endif /* UICOLORINPUT_H_ */
+#endif /* GPICK_UI_COLOR_INPUT_H_ */
+

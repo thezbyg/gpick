@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2015, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,25 +16,51 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GLOBALSTATE_H_
-#define GLOBALSTATE_H_
+#ifndef GPICK_GLOBAL_STATE_H_
+#define GPICK_GLOBAL_STATE_H_
 
-typedef struct GlobalState GlobalState;
-
-enum GlobalStateLevel{
-	GLOBALSTATE_CONFIGURATION = 1,
-	GLOBALSTATE_SCRIPTING = 2,
-	GLOBALSTATE_COLOR_LIST = 4,
-	GLOBALSTATE_CONVERTERS = 8,
-	GLOBALSTATE_COLOR_NAMES = 16,
-	GLOBALSTATE_OTHER = 32,
-	GLOBALSTATE_TRANSFORMATIONS = 64,
-	GLOBALSTATE_ALL = 0xffffffff,
+#include <memory>
+struct ColorNames;
+struct Sampler;
+struct ScreenReader;
+struct ColorList;
+struct dynvSystem;
+struct lua_State;
+struct Random;
+struct Converters;
+struct ColorSource;
+typedef struct _GtkWidget GtkWidget;
+namespace layout {
+	class Layouts;
+}
+namespace transformation {
+	class Chain;
+}
+class GlobalState
+{
+	public:
+		GlobalState();
+		~GlobalState();
+		bool loadSettings();
+		bool loadAll();
+		bool writeSettings();
+		ColorNames *getColorNames();
+		Sampler *getSampler();
+		ScreenReader *getScreenReader();
+		ColorList *getColorList();
+		dynvSystem *getSettings();
+		lua_State *getLua();
+		Random *getRandom();
+		Converters *getConverters();
+		layout::Layouts *getLayouts();
+		transformation::Chain *getTransformationChain();
+		GtkWidget *getStatusBar();
+		void setStatusBar(GtkWidget *status_bar);
+		ColorSource *getCurrentColorSource();
+		void setCurrentColorSource(ColorSource *color_source);
+	private:
+		class Impl;
+		std::unique_ptr<Impl> m_impl;
 };
 
-int global_state_init(GlobalState *gs, GlobalStateLevel level);
-int global_state_term(GlobalState *gs);
-GlobalState *global_state_create();
-int global_state_destroy(GlobalState* gs);
-
-#endif /* GLOBALSTATE_H_ */
+#endif /* GPICK_GLOBAL_STATE_H_ */

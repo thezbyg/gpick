@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,26 +21,22 @@
 #include "DynvHelpers.h"
 #include "uiApp.h"
 #include "uiUtilities.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "gtk/ColorWheel.h"
 #include "Internationalisation.h"
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
 #include "ColorObject.h"
-
 #include "ColorSpaceType.h"
 #include <string.h>
 
-
-int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object){
-
+int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object)
+{
 	gchar* text = 0;
-
-	Converter *converter;
-	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
-	converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+	auto converters = gs->getConverters();
+	auto converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	if (converter){
-		converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+		converter_get_text(converter->function_name, color_object, 0, gs->getConverters(), &text);
 	}
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -86,7 +82,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 
 		struct ColorObject* color_object;
-		if (main_get_color_object_from_text(gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object)==0){
+		if (main_get_color_object_from_text(gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object) == 0){
 			*new_color_object = color_object;
 			gtk_widget_destroy(dialog);
 			return 0;
@@ -97,7 +93,6 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 }
 
 typedef struct ColorPickerComponentEditArgs{
-	//ColorPickerArgs *color_picker;
 	GtkWidget* value[4];
 	GtkColorComponentComp component;
 	int component_id;
@@ -106,21 +101,17 @@ typedef struct ColorPickerComponentEditArgs{
 
 void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params)
 {
-  GtkColorComponentComp component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(color_component));
-
+	GtkColorComponentComp component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(color_component));
 	ColorPickerComponentEditArgs *args = new ColorPickerComponentEditArgs;
-  //args->color_picker = color_picker_args;
 	args->params = params;
 	args->component = component;
 	args->component_id = component_id;
 	memset(args->value, 0, sizeof(args->value));
-
 	GtkWidget *table;
-
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_OK, GTK_RESPONSE_OK,
+		nullptr);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
 
@@ -128,7 +119,7 @@ void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *col
 
 	table = gtk_table_new(2, 2, FALSE);
 
-  Color raw_color;
+	Color raw_color;
 	gtk_color_component_get_raw_color(color_component, &raw_color);
 
 	const ColorSpaceType *color_space_type = 0;

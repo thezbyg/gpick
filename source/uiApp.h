@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,9 +19,10 @@
 #ifndef GPICK_UI_APP_H_
 #define GPICK_UI_APP_H_
 
+class GlobalState;
+struct Converters;
+struct Color;
 #include <gtk/gtk.h>
-#include "GlobalState.h"
-#include "Color.h"
 
 int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
 
@@ -36,8 +37,8 @@ int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
 int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object);
 
 GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params);
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem* params, gchar** text);
+void converter_get_clipboard(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters);
+void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text);
 
 typedef struct AppArgs AppArgs;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,25 +23,21 @@
 #include "DragDrop.h"
 #include "GlobalState.h"
 #include "uiApp.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "DynvHelpers.h"
 #include "Vector2.h"
 #include "Internationalisation.h"
-
 #include <boost/format.hpp>
-
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-
 using namespace math;
 using namespace std;
 
 typedef struct ListPaletteArgs{
 	ColorSource source;
 	GtkWidget *treeview;
-  gint scroll_timeout;
-
+	gint scroll_timeout;
 	Vec2<int> last_click_position;
 	bool disable_selection;
 	GtkWidget* count_label;
@@ -50,7 +46,7 @@ typedef struct ListPaletteArgs{
 
 static void destroy_arguments(gpointer data);
 static struct ColorObject* get_color_object(struct DragDrop* dd);
-static struct ColorObject** get_color_object_list(struct DragDrop* dd, uint32_t *colorobject_n);
+static struct ColorObject** get_color_object_list(struct DragDrop* dd, size_t *colorobject_n);
 
 #define SCROLL_EDGE_SIZE 15 //SCROLL_EDGE_SIZE from gtktreeview.c
 
@@ -62,18 +58,18 @@ static void palette_list_vertical_autoscroll(GtkTreeView *treeview);
 static void update_counts(ListPaletteArgs *args);
 
 static gboolean scroll_row_timeout(ListPaletteArgs *args){
-  palette_list_vertical_autoscroll(GTK_TREE_VIEW(args->treeview));
+	palette_list_vertical_autoscroll(GTK_TREE_VIEW(args->treeview));
 	return true;
 }
 
 static void add_scroll_timeout(ListPaletteArgs *args){
-  if (!args->scroll_timeout){
+	if (!args->scroll_timeout){
 		args->scroll_timeout = gdk_threads_add_timeout(150, (GSourceFunc)scroll_row_timeout, args);
 	}
 }
 
 static void remove_scroll_timeout(ListPaletteArgs *args){
-  if (args->scroll_timeout){
+	if (args->scroll_timeout){
 		g_source_remove(args->scroll_timeout);
 		args->scroll_timeout = 0;
 	}
@@ -246,20 +242,17 @@ static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gch
 	dynv_set_string(color_object->params, "name", new_text);
 }
 
-static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data) {
+static void palette_list_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, gpointer user_data)
+{
 	ListPaletteArgs* args = (ListPaletteArgs*)user_data;
-
-	GtkTreeModel* model;
+	GtkTreeModel* model = gtk_tree_view_get_model(tree_view);;
 	GtkTreeIter iter;
-
-	model=gtk_tree_view_get_model(tree_view);
 	gtk_tree_model_get_iter(model, &iter, path);
-
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
-
-	ColorSource *color_source = (ColorSource*)dynv_get_pointer_wd(args->gs->params, "CurrentColorSource", 0);
-	color_source_set_color(color_source, color_object);
+	ColorSource *color_source = args->gs->getCurrentColorSource();
+	if (color_source != nullptr)
+		color_source_set_color(color_source, color_object);
 	update_counts(args);
 }
 
@@ -289,10 +282,10 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	args->scroll_timeout = 0;
 	args->count_label = NULL;
 
-	GtkListStore  		*store;
-	GtkCellRenderer     *renderer;
-	GtkTreeViewColumn   *col;
-	GtkWidget           *view;
+	GtkListStore *store;
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *col;
+	GtkWidget *view;
 
 	view = gtk_tree_view_new();
 	args->treeview = view;
@@ -325,7 +318,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	dd.get_color_object = get_color_object;
 	dd.get_color_object_list = get_color_object_list;
 	dd.drag_end = drag_end;
-	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata = args;
 
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE), &dd);
@@ -363,20 +356,20 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	return main_widget;
 }
 
-static struct ColorObject** get_color_object_list(struct DragDrop* dd, uint32_t *colorobject_n){
+static struct ColorObject** get_color_object_list(struct DragDrop* dd, size_t *colorobject_n){
 
 	GtkTreeIter iter;
 	GtkTreeSelection* selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(dd->widget));
 	GtkTreeModel* model;
 	gint selected = gtk_tree_selection_count_selected_rows(selection);
 	if (selected <= 1){
-    if (colorobject_n) *colorobject_n = selected;
+		if (colorobject_n) *colorobject_n = selected;
 		return 0;
 	}
 
 	GList *list = gtk_tree_selection_get_selected_rows(selection, &model);
 
-  struct ColorObject** color_objects = new struct ColorObject*[selected];
+	struct ColorObject** color_objects = new struct ColorObject*[selected];
 	if (colorobject_n) *colorobject_n = selected;
 
 	if (list){
@@ -430,7 +423,7 @@ static struct ColorObject* get_color_object(struct DragDrop* dd){
 	return 0;
 }
 
-static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** colorobjects, uint32_t colorobject_n, int x, int y, bool move){
+static int set_color_object_list_at(DragDrop* dd, ColorObject** colorobjects, size_t colorobject_n, int x, int y, bool move){
 	ListPaletteArgs* args = (ListPaletteArgs*)dd->userdata;
 	remove_scroll_timeout(args);
 
@@ -439,26 +432,26 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 	GtkTreeIter iter, iter2;
 
 	GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(dd->widget));
-  bool copy = false;
+	bool copy = false;
 	bool path_is_valid = false;
 
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
 		gtk_tree_model_get_iter(model, &iter, path);
 
-		if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+		if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			path_is_valid = true;
-		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			path_is_valid = true;
 		}else{
 			return -1;
 		}
 	}
 
-  for (uint32_t i = 0; i != colorobject_n; i++){
+	for (uint32_t i = 0; i != colorobject_n; i++){
 		struct ColorObject *colorobject = 0;
-		if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+		if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			colorobject = colorobjects[i];
-		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			colorobject = colorobjects[colorobject_n - i - 1];
 		}else{
 			colorobject = colorobjects[i];
@@ -471,11 +464,11 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 				// Reference item is going to be removed, so any further inserts
 				// will fail if the same iterator is used. Iterator is moved forward
 				// to avoid that.
-				if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+				if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 					if (!gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter)){
 						path_is_valid = false;
 					}
-				}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+				}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 					GtkTreePath *path = gtk_tree_model_get_path(GTK_TREE_MODEL(model), &iter);
 					if (gtk_tree_path_prev(path)) {
 						if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(model), &iter, path)){
@@ -487,114 +480,96 @@ static int set_color_object_list_at(struct DragDrop* dd, struct ColorObject** co
 					gtk_tree_path_free(path);
 				}
 			}
-
-			if (colorobject->refcnt != 1){	//only one reference, can't be in palette
-				color_list_remove_color_object(args->gs->colors, colorobject);
+			if (colorobject->refcnt != 1){ //only one reference, can't be in palette
+				color_list_remove_color_object(args->gs->getColorList(), colorobject);
 			}
 		}else{
 			colorobject = color_object_copy(colorobject);
 			copy = true;
 		}
-
 		if (path_is_valid){
-
-			if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+			if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 				gtk_list_store_insert_before(GTK_LIST_STORE(model), &iter2, &iter);
 				palette_list_entry_fill(GTK_LIST_STORE(model), &iter2, colorobject, args);
-				color_list_add_color_object(args->gs->colors, colorobject, false);
-			}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+				color_list_add_color_object(args->gs->getColorList(), colorobject, false);
+			}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 				gtk_list_store_insert_after(GTK_LIST_STORE(model), &iter2, &iter);
 				palette_list_entry_fill(GTK_LIST_STORE(model), &iter2, colorobject, args);
-				color_list_add_color_object(args->gs->colors, colorobject, false);
+				color_list_add_color_object(args->gs->getColorList(), colorobject, false);
 			}else{
 				if (copy) color_object_release(colorobject);
 				return -1;
 			}
-
 		}else{
-			color_list_add_color_object(args->gs->colors, colorobject, true);
+			color_list_add_color_object(args->gs->getColorList(), colorobject, true);
 			if (copy) color_object_release(colorobject);
 		}
 	}
 	update_counts(args);
 	return 0;
 }
-
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move)
+{
 	ListPaletteArgs* args = (ListPaletteArgs*)dd->userdata;
-
 	remove_scroll_timeout((ListPaletteArgs*)dd->userdata);
-
 	GtkTreePath* path;
 	GtkTreeViewDropPosition pos;
 	GtkTreeIter iter, iter2;
-
 	GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(dd->widget));
-  bool copy = false;
-
+	bool copy = false;
 	if (move){
-		if (colorobject->refcnt != 1){	//only one reference, can't be in palette
-			color_list_remove_color_object(args->gs->colors, colorobject);
+		if (colorobject->refcnt != 1){ //only one reference, can't be in palette
+			color_list_remove_color_object(args->gs->getColorList(), colorobject);
 		}
 	}else{
 		colorobject = color_object_copy(colorobject);
 		copy = true;
 	}
-
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
 		gtk_tree_model_get_iter(model, &iter, path);
-
 		GdkModifierType mask;
 		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), NULL, NULL, &mask);
-
 		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
 			Color color;
 			color_object_get_color(colorobject, &color);
-
 			struct ColorObject* original_color_object;
 			gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &original_color_object, -1);
-
 			color_object_set_color(original_color_object, &color);
 			palette_list_entry_update_row(GTK_LIST_STORE(model), &iter, original_color_object, args);
-
-		}else if (pos==GTK_TREE_VIEW_DROP_BEFORE || pos==GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+		}else if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			gtk_list_store_insert_before(GTK_LIST_STORE(model), &iter2, &iter);
 			palette_list_entry_fill(GTK_LIST_STORE(model), &iter2, colorobject, args);
-			color_list_add_color_object(args->gs->colors, colorobject, false);
-		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos==GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+			color_list_add_color_object(args->gs->getColorList(), colorobject, false);
+		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			gtk_list_store_insert_after(GTK_LIST_STORE(model), &iter2, &iter);
 			palette_list_entry_fill(GTK_LIST_STORE(model), &iter2, colorobject, args);
-			color_list_add_color_object(args->gs->colors, colorobject, false);
+			color_list_add_color_object(args->gs->getColorList(), colorobject, false);
 		}else{
 			if (copy) color_object_release(colorobject);
 			update_counts(args);
 			return -1;
 		}
-
 		if (copy) color_object_release(colorobject);
 	}else{
-		color_list_add_color_object(args->gs->colors, colorobject, true);
+		color_list_add_color_object(args->gs->getColorList(), colorobject, true);
 		update_counts(args);
 		if (copy) color_object_release(colorobject);
 	}
 	update_counts(args);
 	return 0;
 }
-
-static bool test_at(struct DragDrop* dd, int x, int y){
-
+static bool test_at(struct DragDrop* dd, int x, int y)
+{
 	GtkTreePath* path;
 	GtkTreeViewDropPosition pos;
-
 	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
 		GdkModifierType mask;
 		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), NULL, NULL, &mask);
-
 		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
 			pos = GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
 		}else	if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			pos = GTK_TREE_VIEW_DROP_BEFORE;
-		}else if (pos==GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
 			pos = GTK_TREE_VIEW_DROP_AFTER;
 		}
 
@@ -613,16 +588,15 @@ static void destroy_arguments(gpointer data){
 }
 
 static gboolean disable_palette_selection_function(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
-  return args->disable_selection;
+	return args->disable_selection;
 }
 
 static void disable_palette_selection(GtkWidget *widget, gboolean disable, int x, int y, ListPaletteArgs *args) {
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
 	args->disable_selection = disable;
 	gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)disable_palette_selection_function, args, NULL);
-
-  args->last_click_position.x = x;
-  args->last_click_position.y = y;
+	args->last_click_position.x = x;
+	args->last_click_position.y = y;
 }
 
 static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
@@ -690,10 +664,10 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 	args->count_label = count_label;
 	args->scroll_timeout = 0;
 
-	GtkListStore  		*store;
-	GtkCellRenderer     *renderer;
-	GtkTreeViewColumn   *col;
-	GtkWidget           *view;
+	GtkListStore *store;
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *col;
+	GtkWidget *view;
 
 	view = gtk_tree_view_new ();
 	args->treeview = view;
@@ -757,7 +731,7 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 	dd.get_color_object_list = get_color_object_list;
 	dd.set_color_object_at = set_color_object_at;
 	dd.set_color_object_list_at = set_color_object_list_at;
-	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.test_at = test_at;
 	dd.drag_end = drag_end;
 	dd.userdata = args;
@@ -810,7 +784,7 @@ gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color) {
 	GtkListStore *store;
 	GtkTreeIter iter;
 
-	if (gtk_tree_selection_count_selected_rows(selection)!=1){
+	if (gtk_tree_selection_count_selected_rows(selection) != 1){
 		return -1;
 	}
 
@@ -939,17 +913,14 @@ static void execute_replace_callback(GtkListStore *store, GtkTreeIter *iter, Lis
 	color_object_release(color_object);
 }
 
-gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata){
+gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata)
+{
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
 	GtkListStore *store;
 	gboolean valid;
-
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
-
-	struct ColorObject* color_object;
-
 	while (valid){
 		execute_callback(store, &iter, args, callback, userdata);
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);

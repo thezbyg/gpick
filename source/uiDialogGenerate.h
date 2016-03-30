@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,11 +19,10 @@
 #ifndef GPICK_UI_DIALOG_GENERATE_H_
 #define GPICK_UI_DIALOG_GENERATE_H_
 
+class GlobalState;
+struct ColorList;
 #include <gtk/gtk.h>
-#include "ColorList.h"
-#include "GlobalState.h"
-
-void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs);
+void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState* gs);
 
 #endif /* GPICK_UI_DIALOG_GENERATE_H_ */
 

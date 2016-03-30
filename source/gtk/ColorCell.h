@@ -23,31 +23,31 @@
 #include "../ColorObject.h"
 
 #define CUSTOM_TYPE_CELL_RENDERER_COLOR (custom_cell_renderer_color_get_type())
-#define CUSTOM_CELL_RENDERER_COLOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj),  CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColor))
-#define CUSTOM_CELL_RENDERER_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST ((obj),  CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColorClass))
-#define CUSTOM_IS_CELL_COLOR_COLOR(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR))
-#define CUSTOM_IS_CELL_COLOR_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE ((obj),  CUSTOM_TYPE_CELL_RENDERER_COLOR))
-#define CUSTOM_CELL_RENDERER_COLOR_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj),  CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColorClass))
+#define CUSTOM_CELL_RENDERER_COLOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColor))
+#define CUSTOM_CELL_RENDERER_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColorClass))
+#define CUSTOM_IS_CELL_COLOR_COLOR(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR))
+#define CUSTOM_IS_CELL_COLOR_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR))
+#define CUSTOM_CELL_RENDERER_COLOR_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColorClass))
 
 typedef struct _CustomCellRendererColor CustomCellRendererColor;
 typedef struct _CustomCellRendererColorClass CustomCellRendererColorClass;
 
 struct _CustomCellRendererColor
 {
-	GtkCellRenderer	parent;
-	struct ColorObject*	color;
+	GtkCellRenderer parent;
+	struct ColorObject *color;
 	int width;
 	int height;
 };
 
 struct _CustomCellRendererColorClass
 {
-	GtkCellRendererClass  parent_class;
+	GtkCellRendererClass parent_class;
 };
 
 GType custom_cell_renderer_color_get_type(void);
 GtkCellRenderer *custom_cell_renderer_color_new(void);
-void custom_cell_renderer_color_set_size(GtkCellRenderer *cell,  gint width, gint height);
+void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint height);
 
 #endif /* COLORCELL_H_ */
 

@@ -30,9 +30,7 @@ using namespace std;
 
 int dynv_xml_serialize(struct dynvSystem* dynv_system, ostream& out){
 	struct dynvVariable *variable, *v;
-
-
-	for (dynvSystem::VariableMap::iterator i=dynv_system->variables.begin(); i!=dynv_system->variables.end(); ++i){
+	for (dynvSystem::VariableMap::iterator i=dynv_system->variables.begin(); i != dynv_system->variables.end(); ++i){
 		variable=(*i).second;
 
 		if (variable->flags & dynvVariable::NO_SAVE) continue;
@@ -96,7 +94,7 @@ public:
 static char* get_attribute(const XML_Char **atts, const char *attribute){
 	XML_Char **i = (XML_Char**)atts;
 	while (*i){
-		if (strcmp(attribute, *i)==0){
+		if (strcmp(attribute, *i) == 0){
 			return *(i+1);
 		}
 		i+=2;
@@ -114,7 +112,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 		XmlEntity *n;
 
 		if (entity->list_expected){
-			if (name && strcmp(name, "li")==0){
+			if (name && strcmp(name, "li") == 0){
 				if (entity->first_item){
 					xml->entity.push(n = new XmlEntity(entity->variable, entity->dynv, false));
 					entity->first_item = false;
@@ -146,7 +144,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 			struct dynvHandler *handler = dynv_handler_map_get_handler(xml->handler_map, type);
 
 			if (handler){
-				if (strcmp(type, "dynv")==0){
+				if (strcmp(type, "dynv") == 0){
 					struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(entity->dynv);
 					struct dynvSystem* dlevel_new = dynv_system_create(handler_map);
 					dynv_handler_map_release(handler_map);
@@ -155,7 +153,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 						handler->set(variable, dlevel_new, false);
 					}
 
-					if (list && strcmp(list, "true")==0){
+					if (list && strcmp(list, "true") == 0){
 						xml->entity.push(n = new XmlEntity(variable, dlevel_new, true));
 						n->list_handler = handler;
 					}else{
@@ -165,7 +163,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 					dynv_system_release(dlevel_new);
 				}else if (handler->deserialize_xml){
 
-					if (list && strcmp(list, "true")==0){
+					if (list && strcmp(list, "true") == 0){
 						if ((variable = dynv_system_add_empty(entity->dynv, handler, name))){
 							xml->entity.push(n = new XmlEntity(variable, entity->dynv, true));
 							n->list_handler = handler;
@@ -193,7 +191,7 @@ static void start_element_handler(XmlCtx *xml, const XML_Char *name, const XML_C
 		//cout << name << "=" << type << endl;
 
 	}else{
-		if (strcmp(name, "root")==0){
+		if (strcmp(name, "root") == 0){
 			//XmlEntity *entity = xml->entity.top();
 			xml->root_found = true;
 			//xml->entity.push(new XmlEntity(0, entity->dynv));
@@ -249,7 +247,7 @@ int dynv_xml_deserialize(struct dynvSystem* dynv_system, istream& in){
 		in.read((char*)buffer, 4096);
 		size_t bytes_read = in.gcount();
 
-		if (!XML_ParseBuffer(p, bytes_read, bytes_read==0)) {
+		if (!XML_ParseBuffer(p, bytes_read, bytes_read == 0)) {
 
 		}
 
@@ -272,12 +270,12 @@ int dynv_xml_escape(const char* data, std::ostream& out){
 			out << "&amp;";
 			last_esc = i+1;
 			break;
-        case '<':
+		case '<':
 			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
 			out << "&lt;";
 			last_esc = i+1;
 			break;
-        case '>':
+		case '>':
 			if (last_esc != i) out.write(last_esc, uintptr_t(i)-uintptr_t(last_esc));
 			out << "&gt;";
 			last_esc = i+1;

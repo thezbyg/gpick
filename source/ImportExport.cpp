@@ -5,7 +5,7 @@
 #include "Internationalisation.h"
 #include "StringUtils.h"
 #include "HtmlUtils.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "DynvHelpers.h"
 #include "version/Version.h"
 #include <glib.h>
@@ -244,7 +244,7 @@ bool ImportExport::importTXT()
 		m_last_error = Error::could_not_open_file;
 		return false;
 	}
-	uint32_t table_size;
+	size_t table_size;
 	Converter *converter = nullptr;
 	Converter **converter_table = converters_get_all_type(m_converters, CONVERTERS_ARRAY_TYPE_PASTE, &table_size);
 	ColorObject* color_object;
@@ -429,7 +429,7 @@ bool ImportExport::exportHTML()
 		f << "</form>" << endl;
 	}
 	f << "<div id=\"colors\">" << endl;
-	string hex_case = dynv_get_string_wd(m_gs->params, "gpick.options.hex_case", "upper");
+	string hex_case = dynv_get_string_wd(m_gs->getSettings(), "gpick.options.hex_case", "upper");
 	if (hex_case == "upper"){
 		f << uppercase;
 	}else{

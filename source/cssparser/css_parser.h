@@ -24,22 +24,20 @@
 #endif
 #include <stdint.h>
 #include <stdio.h>
-
 #include <list>
-
 #include "memory_manager.h"
 
 typedef struct parse_parm_s parse_parm;
-
-namespace css_parser {
+namespace css_parser
+{
 class css_file;
 class css_base;
 }
 
-typedef struct parse_parm_s{
+typedef struct parse_parm_s
+{
 	css_parser::css_file *page;
 	struct Memory* memory;
-
 	uint32_t first_line;
 	uint32_t first_column;
 	uint32_t last_line;
@@ -49,8 +47,7 @@ typedef struct parse_parm_s{
 
 int parse(FILE* f, int *result);
 
-#define YY_EXTRA_TYPE   parse_parm*
-
+#define YY_EXTRA_TYPE parse_parm*
 #ifndef YYSTYPE
 typedef union css_yystype{
 	css_parser::css_base *base;
@@ -64,47 +61,43 @@ typedef union css_yystype{
 
 /* extern YYSTYPE yylval; */
 //YYSTYPE yylval;
-
-/*#define YY_EXTRA_TYPE   parse_parm* */
+/*#define YY_EXTRA_TYPE parse_parm* */
 
 /* Initialize LOC. */
-# define CSS_LOCATION_RESET(Loc)                  	\
-	(Loc).first_column = (Loc).first_line = 1;  		\
-	(Loc).last_column =  (Loc).last_line = 1;			\
-	(Loc).position=0;
+# define CSS_LOCATION_RESET(Loc) \
+	(Loc).first_column = (Loc).first_line = 1; \
+	(Loc).last_column = (Loc).last_line = 1; \
+	(Loc).position = 0;
 
 /* Advance of NUM lines. */
-# define CSS_LOCATION_LINES(Loc, Num)             \
-  (Loc).last_column = 1;                      \
-  (Loc).last_line += Num;
+# define CSS_LOCATION_LINES(Loc, Num) \
+	(Loc).last_column = 1; \
+	(Loc).last_line += Num;
 
 /* Restart: move the first cursor to the last position. */
-# define CSS_LOCATION_STEP(Loc)                   \
-  (Loc).first_column = (Loc).last_column;     \
-  (Loc).first_line = (Loc).last_line;
+# define CSS_LOCATION_STEP(Loc) \
+	(Loc).first_column = (Loc).last_column; \
+	(Loc).first_line = (Loc).last_line;
 
 /* Output LOC on the stream OUT. */
-# define CSS_LOCATION_PRINT(Out, Loc)                               \
-  if ((Loc).first_line != (Loc).last_line)                      \
-    fprintf (Out, "%d.%d-%d.%d",                                \
-             (Loc).first_line, (Loc).first_column,              \
-             (Loc).last_line, (Loc).last_column - 1);           \
-  else if ((Loc).first_column < (Loc).last_column - 1)          \
-    fprintf (Out, "%d.%d-%d", (Loc).first_line,                 \
-             (Loc).first_column, (Loc).last_column - 1);        \
-  else                                                          \
-    fprintf (Out, "%d.%d", (Loc).first_line, (Loc).first_column)
-
+# define CSS_LOCATION_PRINT(Out, Loc) \
+	if ((Loc).first_line != (Loc).last_line) \
+		fprintf(Out, "%d.%d-%d.%d", \
+			(Loc).first_line, (Loc).first_column, \
+			(Loc).last_line, (Loc).last_column - 1); \
+	else if ((Loc).first_column < (Loc).last_column - 1) \
+		fprintf(Out, "%d.%d-%d", (Loc).first_line, \
+			(Loc).first_column, (Loc).last_column - 1); \
+	else \
+		fprintf(Out, "%d.%d", (Loc).first_line, (Loc).first_column)
 
 namespace css_parser {
 
 class css_base{
 public:
 	css_base();
-
 	void* operator new(size_t num_bytes, parse_parm* parm);
 	void operator delete(void* base, parse_parm* parm);
-
 	virtual void polymorphic();
 };
 
@@ -112,34 +105,27 @@ class css_property: public css_base{
 public:
 	const char* name_;
 	std::list<css_base*> values_;
-
 	css_property(const char* name);
-
 	void addValue(css_base* value);
 };
 
 class css_properties: public css_base{
 public:
 	std::list<css_property*> properties_;
-
 	css_properties();
-
 	void addProperty(css_property* property);
 };
 
 class css_simple_selector: public css_base{
 public:
 	const char* name_;
-
 	css_simple_selector(const char* name);
 };
 
 class css_selector: public css_base{
 public:
 	std::list<css_simple_selector*> simple_selectors_;
-
 	css_selector();
-
 	void addSimpleSelector(css_simple_selector* simple_selector);
 	void addSelector(css_selector* selector);
 	void prependSimpleSelector(css_simple_selector* simple_selector);
@@ -148,9 +134,7 @@ public:
 class css_selectors: public css_base{
 public:
 	std::list<css_selector*> selectors_;
-
 	css_selectors();
-
 	void addSelector(css_selector* selector);
 };
 
@@ -158,9 +142,7 @@ class css_ruleset: public css_base{
 public:
 	std::list<css_selector*> selectors_;
 	std::list<css_property*> properties_;
-
 	css_ruleset();
-
 	void addSelector(css_selector* selector);
 	void setSelectors(std::list<css_selector*> &selectors);
 	void addProperty(css_property* property);
@@ -170,9 +152,7 @@ public:
 class css_file: public css_base{
 public:
 	std::list<css_ruleset*> rulesets_;
-
 	css_file();
-
 	void addRuleset(css_ruleset* ruleset);
 };
 
@@ -180,9 +160,7 @@ class css_function: public css_base{
 public:
 	const char* name_;
 	std::list<css_base*> arguments_;
-
 	css_function(const char* name);
-
 	void addArgument(css_base* argument);
 };
 
@@ -214,7 +192,6 @@ public:
 }
 
 int parse_file(const char *filename);
-
 
 #endif
 

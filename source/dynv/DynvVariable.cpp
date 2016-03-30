@@ -43,7 +43,7 @@ void dynv_variable_destroy_data(struct dynvVariable* variable){
 
 	while (i){
 		next = i->next;
-		if (i->handler->destroy!=NULL) i->handler->destroy(i);
+		if (i->handler->destroy != NULL) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
 
@@ -61,7 +61,7 @@ void dynv_variable_destroy(struct dynvVariable* variable){
 
 	while (i){
 		next = i->next;
-		if (i->handler->destroy!=NULL) i->handler->destroy(i);
+		if (i->handler->destroy != NULL) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
 

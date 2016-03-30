@@ -22,10 +22,10 @@ using namespace std;
 
 
 NotificationLink::NotificationLink(const char *source_name_, uint32_t source_slot_id_, const char *destination_name_, uint32_t destination_slot_id_){
-    source_name = source_name_;
-    destination_name = destination_name_;
-    source_slot_id = source_slot_id_;
-    destination_slot_id = destination_slot_id_;
+	source_name = source_name_;
+	destination_name = destination_name_;
+	source_slot_id = source_slot_id_;
+	destination_slot_id = destination_slot_id_;
 	enabled = false;
 }
 
@@ -43,7 +43,7 @@ bool ChangeNotification::registerSource(const char *location, ColorSource *sourc
 }
 
 bool ChangeNotification::unregisterSource(const char *location, ColorSource *source){
-    map<string, ColorSource*>::iterator i = sources.find(location);
+	map<string, ColorSource*>::iterator i = sources.find(location);
 	if (i != sources.end()){
 		sources.erase(i);
 		return true;

@@ -83,8 +83,7 @@ uint32_t color_space_count_types()
 
 std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L)
 {
-  list<string> result;
-
+	list<string> result;
 	int status;
 	int stack_top = lua_gettop(L);
 

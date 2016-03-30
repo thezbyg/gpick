@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,23 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORSOURCEMANAGER_H_
-#define COLORSOURCEMANAGER_H_
-
-#include "ColorSource.h"
+#ifndef GPICK_COLOR_SOURCE_MANAGER_H_
+#define GPICK_COLOR_SOURCE_MANAGER_H_
 
 #include <vector>
 #include <map>
 #include <string>
-
-typedef struct ColorSourceManager{
+struct ColorSource;
+struct ColorSourceManager{
 	std::map<std::string, ColorSource*> colorsource;
-}ColorSourceManager;
-
+};
 ColorSourceManager* color_source_manager_create();
 int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source);
 ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name);
 std::vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm);
 int color_source_manager_destroy(ColorSourceManager *csm);
 
-#endif /* COLORSOURCE_H_ */
+#endif /* GPICK_COLOR_SOURCE_MANAGER_H_ */

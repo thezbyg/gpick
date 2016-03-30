@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,6 +17,8 @@
  */
 
 #include "ToolColorNaming.h"
+#include "GlobalState.h"
+#include "DynvHelpers.h"
 #include "Internationalisation.h"
 #include "color_names/ColorNames.h"
 #include "ColorObject.h"
@@ -48,9 +50,9 @@ ToolColorNamingType tool_color_naming_name_to_type(const char *name)
 ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
 	m_gs(gs)
 {
-	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->params, "gpick.color_names.tool_color_naming", "tool_specific"));
+	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->getSettings(), "gpick.color_names.tool_color_naming", "tool_specific"));
 	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
-		m_imprecision_postfix = dynv_get_bool_wd(m_gs->params, "gpick.color_names.imprecision_postfix", true);
+		m_imprecision_postfix = dynv_get_bool_wd(m_gs->getSettings(), "gpick.color_names.imprecision_postfix", true);
 	}else{
 		m_imprecision_postfix = false;
 	}
@@ -67,7 +69,7 @@ void ToolColorNameAssigner::assign(struct ColorObject *color_object, Color *colo
 			dynv_set_string(color_object->params, "name", "");
 			break;
 		case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
-			name = color_names_get(m_gs->color_names, color, m_imprecision_postfix);
+			name = color_names_get(m_gs->getColorNames(), color, m_imprecision_postfix);
 			dynv_set_string(color_object->params, "name", name.c_str());
 			break;
 		case TOOL_COLOR_NAMING_TOOL_SPECIFIC:

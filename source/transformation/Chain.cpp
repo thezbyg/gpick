@@ -36,7 +36,7 @@ void Chain::apply(const Color *input, Color *output)
 	Color tmp[2];
 	Color *tmp_p[3];
 
-  color_copy(input, &tmp[0]);
+	color_copy(input, &tmp[0]);
 
 	tmp_p[0] = &tmp[0];
 	tmp_p[1] = &tmp[1];

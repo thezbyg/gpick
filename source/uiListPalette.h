@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,41 +16,34 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UILISTPALETTE_H_
-#define UILISTPALETTE_H_
+#ifndef GPICK_UI_LIST_PALETTE_H_
+#define GPICK_UI_LIST_PALETTE_H_
 
+class GlobalState;
+struct ColorObject;
+struct ColorList;
 #include <gtk/gtk.h>
-#include "ColorObject.h"
-#include "ColorList.h"
-#include "GlobalState.h"
-
-
 GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label);
-void palette_list_add_entry(GtkWidget* widget, struct ColorObject *color_object);
-
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, struct ColorList* color_list, struct ColorList** out_color_list);
-GtkWidget* palette_list_get_widget(struct ColorList *color_list);
-
+void palette_list_add_entry(GtkWidget* widget, ColorObject *color_object);
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list);
+GtkWidget* palette_list_get_widget(ColorList *color_list);
 void palette_list_remove_all_entries(GtkWidget* widget);
 void palette_list_remove_selected_entries(GtkWidget* widget);
-int palette_list_remove_entry(GtkWidget* widget, struct ColorObject *color_object);
+int palette_list_remove_entry(GtkWidget* widget, ColorObject *color_object);
 
 enum PaletteListCallbackReturn{
 	PALETTE_LIST_CALLBACK_NO_UPDATE = 0,
 	PALETTE_LIST_CALLBACK_UPDATE_ROW = 1,
 	PALETTE_LIST_CALLBACK_UPDATE_NAME = 2,
 };
-
-typedef PaletteListCallbackReturn (*PaletteListCallback)(struct ColorObject* color_object, void *userdata);
-typedef PaletteListCallbackReturn (*PaletteListReplaceCallback)(struct ColorObject** color_object, void *userdata);
-
+typedef PaletteListCallbackReturn (*PaletteListCallback)(ColorObject* color_object, void *userdata);
+typedef PaletteListCallbackReturn (*PaletteListReplaceCallback)(ColorObject** color_object, void *userdata);
 gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
 gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata);
 gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
 gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata);
-
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 
+#endif /* GPICK_UI_LIST_PALETTE_H_ */
 
-#endif /* UILISTPALETTE_H_ */

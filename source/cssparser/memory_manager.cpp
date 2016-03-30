@@ -52,7 +52,7 @@ static void* memory_page_alloc(struct MemoryPage* page, uint32_t alloc_size){
 	register uint32_t space=0;
 	for (register uint32_t i=0; i<page->total_size; ++i){
 		space=(space+1)*page->map[i];
-		if (space==size){
+		if (space == size){
 			memset(page->map+(i+1-size), 0, size);
 			page->total_free-=size;
 

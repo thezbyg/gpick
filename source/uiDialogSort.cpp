@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,14 +19,15 @@
 #include "uiDialogSort.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
+#include "ColorList.h"
+#include "ColorObject.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
 #include "Internationalisation.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -548,7 +549,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 {
 	DialogSortArgs *args = new DialogSortArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.group_and_sort");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.group_and_sort");
 	args->sorted_color_list = sorted_color_list;
 
 	GtkWidget *table;
@@ -610,7 +611,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 
 	GtkWidget* preview_expander;
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
 	args->selected_color_list = selected_color_list;

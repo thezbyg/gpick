@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,17 +17,14 @@
  */
 
 #include "uiTransformations.h"
-
 #include "Converter.h"
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "Internationalisation.h"
-
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
 #include "transformation/ColorVisionDeficiency.h"
-
 #include <iostream>
 using namespace std;
 
@@ -88,11 +85,9 @@ static void available_transformation_row_activated(GtkTreeView *tree_view, GtkTr
 
 	boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
 	if (tran){
-		transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+		auto chain = args->gs->getTransformationChain();
 		chain->add(tran);
-
 		configure_transformation(args, tran.get());
-
 		model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
 		tranformations_update_row(model, &iter, tran.get(), args);
@@ -104,35 +99,26 @@ static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->available_transformations));
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->available_transformations));
 	GtkTreeIter iter;
-
 	if (gtk_tree_selection_count_selected_rows(selection) == 0){
 		return;
 	}
-
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
-
 	GList *i = list;
 	while (i) {
 		gtk_tree_model_get_iter(model, &iter, (GtkTreePath*)i->data);
-
 		gchar *name = 0;
 		gtk_tree_model_get(model, &iter, AVAILABLE_TRANSFORMATIONS_NAME, &name, -1);
-
 		boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
 		if (tran){
-			transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+			auto chain = args->gs->getTransformationChain();
 			chain->add(tran);
-
 			configure_transformation(args, tran.get());
-
 			model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
 			gtk_list_store_append(GTK_LIST_STORE(model), &iter);
 			tranformations_update_row(model, &iter, tran.get(), args);
 		}
-
 		i = g_list_next(i);
 	}
-
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
 	g_list_free(list);
 }
@@ -158,7 +144,7 @@ static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *arg
 		i = g_list_next(i);
 	}
 
-	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
+	auto chain = args->gs->getTransformationChain();
 
 	i = ref_list;
 	GtkTreePath *path;
@@ -229,8 +215,8 @@ static GtkWidget* transformations_list_new(bool selection_list)
 
 static void apply_configuration(TransformationsArgs *args){
 	if (args->configuration && args->transformation){
-		struct dynvHandlerMap *handler_map = dynv_system_get_handler_map(args->gs->params);
-		struct dynvSystem *dv = dynv_system_create(handler_map);
+		auto handler_map = dynv_system_get_handler_map(args->gs->getSettings());
+		auto dv = dynv_system_create(handler_map);
 		args->configuration->applyConfig(dv);
 		args->transformation->deserialize(dv);
 		dynv_handler_map_release(handler_map);
@@ -255,8 +241,8 @@ static void configure_transformation(TransformationsArgs *args, transformation::
 	}
 }
 
-static void	transformation_chain_cursor_changed(GtkWidget *widget, TransformationsArgs *args) 
-{ 
+static void	transformation_chain_cursor_changed(GtkWidget *widget, TransformationsArgs *args)
+{
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->transformation_list));
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->transformation_list));
 	GtkTreeIter iter;
@@ -282,7 +268,7 @@ static void	transformation_chain_cursor_changed(GtkWidget *widget, Transformatio
 	g_list_free(list);
 }
 
-static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args) 
+static void transformation_chain_row_activated(GtkTreeView *tree_view, GtkTreePath *path, GtkTreeViewColumn *column, TransformationsArgs *args)
 {
 	GtkTreeModel* model;
 	GtkTreeIter iter;
@@ -300,8 +286,8 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 {
 	TransformationsArgs *args = new TransformationsArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick");
-	args->transformations_params = dynv_get_dynv(args->gs->params, "gpick.transformations");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
+	args->transformations_params = dynv_get_dynv(args->gs->getSettings(), "gpick.transformations");
 	args->transformation = 0;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Display filters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
@@ -342,7 +328,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
-	for (int i = 0; i != types.size(); i++){
+	for (size_t i = 0; i != types.size(); i++){
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		available_tranformations_update_row(model, &iter1, &types[i], args);
 	}
@@ -371,7 +357,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	gtk_paned_pack1(GTK_PANED(args->vpaned), hbox, false, false);
 
 	GtkWidget *config_wrap_vbox = gtk_vbox_new(false, 5);
-  args->configuration_label = gtk_label_new(_("No filter selected"));
+	args->configuration_label = gtk_label_new(_("No filter selected"));
 	gtk_box_pack_start(GTK_BOX(config_wrap_vbox), gtk_widget_aligned_new(args->configuration_label, 0, 0.5, 0, 0), false, false, 5);
 
 	args->config_vbox = gtk_vbox_new(false, 5);
@@ -379,12 +365,11 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	gtk_paned_pack2(GTK_PANED(args->vpaned), config_wrap_vbox, false, false);
 
-	transformation::Chain *chain = static_cast<transformation::Chain*>(dynv_get_pointer_wdc(args->gs->params, "TransformationChain", 0));
-
+	auto chain = args->gs->getTransformationChain();
 	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
-	for (transformation::Chain::TransformationList::iterator i = chain->getAll().begin(); i != chain->getAll().end(); i++){
+	for (auto transformation: chain->getAll()){
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-		tranformations_update_row(model, &iter1, (*i).get(), args);
+		tranformations_update_row(model, &iter1, transformation.get(), args);
 	}
 
 	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
@@ -404,7 +389,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 
 
-    bool enabled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->enabled));
+		bool enabled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->enabled));
 		dynv_set_bool(args->transformations_params, "enabled", enabled);
 		chain->setEnabled(enabled);
 
@@ -412,25 +397,18 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		if (count > 0){
 			struct dynvSystem** config_array = new struct dynvSystem*[count];
 			unsigned int i = 0;
-
-			struct dynvHandlerMap *handler_map = dynv_system_get_handler_map(args->gs->params);
-
+			auto handler_map = dynv_system_get_handler_map(args->gs->getSettings());
 			while (valid){
 				transformation::Transformation* transformation;
 				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, TRANSFORMATIONS_TRANSFORMATION_PTR, &transformation, -1);
-
-				struct dynvSystem *dv = dynv_system_create(handler_map);
+				auto dv = dynv_system_create(handler_map);
 				transformation->serialize(dv);
 				config_array[i] = dv;
-
 				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 				++i;
 			}
-
 			dynv_handler_map_release(handler_map);
-
 			dynv_set_dynv_array(args->transformations_params, "items", (const dynvSystem**)config_array, count);
-
 			for (i = 0; i != count; i++){
 				dynv_system_release(config_array[i]);
 			}
@@ -439,14 +417,11 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 			dynv_set_dynv_array(args->transformations_params, "items", 0, 0);
 		}
 	}
-
 	chain->clear();
-	chain->setEnabled(dynv_get_bool_wd(gs->params, "gpick.transformations.enabled", false));
-
+	chain->setEnabled(dynv_get_bool_wd(gs->getSettings(), "gpick.transformations.enabled", false));
 	struct dynvSystem** config_array;
 	uint32_t config_size;
-
-	if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->params, "gpick.transformations.items", 0, 0, &config_size))){
+	if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(gs->getSettings(), "gpick.transformations.items", 0, 0, &config_size))){
 		for (uint32_t i = 0; i != config_size; i++){
 			const char *name = dynv_get_string_wd(config_array[i], "name", 0);
 			if (name){

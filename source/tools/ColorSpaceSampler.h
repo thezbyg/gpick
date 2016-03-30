@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,8 +19,8 @@
 #ifndef GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
 #define GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
 
+class GlobalState;
 #include <gtk/gtk.h>
-typedef struct GlobalState GlobalState;
 void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_ */

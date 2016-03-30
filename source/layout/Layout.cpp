@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,10 +20,8 @@
 #include "LuaBindings.h"
 #include "../LuaExt.h"
 #include "../DynvHelpers.h"
-
 #include <string.h>
 #include <stdlib.h>
-
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -46,17 +44,14 @@ class Layouts{
 public:
 	typedef std::map<const char*, Layout*, LayoutKeyCompare> LayoutMap;
 	LayoutMap layouts;
-
 	vector<Layout*> all_layouts;
-
 	lua_State *L;
 	~Layouts();
 };
 
 Layouts::~Layouts(){
 	Layouts::LayoutMap::iterator i;
-
-	for (i=layouts.begin(); i!=layouts.end(); ++i){
+	for (i = layouts.begin(); i != layouts.end(); ++i){
 		g_free(((*i).second)->human_readable);
 		g_free(((*i).second)->name);
 		delete ((*i).second);
@@ -64,19 +59,17 @@ Layouts::~Layouts(){
 	layouts.clear();
 }
 
-Layouts* layouts_init(struct dynvSystem* params){
-
-	lua_State* L = static_cast<lua_State*>(dynv_get_pointer_wdc(params, "lua_State", 0));
-	if (L == NULL) return 0;
-
+Layouts* layouts_init(lua_State *lua, dynvSystem* settings)
+{
+	if (lua == nullptr || settings == nullptr) return nullptr;
+	lua_State* L = lua;
 	Layouts *layouts = new Layouts;
 	layouts->L = L;
-
 	int status;
 	int stack_top = lua_gettop(L);
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1)!=LUA_TNIL){
+	if (lua_type(L, -1) != LUA_TNIL){
 
 		lua_pushstring(L, "layouts");
 		lua_gettable(L, gpick_namespace);
@@ -86,8 +79,8 @@ Layouts* layouts_init(struct dynvSystem* params){
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
 
-			if ((status=lua_pcall(L, 0, 1, 0))==0){
-				if (lua_type(L, -1)==LUA_TTABLE){
+			if ((status=lua_pcall(L, 0, 1, 0)) == 0){
+				if (lua_type(L, -1) == LUA_TTABLE){
 					int table_index = lua_gettop(L);
 
 					for (int i=1;;i++){
@@ -95,7 +88,7 @@ Layouts* layouts_init(struct dynvSystem* params){
 						lua_gettable(L, table_index);
 						if (lua_isnil(L, -1)) break;
 
-						lua_pushstring(L, lua_tostring(L, -1));		//duplicate, because lua_gettable replaces stack top
+						lua_pushstring(L, lua_tostring(L, -1)); //duplicate, because lua_gettable replaces stack top
 						lua_gettable(L, layouts_table);
 
 						lua_pushstring(L, "human_readable");
@@ -109,14 +102,9 @@ Layouts* layouts_init(struct dynvSystem* params){
 						layout->name = g_strdup(lua_tostring(L, -4));
 						layout->mask = lua_tointeger(L, -1);
 						layouts->layouts[layout->name] = layout;
-
 						layouts->all_layouts.push_back(layout);
-
-						//cout<<layout->name<<endl;
-
 						lua_pop(L, 3);
 					}
-
 				}
 			}else{
 				cerr<<"layouts_get: "<<lua_tostring (L, -1)<<endl;
@@ -124,9 +112,6 @@ Layouts* layouts_init(struct dynvSystem* params){
 		}
 	}
 	lua_settop(L, stack_top);
-
-	dynv_set_pointer(params, "Layouts", layouts);
-
 	return layouts;
 }
 
@@ -135,7 +120,7 @@ int layouts_term(Layouts *layouts){
 	return 0;
 }
 
-Layout** layouts_get_all(Layouts *layouts, uint32_t *size){
+Layout** layouts_get_all(Layouts *layouts, size_t *size){
 	*size = layouts->all_layouts.size();
 	return &layouts->all_layouts[0];
 }
@@ -143,7 +128,7 @@ Layout** layouts_get_all(Layouts *layouts, uint32_t *size){
 System* layouts_get(Layouts *layouts, const char* name){
 	Layouts::LayoutMap::iterator i;
 	i=layouts->layouts.find(name);
-	if (i!=layouts->layouts.end()){
+	if (i != layouts->layouts.end()){
 		//layout name matched, build layout
 
 		lua_State* L = layouts->L;
@@ -152,7 +137,7 @@ System* layouts_get(Layouts *layouts, const char* name){
 		int stack_top = lua_gettop(L);
 		lua_getglobal(L, "gpick");
 		int gpick_namespace = lua_gettop(L);
-		if (lua_type(L, -1)!=LUA_TNIL){
+		if (lua_type(L, -1) != LUA_TNIL){
 
 			lua_pushstring(L, "layouts");
 			lua_gettable(L, gpick_namespace);
@@ -169,7 +154,7 @@ System* layouts_get(Layouts *layouts, const char* name){
 				System *layout_system = new System;
 				lua_pushlsystem(L, layout_system);
 
-				if ((status=lua_pcall(L, 1, 1, 0))==0){
+				if ((status=lua_pcall(L, 1, 1, 0)) == 0){
 
 					if (!lua_isnil(L, -1)){
 						lua_settop(L, stack_top);

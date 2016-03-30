@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,74 +16,73 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VECTOR2_H_
-#define VECTOR2_H_
+#ifndef GPICK_VECTOR2_H_
+#define GPICK_VECTOR2_H_
 
 #include <math.h>
-
 namespace math{
-
 /** \class Vec2
  * \brief Two dimensional vector
  */
 template<typename T>
-class Vec2{
-public:
-	Vec2(){
-		x = y = 0;
-	};
-
-	Vec2(const T &x_, const T &y_){
-		x = x_;
-		y = y_;
-	};
-
-	Vec2(T &x_, T &y_){
-		x = x_;
-		y = y_;
-	};
-
-	Vec2& operator= (const Vec2& v){
-    	x = v.x;
-    	y = v.y;
-    	return *this;
-	};
-
-	Vec2 operator* (const Vec2& v){
-    	Vec2 r;
-    	r.x = x * v.x;
-    	r.y = y * v.y;
-    	return r;
-	};
-
-	Vec2 operator* (const double& v){
-    	Vec2 r;
-    	r.x = x * v;
-    	r.y = y * v;
-    	return r;
-	};
-
-	Vec2 operator+ (const Vec2& v){
-    	Vec2 r;
-    	r.x = x + v.x;
-    	r.y = y + v.y;
-    	return r;
-	};
-
-	friend bool operator!= (const Vec2& lhs, const Vec2& rhs){
-		if (lhs.x != rhs.x) return false;
-		if (lhs.y != rhs.y) return false;
-		return true;
-	};
-
-	static T distance(const Vec2&a, const Vec2& b){
-    	return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
-	};
-
-	T x;
-	T y;
+class Vec2
+{
+	public:
+		Vec2()
+		{
+			x = y = 0;
+		};
+		Vec2(const T &x_, const T &y_)
+		{
+			x = x_;
+			y = y_;
+		};
+		Vec2(T &x_, T &y_)
+		{
+			x = x_;
+			y = y_;
+		};
+		Vec2 &operator=(const Vec2 &v)
+		{
+			x = v.x;
+			y = v.y;
+			return *this;
+		};
+		Vec2 operator*(const Vec2 &v)
+		{
+			Vec2 r;
+			r.x = x * v.x;
+			r.y = y * v.y;
+			return r;
+		};
+		Vec2 operator*(const double &v)
+		{
+			Vec2 r;
+			r.x = x * v;
+			r.y = y * v;
+			return r;
+		};
+		Vec2 operator+(const Vec2 &v)
+		{
+			Vec2 r;
+			r.x = x + v.x;
+			r.y = y + v.y;
+			return r;
+		};
+		friend bool operator!=(const Vec2 &lhs, const Vec2 &rhs)
+		{
+			if (lhs.x != rhs.x) return false;
+			if (lhs.y != rhs.y) return false;
+			return true;
+		};
+		static T distance(const Vec2&a, const Vec2 &b)
+		{
+			return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+		};
+		T x;
+		T y;
 };
-
 }
 
-#endif /* VECTOR2_H_ */
+#endif /* GPICK_VECTOR2_H_ */
+

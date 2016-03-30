@@ -56,7 +56,7 @@ static int serialize_xml(struct dynvVariable* variable, ostream& out){
 }
 
 static int deserialize_xml(struct dynvVariable* variable, const char *data){
-	if (strcmp(data, "true")==0){
+	if (strcmp(data, "true") == 0){
 		*(bool*)&variable->bool_value = true;
 	}else{
 		*(bool*)&variable->bool_value = false;

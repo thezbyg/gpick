@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,12 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef VARIATIONS_H_
-#define VARIATIONS_H_
+#ifndef GPICK_VARIATIONS_H_
+#define GPICK_VARIATIONS_H_
 
-#include "ColorSourceManager.h"
-
+struct ColorSourceManager;
 int variations_source_register(ColorSourceManager *csm);
 
-#endif /* VARIATIONS_H_ */
+#endif /* GPICK_VARIATIONS_H_ */
 

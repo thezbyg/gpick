@@ -70,7 +70,7 @@ int lua_lstyle_gc (lua_State *L) {
 
 int lua_lstyle_humanname (lua_State *L) {
 	Style *style = lua_checklstyle(L, 1);
-	if (lua_type(L, 2)==LUA_TSTRING){
+	if (lua_type(L, 2) == LUA_TSTRING){
 		size_t st;
 		const char* name = luaL_checklstring(L, 2, &st);
 		style->human_name = name;
@@ -144,7 +144,7 @@ static int lua_new_text (lua_State *L) {
 	double h = luaL_checknumber(L, 6);
 
 	Style* style = 0;
-	if (lua_type(L, 7)!=LUA_TNIL){
+	if (lua_type(L, 7) != LUA_TNIL){
 		style = lua_checklstyle(L, 7);
 	}
 	const char* text = luaL_checklstring(L, 8, &st);
@@ -185,7 +185,7 @@ int lua_add (lua_State *L) {
 
 int lua_box_helper_only (lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
-	if (lua_type(L, 2)==LUA_TBOOLEAN){
+	if (lua_type(L, 2) == LUA_TBOOLEAN){
 		int v = lua_toboolean(L, 2);
 		if (v){
 			box->helper_only = true;
@@ -201,7 +201,7 @@ int lua_box_helper_only (lua_State *L) {
 
 int lua_box_locked (lua_State *L) {
 	Box* box = lua_checklbox(L, 1);
-	if (lua_type(L, 2)==LUA_TBOOLEAN){
+	if (lua_type(L, 2) == LUA_TBOOLEAN){
 		int v = lua_toboolean(L, 2);
 		if (v){
 			box->locked = true;

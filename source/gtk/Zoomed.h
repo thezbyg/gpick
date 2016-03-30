@@ -50,8 +50,8 @@ typedef struct GtkZoomed
 typedef struct GtkZoomedClass
 {
 	GtkDrawingAreaClass parent_class;
-	void  (* color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
-	void  (*activated)(GtkWidget* widget, gpointer userdata);
+	void (* color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
+	void (*activated)(GtkWidget* widget, gpointer userdata);
 }GtkZoomedClass;
 
 

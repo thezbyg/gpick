@@ -113,23 +113,23 @@ void color_hsv_to_rgb(const Color* a, Color* b)
 		y = v * (1.0f - (a->hsv.saturation * f));
 		z = v * (1.0f - (a->hsv.saturation * (1.0f - f)));
 
-		if (i==0){
+		if (i == 0){
 			b->rgb.red = v;
 			b->rgb.green = z;
 			b->rgb.blue = x;
-		}else if (i==1){
+		}else if (i == 1){
 			b->rgb.red = y;
 			b->rgb.green = v;
 			b->rgb.blue = x;
-		}else if (i==2){
+		}else if (i == 2){
 			b->rgb.red = x;
 			b->rgb.green = v;
 			b->rgb.blue = z;
-		}else if (i==3){
+		}else if (i == 3){
 			b->rgb.red = x;
 			b->rgb.green = y;
 			b->rgb.blue = v;
-		}else if (i==4){
+		}else if (i == 4){
 			b->rgb.red = z;
 			b->rgb.green = x;
 			b->rgb.blue = v;
@@ -666,7 +666,7 @@ void color_hsv_to_hsl(const Color *a, Color *b)
 {
 	float l = (2.0 - a->hsv.saturation) * a->hsv.value;
 	float s = (a->hsv.saturation * a->hsv.value) / ((l <= 1.0) ? (l) : (2 - l));
-    if (l == 0) s = 0;
+	if (l == 0) s = 0;
 
 	b->hsl.hue = a->hsv.hue;
 	b->hsl.saturation = s;

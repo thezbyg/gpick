@@ -63,11 +63,11 @@ static int dynv_var_string_serialize(struct dynvVariable* variable, struct dynvI
 	uint32_t length = strlen((char*)variable->ptr_value);
 	uint32_t length_le = UINT32_TO_LE(length);
 
-	if (dynv_io_write(io, &length_le, 4, &written)==0){
+	if (dynv_io_write(io, &length_le, 4, &written) == 0){
 		if (written != 4) return -1;
 	}else return -1;
 
-	if (dynv_io_write(io, variable->ptr_value, length, &written)==0){
+	if (dynv_io_write(io, variable->ptr_value, length, &written) == 0){
 		if (written != length) return -1;
 	}else return -1;
 
@@ -82,7 +82,7 @@ static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dyn
 	uint32_t read;
 	uint32_t length;
 
-	if (dynv_io_read(io, &length, 4, &read)==0){
+	if (dynv_io_read(io, &length, 4, &read) == 0){
 		if (read != 4) return -1;
 	}else return -1;
 
@@ -90,7 +90,7 @@ static int dynv_var_string_deserialize(struct dynvVariable* variable, struct dyn
 
 	variable->ptr_value = new char [length+1];
 
-	if (dynv_io_read(io, variable->ptr_value, length, &read)==0){
+	if (dynv_io_read(io, variable->ptr_value, length, &read) == 0){
 		if (read != length) return -1;
 	}else return -1;
 

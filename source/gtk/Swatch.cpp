@@ -315,7 +315,7 @@ static gboolean gtk_swatch_button_press(GtkWidget *widget, GdkEventButton *event
 			g_signal_emit(widget, gtk_swatch_signals[COLOR_ACTIVATED], 0);
 		}
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
-		if (new_color==0){
+		if (new_color == 0){
 			g_signal_emit(widget, gtk_swatch_signals[CENTER_ACTIVATED], 0);
 		}else if (new_color<0){
 			g_signal_emit(widget, gtk_swatch_signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,10 +19,12 @@
 #ifndef GPICK_UI_DIALOG_OPTIONS_H_
 #define GPICK_UI_DIALOG_OPTIONS_H_
 
+class GlobalState;
+struct dynvSystem;
+struct lua_State;
 #include <gtk/gtk.h>
-#include "GlobalState.h"
-
 void dialog_options_show(GtkWindow* parent, GlobalState* gs);
-int dialog_options_update(struct dynvSystem *params);
+int dialog_options_update(lua_State *lua, dynvSystem *settings);
 
 #endif /* GPICK_UI_DIALOG_OPTIONS_H_ */
+

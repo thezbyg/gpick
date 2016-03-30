@@ -33,7 +33,7 @@ typedef math::Vec2<double> point;
 typedef math::BezierCubicCurve<point, double> bezier;
 
 double bezier_eval_at_x(list<bezier*>& channel, double x, double delta){
-	for (list<bezier*>::iterator i=channel.begin(); i!=channel.end(); ++i){
+	for (list<bezier*>::iterator i=channel.begin(); i != channel.end(); ++i){
 		if (x>=(*i)->p0.x && x<=(*i)->p3.x){
 			double width = ((*i)->p3.x-(*i)->p0.x);
 			double t = (x-(*i)->p0.x)/width;

@@ -52,7 +52,7 @@ static int prepare_chunk_header(struct ChunkHeader* header, const char* type, ui
 }
 
 static int check_chunk_header(struct ChunkHeader* header){
-	if (header->type[sizeof(header->type)-1]!=0) return -1;
+	if (header->type[sizeof(header->type)-1] != 0) return -1;
 	return 0;
 }
 
@@ -96,7 +96,7 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 
 				for (;;){
 					struct ColorObject* color = color_object_new(handler_map);
-					if (dynv_system_deserialize(color->params, handler_vec, mem_io)==0){
+					if (dynv_system_deserialize(color->params, handler_vec, mem_io) == 0){
 						//color_list_add_color_object(color_list, color, 0);
 						//color_object_release(color);
 						color_objects.push_back(color);
@@ -110,17 +110,17 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
 
 				uint32_t index, read;
-				for (list<struct ColorObject*>::iterator i=color_objects.begin(); i!=color_objects.end(); ++i){
-					if (dynv_io_read(mem_io, &index, sizeof(uint32_t), &read)==0){
-						if (read!=sizeof(uint32_t)) break;
+				for (list<struct ColorObject*>::iterator i=color_objects.begin(); i != color_objects.end(); ++i){
+					if (dynv_io_read(mem_io, &index, sizeof(uint32_t), &read) == 0){
+						if (read != sizeof(uint32_t)) break;
 						(*i)->position=index;
 					}
 				}
 
 				color_objects.sort(color_object_position_sort);
 
-				for (list<struct ColorObject*>::iterator i=color_objects.begin(); i!=color_objects.end(); ++i){
-					color_list_add_color_object(color_list, *i, ((*i)->position!=~(uint32_t)0));
+				for (list<struct ColorObject*>::iterator i=color_objects.begin(); i != color_objects.end(); ++i){
+					color_list_add_color_object(color_list, *i, ((*i)->position != ~(uint32_t)0));
 					color_object_release(*i);
 				}
 
@@ -130,7 +130,7 @@ int palette_file_load(const char* filename, struct ColorList* color_list) {
 
 				uint32_t read;
 				uint32_t version;
-				if (dynv_io_read(mem_io, &version, sizeof(uint32_t), &read)==0){
+				if (dynv_io_read(mem_io, &version, sizeof(uint32_t), &read) == 0){
 					version=UINT32_FROM_LE(version);
 				}
 			}else{
@@ -199,7 +199,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 		dynv_io_reset(mem_io);
 		dynv_handler_map_release(handler_map);*/
 
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+		for (ColorList::iter i=color_list->colors.begin(); i != color_list->colors.end(); ++i){
 			dynv_system_serialize((*i)->params, mem_io);
 			dynv_io_memory_get_data(mem_io, &data, &size);
 			file.write(data, size);
@@ -219,7 +219,7 @@ int palette_file_save(const char* filename, struct ColorList* color_list){
 
 		uint32_t *positions=new uint32_t [color_list->colors.size()];
 		uint32_t *position=positions;
-		for (ColorList::iter i=color_list->colors.begin(); i!=color_list->colors.end(); ++i){
+		for (ColorList::iter i=color_list->colors.begin(); i != color_list->colors.end(); ++i){
 			*position=UINT32_TO_LE((*i)->position);
 
 			++position;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,15 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UIDIALOGSORT_H_
-#define UIDIALOGSORT_H_
+#ifndef GPICK_UI_DIALOG_SORT_H_
+#define GPICK_UI_DIALOG_SORT_H_
 
+class GlobalState;
+struct ColorList;
 #include <gtk/gtk.h>
-#include "ColorList.h"
-#include "GlobalState.h"
+bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorList *sorted_color_list, GlobalState* gs);
 
-bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, struct ColorList *sorted_color_list, GlobalState* gs);
-
-#endif /* UIDIALOGSORT_H_ */
+#endif /* GPICK_UI_DIALOG_SORT_H_ */
 
 

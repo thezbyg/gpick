@@ -41,13 +41,11 @@ typedef gpointer GtkRange2DObject;
 typedef struct GtkRange2D
 {
 	GtkDrawingArea parent;
-
-	/* < private > */
 }GtkRange2D;
 
 typedef struct GtkRange2DClass{
 	GtkDrawingAreaClass parent_class;
-	void  (*values_changed)(GtkWidget *widget, gpointer userdata);
+	void (*values_changed)(GtkWidget *widget, gpointer userdata);
 }GtkRange2DClass;
 
 GtkWidget* gtk_range_2d_new(void);

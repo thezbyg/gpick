@@ -44,9 +44,9 @@ static void gtk_color_component_size_request (GtkWidget *widget, GtkRequisition 
 static void gtk_color_component_finalize(GObject *color_obj);
 
 enum{
-  COLOR_CHANGED,
-  INPUT_CLICKED,
-  LAST_SIGNAL
+	COLOR_CHANGED,
+	INPUT_CLICKED,
+	LAST_SIGNAL
 };
 
 static const int MaxNumberOfComponents = 4;
@@ -356,7 +356,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -388,7 +388,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
-        int index = i * int(steps) / surface_width;
+				int index = i * int(steps) / surface_width;
 
 				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
@@ -397,7 +397,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -428,7 +428,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
-        int index = i * int(steps) / surface_width;
+				int index = i * int(steps) / surface_width;
 
 				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
@@ -437,7 +437,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -468,7 +468,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
-        int index = i * int(steps) / surface_width;
+				int index = i * int(steps) / surface_width;
 
 				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
@@ -478,7 +478,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -518,7 +518,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
-        int index = i * int(steps) / surface_width;
+				int index = i * int(steps) / surface_width;
 
 				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
@@ -527,7 +527,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -565,7 +565,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 			for (i = 0; i < surface_width; ++i){
 
 				float position = modf(i * steps / surface_width, &int_part);
-        int index = i * int(steps) / surface_width;
+				int index = i * int(steps) / surface_width;
 
 				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
@@ -574,7 +574,7 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 				col_ptr = data + i * 4;
 
 				for (int y = 0; y < ns->n_components * 16; ++y){
-          if ((y & 0x0f) != 0x0f){
+					if ((y & 0x0f) != 0x0f){
 						col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
 						col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
 						col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
@@ -619,11 +619,8 @@ static gboolean gtk_color_component_expose (GtkWidget *widget, GdkEventExpose *e
 		if (ns->out_of_gamut_mask){
 			int first_out_of_gamut = 0;
 			bool out_of_gamut_found = false;
-
-			cairo_matrix_t matrix;
 			cairo_set_source(cr, ns->pattern);
-
-			for (int j = 0; j < out_of_gamut[i].size(); j++){
+			for (size_t j = 0; j < out_of_gamut[i].size(); j++){
 				if (out_of_gamut[i][j]){
 					if (!out_of_gamut_found){
 						out_of_gamut_found = true;
@@ -739,7 +736,7 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c){
 			}
 			break;
 		case xyz:
-      /* TODO */
+			/* TODO */
 			break;
 		case lch:
 			{
@@ -844,14 +841,14 @@ static gboolean gtk_color_component_motion_notify (GtkWidget *widget, GdkEventMo
 
 void gtk_color_component_set_lab_illuminant(GtkColorComponent* color_component, ReferenceIlluminant illuminant){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
-  ns->lab_illuminant = illuminant;
+	ns->lab_illuminant = illuminant;
 	gtk_color_component_set_color(color_component, &ns->orig_color);
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
 
 void gtk_color_component_set_lab_observer(GtkColorComponent* color_component, ReferenceObserver observer){
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
-  ns->lab_observer = observer;
+	ns->lab_observer = observer;
 	gtk_color_component_set_color(color_component, &ns->orig_color);
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,11 +17,13 @@
  */
 
 #include "BlendColors.h"
+#include "ColorSource.h"
+#include "ColorSourceManager.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "DragDrop.h"
 #include "ColorList.h"
@@ -140,8 +142,8 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 			gtk_color_get_color(GTK_COLOR(args->middle_color), &a);
 			gtk_color_get_color(GTK_COLOR(args->end_color), &b);
 		}
-		string start_name = color_names_get(args->gs->color_names, &a, false);
-		string end_name = color_names_get(args->gs->color_names, &b, false);
+		string start_name = color_names_get(args->gs->getColorNames(), &a, false);
+		string end_name = color_names_get(args->gs->getColorNames(), &b, false);
 		if (type == 0){
 			color_rgb_get_linear(&a, &a);
 			color_rgb_get_linear(&b, &b);
@@ -214,7 +216,7 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 static PaletteListCallbackReturn add_to_palette_cb_helper(struct ColorObject* color_object, void *userdata)
 {
 	BlendColorsArgs *args = (BlendColorsArgs*)userdata;
-	color_list_add_color_object(args->gs->colors, color_object, 1);
+	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
 static gboolean add_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args)
@@ -248,7 +250,7 @@ static void converter_destroy_params(CopyMenuItem* args)
 static void converter_callback_copy(GtkWidget *widget, gpointer item)
 {
 	CopyMenuItem* itemdata=(CopyMenuItem*)g_object_get_data(G_OBJECT(widget), "item_data");
-	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->params);
+	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->getConverters());
 }
 static GtkWidget* converter_create_copy_menu_item(GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs)
 {
@@ -259,7 +261,7 @@ static GtkWidget* converter_create_copy_menu_item(GtkWidget *menu, const gchar* 
 	position.last = true;
 	position.index = 0;
 	position.count = 1;
-	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, position, text_line) == 0){
+	if (converters_color_serialize(gs->getConverters(), function, color_object, position, text_line) == 0){
 		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
 		CopyMenuItem* itemdata=new CopyMenuItem;
@@ -372,7 +374,7 @@ static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, struct Col
 	}else if (color_index == 3){
 		gtk_color_get_color(GTK_COLOR(args->end_color), &c);
 	}
-	*color = color_list_new_color_object(args->gs->colors, &c);
+	*color = color_list_new_color_object(args->gs->getColorList(), &c);
 	BlendColorNameAssigner name_assigner(args->gs);
 	const char *item_name[] = {
 		"start",
@@ -467,7 +469,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y++;
@@ -481,7 +483,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)2;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y++;
@@ -494,7 +496,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->colors->params);
+	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)3;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y = 0;
@@ -527,7 +529,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y = 3;
 	GtkWidget* preview;
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->colors, &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->getColorList(), &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	args->preview_list = palette_list_get_widget(preview_color_list);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->preview_list));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);

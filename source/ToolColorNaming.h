@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,16 +19,16 @@
 #ifndef GPICK_TOOL_COLOR_NAMING_H_
 #define GPICK_TOOL_COLOR_NAMING_H_
 
-#include "GlobalStateStruct.h"
-#include "DynvHelpers.h"
-
+#include <string>
+class GlobalState;
+struct Color;
+struct ColorObject;
 enum ToolColorNamingType {
 	TOOL_COLOR_NAMING_UNKNOWN = 0,
 	TOOL_COLOR_NAMING_EMPTY,
 	TOOL_COLOR_NAMING_AUTOMATIC_NAME,
 	TOOL_COLOR_NAMING_TOOL_SPECIFIC,
 };
-
 typedef struct ToolColorNamingOption{
 	ToolColorNamingType type;
 	const char *name;

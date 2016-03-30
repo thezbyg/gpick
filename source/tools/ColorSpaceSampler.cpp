@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2015, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,7 +17,9 @@
  */
 
 #include "ColorSpaceSampler.h"
-#include "../GlobalStateStruct.h"
+#include "../ColorList.h"
+#include "../ColorObject.h"
+#include "../GlobalState.h"
 #include "../Internationalisation.h"
 #include "../DynvHelpers.h"
 #include "../uiListPalette.h"
@@ -81,7 +83,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 	if (preview)
 		color_list = args->preview_color_list;
 	else
-		color_list = args->gs->colors;
+		color_list = args->gs->getColorList();
 	vector<Color> values;
 	size_t value_count = args->axis[0].samples * args->axis[1].samples * args->axis[2].samples;
 	if (preview)
@@ -140,7 +142,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		if (args->linearization)
 			color_linear_get_rgb(&t, &t);
 		color_rgb_normalize(&t);
-		struct ColorObject *color_object = color_list_new_color_object(color_list, &t);
+		ColorObject *color_object = color_list_new_color_object(color_list, &t);
 		name_assigner.assign(color_object, &t);
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object_release(color_object);
@@ -211,7 +213,7 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 {
 	ColorSpaceSamplerArgs *args = new ColorSpaceSamplerArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick.tools.color_space_sampler");
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.tools.color_space_sampler");
 
 	int table_m_y;
 	GtkWidget *table, *table_m, *widget;
@@ -279,7 +281,7 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 		dynv_system_release(axis_config);
 	}
 	struct ColorList* preview_color_list = NULL;
-	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->colors, &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
 	args->preview_color_list = preview_color_list;

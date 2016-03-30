@@ -24,28 +24,23 @@
 
 G_BEGIN_DECLS
 
-#define GTK_TYPE_COLOR_COMPONENT		(gtk_color_component_get_type ())
-#define GTK_COLOR_COMPONENT(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponent))
-#define GTK_COLOR_COMPONENT_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_COLOR_COMPONENT, GtkColorComponentClass))
-#define GTK_IS_COLOR_COMPONENT(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_COLOR_COMPONENT))
-#define GTK_IS_COLOR_COMPONENT_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_COLOR_COMPONENT))
-#define GTK_COLOR_COMPONENT_GET_CLASS(obj)	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentClass))
+#define GTK_TYPE_COLOR_COMPONENT (gtk_color_component_get_type())
+#define GTK_COLOR_COMPONENT(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponent))
+#define GTK_COLOR_COMPONENT_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), GTK_COLOR_COMPONENT, GtkColorComponentClass))
+#define GTK_IS_COLOR_COMPONENT(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_COLOR_COMPONENT))
+#define GTK_IS_COLOR_COMPONENT_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_COLOR_COMPONENT))
+#define GTK_COLOR_COMPONENT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentClass))
 
-typedef struct GtkColorComponent			GtkColorComponent;
-typedef struct GtkColorComponentClass		GtkColorComponentClass;
-
+typedef struct GtkColorComponent GtkColorComponent;
+typedef struct GtkColorComponentClass GtkColorComponentClass;
 typedef gpointer GtkColorComponentObject;
-
 typedef struct GtkColorComponent{
 	GtkDrawingArea parent;
-
-	/* < private > */
 }GtkColorComponent;
-
 typedef struct GtkColorComponentClass{
 	GtkDrawingAreaClass parent_class;
-	void  (*color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
-	void  (*input_clicked)(GtkWidget* widget, int component_id, gpointer userdata);
+	void (*color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
+	void (*input_clicked)(GtkWidget* widget, int component_id, gpointer userdata);
 }GtkColorComponentClass;
 
 enum GtkColorComponentComp{

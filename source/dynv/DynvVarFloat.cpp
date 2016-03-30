@@ -58,7 +58,7 @@ static int dynv_var_float_serialize(struct dynvVariable* variable, struct dynvIO
 	value.f32 = variable->float_value;
 	value.i32 = UINT32_TO_LE(value.i32);
 
-	if (dynv_io_write(io, &value, 4, &written)==0){
+	if (dynv_io_write(io, &value, 4, &written) == 0){
 		if (written == 4) return 0;
 	}
 	return -1;
@@ -69,12 +69,12 @@ static int dynv_var_float_deserialize(struct dynvVariable* variable, struct dynv
 	uint32_t size;
 	dynv_io_read(io, &size, 4, &read);
 
-    union{
+	union{
 		uint32_t i32;
 		float f32;
 	}value;
 
-    if (dynv_io_read(io, &value, 4, &read)==0){
+	if (dynv_io_read(io, &value, 4, &read) == 0){
 		if (read == 4){
 			value.i32 = UINT32_FROM_LE(value.i32);
 			variable->float_value = value.f32;

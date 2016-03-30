@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,15 +20,13 @@
 #include "../Color.h"
 #include "../MathUtil.h"
 #include <math.h>
-
 #include <boost/math/special_functions/round.hpp>
-
 #include <iostream>
 using namespace std;
 
-#define GTK_COLOR_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR, GtkColorPrivate))
+#define GTK_COLOR_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR, GtkColorPrivate))
 
-G_DEFINE_TYPE (GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
+G_DEFINE_TYPE(GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
 
 static gboolean gtk_color_expose(GtkWidget *widget, GdkEventExpose *event);
 static gboolean gtk_color_button_release(GtkWidget *widget, GdkEventButton *event);
@@ -36,48 +34,36 @@ static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event)
 static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition);
 
 static void gtk_color_finalize(GObject *color_obj);
-
 static GtkWindowClass *parent_class = NULL;
-
 enum {
 	ACTIVATED, LAST_SIGNAL,
 };
-
 static guint gtk_color_signals[LAST_SIGNAL] = { };
-
 typedef struct GtkColorPrivate GtkColorPrivate;
-
 typedef struct GtkColorPrivate {
 	Color color;
 	Color text_color;
 	gchar* text;
-
 	bool rounded_rectangle;
 	bool h_center;
 	bool secondary_color;
-
 	double roundness;
 	transformation::Chain *transformation_chain;
-} GtkColorPrivate;
+}GtkColorPrivate;
 
-static void gtk_color_class_init(GtkColorClass *color_class) {
+static void gtk_color_class_init(GtkColorClass *color_class)
+{
 	GObjectClass *obj_class;
 	GtkWidgetClass *widget_class;
-
 	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(color_class));
-
 	obj_class = G_OBJECT_CLASS(color_class);
 	widget_class = GTK_WIDGET_CLASS(color_class);
-
 	widget_class->expose_event = gtk_color_expose;
 	widget_class->button_release_event = gtk_color_button_release;
 	widget_class->button_press_event = gtk_color_button_press;
 	widget_class->size_request = gtk_color_size_request;
-
 	obj_class->finalize = gtk_color_finalize;
-
 	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
-
 	gtk_color_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkColorClass, activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }

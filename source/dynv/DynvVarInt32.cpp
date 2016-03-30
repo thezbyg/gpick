@@ -52,7 +52,7 @@ static int dynv_var_int32_serialize(struct dynvVariable* variable, struct dynvIO
 	dynv_io_write(io, &length, 4, &written);
 
 	int32_t value = UINT32_TO_LE(variable->int_value);
-	if (dynv_io_write(io, &value, 4, &written)==0){
+	if (dynv_io_write(io, &value, 4, &written) == 0){
 		if (written == 4) return 0;
 	}
 	return -1;
@@ -63,7 +63,7 @@ static int dynv_var_int32_deserialize(struct dynvVariable* variable, struct dynv
 	int32_t value;
 	dynv_io_read(io, &value, 4, &read);
 
-	if (dynv_io_read(io, &value, 4, &read)==0){
+	if (dynv_io_read(io, &value, 4, &read) == 0){
 		if (read == 4){
 			variable->int_value = UINT32_FROM_LE(value);
 			return 0;

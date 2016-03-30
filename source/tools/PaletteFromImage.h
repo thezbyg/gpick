@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,12 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TOOLS_PALETTE_FROM_IMAGE_H_
-#define TOOLS_PALETTE_FROM_IMAGE_H_
+#ifndef GPICK_TOOLS_PALETTE_FROM_IMAGE_H_
+#define GPICK_TOOLS_PALETTE_FROM_IMAGE_H_
 
 #include <gtk/gtk.h>
-#include "../GlobalStateStruct.h"
-
+class GlobalState;
 void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs);
 
-#endif /* TOOLS_PALETTE_FROM_IMAGE_H_ */
+#endif /* GPICK_TOOLS_PALETTE_FROM_IMAGE_H_ */

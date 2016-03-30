@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,19 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UISTATUSICON_H_
-#define UISTATUSICON_H_
+#ifndef GPICK_UI_STATUS_ICON_H_
+#define GPICK_UI_STATUS_ICON_H_
 
+class GlobalState;
 #include "FloatingPicker.h"
-#include "GlobalState.h"
 #include <gtk/gtk.h>
-
 struct uiStatusIcon;
+uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, FloatingPicker floating_picker);
+void status_icon_set_visible(uiStatusIcon* si, bool visible);
+void status_icon_destroy(uiStatusIcon* si);
 
-struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, FloatingPicker floating_picker);
-void status_icon_set_visible(struct uiStatusIcon* si, bool visible);
-void status_icon_destroy(struct uiStatusIcon* si);
-
-
-#endif /* UISTATUSICON_H_ */
+#endif /* GPICK_UI_STATUS_ICON_H_ */
 

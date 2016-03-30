@@ -18,7 +18,8 @@
 
 #include "uiApp.h"
 #include "GlobalState.h"
-#include "GlobalStateStruct.h"
+#include "ColorSourceManager.h"
+#include "ColorSource.h"
 #include "Paths.h"
 #include "Converter.h"
 #include "CopyPaste.h"
@@ -82,7 +83,7 @@ typedef struct AppArgs{
 	AppOptions options;
 	guint bus_id;
 	struct dynvSystem *params;
-	GlobalState* gs;
+	GlobalState *gs;
 	char* current_filename;
 	bool imported;
 	GtkWidget *precision_loss_icon;
@@ -169,9 +170,9 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint pag
 		if (!args->initialization) // do not initialize color sources while initializing program
 			color_source_activate(args->color_source_index[page_num]);
 		args->current_color_source = args->color_source_index[page_num];
-		dynv_set_pointer(args->gs->params, "CurrentColorSource", args->current_color_source);
+		args->gs->setCurrentColorSource(args->current_color_source);
 	}else{
-		dynv_set_pointer(args->gs->params, "CurrentColorSource", NULL);
+		args->gs->setCurrentColorSource(nullptr);
 	}
 }
 
@@ -198,13 +199,13 @@ int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObj
 {
 	struct ColorObject* color_object;
 	Color dummy_color;
-	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
+	auto converters = gs->getConverters();
 	typedef multimap<float, struct ColorObject*, greater<float> > ValidConverters;
 	ValidConverters valid_converters;
 	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	if (converter){
 		if (converter->deserialize_available){
-			color_object = color_list_new_color_object(gs->colors, &dummy_color);
+			color_object = color_list_new_color_object(gs->getColorList(), &dummy_color);
 			float quality;
 			if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality) == 0){
 				if (quality>0){
@@ -217,13 +218,13 @@ int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObj
 			}
 		}
 	}
-	uint32_t table_size;
+	size_t table_size;
 	Converter **converter_table;
 	if ((converter_table = converters_get_all_type(converters, CONVERTERS_ARRAY_TYPE_PASTE, &table_size))){
 		for (uint32_t i = 0; i != table_size; ++i){
 			converter = converter_table[i];
 			if (converter->deserialize_available){
-				color_object = color_list_new_color_object(gs->colors, &dummy_color);
+				color_object = color_list_new_color_object(gs->getColorList(), &dummy_color);
 				float quality;
 				if (converters_color_deserialize(converters, converter->function_name, text, color_object, &quality) == 0){
 					if (quality>0){
@@ -268,26 +269,26 @@ char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type
 {
 	char* text = 0;
 	struct ColorObject* color_object;
-	color_object = color_list_new_color_object(gs->colors, color);
+	color_object = color_list_new_color_object(gs->getColorList(), color);
 	Converter *converter;
-	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
+	auto converters = gs->getConverters();
 	switch (text_type){
 	case COLOR_TEXT_TYPE_DISPLAY:
 		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 		if (converter){
-			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+			converter_get_text(converter->function_name, color_object, 0, gs->getConverters(), &text);
 		}
 		break;
 	case COLOR_TEXT_TYPE_COPY:
 		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 		if (converter){
-			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+			converter_get_text(converter->function_name, color_object, 0, gs->getConverters(), &text);
 		}
 		break;
 	case COLOR_TEXT_TYPE_COLOR_LIST:
 		converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
 		if (converter){
-			converter_get_text(converter->function_name, color_object, 0, gs->params, &text);
+			converter_get_text(converter->function_name, color_object, 0, gs->getConverters(), &text);
 		}
 		break;
 	}
@@ -342,7 +343,7 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args)
 {
 	if (args->current_filename) g_free(args->current_filename);
 	args->current_filename = 0;
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 	app_update_program_name(args);
 }
 
@@ -356,7 +357,7 @@ int app_save_file(AppArgs *args, const char *filename)
 		}
 	}
 	FileType filetype;
-	ImportExport import_export(args->gs->colors, filename, args->gs);
+	ImportExport import_export(args->gs->getColorList(), filename, args->gs);
 	bool return_value = false;
 	switch (filetype = ImportExport::getFileType(filename)){
 		case FileType::gpl:
@@ -395,7 +396,7 @@ int app_load_file(AppArgs *args, const char *filename, bool autoload)
 {
 	bool imported = false;
 	bool return_value = false;
-	ImportExport import_export(args->gs->colors, filename, args->gs);
+	ImportExport import_export(args->gs->getColorList(), filename, args->gs);
 	switch (ImportExport::getFileType(filename)){
 		case FileType::gpl:
 			return_value = import_export.importGPL();
@@ -445,7 +446,7 @@ static void menu_file_revert(GtkWidget *widget, AppArgs *args)
 	}else{
 		return;
 	}
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 	if (app_load_file(args, filename.c_str()) == 0){
 	}else{
 		GtkWidget* message;
@@ -459,7 +460,7 @@ static void menu_file_revert(GtkWidget *widget, AppArgs *args)
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args)
 {
 	const char *filename = args->recent_files.begin()->c_str();
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 	if (app_load_file(args, filename) == 0){
 	}else{
 		GtkWidget* message;
@@ -476,7 +477,7 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args)
 	uintptr_t index = (uintptr_t)g_object_get_data(G_OBJECT(widget), "index");
 	std::advance(i, index);
 	const char *filename = (*i).c_str();
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 	if (app_load_file(args, filename) == 0){
 	}else{
 		GtkWidget* message;
@@ -543,7 +544,7 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(args->params, "open.path", path);
 			g_free(path);
-			color_list_remove_all(args->gs->colors);
+			color_list_remove_all(args->gs->getColorList());
 			if (app_load_file(args, filename) == 0){
 				finished = TRUE;
 			}else{
@@ -621,24 +622,24 @@ static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_o
 
 static void menu_file_export_all(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
 	import_export_dialog.showExport();
 }
 static void menu_file_import(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
 	import_export_dialog.showImport();
 }
 static void menu_file_import_text_file(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->colors, args->gs);
+	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
 	import_export_dialog.showImportTextFile();
 }
 
 static void menu_file_export(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->params);
+	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->getSettings());
 	struct ColorList *color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
@@ -749,7 +750,7 @@ static void activate_secondary_source(AppArgs *args, ColorSource *source)
 	if (source){
 		string namespace_str = "gpick.secondary_view.";
 		namespace_str += source->identificator;
-		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->params, namespace_str.c_str());
+		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->getSettings(), namespace_str.c_str());
 		source = color_source_implement(source, args->gs, dynv_namespace);
 		GtkWidget *new_widget = color_source_get_widget(source);
 		dynv_system_release(dynv_namespace);
@@ -946,10 +947,10 @@ static void converter_destroy_params(CopyMenuItem* args)
 	delete args;
 }
 
-static void converter_callback_copy(GtkWidget *widget,  gpointer item)
+static void converter_callback_copy(GtkWidget *widget, gpointer item)
 {
 	CopyMenuItem* itemdata = (CopyMenuItem*)g_object_get_data(G_OBJECT(widget), "item_data");
-	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->params);
+	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->getConverters());
 }
 
 static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs)
@@ -961,7 +962,7 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 	position.last = true;
 	position.index = 0;
 	position.count = 1;
-	if (converters_color_serialize((Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0), function, color_object, position, text_line) == 0){
+	if (converters_color_serialize(gs->getConverters(), function, color_object, position, text_line) == 0){
 		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
 		CopyMenuItem* itemdata = new CopyMenuItem;
@@ -976,10 +977,10 @@ static GtkWidget* converter_create_copy_menu_item (GtkWidget *menu, const gchar*
 
 GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs)
 {
-	Converters *converters = (Converters*)dynv_get_pointer_wd(gs->params, "Converters", 0);
+	auto converters = gs->getConverters();
 	GtkWidget *menu;
 	menu = gtk_menu_new();
-	uint32_t converter_table_size = 0;
+	size_t converter_table_size = 0;
 	Converter** converter_table = converters_get_all_type(converters, CONVERTERS_ARRAY_TYPE_COPY, &converter_table_size);
 	for (uint32_t i = 0; i<converter_table_size; ++i){
 		GtkWidget* item = converter_create_copy_menu_item(menu, converter_table[i]->function_name, color_object, palette_widget, gs);
@@ -988,7 +989,7 @@ GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidg
 	return menu;
 }
 
-void converter_get_text(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params, gchar** out_text)
+void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text)
 {
 	stringstream text(ios::out);
 	struct ColorList *color_list = color_list_new(NULL);
@@ -1004,7 +1005,6 @@ void converter_get_text(const gchar* function, struct ColorObject* color_object,
 	position.count = color_list->colors.size();
 	if (position.count > 0){
 		string text_line;
-		Converters* converters = (Converters*)dynv_get_pointer_wd(params, "Converters", 0);
 		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
 			if (position.index + 1 == position.count)
 				position.last = true;
@@ -1027,10 +1027,10 @@ void converter_get_text(const gchar* function, struct ColorObject* color_object,
 	}
 }
 
-void converter_get_clipboard(const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, struct dynvSystem *params)
+void converter_get_clipboard(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters)
 {
 	gchar* text;
-	converter_get_text(function, color_object, palette_widget, params, &text);
+	converter_get_text(function, color_object, palette_widget, converters, &text);
 	if (text){
 		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
 		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text, -1);
@@ -1046,13 +1046,13 @@ static PaletteListCallbackReturn color_list_mark_selected(struct ColorObject* co
 
 static void palette_popup_menu_remove_all(GtkWidget *widget, AppArgs* args)
 {
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 }
 
 static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args)
 {
 	palette_list_foreach_selected(args->color_list, color_list_mark_selected, 0);
-	color_list_remove_selected(args->gs->colors);
+	color_list_remove_selected(args->gs->getColorList());
 }
 
 static PaletteListCallbackReturn color_list_clear_names(struct ColorObject* color_object, void *userdata)
@@ -1083,8 +1083,8 @@ static PaletteListCallbackReturn color_list_autoname(struct ColorObject* color_o
 static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args)
 {
 	AutonameState state;
-	state.color_names = args->gs->color_names;
-	state.imprecision_postfix = dynv_get_bool_wd(args->gs->params, "gpick.color_names.imprecision_postfix", true);
+	state.color_names = args->gs->getColorNames();
+	state.imprecision_postfix = dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true);
 	palette_list_foreach_selected(args->color_list, color_list_autoname, &state);
 }
 
@@ -1132,7 +1132,7 @@ static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args)
 	response = dialog_autonumber_show(GTK_WINDOW(args->window), selected_count, args->gs);
 	if (response == GTK_RESPONSE_OK){
 		struct dynvSystem *params;
-		params = dynv_get_dynv(args->gs->params, "gpick.autonumber");
+		params = dynv_get_dynv(args->gs->getSettings(), "gpick.autonumber");
 		state.name = dynv_get_string_wd(params, "name", "autonum");
 		state.nplaces = dynv_get_int32_wd(params, "nplaces", 1);
 		state.index = dynv_get_int32_wd(params, "startindex", 1);
@@ -1180,7 +1180,7 @@ static void palette_popup_menu_mix(GtkWidget *widget, AppArgs* args)
 
 static void palette_popup_menu_variations(GtkWidget *widget, AppArgs* args)
 {
-	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->params);
+	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->getSettings());
 	struct ColorList *color_list = color_list_new(handler_map);
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_variations_show(GTK_WINDOW(args->window), color_list, args->gs);
@@ -1344,7 +1344,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 				struct ColorList *color_list = color_list_new(NULL);
 				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
 				if (color_list_get_count(color_list) > 0){
-					ColorSource *color_source = (ColorSource*)dynv_get_pointer_wd(args->gs->params, "CurrentColorSource", 0);
+					ColorSource *color_source = args->gs->getCurrentColorSource();
 					uint32_t color_index = 0;
 					switch(event->keyval)
 					{
@@ -1379,10 +1379,10 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			break;
 		case GDK_KEY_c:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-				Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+				auto converters = args->gs->getConverters();
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 				if (converter){
-					converter_get_clipboard(converter->function_name, 0, args->color_list, args->gs->params);
+					converter_get_clipboard(converter->function_name, 0, args->color_list, args->gs->getConverters());
 				}
 				return true;
 			}
@@ -1392,7 +1392,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				struct ColorObject* color_object;
 				if (copypaste_get_color_object(&color_object, args->gs) == 0){
-					color_list_add_color_object(args->gs->colors, color_object, 1);
+					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 					color_object_release(color_object);
 				}
 				return true;
@@ -1563,22 +1563,21 @@ static void app_initialize_variables(AppArgs *args)
 	args->secondary_color_source = 0;
 	args->secondary_source_widget = 0;
 	args->secondary_source_scrolled_viewpoint = 0;
-	global_state_init(args->gs, GLOBALSTATE_ALL);
-	dynv_set_pointer(args->gs->params, "MainWindowStruct", args);
-	dialog_options_update(args->gs->params);
-	args->params = dynv_get_dynv(args->gs->params, "gpick.main");
+	args->gs->loadAll();
+	dialog_options_update(args->gs->getLua(), args->gs->getSettings());
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.main");
 	args->csm = color_source_manager_create();
 	register_sources(args->csm);
 }
 
 static void app_initialize_color_list(AppArgs *args)
 {
-	args->gs->colors->on_insert = color_list_on_insert;
-	args->gs->colors->on_clear = color_list_on_clear;
-	args->gs->colors->on_delete_selected = color_list_on_delete_selected;
-	args->gs->colors->on_get_positions = color_list_on_get_positions;
-	args->gs->colors->on_delete = color_list_on_delete;
-	args->gs->colors->userdata = args;
+	args->gs->getColorList()->on_insert = color_list_on_insert;
+	args->gs->getColorList()->on_clear = color_list_on_clear;
+	args->gs->getColorList()->on_delete_selected = color_list_on_delete_selected;
+	args->gs->getColorList()->on_get_positions = color_list_on_get_positions;
+	args->gs->getColorList()->on_delete = color_list_on_delete;
+	args->gs->getColorList()->userdata = args;
 }
 
 static void app_initialize_floating_picker(AppArgs *args)
@@ -1590,7 +1589,7 @@ static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 {
 	ColorSource *source;
 	struct dynvSystem *dynv_namespace;
-	dynv_namespace = dynv_get_dynv(args->gs->params, "gpick.picker");
+	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.picker");
 	source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, dynv_namespace);
 	GtkWidget *widget = color_source_get_widget(source);
 	dynv_system_release(dynv_namespace);
@@ -1608,9 +1607,8 @@ AppArgs* app_create_main(const AppOptions *options)
 	args->initialization = true;
 	memcpy(&args->options, options, sizeof(AppOptions));
 	color_init();
-	GlobalState *gs = global_state_create();
-	args->gs = gs;
-	global_state_init(args->gs, GLOBALSTATE_CONFIGURATION);
+	args->gs = new GlobalState();
+	args->gs->loadSettings();
 	if (args->options.single_color_pick_mode){
 		app_initialize_variables(args);
 		app_initialize_floating_picker(args);
@@ -1624,7 +1622,7 @@ AppArgs* app_create_main(const AppOptions *options)
 				cancel_startup = true;
 			}
 		}
-		if (!cancel_startup && dynv_get_bool_wd(gs->params, "gpick.main.single_instance", false)){
+		if (!cancel_startup && dynv_get_bool_wd(args->gs->getSettings(), "gpick.main.single_instance", false)){
 			if (gpick_single_instance_activate()){
 				cancel_startup = true;
 			}
@@ -1666,7 +1664,7 @@ AppArgs* app_create_main(const AppOptions *options)
 	g_signal_connect(G_OBJECT(notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 	statusbar = gtk_statusbar_new();
-	dynv_set_pointer(args->gs->params, "StatusBar", statusbar);
+	args->gs->setStatusBar(statusbar);
 	gtk_paned_pack1(GTK_PANED(vpaned), notebook, false, false);
 	if (color_list_visible){
 		gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
@@ -1679,7 +1677,7 @@ AppArgs* app_create_main(const AppOptions *options)
 	struct dynvSystem *dynv_namespace;
 	app_initialize_floating_picker(args);
 	app_initialize_picker(args, notebook);
-	dynv_namespace = dynv_get_dynv(gs->params, "gpick.generate_scheme");
+	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.generate_scheme");
 	source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, dynv_namespace);
 	widget = color_source_get_widget(source);
 	dynv_system_release(dynv_namespace);
@@ -1694,7 +1692,7 @@ AppArgs* app_create_main(const AppOptions *options)
 		source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
 		if (source) activate_secondary_source(args, source);
 	}
-	dynv_namespace = dynv_get_dynv(gs->params, "gpick.layout_preview");
+	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.layout_preview");
 	source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, dynv_namespace);
 	widget = color_source_get_widget(source);
 	dynv_system_release(dynv_namespace);
@@ -1755,7 +1753,7 @@ AppArgs* app_create_main(const AppOptions *options)
 		//Load recent file list
 		char** recent_array;
 		uint32_t recent_array_size;
-		if ((recent_array = (char**)dynv_get_string_array_wd(args->gs->params, "gpick.recent.files", 0, 0, &recent_array_size))){
+		if ((recent_array = (char**)dynv_get_string_array_wd(args->gs->getSettings(), "gpick.recent.files", 0, 0, &recent_array_size))){
 			for (uint32_t i = 0; i < recent_array_size; i++){
 				args->recent_files.push_back(string(recent_array[i]));
 			}
@@ -1790,11 +1788,11 @@ static void app_release(AppArgs *args)
 	if (!args->options.single_color_pick_mode){
 		if (app_is_autoload_enabled(args)){
 			gchar* autosave_file = build_config_path("autosave.gpa");
-			palette_file_save(autosave_file, args->gs->colors);
+			palette_file_save(autosave_file, args->gs->getColorList());
 			g_free(autosave_file);
 		}
 	}
-	color_list_remove_all(args->gs->colors);
+	color_list_remove_all(args->gs->getColorList());
 }
 
 static void app_save_recent_file_list(AppArgs *args)
@@ -1808,7 +1806,7 @@ static void app_save_recent_file_list(AppArgs *args)
 		recent_array[j] = (*i).c_str();
 		j++;
 	}
-	dynv_set_string_array(args->gs->params, "gpick.recent.files", recent_array, recent_array_size);
+	dynv_set_string_array(args->gs->getSettings(), "gpick.recent.files", recent_array, recent_array_size);
 	delete [] recent_array;
 }
 
@@ -1825,13 +1823,13 @@ class FloatingPickerAction {
 		{
 			struct ColorObject* color_object;
 			Color c = color;
-			color_object = color_list_new_color_object(args->gs->colors, &c);
-			Converters *converters = (Converters*)dynv_get_pointer_wd(args->gs->params, "Converters", 0);
+			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+			auto converters = args->gs->getConverters();
 			Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 			if (args->options.output_picked_color){
 				gchar *text = NULL;
 				if (converter){
-					converter_get_text(converter->function_name, color_object, 0, args->gs->params, &text);
+					converter_get_text(converter->function_name, color_object, 0, args->gs->getConverters(), &text);
 				}
 				if (text){
 					cout << text << endl;
@@ -1839,7 +1837,7 @@ class FloatingPickerAction {
 				}
 			}else{
 				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->params);
+					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 					clipboard_touched = true;
 				}
 			}
@@ -1889,9 +1887,9 @@ int app_run(AppArgs *args)
 		gpick_unown_name(args->bus_id);
 		status_icon_destroy(args->status_icon);
 	}
-	global_state_term(args->gs);
+	args->gs->writeSettings();
 	dynv_system_release(args->params);
-	global_state_destroy(args->gs);
+	delete args->gs;
 	if (args->current_filename) g_free(args->current_filename);
 	color_source_manager_destroy(args->csm);
 	delete args;

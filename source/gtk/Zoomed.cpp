@@ -411,7 +411,7 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 	g_object_unref(layout);
 	pango_font_description_free(font_description);
 	cairo_destroy (cr);
-	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, ns->width_height + widget->style->xthickness * 2, ns->width_height  + widget->style->ythickness * 2);
+	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, ns->width_height + widget->style->xthickness * 2, ns->width_height + widget->style->ythickness * 2);
 	return true;
 }
 static gboolean gtk_zoomed_button_press(GtkWidget *widget, GdkEventButton *event)

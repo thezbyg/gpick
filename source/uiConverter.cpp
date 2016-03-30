@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,14 +17,12 @@
  */
 
 #include "uiConverter.h"
-
 #include "Converter.h"
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
-#include "GlobalStateStruct.h"
+#include "GlobalState.h"
 #include "Internationalisation.h"
 #include "ColorObject.h"
-
 #include <iostream>
 using namespace std;
 
@@ -58,10 +56,10 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	c.rgb.red=0.75;
 	c.rgb.green=0.50;
 	c.rgb.blue=0.25;
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->colors, &c);
+	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	dynv_set_string(color_object->params, "name", _("Test color"));
 
-	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
+	auto converters = args->gs->getConverters();
 
 	if (converters_color_serialize(converters, converter->function_name, color_object, position, text_line) == 0) {
 		gtk_list_store_set(GTK_LIST_STORE(model), iter1,
@@ -110,9 +108,9 @@ static void paste_toggled_cb(GtkCellRendererText *cell, gchar *path, ConverterAr
 
 static GtkWidget* converter_dropdown_new(ConverterArgs *args, GtkTreeModel *model){
 
-	GtkListStore  		*store = 0;
-	GtkCellRenderer     *renderer;
-	GtkWidget			*combo;
+	GtkListStore *store = 0;
+	GtkCellRenderer *renderer;
+	GtkWidget *combo;
 
 	if (model){
 		combo = gtk_combo_box_new_with_model(model);
@@ -122,7 +120,7 @@ static GtkWidget* converter_dropdown_new(ConverterArgs *args, GtkTreeModel *mode
 	}
 
 	renderer = gtk_cell_renderer_text_new();
-    gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
+	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
 	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", CONVERTERLIST_HUMAN_NAME, NULL);
 
 	if (store) g_object_unref (store);
@@ -132,10 +130,10 @@ static GtkWidget* converter_dropdown_new(ConverterArgs *args, GtkTreeModel *mode
 
 static GtkWidget* converter_list_new(ConverterArgs *args){
 
-	GtkListStore  		*store;
-	GtkCellRenderer     *renderer;
-	GtkTreeViewColumn   *col;
-	GtkWidget           *view;
+	GtkListStore *store;
+	GtkCellRenderer *renderer;
+	GtkTreeViewColumn *col;
+	GtkWidget *view;
 
 	view = gtk_tree_view_new ();
 	args->list=view;
@@ -192,25 +190,20 @@ static GtkWidget* converter_list_new(ConverterArgs *args){
 	return view;
 }
 
-void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
-
+void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
+{
 	ConverterArgs *args = new ConverterArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->params, "gpick");
-
+	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Converters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			NULL);
-
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "converters.window.width", -1),
 		dynv_get_int32_wd(args->params, "converters.window.height", -1));
-
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
-
 	GtkWidget *list;
 	list = converter_list_new(args);
 
@@ -237,18 +230,15 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 	gtk_table_attach(GTK_TABLE(table), color_list, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	table_y++;
 
-
-	Converters *converters = static_cast<Converters*>(dynv_get_pointer_wdc(args->gs->params, "Converters", 0));
-
+	auto converters = args->gs->getConverters();
 	Converter **converter_table;
-	uint32_t total_converters, converter_i;
+	size_t total_converters, converter_i;
 	converter_table = converters_get_all(converters, &total_converters);
 
 	GtkTreeIter iter1;
 	GtkTreeModel *model=gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 
 	GtkTreeIter iter2;
-
 
 	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
 	bool display_converter_found = false;
@@ -348,28 +338,19 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs){
 			delete [] paste_array;
 		}else{
 			converters_reorder(converters, 0, 0);
-
 			dynv_set_string_array(args->params, "converters.names", 0, 0);
 			dynv_set_bool_array(args->params, "converters.copy", 0, 0);
 			dynv_set_bool_array(args->params, "converters.paste", 0, 0);
-
 		}
-
-
 		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
 		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
-
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
 	dynv_set_int32(args->params, "converters.window.width", width);
 	dynv_set_int32(args->params, "converters.window.height", height);
-
 	gtk_widget_destroy(dialog);
-
 	dynv_system_release(args->params);
 	delete args;
 }
-
-
 

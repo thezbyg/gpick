@@ -70,7 +70,7 @@ int dynv_handler_map_release(struct dynvHandlerMap* handler_map){
 	}else{
 		dynvHandlerMap::HandlerMap::iterator i;
 
-		for (i=handler_map->handlers.begin(); i!=handler_map->handlers.end(); ++i){
+		for (i=handler_map->handlers.begin(); i != handler_map->handlers.end(); ++i){
 			dynv_handler_destroy((*i).second);
 		}
 		handler_map->handlers.clear();
@@ -89,7 +89,7 @@ int dynv_handler_map_add_handler(struct dynvHandlerMap* handler_map, struct dynv
 	dynvHandlerMap::HandlerMap::iterator i;
 
 	i=handler_map->handlers.find(handler->name);
-	if (i!=handler_map->handlers.end()){
+	if (i != handler_map->handlers.end()){
 		return -1;
 	}else{
 		handler_map->handlers[handler->name]=handler;
@@ -102,7 +102,7 @@ struct dynvHandler* dynv_handler_map_get_handler(struct dynvHandlerMap* handler_
 	dynvHandlerMap::HandlerMap::iterator i;
 
 	i=handler_map->handlers.find(handler_name);
-	if (i!=handler_map->handlers.end()){
+	if (i != handler_map->handlers.end()){
 		return (*i).second;
 	}else{
 		return 0;
@@ -118,7 +118,7 @@ int dynv_handler_map_serialize(struct dynvHandlerMap* handler_map, struct dynvIO
 	handler_count=UINT32_TO_LE(handler_count);
 	dynv_io_write(io, &handler_count, 4, &written);
 
-	for (i=handler_map->handlers.begin(); i!=handler_map->handlers.end(); ++i){
+	for (i=handler_map->handlers.begin(); i != handler_map->handlers.end(); ++i){
 		struct dynvHandler* handler=(*i).second;
 
 		length=strlen(handler->name);
@@ -140,15 +140,15 @@ int dynv_handler_map_deserialize(struct dynvHandlerMap* handler_map, struct dynv
 	char* name;
 	struct dynvHandler* handler;
 
-	if (dynv_io_read(io, &handler_count, 4, &read)==0){
-		if (read!=4) return -1;
+	if (dynv_io_read(io, &handler_count, 4, &read) == 0){
+		if (read != 4) return -1;
 	}else return -1;
 
 	handler_count=UINT32_TO_LE(handler_count);
 
 	handler_vec.resize(handler_count);
 
-	for (uint32_t i=0; i!=handler_count; ++i){
+	for (uint32_t i=0; i != handler_count; ++i){
 		dynv_io_read(io, &length, 4, &read);
 		length=UINT32_TO_LE(length);
 		name=new char [length+1];

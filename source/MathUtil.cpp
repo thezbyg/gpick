@@ -97,7 +97,7 @@ void matrix3x3_identity(matrix3x3* matrix) {
 	int i,j;
 	for (i=0;i<3;++i){
 		for (j=0;j<3;++j){
-			matrix->m[i][j]=((i==j)?1:0);
+			matrix->m[i][j]=((i == j)?1:0);
 		}
 	}
 }
@@ -111,10 +111,10 @@ void matrix3x3_multiply(const matrix3x3* matrix1, const matrix3x3* matrix2, matr
 
 	matrix3x3 matrix_t;
 
-	if (matrix1==result){
+	if (matrix1 == result){
 		matrix3x3_copy(matrix1, &matrix_t);
 		matrix1=&matrix_t;
-	}else if (matrix2==result){
+	}else if (matrix2 == result){
 		matrix3x3_copy(matrix2, &matrix_t);
 		matrix2=&matrix_t;
 	}
@@ -154,7 +154,7 @@ void matrix3x3_transpose(const matrix3x3* matrix, matrix3x3* result) {
 	int i,j;
 	matrix3x3 matrix_t;
 
-	if (matrix==result){
+	if (matrix == result){
 		matrix3x3_copy(matrix, &matrix_t);
 		matrix=&matrix_t;
 	}
@@ -169,13 +169,13 @@ void matrix3x3_transpose(const matrix3x3* matrix, matrix3x3* result) {
 
 int matrix3x3_inverse(const matrix3x3* matrix, matrix3x3* result){
 	double det = matrix3x3_determinant(matrix);
-	if (det==0) return -1;
+	if (det == 0) return -1;
 
 	double invdet=1/det;
 
 	matrix3x3 matrix_t;
 
-	if (matrix==result){
+	if (matrix == result){
 		matrix3x3_copy(matrix, &matrix_t);
 		matrix=&matrix_t;
 	}
@@ -241,7 +241,7 @@ void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, 
 
 	vector3 vector_t;
 
-	if (vector==result){
+	if (vector == result){
 		vector3_copy(vector, &vector_t);
 		vector=&vector_t;
 	}
