@@ -43,9 +43,9 @@ typedef struct DialogSortArgs{
 	GtkWidget *toggle_reverse;
 	GtkWidget *toggle_reverse_groups;
 
-	struct ColorList *sorted_color_list;
-	struct ColorList *selected_color_list;
-	struct ColorList *preview_color_list;
+	ColorList *sorted_color_list;
+	ColorList *selected_color_list;
+	ColorList *preview_color_list;
 
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -220,7 +220,7 @@ static double group_lch_hue(Color *color)
 }
 
 const GroupType group_types[] = {
-	{N_("None"), NULL},
+	{N_("None"), nullptr},
 	{N_("RGB Red"), group_rgb_red},
 	{N_("RGB Green"), group_rgb_green},
 	{N_("RGB Blue"), group_rgb_blue},
@@ -442,13 +442,13 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 		dynv_set_bool(args->params, "reverse_groups", reverse_groups);
 	}
 
-	struct ColorList *color_list;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->sorted_color_list;
 
-	typedef std::multimap<double, struct ColorObject*> SortedColors;
+	typedef std::multimap<double, ColorObject*> SortedColors;
 	typedef std::map<uintptr_t, SortedColors> GroupedSortedColors;
 	GroupedSortedColors grouped_sorted_colors;
 
@@ -466,9 +466,8 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 	int tmp_limit = limit;
 	if (group->get_group){
 		for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-			color_object_get_color(*i, &in);
+			in = (*i)->getColor();
 			node_update(group_nodes, &range, group->get_group(&in), 8);
-
 			if (preview){
 				if (tmp_limit <= 0)
 					break;
@@ -481,13 +480,13 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 
 	tmp_limit = limit;
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-		color_object_get_color(*i, &in);
+		in = (*i)->getColor();
 
 		uintptr_t node_ptr = 0;
 		if (group->get_group){
 			node_ptr = reinterpret_cast<uintptr_t>(node_find(group_nodes, &range, group->get_group(&in)));
 		}
-		grouped_sorted_colors[node_ptr].insert(std::pair<double, struct ColorObject*>(sort->get_value(&in), *i));
+		grouped_sorted_colors[node_ptr].insert(std::pair<double, ColorObject*>(sort->get_value(&in), *i));
 
 		if (preview){
 			if (tmp_limit <= 0)
@@ -499,7 +498,7 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 	node_delete(group_nodes);
 
 	for (GroupedSortedColors::iterator i = grouped_sorted_colors.begin(); i != grouped_sorted_colors.end(); ++i){
-		color_object_get_color((*(*i).second.begin()).second, &in);
+		in = (*(*i).second.begin()).second->getColor();
 		sorted_groups.insert(std::pair<double, uintptr_t>(sort->get_value(&in), (*i).first));
 	}
 
@@ -545,7 +544,7 @@ static void update(GtkWidget *widget, DialogSortArgs *args ){
 	calc(args, true, 100);
 }
 
-bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, struct ColorList *sorted_color_list, GlobalState* gs)
+bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorList *sorted_color_list, GlobalState* gs)
 {
 	DialogSortArgs *args = new DialogSortArgs;
 	args->gs = gs;
@@ -554,7 +553,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 
 	GtkWidget *table;
 
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -610,7 +609,7 @@ bool dialog_sort_show(GtkWindow* parent, struct ColorList *selected_color_list, 
 
 
 	GtkWidget* preview_expander;
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 

@@ -21,7 +21,8 @@
 
 #include <gtk/gtk.h>
 class GlobalState;
-struct ColorObject;
+class ColorObject;
+struct dynvHandlerMap;
 enum DragDropFlags{
 	DRAGDROP_SOURCE = 1<<1,
 	DRAGDROP_DESTINATION = 1<<2,
@@ -29,15 +30,15 @@ enum DragDropFlags{
 struct DragDrop{
 	GtkWidget* widget;
 	void* userdata;
-	struct ColorObject* (*get_color_object)(struct DragDrop* dd);
-	int (*set_color_object_at)(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move);
-	struct ColorObject** (*get_color_object_list)(struct DragDrop* dd, size_t *colorobject_n);
-	int (*set_color_object_list_at)(struct DragDrop* dd, struct ColorObject** colorobject, size_t colorobject_n, int x, int y, bool move);
-	bool (*test_at)(struct DragDrop* dd, int x, int y);
-	bool (*data_received)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
-	bool (*data_get)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
-	bool (*data_delete)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
-	bool (*drag_end)(struct DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
+	ColorObject* (*get_color_object)(DragDrop* dd);
+	int (*set_color_object_at)(DragDrop* dd, ColorObject* colorobject, int x, int y, bool move);
+	ColorObject** (*get_color_object_list)(DragDrop* dd, size_t *colorobject_n);
+	int (*set_color_object_list_at)(DragDrop* dd, ColorObject** colorobject, size_t colorobject_n, int x, int y, bool move);
+	bool (*test_at)(DragDrop* dd, int x, int y);
+	bool (*data_received)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
+	bool (*data_get)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
+	bool (*data_delete)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
+	bool (*drag_end)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context);
 	enum DataType{
 		DATA_TYPE_NONE,
 		DATA_TYPE_COLOR_OBJECT,
@@ -46,19 +47,19 @@ struct DragDrop{
 	DataType data_type;
 	union{
 		struct{
-			struct ColorObject* color_object;
+			ColorObject* color_object;
 		}color_object;
 		struct{
-			struct ColorObject** color_objects;
+			ColorObject** color_objects;
 			size_t color_object_n;
 		}color_objects;
 	}data;
-	struct dynvHandlerMap* handler_map;
+	dynvHandlerMap* handler_map;
 	GtkWidget* dragwidget;
 	GlobalState *gs;
 	void* userdata2;
 };
-int dragdrop_init(struct DragDrop* dd, GlobalState *gs);
-int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, struct DragDrop *dd);
+int dragdrop_init(DragDrop* dd, GlobalState *gs);
+int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, DragDrop *dd);
 
 #endif /* GPICK_DRAG_DROP_H_ */

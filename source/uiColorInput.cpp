@@ -30,7 +30,7 @@
 #include "ColorSpaceType.h"
 #include <string.h>
 
-int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object)
+int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* color_object, ColorObject** new_color_object)
 {
 	gchar* text = 0;
 	auto converters = gs->getConverters();
@@ -42,7 +42,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
+			nullptr);
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -57,9 +57,8 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
 
-	Color c;
-	color_object_get_color(color_object, &c);
-	gtk_color_set_color(GTK_COLOR(widget), &c, "");
+	Color color = color_object->getColor();
+	gtk_color_set_color(GTK_COLOR(widget), &color, "");
 
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, true, 0);
 
@@ -81,7 +80,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObje
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 
-		struct ColorObject* color_object;
+		ColorObject* color_object;
 		if (main_get_color_object_from_text(gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object) == 0){
 			*new_color_object = color_object;
 			gtk_widget_destroy(dialog);

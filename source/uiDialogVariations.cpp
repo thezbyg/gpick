@@ -34,8 +34,8 @@ typedef struct DialogVariationsArgs
 	GtkWidget *toggle_multiplication, *toggle_linearization;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
-	struct ColorList *selected_color_list;
-	struct ColorList *preview_color_list;
+	ColorList *selected_color_list;
+	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }DialogVariationsArgs;
@@ -51,20 +51,20 @@ class VariationsColorNameAssigner: public ToolColorNameAssigner
 			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color, const char *name, uint32_t step_i)
+		void assign(ColorObject *color_object, const Color *color, const char *name, uint32_t step_i)
 		{
 			m_name = name;
 			m_step_i = step_i;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << m_name << " " << _("variation") << " " << m_step_i;
 			return m_stream.str();
 		}
 };
-static void calc( DialogVariationsArgs *args, bool preview, int limit)
+static void calc(DialogVariationsArgs *args, bool preview, int limit)
 {
 	gint steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->range_steps));
 	gfloat lightness_from = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from));
@@ -84,16 +84,15 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit)
 	}
 	Color r, hsl;
 	gint step_i;
-	struct ColorList *color_list;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->gs->getColorList();
 	VariationsColorNameAssigner name_assigner(args->gs);
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-		Color in;
-		color_object_get_color(*i, &in);
-		const char* name = dynv_get_string_wd((*i)->params, "name", 0);
+		Color in = (*i)->getColor();
+		const char* name = (*i)->getName().c_str();
 		if (linearization)
 			color_rgb_get_linear(&in, &in);
 		for (step_i = 0; step_i < steps; ++step_i) {
@@ -124,10 +123,10 @@ static void calc( DialogVariationsArgs *args, bool preview, int limit)
 			color_hsl_to_rgb(&hsl, &r);
 			if (linearization)
 				color_linear_get_rgb(&r, &r);
-			struct ColorObject *color_object = color_list_new_color_object(color_list, &r);
+			ColorObject *color_object = color_list_new_color_object(color_list, &r);
 			name_assigner.assign(color_object, &r, name, step_i);
 			color_list_add_color_object(color_list, color_object, 1);
-			color_object_release(color_object);
+			color_object->release();
 		}
 	}
 }
@@ -136,7 +135,7 @@ static void update(GtkWidget *widget, DialogVariationsArgs *args)
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
-void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs)
+void dialog_variations_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState* gs)
 {
 	DialogVariationsArgs *args = new DialogVariationsArgs;
 	args->gs = gs;
@@ -144,7 +143,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	GtkWidget *table, *toggle_multiplication;
 	GtkWidget *range_lightness_from, *range_lightness_to, *range_steps;
 	GtkWidget *range_saturation_from, *range_saturation_to;
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Variations"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Variations"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -201,7 +200,7 @@ void dialog_variations_show(GtkWindow* parent, struct ColorList *selected_color_
 	table_y++;
 
 	GtkWidget* preview_expander;
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 3, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 

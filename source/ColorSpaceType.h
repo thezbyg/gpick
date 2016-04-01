@@ -19,15 +19,15 @@
 #ifndef GPICK_COLOR_SPACE_TYPE_H_
 #define GPICK_COLOR_SPACE_TYPE_H_
 
+struct Color;
 #include "gtk/ColorComponent.h"
-#include "Color.h"
-#include <gtk/gtk.h>
 #include <stdint.h>
+#include <cstddef>
 #include <string>
 #include <list>
 
-typedef struct lua_State lua_State;
-typedef struct ColorSpaceType
+struct lua_State;
+struct ColorSpaceType
 {
 	GtkColorComponentComp comp_type;
 	int8_t n_items;
@@ -38,10 +38,9 @@ typedef struct ColorSpaceType
 		double max_value;
 		double step;
 	}items[4];
-}ColorSpaceType;
-
+};
 const ColorSpaceType* color_space_get_types();
-uint32_t color_space_count_types();
+size_t color_space_count_types();
 std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L);
 
 #endif /* GPICK_COLOR_SPACE_TYPE_H_ */

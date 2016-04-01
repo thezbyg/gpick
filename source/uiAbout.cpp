@@ -76,7 +76,7 @@ void show_about_box(GtkWidget *widget)
  * Please keep this list sorted alphabetically.
  */
 	};
-	GtkWidget* dialog = gtk_dialog_new_with_buttons(_("About Gpick"), GTK_WINDOW(gtk_widget_get_toplevel(widget)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL, NULL);
+	GtkWidget* dialog = gtk_dialog_new_with_buttons(_("About Gpick"), GTK_WINDOW(gtk_widget_get_toplevel(widget)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CANCEL, nullptr);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_CANCEL);
 	GtkWidget *vbox = gtk_vbox_new(false, 5);
 	GtkWidget *align_box = gtk_hbox_new(false, 5);

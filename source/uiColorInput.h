@@ -20,9 +20,10 @@
 #define GPICK_UI_COLOR_INPUT_H_
 
 class GlobalState;
+class ColorObject;
 struct GtkColorComponent;
 #include <gtk/gtk.h>
-int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, struct ColorObject* color_object, struct ColorObject** new_color_object);
+int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* color_object, ColorObject** new_color_object);
 void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params);
 
 #endif /* GPICK_UI_COLOR_INPUT_H_ */

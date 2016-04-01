@@ -32,7 +32,7 @@ using namespace std;
 #define GTK_RANGE_2D_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_RANGE_2D, GtkRange2DPrivate))
 
 G_DEFINE_TYPE (GtkRange2D, gtk_range_2d, GTK_TYPE_DRAWING_AREA);
-static GtkWindowClass *parent_class = NULL;
+static GtkWindowClass *parent_class = nullptr;
 
 static gboolean gtk_range_2d_expose(GtkWidget *range_2d, GdkEventExpose *event);
 static gboolean gtk_range_2d_button_release(GtkWidget *range_2d, GdkEventButton *event);
@@ -92,7 +92,7 @@ static void gtk_range_2d_class_init(GtkRange2DClass *range_2d_class) {
 
 	g_type_class_add_private(obj_class, sizeof(GtkRange2DPrivate));
 
-	gtk_range_2d_signals[VALUES_CHANGED] = g_signal_new("values_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkRange2DClass, values_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+	gtk_range_2d_signals[VALUES_CHANGED] = g_signal_new("values_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkRange2DClass, values_changed), nullptr, nullptr, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
 }
 
@@ -101,7 +101,7 @@ static void gtk_range_2d_init(GtkRange2D *range_2d){
 }
 
 GtkWidget* gtk_range_2d_new(){
-	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_RANGE_2D, NULL);
+	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_RANGE_2D, nullptr);
 	GtkRange2DPrivate *ns = GTK_RANGE_2D_GET_PRIVATE(widget);
 
 	ns->block_size = 128;
@@ -314,7 +314,7 @@ static gboolean gtk_range_2d_button_press(GtkWidget *widget, GdkEventButton *eve
 		ns->grab_block = true;
 
 		GdkCursor *cursor = gdk_cursor_new(GDK_CROSS);
-		gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, cursor, GDK_CURRENT_TIME);
+		gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 		gdk_cursor_destroy(cursor);
 
 		double dx = (event->x - widget->style->xthickness);

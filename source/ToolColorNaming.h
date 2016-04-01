@@ -22,7 +22,7 @@
 #include <string>
 class GlobalState;
 struct Color;
-struct ColorObject;
+class ColorObject;
 enum ToolColorNamingType {
 	TOOL_COLOR_NAMING_UNKNOWN = 0,
 	TOOL_COLOR_NAMING_EMPTY,
@@ -46,8 +46,8 @@ class ToolColorNameAssigner{
 	public:
 		ToolColorNameAssigner(GlobalState *gs);
 		virtual ~ToolColorNameAssigner();
-		void assign(struct ColorObject *color_object, Color *color);
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color);
+		void assign(ColorObject *color_object, const Color *color);
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color) = 0;
 };
 
 #endif /* GPICK_TOOL_COLOR_NAMING_H_ */

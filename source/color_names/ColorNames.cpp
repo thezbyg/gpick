@@ -113,14 +113,14 @@ void color_names_destroy(ColorNames* cnames)
 	}
 	delete cnames;
 }
-string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix)
+string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix)
 {
 	Color c1;
 	cnames->color_space_convert(color, &c1);
 	int x1, y1, z1, x2, y2, z2;
 	color_names_get_color_xyz(cnames, &c1, &x1, &y1, &z1, &x2, &y2, &z2);
 	float result_delta=1e5;
-	ColorEntry* color_entry = NULL;
+	ColorEntry* color_entry = nullptr;
 	char skip_mask[8][8][8];
 	memset(&skip_mask, 0, sizeof(skip_mask));
 	/* Search expansion should be from 0 to 7, but this would only increase search time and return

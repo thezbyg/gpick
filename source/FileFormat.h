@@ -16,12 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef FILEFORMAT_H_
-#define FILEFORMAT_H_
+#ifndef GPICK_FILE_FORMAT_H_
+#define GPICK_FILE_FORMAT_H_
 
-#include "ColorList.h"
+class ColorList;
+int palette_file_save(const char* filename, ColorList* color_list);
+int palette_file_load(const char* filename, ColorList* color_list);
 
-int palette_file_save(const char* filename, struct ColorList* color_list);
-int palette_file_load(const char* filename, struct ColorList* color_list);
+#endif /* GPICK_FILE_FORMAT_H_ */
 
-#endif /* FILEFORMAT_H_ */

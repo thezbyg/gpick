@@ -35,7 +35,7 @@ struct ScreenReader* screen_reader_new(){
 	struct ScreenReader* screen = new struct ScreenReader;
 	screen->max_size = 150;
 	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 150, 150);
-	screen->screen = NULL;
+	screen->screen = nullptr;
 	return screen;
 }
 
@@ -55,7 +55,7 @@ void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, 
 
 void screen_reader_reset_rect(struct ScreenReader *screen){
 	screen->read_area = Rect2<int>();
-	screen->screen = NULL;
+	screen->screen = nullptr;
 }
 
 void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update_rect){

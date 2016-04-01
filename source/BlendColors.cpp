@@ -17,8 +17,10 @@
  */
 
 #include "BlendColors.h"
+#include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
+#include "ColorUtils.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
@@ -49,15 +51,6 @@
 #include <sstream>
 using namespace std;
 
-#define STORE_COLOR() struct ColorObject *color_object = color_list_new_color_object(color_list, &r); \
-	float mixfactor = step_i/(float)(steps-1); \
-	name_assigner.assign(color_object, &r, start_name.c_str(), end_name.c_str(), (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), (((step_i == 0 || step_i == steps - 1) && stage == 0) || (stage == 1 && step_i == steps - 1))); \
-	color_list_add_color_object(color_list, color_object, 1); \
-	color_object_release(color_object)
-
-#define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
-	STORE_COLOR()
-
 typedef struct BlendColorsArgs{
 	ColorSource source;
 	GtkWidget *main;
@@ -68,7 +61,7 @@ typedef struct BlendColorsArgs{
 	GtkWidget *middle_color;
 	GtkWidget *end_color;
 	GtkWidget *preview_list;
-	struct ColorList *preview_color_list;
+	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }BlendColorsArgs;
@@ -81,6 +74,8 @@ class BlendColorNameAssigner: public ToolColorNameAssigner
 		const char *m_color_end;
 		int m_start_percent;
 		int m_end_percent;
+		int m_steps;
+		int m_stage;
 		bool m_is_color_item;
 	public:
 		BlendColorNameAssigner(GlobalState *gs):
@@ -88,22 +83,30 @@ class BlendColorNameAssigner: public ToolColorNameAssigner
 		{
 			m_is_color_item = false;
 		}
-		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name, int start_percent, int end_percent, bool is_color_item)
+		void setNames(const char *start_color_name, const char *end_color_name)
 		{
 			m_color_start = start_color_name;
 			m_color_end = end_color_name;
-			m_start_percent = start_percent;
-			m_end_percent = end_percent;
-			m_is_color_item = is_color_item;
+		}
+		void setStepsAndStage(int steps, int stage)
+		{
+			m_steps = steps;
+			m_stage = stage;
+		}
+		void assign(ColorObject *color_object, const Color *color, int step)
+		{
+			m_start_percent = step * 100 / (m_steps - 1);
+			m_end_percent = 100 - (step * 100 / (m_steps - 1));
+			m_is_color_item = (((step == 0 || step == m_steps - 1) && m_stage == 0) || (m_stage == 1 && step == m_steps - 1));
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		void assign(struct ColorObject *color_object, Color *color, const char *item_name)
+		void assign(ColorObject *color_object, const Color *color, const char *item_name)
 		{
 			m_color_start = item_name;
 			m_is_color_item = true;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			if (m_is_color_item){
@@ -118,7 +121,15 @@ class BlendColorNameAssigner: public ToolColorNameAssigner
 			return m_stream.str();
 		}
 };
-static int source_get_color(BlendColorsArgs *args, struct ColorObject** color);
+static int source_get_color(BlendColorsArgs *args, ColorObject** color);
+
+static void store(ColorList *color_list, const Color *color, int step, BlendColorNameAssigner &name_assigner)
+{
+	ColorObject *color_object = color_list_new_color_object(color_list, color);
+	name_assigner.assign(color_object, color, step);
+	color_list_add_color_object(color_list, color_object, 1);
+	color_object->release();
+}
 
 static void calc(BlendColorsArgs *args, bool preview, int limit)
 {
@@ -128,7 +139,7 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 	Color r;
 	gint step_i;
 	Color a,b;
-	struct ColorList *color_list;
+	ColorList *color_list;
 	color_list = args->preview_color_list;
 	BlendColorNameAssigner name_assigner(args->gs);
 	int steps;
@@ -144,16 +155,19 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 		}
 		string start_name = color_names_get(args->gs->getColorNames(), &a, false);
 		string end_name = color_names_get(args->gs->getColorNames(), &b, false);
+		name_assigner.setNames(start_name.c_str(), end_name.c_str());
+		name_assigner.setStepsAndStage(steps, stage);
 		if (type == 0){
 			color_rgb_get_linear(&a, &a);
 			color_rgb_get_linear(&b, &b);
 		}
 		step_i = stage;
-		switch (type) {
+		switch (type){
 		case 0:
-			for (; step_i < steps; ++step_i) {
-				MIX_COMPONENTS(r.rgb, a.rgb, b.rgb, red, green, blue);
-				STORE_LINEARCOLOR();
+			for (; step_i < steps; ++step_i){
+				color_utils::mix(a, b, step_i / (float)(steps - 1), r);
+				color_linear_get_rgb(&r, &r);
+				store(color_list, &r, step_i, name_assigner);
 			}
 			break;
 		case 1:
@@ -168,11 +182,11 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 					if (b_hsv.hsv.hue - a_hsv.hsv.hue > 0.5)
 						b_hsv.hsv.hue -= 1;
 				}
-				for (; step_i < steps; ++step_i) {
-					MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
+				for (; step_i < steps; ++step_i){
+					color_utils::mix(a_hsv, b_hsv, step_i / (float)(steps - 1), r_hsv);
 					if (r_hsv.hsv.hue < 0) r_hsv.hsv.hue += 1;
 					color_hsv_to_rgb(&r_hsv, &r);
-					STORE_COLOR();
+					store(color_list, &r, step_i, name_assigner);
 				}
 			}
 			break;
@@ -181,11 +195,11 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 				Color a_lab, b_lab, r_lab;
 				color_rgb_to_lab_d50(&a, &a_lab);
 				color_rgb_to_lab_d50(&b, &b_lab);
-				for (; step_i < steps; ++step_i) {
-					MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
+				for (; step_i < steps; ++step_i){
+					color_utils::mix(a_lab, b_lab, step_i / (float)(steps - 1), r_lab);
 					color_lab_to_rgb_d50(&r_lab, &r);
 					color_rgb_normalize(&r);
-					STORE_COLOR();
+					store(color_list, &r, step_i, name_assigner);
 				}
 			}
 			break;
@@ -201,19 +215,19 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 					if (b_lch.lch.h - a_lch.lch.h > 180)
 						b_lch.lch.h -= 360;
 				}
-				for (; step_i < steps; ++step_i) {
-					MIX_COMPONENTS(r_lch.lch, a_lch.lch, b_lch.lch, L, C, h);
+				for (; step_i < steps; ++step_i){
+					color_utils::mix(a_lch, b_lch, step_i / (float)(steps - 1), r_lch);
 					if (r_lch.lch.h < 0) r_lch.lch.h += 360;
 					color_lch_to_rgb_d50(&r_lch, &r);
 					color_rgb_normalize(&r);
-					STORE_COLOR();
+					store(color_list, &r, step_i, name_assigner);
 				}
 			}
 			break;
 		}
 	}
 }
-static PaletteListCallbackReturn add_to_palette_cb_helper(struct ColorObject* color_object, void *userdata)
+static PaletteListCallbackReturn add_to_palette_cb_helper(ColorObject* color_object, void *userdata)
 {
 	BlendColorsArgs *args = (BlendColorsArgs*)userdata;
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
@@ -229,49 +243,10 @@ static gboolean add_all_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args)
 	palette_list_foreach(args->preview_list, add_to_palette_cb_helper, args);
 	return true;
 }
-static PaletteListCallbackReturn color_list_selected(struct ColorObject* color_object, void *userdata)
+static PaletteListCallbackReturn color_list_selected(ColorObject* color_object, void *userdata)
 {
-	color_list_add_color_object((struct ColorList *)userdata, color_object, 1);
+	color_list_add_color_object((ColorList *)userdata, color_object, 1);
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
-}
-typedef struct CopyMenuItem
-{
-	gchar* function_name;
-	struct ColorObject* color_object;
-	GlobalState* gs;
-	GtkWidget* palette_widget;
-}CopyMenuItem;
-static void converter_destroy_params(CopyMenuItem* args)
-{
-	color_object_release(args->color_object);
-	g_free(args->function_name);
-	delete args;
-}
-static void converter_callback_copy(GtkWidget *widget, gpointer item)
-{
-	CopyMenuItem* itemdata=(CopyMenuItem*)g_object_get_data(G_OBJECT(widget), "item_data");
-	converter_get_clipboard(itemdata->function_name, itemdata->color_object, itemdata->palette_widget, itemdata->gs->getConverters());
-}
-static GtkWidget* converter_create_copy_menu_item(GtkWidget *menu, const gchar* function, struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState *gs)
-{
-	GtkWidget* item = 0;
-	string text_line;
-	ConverterSerializePosition position;
-	position.first = true;
-	position.last = true;
-	position.index = 0;
-	position.count = 1;
-	if (converters_color_serialize(gs->getConverters(), function, color_object, position, text_line) == 0){
-		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(converter_callback_copy), 0);
-		CopyMenuItem* itemdata=new CopyMenuItem;
-		itemdata->function_name=g_strdup(function);
-		itemdata->palette_widget=palette_widget;
-		itemdata->color_object=color_object_ref(color_object);
-		itemdata->gs = gs;
-		g_object_set_data_full(G_OBJECT(item), "item_data", itemdata, (GDestroyNotify)converter_destroy_params);
-	}
-	return item;
 }
 static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *event, BlendColorsArgs *args)
 {
@@ -295,7 +270,7 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		if (selection_avail){
-			struct ColorList *color_list = color_list_new(NULL);
+			ColorList *color_list = color_list_new(nullptr);
 			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
 			if (color_list_get_count(color_list) != 0){
 				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(*color_list->colors.begin(), args->preview_list, args->gs));
@@ -307,7 +282,7 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		button = event->button;
 		event_time = event->time;
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
 		return TRUE;
@@ -343,28 +318,27 @@ static gboolean color_button_press_cb(GtkWidget *widget, GdkEventButton *event, 
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		button = event->button;
 		event_time = event->time;
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
 		return TRUE;
 	}
 	return FALSE;
 }
-static int set_rgb_color(BlendColorsArgs *args, struct ColorObject* color, uint32_t color_index)
+static int set_rgb_color(BlendColorsArgs *args, ColorObject* color_object, uint32_t color_index)
 {
-	Color c;
-	color_object_get_color(color, &c);
+	Color color = color_object->getColor();
 	if (color_index == 1){
-		gtk_color_set_color(GTK_COLOR(args->start_color), &c, "");
+		gtk_color_set_color(GTK_COLOR(args->start_color), &color, "");
 	}else if (color_index == 2){
-		gtk_color_set_color(GTK_COLOR(args->middle_color), &c, "");
+		gtk_color_set_color(GTK_COLOR(args->middle_color), &color, "");
 	}else if (color_index == 3){
-		gtk_color_set_color(GTK_COLOR(args->end_color), &c, "");
+		gtk_color_set_color(GTK_COLOR(args->end_color), &color, "");
 	}
 	update(0, args);
 	return 0;
 }
-static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, struct ColorObject** color)
+static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, ColorObject** color)
 {
 	Color c;
 	if (color_index == 1){
@@ -384,26 +358,26 @@ static int get_rgb_color(BlendColorsArgs *args, uint32_t color_index, struct Col
 	name_assigner.assign(*color, &c, item_name[color_index - 1]);
 	return 0;
 }
-static struct ColorObject* get_color_object(struct DragDrop* dd)
+static ColorObject* get_color_object(struct DragDrop* dd)
 {
 	BlendColorsArgs* args = (BlendColorsArgs*)dd->userdata;
-	struct ColorObject* colorobject;
-	if (get_rgb_color(args, (uintptr_t)dd->userdata2, &colorobject) == 0){
-		return colorobject;
+	ColorObject* color_object;
+	if (get_rgb_color(args, (uintptr_t)dd->userdata2, &color_object) == 0){
+		return color_object;
 	}
 	return 0;
 }
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move)
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
 {
 	BlendColorsArgs* args = static_cast<BlendColorsArgs*>(dd->userdata);
-	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
+	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;
 }
-static int source_get_color(BlendColorsArgs *args, struct ColorObject** color)
+static int source_get_color(BlendColorsArgs *args, ColorObject** color)
 {
 	return -1;
 }
-static int source_set_color(BlendColorsArgs *args, struct ColorObject* color)
+static int source_set_color(BlendColorsArgs *args, ColorObject* color)
 {
 	return -1;
 }
@@ -528,7 +502,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	g_signal_connect(G_OBJECT(mix_steps), "value-changed", G_CALLBACK(update), args);
 	table_y = 3;
 	GtkWidget* preview;
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->getColorList(), &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	args->preview_list = palette_list_get_widget(preview_color_list);
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->preview_list));

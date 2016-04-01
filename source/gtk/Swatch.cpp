@@ -67,16 +67,16 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class)
 	g_type_class_add_private(obj_class, sizeof(GtkSwatchPrivate));
 
 	gtk_swatch_signals[ACTIVE_COLOR_CHANGED] = g_signal_new("active_color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkSwatchClass, active_color_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+			G_STRUCT_OFFSET(GtkSwatchClass, active_color_changed), nullptr, nullptr, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
 	gtk_swatch_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkSwatchClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+			G_STRUCT_OFFSET(GtkSwatchClass, color_changed), nullptr, nullptr, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
 	gtk_swatch_signals[COLOR_ACTIVATED] = g_signal_new("color_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkSwatchClass, color_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+			G_STRUCT_OFFSET(GtkSwatchClass, color_activated), nullptr, nullptr, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
 	gtk_swatch_signals[CENTER_ACTIVATED] = g_signal_new("center_activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkSwatchClass, center_activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+			G_STRUCT_OFFSET(GtkSwatchClass, center_activated), nullptr, nullptr, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 
 }
 
@@ -87,7 +87,7 @@ static void gtk_swatch_init(GtkSwatch *swatch)
 
 GtkWidget* gtk_swatch_new()
 {
-	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_SWATCH, NULL);
+	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_SWATCH, nullptr);
 	GtkSwatchPrivate *ns = GTK_SWATCH_GET_PRIVATE(widget);
 	gtk_widget_set_size_request(GTK_WIDGET(widget), 150 + widget->style->xthickness * 2, 136 + widget->style->ythickness * 2);
 	for (gint32 i = 0; i < 7; ++i)

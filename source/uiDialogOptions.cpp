@@ -145,7 +145,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
 	GtkWidget *table, *table_m, *widget;
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Options"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Options"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "options.window.width", -1), dynv_get_int32_wd(args->params, "options.window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *frame;
@@ -194,7 +194,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
-	GSList *group = NULL;
+	GSList *group = nullptr;
 	bool dragging_moves = dynv_get_bool_wd(args->params, "main.dragging_moves", true);
 	args->default_drag_action[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("M_ove"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
@@ -216,7 +216,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table = gtk_table_new(1, 1, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
-	group = NULL;
+	group = nullptr;
 	string hex_format = dynv_get_string_wd(args->params, "options.hex_case", "upper");
 	args->hex_case[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("Lower case"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
@@ -381,7 +381,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
-	group = NULL;
+	group = nullptr;
 	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(args->params, "color_names.tool_color_naming", "tool_specific"));
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
 	int i = 0;

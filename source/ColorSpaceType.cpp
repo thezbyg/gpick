@@ -19,9 +19,10 @@
 #include "ColorSpaceType.h"
 #include "Internationalisation.h"
 #include "LuaExt.h"
-
+extern "C"{
+#include <lua.h>
+}
 #include <iostream>
-
 using namespace std;
 
 const ColorSpaceType color_space_types[] = {
@@ -73,14 +74,11 @@ const ColorSpaceType color_space_types[] = {
 const ColorSpaceType* color_space_get_types()
 {
 	return color_space_types;
-
 }
-
-uint32_t color_space_count_types()
+size_t color_space_count_types()
 {
 	return sizeof(color_space_types) / sizeof(ColorSpaceType);
 }
-
 std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L)
 {
 	list<string> result;

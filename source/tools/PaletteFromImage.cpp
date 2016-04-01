@@ -71,8 +71,8 @@ typedef struct PaletteFromImageArgs{
 	uint32_t n_colors;
 	string previous_filename;
 	Node *previous_node;
-	struct ColorList *color_list;
-	struct ColorList *preview_color_list;
+	ColorList *color_list;
+	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }PaletteFromImageArgs;
@@ -83,17 +83,19 @@ class PaletteColorNameAssigner: public ToolColorNameAssigner {
 		const char *m_filename;
 		int m_index;
 	public:
-		PaletteColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		PaletteColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
+		{
 			m_index = 0;
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const char *filename, const int index){
+		void assign(ColorObject *color_object, const Color *color, const char *filename, const int index)
+		{
 			m_filename = filename;
 			m_index = index;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
+		{
 			m_stream.str("");
 			m_stream << m_filename << " #" << m_index;
 			return m_stream.str();
@@ -339,7 +341,7 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 		args->previous_node = 0;
 	}
 
-	GError *error = NULL;
+	GError *error = nullptr;
 	GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename, &error);
 	if (error){
 		cout << error->message << endl;
@@ -420,7 +422,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	if (!args->filename.empty())
 		root_node = process_image(args, args->filename.c_str(), root_node);
 
-	struct ColorList *color_list;
+	ColorList *color_list;
 
 	if (preview)
 		color_list = args->preview_color_list;
@@ -436,10 +438,10 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	}
 
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
-		struct ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
+		ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
 		name_assigner.assign(color_object, &(*i), name, index);
 		color_list_add_color_object(color_list, color_object, 1);
-		color_object_release(color_object);
+		color_object->release();
 		index++;
 	}
 }
@@ -496,7 +498,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.tools.palette_from_image");
 	args->previous_node = 0;
 	GtkWidget *table, *table_m, *widget;
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
@@ -528,14 +530,14 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All files"));
 	gtk_file_filter_add_pattern(filter, "*");
-	g_object_set_data_full(G_OBJECT(filter), "name", (void*)"all_files", GDestroyNotify(NULL));
+	g_object_set_data_full(G_OBJECT(filter), "name", (void*)"all_files", GDestroyNotify(nullptr));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
 	if (g_strcmp0("all_files", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
 
 
 	all_image_filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(all_image_filter, _("All images"));
-	g_object_set_data_full(G_OBJECT(all_image_filter), "name", (void*)"all_images", GDestroyNotify(NULL));
+	g_object_set_data_full(G_OBJECT(all_image_filter), "name", (void*)"all_images", GDestroyNotify(nullptr));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
 	if (g_strcmp0("all_images", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
 
@@ -558,7 +560,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 			}
 			g_strfreev(extensions);
 		}
-		g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(NULL));
+		g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(nullptr));
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
 		if (g_strcmp0(gdk_pixbuf_format_get_name(format), selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
 
@@ -581,7 +583,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	g_signal_connect(G_OBJECT(args->range_colors), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 

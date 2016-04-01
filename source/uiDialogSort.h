@@ -20,7 +20,7 @@
 #define GPICK_UI_DIALOG_SORT_H_
 
 class GlobalState;
-struct ColorList;
+class ColorList;
 #include <gtk/gtk.h>
 bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorList *sorted_color_list, GlobalState* gs);
 

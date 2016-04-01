@@ -21,6 +21,7 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
+#include "ColorUtils.h"
 #include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalState.h"
@@ -36,41 +37,57 @@ typedef struct DialogMixArgs{
 	GtkWidget *mix_type;
 	GtkWidget *mix_steps;
 	GtkWidget *toggle_endpoints;
-
-	struct ColorList *selected_color_list;
-	struct ColorList *preview_color_list;
-
-	struct dynvSystem *params;
+	ColorList *selected_color_list;
+	ColorList *preview_color_list;
+	dynvSystem *params;
 	GlobalState* gs;
 }DialogMixArgs;
 
-class MixColorNameAssigner: public ToolColorNameAssigner {
+class MixColorNameAssigner: public ToolColorNameAssigner
+{
 	protected:
 		stringstream m_stream;
 		const char *m_color_start;
 		const char *m_color_end;
 		int m_start_percent;
 		int m_end_percent;
+		int m_steps;
+		int m_stage;
 		int m_is_node;
 	public:
-		MixColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		MixColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
+		{
+			m_is_node = false;
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const char *start_color_name, const char *end_color_name, int start_percent, int end_percent, bool is_node){
+		void setStartName(const char *start_color_name)
+		{
 			m_color_start = start_color_name;
+		}
+		void setEndName(const char *end_color_name)
+		{
 			m_color_end = end_color_name;
-			m_start_percent = start_percent;
-			m_end_percent = end_percent;
-			m_is_node = is_node;
+		}
+		void setStepsAndStage(int steps, int stage)
+		{
+			m_steps = steps;
+			m_stage = stage;
+		}
+		void assign(ColorObject *color_object, const Color *color, int step)
+		{
+			m_start_percent = step * 100 / (m_steps - 1);
+			m_end_percent = 100 - (step * 100 / (m_steps - 1));
+			m_is_node = (((step == 0 || step == m_steps - 1) && m_stage == 0) || (m_stage == 1 && step == m_steps - 1));
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const char *item_name){
+		void assign(ColorObject *color_object, const Color *color, const char *item_name)
+		{
 			m_color_start = item_name;
+			m_is_node = false;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
+		{
 			m_stream.str("");
 			if (m_is_node){
 				if (m_end_percent == 100){
@@ -86,17 +103,24 @@ class MixColorNameAssigner: public ToolColorNameAssigner {
 };
 
 
-#define STORE_COLOR() struct ColorObject *color_object=color_list_new_color_object(color_list, &r); \
+#define STORE_COLOR() ColorObject *color_object=color_list_new_color_object(color_list, &r); \
 	float mixfactor = step_i/(float)(steps-1); \
 	name_assigner.assign(color_object, &r, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
 	color_list_add_color_object(color_list, color_object, 1); \
-	color_object_release(color_object)
+	color_object->release()
 
 #define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
 	STORE_COLOR()
 
-static void calc( DialogMixArgs *args, bool preview, int limit){
-
+static void store(ColorList *color_list, const Color *color, int step, MixColorNameAssigner &name_assigner)
+{
+	ColorObject *color_object = color_list_new_color_object(color_list, color);
+	name_assigner.assign(color_object, color, step);
+	color_list_add_color_object(color_list, color_object, 1);
+	color_object->release();
+}
+static void calc( DialogMixArgs *args, bool preview, int limit)
+{
 	gint steps=gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->mix_steps));
 	gint type=gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
 	bool with_endpoints=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_endpoints));
@@ -114,17 +138,13 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 		start_step = 1;
 		max_step = steps - 1;
 	}
-
 	Color r;
 	gint step_i;
-
 	stringstream s;
 	s.precision(0);
 	s.setf(ios::fixed,ios::floatfield);
-
-	Color a,b;
-
-	struct ColorList *color_list;
+	Color a ,b;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
@@ -132,31 +152,29 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 
 	ColorList::iter j;
 	for (ColorList::iter i=args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-
-		color_object_get_color(*i, &a);
+		a = (*i)->getColor();
 		if (type == 0)
 			color_rgb_get_linear(&a, &a);
-
-		const char* name_a = dynv_get_string_wd((*i)->params, "name", 0);
-		j=i;
+		name_assigner.setStartName((*i)->getName().c_str());
+		j = i;
 		++j;
 		for (; j != args->selected_color_list->colors.end(); ++j){
-
 			if (preview){
-				if (limit<=0) return;
+				if (limit <= 0) return;
 				limit--;
 			}
-
-			color_object_get_color(*j, &b);
+			b = (*j)->getColor();
 			if (type == 0)
 				color_rgb_get_linear(&b, &b);
-			const char* name_b = dynv_get_string_wd((*j)->params, "name", 0);
+			name_assigner.setEndName((*j)->getName().c_str());
+			name_assigner.setStepsAndStage(steps, 0);
 
-			switch (type) {
+			switch (type){
 			case 0:
 				for (step_i = start_step; step_i < max_step; ++step_i) {
-					MIX_COMPONENTS(r.rgb, a.rgb, b.rgb, red, green, blue);
-					STORE_LINEARCOLOR();
+					color_utils::mix(a, b, step_i / (float)(steps - 1), r);
+					color_linear_get_rgb(&r, &r);
+					store(color_list, &r, step_i, name_assigner);
 				}
 				break;
 
@@ -174,12 +192,10 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 							b_hsv.hsv.hue-=1;
 					}
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						MIX_COMPONENTS(r_hsv.hsv, a_hsv.hsv, b_hsv.hsv, hue, saturation, value);
-
-						if (r_hsv.hsv.hue<0) r_hsv.hsv.hue+=1;
-
+						color_utils::mix(a_hsv, b_hsv, step_i / (float)(steps - 1), r_hsv);
+						if (r_hsv.hsv.hue < 0) r_hsv.hsv.hue += 1;
 						color_hsv_to_rgb(&r_hsv, &r);
-						STORE_COLOR();
+						store(color_list, &r, step_i, name_assigner);
 					}
 				}
 				break;
@@ -191,11 +207,10 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 					color_rgb_to_lab_d50(&b, &b_lab);
 
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						MIX_COMPONENTS(r_lab.lab, a_lab.lab, b_lab.lab, L, a, b);
-
+						color_utils::mix(a_lab, b_lab, step_i / (float)(steps - 1), r_lab);
 						color_lab_to_rgb_d50(&r_lab, &r);
 						color_rgb_normalize(&r);
-						STORE_COLOR();
+						store(color_list, &r, step_i, name_assigner);
 					}
 				}
 				break;
@@ -214,11 +229,11 @@ static void calc( DialogMixArgs *args, bool preview, int limit){
 							b_lch.lch.h-=360;
 					}
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						MIX_COMPONENTS(r_lch.lch, a_lch.lch, b_lch.lch, L, C, h);
-						if (r_lch.lch.h<0) r_lch.lch.h+=360;
+						color_utils::mix(a_lch, b_lch, step_i / (float)(steps - 1), r_lch);
+						if (r_lch.lch.h < 0) r_lch.lch.h += 360;
 						color_lch_to_rgb_d50(&r_lch, &r);
 						color_rgb_normalize(&r);
-						STORE_COLOR();
+						store(color_list, &r, step_i, name_assigner);
 					}
 				}
 				break;
@@ -232,7 +247,7 @@ static void update(GtkWidget *widget, DialogMixArgs *args ){
 	calc(args, true, 100);
 }
 
-void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs) {
+void dialog_mix_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState* gs) {
 	DialogMixArgs *args = new DialogMixArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.mix");
@@ -243,7 +258,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Mix colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
+			nullptr);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
@@ -281,7 +296,7 @@ void dialog_mix_show(GtkWindow* parent, struct ColorList *selected_color_list, G
 	table_y++;
 
 	GtkWidget* preview_expander;
-	struct ColorList* preview_color_list=NULL;
+	ColorList* preview_color_list=nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 2, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 

@@ -50,8 +50,8 @@ typedef struct ColorSpaceSamplerArgs
 	bool linearization;
 	AxisOptions axis[N_AXIS];
 	GtkWidget *preview_expander;
-	struct ColorList *color_list;
-	struct ColorList *preview_color_list;
+	ColorList *color_list;
+	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }ColorSpaceSamplerArgs;
@@ -65,11 +65,11 @@ class ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner
 			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color)
+		void assign(ColorObject *color_object, const Color *color)
 		{
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << _("color space");
@@ -79,7 +79,7 @@ class ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner
 static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 {
 	ColorSpaceSamplerNameAssigner name_assigner(args->gs);
-	struct ColorList *color_list;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
@@ -145,7 +145,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		ColorObject *color_object = color_list_new_color_object(color_list, &t);
 		name_assigner.assign(color_object, &t);
 		color_list_add_color_object(color_list, color_object, 1);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static void destroy_cb(GtkWidget* widget, ColorSpaceSamplerArgs *args)
@@ -217,7 +217,7 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 
 	int table_m_y;
 	GtkWidget *table, *table_m, *widget;
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Color space sampler"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Color space sampler"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 
@@ -280,7 +280,7 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 		table_y++;
 		dynv_system_release(axis_config);
 	}
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 

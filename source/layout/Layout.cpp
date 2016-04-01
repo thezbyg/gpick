@@ -29,6 +29,9 @@
 #include <list>
 #include <vector>
 #include <iostream>
+extern "C"{
+#include <lua.h>
+}
 using namespace std;
 
 namespace layout{

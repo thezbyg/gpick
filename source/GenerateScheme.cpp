@@ -17,6 +17,7 @@
  */
 
 #include "GenerateScheme.h"
+#include "ColorObject.h"
 #include "ColorSourceManager.h"
 #include "ColorSource.h"
 #include "DragDrop.h"
@@ -83,7 +84,7 @@ typedef struct GenerateSchemeArgs{
 	struct dynvSystem *params;
 
 	GlobalState* gs;
-	struct ColorList *preview_color_list;
+	ColorList *preview_color_list;
 }GenerateSchemeArgs;
 
 const SchemeType scheme_types[]={
@@ -105,16 +106,17 @@ class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 		int32_t m_ident;
 		int32_t m_schemetype;
 	public:
-		GenerateSchemeColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs)
+		GenerateSchemeColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const int32_t schemetype)
+		void assign(ColorObject *color_object, const Color *color, const int32_t ident, const int32_t schemetype)
 		{
 			m_ident = ident;
 			m_schemetype = schemetype;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << _("scheme") << " " << _(generate_scheme_get_scheme_type(m_schemetype)->name) << " #" << m_ident << "[" << color_names_get(m_gs->getColorNames(), color, false) << "]";
@@ -122,10 +124,8 @@ class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 		}
 };
 
-static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color, GtkWidget* color_widget);
-
-// XXX needs to have name assignment in here.
+static int set_rgb_color(GenerateSchemeArgs *args, ColorObject* color, uint32_t color_index);
+static int set_rgb_color_by_widget(GenerateSchemeArgs *args, ColorObject* color, GtkWidget* color_widget);
 
 static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 
@@ -134,9 +134,6 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 
 	gtk_color_wheel_set_color_wheel_type(GTK_COLOR_WHEEL(args->color_wheel), &color_wheel_types_get()[wheel_type]);
 	gtk_color_wheel_set_n_colors(GTK_COLOR_WHEEL(args->color_wheel), generate_scheme_get_scheme_type(type)->colors + 1);
-
-	//gfloat chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
-	//gboolean correction = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_brightness_correction));
 
 	double hue = gtk_range_get_value(GTK_RANGE(args->hue));
 	double saturation = gtk_range_get_value(GTK_RANGE(args->saturation));
@@ -157,7 +154,7 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 	Color color, hsl, r;
 	gint step_i;
 
-	struct ColorList *color_list;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
@@ -186,10 +183,10 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 
 		color_hsv_to_rgb(&hsv, &r);
 
-		struct ColorObject *color_object=color_list_new_color_object(color_list, &r);
-		dynv_set_float(color_object->params, "hue_offset", hue_offset);
+		ColorObject *color_object = color_list_new_color_object(color_list, &r);
+		args->color_hue[step_i] = hue_offset;
 		color_list_add_color_object(color_list, color_object, 1);
-		color_object_release(color_object);
+		color_object->release();
 
 		gtk_color_wheel_set_hue(GTK_COLOR_WHEEL(args->color_wheel), step_i, wrap_float(hue + args->mod[step_i].hue));
 		gtk_color_wheel_set_saturation(GTK_COLOR_WHEEL(args->color_wheel), step_i, hsv.hsv.saturation);
@@ -201,32 +198,24 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 		hue = wrap_float(hue + hue_step);
 		hue_offset = wrap_float(hue_offset + hue_step);
 	}
-
 	if (preview){
 		size_t total_colors = generate_scheme_get_scheme_type(type)->colors + 1;
 		if (total_colors > MAX_COLOR_WIDGETS) total_colors = MAX_COLOR_WIDGETS;
-
 		for (size_t i = args->colors_visible; i > total_colors; --i)
 			gtk_widget_hide(args->colors[i-1]);
 		for (size_t i = args->colors_visible; i < total_colors; ++i)
 			gtk_widget_show(args->colors[i]);
 		args->colors_visible = total_colors;
-
 		size_t j = 0;
 		char* text;
 		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			color_object_get_color(*i, &color);
-
+			color = (*i)->getColor();
 			text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
-
-			args->color_hue[j] = dynv_get_float_wd((*i)->params, "hue_offset", 0);
-
 			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text);
 			if (text) g_free(text);
 			++j;
 			if (j >= total_colors) break;
 		}
-
 	}
 }
 
@@ -234,9 +223,8 @@ static void update(GtkWidget *widget, GenerateSchemeArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, false);
 }
-
-
-static void hue_changed_cb(GtkWidget *widget, gint color_id, GenerateSchemeArgs *args){
+static void hue_changed_cb(GtkWidget *widget, gint color_id, GenerateSchemeArgs *args)
+{
 	if (args->wheel_locked){
 		double hue = gtk_range_get_value(GTK_RANGE(args->hue)) / 360.0;
 		hue = wrap_float(hue - args->mod[color_id].hue + gtk_color_wheel_get_hue(GTK_COLOR_WHEEL(widget), color_id) - args->mod[color_id].orig_hue);
@@ -247,8 +235,8 @@ static void hue_changed_cb(GtkWidget *widget, gint color_id, GenerateSchemeArgs 
 		update(widget, args);
 	}
 }
-
-static void saturation_value_changed_cb(GtkWidget *widget, gint color_id, GenerateSchemeArgs *args){
+static void saturation_value_changed_cb(GtkWidget *widget, gint color_id, GenerateSchemeArgs *args)
+{
 	if (args->wheel_locked){
 		double saturation = gtk_range_get_value(GTK_RANGE(args->saturation)) / 100.0;
 		double lightness = gtk_range_get_value(GTK_RANGE(args->lightness)) / 100.0;
@@ -307,7 +295,7 @@ static void color_wheel_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, G
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
@@ -329,10 +317,10 @@ static void on_color_paste(GtkWidget *widget, gpointer item) {
 
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
 
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		set_rgb_color_by_widget(args, color_object, color_widget);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 
@@ -359,17 +347,17 @@ static void on_color_edit(GtkWidget *widget, gpointer item) {
 
 	Color c;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	struct ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	struct ColorObject* new_color_object = 0;
+	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+	ColorObject* new_color_object = 0;
 
 	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
 
 		set_rgb_color_by_widget(args, new_color_object, color_widget);
 
-		color_object_release(new_color_object);
+		new_color_object->release();
 	}
 
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static string identify_color_widget(GtkWidget *widget, GenerateSchemeArgs *args)
@@ -385,7 +373,7 @@ static string identify_color_widget(GtkWidget *widget, GenerateSchemeArgs *args)
 static void add_color_to_palette(GtkWidget *color_widget, GenerateSchemeColorNameAssigner &name_assigner, GenerateSchemeArgs *args)
 {
 	Color c;
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	string widget_ident;
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
@@ -393,7 +381,7 @@ static void add_color_to_palette(GtkWidget *color_widget, GenerateSchemeColorNam
 	widget_ident = identify_color_widget(color_widget, args);
 	name_assigner.assign(color_object, &c, atoi(widget_ident.c_str()+7), type);
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static void on_color_add_to_palette(GtkWidget *widget, gpointer item) {
@@ -455,10 +443,10 @@ static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEven
 	Color c;
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
-	color_object_release(color_object);
+	color_object->release();
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 
@@ -494,7 +482,7 @@ static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEven
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup (GTK_MENU (menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
@@ -515,7 +503,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
 	Color c;
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	GtkWidget* color_widget = widget;
 
 	switch(event->keyval){
@@ -531,7 +519,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
 
-				color_object_release(color_object);
+				color_object->release();
 
 				return true;
 			}
@@ -542,7 +530,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				if (copypaste_get_color_object(&color_object, args->gs) == 0){
 					set_rgb_color_by_widget(args, color_object, color_widget);
-					color_object_release(color_object);
+					color_object->release();
 				}
 				return true;
 			}
@@ -592,7 +580,7 @@ static int source_get_color(GenerateSchemeArgs *args, ColorObject** color){
 	return 0;
 }
 
-static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject* color_object, GtkWidget* color_widget){
+static int set_rgb_color_by_widget(GenerateSchemeArgs *args, ColorObject* color_object, GtkWidget* color_widget){
 	for (int i=0; i<args->colors_visible; ++i){
 		if (args->colors[i] == color_widget){
 			set_rgb_color(args, color_object, i);
@@ -602,79 +590,61 @@ static int set_rgb_color_by_widget(GenerateSchemeArgs *args, struct ColorObject*
 	return -1;
 }
 
-static int set_rgb_color(GenerateSchemeArgs *args, struct ColorObject* color, uint32_t color_index){
-	Color c;
-	color_object_get_color(color, &c);
-
+static int set_rgb_color(GenerateSchemeArgs *args, ColorObject* color_object, uint32_t color_index)
+{
+	Color color = color_object->getColor();
 	double hue;
 	double saturation;
 	double lightness;
 	double shifted_hue;
-
 	Color hsl, hsv, hsl_results;
-	color_rgb_to_hsv(&c, &hsv);
-
+	color_rgb_to_hsv(&color, &hsv);
 	//hsv.hsv.saturation = clamp_float(hsv.hsv.saturation - args->mod[color_index].saturation, 0, 1);
 	//hsv.hsv.value = clamp_float(hsv.hsv.value - args->mod[color_index].value, 0, 1);
-
 	color_hsv_to_hsl(&hsv, &hsl);
-
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	const ColorWheelType *wheel = &color_wheel_types_get()[wheel_type];
-
 	wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
-
 	//color_rgbhue_to_rybhue(hsl.hsl.hue, &hue);
-
 	shifted_hue = wrap_float(hue - args->color_hue[color_index] - args->mod[color_index].hue);
-
 	wheel->hue_to_hsl(hue, &hsl_results);
-
 	saturation = hsl.hsl.saturation * 1/hsl_results.hsl.saturation;
 	lightness = hsl.hsl.lightness - hsl_results.hsl.lightness;
-
 	shifted_hue *= 360.0;
 	saturation *= 100.0;
 	lightness *= 100.0;
-
 	gtk_range_set_value(GTK_RANGE(args->hue), shifted_hue);
 	gtk_range_set_value(GTK_RANGE(args->saturation), saturation);
 	gtk_range_set_value(GTK_RANGE(args->lightness), lightness);
-
 	return 0;
 }
-
-static int source_set_nth_color(GenerateSchemeArgs *args, uint32_t color_n, ColorObject* color){
+static int source_set_nth_color(GenerateSchemeArgs *args, uint32_t color_n, ColorObject* color_object)
+{
 	if (color_n < 0 || color_n > 6) return -1;
-	return set_rgb_color(args, color, color_n);
+	return set_rgb_color(args, color_object, color_n);
 }
-
-static int source_set_color(GenerateSchemeArgs *args, struct ColorObject* color){
+static int source_set_color(GenerateSchemeArgs *args, ColorObject *color_object)
+{
 	if (args->last_focused_color){
-		return set_rgb_color_by_widget(args, color, args->last_focused_color);
+		return set_rgb_color_by_widget(args, color_object, args->last_focused_color);
 	}else{
-		return set_rgb_color(args, color, 0);
+		return set_rgb_color(args, color_object, 0);
 	}
 }
-
-static int source_activate(GenerateSchemeArgs *args){
-
+static int source_activate(GenerateSchemeArgs *args)
+{
 	auto chain = args->gs->getTransformationChain();
 	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
 		gtk_color_set_transformation_chain(GTK_COLOR(args->colors[i]), chain);
 	}
-
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }
-
-static int source_deactivate(GenerateSchemeArgs *args){
+static int source_deactivate(GenerateSchemeArgs *args)
+{
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, true);
-
-
 	dynv_set_bool(args->params, "wheel_locked", args->wheel_locked);
-
 	float hsv_shift_array[MAX_COLOR_WIDGETS * 3];
 	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
 		hsv_shift_array[i * 3 + 0] = args->mod[i].hue;
@@ -682,36 +652,36 @@ static int source_deactivate(GenerateSchemeArgs *args){
 		hsv_shift_array[i * 3 + 2] = args->mod[i].value;
 	}
 	dynv_set_float_array(args->params, "hsv_shift", hsv_shift_array, MAX_COLOR_WIDGETS * 3);
-
 	return 0;
 }
 
-static struct ColorObject* get_color_object(struct DragDrop* dd){
+static ColorObject* get_color_object(struct DragDrop* dd){
 	GenerateSchemeArgs* args = (GenerateSchemeArgs*)dd->userdata;
-	struct ColorObject* colorobject;
-	if (source_get_color(args, &colorobject) == 0){
-		return colorobject;
+	ColorObject* color_object;
+	if (source_get_color(args, &color_object) == 0){
+		return color_object;
 	}
 	return 0;
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+{
 	GenerateSchemeArgs* args = static_cast<GenerateSchemeArgs*>(dd->userdata);
-	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
+	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;
 }
 
-static int set_color_object_at_color_wheel(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at_color_wheel(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move){
 	int item = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(dd->widget), x, y);
 	GenerateSchemeArgs* args = static_cast<GenerateSchemeArgs*>(dd->userdata);
 
 	if (item == -1){
 
 	}else if (item >= 0){
-		Color c, hsl;
+		Color color, hsl;
 		double hue;
-		color_object_get_color(colorobject, &c);
-		color_rgb_to_hsl(&c, &hsl);
+		color = color_object->getColor();
+		color_rgb_to_hsl(&color, &hsl);
 
 		int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 		const ColorWheelType *wheel = &color_wheel_types_get()[wheel_type];
@@ -876,7 +846,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y++;
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	struct ColorList* preview_color_list = color_list_new(handler_map);
+	ColorList* preview_color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 
 	args->preview_color_list = preview_color_list;
@@ -889,7 +859,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	return (ColorSource*)args;
 }
 
-int generate_scheme_source_register(ColorSourceManager *csm){
+int generate_scheme_source_register(ColorSourceManager *csm)
+{
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "generate_scheme", _("Scheme generation"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
@@ -910,5 +881,4 @@ size_t generate_scheme_get_n_scheme_types()
 {
 	return sizeof(scheme_types) / sizeof(SchemeType);
 }
-
 

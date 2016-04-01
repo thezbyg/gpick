@@ -66,7 +66,7 @@ Converters::~Converters()
 	}
 	converters.clear();
 }
-int converters_color_deserialize(Converters* converters, const char* function, const char* text, struct ColorObject* color_object, float* conversion_quality)
+int converters_color_deserialize(Converters* converters, const char* function, const char* text, ColorObject* color_object, float* conversion_quality)
 {
 	lua_State* L = converters->L;
 	int status;
@@ -102,7 +102,7 @@ int converters_color_deserialize(Converters* converters, const char* function, c
 	lua_settop(L, stack_top);
 	return -1;
 }
-int converters_color_serialize(Converters* converters, const char* function, struct ColorObject* color_object, const ConverterSerializePosition &position, string& result)
+int converters_color_serialize(Converters* converters, const char* function, ColorObject* color_object, const ConverterSerializePosition &position, string& result)
 {
 	lua_State* L = converters->L;
 	int status;
@@ -145,7 +145,7 @@ int converters_color_serialize(Converters* converters, const char* function, str
 	lua_settop(L, stack_top);
 	return -1;
 }
-int converters_color_serialize(Converter* converter, struct ColorObject* color_object, const ConverterSerializePosition &position, std::string& result)
+int converters_color_serialize(Converter* converter, ColorObject* color_object, const ConverterSerializePosition &position, std::string& result)
 {
 	lua_State* L = converter->converters->L;
 	int status;

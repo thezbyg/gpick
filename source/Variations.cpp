@@ -17,6 +17,7 @@
  */
 
 #include "Variations.h"
+#include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
 #include "DragDrop.h"
@@ -81,7 +82,7 @@ typedef struct VariationsArgs{
 		const VariationType *type;
 	}color[MAX_COLOR_LINES];
 	struct dynvSystem *params;
-	struct ColorList *preview_color_list;
+	ColorList *preview_color_list;
 	GlobalState* gs;
 }VariationsArgs;
 
@@ -90,15 +91,17 @@ class VariationsColorNameAssigner: public ToolColorNameAssigner {
 		stringstream m_stream;
 		const char *m_ident;
 	public:
-		VariationsColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		VariationsColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
+		{
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+		void assign(ColorObject *color_object, const Color *color, const char *ident)
+		{
 			m_ident = ident;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
+		{
 			m_stream.str("");
 			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("variations") << " " << m_ident;
 			return m_stream.str();
@@ -112,8 +115,8 @@ static boost::format format_ignore_arg_errors(const std::string &f_string) {
 }
 
 
-static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* color, GtkWidget* color_widget);
+static int set_rgb_color(VariationsArgs *args, ColorObject* color, uint32_t color_index);
+static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color, GtkWidget* color_widget);
 
 static void calc(VariationsArgs *args, bool preview, bool save_settings){
 
@@ -184,10 +187,10 @@ static void on_color_paste(GtkWidget *widget, gpointer item) {
 
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
 
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		set_rgb_color_by_widget(args, color_object, color_widget);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 
@@ -199,17 +202,17 @@ static void on_color_edit(GtkWidget *widget, gpointer item) {
 
 	Color c;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	struct ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	struct ColorObject* new_color_object = 0;
+	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+	ColorObject* new_color_object = 0;
 
 	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
 
 		set_rgb_color_by_widget(args, new_color_object, color_widget);
 
-		color_object_release(new_color_object);
+		new_color_object->release();
 	}
 
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
@@ -242,14 +245,14 @@ static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
 static void add_color_to_palette(GtkWidget *color_widget, VariationsColorNameAssigner &name_assigner, VariationsArgs *args)
 {
 	Color c;
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	string widget_ident;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	widget_ident = identify_color_widget(color_widget, args);
 	name_assigner.assign(color_object, &c, widget_ident.c_str());
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static void on_color_add_to_palette(GtkWidget *widget, gpointer item) {
@@ -275,18 +278,15 @@ static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, Varia
 	return false;
 }
 
-
-static void on_color_activate(GtkWidget *widget, gpointer item) {
-	VariationsArgs* args=(VariationsArgs*)item;
-	Color c;
-
-	gtk_color_get_color(GTK_COLOR(widget), &c);
-
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->getColorList(), &c);
-	string name = color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
+static void on_color_activate(GtkWidget *widget, VariationsArgs* args)
+{
+	Color color;
+	gtk_color_get_color(GTK_COLOR(widget), &color);
+	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	color_object->setName(name);
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static void type_toggled_cb(GtkWidget *widget, VariationsArgs *args) {
@@ -308,9 +308,9 @@ static void type_toggled_cb(GtkWidget *widget, VariationsArgs *args) {
 		Color c;
 		gtk_color_get_color(GTK_COLOR(color_widget), &c);
 
-		struct ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+		ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 		set_rgb_color(args, color_object, line_id);
-		color_object_release(color_object);
+		color_object->release();
 
 	}
 }
@@ -339,10 +339,10 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 	Color c;
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
-	color_object_release(color_object);
+	color_object->release();
 
 	int line_id = -1;
 	bool all_colors = false;
@@ -399,7 +399,7 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup (GTK_MENU (menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
@@ -422,7 +422,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
 	Color c;
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	GtkWidget* color_widget = widget;
 
 	switch(event->keyval){
@@ -435,7 +435,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 				if (converter){
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
-				color_object_release(color_object);
+				color_object->release();
 				return true;
 			}
 			return false;
@@ -445,7 +445,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				if (copypaste_get_color_object(&color_object, args->gs) == 0){
 					set_rgb_color_by_widget(args, color_object, color_widget);
-					color_object_release(color_object);
+					color_object->release();
 				}
 				return true;
 			}
@@ -498,7 +498,7 @@ static int source_get_color(VariationsArgs *args, ColorObject** color){
 	return 0;
 }
 
-static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* color_object, GtkWidget* color_widget)
+static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color_object, GtkWidget* color_widget)
 {
 	if (args->all_colors){
 		set_rgb_color(args, color_object, -1);
@@ -512,9 +512,9 @@ static int set_rgb_color_by_widget(VariationsArgs *args, struct ColorObject* col
 	return -1;
 }
 
-static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32_t color_index){
-	Color c;
-	color_object_get_color(color, &c);
+static int set_rgb_color(VariationsArgs *args, ColorObject* color_object, uint32_t color_index)
+{
+	Color c = color_object->getColor();
 	if (color_index == (uint32_t)-1){
 		gtk_color_set_color(GTK_COLOR(args->all_colors), &c, "");
 		for (int i = 0; i < MAX_COLOR_LINES; ++i){
@@ -528,11 +528,12 @@ static int set_rgb_color(VariationsArgs *args, struct ColorObject* color, uint32
 }
 
 
-static int source_set_color(VariationsArgs *args, struct ColorObject* color){
+static int source_set_color(VariationsArgs *args, ColorObject* color_object)
+{
 	if (args->last_focused_color){
-		return set_rgb_color_by_widget(args, color, args->last_focused_color);
+		return set_rgb_color_by_widget(args, color_object, args->last_focused_color);
 	}else{
-		return set_rgb_color(args, color, 0);
+		return set_rgb_color(args, color_object, 0);
 	}
 }
 
@@ -556,18 +557,18 @@ static int source_deactivate(VariationsArgs *args){
 	return 0;
 }
 
-static struct ColorObject* get_color_object(struct DragDrop* dd){
+static ColorObject* get_color_object(struct DragDrop* dd){
 	VariationsArgs* args = (VariationsArgs*)dd->userdata;
-	struct ColorObject* colorobject;
-	if (source_get_color(args, &colorobject) == 0){
-		return colorobject;
+	ColorObject* color_object;
+	if (source_get_color(args, &color_object) == 0){
+		return color_object;
 	}
 	return 0;
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move){
 	VariationsArgs* args = static_cast<VariationsArgs*>(dd->userdata);
-	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
+	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;
 }
 
@@ -701,7 +702,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y++;
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	struct ColorList* preview_color_list = color_list_new(handler_map);
+	ColorList* preview_color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 
 	args->preview_color_list = preview_color_list;

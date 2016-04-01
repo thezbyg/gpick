@@ -19,10 +19,10 @@
 #ifndef GPICK_COPY_PASTE_H_
 #define GPICK_COPY_PASTE_H_
 
-struct ColorObject;
+class ColorObject;
 class GlobalState;
-int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs);
-int copypaste_get_color_object(struct ColorObject** color_object, GlobalState* gs);
+int copypaste_set_color_object(ColorObject* color_object, GlobalState* gs);
+int copypaste_get_color_object(ColorObject** color_object, GlobalState* gs);
 int copypaste_is_color_object_available(GlobalState* gs);
 
 #endif /* GPICK_COPY_PASTE_H_ */

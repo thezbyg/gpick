@@ -16,41 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_LIST_H_
-#define GPICK_COLOR_LIST_H_
+#ifndef GPICK_COLOR_UTILS_H_
+#define GPICK_COLOR_UTILS_H_
 
-class ColorObject;
-struct dynvSystem;
 #include "Color.h"
-#include <list>
-#include <cstddef>
-
-class ColorList
+namespace color_utils
 {
-	public:
-		std::list<ColorObject*> colors;
-		typedef std::list<ColorObject*>::iterator iter;
-		dynvSystem *params;
-		int (*on_insert)(ColorList *color_list, ColorObject *color_object);
-		int (*on_delete)(ColorList *color_list, ColorObject *color_object);
-		int (*on_delete_selected)(ColorList *color_list);
-		int (*on_change)(ColorList *color_list, ColorObject *color_object);
-		int (*on_clear)(ColorList *color_list);
-		int (*on_get_positions)(ColorList *color_list);
-		void* userdata;
-};
+	template<typename T>
+	void mix(const Color &a, const Color &b, T ratio, Color &result)
+	{
+		for (int i = 0; i < 4; i++){
+			result.ma[i] = a.ma[i] * (1 - ratio) + b.ma[i] * ratio;
+		}
+	};
+}
 
-ColorList* color_list_new(struct dynvHandlerMap *handler_map);
-ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color);
-void color_list_destroy(ColorList *color_list);
-ColorObject* color_list_new_color_object(ColorList *color_list, const Color *color);
-ColorObject* color_list_add_color(ColorList *color_list, const Color *color);
-int color_list_add_color_object(ColorList *color_list, ColorObject *color_object, int add_to_palette);
-int color_list_remove_color_object(ColorList *color_list, ColorObject *color_object);
-int color_list_remove_selected(ColorList *color_list);
-int color_list_remove_all(ColorList *color_list);
-size_t color_list_get_count(ColorList *color_list);
-int color_list_get_positions(ColorList *color_list);
-
-#endif /* GPICK_COLOR_LIST_H_ */
+#endif /* GPICK_COLOR_UTILS_H_ */
 

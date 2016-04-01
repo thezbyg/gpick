@@ -41,18 +41,18 @@ struct dynvHandlerMap* dynv_system_get_handler_map(struct dynvSystem* dynv_syste
 }
 
 void dynv_system_set_handler_map(struct dynvSystem* dynv_system, struct dynvHandlerMap* handler_map){
-	if (dynv_system->handler_map != NULL){
+	if (dynv_system->handler_map != nullptr){
 		dynv_handler_map_release(dynv_system->handler_map);
-		dynv_system->handler_map=NULL;
+		dynv_system->handler_map=nullptr;
 	}
-	if (handler_map != NULL){
+	if (handler_map != nullptr){
 		dynv_system->handler_map=dynv_handler_map_ref(handler_map);
 	}
 }
 
 struct dynvSystem* dynv_system_create(struct dynvHandlerMap* handler_map){
 	struct dynvSystem* dynv_system=new struct dynvSystem;
-	dynv_system->handler_map=NULL;
+	dynv_system->handler_map=nullptr;
 	dynv_system->refcnt=0;
 	dynv_system_set_handler_map(dynv_system, handler_map);
 	return dynv_system;
@@ -83,12 +83,12 @@ struct dynvSystem* dynv_system_ref(struct dynvSystem* dynv_system){
 }
 
 struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struct dynvHandler* handler, const char* variable_name){
-	struct dynvVariable* variable=NULL;
+	struct dynvVariable* variable=nullptr;
 
 	dynvSystem::VariableMap::iterator i;
 	i=dynv_system->variables.find(variable_name);
 	if (i == dynv_system->variables.end()){
-		if (handler == NULL) return 0;
+		if (handler == nullptr) return 0;
 		variable=dynv_variable_create(variable_name, handler);
 		dynv_system->variables[variable->name]=variable;
 		variable->handler->create(variable);
@@ -102,7 +102,7 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 	if (variable->handler == handler){
 		return variable;
 	}else{
-		if (handler->create != NULL){
+		if (handler->create != nullptr){
 			dynv_variable_destroy_data(variable);
 			variable->handler=handler;
 			variable->handler->create(variable);
@@ -113,10 +113,10 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 }
 
 int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, void* value){
-	struct dynvVariable* variable=NULL;
-	struct dynvHandler* handler=NULL;
+	struct dynvVariable* variable=nullptr;
+	struct dynvHandler* handler=nullptr;
 
-	if (handler_name != NULL){
+	if (handler_name != nullptr){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
 		if (j == dynv_system->handler_map->handlers.end()){
@@ -129,7 +129,7 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 	dynvSystem::VariableMap::iterator i;
 	i=dynv_system->variables.find(variable_name);
 	if (i == dynv_system->variables.end()){
-		if (handler == NULL) return -2;
+		if (handler == nullptr) return -2;
 		variable=dynv_variable_create(variable_name, handler);
 		dynv_system->variables[variable->name]=variable;
 		variable->handler->create(variable);
@@ -143,7 +143,7 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 	if (variable->handler == handler){
 		return variable->handler->set(variable, value, false);
 	}else{
-		if (handler->create != NULL){
+		if (handler->create != nullptr){
 			dynv_variable_destroy_data(variable);
 			variable->handler=handler;
 			variable->handler->create(variable);
@@ -155,14 +155,14 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 
 
 void* dynv_system_get_r(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, int* error){
-	struct dynvVariable* variable=NULL;
-	struct dynvHandler* handler=NULL;
+	struct dynvVariable* variable=nullptr;
+	struct dynvHandler* handler=nullptr;
 	int error_redir;
-	if (error == NULL) error = &error_redir;
+	if (error == nullptr) error = &error_redir;
 
 	*error = 1;
 
-	if (handler_name != NULL){
+	if (handler_name != nullptr){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
 		if (j == dynv_system->handler_map->handlers.end()){
@@ -181,7 +181,7 @@ void* dynv_system_get_r(struct dynvSystem* dynv_system, const char* handler_name
 	}
 
 	if (variable->handler == handler){
-		if (variable->handler->get != NULL){
+		if (variable->handler->get != nullptr){
 			void* value = 0;
 			bool deref = true;
 			if (variable->handler->get(variable, &value, &deref) == 0){
@@ -201,14 +201,14 @@ void* dynv_system_get(struct dynvSystem* dynv_system, const char* handler_name, 
 }
 
 void** dynv_system_get_array_r(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, uint32_t *count, int* error){
-	struct dynvVariable* variable=NULL;
-	struct dynvHandler* handler=NULL;
+	struct dynvVariable* variable=nullptr;
+	struct dynvHandler* handler=nullptr;
 	int error_redir;
-	if (error == NULL) error = &error_redir;
+	if (error == nullptr) error = &error_redir;
 
 	*error = 1;
 
-	if (handler_name != NULL){
+	if (handler_name != nullptr){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
 		if (j == dynv_system->handler_map->handlers.end()){
@@ -286,14 +286,14 @@ static int build_linked_list(struct dynvVariable* start_variable, void** values,
 }
 
 int dynv_system_set_array(struct dynvSystem* dynv_system, const char* handler_name, const char* variable_name, void** values, uint32_t count){
-	struct dynvVariable* variable=NULL;
-	struct dynvHandler* handler=NULL;
+	struct dynvVariable* variable=nullptr;
+	struct dynvHandler* handler=nullptr;
 
 	if (count<1){
 		return dynv_system_remove(dynv_system, variable_name);
 	}
 
-	if (handler_name != NULL){
+	if (handler_name != nullptr){
 		dynvHandlerMap::HandlerMap::iterator j;
 		j=dynv_system->handler_map->handlers.find(handler_name);
 		if (j == dynv_system->handler_map->handlers.end()){
@@ -306,7 +306,7 @@ int dynv_system_set_array(struct dynvSystem* dynv_system, const char* handler_na
 	dynvSystem::VariableMap::iterator i;
 	i=dynv_system->variables.find(variable_name);
 	if (i == dynv_system->variables.end()){
-		if (handler == NULL) return -2;
+		if (handler == nullptr) return -2;
 
 		variable=dynv_variable_create(variable_name, handler);
 		dynv_system->variables[variable->name]=variable;
@@ -581,7 +581,7 @@ void* dynv_get(struct dynvSystem* dynv_system, const char* handler_name, const c
 	string path(variable_path);
 	size_t found;
 	int error_redir;
-	if (error == NULL) error = &error_redir;
+	if (error == nullptr) error = &error_redir;
 
 	*error = 0;
 
@@ -614,7 +614,7 @@ void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, 
 	string path(variable_path);
 	size_t found;
 	int error_redir;
-	if (error == NULL) error = &error_redir;
+	if (error == nullptr) error = &error_redir;
 
 	*error = 0;
 

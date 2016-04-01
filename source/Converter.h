@@ -22,7 +22,7 @@
 class Converters;
 struct lua_State;
 struct dynvSystem;
-struct ColorObject;
+class ColorObject;
 #include <string>
 #ifndef _MSC_VER
 #include <stdbool.h>

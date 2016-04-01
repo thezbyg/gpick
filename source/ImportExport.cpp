@@ -17,6 +17,8 @@
  */
 
 #include "ImportExport.h"
+#include "ColorObject.h"
+#include "ColorList.h"
 #include "FileFormat.h"
 #include "Converter.h"
 #include "Endian.h"
@@ -42,12 +44,12 @@ static bool getOrderedColors(ColorList *color_list, vector<ColorObject*> &ordere
 	size_t max_index = 0;
 	bool index_set = false;
 	for (auto color: color_list->colors){
-		if (color->position_set){
+		if (color->isPositionSet()){
 			if (!index_set){
-				max_index = color->position;
+				max_index = color->getPosition();
 				index_set = true;
-			}else if (color->position > max_index){
-				max_index = color->position;
+			}else if (color->getPosition() > max_index){
+				max_index = color->getPosition();
 			}
 		}
 	}
@@ -56,8 +58,8 @@ static bool getOrderedColors(ColorList *color_list, vector<ColorObject*> &ordere
 	}else{
 		ordered.resize(max_index + 1);
 		for (auto color: color_list->colors){
-			if (color->position_set){
-				ordered[color->position] = color;
+			if (color->isPositionSet()){
+				ordered[color->getPosition()] = color;
 			}
 		}
 		return true;
@@ -132,13 +134,11 @@ void ImportExport::setIncludeColorNames(bool include_color_names)
 static void gplColor(ColorObject* color_object, ostream &stream)
 {
 	using boost::math::iround;
-	Color color;
-	color_object_get_color(color_object, &color);
-	const char* name = color_object_get_name(color_object);
+	Color color = color_object->getColor();
 	stream
 		<< iround(color.rgb.red * 255) << "\t"
 		<< iround(color.rgb.green * 255) << "\t"
-		<< iround(color.rgb.blue * 255) << "\t" << name << endl;
+		<< iround(color.rgb.blue * 255) << "\t" << color_object->getName() << endl;
 }
 bool ImportExport::exportGPL()
 {
@@ -201,9 +201,9 @@ bool ImportExport::importGPL()
 		c.rgb.green = g / 255.0;
 		c.rgb.blue = b / 255.0;
 		color_object = color_list_new_color_object(m_color_list, &c);
-		color_object_set_name(color_object, line.c_str());
+		color_object->setName(line);
 		color_list_add_color_object(m_color_list, color_object, true);
-		color_object_release(color_object);
+		color_object->release();
 		getline(f, line);
 	}
 	if (!f.eof()) {
@@ -285,10 +285,10 @@ bool ImportExport::importTXT()
 					if (quality > 0){
 						valid_converters.insert(make_pair(quality, color_object));
 					}else{
-						color_object_release(color_object);
+						color_object->release();
 					}
 				}else{
-					color_object_release(color_object);
+					color_object->release();
 				}
 			}
 			bool first = true;
@@ -298,7 +298,7 @@ bool ImportExport::importTXT()
 					color_list_add_color_object(m_color_list, result.second, true);
 					imported = true;
 				}
-				color_object_release(result.second);
+				result.second->release();
 			}
 			valid_converters.clear();
 		}
@@ -318,10 +318,9 @@ bool ImportExport::importTXT()
 static void cssColor(ColorObject* color_object, ostream &stream)
 {
 	Color color, hsl;
-	color_object_get_color(color_object, &color);
-	const char* name = color_object_get_name(color_object);
+	color = color_object->getColor();
 	color_rgb_to_hsl(&color, &hsl);
-	stream << " * " << name
+	stream << " * " << color_object->getName()
 		<< ": " << HtmlHEX{&color}
 		<< ", " << HtmlRGB{&color}
 		<< ", " << HtmlHSL{&color}
@@ -357,11 +356,11 @@ bool ImportExport::exportCSS()
 static void htmlColor(ColorObject* color_object, bool include_color_name, ostream &stream)
 {
 	Color color, text_color;
-	color_object_get_color(color_object, &color);
+	color = color_object->getColor();
 	color_get_contrasting(&color, &text_color);
 	stream << "<div style=\"background-color:" << HtmlRGB{&color} << "; color:" << HtmlRGB{&text_color} << "\">";
 	if (include_color_name){
-		string name = color_object_get_name(color_object);
+		string name = color_object->getName();
 		escapeHtmlInplace(name);
 		if (!name.empty())
 			stream << name << ":<br/>";
@@ -370,8 +369,7 @@ static void htmlColor(ColorObject* color_object, bool include_color_name, ostrea
 }
 static string getHtmlColor(ColorObject* color_object)
 {
-	Color color;
-	color_object_get_color(color_object, &color);
+	Color color = color_object->getColor();
 	stringstream ss;
 	ss << HtmlRGB{&color};
 	return ss.str();
@@ -500,10 +498,8 @@ bool ImportExport::exportType(FileType type)
 }
 static void mtlColor(ColorObject* color_object, ostream &stream)
 {
-	Color color;
-	color_object_get_color(color_object, &color);
-	const char* name = color_object_get_name(color_object);
-	stream << "newmtl " << name << endl;
+	Color color = color_object->getColor();
+	stream << "newmtl " << color_object->getName() << endl;
 	stream << "Ns 90.000000" << endl;
 	stream << "Ka 0.000000 0.000000 0.000000" << endl;
 	stream << "Kd " << color.rgb.red << " " << color.rgb.green << " " << color.rgb.blue << endl;
@@ -536,11 +532,10 @@ typedef union FloatInt
 }FloatInt;
 static void aseColor(ColorObject* color_object, ostream &stream)
 {
-	Color color;
-	color_object_get_color(color_object, &color);
-	const char* name = color_object_get_name(color_object);
+	Color color = color_object->getColor();
+	string name = color_object->getName();
 	glong name_u16_len = 0;
-	gunichar2 *name_u16 = g_utf8_to_utf16(name, -1, 0, &name_u16_len, 0);
+	gunichar2 *name_u16 = g_utf8_to_utf16(name.c_str(), -1, 0, &name_u16_len, 0);
 	for (glong i = 0; i < name_u16_len; ++i){
 		name_u16[i] = UINT16_TO_BE(name_u16[i]);
 	}
@@ -695,9 +690,9 @@ bool ImportExport::importASE()
 				if (color_supported){
 					ColorObject* color_object;
 					color_object = color_list_new_color_object(m_color_list, &c);
-					color_object_set_name(color_object, name);
+					color_object->setName(name);
 					color_list_add_color_object(m_color_list, color_object, true);
-					color_object_release(color_object);
+					color_object->release();
 				}
 				uint16_t color_type;
 				f.read((char*)&color_type, 2);

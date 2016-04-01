@@ -70,12 +70,12 @@ class BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
 			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color, const char *ident)
+		void assign(ColorObject *color_object, Color *color, const char *ident)
 		{
 			m_ident = ident;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("brightness darkness") << " " << m_ident;
@@ -119,7 +119,7 @@ static void update(GtkWidget *widget, BrightnessDarknessArgs *args)
 {
 	calc(args, true, false);
 }
-static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** color)
+static int source_get_color(BrightnessDarknessArgs *args, ColorObject** color)
 {
 	Style* style = 0;
 	Color c;
@@ -134,29 +134,27 @@ static int source_get_color(BrightnessDarknessArgs *args, struct ColorObject** c
 	}
 	return -1;
 }
-static int source_set_color(BrightnessDarknessArgs *args, struct ColorObject* color)
+static int source_set_color(BrightnessDarknessArgs *args, ColorObject* color_object)
 {
-	Color c;
-	color_object_get_color(color, &c);
-	color_copy(&c, &args->color);
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &c, "main");
+	Color color = color_object->getColor();
+	color_copy(&color, &args->color);
+	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
 	calc(args, true, false);
 	return 0;
 }
-static struct ColorObject* get_color_object(struct DragDrop* dd)
+static ColorObject* get_color_object(struct DragDrop* dd)
 {
 	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
-	struct ColorObject* colorobject;
+	ColorObject* colorobject;
 	if (source_get_color(args, &colorobject) == 0){
 		return colorobject;
 	}
 	return 0;
 }
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move)
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
 {
 	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
-	Color color;
-	color_object_get_color(colorobject, &color);
+	Color color = color_object->getColor();
 	color_copy(&color, &args->color);
 	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
 	calc(args, true, false);
@@ -171,52 +169,52 @@ static bool test_at(struct DragDrop* dd, int x, int y)
 static void edit_cb(GtkWidget *widget, gpointer item)
 {
 	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)item;
-	struct ColorObject *color_object;
-	struct ColorObject* new_color_object = 0;
+	ColorObject *color_object;
+	ColorObject* new_color_object = nullptr;
 	if (source_get_color(args, &color_object) == 0){
 		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
 			source_set_color(args, new_color_object);
-			color_object_release(new_color_object);
+			new_color_object->release();
 		}
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static void paste_cb(GtkWidget *widget, BrightnessDarknessArgs* args)
 {
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		source_set_color(args, color_object);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static void add_to_palette_cb(GtkWidget *widget, gpointer item)
 {
 	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)item;
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	if (source_get_color(args, &color_object) == 0){
 		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *args)
 {
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	BrightnessDarknessColorNameAssigner name_assigner(args->gs);
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
 		color_object = color_list_new_color_object(args->gs->getColorList(), &(*i)->color);
 		name_assigner.assign(color_object, &(*i)->color, (*i)->human_name.c_str());
 		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, BrightnessDarknessArgs* args)
 {
 	GtkWidget *menu;
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
-		struct ColorObject *color_object;
+		ColorObject *color_object;
 		if (source_get_color(args, &color_object) == 0){
 			color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-			color_object_release(color_object);
+			color_object->release();
 		}
 		return true;
 	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
@@ -236,10 +234,10 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		if (selection_avail){
-			struct ColorObject* color_object;
+			ColorObject* color_object;
 			source_get_color(args, &color_object);
 			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(color_object, 0, args->gs));
-			color_object_release(color_object);
+			color_object->release();
 		}else{
 			gtk_widget_set_sensitive(item, false);
 		}
@@ -260,7 +258,7 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		button = event->button;
 		event_time = event->time;
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
 		return TRUE;
@@ -274,12 +272,6 @@ static int source_destroy(BrightnessDarknessArgs *args)
 	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
-	return 0;
-}
-static int set_rgb_color(BrightnessDarknessArgs *args, struct ColorObject* color, uint32_t color_index)
-{
-	color_object_get_color(color, &args->color);
-	update(0, args);
 	return 0;
 }
 static int source_activate(BrightnessDarknessArgs *args)

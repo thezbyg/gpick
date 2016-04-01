@@ -19,32 +19,41 @@
 #ifndef GPICK_COLOR_OBJECT_H_
 #define GPICK_COLOR_OBJECT_H_
 
+class ColorObject;
 #include "Color.h"
-#include "ColorAction.h"
-#include "dynv/DynvSystem.h"
-#include <list>
+#include <string>
 
-struct ColorObject;
-
-struct ColorObject{
-	uint32_t refcnt;
-	struct dynvSystem* params;
-	struct ColorList* childs; //color objects depending on current object
-	size_t position;
-	bool position_set;
-	struct ColorAction* action;
-	int recalculate;
-	int selected;
-	int visited;
+class ColorObject
+{
+	public:
+		ColorObject();
+		ColorObject(const char *name, const Color &color);
+		ColorObject(const std::string &name, const Color &color);
+		ColorObject *reference();
+		void release();
+		const Color &getColor() const;
+		void setColor(const Color &color);
+		const std::string &getName() const;
+		void setName(const std::string &name);
+		ColorObject* copy() const;
+		bool isSelected() const;
+		bool isVisited() const;
+		size_t getPosition() const;
+		bool isPositionSet() const;
+		void setPosition(size_t position);
+		void resetPosition();
+		void setSelected(bool selected);
+		void setVisited(bool visited);
+		size_t getReferenceCount() const;
+	private:
+		size_t m_refcnt;
+		std::string m_name;
+		Color m_color;
+		size_t m_position;
+		bool m_position_set;
+		bool m_selected;
+		bool m_visited;
 };
 
-struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map);
-int color_object_release(struct ColorObject *color_object);
-struct ColorObject* color_object_ref(struct ColorObject *color_object);
-int color_object_get_color(struct ColorObject *color_object, Color *color);
-int color_object_set_color(struct ColorObject *color_object, const Color *color);
-struct ColorObject* color_object_copy(struct ColorObject *color_object);
-const char* color_object_get_name(struct ColorObject *color_object);
-void color_object_set_name(struct ColorObject *color_object, const char *name);
-
 #endif /* GPICK_COLOR_OBJECT_H_ */
+

@@ -39,14 +39,14 @@ bool dynvHandlerMap::dynvKeyCompare::operator() (const char* const& x, const cha
 struct dynvHandler* dynv_handler_create(const char* name){
 	struct dynvHandler* handler=new struct dynvHandler;
 	handler->name=strdup(name);
-	handler->create=NULL;
-	handler->destroy=NULL;
-	handler->set=NULL;
-	handler->serialize=NULL;
-	handler->deserialize=NULL;
-	handler->serialize_xml=NULL;
-	handler->deserialize_xml=NULL;
-	handler->get=NULL;
+	handler->create=nullptr;
+	handler->destroy=nullptr;
+	handler->set=nullptr;
+	handler->serialize=nullptr;
+	handler->deserialize=nullptr;
+	handler->serialize_xml=nullptr;
+	handler->deserialize_xml=nullptr;
+	handler->get=nullptr;
 	return handler;
 }
 

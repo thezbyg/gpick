@@ -17,6 +17,7 @@
  */
 
 #include "ColorPicker.h"
+#include "ColorObject.h"
 #include "GlobalState.h"
 #include "ColorList.h"
 #include "ColorSource.h"
@@ -217,74 +218,64 @@ static void on_swatch_color_changed(GtkWidget *widget, gpointer data)
 	ColorPickerArgs* args = (ColorPickerArgs*)data;
 	updateDisplays(args, widget);
 }
-static void on_swatch_menu_add_to_palette(GtkWidget *widget, gpointer item)
+static void addToPalette(const Color *color, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args=(ColorPickerArgs*)item;
-	Color c;
-	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->getColorList(), &c);
-	string name=color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
+	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), color);
+	string name = color_names_get(args->gs->getColorNames(), color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	color_object->setName(name);
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
-static void on_swatch_menu_add_all_to_palette(GtkWidget *widget, gpointer item)
+static void on_swatch_menu_add_to_palette(GtkWidget *widget, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args=(ColorPickerArgs*)item;
-	Color c;
-	for (int i = 1; i < 7; ++i) {
-		gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), i, &c);
-		struct ColorObject *color_object=color_list_new_color_object(args->gs->getColorList(), &c);
-		string name=color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-		dynv_set_string(color_object->params, "name", name.c_str());
-		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-		color_object_release(color_object);
+	Color color;
+	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+	addToPalette(&color, args);
+}
+static void on_swatch_menu_add_all_to_palette(GtkWidget *widget, ColorPickerArgs *args)
+{
+	Color color;
+	for (int i = 1; i < 7; ++i){
+		gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), i, &color);
+		addToPalette(&color, args);
 	}
 }
-static void on_swatch_color_activated(GtkWidget *widget, gpointer item)
+static void on_swatch_color_activated(GtkWidget *widget, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args=(ColorPickerArgs*)item;
-	Color c;
-	gtk_swatch_get_active_color(GTK_SWATCH(widget), &c);
-	struct ColorObject *color_object=color_list_new_color_object(args->gs->getColorList(), &c);
-	string name=color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	Color color;
+	gtk_swatch_get_active_color(GTK_SWATCH(widget), &color);
+	addToPalette(&color, args);
 }
-static void on_swatch_center_activated(GtkWidget *widget, gpointer item)
+static void on_swatch_center_activated(GtkWidget *widget, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args = (ColorPickerArgs*)item;
 	floating_picker_activate(args->floating_picker, true, false);
 }
-static void on_picker_toggled(GtkWidget *widget, gpointer item)
+static void on_picker_toggled(GtkWidget *widget, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args = (ColorPickerArgs*)item;
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))){
 		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
 	}else{
 		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), false);
 	}
 }
-static void on_swatch_color_edit(GtkWidget *widget, gpointer item)
+static void on_swatch_color_edit(GtkWidget *widget, ColorPickerArgs *args)
 {
-	ColorPickerArgs* args=(ColorPickerArgs*)item;
-	Color c;
-	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-	struct ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	struct ColorObject* new_color_object = 0;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->swatch_display)), args->gs, color_object, &new_color_object ) == 0){
+	Color color;
+	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+	ColorObject* new_color_object = nullptr;
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->swatch_display)), args->gs, color_object, &new_color_object) == 0){
 		source_set_color(args, new_color_object);
-		color_object_release(new_color_object);
+		new_color_object->release();
 	}
-	color_object_release(color_object);
+	color_object->release();
 }
 static void paste_cb(GtkWidget *widget, ColorPickerArgs* args)
 {
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		source_set_color(args, color_object);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
@@ -294,14 +285,14 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 	Color c;
 	updateMainColor(args);
 	gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	menu = converter_create_copy_menu(color_object, 0, args->gs);
-	color_object_release(color_object);
+	color_object->release();
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	button = 0;
 	event_time = gtk_get_current_event_time ();
-	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 }
@@ -310,8 +301,7 @@ static GtkWidget* createNearestFromPaletteMenu(const Color *color, GlobalState* 
 	GtkWidget *menu = gtk_menu_new();
 	map<float, ColorObject *> color_distances;
 	for (auto color_object: gs->getColorList()->colors){
-		Color target_color;
-		color_object_get_color(color_object, &target_color);
+		Color target_color = color_object->getColor();
 		color_distances[color_distance_lch(color, &target_color)] = color_object;
 	}
 	int count = 0;
@@ -346,10 +336,10 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 
-		struct ColorObject* color_object;
+		ColorObject* color_object;
 		color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(color_object, 0, args->gs));
-		color_object_release(color_object);
+		color_object->release();
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
@@ -377,7 +367,7 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 			button = 0;
 			event_time = gtk_get_current_event_time();
 		}
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
 	}
@@ -406,7 +396,7 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 		case GDK_KEY_m:
 			{
 				int x, y;
-				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
+				gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
 				math::Vec2<int> position(x, y);
 				if ((event->state&modifiers) == GDK_CONTROL_MASK){
 					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 1, position);
@@ -423,7 +413,7 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 				updateMainColor(args);
 				gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
 
-				struct ColorObject* color_object;
+				ColorObject* color_object;
 				color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 
 				auto converters = args->gs->getConverters();
@@ -432,7 +422,7 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
 
-				color_object_release(color_object);
+				color_object->release();
 				return TRUE;
 			}
 			return FALSE;
@@ -491,46 +481,39 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 			gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
 
 			if (dynv_get_bool_wd(args->params, "sampler.add_to_palette", true)){
-				Color c;
-				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-
-				struct ColorObject *color_object=color_list_new_color_object(args->gs->getColorList(), &c);
-				string name=color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-				dynv_set_string(color_object->params, "name", name.c_str());
+				Color color;
+				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+				ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+				string name=color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+				color_object->setName(name);
 				color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-				color_object_release(color_object);
+				color_object->release();
 			}
-
 			if (dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", true)){
-				Color c;
-				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-
-				struct ColorObject* color_object;
-				color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-
+				Color color;
+				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+				ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &color);
 				auto converters = args->gs->getConverters();
 				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 				if (converter){
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
-
-				color_object_release(color_object);
+				color_object->release();
 			}
-
 			if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)){
-				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
+				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
 			}
 			updateDisplays(args, widget);
 			return TRUE;
 			break;
 
 		case GDK_KEY_a:
-			on_swatch_menu_add_all_to_palette(NULL, args);
+			on_swatch_menu_add_all_to_palette(nullptr, args);
 			return TRUE;
 			break;
 
 		case GDK_KEY_e:
-			on_swatch_color_edit(NULL, args);
+			on_swatch_color_edit(nullptr, args);
 			return TRUE;
 			break;
 
@@ -687,7 +670,7 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 			event_time = gtk_get_current_event_time ();
 		}
 
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
@@ -721,11 +704,11 @@ static GtkWidget* create_falloff_type_list (void){
 	gtk_combo_box_set_add_tearoffs (GTK_COMBO_BOX (widget), 0);
 	renderer = gtk_cell_renderer_pixbuf_new();
 	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (widget),renderer,0);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"pixbuf",0,NULL);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"pixbuf",0,nullptr);
 
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (widget),renderer,0);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"text",1,NULL);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"text",1,nullptr);
 
 	g_object_unref (GTK_TREE_MODEL(store));
 	GtkTreeIter iter1;
@@ -749,7 +732,7 @@ static GtkWidget* create_falloff_type_list (void){
 	gtk_icon_size_lookup(GTK_ICON_SIZE_MENU, 0, &icon_size);
 
 	for (guint32 i=0;i<sizeof(falloff_type_ids)/sizeof(gint32);++i){
-		GError *error = NULL;
+		GError *error = nullptr;
 
 		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, falloff_types[i][0], icon_size, GtkIconLookupFlags(0), &error);
 		if (error) g_error_free (error);
@@ -803,56 +786,44 @@ static int source_destroy(ColorPickerArgs *args)
 	return 0;
 }
 
-static int source_get_color(ColorPickerArgs *args, ColorObject** color){
-
-	Color c;
-	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-
-	struct ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	string name = color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
-
-	*color = color_object;
-
+static int source_get_color(ColorPickerArgs *args, ColorObject** color_object)
+{
+	Color color;
+	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+	ColorObject *new_color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	new_color_object->setName(name);
+	*color_object = new_color_object;
 	return 0;
 }
-
-static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject* color){
+static int source_set_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject* color_object)
+{
 	if (color_n < 0 || color_n > 6) return -1;
-	Color c;
-	color_object_get_color(color, &c);
-	gtk_swatch_set_color(GTK_SWATCH(args->swatch_display), color_n + 1, &c);
-
+	Color color = color_object->getColor();
+	gtk_swatch_set_color(GTK_SWATCH(args->swatch_display), color_n + 1, &color);
 	updateDisplays(args, 0);
 	return 0;
 }
-
-static int source_get_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject** color){
+static int source_get_nth_color(ColorPickerArgs *args, uint32_t color_n, ColorObject** color_object)
+{
 	if (color_n < 0 || color_n > 6) return -1;
-	Color c;
-
-	gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), color_n + 1, &c);
-
-	struct ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	string name = color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(color_object->params, "name", name.c_str());
-
-	*color = color_object;
-
+	Color color;
+	gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), color_n + 1, &color);
+	ColorObject *new_color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	new_color_object->setName(name);
+	*color_object = new_color_object;
 	return 0;
 }
-
-
-static int source_set_color(ColorPickerArgs *args, ColorObject* color){
-	Color c;
-	color_object_get_color(color, &c);
-	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), &c);
-
+static int source_set_color(ColorPickerArgs *args, ColorObject* color_object)
+{
+	Color color = color_object->getColor();
+	gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), &color);
 	updateDisplays(args, 0);
 	return 0;
 }
-
-static int source_activate(ColorPickerArgs *args){
+static int source_activate(ColorPickerArgs *args)
+{
 	if (args->timeout_source_id > 0) {
 		g_source_remove(args->timeout_source_id);
 		args->timeout_source_id = 0;
@@ -895,7 +866,7 @@ static int source_activate(ColorPickerArgs *args){
 
 	if (dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
 		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
-		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 
 	gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
@@ -917,53 +888,43 @@ static int source_deactivate(ColorPickerArgs *args){
 }
 
 
-static struct ColorObject* get_color_object(struct DragDrop* dd){
+static ColorObject* get_color_object(struct DragDrop* dd){
 	ColorPickerArgs* args=(ColorPickerArgs*)dd->userdata;
-	ColorObject *colorobject;
-	source_get_color(args, &colorobject);
-	return colorobject;
+	ColorObject *color_object;
+	source_get_color(args, &color_object);
+	return color_object;
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+{
 	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
-	Color c;
-	color_object_get_color(colorobject, &c);
-	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &c);
-
+	Color color = color_object->getColor();
+	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &color);
 	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
-
 	return 0;
 }
-
 static bool test_at(struct DragDrop* dd, int x, int y){
 	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
 	if (color_index>0) return true;
 	return false;
 }
-
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker){
 	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	args->floating_picker = floating_picker;
 }
-
-static struct ColorObject* get_color_object_contrast(struct DragDrop* dd){
+static ColorObject* get_color_object_contrast(struct DragDrop* dd)
+{
 	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
-	Color c;
-	gtk_color_get_color(GTK_COLOR(dd->widget), &c);
-	struct ColorObject* colorobject = color_object_new(dd->handler_map);
-	color_object_set_color(colorobject, &c);
-
-	string name = color_names_get(args->gs->getColorNames(), &c, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
-	dynv_set_string(colorobject->params, "name", name.c_str());
-
-	return colorobject;
+	Color color;
+	gtk_color_get_color(GTK_COLOR(dd->widget), &color);
+	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	return new ColorObject(name, color);
 }
-
-static int set_color_object_at_contrast(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at_contrast(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+{
 	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
-	Color c;
-	color_object_get_color(colorobject, &c);
-	gtk_color_set_color(GTK_COLOR(args->contrastCheck), &c, "Sample");
+	Color color = color_object->getColor();
+	gtk_color_set_color(GTK_COLOR(args->contrastCheck), &color, "Sample");
 	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
 	return 0;
 }
@@ -991,7 +952,7 @@ static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 			args->timeout_source_id = 0;
 		}
 		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
-		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)NULL);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 	return;
 }
@@ -1136,7 +1097,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(hsv);
-				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), NULL};
+				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsv_labels);
 				args->hsv_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
@@ -1150,7 +1111,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(hsl);
-				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), NULL};
+				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsl_labels);
 				args->hsl_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
@@ -1164,7 +1125,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(rgb);
-				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), NULL};
+				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), rgb_labels);
 				args->rgb_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
@@ -1178,7 +1139,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(cmyk);
-				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), NULL};
+				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), cmyk_labels);
 				args->cmyk_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
@@ -1192,7 +1153,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(lab);
-				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", NULL};
+				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->lab_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);
@@ -1206,7 +1167,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(lch);
-				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", NULL};
+				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lch_labels);
 				args->lch_control = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args);

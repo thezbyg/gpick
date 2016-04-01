@@ -319,7 +319,7 @@ static GtkWidget* create_type_list(void){
 	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
-	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 0, NULL);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 0, nullptr);
 	g_object_unref(GTK_TREE_MODEL(store));
 	GtkTreeIter iter1;
 

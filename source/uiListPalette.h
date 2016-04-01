@@ -20,8 +20,8 @@
 #define GPICK_UI_LIST_PALETTE_H_
 
 class GlobalState;
-struct ColorObject;
-struct ColorList;
+class ColorObject;
+class ColorList;
 #include <gtk/gtk.h>
 GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label);
 void palette_list_add_entry(GtkWidget* widget, ColorObject *color_object);

@@ -17,63 +17,52 @@
  */
 
 #include "Paths.h"
-
 #include <glib/gstdio.h>
 
-static gchar* get_data_dir(){
-	static gchar* data_dir=NULL;
+static gchar* get_data_dir()
+{
+	static gchar* data_dir = nullptr;
 	if (data_dir) return data_dir;
-
-	GList *paths=NULL, *i=NULL;
+	GList *paths = nullptr, *i = nullptr;
 	gchar *tmp;
-
-	i=g_list_append(i, (gchar*)"share");
-	paths=i;
-
-	i=g_list_append(i, (gchar*)g_get_user_data_dir());
-
+	i = g_list_append(i, (gchar*)"share");
+	paths = i;
+	i = g_list_append(i, (gchar*)g_get_user_data_dir());
 	const gchar* const *datadirs = g_get_system_data_dirs();
-	for (gint datadirs_i=0; datadirs[datadirs_i];++datadirs_i){
-		i=g_list_append(i, (gchar*)datadirs[datadirs_i]);
+	for (gint datadirs_i = 0; datadirs[datadirs_i]; ++datadirs_i){
+		i = g_list_append(i, (gchar*)datadirs[datadirs_i]);
 	}
-
-	i=paths;
+	i = paths;
 	GStatBuf sb;
 	while (i){
-		tmp = g_build_filename((gchar*)i->data, "gpick", NULL);
-
-		if (g_stat( tmp, &sb ) == 0){
+		tmp = g_build_filename((gchar*)i->data, "gpick", nullptr);
+		if (g_stat(tmp, &sb) == 0){
 			data_dir=g_strdup(tmp);
 			g_free(tmp);
 			break;
 		}
 		g_free(tmp);
-		i=g_list_next(i);
+		i = g_list_next(i);
 	}
-
 	g_list_free(paths);
-
-	if (data_dir == NULL){
+	if (data_dir == nullptr){
 		data_dir=g_strdup("");
 		return data_dir;
 	}
-
 	return data_dir;
 }
-
-gchar* build_filename(const gchar* filename){
+gchar* build_filename(const gchar* filename)
+{
 	if (filename)
-		return g_build_filename(get_data_dir(), filename, NULL);
+		return g_build_filename(get_data_dir(), filename, nullptr);
 	else
-		return g_build_filename(get_data_dir(), NULL);
+		return g_build_filename(get_data_dir(), nullptr);
 }
-
-gchar* build_config_path(const gchar *filename){
-
+gchar* build_config_path(const gchar *filename)
+{
 	if (filename)
-		return g_build_filename(g_get_user_config_dir(), "gpick", filename, NULL);
+		return g_build_filename(g_get_user_config_dir(), "gpick", filename, nullptr);
 	else
-		return g_build_filename(g_get_user_config_dir(), "gpick", NULL);
+		return g_build_filename(g_get_user_config_dir(), "gpick", nullptr);
 }
-
 

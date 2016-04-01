@@ -20,6 +20,7 @@
 #define GPICK_UI_APP_H_
 
 class GlobalState;
+class ColorObject;
 struct Converters;
 struct Color;
 #include <gtk/gtk.h>
@@ -34,9 +35,9 @@ enum ColorTextType{
 
 char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
 int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
-int main_get_color_object_from_text(GlobalState* gs, char* text, struct ColorObject** output_color_object);
+int main_get_color_object_from_text(GlobalState* gs, char* text, ColorObject** output_color_object);
 
-GtkWidget* converter_create_copy_menu (struct ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
+GtkWidget* converter_create_copy_menu(ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
 void converter_get_clipboard(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters);
 void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text);
 

@@ -21,7 +21,7 @@
 #include <iostream>
 using namespace std;
 
-static GDBusObjectManagerServer *manager = NULL;
+static GDBusObjectManagerServer *manager = nullptr;
 
 typedef struct DbusInterface {
 	bool (*on_control_activate_floating_picker)(void *userdata);
@@ -88,7 +88,7 @@ guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata)
 	dbus_interface.on_control_activate_floating_picker = on_control_activate_floating_picker;
 	dbus_interface.on_single_instance_activate = on_single_instance_activate;
 	dbus_interface.userdata = userdata;
-	return g_bus_own_name(G_BUS_TYPE_SESSION, "com.google.code.gpick", GBusNameOwnerFlags(G_BUS_NAME_OWNER_FLAGS_REPLACE), on_bus_acquired, on_name_acquired, on_name_lost, &dbus_interface, NULL);
+	return g_bus_own_name(G_BUS_TYPE_SESSION, "com.google.code.gpick", GBusNameOwnerFlags(G_BUS_NAME_OWNER_FLAGS_REPLACE), on_bus_acquired, on_name_acquired, on_name_lost, &dbus_interface, nullptr);
 }
 
 void gpick_unown_name(guint bus_id)
@@ -99,9 +99,9 @@ void gpick_unown_name(guint bus_id)
 GDBusObjectManager* gpick_get_manager()
 {
 	GDBusObjectManager *manager;
-	GError *error = NULL;
-	manager = gpick_object_manager_client_new_for_bus_sync(G_BUS_TYPE_SESSION, G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE, "com.google.code.gpick", "/gpick", NULL, &error);
-	if (manager == NULL) {
+	GError *error = nullptr;
+	manager = gpick_object_manager_client_new_for_bus_sync(G_BUS_TYPE_SESSION, G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE, "com.google.code.gpick", "/gpick", nullptr, &error);
+	if (manager == nullptr) {
 		cerr << "Error getting object manager client: " << error->message << endl;
 		g_error_free (error);
 		return 0;
@@ -113,11 +113,11 @@ bool gpick_control_activate_floating_picker()
 {
 	GDBusObjectManager *manager = gpick_get_manager();
 	if (!manager) return false;
-	GError *error = NULL;
+	GError *error = nullptr;
 	GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/gpick/Control", "com.google.code.gpick.Control");
 	bool result = false;
 	if (interface){
-		if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), NULL, &error)){
+		if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), nullptr, &error)){
 			cerr << "Error calling \"Control.ActivateFloatingPicker\": " << error->message << endl;
 			g_error_free (error);
 		}else result = true;
@@ -131,11 +131,11 @@ bool gpick_single_instance_activate()
 {
 	GDBusObjectManager *manager = gpick_get_manager();
 	if (!manager) return false;
-	GError *error = NULL;
+	GError *error = nullptr;
 	GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/gpick/SingleInstance", "com.google.code.gpick.SingleInstance");
 	bool result = false;
 	if (interface){
-		if (!gpick_single_instance_call_activate_sync(GPICK_SINGLE_INSTANCE(interface), NULL, &error)){
+		if (!gpick_single_instance_call_activate_sync(GPICK_SINGLE_INSTANCE(interface), nullptr, &error)){
 			cerr << "Error calling \"SingleInstance.Activate\": " << error->message << endl;
 			g_error_free (error);
 		}else result = true;

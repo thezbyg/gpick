@@ -27,8 +27,8 @@
 #include <string>
 using namespace std;
 
-static gchar **commandline_filename = NULL;
-static gchar *commandline_geometry = NULL;
+static gchar **commandline_filename = nullptr;
+static gchar *commandline_geometry = nullptr;
 static gboolean pick_color = FALSE;
 static gboolean output_picked_color = FALSE;
 static gboolean single_color_pick_mode = FALSE;
@@ -36,12 +36,12 @@ static gboolean version_information = FALSE;
 static GOptionEntry commandline_entries[] =
 {
 	{"geometry", 'g', 0, G_OPTION_ARG_STRING, &commandline_geometry, "Window geometry", "GEOMETRY"},
-	{"pick", 'p', 0, G_OPTION_ARG_NONE, &pick_color, "Pick a color", NULL},
-	{"single", 's', 0, G_OPTION_ARG_NONE, &single_color_pick_mode, "Pick one color and exit", NULL},
-	{"output", 'o', 0, G_OPTION_ARG_NONE, &output_picked_color, "Output picked color", NULL},
-	{"version", 'v', 0, G_OPTION_ARG_NONE, &version_information, "Print version information", NULL},
-	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, NULL, "[FILE...]"},
-	{NULL}
+	{"pick", 'p', 0, G_OPTION_ARG_NONE, &pick_color, "Pick a color", nullptr},
+	{"single", 's', 0, G_OPTION_ARG_NONE, &single_color_pick_mode, "Pick one color and exit", nullptr},
+	{"output", 'o', 0, G_OPTION_ARG_NONE, &output_picked_color, "Output picked color", nullptr},
+	{"version", 'v', 0, G_OPTION_ARG_NONE, &version_information, "Print version information", nullptr},
+	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, nullptr, "[FILE...]"},
+	{nullptr}
 };
 int main(int argc, char **argv)
 {
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 	icon_theme = gtk_icon_theme_get_default();
 	gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(0));
 	g_free(tmp);
-	GError *error = NULL;
+	GError *error = nullptr;
 	GOptionContext *context;
 	context = g_option_context_new("- advanced color picker");
 	g_option_context_add_main_entries(context, commandline_entries, 0);

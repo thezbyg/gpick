@@ -20,7 +20,7 @@
 #define GPICK_UI_DIALOG_VARIATIONS_H_
 
 class GlobalState;
-struct ColorList;
+class ColorList;
 #include <gtk/gtk.h>
 void dialog_variations_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState *gs);
 

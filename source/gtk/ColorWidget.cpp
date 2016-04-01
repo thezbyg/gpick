@@ -34,7 +34,7 @@ static gboolean gtk_color_button_press(GtkWidget *widget, GdkEventButton *event)
 static void gtk_color_size_request (GtkWidget *widget, GtkRequisition *requisition);
 
 static void gtk_color_finalize(GObject *color_obj);
-static GtkWindowClass *parent_class = NULL;
+static GtkWindowClass *parent_class = nullptr;
 enum {
 	ACTIVATED, LAST_SIGNAL,
 };
@@ -65,7 +65,7 @@ static void gtk_color_class_init(GtkColorClass *color_class)
 	obj_class->finalize = gtk_color_finalize;
 	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
 	gtk_color_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkColorClass, activated), NULL, NULL, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+			G_STRUCT_OFFSET(GtkColorClass, activated), nullptr, nullptr, g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
 }
 
 static void gtk_color_init(GtkColor *color) {
@@ -73,7 +73,7 @@ static void gtk_color_init(GtkColor *color) {
 }
 
 GtkWidget* gtk_color_new(void) {
-	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR, NULL);
+	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR, nullptr);
 	GtkColorPrivate *ns = GTK_COLOR_GET_PRIVATE(widget);
 
 	//gtk_widget_set_size_request(GTK_WIDGET(widget), 16+widget->style->xthickness*2, 16+widget->style->ythickness*2);

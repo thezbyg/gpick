@@ -33,7 +33,7 @@ using namespace std;
 #define GTK_COLOR_WHEEL_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
 
 G_DEFINE_TYPE (GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA);
-static GtkWindowClass *parent_class = NULL;
+static GtkWindowClass *parent_class = nullptr;
 
 static gboolean gtk_color_wheel_expose(GtkWidget *color_wheel, GdkEventExpose *event);
 static gboolean gtk_color_wheel_button_release(GtkWidget *color_wheel, GdkEventButton *event);
@@ -108,8 +108,8 @@ static void gtk_color_wheel_class_init(GtkColorWheelClass *color_wheel_class) {
 
 	g_type_class_add_private(obj_class, sizeof(GtkColorWheelPrivate));
 
-	gtk_color_wheel_signals[HUE_CHANGED] = g_signal_new("hue_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, hue_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
-	gtk_color_wheel_signals[SATURATION_VALUE_CHANGED] = g_signal_new("saturation_value_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, saturation_value_changed), NULL, NULL, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+	gtk_color_wheel_signals[HUE_CHANGED] = g_signal_new("hue_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, hue_changed), nullptr, nullptr, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
+	gtk_color_wheel_signals[SATURATION_VALUE_CHANGED] = g_signal_new("saturation_value_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, saturation_value_changed), nullptr, nullptr, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 
 }
 
@@ -118,7 +118,7 @@ static void gtk_color_wheel_init(GtkColorWheel *color_wheel){
 }
 
 GtkWidget* gtk_color_wheel_new(){
-	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR_WHEEL, NULL);
+	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_COLOR_WHEEL, nullptr);
 	GtkColorWheelPrivate *ns = GTK_COLOR_WHEEL_GET_PRIVATE(widget);
 
 
@@ -514,7 +514,7 @@ static gboolean gtk_color_wheel_button_press(GtkWidget *widget, GdkEventButton *
 				ns->grab_block = true;
 
 				GdkCursor *cursor = gdk_cursor_new(GDK_CROSS);
-				gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, cursor, GDK_CURRENT_TIME);
+				gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 				gdk_cursor_destroy(cursor);
 				return true;
 			}
@@ -526,7 +526,7 @@ static gboolean gtk_color_wheel_button_press(GtkWidget *widget, GdkEventButton *
 			ns->selected = p;
 
 			GdkCursor *cursor = gdk_cursor_new(GDK_CROSS);
-			gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, cursor, GDK_CURRENT_TIME);
+			gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 			gdk_cursor_destroy(cursor);
 			return true;
 		}

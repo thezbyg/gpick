@@ -23,7 +23,7 @@
 struct ColorNames;
 struct Sampler;
 struct ScreenReader;
-struct ColorList;
+class ColorList;
 struct dynvSystem;
 struct lua_State;
 struct Random;

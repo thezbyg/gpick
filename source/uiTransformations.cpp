@@ -119,7 +119,7 @@ static void add_transformation_cb(GtkWidget *widget, TransformationsArgs *args)
 		}
 		i = g_list_next(i);
 	}
-	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
 }
 
@@ -133,10 +133,10 @@ static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *arg
 		return;
 	}
 
-	configure_transformation(args, NULL);
+	configure_transformation(args, nullptr);
 
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
-	GList *ref_list = NULL;
+	GList *ref_list = nullptr;
 
 	GList *i = list;
 	while (i) {
@@ -163,10 +163,10 @@ static void remove_transformation_cb(GtkWidget *widget, TransformationsArgs *arg
 		}
 		i = g_list_next(i);
 	}
-	g_list_foreach(ref_list, (GFunc)gtk_tree_row_reference_free, NULL);
+	g_list_foreach(ref_list, (GFunc)gtk_tree_row_reference_free, nullptr);
 	g_list_free(ref_list);
 
-	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
 }
 
@@ -251,7 +251,7 @@ static void	transformation_chain_cursor_changed(GtkWidget *widget, Transformatio
 		return;
 	}
 
-	configure_transformation(args, NULL);
+	configure_transformation(args, nullptr);
 
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
 
@@ -264,7 +264,7 @@ static void	transformation_chain_cursor_changed(GtkWidget *widget, Transformatio
 		configure_transformation(args, transformation);
 	}
 
-	g_list_foreach(list, (GFunc)gtk_tree_path_free, NULL);
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
 }
 
@@ -293,7 +293,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Display filters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
+			nullptr);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "transformations.window.width", -1), dynv_get_int32_wd(args->params, "transformations.window.height", -1));
 
@@ -393,7 +393,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		dynv_set_bool(args->transformations_params, "enabled", enabled);
 		chain->setEnabled(enabled);
 
-		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
+		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), nullptr);
 		if (count > 0){
 			struct dynvSystem** config_array = new struct dynvSystem*[count];
 			unsigned int i = 0;

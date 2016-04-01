@@ -16,27 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LUAEXT_H_
-#define LUAEXT_H_
+#ifndef GPICK_LUA_EXT_H_
+#define GPICK_LUA_EXT_H_
 
-extern "C"{
-#include <lua.h>
-}
-
-struct ColorObject;
+class ColorObject;
 struct dynvSystem;
+struct lua_State;
 typedef struct Color Color;
-
 int lua_ext_colors_openlib(lua_State *lua);
-
-int lua_pushcolorobject(lua_State *L, struct ColorObject* color_object);
-struct ColorObject** lua_checkcolorobject(lua_State *L, int index);
-
-int lua_pushdynvsystem(lua_State *L, struct dynvSystem* params);
-struct dynvSystem* lua_checkdynvsystem(lua_State *L, int index);
-
+int lua_pushcolorobject(lua_State *L, ColorObject* color_object);
+ColorObject** lua_checkcolorobject(lua_State *L, int index);
+int lua_pushdynvsystem(lua_State *L, dynvSystem* params);
+dynvSystem* lua_checkdynvsystem(lua_State *L, int index);
 int lua_pushcolor(lua_State *L, const Color* color);
 Color* lua_checkcolor(lua_State *L, int index);
 
+#endif /* GPICK_LUA_EXT_H_ */
 
-#endif /* LUAEXT_H_ */

@@ -50,7 +50,7 @@ static int lua_lstyle_new (lua_State *L) {
 
 Style* lua_checklstyle (lua_State *L, int index) {
 	Style** c = static_cast<Style**>(luaL_checkudata(L, index, "layout_style"));
-	luaL_argcheck(L, c != NULL, index, "`layout_style' expected");
+	luaL_argcheck(L, c != nullptr, index, "`layout_style' expected");
 	return *c;
 }
 
@@ -84,13 +84,13 @@ int lua_lstyle_humanname (lua_State *L) {
 
 static const struct luaL_Reg lua_lstylelib_f [] = {
 	{"new", lua_lstyle_new},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 static const struct luaL_Reg lua_lstylelib_m [] = {
 	{"humanname", lua_lstyle_humanname},
 	{"__gc", lua_lstyle_gc},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 
@@ -163,7 +163,7 @@ static int lua_new_text (lua_State *L) {
 
 Box* lua_checklbox (lua_State *L, int index) {
 	Box** c = static_cast<Box**>(luaL_checkudata(L, index, "layout"));
-	luaL_argcheck(L, c != NULL, index, "`layout' expected");
+	luaL_argcheck(L, c != nullptr, index, "`layout' expected");
 	return *c;
 }
 
@@ -225,7 +225,7 @@ static const struct luaL_Reg lua_lboxlib_f [] = {
 	{"new_box", lua_new_box},
 	{"new_text", lua_new_text},
 	{"new_fill", lua_new_fill},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 static const struct luaL_Reg lua_lboxlib_m [] = {
@@ -233,7 +233,7 @@ static const struct luaL_Reg lua_lboxlib_m [] = {
 	{"helper_only", lua_box_helper_only},
 	{"locked", lua_box_locked},
 	{"__gc", lua_box_gc},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 
@@ -241,7 +241,7 @@ static const struct luaL_Reg lua_lboxlib_m [] = {
 
 System* lua_checklsystem (lua_State *L, int index) {
 	System** c = static_cast<System**>(luaL_checkudata(L, index, "layout_system"));
-	luaL_argcheck(L, c != NULL, index, "`layout_system' expected");
+	luaL_argcheck(L, c != nullptr, index, "`layout_system' expected");
 	return *c;
 }
 
@@ -271,7 +271,7 @@ int lua_lsystem_setbox (lua_State *L) {
 static const struct luaL_Reg lua_systemlib_m [] = {
 	{"addstyle", lua_lsystem_addstyle},
 	{"setbox", lua_lsystem_setbox},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 

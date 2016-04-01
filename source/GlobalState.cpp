@@ -145,12 +145,12 @@ class GlobalState::Impl
 		{
 			//create configuration directory if it doesn't exist
 			GStatBuf st;
-			gchar* config_dir = build_config_path(NULL);
+			gchar* config_dir = build_config_path(nullptr);
 			if (g_stat(config_dir, &st) != 0){
 #ifndef _MSC_VER
 				g_mkdir(config_dir, S_IRWXU);
 #else
-				g_mkdir(config_dir, NULL);
+				g_mkdir(config_dir, nullptr);
 #endif
 			}
 			g_free(config_dir);

@@ -17,6 +17,7 @@
  */
 
 #include "ColorMixer.h"
+#include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
 #include "DragDrop.h"
@@ -84,7 +85,7 @@ typedef struct ColorMixerArgs{
 		GtkWidget *output;
 	}color[MAX_COLOR_LINES];
 	struct dynvSystem *params;
-	struct ColorList *preview_color_list;
+	ColorList *preview_color_list;
 	GlobalState* gs;
 }ColorMixerArgs;
 
@@ -93,25 +94,25 @@ class ColorMixerColorNameAssigner: public ToolColorNameAssigner {
 		stringstream m_stream;
 		const char *m_ident;
 	public:
-		ColorMixerColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
+		ColorMixerColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
+		{
 		}
-
-		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+		void assign(ColorObject *color_object, const Color *color, const char *ident)
+		{
 			m_ident = ident;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
+		{
 			m_stream.str("");
 			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("color mixer") << " " << m_ident;
 			return m_stream.str();
 		}
 };
 
-static int set_rgb_color(ColorMixerArgs *args, struct ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(ColorMixerArgs *args, struct ColorObject* color, GtkWidget* color_widget);
-
-
+static int set_rgb_color(ColorMixerArgs *args, ColorObject* color, uint32_t color_index);
+static int set_rgb_color_by_widget(ColorMixerArgs *args, ColorObject* color, GtkWidget* color_widget);
 
 static void calc(ColorMixerArgs *args, bool preview, bool save_settings){
 
@@ -179,42 +180,31 @@ static void update(GtkWidget *widget, ColorMixerArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, false);
 }
-
-
-static void on_color_paste(GtkWidget *widget, gpointer item) {
-	ColorMixerArgs* args=(ColorMixerArgs*)item;
-
+static void on_color_paste(GtkWidget *widget, ColorMixerArgs *args)
+{
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		set_rgb_color_by_widget(args, color_object, color_widget);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
-
-
-static void on_color_edit(GtkWidget *widget, gpointer item) {
-	ColorMixerArgs* args=(ColorMixerArgs*)item;
-
+static void on_color_edit(GtkWidget *widget, ColorMixerArgs *args)
+{
 	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-
 	Color c;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	struct ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	struct ColorObject* new_color_object = 0;
-
+	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+	ColorObject* new_color_object = nullptr;
 	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
-
 		set_rgb_color_by_widget(args, new_color_object, color_widget);
-
-		color_object_release(new_color_object);
+		new_color_object->release();
 	}
-
-	color_object_release(color_object);
+	color_object->release();
 }
 
-static boost::format format_ignore_arg_errors(const std::string &f_string) {
+static boost::format format_ignore_arg_errors(const std::string &f_string)
+{
 	boost::format fmter(f_string);
 	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
 	return fmter;
@@ -245,14 +235,14 @@ static string identify_color_widget(GtkWidget *widget, ColorMixerArgs *args)
 static void add_color_to_palette(GtkWidget *color_widget, ColorMixerColorNameAssigner &name_assigner, ColorMixerArgs *args)
 {
 	Color c;
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	string widget_ident;
 	gtk_color_get_color(GTK_COLOR(color_widget), &c);
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	widget_ident = identify_color_widget(color_widget, args);
 	name_assigner.assign(color_object, &c, widget_ident.c_str());
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static void on_color_add_to_palette(GtkWidget *widget, gpointer item) {
@@ -328,10 +318,10 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 	Color c;
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
-	color_object_release(color_object);
+	color_object->release();
 
 	int line_id = -1;
 	bool secondary_color = false;
@@ -388,7 +378,7 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 		event_time = gtk_get_current_event_time ();
 	}
 
-	gtk_menu_popup (GTK_MENU (menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup (GTK_MENU (menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
@@ -411,7 +401,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Color
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 
 	Color c;
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	GtkWidget* color_widget = widget;
 
 	switch(event->keyval){
@@ -424,7 +414,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Color
 				if (converter){
 					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
 				}
-				color_object_release(color_object);
+				color_object->release();
 				return true;
 			}
 			return false;
@@ -434,7 +424,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Color
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				if (copypaste_get_color_object(&color_object, args->gs) == 0){
 					set_rgb_color_by_widget(args, color_object, color_widget);
-					color_object_release(color_object);
+					color_object->release();
 				}
 				return true;
 			}
@@ -485,9 +475,8 @@ static int source_get_color(ColorMixerArgs *args, ColorObject** color){
 	name_assigner.assign(*color, &c, widget_ident.c_str());
 	return 0;
 }
-
-static int set_rgb_color_by_widget(ColorMixerArgs *args, struct ColorObject* color_object, GtkWidget* color_widget){
-
+static int set_rgb_color_by_widget(ColorMixerArgs *args, ColorObject* color_object, GtkWidget* color_widget)
+{
 	if (args->secondary_color == color_widget){
 		set_rgb_color(args, color_object, -1);
 		return 0;
@@ -502,26 +491,23 @@ static int set_rgb_color_by_widget(ColorMixerArgs *args, struct ColorObject* col
 	}
 	return -1;
 }
-
-
-static int set_rgb_color(ColorMixerArgs *args, struct ColorObject* color, uint32_t color_index){
-	Color c;
-	color_object_get_color(color, &c);
+static int set_rgb_color(ColorMixerArgs *args, ColorObject* color_object, uint32_t color_index)
+{
+	Color color = color_object->getColor();
 	if (color_index == (uint32_t)-1){
-		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, _(args->mixer_type->name));
+		gtk_color_set_color(GTK_COLOR(args->secondary_color), &color, _(args->mixer_type->name));
 	}else{
-		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), &c, "");
+		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), &color, "");
 	}
 	update(0, args);
 	return 0;
 }
-
-
-static int source_set_color(ColorMixerArgs *args, struct ColorObject* color){
+static int source_set_color(ColorMixerArgs *args, ColorObject* color_object)
+{
 	if (args->last_focused_color){
-		return set_rgb_color_by_widget(args, color, args->last_focused_color);
+		return set_rgb_color_by_widget(args, color_object, args->last_focused_color);
 	}else{
-		return set_rgb_color(args, color, 0);
+		return set_rgb_color(args, color_object, 0);
 	}
 }
 
@@ -543,83 +529,63 @@ static int source_deactivate(ColorMixerArgs *args){
 	return 0;
 }
 
-static struct ColorObject* get_color_object(struct DragDrop* dd){
+static ColorObject* get_color_object(DragDrop* dd)
+{
 	ColorMixerArgs* args = (ColorMixerArgs*)dd->userdata;
-	struct ColorObject* colorobject;
-	if (source_get_color(args, &colorobject) == 0){
-		return colorobject;
+	ColorObject* color_object;
+	if (source_get_color(args, &color_object) == 0){
+		return color_object;
 	}
 	return 0;
 }
-
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move){
+static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+{
 	ColorMixerArgs* args = static_cast<ColorMixerArgs*>(dd->userdata);
-	set_rgb_color(args, colorobject, (uintptr_t)dd->userdata2);
+	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;
 }
-
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *dynv_namespace){
 	ColorMixerArgs* args = new ColorMixerArgs;
-
 	args->params = dynv_system_ref(dynv_namespace);
 	args->statusbar = gs->getStatusBar();
-
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
-
-
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
-
 	hbox = gtk_hbox_new(FALSE, 0);
-
 	vbox = gtk_vbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
-
 	args->color_previews = gtk_table_new(MAX_COLOR_LINES, 3, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
-
-	struct DragDrop dd;
+	DragDrop dd;
 	dragdrop_init(&dd, gs);
-
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
-
-
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
-
 	gtk_table_attach(GTK_TABLE(args->color_previews), widget, 1, 2, 0, 3, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 0, 0);
-
 	args->secondary_color = widget;
-
 	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
 	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
 	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
 	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
 	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
-
 	gtk_widget_set_size_request(widget, 50, 50);
-
 	//setup drag&drop
-
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
-
 	for (intptr_t i = 0; i < MAX_COLOR_LINES; ++i){
-
 		for (intptr_t j = 0; j < 2; ++j){
-
 			widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
@@ -695,24 +661,20 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	table_y++;
 
 	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	struct ColorList* preview_color_list = color_list_new(handler_map);
+	ColorList* preview_color_list = color_list_new(handler_map);
 	dynv_handler_map_release(handler_map);
 
 	args->preview_color_list = preview_color_list;
 	args->gs = gs;
-
 	gtk_widget_show_all(hbox);
-
 	update(0, args);
-
 	args->main = hbox;
-
 	args->source.widget = hbox;
-
 	return (ColorSource*)args;
 }
 
-int color_mixer_source_register(ColorSourceManager *csm){
+int color_mixer_source_register(ColorSourceManager *csm)
+{
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "color_mixer", _("Color mixer"));
 	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
@@ -720,6 +682,4 @@ int color_mixer_source_register(ColorSourceManager *csm){
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }
-
-
 

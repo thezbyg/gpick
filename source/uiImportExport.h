@@ -20,8 +20,8 @@
 #define GPICK_UI_IMPORT_EXPORT_H_
 
 #include <gtk/gtk.h>
-struct GlobalState;
-struct ColorList;
+class GlobalState;
+class ColorList;
 class ImportExportDialog
 {
 	public:

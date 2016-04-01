@@ -22,7 +22,7 @@
 #include <gtk/gtk.h>
 
 class GlobalState;
-struct ColorObject;
+class ColorObject;
 struct ColorSourceSlot{
 	const char *identificator;
 	const char *hr_name;

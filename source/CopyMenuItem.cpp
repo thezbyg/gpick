@@ -36,7 +36,7 @@ class CopyMenuItemState
 		}
 		~CopyMenuItemState()
 		{
-			color_object_release(m_color_object);
+			m_color_object->release();
 		}
 		static void onRelease(CopyMenuItemState *copy_menu_item)
 		{
@@ -73,10 +73,10 @@ GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GlobalState *gs, boo
 	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
 		if (include_name){
 			text_line += " - ";
-			text_line += color_object_get_name(color_object);
+			text_line += color_object->getName();
 		}
 		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object_ref(color_object), gs);
+		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
 		g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
 	}

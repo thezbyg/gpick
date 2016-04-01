@@ -23,6 +23,7 @@
 #include "GlobalState.h"
 #include "Internationalisation.h"
 #include "ColorObject.h"
+#include "ColorList.h"
 #include <iostream>
 using namespace std;
 
@@ -57,7 +58,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	c.rgb.green=0.50;
 	c.rgb.blue=0.25;
 	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	dynv_set_string(color_object->params, "name", _("Test color"));
+	color_object->setName(_("Test color"));
 
 	auto converters = args->gs->getConverters();
 
@@ -83,7 +84,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 		-1);
 	}
 
-	color_object_release(color_object);
+	color_object->release();
 }
 
 
@@ -121,7 +122,7 @@ static GtkWidget* converter_dropdown_new(ConverterArgs *args, GtkTreeModel *mode
 
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", CONVERTERLIST_HUMAN_NAME, NULL);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", CONVERTERLIST_HUMAN_NAME, nullptr);
 
 	if (store) g_object_unref (store);
 
@@ -198,7 +199,7 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Converters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			NULL);
+			nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "converters.window.width", -1),
 		dynv_get_int32_wd(args->params, "converters.window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -304,7 +305,7 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 
-		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL);
+		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), nullptr);
 		if (count > 0){
 			char** name_array = new char*[count];
 			bool* copy_array = new bool[count];

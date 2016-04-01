@@ -16,13 +16,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MATHUTIL_H_
-#define MATHUTIL_H_
+#ifndef GPICK_MATH_UTIL_H_
+#define GPICK_MATH_UTIL_H_
 
 #define PI 3.14159265
-
-#define MIX(r,a,b,component) r.component = mix_float(a.component, b.component, step_i/(float)(steps-1))
-#define MIX_COMPONENTS(r,a,b,ca,cb,cc) MIX(r,a,b,ca); MIX(r,a,b,cb); MIX(r,a,b,cc)
 
 float min_float_3(float a, float b, float c);
 
@@ -93,5 +90,5 @@ void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, 
 
 void vector3_clamp(vector3* vector, float a, float b);
 
-#endif /* MATHUTIL_H_ */
+#endif /* GPICK_MATH_UTIL_H_ */
 

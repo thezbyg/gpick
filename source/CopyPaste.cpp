@@ -16,9 +16,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ColorObject.h"
-#include "GlobalState.h"
 #include "CopyPaste.h"
+#include "ColorObject.h"
+#include "ColorList.h"
+#include "GlobalState.h"
 #include "uiApp.h"
 #include <string.h>
 
@@ -40,23 +41,23 @@ static GtkTargetEntry targets[] = {
 static guint n_targets = G_N_ELEMENTS (targets);
 
 typedef struct CopyPasteArgs{
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	GlobalState* gs;
 }CopyPasteArgs;
 
 static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint target_type, CopyPasteArgs* args){
-	g_assert (selection_data != NULL);
+	g_assert (selection_data != nullptr);
 
 	Color color;
 
 	switch (target_type){
 	case TARGET_COLOR_OBJECT:
-		gtk_selection_data_set (selection_data, gdk_atom_intern ("colorobject", false), 8, (guchar *)&args->color_object, sizeof(struct ColorObject*));
+		gtk_selection_data_set (selection_data, gdk_atom_intern ("colorobject", false), 8, (guchar *)&args->color_object, sizeof(ColorObject*));
 		break;
 
 	case TARGET_STRING:
 		{
-			color_object_get_color(args->color_object, &color);
+			color = args->color_object->getColor();
 			char* text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_COPY);
 			if (text){
 				gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
@@ -67,7 +68,7 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 
 	case TARGET_COLOR:
 		{
-			color_object_get_color(args->color_object, &color);
+			color = args->color_object->getColor();
 			guint16 data_color[4];
 
 			data_color[0] = int(color.rgb.red * 0xFFFF);
@@ -90,14 +91,14 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 }
 
 static void clipboard_clear(GtkClipboard *clipboard, CopyPasteArgs* args){
-	color_object_release(args->color_object);
+	args->color_object->release();
 	delete args;
 }
 
 
-int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs){
+int copypaste_set_color_object(ColorObject* color_object, GlobalState* gs){
 	CopyPasteArgs* args = new CopyPasteArgs;
-	args->color_object = color_object_ref(color_object);
+	args->color_object = color_object->reference();
 	args->gs = gs;
 
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, n_targets,
@@ -108,7 +109,7 @@ int copypaste_set_color_object(struct ColorObject* color_object, GlobalState* gs
 }
 
 
-int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalState* gs){
+int copypaste_get_color_object(ColorObject** out_color_object, GlobalState* gs){
 	GdkAtom *avail_targets;
 	gint avail_n_targets;
 
@@ -127,8 +128,8 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 						switch (targets[j].info){
 						case TARGET_COLOR_OBJECT:
 							{
-								struct ColorObject* color_object;
-								memcpy(&color_object, gtk_selection_data_get_data(selection_data), sizeof(struct ColorObject*));
+								ColorObject* color_object;
+								memcpy(&color_object, gtk_selection_data_get_data(selection_data), sizeof(ColorObject*));
 								*out_color_object = color_object;
 								success = true;
 							}
@@ -138,7 +139,7 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 							{
 								gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
 								if (data[gtk_selection_data_get_length(selection_data)] !=0) break; //not null terminated
-								struct ColorObject* color_object;
+								ColorObject* color_object;
 								if (main_get_color_object_from_text(gs, data, &color_object) == 0){
 									*out_color_object = color_object;
 									success = true;
@@ -154,7 +155,7 @@ int copypaste_get_color_object(struct ColorObject** out_color_object, GlobalStat
 								color.rgb.green = data[1] / (double)0xFFFF;
 								color.rgb.blue = data[2] / (double)0xFFFF;
 
-								struct ColorObject* color_object = color_list_new_color_object(gs->getColorList(), &color);
+								ColorObject* color_object = color_list_new_color_object(gs->getColorList(), &color);
 								*out_color_object = color_object;
 								success = true;
 							}

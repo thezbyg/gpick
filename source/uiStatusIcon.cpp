@@ -61,7 +61,7 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(status_icon_destroy_parent), si);
 	gtk_widget_show_all(GTK_WIDGET(menu));
-	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, 0, 0, button, activate_time);
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, 0, 0, button, activate_time);
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 }

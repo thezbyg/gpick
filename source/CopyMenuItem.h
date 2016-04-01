@@ -20,8 +20,8 @@
 #define GPICK_COPY_MENU_ITEM_H_
 
 #include <gtk/gtk.h>
-struct GlobalState;
-struct ColorObject;
+class GlobalState;
+class ColorObject;
 class CopyMenuItem
 {
 	public:

@@ -70,7 +70,7 @@ static void gtk_layout_preview_class_init(GtkLayoutPreviewClass *klass){
 
 	g_type_class_add_private(obj_class, sizeof(GtkLayoutPreviewPrivate));
 
-	gtk_layout_preview_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkLayoutPreviewClass, color_changed), NULL, NULL, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1, G_TYPE_POINTER);
+	gtk_layout_preview_signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkLayoutPreviewClass, color_changed), nullptr, nullptr, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 
 static void gtk_layout_preview_init(GtkLayoutPreview *layout_preview){
@@ -83,7 +83,7 @@ static void gtk_layout_preview_destroy(GtkLayoutPreview *widget){
 }
 
 GtkWidget* gtk_layout_preview_new(void){
-	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_LAYOUT_PREVIEW, NULL);
+	GtkWidget* widget = (GtkWidget*) g_object_new(GTK_TYPE_LAYOUT_PREVIEW, nullptr);
 	GtkLayoutPreviewPrivate *ns = GTK_LAYOUT_PREVEW_GET_PRIVATE(widget);
 
 	ns->area = Rect2<float>(0, 0, 1, 1);
@@ -92,7 +92,7 @@ GtkWidget* gtk_layout_preview_new(void){
 	ns->system = 0;
 	ns->transformation_chain = 0;
 
-	g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK (gtk_layout_preview_destroy), NULL);
+	g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK (gtk_layout_preview_destroy), nullptr);
 
 	GTK_WIDGET_SET_FLAGS(widget, GTK_CAN_FOCUS);
 	return widget;

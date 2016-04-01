@@ -19,10 +19,10 @@
 #ifndef GPICK_IMPORT_EXPORT_H_
 #define GPICK_IMPORT_EXPORT_H_
 
-struct ColorList;
+class ColorList;
 struct Converter;
 struct Converters;
-struct GlobalState;
+class GlobalState;
 enum class FileType
 {
 	gpa,
@@ -98,5 +98,4 @@ class ImportExport
 };
 
 #endif /* GPICK_IMPORT_EXPORT_H_ */
-
 

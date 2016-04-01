@@ -63,11 +63,11 @@ class LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
 	public:
 		LayoutPreviewColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs){
 		}
-		void assign(struct ColorObject *color_object, Color *color, const char *ident){
+		void assign(ColorObject *color_object, const Color *color, const char *ident){
 			m_ident = ident;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color){
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color){
 			m_stream.str("");
 			m_stream << _("layout preview") << " " << m_ident << " [" << color_names_get(m_gs->getColorNames(), color, false) << "]";
 			return m_stream.str();
@@ -148,7 +148,7 @@ static GtkWidget* style_list_new(LayoutPreviewArgs *args)
 	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", STYLELIST_CSS_SELECTOR);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
-	g_object_set(renderer, "editable", true, NULL);
+	g_object_set(renderer, "editable", true, nullptr);
 	g_signal_connect(renderer, "edited", (GCallback)style_cell_edited_cb, store);
 
 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
@@ -161,7 +161,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Assign CSS selectors"), GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
-		NULL);
+		nullptr);
 
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "css_selectors.window.width", -1),
 		dynv_get_int32_wd(args->params, "css_selectors.window.height", -1));
@@ -237,11 +237,11 @@ static int source_destroy(LayoutPreviewArgs *args)
 	return 0;
 }
 
-static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color)
+static int source_get_color(LayoutPreviewArgs *args, ColorObject** color)
 {
 	Style *style = 0;
 	if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout), &style) == 0){
-		struct ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &style->color);
+		ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &style->color);
 		LayoutPreviewColorNameAssigner name_assigner(args->gs);
 		name_assigner.assign(color_object, &style->color, style->ident_name.c_str());
 		*color = color_object;
@@ -249,35 +249,30 @@ static int source_get_color(LayoutPreviewArgs *args, struct ColorObject** color)
 	}
 	return -1;
 }
-
-static int source_set_color(LayoutPreviewArgs *args, struct ColorObject* color)
+static int source_set_color(LayoutPreviewArgs *args, ColorObject* color_object)
 {
-	Color c;
-	color_object_get_color(color, &c);
-	gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(args->layout), &c);
+	Color color = color_object->getColor();
+	gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(args->layout), &color);
 	return -1;
 }
-
 static int source_deactivate(LayoutPreviewArgs *args)
 {
 	return 0;
 }
-
-static struct ColorObject* get_color_object(struct DragDrop* dd)
+static ColorObject* get_color_object(DragDrop* dd)
 {
-	LayoutPreviewArgs* args=(LayoutPreviewArgs*)dd->userdata;
-	struct ColorObject* colorobject;
-	if (source_get_color(args, &colorobject) == 0){
-		return colorobject;
+	LayoutPreviewArgs *args = (LayoutPreviewArgs*)dd->userdata;
+	ColorObject *color_object;
+	if (source_get_color(args, &color_object) == 0){
+		return color_object;
 	}
 	return 0;
 }
 
-static int set_color_object_at(struct DragDrop* dd, struct ColorObject* colorobject, int x, int y, bool move)
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
 {
 	LayoutPreviewArgs* args=(LayoutPreviewArgs*)dd->userdata;
-	Color color;
-	color_object_get_color(colorobject, &color);
+	Color color = color_object->getColor();
 	gtk_layout_preview_set_color_at(GTK_LAYOUT_PREVIEW(args->layout), &color, x, y);
 	return 0;
 }
@@ -302,7 +297,7 @@ static GtkWidget* layout_preview_dropdown_new(LayoutPreviewArgs *args, GtkTreeMo
 	}
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", LAYOUTLIST_HUMAN_NAME, NULL);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", LAYOUTLIST_HUMAN_NAME, nullptr);
 	if (store) g_object_unref (store);
 	return combo;
 }
@@ -310,33 +305,33 @@ static GtkWidget* layout_preview_dropdown_new(LayoutPreviewArgs *args, GtkTreeMo
 static void edit_cb(GtkWidget *widget, gpointer item)
 {
 	LayoutPreviewArgs* args=(LayoutPreviewArgs*)item;
-	struct ColorObject *color_object;
-	struct ColorObject* new_color_object = 0;
+	ColorObject *color_object;
+	ColorObject* new_color_object = 0;
 	if (source_get_color(args, &color_object) == 0){
 		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
 			source_set_color(args, new_color_object);
-			color_object_release(new_color_object);
+			new_color_object->release();
 		}
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 
 static void paste_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 {
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	if (copypaste_get_color_object(&color_object, args->gs) == 0){
 		source_set_color(args, color_object);
-		color_object_release(color_object);
+		color_object->release();
 	}
 }
 
 static void add_color_to_palette(Style *style, LayoutPreviewColorNameAssigner &name_assigner, LayoutPreviewArgs *args)
 {
-	struct ColorObject *color_object;
+	ColorObject *color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &style->color);
 	name_assigner.assign(color_object, &style->color, style->ident_name.c_str());
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object_release(color_object);
+	color_object->release();
 }
 
 static void add_to_palette_cb(GtkWidget *widget, gpointer item)
@@ -384,10 +379,10 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 
 		if (selection_avail){
-			struct ColorObject* color_object;
+			ColorObject* color_object;
 			source_get_color(args, &color_object);
 			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
-			color_object_release(color_object);
+			color_object->release();
 		}else{
 			gtk_widget_set_sensitive(item, false);
 		}
@@ -413,7 +408,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		button = event->button;
 		event_time = event->time;
 
-		gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
@@ -453,7 +448,7 @@ static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 		auto converters = args->gs->getConverters();
 		Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
 
-		struct ColorObject *co_color, *co_background_color;
+		ColorObject *co_color, *co_background_color;
 		Color t;
 		co_color = color_list_new_color_object(args->gs->getColorList(), &t);
 		co_background_color = color_list_new_color_object(args->gs->getColorList(), &t);
@@ -468,9 +463,7 @@ static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 			const char *css_selector = dynv_get_string_wd(assignments_params, ident_selector.c_str(), (*i)->ident_name.c_str());
 
 			if (css_selector[0] != 0){
-
-				color_object_set_color(co_color, &(*i)->color);
-
+				(*i)->color = co_color->getColor();
 				converter_get_text(converter->function_name, co_color, 0, args->gs->getConverters(), &color);
 
 				file << css_selector << " {" << endl;
@@ -492,8 +485,8 @@ static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 
 		dynv_system_release(assignments_params);
 
-		color_object_release(co_color);
-		color_object_release(co_background_color);
+		co_color->release();
+		co_background_color->release();
 
 		file.close();
 		return 0;

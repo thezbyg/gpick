@@ -17,6 +17,7 @@
  */
 
 #include "FloatingPicker.h"
+#include "ColorObject.h"
 #include "ColorList.h"
 #include "gtk/Zoomed.h"
 #include "gtk/ColorWidget.h"
@@ -58,14 +59,15 @@ class PickerColorNameAssigner: public ToolColorNameAssigner
 	protected:
 		stringstream m_stream;
 	public:
-		PickerColorNameAssigner(GlobalState *gs):ToolColorNameAssigner(gs)
+		PickerColorNameAssigner(GlobalState *gs):
+			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color)
+		void assign(ColorObject *color_object, const Color *color)
 		{
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << color_names_get(m_gs->getColorNames(), color, false);
@@ -128,7 +130,7 @@ static gboolean update_display(FloatingPickerArgs *args)
 	gtk_window_move(GTK_WINDOW(args->window), x, y);
 	Color c;
 	get_color_sample(args, true, &c);
-	struct ColorObject* color_object;
+	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	gchar* text = 0;
 	auto converters = args->gs->getConverters();
@@ -136,7 +138,7 @@ static gboolean update_display(FloatingPickerArgs *args)
 	if (converter){
 		converter_get_text(converter->function_name, color_object, 0, args->gs->getConverters(), &text);
 	}
-	color_object_release(color_object);
+	color_object->release();
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text);
 	if (text) g_free(text);
 	return true;
@@ -152,10 +154,10 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.zoom", 2));
 	update_display(args);
 	gtk_widget_show(args->window);
-	gdk_pointer_grab(args->window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), NULL, cursor, GDK_CURRENT_TIME);
+	gdk_pointer_grab(args->window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 	gdk_keyboard_grab(args->window->window, false, GDK_CURRENT_TIME);
 	float refresh_rate = dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.refresh_rate", 30);
-	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000 / refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)NULL);
+	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000 / refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
 	gdk_cursor_destroy(cursor);
 #endif
 }
@@ -196,7 +198,7 @@ static void complete_picking(FloatingPickerArgs *args)
 			if (args->custom_pick_action)
 				args->custom_pick_action(args, c);
 		}else{
-			struct ColorObject* color_object;
+			ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 			if (args->single_pick_mode){
 				auto converters = args->gs->getConverters();
@@ -218,7 +220,7 @@ static void complete_picking(FloatingPickerArgs *args)
 					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
 			}
-			color_object_release(color_object);
+			color_object->release();
 		}
 	}
 }
@@ -227,10 +229,10 @@ static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
 	Color c;
 	get_color_sample(args, false, &c);
 	GtkWidget *menu;
-	struct ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
-	menu = converter_create_copy_menu(*color_list->colors.begin(), NULL, args->gs);
+	ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
+	menu = converter_create_copy_menu(*color_list->colors.begin(), nullptr, args->gs);
 	gtk_widget_show_all(GTK_WIDGET(menu));
-	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL, button, event_time);
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 	color_list_destroy(color_list);
@@ -271,7 +273,7 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 		case GDK_KEY_m:
 			{
 				int x, y;
-				gdk_display_get_pointer(gdk_display_get_default(), NULL, &x, &y, NULL);
+				gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
 				math::Vec2<int> position(x, y);
 				if ((event->state & modifiers) == GDK_CONTROL_MASK){
 					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
@@ -312,11 +314,11 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 	}
 	if (add_x || add_y){
 		gint x, y;
-		GdkDisplay *display = NULL;
-		GdkScreen *screen = NULL;
+		GdkDisplay *display = nullptr;
+		GdkScreen *screen = nullptr;
 		display = gdk_display_get_default();
 		screen = gdk_display_get_default_screen(display);
-		gdk_display_get_pointer(display, NULL, &x, &y, NULL);
+		gdk_display_get_pointer(display, nullptr, &x, &y, nullptr);
 		x += add_x;
 		y += add_y;
 		gdk_display_warp_pointer(display, screen, x, y);
@@ -332,7 +334,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	FloatingPickerArgs *args = new FloatingPickerArgs;
 	args->gs = gs;
 	args->window = gtk_window_new(GTK_WINDOW_POPUP);
-	args->color_source = NULL;
+	args->color_source = nullptr;
 	args->perform_custom_pick_action = false;
 	args->menu_button_pressed = false;
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(args->window), true);

@@ -23,12 +23,11 @@
 #include <glib.h>
 #include "Internationalisation.h"
 #include "version/Version.h"
-
 extern "C"{
+#include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
 }
-
 #include <iostream>
 using namespace std;
 
@@ -48,7 +47,7 @@ static int lua_newcolor (lua_State *L) {
 
 Color *lua_checkcolor (lua_State *L, int index) {
 	void *ud = luaL_checkudata(L, index, "color");
-	luaL_argcheck(L, ud != NULL, index, "`color' expected");
+	luaL_argcheck(L, ud != nullptr, index, "`color' expected");
 	return (Color *)ud;
 }
 
@@ -283,7 +282,7 @@ static int lua_color_lch_hue(lua_State *L) {
 
 static const struct luaL_Reg lua_colorlib_f [] = {
 	{"new", lua_newcolor},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 static const struct luaL_Reg lua_colorlib_m [] = {
@@ -316,7 +315,7 @@ static const struct luaL_Reg lua_colorlib_m [] = {
 	{"rgb_to_hsl",lua_color_rgb_to_hsl},
 	{"hsl_to_rgb",lua_color_hsl_to_rgb},
 	{"rgb_to_cmyk",lua_color_rgb_to_cmyk},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 static int luaopen_color(lua_State *L) {
@@ -333,79 +332,65 @@ static int luaopen_color(lua_State *L) {
 }
 
 static int lua_newcolorobject (lua_State *L) {
-	struct ColorObject** c = (struct ColorObject**)lua_newuserdata(L, sizeof(struct ColorObject*));
+	ColorObject** c = (ColorObject**)lua_newuserdata(L, sizeof(ColorObject*));
 	luaL_getmetatable(L, "colorobject");
 	lua_setmetatable(L, -2);
-	*c=NULL;
+	*c=nullptr;
 	return 1;
 }
 
-struct ColorObject** lua_checkcolorobject (lua_State *L, int index) {
+ColorObject** lua_checkcolorobject (lua_State *L, int index) {
 	void *ud = luaL_checkudata(L, index, "colorobject");
-	luaL_argcheck(L, ud != NULL, index, "`colorobject' expected");
-	return (struct ColorObject **)ud;
+	luaL_argcheck(L, ud != nullptr, index, "`colorobject' expected");
+	return (ColorObject **)ud;
 }
 
-int lua_pushcolorobject (lua_State *L, struct ColorObject* color_object) {
-	struct ColorObject** c = (struct ColorObject**)lua_newuserdata(L, sizeof(struct ColorObject*));
+int lua_pushcolorobject (lua_State *L, ColorObject* color_object) {
+	ColorObject** c = (ColorObject**)lua_newuserdata(L, sizeof(ColorObject*));
 	luaL_getmetatable(L, "colorobject");
 	lua_setmetatable(L, -2);
 	*c=color_object;
 	return 1;
 }
 
-int lua_colorobject_get_color(lua_State *L) {
-	struct ColorObject** color_object=lua_checkcolorobject(L, 1);
-	Color tmp;
-	color_object_get_color(*color_object, &tmp);
+int lua_colorobject_get_color(lua_State *L)
+{
+	ColorObject** color_object = lua_checkcolorobject(L, 1);
+	Color tmp = (*color_object)->getColor();
 	lua_pushcolor(L, &tmp);
 	return 1;
 }
-
-int lua_colorobject_set_color(lua_State *L) {
-	struct ColorObject** color_object=lua_checkcolorobject(L, 1);
-	Color *c = lua_checkcolor(L, 2);
-	color_object_set_color(*color_object, c);
+int lua_colorobject_set_color(lua_State *L)
+{
+	ColorObject** color_object=lua_checkcolorobject(L, 1);
+	Color *color = lua_checkcolor(L, 2);
+	(*color_object)->setColor(*color);
 	return 0;
 }
-
-int lua_colorobject_get_params(lua_State *L) {
-	struct ColorObject** color_object = lua_checkcolorobject(L, 1);
-	lua_pushdynvsystem(L, (*color_object)->params);
+int lua_colorobject_get_name(lua_State *L)
+{
+	ColorObject** color_object = lua_checkcolorobject(L, 1);
+	lua_pushstring(L, (*color_object)->getName().c_str());
 	return 1;
 }
-
-int lua_colorobject_get_name(lua_State *L) {
-	struct ColorObject** color_object = lua_checkcolorobject(L, 1);
-	const char* name = dynv_get_string_wd((*color_object)->params, "name", NULL);
-	if (name){
-		lua_pushstring(L, name);
-		return 1;
-	}
-	return 0;
-}
-
-static const struct luaL_Reg lua_colorobjectlib_f [] = {
+static const struct luaL_Reg lua_colorobjectlib_f[] = {
 	{"new", lua_newcolorobject},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
-
-static const struct luaL_Reg lua_colorobjectlib_m [] = {
+static const struct luaL_Reg lua_colorobjectlib_m[] = {
 	{"get_color", lua_colorobject_get_color},
 	{"set_color", lua_colorobject_set_color},
-	{"get_params", lua_colorobject_get_params},
 	{"get_name", lua_colorobject_get_name},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
-
-int luaopen_colorobject (lua_State *L) {
+int luaopen_colorobject (lua_State *L)
+{
 	luaL_newmetatable(L, "colorobject");
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
 	luaL_setfuncs(L, lua_colorobjectlib_m, 0);
 	lua_pop(L, 1);
-
 	luaL_newlibtable(L, lua_colorobjectlib_f);
 	luaL_setfuncs(L, lua_colorobjectlib_f, 0);
 	lua_setglobal(L, "colorobject");
@@ -429,7 +414,7 @@ int luaopen_i18n(lua_State *L)
 struct dynvSystem* lua_checkdynvsystem(lua_State *L, int index)
 {
 	void *ud = luaL_checkudata(L, index, "dynvsystem");
-	luaL_argcheck(L, ud != NULL, index, "`dynvsystem' expected");
+	luaL_argcheck(L, ud != nullptr, index, "`dynvsystem' expected");
 	return dynv_system_ref(*(struct dynvSystem**)ud);
 }
 
@@ -452,12 +437,12 @@ int lua_dynvsystem_get_string(lua_State *L) {
 }
 
 static const struct luaL_Reg lua_dynvsystemlib_f [] = {
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 static const struct luaL_Reg lua_dynvsystemlib_m [] = {
 	{"get_string", lua_dynvsystem_get_string},
-	{NULL, NULL}
+	{nullptr, nullptr}
 };
 
 int luaopen_dynvsystem(lua_State *L) {

@@ -100,7 +100,7 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 			G_OBJECT_CLASS_TYPE(obj_class),
 			G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkColorComponentClass, color_changed),
-			NULL, NULL,
+			nullptr, nullptr,
 			g_cclosure_marshal_VOID__POINTER,
 			G_TYPE_NONE, 1,
 			G_TYPE_POINTER);
@@ -109,7 +109,7 @@ static void gtk_color_component_class_init (GtkColorComponentClass *color_compon
 			G_OBJECT_CLASS_TYPE(obj_class),
 			G_SIGNAL_RUN_FIRST,
 			G_STRUCT_OFFSET(GtkColorComponentClass, input_clicked),
-			NULL, NULL,
+			nullptr, nullptr,
 			g_cclosure_marshal_VOID__INT,
 			G_TYPE_NONE, 1,
 			G_TYPE_INT);
@@ -139,7 +139,7 @@ static void gtk_color_component_finalize(GObject *color_obj){
 
 
 GtkWidget *gtk_color_component_new (GtkColorComponentComp component){
-	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, NULL);
+	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, nullptr);
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(widget);
 
 	gchar* pattern_filename = build_filename("gpick-gray-pattern.png");
@@ -806,7 +806,7 @@ static gboolean gtk_color_component_button_press (GtkWidget *widget, GdkEventBut
 
 
 		ns->capture_on = component;
-		gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), NULL, NULL, GDK_CURRENT_TIME);
+		gdk_pointer_grab(gtk_widget_get_window(widget), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK), nullptr, nullptr, GDK_CURRENT_TIME);
 
 		gtk_color_component_emit_color_change(widget, component, value);
 		gtk_widget_queue_draw(widget);

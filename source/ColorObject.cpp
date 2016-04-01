@@ -17,81 +17,111 @@
  */
 
 #include "ColorObject.h"
-#include "DynvHelpers.h"
-#include <iostream>
 using namespace std;
 
-struct ColorObject* color_object_new(struct dynvHandlerMap *handler_map)
+ColorObject::ColorObject():
+	m_refcnt(0),
+	m_name(),
+	m_color(),
+	m_position(0),
+	m_position_set(false),
+	m_selected(false),
+	m_visited(false)
 {
-	struct ColorObject* color_object = new struct ColorObject;
-	color_object->action = NULL;
-	color_object->refcnt = 0;
-	color_object->selected = 0;
-	color_object->position = 0;
-	color_object->position_set = false;
-	color_object->recalculate = 1;
-	if (handler_map){
-		color_object->params = dynv_system_create(handler_map);
+}
+ColorObject::ColorObject(const char *name, const Color &color):
+	m_refcnt(0),
+	m_name(name),
+	m_color(color),
+	m_position(0),
+	m_position_set(false),
+	m_selected(false),
+	m_visited(false)
+{
+}
+ColorObject::ColorObject(const std::string &name, const Color &color):
+	m_refcnt(0),
+	m_name(name),
+	m_color(color),
+	m_position(0),
+	m_position_set(false),
+	m_selected(false),
+	m_visited(false)
+{
+}
+ColorObject *ColorObject::reference()
+{
+	m_refcnt++;
+	return this;
+}
+void ColorObject::release()
+{
+	if (m_refcnt == 0){
+		delete this;
 	}else{
-		color_object->params = NULL;
+		m_refcnt--;
 	}
+}
+const Color &ColorObject::getColor() const
+{
+	return m_color;
+}
+void ColorObject::setColor(const Color &color)
+{
+	m_color = color;
+}
+const std::string &ColorObject::getName() const
+{
+	return m_name;
+}
+void ColorObject::setName(const std::string &name)
+{
+	m_name = name;
+}
+ColorObject* ColorObject::copy() const
+{
+	ColorObject *color_object = new ColorObject();
+	color_object->m_name = m_name;
+	color_object->m_color = m_color;
+	color_object->m_selected = m_selected;
+	color_object->m_visited = m_visited;
 	return color_object;
 }
-int color_object_release(struct ColorObject *color_object)
+bool ColorObject::isSelected() const
 {
-	if (color_object->refcnt){
-		color_object->refcnt--;
-		return -1;
-	}else{
-		if (color_object->params) dynv_system_release(color_object->params);
-		delete color_object;
-		return 0;
-	}
+	return m_selected;
 }
-struct ColorObject* color_object_ref(struct ColorObject *color_object)
+bool ColorObject::isVisited() const
 {
-	color_object->refcnt++;
-	return color_object;
+	return m_visited;
 }
-int color_object_get_color(struct ColorObject *color_object, Color *color)
+size_t ColorObject::getPosition() const
 {
-	if (!color_object->action){
-		const Color* c = dynv_get_color_wd(color_object->params, "color", 0);
-		if (c){
-			color_copy(const_cast<Color*>(c), color);
-			return 0;
-		}
-		return -1;
-	}else{
-		//action
-	}
-	return -1;
+	return m_position;
 }
-int color_object_set_color(struct ColorObject *color_object, const Color *color)
+bool ColorObject::isPositionSet() const
 {
-	if (!color_object->action){
-		dynv_set_color(color_object->params, "color", color);
-		return 0;
-	}else{
-		//action
-	}
-	return -1;
+	return m_position_set;
 }
-struct ColorObject* color_object_copy(struct ColorObject *color_object)
+void ColorObject::setPosition(size_t position)
 {
-	struct ColorObject* new_color_object = color_object_new(0);
-	new_color_object->params = dynv_system_copy(color_object->params);
-	new_color_object->recalculate = color_object->recalculate;
-	new_color_object->selected = color_object->selected;
-	new_color_object->visited = color_object->visited;
-	return new_color_object;
+	m_position = position;
+	m_position_set = true;
 }
-const char* color_object_get_name(struct ColorObject *color_object)
+void ColorObject::resetPosition()
 {
-	return dynv_get_string_wd(color_object->params, "name", "");
+	m_position_set = false;
 }
-void color_object_set_name(struct ColorObject *color_object, const char *name)
+void ColorObject::setSelected(bool selected)
 {
-	return dynv_set_string(color_object->params, "name", name);
+	m_selected = selected;
+}
+void ColorObject::setVisited(bool visited)
+{
+	m_visited = visited;
+}
+size_t ColorObject::getReferenceCount() const
+{
+	return m_refcnt;
 }
 

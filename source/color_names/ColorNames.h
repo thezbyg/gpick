@@ -39,7 +39,7 @@ typedef struct ColorNames{
 ColorNames* color_names_new();
 int color_names_load_from_file(ColorNames* cnames, const char* filename);
 void color_names_destroy(ColorNames* cnames);
-std::string color_names_get(ColorNames* cnames, Color* color, bool imprecision_postfix);
+std::string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix);
 
 #endif /* GPICK_COLOR_NAMES_COLOR_NAMES_H_ */
 

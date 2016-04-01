@@ -33,7 +33,7 @@ G_DEFINE_TYPE(GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA);
 static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event);
 static void gtk_zoomed_finalize(GObject *zoomed_obj);
 static gboolean gtk_zoomed_button_press(GtkWidget *node_system, GdkEventButton *event);
-static GtkWindowClass *parent_class = NULL;
+static GtkWindowClass *parent_class = nullptr;
 
 enum
 {
@@ -73,11 +73,11 @@ static void gtk_zoomed_class_init(GtkZoomedClass *zoomed_class)
 	obj_class->finalize = gtk_zoomed_finalize;
 	g_type_class_add_private(obj_class, sizeof(GtkZoomedPrivate));
 	gtk_zoomed_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkZoomedClass, activated), NULL, NULL,
+			G_STRUCT_OFFSET(GtkZoomedClass, activated), nullptr, nullptr,
 			g_cclosure_marshal_VOID__VOID,
 			G_TYPE_NONE, 0);
 	gtk_zoomed_signals[COLOR_CHANGED] = g_signal_new("color-changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkZoomedClass, color_changed), NULL, NULL,
+			G_STRUCT_OFFSET(GtkZoomedClass, color_changed), nullptr, nullptr,
 			g_cclosure_marshal_VOID__POINTER,
 			G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
@@ -87,7 +87,7 @@ static void gtk_zoomed_init(GtkZoomed *zoomed)
 }
 GtkWidget* gtk_zoomed_new()
 {
-	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_ZOOMED, NULL);
+	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_ZOOMED, nullptr);
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(widget);
 	ns->fade = false;
 	ns->zoom = 20;
@@ -390,7 +390,7 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 			pango_cairo_update_layout(cr, layout);
 			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
 			PangoRectangle rect;
-			pango_layout_get_pixel_extents(layout, NULL, &rect);
+			pango_layout_get_pixel_extents(layout, nullptr, &rect);
 			int text_width = rect.width;
 			int text_height = rect.height;
 			math::Rect2<int> text_rect(relative_position.x + 10, relative_position.y, relative_position.x + 10 + text_width, relative_position.y + text_height);

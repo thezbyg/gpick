@@ -45,9 +45,9 @@ typedef struct DialogGenerateArgs
 	GtkWidget *range_additional_rotation;
 	GtkWidget *range_chaos_seed;
 	GtkWidget *toggle_reverse;
-	struct ColorList *color_list;
-	struct ColorList *selected_color_list;
-	struct ColorList *preview_color_list;
+	ColorList *color_list;
+	ColorList *selected_color_list;
+	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }DialogGenerateArgs;
@@ -70,13 +70,13 @@ class GenerateColorNameAssigner: public ToolColorNameAssigner
 			ToolColorNameAssigner(gs)
 		{
 		}
-		void assign(struct ColorObject *color_object, Color *color, const int32_t ident, const char *scheme_name)
+		void assign(ColorObject *color_object, const Color *color, const int32_t ident, const char *scheme_name)
 		{
 			m_ident = ident;
 			m_scheme_name = scheme_name;
 			ToolColorNameAssigner::assign(color_object, color);
 		}
-		virtual std::string getToolSpecificName(struct ColorObject *color_object, Color *color)
+		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
 		{
 			m_stream.str("");
 			m_stream << _("scheme") << " " << m_scheme_name << " #" << m_ident << "[" << color_names_get(m_gs->getColorNames(), color, false) << "]";
@@ -140,7 +140,7 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 	Color r, hsl, hsl_results;
 	double hue;
 	double hue_step;
-	struct ColorList *color_list;
+	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
 	else
@@ -155,8 +155,7 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 		scheme_type = generate_scheme_get_scheme_type(type);
 	}
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-		Color in;
-		color_object_get_color(*i, &in);
+		Color in = (*i)->getColor();
 		color_rgb_to_hsl(&in, &hsl);
 		wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
 		wheel->hue_to_hsl(hue, &hsl_results);
@@ -174,10 +173,10 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 			hsl.hsl.lightness = clamp_float(hsl.hsl.lightness + lightness, 0, 1);
 			hsl.hsl.saturation = clamp_float(hsl.hsl.saturation * saturation, 0, 1);
 			color_hsl_to_rgb(&hsl, &r);
-			struct ColorObject *color_object = color_list_new_color_object(color_list, &r);
+			ColorObject *color_object = color_list_new_color_object(color_list, &r);
 			name_assigner.assign(color_object, &r, i, scheme_type->name);
 			color_list_add_color_object(color_list, color_object, 1);
-			color_object_release(color_object);
+			color_object->release();
 			hue_step = (scheme_type->turn[i % scheme_type->turn_types]) / (360.0)
 				+ chaos * (random_get_double(random) - 0.5) + additional_rotation / 360.0;
 			if (reverse){
@@ -193,13 +192,13 @@ static void update(GtkWidget *widget, DialogGenerateArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, 100);
 }
-void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_list, GlobalState* gs)
+void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState* gs)
 {
 	DialogGenerateArgs *args = new DialogGenerateArgs;
 	args->gs = gs;
 	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.generate");
 	GtkWidget *table;
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Generate colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, NULL);
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Generate colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
 		dynv_get_int32_wd(args->params, "window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
@@ -262,7 +261,7 @@ void dialog_generate_show(GtkWindow* parent, struct ColorList *selected_color_li
 	table_y++;
 
 	GtkWidget* preview_expander;
-	struct ColorList* preview_color_list = NULL;
+	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
