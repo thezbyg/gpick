@@ -126,4 +126,3 @@ std::list<std::string> color_space_color_to_text(const char *type, const Color *
 	lua_settop(L, stack_top);
 	return result;
 }
-

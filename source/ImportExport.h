@@ -98,4 +98,3 @@ class ImportExport
 };
 
 #endif /* GPICK_IMPORT_EXPORT_H_ */
-

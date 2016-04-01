@@ -176,4 +176,3 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 	delete args;
 	return return_val;
 }
-

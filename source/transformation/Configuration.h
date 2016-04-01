@@ -44,4 +44,3 @@ class Configuration{
 }
 
 #endif /* TRANSFORMATION_CONFIGURATION_H_ */
-

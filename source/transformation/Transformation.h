@@ -94,4 +94,3 @@ class Transformation{
 }
 
 #endif /* TRANSFORMATION_H_ */
-

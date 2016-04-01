@@ -31,4 +31,3 @@
 void initialize_internationalisation();
 
 #endif /* INTERNATIONALISATIOM_H_ */
-

@@ -84,4 +84,3 @@ class Chain{
 }
 
 #endif /* TRANSFORMATION_CHAIN_H_ */
-

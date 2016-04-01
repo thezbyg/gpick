@@ -435,4 +435,3 @@ void gtk_zoomed_clear_mark(GtkZoomed *zoomed, int index)
 	ns->marks[index].valid = false;
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }
-

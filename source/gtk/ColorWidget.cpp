@@ -338,4 +338,3 @@ void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain 
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
-

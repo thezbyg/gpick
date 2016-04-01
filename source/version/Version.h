@@ -21,4 +21,3 @@ extern const char* gpick_build_revision;
 extern const char* gpick_build_date;
 extern const char* gpick_build_time;
 extern const char* gpick_build_platform;
-

@@ -37,4 +37,3 @@ void initialize_internationalisation()
 	}
 #endif
 }
-

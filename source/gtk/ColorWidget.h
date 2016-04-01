@@ -59,4 +59,3 @@ GType gtk_color_get_type(void);
 G_END_DECLS
 
 #endif /* GPICK_GTK_COLOR_WIDGET_H_ */
-

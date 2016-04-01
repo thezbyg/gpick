@@ -362,4 +362,3 @@ void floating_picker_set_custom_done_action(FloatingPickerArgs *args, std::funct
 {
 	args->custom_done_action = action;
 }
-

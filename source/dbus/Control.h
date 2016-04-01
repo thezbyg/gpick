@@ -46,4 +46,3 @@ bool gpick_single_instance_activate();
 bool gpick_control_activate_floating_picker();
 
 #endif /* UI_DBUS_CONTROL_H_ */
-

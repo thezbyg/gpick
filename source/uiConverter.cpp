@@ -354,4 +354,3 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 	dynv_system_release(args->params);
 	delete args;
 }
-

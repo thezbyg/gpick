@@ -83,4 +83,3 @@ void Chain::setEnabled(bool enabled_)
 }
 
 }
-

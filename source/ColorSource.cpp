@@ -107,4 +107,3 @@ GtkWidget* color_source_get_widget(ColorSource* source)
 {
 	return source->widget;
 }
-

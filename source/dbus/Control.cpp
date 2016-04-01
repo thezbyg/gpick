@@ -144,4 +144,3 @@ bool gpick_single_instance_activate()
 	g_object_unref(manager);
 	return result;
 }
-

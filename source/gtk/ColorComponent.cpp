@@ -865,4 +865,3 @@ bool gtk_color_component_get_out_of_gamut_mask(GtkColorComponent* color_componen
 	GtkColorComponentPrivate *ns = GTK_COLOR_COMPONENT_GET_PRIVATE(color_component);
 	return ns->out_of_gamut_mask;
 }
-

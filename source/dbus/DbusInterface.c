@@ -2453,5 +2453,3 @@ gpick_object_manager_client_new_for_bus_sync (
   else
     return NULL;
 }
-
-

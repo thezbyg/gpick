@@ -59,4 +59,3 @@ const ColorWheelType* color_wheel_types_get();
 const uint32_t color_wheel_types_get_n();
 
 #endif /* COLOR_WHEEL_TYPE_H_ */
-

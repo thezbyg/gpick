@@ -194,4 +194,3 @@ public:
 int parse_file(const char *filename);
 
 #endif
-

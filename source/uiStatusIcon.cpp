@@ -97,4 +97,3 @@ void status_icon_destroy(struct uiStatusIcon* si)
 {
 	delete si;
 }
-

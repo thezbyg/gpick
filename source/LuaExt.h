@@ -32,4 +32,3 @@ int lua_pushcolor(lua_State *L, const Color* color);
 Color* lua_checkcolor(lua_State *L, int index);
 
 #endif /* GPICK_LUA_EXT_H_ */
-

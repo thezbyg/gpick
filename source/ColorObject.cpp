@@ -124,4 +124,3 @@ size_t ColorObject::getReferenceCount() const
 {
 	return m_refcnt;
 }
-

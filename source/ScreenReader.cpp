@@ -82,4 +82,3 @@ void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update
 GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen){
 	return screen->pixbuf;
 }
-

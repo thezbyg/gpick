@@ -62,5 +62,3 @@ G_END_DECLS
 
 
 #endif /* RANGE_2D_H_ */
-
-

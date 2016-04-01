@@ -409,4 +409,3 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_widget_destroy(dialog);
 	delete args;
 }
-

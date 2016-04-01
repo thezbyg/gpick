@@ -48,4 +48,3 @@ GtkCellRenderer *custom_cell_renderer_color_new();
 void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint height);
 
 #endif /* GPICK_GTK_COLOR_CELL_H_ */
-

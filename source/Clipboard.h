@@ -34,4 +34,3 @@ class Clipboard
 };
 
 #endif /* GPICK_CLIPBOARD_H_ */
-

@@ -91,4 +91,3 @@ void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, 
 void vector3_clamp(vector3* vector, float a, float b);
 
 #endif /* GPICK_MATH_UTIL_H_ */
-

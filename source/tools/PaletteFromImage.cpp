@@ -597,4 +597,3 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 
 	gtk_widget_show(dialog);
 }
-

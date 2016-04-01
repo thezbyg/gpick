@@ -268,4 +268,3 @@ double color_ryb_transform_hue(double hue, bool forward){
 	return 0;
 
 }
-

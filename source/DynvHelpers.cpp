@@ -176,4 +176,3 @@ void dynv_set_color_array(struct dynvSystem* dynv_system, const char *path, cons
 void dynv_set_dynv_array(struct dynvSystem* dynv_system, const char *path, const struct dynvSystem** values, uint32_t count){
 	dynv_set_array(dynv_system, "dynv", path, (const void**)values, count);
 }
-

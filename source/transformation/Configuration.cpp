@@ -38,4 +38,3 @@ void Configuration::applyConfig(dynvSystem *dynv)
 }
 
 }
-

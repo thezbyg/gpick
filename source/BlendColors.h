@@ -23,4 +23,3 @@ struct ColorSourceManager;
 int blend_colors_source_register(ColorSourceManager *csm);
 
 #endif /* GPICK_BLEND_COLORS_H_ */
-

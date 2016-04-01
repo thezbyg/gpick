@@ -482,4 +482,3 @@ float color_distance(const Color* a, const Color* b);
 float color_distance_lch(const Color* a, const Color* b);
 
 #endif /* GPICK_COLOR_H_ */
-

@@ -44,4 +44,3 @@ GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalig
 	gtk_container_add(GTK_CONTAINER(align), widget);
 	return align;
 }
-

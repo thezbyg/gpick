@@ -87,4 +87,3 @@ void Style::SetState(bool _highlight, Box *box){
 
 
 }
-

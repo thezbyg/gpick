@@ -293,4 +293,3 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(response_cb), args);
 	gtk_widget_show(dialog);
 }
-

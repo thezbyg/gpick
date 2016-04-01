@@ -25,5 +25,3 @@ class ColorList;
 bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorList *sorted_color_list, GlobalState* gs);
 
 #endif /* GPICK_UI_DIALOG_SORT_H_ */
-
-

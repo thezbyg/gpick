@@ -81,4 +81,3 @@ bool converter_get_text(const ColorObject *color_object, Converter *converter, G
 bool converter_get_color_object(const char *text, GlobalState* gs, ColorObject** output_color_object);
 
 #endif /* GPICK_CONVERTER_H_ */
-

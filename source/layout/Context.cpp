@@ -43,4 +43,3 @@ transformation::Chain* Context::getTransformationChain() const
 }
 
 }
-

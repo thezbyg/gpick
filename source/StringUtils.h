@@ -26,4 +26,3 @@ void split(const std::string &str, char separator, bool skip_empty, std::functio
 void stripLeadingTrailingChars(std::string &str, const std::string &strip_chars);
 
 #endif /* GPICK_STRING_UTILS_H_ */
-

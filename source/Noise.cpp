@@ -90,5 +90,3 @@ double noise(double x, double y, double z){
 		grad(permutation[BB+1], x-1, y-1, z-1)))
 	);
 }
-
-

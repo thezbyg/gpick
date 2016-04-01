@@ -165,4 +165,3 @@ int dynv_handler_map_deserialize(struct dynvHandlerMap* handler_map, struct dynv
 
 	return 0;
 }
-

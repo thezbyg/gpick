@@ -32,4 +32,3 @@ class CopyMenuItem
 };
 
 #endif /* GPICK_COPY_MENU_ITEM_H_ */
-

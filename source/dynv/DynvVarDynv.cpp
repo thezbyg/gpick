@@ -75,4 +75,3 @@ struct dynvHandler* dynv_var_dynv_new()
 	handler->data_size = sizeof(struct dynvSystem*);
 	return handler;
 }
-

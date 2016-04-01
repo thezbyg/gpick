@@ -60,6 +60,3 @@ class GammaModification: public Transformation{
 }
 
 #endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */
-
-
-

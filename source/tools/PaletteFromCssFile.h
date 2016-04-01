@@ -24,4 +24,3 @@ class GlobalState;
 void tools_palette_from_css_file_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* GPICK_TOOLS_PALETTE_FROM_CSS_FILE_H_ */
-

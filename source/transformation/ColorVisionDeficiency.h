@@ -81,5 +81,3 @@ class ColorVisionDeficiency: public Transformation{
 }
 
 #endif /* TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_ */
-
-

@@ -641,5 +641,3 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 
 	return retval;
 }
-
-

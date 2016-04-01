@@ -33,4 +33,3 @@
 double noise(double x, double y, double z);
 
 #endif /* NOISE_H_ */
-

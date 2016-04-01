@@ -40,4 +40,3 @@ gchar* build_filename(const gchar* filename);
 gchar* build_config_path(const gchar *filename);
 
 #endif /* PATHS_H_ */
-

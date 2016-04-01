@@ -97,4 +97,3 @@ int main(int argc, char **argv)
 	g_option_context_free(context);
 	return 0;
 }
-

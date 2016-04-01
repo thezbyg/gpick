@@ -143,4 +143,3 @@ static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable
 	cairo_fill(cr);
 	cairo_destroy(cr);
 }
-

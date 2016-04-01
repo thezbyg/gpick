@@ -28,4 +28,3 @@ void status_icon_set_visible(uiStatusIcon* si, bool visible);
 void status_icon_destroy(uiStatusIcon* si);
 
 #endif /* GPICK_UI_STATUS_ICON_H_ */
-

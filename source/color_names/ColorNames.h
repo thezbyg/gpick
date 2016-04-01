@@ -42,4 +42,3 @@ void color_names_destroy(ColorNames* cnames);
 std::string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix);
 
 #endif /* GPICK_COLOR_NAMES_COLOR_NAMES_H_ */
-

@@ -110,4 +110,3 @@ void GammaModificationConfig::applyConfig(dynvSystem *dynv){
 }
 
 }
-

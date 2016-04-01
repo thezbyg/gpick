@@ -285,4 +285,3 @@ void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, trans
 	ns->transformation_chain = chain;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
-

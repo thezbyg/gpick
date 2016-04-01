@@ -46,4 +46,3 @@ public:
 }
 
 #endif /* LAYOUT_SYSTEM_H_ */
-

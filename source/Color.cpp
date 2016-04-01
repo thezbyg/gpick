@@ -809,4 +809,3 @@ float color_distance_lch(const Color* a, const Color* b)
 		pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2)
 	);
 }
-

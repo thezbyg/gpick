@@ -679,4 +679,3 @@ int color_mixer_source_register(ColorSourceManager *csm)
 	color_source_manager_add_source(csm, color_source);
 	return 0;
 }
-

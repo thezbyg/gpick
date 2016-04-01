@@ -57,4 +57,3 @@ class Factory{
 }
 
 #endif /* TRANSFORMATION_FACTORY_H_ */
-

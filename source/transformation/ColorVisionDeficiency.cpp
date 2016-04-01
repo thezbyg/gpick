@@ -446,4 +446,3 @@ void ColorVisionDeficiencyConfig::info_label_size_allocate_cb(GtkWidget *widget,
 }
 
 }
-

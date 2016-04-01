@@ -348,6 +348,3 @@ void gtk_range_2d_set_axis(GtkRange2D *range_2d, const char *x, const char *y){
 	ns->yname = g_strdup(y);
 	gtk_widget_queue_draw(GTK_WIDGET(range_2d));
 }
-
-
-

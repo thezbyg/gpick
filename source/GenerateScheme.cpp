@@ -871,4 +871,3 @@ size_t generate_scheme_get_n_scheme_types()
 {
 	return sizeof(scheme_types) / sizeof(SchemeType);
 }
-

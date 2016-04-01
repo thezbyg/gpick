@@ -164,4 +164,3 @@ void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, 
 	bottom = min_int(screen_rect.getBottom(), pointer.y + sampler->oversample + 1);
 	*rect = math::Rect2<int>(left, top, right, bottom);
 }
-

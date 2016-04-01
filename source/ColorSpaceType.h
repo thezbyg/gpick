@@ -44,4 +44,3 @@ size_t color_space_count_types();
 std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L);
 
 #endif /* GPICK_COLOR_SPACE_TYPE_H_ */
-

@@ -27,4 +27,3 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs);
 int dialog_options_update(lua_State *lua, dynvSystem *settings);
 
 #endif /* GPICK_UI_DIALOG_OPTIONS_H_ */
-

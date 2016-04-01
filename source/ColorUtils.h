@@ -32,4 +32,3 @@ namespace color_utils
 }
 
 #endif /* GPICK_COLOR_UTILS_H_ */
-

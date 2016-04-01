@@ -23,4 +23,3 @@ struct ColorSourceManager;
 int layout_preview_source_register(ColorSourceManager *csm);
 
 #endif /* GPICK_LAYOUT_PREVIEW_H_ */
-

@@ -51,4 +51,3 @@ class ToolColorNameAssigner{
 };
 
 #endif /* GPICK_TOOL_COLOR_NAMING_H_ */
-

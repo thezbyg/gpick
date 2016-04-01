@@ -157,4 +157,3 @@ string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_
 	}
 	return string("");
 }
-

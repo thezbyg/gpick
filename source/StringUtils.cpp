@@ -52,4 +52,3 @@ void stripLeadingTrailingChars(std::string &str, const std::string &strip_chars)
 	}
 	str = str.substr(start, end - start + 1);
 }
-

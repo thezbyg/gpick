@@ -98,4 +98,3 @@ std::ostream& operator<<(std::ostream& os, const HtmlHSL color)
 	os.setf(flags);
 	return os;
 }
-

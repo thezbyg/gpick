@@ -83,4 +83,3 @@ void Clipboard::set(GtkWidget *palette_widget, GlobalState *gs)
 		set(text_line);
 	}
 }
-

@@ -101,4 +101,3 @@ struct dynvHandler* dynv_var_int32_new(){
 
 	return handler;
 }
-

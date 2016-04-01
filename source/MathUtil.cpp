@@ -270,4 +270,3 @@ void vector3_clamp(vector3* vector, float a, float b){
 	vector->y = clamp_float(vector->y, a, b);
 	vector->z = clamp_float(vector->z, a, b);
 }
-

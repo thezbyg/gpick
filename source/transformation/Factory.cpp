@@ -55,5 +55,3 @@ Factory::TypeInfo::TypeInfo(const char *name_, const char *human_name_):
 }
 
 }
-
-

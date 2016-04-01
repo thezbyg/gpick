@@ -46,4 +46,3 @@ gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 
 #endif /* GPICK_UI_LIST_PALETTE_H_ */
-

@@ -23,4 +23,3 @@ struct ColorSourceManager;
 int variations_source_register(ColorSourceManager *csm);
 
 #endif /* GPICK_VARIATIONS_H_ */
-

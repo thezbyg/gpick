@@ -23,4 +23,3 @@ struct ColorSourceManager;
 int brightness_darkness_source_register(ColorSourceManager *csm);
 
 #endif /* GPICK_BRIGHTNESS_DARKNESS_H_ */
-

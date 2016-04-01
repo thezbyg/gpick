@@ -758,4 +758,3 @@ ImportExport::Error ImportExport::getLastError() const
 {
 	return m_last_error;
 }
-

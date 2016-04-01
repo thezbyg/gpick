@@ -53,4 +53,3 @@ size_t color_list_get_count(ColorList *color_list);
 int color_list_get_positions(ColorList *color_list);
 
 #endif /* GPICK_COLOR_LIST_H_ */
-

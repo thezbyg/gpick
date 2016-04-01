@@ -25,4 +25,3 @@ class ColorList;
 void dialog_mix_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState* gs);
 
 #endif /* GPICK_UI_DIALOG_MIX_H_ */
-

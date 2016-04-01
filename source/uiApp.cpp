@@ -1713,4 +1713,3 @@ int app_run(AppArgs *args)
 	delete args;
 	return 0;
 }
-

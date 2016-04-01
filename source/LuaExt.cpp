@@ -474,4 +474,3 @@ int lua_ext_colors_openlib(lua_State *L){
 	luaopen_gpick(L);
 	return 0;
 }
-

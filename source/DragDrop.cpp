@@ -585,4 +585,3 @@ static void drag_destroy(GtkWidget *widget, gpointer user_data){
 	dynv_handler_map_release(dd->handler_map);
 	delete dd;
 }
-

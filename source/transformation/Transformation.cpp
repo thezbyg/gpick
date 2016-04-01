@@ -62,4 +62,3 @@ boost::shared_ptr<Configuration> Transformation::getConfig()
 }
 
 }
-

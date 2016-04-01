@@ -950,4 +950,3 @@ gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback cal
 	g_list_free(list);
 	return 0;
 }
-

@@ -65,4 +65,3 @@ gchar* build_config_path(const gchar *filename)
 	else
 		return g_build_filename(g_get_user_config_dir(), "gpick", nullptr);
 }
-

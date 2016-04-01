@@ -125,4 +125,3 @@ void show_about_box(GtkWidget *widget)
 	gtk_widget_destroy(dialog);
 	return;
 }
-

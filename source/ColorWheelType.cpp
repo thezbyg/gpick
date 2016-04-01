@@ -65,4 +65,3 @@ const ColorWheelType* color_wheel_types_get(){
 const uint32_t color_wheel_types_get_n(){
 	return sizeof(color_wheel_types)/sizeof(ColorWheelType);
 }
-

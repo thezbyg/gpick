@@ -206,5 +206,3 @@ int copypaste_is_color_object_available(GlobalState* gs){
 	}
 	return -1;
 }
-
-

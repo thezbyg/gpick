@@ -24,4 +24,3 @@
 int register_sources(ColorSourceManager *csm);
 
 #endif /* REGISTERSOURCES_H_ */
-

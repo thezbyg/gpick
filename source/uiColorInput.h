@@ -27,4 +27,3 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* col
 void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params);
 
 #endif /* GPICK_UI_COLOR_INPUT_H_ */
-

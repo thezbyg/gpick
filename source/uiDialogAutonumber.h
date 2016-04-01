@@ -24,4 +24,3 @@ class GlobalState;
 int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState* gs);
 
 #endif /* GPICK_UI_DIALOG_AUTONUMBER_H_ */
-

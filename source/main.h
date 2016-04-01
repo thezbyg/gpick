@@ -20,4 +20,3 @@
 #define GPICK_MAIN_H_
 
 #endif /* GPICK_MAIN_H_ */
-

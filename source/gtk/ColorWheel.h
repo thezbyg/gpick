@@ -78,4 +78,3 @@ G_END_DECLS
 
 
 #endif /* COLOR_WHEEL_H_ */
-

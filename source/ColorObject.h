@@ -56,4 +56,3 @@ class ColorObject
 };
 
 #endif /* GPICK_COLOR_OBJECT_H_ */
-

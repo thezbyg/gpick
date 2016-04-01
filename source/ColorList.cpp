@@ -136,4 +136,3 @@ int color_list_get_positions(ColorList *color_list)
 	}
 	return 0;
 }
-

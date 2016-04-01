@@ -41,4 +41,3 @@ System* layouts_get(Layouts *layouts, const char* name);
 }
 
 #endif /* GPICK_LAYOUT_LAYOUT_H_ */
-

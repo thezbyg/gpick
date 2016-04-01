@@ -543,5 +543,3 @@ static gboolean gtk_color_wheel_button_release(GtkWidget *widget, GdkEventButton
 
 	return false;
 }
-
-

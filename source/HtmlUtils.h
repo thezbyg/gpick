@@ -42,4 +42,3 @@ std::ostream& operator<<(std::ostream& os, const HtmlHEX color);
 std::ostream& operator<<(std::ostream& os, const HtmlHSL color);
 
 #endif /* GPICK_HTML_UTILS_H_ */
-

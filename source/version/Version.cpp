@@ -25,4 +25,3 @@ const char* gpick_build_version = T_(BUILD_VERSION);
 const char* gpick_build_revision = T_(BUILD_REVISION);
 const char* gpick_build_date = T_(BUILD_DATE);
 const char* gpick_build_platform = T_(BUILD_PLATFORM);
-

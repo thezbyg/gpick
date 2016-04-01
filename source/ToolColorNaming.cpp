@@ -78,4 +78,3 @@ void ToolColorNameAssigner::assign(ColorObject *color_object, const Color *color
 			break;
 	}
 }
-

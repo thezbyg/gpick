@@ -23,4 +23,3 @@ struct ColorSourceManager;
 int color_mixer_source_register(ColorSourceManager *csm);
 
 #endif /* GPICK_COLOR_MIXER_H_ */
-

@@ -220,4 +220,3 @@ void dialog_variations_show(GtkWindow* parent, ColorList *selected_color_list, G
 	dynv_system_release(args->params);
 	delete args;
 }
-

@@ -49,4 +49,3 @@ bool ReferenceCounter::unref(ReferenceCounter* rc){
 }
 
 }
-

@@ -37,4 +37,3 @@ class ImportExportDialog
 };
 
 #endif /* GPICK_UI_IMPORT_EXPORT_H_ */
-

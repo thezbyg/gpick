@@ -122,4 +122,3 @@ void QuantizationConfig::applyConfig(dynvSystem *dynv){
 }
 
 }
-

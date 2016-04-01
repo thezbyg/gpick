@@ -17,5 +17,3 @@
  */
 
 #include "DynvIO.h"
-
-

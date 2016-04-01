@@ -36,4 +36,3 @@ int register_sources(ColorSourceManager *csm){
 	blend_colors_source_register(csm);
 	return 0;
 }
-

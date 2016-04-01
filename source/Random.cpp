@@ -94,4 +94,3 @@ void random_destroy(struct Random* r)
 		delete r;
 	}
 }
-

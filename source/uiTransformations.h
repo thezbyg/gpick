@@ -24,4 +24,3 @@ class GlobalState;
 void dialog_transformations_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* GPICK_UI_TRANSFORMATIONS_H_ */
-

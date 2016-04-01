@@ -33,6 +33,3 @@ void tools_palette_from_css_file_show(GtkWindow* parent, GlobalState* gs)
 	parse_file("test.css");
 #endif
 }
-
-
-

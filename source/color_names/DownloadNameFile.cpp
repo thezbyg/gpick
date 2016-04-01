@@ -58,4 +58,3 @@ int download_name_file(const char *destination_filename)
 	return -1;
 }
 #endif
-

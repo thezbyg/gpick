@@ -24,4 +24,3 @@ class GlobalState;
 void dialog_converter_show(GtkWindow* parent, GlobalState* gs);
 
 #endif /* GPICK_UI_CONVERTER_H_ */
-

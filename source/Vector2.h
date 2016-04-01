@@ -85,4 +85,3 @@ class Vec2
 }
 
 #endif /* GPICK_VECTOR2_H_ */
-

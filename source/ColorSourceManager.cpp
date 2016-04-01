@@ -60,4 +60,3 @@ int color_source_manager_destroy(ColorSourceManager *csm){
 	delete csm;
 	return 0;
 }
-

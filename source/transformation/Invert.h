@@ -34,4 +34,3 @@ class Invert : public Transformation{
 }
 
 #endif /* TRANSFORMATION_INVERT_H_ */
-

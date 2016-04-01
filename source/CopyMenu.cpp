@@ -47,4 +47,3 @@ GtkWidget* CopyMenu::newMenu(ColorObject *color_object, GlobalState *gs)
 	}
 	return menu;
 }
-

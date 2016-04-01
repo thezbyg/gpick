@@ -281,4 +281,3 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 	dynv_system_release(args->params);
 	delete args;
 }
-

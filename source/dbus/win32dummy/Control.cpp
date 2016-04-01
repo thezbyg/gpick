@@ -36,4 +36,3 @@ bool gpick_single_instance_activate()
 {
 	return false;
 }
-

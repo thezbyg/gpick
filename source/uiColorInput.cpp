@@ -154,4 +154,3 @@ void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *col
 	dynv_system_release(args->params);
 	delete args;
 }
-

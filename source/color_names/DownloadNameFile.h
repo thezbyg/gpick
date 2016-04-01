@@ -22,4 +22,3 @@
 int download_name_file(const char *destination_filename);
 
 #endif /* GPICK_COLOR_NAMES_DOWNLOAD_NAME_FILE_H_ */
-

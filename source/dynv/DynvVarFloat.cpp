@@ -112,4 +112,3 @@ struct dynvHandler* dynv_var_float_new(){
 
 	return handler;
 }
-

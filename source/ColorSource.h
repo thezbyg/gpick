@@ -66,4 +66,3 @@ GtkWidget* color_source_get_widget(ColorSource* source);
 int color_source_destroy(ColorSource* source);
 
 #endif /* GPICK_COLOR_SOURCE_H_ */
-

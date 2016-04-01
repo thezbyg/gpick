@@ -424,4 +424,3 @@ void GlobalState::setCurrentColorSource(ColorSource *color_source)
 {
 	m_impl->m_color_source = color_source;
 }
-

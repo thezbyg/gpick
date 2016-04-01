@@ -135,4 +135,3 @@ struct dynvHandler* dynv_var_string_new(){
 
 	return handler;
 }
-
