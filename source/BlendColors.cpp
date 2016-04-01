@@ -37,7 +37,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "uiApp.h"
+#include "CopyMenu.h"
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
 #include <gdk/gdkkeysyms.h>
@@ -273,7 +273,7 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 			ColorList *color_list = color_list_new(nullptr);
 			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
 			if (color_list_get_count(color_list) != 0){
-				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(*color_list->colors.begin(), args->preview_list, args->gs));
+				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(*color_list->colors.begin(), args->preview_list, args->gs));
 			}
 			color_list_destroy(color_list);
 		}else{

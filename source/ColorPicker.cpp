@@ -34,7 +34,8 @@
 #include "gtk/Zoomed.h"
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
-#include "uiApp.h"
+#include "CopyMenu.h"
+#include "Clipboard.h"
 #include "uiUtilities.h"
 #include "uiColorInput.h"
 #include "uiConverter.h"
@@ -104,9 +105,9 @@ static void updateMainColorNow(ColorPickerArgs* args)
 	if (!dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
 		Color c;
 		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-		gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
-		gtk_color_set_color(GTK_COLOR(args->color_code), &c, text);
-		if (text) g_free(text);
+		string text;
+		converter_get_text(c, ConverterArrayType::display, args->gs, text);
+		gtk_color_set_color(GTK_COLOR(args->color_code), &c, text.c_str());
 		gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	}
 }
@@ -137,9 +138,9 @@ static gboolean updateMainColor( gpointer data ){
 	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
 	Color c;
 	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, &c);
-	gchar* text = main_get_color_text(args->gs, &c, COLOR_TEXT_TYPE_DISPLAY);
-	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text);
-	if (text) g_free(text);
+	string text;
+	converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text.c_str());
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	if (zoomed_enabled){
 		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
@@ -287,7 +288,7 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 	gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
 	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	menu = converter_create_copy_menu(color_object, 0, args->gs);
+	menu = CopyMenu::newMenu(color_object, args->gs);
 	color_object->release();
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	button = 0;
@@ -338,7 +339,7 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 
 		ColorObject* color_object;
 		color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(color_object, 0, args->gs));
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
 		color_object->release();
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
@@ -408,21 +409,10 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 
 		case GDK_KEY_c:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-
 				Color c;
 				updateMainColor(args);
 				gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
-
-				ColorObject* color_object;
-				color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-
-				auto converters = args->gs->getConverters();
-				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-				}
-
-				color_object->release();
+				Clipboard::set(c, args->gs);
 				return TRUE;
 			}
 			return FALSE;
@@ -492,13 +482,7 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 			if (dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", true)){
 				Color color;
 				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
-				ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-				auto converters = args->gs->getConverters();
-				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-				}
-				color_object->release();
+				Clipboard::set(color, args->gs);
 			}
 			if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)){
 				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);

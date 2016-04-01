@@ -27,27 +27,14 @@ struct Color;
 
 int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
 
-enum ColorTextType{
-	COLOR_TEXT_TYPE_DISPLAY,
-	COLOR_TEXT_TYPE_COPY,
-	COLOR_TEXT_TYPE_COLOR_LIST,
-};
-
-char* main_get_color_text(GlobalState* gs, Color* color, ColorTextType text_type);
-int main_get_color_from_text(GlobalState* gs, char* text, Color* color);
-int main_get_color_object_from_text(GlobalState* gs, char* text, ColorObject** output_color_object);
-
-GtkWidget* converter_create_copy_menu(ColorObject* color_object, GtkWidget* palette_widget, GlobalState* gs);
-void converter_get_clipboard(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters);
-void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text);
-
 typedef struct AppArgs AppArgs;
 
-typedef struct AppOptions {
+struct AppOptions
+{
 	bool floating_picker_mode;
 	bool output_picked_color;
 	bool single_color_pick_mode;
-}AppOptions;
+};
 
 AppArgs* app_create_main(const AppOptions *options);
 int app_load_file(AppArgs *args, const char *filename, bool autoload = false);

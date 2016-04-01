@@ -264,7 +264,7 @@ bool ImportExport::importTXT()
 	}
 	size_t table_size;
 	Converter *converter = nullptr;
-	Converter **converter_table = converters_get_all_type(m_converters, CONVERTERS_ARRAY_TYPE_PASTE, &table_size);
+	Converter **converter_table = converters_get_all_type(m_converters, ConverterArrayType::paste, &table_size);
 	ColorObject* color_object;
 	Color dummy_color;
 	typedef multimap<float, ColorObject*, greater<float>> ValidConverters;

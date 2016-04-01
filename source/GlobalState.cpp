@@ -294,10 +294,10 @@ class GlobalState::Impl
 				}
 				converters_reorder(converters, name_array, source_array_size);
 			}
-			converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
-			converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
-			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.display", "color_web_hex")), CONVERTERS_ARRAY_TYPE_DISPLAY);
-			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.color_list", "color_web_hex")), CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+			converters_rebuild_arrays(converters, ConverterArrayType::copy);
+			converters_rebuild_arrays(converters, ConverterArrayType::paste);
+			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.display", "color_web_hex")), ConverterArrayType::display);
+			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.color_list", "color_web_hex")), ConverterArrayType::color_list);
 			m_converters = converters;
 			return true;
 		}

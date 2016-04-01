@@ -37,7 +37,7 @@
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
 #include "layout/Style.h"
-#include "uiApp.h"
+#include "CopyMenu.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/format.hpp>
 #include <math.h>
@@ -236,7 +236,7 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		if (selection_avail){
 			ColorObject* color_object;
 			source_get_color(args, &color_object);
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu(color_object, 0, args->gs));
+			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
 			color_object->release();
 		}else{
 			gtk_widget_set_sensitive(item, false);

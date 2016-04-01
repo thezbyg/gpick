@@ -37,7 +37,8 @@
 #include "Internationalisation.h"
 #include "Random.h"
 #include "color_names/ColorNames.h"
-#include "uiApp.h"
+#include "Clipboard.h"
+#include "CopyMenu.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
@@ -207,12 +208,11 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 			gtk_widget_show(args->colors[i]);
 		args->colors_visible = total_colors;
 		size_t j = 0;
-		char* text;
 		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
 			color = (*i)->getColor();
-			text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
-			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text);
-			if (text) g_free(text);
+			string text;
+			converter_get_text(color, ConverterArrayType::display, args->gs, text);
+			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text.c_str());
 			++j;
 			if (j >= total_colors) break;
 		}
@@ -445,7 +445,7 @@ static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEven
 
 	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
 	color_object->release();
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
@@ -509,18 +509,8 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Gener
 	switch(event->keyval){
 		case GDK_KEY_c:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);
-				color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-
-				auto converters = args->gs->getConverters();
-				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-				}
-
-				color_object->release();
-
+				Clipboard::set(c, args->gs);
 				return true;
 			}
 			return false;

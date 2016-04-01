@@ -18,6 +18,8 @@
 
 #include "Converter.h"
 #include "DynvHelpers.h"
+#include "GlobalState.h"
+#include "ColorObject.h"
 #include "LuaExt.h"
 #include <string.h>
 #include <stdlib.h>
@@ -102,7 +104,43 @@ int converters_color_deserialize(Converters* converters, const char* function, c
 	lua_settop(L, stack_top);
 	return -1;
 }
-int converters_color_serialize(Converters* converters, const char* function, ColorObject* color_object, const ConverterSerializePosition &position, string& result)
+int converters_color_deserialize(Converter *converter, const char* text, ColorObject *color_object, float* conversion_quality)
+{
+	lua_State* L = converter->converters->L;
+	int status;
+	int stack_top = lua_gettop(L);
+	lua_getglobal(L, "gpick");
+	int gpick_namespace = lua_gettop(L);
+	if (lua_type(L, -1) != LUA_TNIL){
+		lua_pushstring(L, "color_deserialize");
+		lua_gettable(L, gpick_namespace);
+		if (lua_type(L, -1) != LUA_TNIL){
+			lua_pushstring(L, converter->function_name);
+			lua_pushstring(L, text);
+			lua_pushcolorobject (L, color_object);
+			lua_pushdynvsystem(L, converter->converters->params);
+			status = lua_pcall(L, 4, 1, 0);
+			dynv_system_release(converter->converters->params);
+			if (status == 0){
+				if (lua_type(L, -1) == LUA_TNUMBER){
+					double result = luaL_checknumber(L, -1);
+					*conversion_quality = result;
+					lua_settop(L, stack_top);
+					return 0;
+				}else{
+					cerr<<"gpick.color_deserialize: returned not a number value \""<<converter->function_name<<"\""<<endl;
+				}
+			}else{
+				cerr<<"gpick.color_deserialize: "<<lua_tostring (L, -1)<<endl;
+			}
+		}else{
+			cerr<<"gpick.color_deserialize: no such function \""<<converter->function_name<<"\""<<endl;
+		}
+	}
+	lua_settop(L, stack_top);
+	return -1;
+}
+int converters_color_serialize(Converters* converters, const char* function, const ColorObject* color_object, const ConverterSerializePosition &position, string& result)
 {
 	lua_State* L = converters->L;
 	int status;
@@ -114,7 +152,7 @@ int converters_color_serialize(Converters* converters, const char* function, Col
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
 			lua_pushstring(L, function);
-			lua_pushcolorobject (L, color_object);
+			lua_pushcolorobject(L, const_cast<ColorObject*>(color_object));
 			lua_pushdynvsystem(L, converters->params);
 			lua_newtable(L);
 			lua_pushboolean(L, position.first);
@@ -145,7 +183,7 @@ int converters_color_serialize(Converters* converters, const char* function, Col
 	lua_settop(L, stack_top);
 	return -1;
 }
-int converters_color_serialize(Converter* converter, ColorObject* color_object, const ConverterSerializePosition &position, std::string& result)
+int converters_color_serialize(Converter* converter, const ColorObject* color_object, const ConverterSerializePosition &position, std::string& result)
 {
 	lua_State* L = converter->converters->L;
 	int status;
@@ -157,7 +195,7 @@ int converters_color_serialize(Converter* converter, ColorObject* color_object, 
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
 			lua_pushstring(L, converter->function_name);
-			lua_pushcolorobject (L, color_object);
+			lua_pushcolorobject(L, const_cast<ColorObject*>(color_object));
 			lua_pushdynvsystem(L, converter->converters->params);
 			lua_newtable(L);
 			lua_pushboolean(L, position.first);
@@ -241,56 +279,56 @@ int converters_term(Converters *converters)
 Converter* converters_get(Converters *converters, const char* name)
 {
 	Converters::ConverterMap::iterator i;
-	i=converters->converters.find( name);
+	i=converters->converters.find(name);
 	if (i != converters->converters.end()){
 		return (*i).second;
 	}else{
 		return 0;
 	}
 }
-Converter* converters_get_first(Converters *converters, ConvertersArrayType type)
+Converter* converters_get_first(Converters *converters, ConverterArrayType type)
 {
 	switch (type){
-	case CONVERTERS_ARRAY_TYPE_COPY:
-		if (converters->copy_converters.size()>0)
-			return converters->copy_converters[0];
-		break;
-	case CONVERTERS_ARRAY_TYPE_PASTE:
-		if (converters->paste_converters.size()>0)
-			return converters->paste_converters[0];
-		break;
-	case CONVERTERS_ARRAY_TYPE_DISPLAY:
-		return converters->display_converter;
-		break;
-	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
-		return converters->color_list_converter;
-		break;
+		case ConverterArrayType::copy:
+			if (converters->copy_converters.size() > 0)
+				return converters->copy_converters[0];
+			break;
+		case ConverterArrayType::paste:
+			if (converters->paste_converters.size() > 0)
+				return converters->paste_converters[0];
+			break;
+		case ConverterArrayType::display:
+			return converters->display_converter;
+			break;
+		case ConverterArrayType::color_list:
+			return converters->color_list_converter;
+			break;
 	}
 	return 0;
 }
-Converter** converters_get_all_type(Converters *converters, ConvertersArrayType type, size_t *size)
+Converter** converters_get_all_type(Converters *converters, ConverterArrayType type, size_t *size)
 {
 	switch (type){
-	case CONVERTERS_ARRAY_TYPE_COPY:
-		if (converters->copy_converters.size()>0){
-			*size = converters->copy_converters.size();
-			return &converters->copy_converters[0];
-		}
-		break;
-	case CONVERTERS_ARRAY_TYPE_PASTE:
-		if (converters->paste_converters.size()>0){
-			*size = converters->paste_converters.size();
-			return &converters->paste_converters[0];
-		}
-		break;
-	case CONVERTERS_ARRAY_TYPE_DISPLAY:
-		*size = 1;
-		return &converters->display_converter;
-		break;
-	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
-		*size = 1;
-		return &converters->color_list_converter;
-		break;
+		case ConverterArrayType::copy:
+			if (converters->copy_converters.size() > 0){
+				*size = converters->copy_converters.size();
+				return &converters->copy_converters[0];
+			}
+			break;
+		case ConverterArrayType::paste:
+			if (converters->paste_converters.size() > 0){
+				*size = converters->paste_converters.size();
+				return &converters->paste_converters[0];
+			}
+			break;
+		case ConverterArrayType::display:
+			*size = 1;
+			return &converters->display_converter;
+			break;
+		case ConverterArrayType::color_list:
+			*size = 1;
+			return &converters->color_list_converter;
+			break;
 	}
 	return 0;
 }
@@ -333,45 +371,130 @@ int converters_reorder(Converters *converters, const char** priority_names, size
 	}
 	return 0;
 }
-int converters_rebuild_arrays(Converters *converters, ConvertersArrayType type)
+int converters_rebuild_arrays(Converters *converters, ConverterArrayType type)
 {
 	list<Converter*>::iterator i;
 	switch (type){
-	case CONVERTERS_ARRAY_TYPE_COPY:
-		converters->copy_converters.clear();
-		for (i=converters->all_converters.begin(); i != converters->all_converters.end(); ++i){
-			if ((*i)->copy && (*i)->serialize_available){
-				converters->copy_converters.push_back(*i);
+		case ConverterArrayType::copy:
+			converters->copy_converters.clear();
+			for (i=converters->all_converters.begin(); i != converters->all_converters.end(); ++i){
+				if ((*i)->copy && (*i)->serialize_available){
+					converters->copy_converters.push_back(*i);
+				}
 			}
-		}
-		return 0;
-		break;
-	case CONVERTERS_ARRAY_TYPE_PASTE:
-		converters->paste_converters.clear();
-		for (i=converters->all_converters.begin(); i != converters->all_converters.end(); ++i){
-			if ((*i)->paste && (*i)->deserialize_available){
-				converters->paste_converters.push_back(*i);
+			return 0;
+			break;
+		case ConverterArrayType::paste:
+			converters->paste_converters.clear();
+			for (i=converters->all_converters.begin(); i != converters->all_converters.end(); ++i){
+				if ((*i)->paste && (*i)->deserialize_available){
+					converters->paste_converters.push_back(*i);
+				}
 			}
-		}
-		return 0;
-		break;
-	default:
-		return -1;
+			return 0;
+			break;
+		default:
+			return -1;
 	}
 	return -1;
 }
-int converters_set(Converters *converters, Converter* converter, ConvertersArrayType type)
+int converters_set(Converters *converters, Converter* converter, ConverterArrayType type)
 {
 	switch (type){
-	case CONVERTERS_ARRAY_TYPE_DISPLAY:
-		converters->display_converter = converter;
-		break;
-	case CONVERTERS_ARRAY_TYPE_COLOR_LIST:
-		converters->color_list_converter = converter;
-		break;
-	default:
-		return -1;
+		case ConverterArrayType::display:
+			converters->display_converter = converter;
+			break;
+		case ConverterArrayType::color_list:
+			converters->color_list_converter = converter;
+			break;
+		default:
+			return -1;
 	}
 	return 0;
 }
 
+bool converter_get_text(const Color &color, ConverterArrayType type, GlobalState *gs, std::string &text)
+{
+	auto converters = gs->getConverters();
+	auto converter = converters_get_first(converters, type);
+	if (converter == nullptr) return "";
+	ColorObject color_object("", color);
+	ConverterSerializePosition position;
+	return (converters_color_serialize(converter, &color_object, position, text) == 0);
+}
+bool converter_get_text(const ColorObject *color_object, ConverterArrayType type, GlobalState *gs, std::string &text)
+{
+	auto converters = gs->getConverters();
+	auto converter = converters_get_first(converters, type);
+	if (converter == nullptr) return "";
+	ConverterSerializePosition position;
+	return (converters_color_serialize(converter, color_object, position, text) == 0);
+}
+bool converter_get_text(const ColorObject *color_object, Converter *converter, GlobalState *gs, std::string &text)
+{
+	if (converter == nullptr) return "";
+	ConverterSerializePosition position;
+	return (converters_color_serialize(converter, color_object, position, text) == 0);
+}
+bool converter_get_color_object(const char *text, GlobalState* gs, ColorObject** output_color_object)
+{
+	ColorObject color_object;
+	auto converters = gs->getConverters();
+	typedef multimap<float, ColorObject*, greater<float> > ValidConverters;
+	ValidConverters valid_converters;
+	Converter *converter = converters_get_first(converters, ConverterArrayType::display);
+	if (converter){
+		if (converter->deserialize_available){
+			float quality;
+			if (converters_color_deserialize(converter, text, &color_object, &quality) == 0){
+				if (quality > 0){
+					valid_converters.insert(make_pair(quality, color_object.copy()));
+				}
+			}
+		}
+	}
+	size_t table_size;
+	Converter **converter_table;
+	if ((converter_table = converters_get_all_type(converters, ConverterArrayType::paste, &table_size))){
+		for (uint32_t i = 0; i != table_size; ++i){
+			converter = converter_table[i];
+			if (converter->deserialize_available){
+				float quality;
+				if (converters_color_deserialize(converter, text, &color_object, &quality) == 0){
+					if (quality > 0){
+						valid_converters.insert(make_pair(quality, color_object.copy()));
+					}
+				}
+			}
+		}
+	}
+	bool first = true;
+	for (ValidConverters::iterator i = valid_converters.begin(); i != valid_converters.end(); ++i){
+		if (first){
+			first = false;
+			*output_color_object = (*i).second;
+		}else{
+			(*i).second->release();
+		}
+	}
+	if (first){
+		return false;
+	}else{
+		return true;
+	}
+}
+
+ConverterSerializePosition::ConverterSerializePosition():
+	first(true),
+	last(true),
+	index(0),
+	count(1)
+{
+}
+ConverterSerializePosition::ConverterSerializePosition(size_t count):
+	first(true),
+	last(count <= 1),
+	index(0),
+	count(count)
+{
+}

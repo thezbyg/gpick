@@ -21,7 +21,7 @@
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "gtk/ColorWidget.h"
-#include "uiApp.h"
+#include "Converter.h"
 #include "dynv/DynvXml.h"
 #include <string.h>
 #include <iostream>
@@ -219,12 +219,11 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 			{
 				gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
 				if (data[gtk_selection_data_get_length(selection_data)] != 0) break; //not null terminated
-				Color color;
-				if (main_get_color_from_text(dd->gs, data, &color) != 0){
+				ColorObject* color_object = nullptr;
+				if (!converter_get_color_object(data, dd->gs, &color_object)){
 					gtk_drag_finish (context, false, false, time);
 					return;
 				}
-				ColorObject* color_object = new ColorObject("", color);
 				dd->set_color_object_at(dd, color_object, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE);
 				color_object->release();
 			}
@@ -381,11 +380,9 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 
 			case TARGET_STRING:
 				{
-					color = color_object->getColor();
-					char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_COPY);
-					if (text){
-						gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
-						g_free(text);
+					string text;
+					if (converter_get_text(color_object, ConverterArrayType::copy, dd->gs, text)){
+						gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
 					}
 				}
 				break;
@@ -459,16 +456,14 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 			case TARGET_STRING:
 				{
 					stringstream ss;
+					string text;
 					for (uint32_t i = 0; i != color_object_n; i++){
-						ColorObject *color_object = color_objects[i];
-						color = color_object->getColor();
-						char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_COPY);
-						if (text){
+						if (converter_get_text(color_objects[i], ConverterArrayType::copy, dd->gs, text)){
 							ss << text << endl;
-							g_free(text);
 						}
 					}
-					gtk_selection_data_set_text(selection_data, ss.str().c_str(), ss.str().length() + 1);
+					text = ss.str();
+					gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
 				}
 				break;
 
@@ -517,13 +512,12 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24 * std::min(color_object_n, (size_t)5));
 
 			for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
-				Color color = color_objects[i]->getColor();;
-				GtkWidget* colorwidget = gtk_color_new();
-				char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
-				gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
-				g_free(text);
-
-				gtk_box_pack_start(GTK_BOX(hbox), colorwidget, true, true, 0);
+				GtkWidget* color_widget = gtk_color_new();
+				string text;
+				converter_get_text(color_objects[i], ConverterArrayType::display, dd->gs, text);
+				Color color = color_objects[i]->getColor();
+				gtk_color_set_color(GTK_COLOR(color_widget), &color, text.c_str());
+				gtk_box_pack_start(GTK_BOX(hbox), color_widget, true, true, 0);
 			}
 
 			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
@@ -539,20 +533,16 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 		if (color_object){
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECT;
 			dd->data.color_object.color_object = color_object;
-
 			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
 			GtkWidget* colorwidget = gtk_color_new();
 			gtk_container_add(GTK_CONTAINER(dragwindow), colorwidget);
 			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24);
-
+			string text;
+			converter_get_text(color_object, ConverterArrayType::display, dd->gs, text);
 			Color color = color_object->getColor();
-			char* text = main_get_color_text(dd->gs, &color, COLOR_TEXT_TYPE_DISPLAY);
-			gtk_color_set_color(GTK_COLOR(colorwidget), &color, text);
-			g_free(text);
-
+			gtk_color_set_color(GTK_COLOR(colorwidget), &color, text.c_str());
 			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
 			gtk_widget_show_all(dragwindow);
-
 			dd->dragwidget = dragwindow;
 			return;
 		}

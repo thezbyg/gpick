@@ -241,9 +241,9 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 
 	GtkTreeIter iter2;
 
-	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
+	Converter *converter = converters_get_first(converters, ConverterArrayType::display);
 	bool display_converter_found = false;
-	Converter *list_converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+	Converter *list_converter = converters_get_first(converters, ConverterArrayType::color_list);
 	bool color_list_converter_found = false;
 
 	converter_i = 0;
@@ -292,13 +292,13 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 
 		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(display), &iter2)){
 			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
-			converters_set(converters, converter, CONVERTERS_ARRAY_TYPE_DISPLAY);
+			converters_set(converters, converter, ConverterArrayType::display);
 			dynv_set_string(args->params, "converters.display", converter->function_name);
 		}
 
 		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(color_list), &iter2)){
 			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
-			converters_set(converters, converter, CONVERTERS_ARRAY_TYPE_COLOR_LIST);
+			converters_set(converters, converter, ConverterArrayType::color_list);
 			dynv_set_string(args->params, "converters.color_list", converter->function_name);
 		}
 
@@ -343,8 +343,8 @@ void dialog_converter_show(GtkWindow* parent, GlobalState* gs)
 			dynv_set_bool_array(args->params, "converters.copy", 0, 0);
 			dynv_set_bool_array(args->params, "converters.paste", 0, 0);
 		}
-		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_COPY);
-		converters_rebuild_arrays(converters, CONVERTERS_ARRAY_TYPE_PASTE);
+		converters_rebuild_arrays(converters, ConverterArrayType::copy);
+		converters_rebuild_arrays(converters, ConverterArrayType::paste);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

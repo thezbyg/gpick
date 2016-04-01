@@ -36,7 +36,8 @@
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
 #include "color_names/ColorNames.h"
-#include "uiApp.h"
+#include "CopyMenu.h"
+#include "Clipboard.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/format.hpp>
 #include <math.h>
@@ -341,7 +342,7 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 
 	ColorObject* color_object;
 	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
 	color_object->release();
 
 	int line_id = -1;
@@ -427,15 +428,9 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Varia
 
 	switch(event->keyval){
 		case GDK_KEY_c:
-			if ((event->state&modifiers) == GDK_CONTROL_MASK){
+			if ((event->state & modifiers) == GDK_CONTROL_MASK){
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);
-				color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-				auto converters = args->gs->getConverters();
-				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-				}
-				color_object->release();
+				Clipboard::set(c, args->gs);
 				return true;
 			}
 			return false;

@@ -16,20 +16,35 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COPY_MENU_ITEM_H_
-#define GPICK_COPY_MENU_ITEM_H_
+#include "CopyMenu.h"
+#include "Converter.h"
+#include "GlobalState.h"
+#include "CopyMenuItem.h"
 
-#include <gtk/gtk.h>
-class GlobalState;
-class ColorObject;
-class Converter;
-class CopyMenuItem
+GtkWidget* CopyMenu::newMenu(ColorObject *color_object, GtkWidget *palette_widget, GlobalState *gs)
 {
-	public:
-		static GtkWidget* newItem(ColorObject *color_object, GlobalState *gs, bool include_name);
-		static GtkWidget* newItem(ColorObject *color_object, Converter *converter, GlobalState *gs);
-		static GtkWidget* newItem(ColorObject *color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs);
-};
-
-#endif /* GPICK_COPY_MENU_ITEM_H_ */
+	auto converters = gs->getConverters();
+	GtkWidget *menu;
+	menu = gtk_menu_new();
+	size_t converter_table_size = 0;
+	Converter** converter_table = converters_get_all_type(converters, ConverterArrayType::copy, &converter_table_size);
+	for (size_t i = 0; i < converter_table_size; ++i){
+		GtkWidget* item = CopyMenuItem::newItem(color_object, palette_widget, converter_table[i], gs);
+		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	return menu;
+}
+GtkWidget* CopyMenu::newMenu(ColorObject *color_object, GlobalState *gs)
+{
+	auto converters = gs->getConverters();
+	GtkWidget *menu;
+	menu = gtk_menu_new();
+	size_t converter_table_size = 0;
+	Converter** converter_table = converters_get_all_type(converters, ConverterArrayType::copy, &converter_table_size);
+	for (size_t i = 0; i < converter_table_size; ++i){
+		GtkWidget* item = CopyMenuItem::newItem(color_object, converter_table[i], gs);
+		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	return menu;
+}
 

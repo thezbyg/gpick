@@ -22,7 +22,8 @@
 #include "DragDrop.h"
 #include "uiColorInput.h"
 #include "CopyPaste.h"
-#include "uiApp.h"
+#include "Clipboard.h"
+#include "CopyMenu.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
@@ -381,7 +382,7 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		if (selection_avail){
 			ColorObject* color_object;
 			source_get_color(args, &color_object);
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), converter_create_copy_menu (color_object, 0, args->gs));
+			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
 			color_object->release();
 		}else{
 			gtk_widget_set_sensitive(item, false);
@@ -446,48 +447,35 @@ static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 	ofstream file(filename, ios::out);
 	if (file.is_open()){
 		auto converters = args->gs->getConverters();
-		Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
+		Converter *converter = converters_get_first(converters, ConverterArrayType::copy);
 
 		ColorObject *co_color, *co_background_color;
 		Color t;
 		co_color = color_list_new_color_object(args->gs->getColorList(), &t);
 		co_background_color = color_list_new_color_object(args->gs->getColorList(), &t);
-		char *color;
-
 		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
 		string ident_selector;
-
 		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-
 			ident_selector = (*i)->ident_name + ".selector";
 			const char *css_selector = dynv_get_string_wd(assignments_params, ident_selector.c_str(), (*i)->ident_name.c_str());
-
 			if (css_selector[0] != 0){
-				(*i)->color = co_color->getColor();
-				converter_get_text(converter->function_name, co_color, 0, args->gs->getConverters(), &color);
-
+				co_color->setColor((*i)->color);
+				string text;
+				converter_get_text(co_color, converter, args->gs, text);
 				file << css_selector << " {" << endl;
-
 				if ((*i)->style_type == Style::TYPE_BACKGROUND){
-					file << "\tbackground-color: " << color << ";" << endl;
+					file << "\tbackground-color: " << text << ";" << endl;
 				}else if ((*i)->style_type == Style::TYPE_COLOR){
-					file << "\tcolor: " << color << ";" << endl;
+					file << "\tcolor: " << text << ";" << endl;
 				}else if ((*i)->style_type == Style::TYPE_BORDER){
-					file << "\tborder-color: " << color << ";" << endl;
+					file << "\tborder-color: " << text << ";" << endl;
 				}
-
 				file << "}" << endl << endl;
-
 			}
-
-			g_free(color);
 		}
-
 		dynv_system_release(assignments_params);
-
 		co_color->release();
 		co_background_color->release();
-
 		file.close();
 		return 0;
 	}

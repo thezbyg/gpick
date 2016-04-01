@@ -96,6 +96,7 @@ int palette_file_load(const char* filename, ColorList* color_list)
 							color_object->setColor(*color);
 						color_objects.push_back(color_object);
 					}else{
+						dynv_system_release(params);
 						break;
 					}
 					dynv_system_release(params);
@@ -220,4 +221,3 @@ int palette_file_save(const char* filename, ColorList* color_list)
 	}
 	return -1;
 }
-

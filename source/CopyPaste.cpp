@@ -20,8 +20,11 @@
 #include "ColorObject.h"
 #include "ColorList.h"
 #include "GlobalState.h"
-#include "uiApp.h"
+#include "Converter.h"
+#include <gtk/gtk.h>
 #include <string.h>
+#include <string>
+using namespace std;
 
 enum {
 	TARGET_STRING = 1,
@@ -46,10 +49,8 @@ typedef struct CopyPasteArgs{
 }CopyPasteArgs;
 
 static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_data, guint target_type, CopyPasteArgs* args){
-	g_assert (selection_data != nullptr);
-
+	g_assert(selection_data != nullptr);
 	Color color;
-
 	switch (target_type){
 	case TARGET_COLOR_OBJECT:
 		gtk_selection_data_set (selection_data, gdk_atom_intern ("colorobject", false), 8, (guchar *)&args->color_object, sizeof(ColorObject*));
@@ -57,12 +58,9 @@ static void clipboard_get(GtkClipboard *clipboard, GtkSelectionData *selection_d
 
 	case TARGET_STRING:
 		{
-			color = args->color_object->getColor();
-			char* text = main_get_color_text(args->gs, &color, COLOR_TEXT_TYPE_COPY);
-			if (text){
-				gtk_selection_data_set_text(selection_data, text, strlen(text)+1);
-				g_free(text);
-			}
+			string text;
+			converter_get_text(args->color_object, ConverterArrayType::copy, args->gs, text);
+			gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
 		}
 		break;
 
@@ -138,9 +136,9 @@ int copypaste_get_color_object(ColorObject** out_color_object, GlobalState* gs){
 						case TARGET_STRING:
 							{
 								gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
-								if (data[gtk_selection_data_get_length(selection_data)] !=0) break; //not null terminated
+								if (data[gtk_selection_data_get_length(selection_data)] != 0) break; //not null terminated
 								ColorObject* color_object;
-								if (main_get_color_object_from_text(gs, data, &color_object) == 0){
+								if (converter_get_color_object(data, gs, &color_object)){
 									*out_color_object = color_object;
 									success = true;
 								}

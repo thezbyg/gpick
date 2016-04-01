@@ -22,7 +22,8 @@
 #include "gtk/Zoomed.h"
 #include "gtk/ColorWidget.h"
 #include "uiUtilities.h"
-#include "uiApp.h"
+#include "Clipboard.h"
+#include "CopyMenu.h"
 #include "GlobalState.h"
 #include "ColorPicker.h"
 #include "Converter.h"
@@ -130,17 +131,9 @@ static gboolean update_display(FloatingPickerArgs *args)
 	gtk_window_move(GTK_WINDOW(args->window), x, y);
 	Color c;
 	get_color_sample(args, true, &c);
-	ColorObject* color_object;
-	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	gchar* text = 0;
-	auto converters = args->gs->getConverters();
-	Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
-	if (converter){
-		converter_get_text(converter->function_name, color_object, 0, args->gs->getConverters(), &text);
-	}
-	color_object->release();
-	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text);
-	if (text) g_free(text);
+	string text;
+	converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text.c_str());
 	return true;
 }
 void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_release, bool single_pick_mode)
@@ -201,18 +194,10 @@ static void complete_picking(FloatingPickerArgs *args)
 			ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 			if (args->single_pick_mode){
-				auto converters = args->gs->getConverters();
-				Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-				if (converter){
-					converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-				}
+				Clipboard::set(color_object, args->gs);
 			}else{
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", false)){
-					auto converters = args->gs->getConverters();
-					Converter *converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_COPY);
-					if (converter){
-						converter_get_clipboard(converter->function_name, color_object, 0, args->gs->getConverters());
-					}
+					Clipboard::set(color_object, args->gs);
 				}
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", false)){
 					PickerColorNameAssigner name_assigner(args->gs);
@@ -230,7 +215,7 @@ static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
 	get_color_sample(args, false, &c);
 	GtkWidget *menu;
 	ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
-	menu = converter_create_copy_menu(*color_list->colors.begin(), nullptr, args->gs);
+	menu = CopyMenu::newMenu(*color_list->colors.begin(), args->gs);
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 	g_object_ref_sink(menu);

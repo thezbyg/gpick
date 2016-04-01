@@ -16,20 +16,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COPY_MENU_ITEM_H_
-#define GPICK_COPY_MENU_ITEM_H_
+#ifndef GPICK_COPY_MENU_H_
+#define GPICK_COPY_MENU_H_
 
 #include <gtk/gtk.h>
-class GlobalState;
 class ColorObject;
-class Converter;
-class CopyMenuItem
+class GlobalState;
+class CopyMenu
 {
 	public:
-		static GtkWidget* newItem(ColorObject *color_object, GlobalState *gs, bool include_name);
-		static GtkWidget* newItem(ColorObject *color_object, Converter *converter, GlobalState *gs);
-		static GtkWidget* newItem(ColorObject *color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs);
+		static GtkWidget* newMenu(ColorObject* color_object, GtkWidget *palette_widget, GlobalState *gs);
+		static GtkWidget* newMenu(ColorObject* color_object, GlobalState *gs);
 };
 
-#endif /* GPICK_COPY_MENU_ITEM_H_ */
+#endif /* GPICK_COPY_MENU_H_ */
 

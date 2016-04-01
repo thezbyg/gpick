@@ -19,7 +19,6 @@
 #include "uiColorInput.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "uiApp.h"
 #include "uiUtilities.h"
 #include "GlobalState.h"
 #include "gtk/ColorWheel.h"
@@ -29,25 +28,21 @@
 #include "ColorObject.h"
 #include "ColorSpaceType.h"
 #include <string.h>
+#include <string>
+using namespace std;
 
 int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* color_object, ColorObject** new_color_object)
 {
-	gchar* text = 0;
-	auto converters = gs->getConverters();
-	auto converter = converters_get_first(converters, CONVERTERS_ARRAY_TYPE_DISPLAY);
-	if (converter){
-		converter_get_text(converter->function_name, color_object, 0, gs->getConverters(), &text);
-	}
+	string text;
+	converter_get_text(color_object, ConverterArrayType::display, gs, text);
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			nullptr);
+		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
+		GTK_STOCK_OK, GTK_RESPONSE_OK,
+		nullptr);
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
-
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
 
@@ -61,27 +56,21 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* col
 	gtk_color_set_color(GTK_COLOR(widget), &color, "");
 
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, true, 0);
-
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"),0,0.5,0,0), false, false, 0);
 
 	GtkWidget* entry = gtk_entry_new();
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
 	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
 
-	if (text){
-		gtk_entry_set_text(GTK_ENTRY(entry), text);
-		g_free(text);
-	}
+	gtk_entry_set_text(GTK_ENTRY(entry), text.c_str());
 
 	gtk_widget_show_all(vbox);
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox);
-
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-
 		ColorObject* color_object;
-		if (main_get_color_object_from_text(gs, (char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object) == 0){
+
+		if (converter_get_color_object((char*)gtk_entry_get_text(GTK_ENTRY(entry)), gs, &color_object)){
 			*new_color_object = color_object;
 			gtk_widget_destroy(dialog);
 			return 0;
@@ -165,5 +154,4 @@ void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *col
 	dynv_system_release(args->params);
 	delete args;
 }
-
 

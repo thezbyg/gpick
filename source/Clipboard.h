@@ -16,20 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COPY_MENU_ITEM_H_
-#define GPICK_COPY_MENU_ITEM_H_
+#ifndef GPICK_CLIPBOARD_H_
+#define GPICK_CLIPBOARD_H_
 
-#include <gtk/gtk.h>
-class GlobalState;
+#include <string>
 class ColorObject;
-class Converter;
-class CopyMenuItem
+class GlobalState;
+struct Color;
+typedef struct _GtkWidget GtkWidget;
+class Clipboard
 {
 	public:
-		static GtkWidget* newItem(ColorObject *color_object, GlobalState *gs, bool include_name);
-		static GtkWidget* newItem(ColorObject *color_object, Converter *converter, GlobalState *gs);
-		static GtkWidget* newItem(ColorObject *color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs);
+		static void set(const std::string &value);
+		static void set(const ColorObject *color_object, GlobalState *gs);
+		static void set(const Color &color, GlobalState *gs);
+		static void set(GtkWidget *palette_widget, GlobalState *gs);
 };
 
-#endif /* GPICK_COPY_MENU_ITEM_H_ */
+#endif /* GPICK_CLIPBOARD_H_ */
 
