@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,3 +21,4 @@ extern const char* gpick_build_revision;
 extern const char* gpick_build_date;
 extern const char* gpick_build_time;
 extern const char* gpick_build_platform;
+

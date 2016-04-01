@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2012, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  * Copyright (c) 2012, David Gowers (Portions regarding adaptation of GammaModification.(cpp|h) to quantise colors instead.)
  *
