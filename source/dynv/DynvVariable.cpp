@@ -18,11 +18,11 @@
 
 #include "DynvVariable.h"
 #include "DynvHandler.h"
-
 #include <string.h>
 #include <stdlib.h>
 
-struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* handler){
+dynvVariable* dynv_variable_create(const char* name, dynvHandler* handler)
+{
 	struct dynvVariable* variable = new struct dynvVariable;
 	if (name){
 		variable->name = strdup(name);
@@ -32,39 +32,42 @@ struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* 
 	variable->handler = handler;
 	variable->ptr_value = nullptr;
 	variable->next = nullptr;
-	variable->prev = nullptr;
-	variable->flags = dynvVariable::Flags(0);
+	variable->flags = dynvVariable::Flag::none;
 	return variable;
 }
-
-void dynv_variable_destroy_data(struct dynvVariable* variable){
-	struct dynvVariable *next, *i;
+void dynv_variable_destroy_data(dynvVariable* variable)
+{
+	dynvVariable *next, *i;
 	i = variable->next;
-
 	while (i){
 		next = i->next;
 		if (i->handler->destroy != nullptr) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
-
 		i = next;
 	}
-
+	if (variable->handler->destroy != nullptr) variable->handler->destroy(variable);
 	variable->next = nullptr;
 	variable->ptr_value = nullptr;
 	variable->handler = nullptr;
 }
-
-void dynv_variable_destroy(struct dynvVariable* variable){
-	struct dynvVariable *next, *i;
+void dynv_variable_destroy(dynvVariable* variable)
+{
+	dynvVariable *next, *i;
 	i = variable;
-
 	while (i){
 		next = i->next;
 		if (i->handler->destroy != nullptr) i->handler->destroy(i);
 		if (i->name) free(i->name);
 		delete i;
-
 		i = next;
 	}
+}
+dynvVariable::Flag operator&(dynvVariable::Flag x, dynvVariable::Flag y)
+{
+	return static_cast<dynvVariable::Flag>(static_cast<uintptr_t>(x) & static_cast<uintptr_t>(y));
+}
+bool operator!=(dynvVariable::Flag x, dynvVariable::Flag y)
+{
+	return static_cast<uintptr_t>(x) != static_cast<uintptr_t>(y);
 }

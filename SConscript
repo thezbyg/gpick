@@ -140,10 +140,14 @@ env.Append(
 )
 
 extern_libs = SConscript(['extern/SConscript'], exports='env')
-executable, parser_files = SConscript(['source/SConscript'], exports='env')
+executable, tests, parser_files = SConscript(['source/SConscript'], exports='env')
 
 env.Alias(target="build", source=[
-	executable
+	executable,
+])
+
+env.Alias(target="test", source=[
+	tests,
 ])
 
 if 'debian' in COMMAND_LINE_TARGETS:

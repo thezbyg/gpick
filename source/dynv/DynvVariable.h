@@ -25,10 +25,9 @@
 #endif
 
 struct dynvHandler;
-
-struct dynvVariable{
+struct dynvVariable
+{
 	char* name;
-
 	struct dynvHandler* handler;
 	union{
 		void* ptr_value;
@@ -36,21 +35,20 @@ struct dynvVariable{
 		int32_t int_value;
 		float float_value;
 	};
-
-	enum Flags{
-		NO_SAVE = 0x01,
-		READONLY = 0x02,
-
-		DUMMY = 0xFFFFFFFF
+	enum class Flag: uintptr_t
+	{
+		none = 0,
+		no_save = 1,
+		read_only = 2,
 	}flags;
-
-	struct dynvVariable *next, *prev;
+	dynvVariable *next;
 };
 
+dynvVariable* dynv_variable_create(const char* name, dynvHandler* handler);
+void dynv_variable_destroy(dynvVariable* variable);
+void dynv_variable_destroy_data(dynvVariable* variable);
 
-
-struct dynvVariable* dynv_variable_create(const char* name, struct dynvHandler* handler);
-void dynv_variable_destroy(struct dynvVariable* variable);
-void dynv_variable_destroy_data(struct dynvVariable* variable);
+dynvVariable::Flag operator&(dynvVariable::Flag x, dynvVariable::Flag y);
+bool operator!=(dynvVariable::Flag x, dynvVariable::Flag y);
 
 #endif /* DYNVVARIABLE_H_ */

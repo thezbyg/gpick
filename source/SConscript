@@ -19,7 +19,7 @@ if local_env['ENABLE_NLS']:
 		CPPDEFINES = ['ENABLE_NLS'],
 	)
 
-sources = local_env.Glob('*.cpp') + local_env.Glob('dynv/*.cpp') + local_env.Glob('transformation/*.cpp')
+sources = local_env.Glob('*.cpp') + local_env.Glob('transformation/*.cpp')
 
 objects = []
 objects.append(SConscript(['version/SConscript'], exports='env'))
@@ -51,10 +51,18 @@ if local_env['BUILD_TARGET'] == 'win32':
 	objects.append(SConscript(['winres/SConscript'], exports='env'))
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt', 'expat'])
+local_env.Append(CPPPATH=['#source'])
 
-executable = local_env.Program(
-	'gpick',
-	source = [sources, objects])
+dynv_objects = local_env.StaticObject(source = local_env.Glob('dynv/*.cpp'))
+objects.append(dynv_objects)
 
-Return('executable', 'generated_files')
+executable = local_env.Program('gpick', source = [sources, objects])
+
+test_env = local_env.Clone()
+test_env.Append(LIBS = ['boost_unit_test_framework'])
+
+test_dynv = test_env.Program('test_dynv', source = ['test/DynvTest.cpp', dynv_objects])
+tests = [test_dynv]
+
+Return('executable', 'tests', 'generated_files')
 

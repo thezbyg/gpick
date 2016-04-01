@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding='UTF-8'?>
+<root>
+	<test type="string" list="true">
+		<li>a</li>
+		<li>b</li>
+		<li>c</li>
+	</test>
+</root>
