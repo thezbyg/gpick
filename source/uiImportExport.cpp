@@ -25,6 +25,7 @@
 #include "Converter.h"
 #include "GlobalState.h"
 #include "Internationalisation.h"
+#include "parser/TextFile.h"
 #include <functional>
 #include <iostream>
 using namespace std;
@@ -44,23 +45,33 @@ struct ListOption
 class ImportExportDialogOptions
 {
 	public:
+		enum class Options {
+			import,
+			import_text_file,
+		};
+		Options m_options;
 		GtkWidget *m_dialog;
 		GtkWidget *m_converters, *m_item_sizes, *m_backgrounds, *m_include_color_names;
+		GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments;
 		GlobalState *m_gs;
 		ImportExportDialogOptions(GtkWidget *dialog, GlobalState *gs)
 		{
 			m_dialog = dialog;
 			m_gs = gs;
+		}
+		void createImportOptions()
+		{
+			m_options = Options::import;
 			m_converters = newConverterList();
-			g_signal_connect(G_OBJECT(dialog), "notify::filter", G_CALLBACK(filterChanged), this);
-			auto converters = gs->getConverters();
+			g_signal_connect(G_OBJECT(m_dialog), "notify::filter", G_CALLBACK(filterChanged), this);
+			auto converters = m_gs->getConverters();
 			Converter **converter_table;
 			size_t total_converters;
 			converter_table = converters_get_all(converters, &total_converters);
 			GtkTreeIter iter;
 			GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_converters));
 			bool converter_found = false;
-			string converter_name = dynv_get_string_wd(gs->getSettings(), "gpick.import.converter", "");
+			string converter_name = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.converter", "");
 			for (size_t i = 0; i < total_converters; i++){
 				gtk_list_store_append(GTK_LIST_STORE(model), &iter);
 				gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, converter_table[i]->human_readable, 1, converter_table[i], -1);
@@ -80,7 +91,7 @@ class ImportExportDialogOptions
 				{"big", _("Big")},
 				{"controllable", _("User controllable")},
 			};
-			m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), dynv_get_string_wd(gs->getSettings(), "gpick.import.item_size", "medium"));
+			m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.item_size", "medium"));
 
 			const ListOption background_options[] = {
 				{"none", _("None")},
@@ -91,7 +102,7 @@ class ImportExportDialogOptions
 				{"last_color", _("Last color")},
 				{"controllable", _("User controllable")},
 			};
-			m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(gs->getSettings(), "gpick.import.background", "none"));
+			m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.background", "none"));
 
 			m_include_color_names = newCheckbox(_("Include color names"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import.include_color_names", true));
 
@@ -103,7 +114,18 @@ class ImportExportDialogOptions
 			addOption(_("Background:"), m_backgrounds, y, table);
 			addOption(m_include_color_names, y, table);
 			gtk_widget_show_all(table);
-			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(dialog), table);
+			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
+		}
+		void createImportTextFileOptions()
+		{
+			m_options = Options::import_text_file;
+			int y = 0;
+			GtkWidget *table = gtk_table_new(2, 3, false);
+			addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), y, table);
+			addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), y, table);
+			addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), y, table);
+			gtk_widget_show_all(table);
+			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
 		}
 		GtkWidget *addOption(const char *label, GtkWidget *widget, int &y, GtkWidget *table)
 		{
@@ -154,16 +176,35 @@ class ImportExportDialogOptions
 		{
 			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_include_color_names));
 		}
+		bool isSingleLineCCommentsEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_c_comments));
+		}
+		bool isMultiLineCCommentsEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_multi_line_c_comments));
+		}
+		bool isSingleLineHashCommentsEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_hash_comments));
+		}
 		void saveState()
 		{
-			Converter *converter = getSelectedConverter();
-			if (converter)
-				dynv_set_string(m_gs->getSettings(), "gpick.import.converter", converter->function_name);
-			string item_size = getSelectedItemSize();
-			dynv_set_string(m_gs->getSettings(), "gpick.import.item_size", item_size.c_str());
-			string background = getSelectedBackground();
-			dynv_set_string(m_gs->getSettings(), "gpick.import.background", background.c_str());
-			dynv_set_bool(m_gs->getSettings(), "gpick.import.include_color_names", isIncludeColorNamesEnabled());
+			auto settings = m_gs->getSettings();
+			if (m_options == Options::import){
+				Converter *converter = getSelectedConverter();
+				if (converter)
+					dynv_set_string(settings, "gpick.import.converter", converter->function_name);
+				string item_size = getSelectedItemSize();
+				dynv_set_string(settings, "gpick.import.item_size", item_size.c_str());
+				string background = getSelectedBackground();
+				dynv_set_string(settings, "gpick.import.background", background.c_str());
+				dynv_set_bool(settings, "gpick.import.include_color_names", isIncludeColorNamesEnabled());
+			}else if (m_options == Options::import_text_file){
+				dynv_set_bool(settings, "gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
+			}
 		}
 		GtkWidget* newConverterList()
 		{
@@ -201,6 +242,12 @@ class ImportExportDialogOptions
 		GtkWidget *newCheckbox(const char *label, bool value)
 		{
 			GtkWidget *widget = gtk_check_button_new_with_label(label);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
+			return widget;
+		}
+		GtkWidget *newCheckbox(const string &label, bool value)
+		{
+			GtkWidget *widget = gtk_check_button_new_with_label(label.c_str());
 			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
 			return widget;
 		}
@@ -332,18 +379,25 @@ bool ImportExportDialog::showImportTextFile()
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	const char* default_path = dynv_get_string_wd(m_gs->getSettings(), "gpick.import_text_file.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	ImportExportDialogOptions import_export_dialog_options(dialog, m_gs);
+	import_export_dialog_options.createImportTextFileOptions();
 	bool finished = false;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(m_gs->getSettings(), "gpick.import_text_file.path", path);
 			g_free(path);
+			import_export_dialog_options.saveState();
 			GtkWidget* message;
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			ImportExport import_export(m_color_list, filename, m_gs);
 			auto converters = m_gs->getConverters();
 			import_export.setConverters(converters);
-			if (import_export.importTXT()){
+			text_file_parser::Configuration configuration;
+			configuration.single_line_c_comments = import_export_dialog_options.isSingleLineCCommentsEnabled();
+			configuration.multi_line_c_comments = import_export_dialog_options.isMultiLineCCommentsEnabled();
+			configuration.single_line_hash_comments = import_export_dialog_options.isSingleLineHashCommentsEnabled();
+			if (import_export.importTextFile(configuration)){
 				finished = true;
 			}else{
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
@@ -392,6 +446,7 @@ bool ImportExportDialog::showExport()
 		}
 	}
 	ImportExportDialogOptions import_export_dialog_options(dialog, m_gs);
+	import_export_dialog_options.createImportOptions();
 	bool finished = false;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){

@@ -28,6 +28,7 @@
 #include "GlobalState.h"
 #include "DynvHelpers.h"
 #include "version/Version.h"
+#include "parser/TextFile.h"
 #include <glib.h>
 #include <fstream>
 #include <string>
@@ -757,4 +758,73 @@ bool ImportExport::importType(FileType type)
 ImportExport::Error ImportExport::getLastError() const
 {
 	return m_last_error;
+}
+class ImportTextFile: public text_file_parser::TextFile
+{
+	public:
+		ifstream m_file;
+		list<Color> m_colors;
+		bool m_failed;
+		ImportTextFile(const string &filename)
+		{
+			m_failed = false;
+			m_file.open(filename, ios::in);
+		}
+		bool isOpen()
+		{
+			return m_file.is_open();
+		}
+		virtual ~ImportTextFile()
+		{
+			m_file.close();
+		}
+		virtual void outOfMemory()
+		{
+			m_failed = true;
+		}
+		virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn)
+		{
+			m_failed = true;
+		}
+		virtual size_t read(char *buffer, size_t length)
+		{
+			m_file.read(buffer, length);
+			size_t bytes = m_file.gcount();
+			if (bytes > 0) return bytes;
+			if (m_file.eof()) return 0;
+			if (!m_file.good()){
+				m_failed = true;
+			}
+			return 0;
+		}
+		virtual void addColor(const Color &color)
+		{
+			m_colors.push_back(color);
+		}
+};
+bool ImportExport::importTextFile(const text_file_parser::Configuration &configuration)
+{
+	ImportTextFile import_text_file(m_filename);
+	if (!import_text_file.isOpen()){
+		m_last_error = Error::could_not_open_file;
+		return false;
+	}
+	if (!import_text_file.parse(configuration)){
+		m_last_error = Error::parsing_failed;
+		return false;
+	}
+	if (import_text_file.m_failed){
+		m_last_error = Error::parsing_failed;
+		return false;
+	}
+	if (import_text_file.m_colors.size() == 0){
+		m_last_error = Error::no_colors_imported;
+		return false;
+	}
+	for (auto color: import_text_file.m_colors){
+		auto color_object = new ColorObject("" ,color);
+		color_list_add_color_object(m_color_list, color_object, true);
+		color_object->release();
+	}
+	return true;
 }

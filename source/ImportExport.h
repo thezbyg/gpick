@@ -23,6 +23,9 @@ class ColorList;
 struct Converter;
 struct Converters;
 class GlobalState;
+namespace text_file_parser {
+class Configuration;
+}
 enum class FileType
 {
 	gpa,
@@ -44,6 +47,7 @@ class ImportExport
 			file_read_error,
 			file_write_error,
 			no_colors_imported,
+			parsing_failed,
 		};
 		enum class ItemSize
 		{
@@ -81,6 +85,7 @@ class ImportExport
 		bool exportGPA();
 		bool exportMTL();
 		bool exportHTML();
+		bool importTextFile(const text_file_parser::Configuration &configuration);
 		bool importType(FileType type);
 		bool exportType(FileType type);
 		Error getLastError() const;

@@ -53,6 +53,9 @@ elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt', 'expat'])
 local_env.Append(CPPPATH=['#source'])
 
+text_file_parser_objects = local_env.StaticObject(source = ['parser/TextFile.cpp', local_env.Ragel('parser/TextFileParser.rl')])
+objects.append(text_file_parser_objects)
+
 dynv_objects = local_env.StaticObject(source = local_env.Glob('dynv/*.cpp'))
 objects.append(dynv_objects)
 

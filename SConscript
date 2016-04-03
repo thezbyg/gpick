@@ -63,6 +63,7 @@ if not env.GetOption('clean'):
 		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}, 'required':False}
 		programs['MSGMERGE'] = {'checks':{'msgmerge':'MSGMERGE'}, 'required':False}
 		programs['MSGCAT'] = {'checks':{'msgcat':'MSGCAT'}, 'required':False}
+	programs['RAGEL'] = {'checks':{'ragel':'RAGEL'}}
 	if env['EXPERIMENTAL_CSS_PARSER'] and not env['PREBUILD_GRAMMAR']:
 		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
 		programs['FLEX'] = {'checks':{'flex':'FLEX'}}

@@ -13,6 +13,7 @@ from lemon import *
 from flex import *
 from gettext import *
 from resource_template import *
+from ragel import *
 
 from SCons.Script import *
 from SCons.Util import *
@@ -61,6 +62,7 @@ class GpickEnvironment(SConsEnvironment):
 		addFlexBuilder(self)
 		addGettextBuilder(self)
 		addResourceTemplateBuilder(self)
+		addRagelBuilder(self)
 		
 	def DefineLibrary(self, library_name, library):
 		self.extern_libs[library_name] = library
