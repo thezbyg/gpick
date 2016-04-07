@@ -383,6 +383,24 @@ void color_destroy(Color* a);
 void color_set(Color* a, float value);
 
 /**
+ * Set color values to specified values.
+ * @param[in,out] a Color to be set.
+ * @param[in] red Red value which is used.
+ * @param[in] green Green value which is used.
+ * @param[in] blue Blue value which is used.
+ */
+void color_set(Color* a, float red, float green, float blue);
+
+/**
+ * Set color values to specified values.
+ * @param[in,out] a Color to be set.
+ * @param[in] red Red value which is used.
+ * @param[in] green Green value which is used.
+ * @param[in] blue Blue value which is used.
+ */
+void color_set(Color* a, int red, int green, int blue);
+
+/**
  * Get either black or white color depending on which has more contrast with specified color.
  * @param[in] a Source color in RGB color space.
  * @param[out] b Color with most contrast in RGB color space.
@@ -480,5 +498,13 @@ float color_distance(const Color* a, const Color* b);
  * @return Distance.
  */
 float color_distance_lch(const Color* a, const Color* b);
+
+/**
+ * Check if colors are equal.
+ * @param[in] a First color.
+ * @param[in] b Second color.
+ * @return Equality.
+ */
+bool color_equal(const Color* a, const Color* b);
 
 #endif /* GPICK_COLOR_H_ */

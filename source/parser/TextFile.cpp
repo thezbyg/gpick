@@ -19,6 +19,18 @@
 #include "TextFile.h"
 
 namespace text_file_parser {
+	Configuration::Configuration()
+	{
+		single_line_c_comments = true;
+		single_line_hash_comments = true;
+		multi_line_c_comments = true;
+		short_hex = true;
+		full_hex = true;
+		css_rgb = true;
+		css_rgba = true;
+		float_values = true;
+		int_values = true;
+	}
 	bool scanner(TextFile &text_file, const Configuration &configuration);
 	bool TextFile::parse(const Configuration &configuration)
 	{

@@ -52,7 +52,7 @@ class ImportExportDialogOptions
 		Options m_options;
 		GtkWidget *m_dialog;
 		GtkWidget *m_converters, *m_item_sizes, *m_backgrounds, *m_include_color_names;
-		GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments;
+		GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_float_values, *m_int_values;
 		GlobalState *m_gs;
 		ImportExportDialogOptions(GtkWidget *dialog, GlobalState *gs)
 		{
@@ -109,10 +109,10 @@ class ImportExportDialogOptions
 			afterFilterChanged();
 			int y = 0;
 			GtkWidget *table = gtk_table_new(2, 3, false);
-			addOption(_("Converter:"), m_converters, y, table);
-			addOption(_("Item size:"), m_item_sizes, y, table);
-			addOption(_("Background:"), m_backgrounds, y, table);
-			addOption(m_include_color_names, y, table);
+			addOption(_("Converter:"), m_converters, 0, y, table);
+			addOption(_("Item size:"), m_item_sizes, 0, y, table);
+			addOption(_("Background:"), m_backgrounds, 0, y, table);
+			addOption(m_include_color_names, 0, y, table);
 			gtk_widget_show_all(table);
 			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
 		}
@@ -121,22 +121,30 @@ class ImportExportDialogOptions
 			m_options = Options::import_text_file;
 			int y = 0;
 			GtkWidget *table = gtk_table_new(2, 3, false);
-			addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), y, table);
-			addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), y, table);
-			addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), y, table);
+			addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), 0, y, table);
+			addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), 0, y, table);
+			addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), 0, y, table);
+			y = 0;
+			addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgb", true)), 1, y, table);
+			addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgba", true)), 1, y, table);
+			addOption(m_full_hex = newCheckbox(_("Full hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.full_hex", true)), 1, y, table);
+			y = 0;
+			addOption(m_short_hex = newCheckbox(_("Short hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.short_hex", true)), 2, y, table);
+			addOption(m_int_values = newCheckbox(_("Integer values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.int_values", true)), 2, y, table);
+			addOption(m_float_values = newCheckbox(_("Real values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.float_values", true)), 2, y, table);
 			gtk_widget_show_all(table);
 			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
 		}
-		GtkWidget *addOption(const char *label, GtkWidget *widget, int &y, GtkWidget *table)
+		GtkWidget *addOption(const char *label, GtkWidget *widget, int x, int &y, GtkWidget *table)
 		{
-			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(label, 0, 0.5, 0, 0), 0, 1, y, y + 1, GTK_FILL, GTK_FILL, 3, 1);
+			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(label, 0, 0.5, 0, 0), x * 3, x * 3 + 1, y, y + 1, GTK_FILL, GTK_FILL, 3, 1);
 			gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
 			y++;
 			return widget;
 		}
-		GtkWidget *addOption(GtkWidget *widget, int &y, GtkWidget *table)
+		GtkWidget *addOption(GtkWidget *widget, int x, int &y, GtkWidget *table)
 		{
-			gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
+			gtk_table_attach(GTK_TABLE(table), widget, x * 3 + 1, x * 3 + 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
 			y++;
 			return widget;
 		}
@@ -188,6 +196,30 @@ class ImportExportDialogOptions
 		{
 			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_hash_comments));
 		}
+		bool isCssRgbEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgb));
+		}
+		bool isCssRgbaEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgba));
+		}
+		bool isFullHexEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex));
+		}
+		bool isShortHexEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_short_hex));
+		}
+		bool isIntValuesEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_int_values));
+		}
+		bool isFloatValuesEnabled()
+		{
+			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_float_values));
+		}
 		void saveState()
 		{
 			auto settings = m_gs->getSettings();
@@ -204,6 +236,12 @@ class ImportExportDialogOptions
 				dynv_set_bool(settings, "gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
 				dynv_set_bool(settings, "gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
 				dynv_set_bool(settings, "gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.css_rgb", isCssRgbEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.css_rgba", isCssRgbaEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.full_hex", isFullHexEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.short_hex", isShortHexEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.int_values", isIntValuesEnabled());
+				dynv_set_bool(settings, "gpick.import_text_file.float_values", isFloatValuesEnabled());
 			}
 		}
 		GtkWidget* newConverterList()
@@ -397,6 +435,12 @@ bool ImportExportDialog::showImportTextFile()
 			configuration.single_line_c_comments = import_export_dialog_options.isSingleLineCCommentsEnabled();
 			configuration.multi_line_c_comments = import_export_dialog_options.isMultiLineCCommentsEnabled();
 			configuration.single_line_hash_comments = import_export_dialog_options.isSingleLineHashCommentsEnabled();
+			configuration.css_rgb = import_export_dialog_options.isCssRgbEnabled();
+			configuration.css_rgba = import_export_dialog_options.isCssRgbaEnabled();
+			configuration.full_hex = import_export_dialog_options.isFullHexEnabled();
+			configuration.short_hex = import_export_dialog_options.isShortHexEnabled();
+			configuration.int_values = import_export_dialog_options.isIntValuesEnabled();
+			configuration.float_values = import_export_dialog_options.isFloatValuesEnabled();
 			if (import_export.importTextFile(configuration)){
 				finished = true;
 			}else{

@@ -59,13 +59,20 @@ objects.append(text_file_parser_objects)
 dynv_objects = local_env.StaticObject(source = local_env.Glob('dynv/*.cpp'))
 objects.append(dynv_objects)
 
-executable = local_env.Program('gpick', source = [sources, objects])
+gpick_objects = local_env.StaticObject(source = sources)
+gpick_object_map = {}
+for obj in gpick_objects:
+	gpick_object_map[os.path.splitext(obj.name)[0]] = obj
+objects.append(gpick_objects)
+
+executable = local_env.Program('gpick', source = [objects])
 
 test_env = local_env.Clone()
 test_env.Append(LIBS = ['boost_unit_test_framework'])
 
 test_dynv = test_env.Program('test_dynv', source = ['test/DynvTest.cpp', dynv_objects])
-tests = [test_dynv]
+test_text_file = test_env.Program('test_text_file', source = ['test/TextFileTest.cpp', text_file_parser_objects, gpick_object_map['Color'], gpick_object_map['MathUtil']])
+tests = [test_dynv, test_text_file]
 
 Return('executable', 'tests', 'generated_files')
 

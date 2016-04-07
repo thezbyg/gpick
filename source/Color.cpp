@@ -277,6 +277,21 @@ color_get_contrasting(const Color* a, Color* b)
 void color_set(Color* a, float value)
 {
 	a->rgb.red = a->rgb.green = a->rgb.blue = value;
+	a->ma[3] = 0;
+}
+void color_set(Color* a, float red, float green, float blue)
+{
+	a->rgb.red = red;
+	a->rgb.green = green;
+	a->rgb.blue = blue;
+	a->ma[3] = 0;
+}
+void color_set(Color* a, int red, int green, int blue)
+{
+	a->rgb.red = red / 255.0;
+	a->rgb.green = green / 255.0;
+	a->rgb.blue = blue / 255.0;
+	a->ma[3] = 0;
 }
 
 Color* color_new()
@@ -645,6 +660,7 @@ void color_rgb_normalize(Color* a)
 	a->rgb.red = clamp_float(a->rgb.red, 0, 1);
 	a->rgb.green = clamp_float(a->rgb.green, 0, 1);
 	a->rgb.blue = clamp_float(a->rgb.blue, 0, 1);
+	a->ma[3] = clamp_float(a->ma[3], 0, 1);
 }
 
 void color_hsl_to_hsv(const Color *a, Color *b)
@@ -808,4 +824,16 @@ float color_distance_lch(const Color* a, const Color* b)
 		pow((bl.lch.C - al.lch.C) / (1 + 0.045 * al.lch.C), 2) +
 		pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2)
 	);
+}
+static inline float abs(float a)
+{
+	if (a < 0) return -a;
+	return a;
+}
+bool color_equal(const Color* a, const Color* b)
+{
+	for (int i = 0; i < 4; i++){
+		if (abs(a->ma[i] - b->ma[i]) > 1e-6) return false;
+	}
+	return true;
 }

@@ -64,6 +64,7 @@ class FSM
 			color.rgb.red = hexToInt(ts[start_index + 0]) / 15.0;
 			color.rgb.green = hexToInt(ts[start_index + 1]) / 15.0;
 			color.rgb.blue = hexToInt(ts[start_index + 2]) / 15.0;
+			color.ma[3] = 0;
 			addColor(color);
 		}
 		void colorRgb()
@@ -72,6 +73,7 @@ class FSM
 			color.rgb.red = numbers_i64[0] / 255.0;
 			color.rgb.green = numbers_i64[1] / 255.0;
 			color.rgb.blue = numbers_i64[2] / 255.0;
+			color.ma[3] = 0;
 			numbers_i64.clear();
 			addColor(color);
 		}
@@ -92,6 +94,7 @@ class FSM
 			color.rgb.red = numbers_double[0];
 			color.rgb.green = numbers_double[1];
 			color.rgb.blue = numbers_double[2];
+			color.ma[3] = 0;
 			numbers_double.clear();
 			addColor(color);
 		}
@@ -101,6 +104,7 @@ class FSM
 			color.rgb.red = numbers_i64[0] / 255.0;
 			color.rgb.green = numbers_i64[1] / 255.0;
 			color.rgb.blue = numbers_i64[2] / 255.0;
+			color.ma[3] = 0;
 			numbers_i64.clear();
 			addColor(color);
 		}
@@ -108,6 +112,11 @@ class FSM
 		{
 			string v(start, end);
 			return stod(v.c_str());
+		}
+		void clearNumberStacks()
+		{
+			numbers_i64.clear();
+			numbers_double.clear();
 		}
 };
 
@@ -127,15 +136,15 @@ class FSM
 	single_line_comment := (any - newline)* :>> ('\n' | '\r\n') @{ fgoto main; };
 
 	main := |*
-		( '#'[0-9a-fA-F]{6} ) { fsm->colorHexFull(true); };
-		( '#'[0-9a-fA-F]{3} ) { fsm->colorHexShort(true); };
-		( [0-9a-fA-F]{6} ) { fsm->colorHexFull(false); };
-		( [0-9a-fA-F]{3} ) { fsm->colorHexShort(false); };
-		( 'rgb'i '(' space* number space* ',' space* number space* ',' space* number space* ')' ) { fsm->colorRgb(); };
-		( 'rgba'i '(' space* number space* ',' space* number space* ',' space* number space* ',' space* real_number space* ')' ) { fsm->colorRgba(); };
-		( number space* ',' space* number space* ',' space* number ) { fsm->colorValueIntegers(); };
-		( number space+ number space+ number ) { fsm->colorValueIntegers(); };
-		( real_number space* ',' space* real_number space* ',' space* real_number ) { fsm->colorValues(); };
+		( '#'[0-9a-fA-F]{6} ) { if (configuration.full_hex) fsm->colorHexFull(true); };
+		( '#'[0-9a-fA-F]{3} ) { if (configuration.short_hex) fsm->colorHexShort(true); };
+		( [0-9a-fA-F]{6} ) { if (configuration.full_hex) fsm->colorHexFull(false); };
+		( [0-9a-fA-F]{3} ) { if (configuration.short_hex) fsm->colorHexShort(false); };
+		( 'rgb'i '(' space* number space* ',' space* number space* ',' space* number space* ')' ) { if (configuration.css_rgb) fsm->colorRgb(); else fsm->clearNumberStacks(); };
+		( 'rgba'i '(' space* number space* ',' space* number space* ',' space* number space* ',' space* real_number space* ')' ) { if (configuration.css_rgba) fsm->colorRgba(); else fsm->clearNumberStacks(); };
+		( number space* ',' space* number space* ',' space* number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
+		( number space+ number space+ number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
+		( real_number space* ',' space* real_number space* ',' space* real_number ) { if (configuration.float_values) fsm->colorValues(); else fsm->clearNumberStacks(); };
 		( '//' ) { if (configuration.single_line_c_comments) fgoto single_line_comment; };
 		( '/*' ) {  if (configuration.multi_line_c_comments) fgoto multi_line_comment; };
 		( '#' ) { if (configuration.single_line_hash_comments) fgoto single_line_comment; };

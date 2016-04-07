@@ -26,9 +26,16 @@ namespace text_file_parser {
 	class Configuration
 	{
 		public:
+			Configuration();
 			bool single_line_c_comments;
 			bool single_line_hash_comments;
 			bool multi_line_c_comments;
+			bool short_hex;
+			bool full_hex;
+			bool css_rgb;
+			bool css_rgba;
+			bool float_values;
+			bool int_values;
 	};
 	class TextFile
 	{
