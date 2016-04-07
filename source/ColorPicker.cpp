@@ -300,10 +300,10 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 static GtkWidget* createNearestFromPaletteMenu(const Color *color, GlobalState* gs)
 {
 	GtkWidget *menu = gtk_menu_new();
-	map<float, ColorObject *> color_distances;
+	multimap<float, ColorObject *> color_distances;
 	for (auto color_object: gs->getColorList()->colors){
 		Color target_color = color_object->getColor();
-		color_distances[color_distance_lch(color, &target_color)] = color_object;
+		color_distances.insert(pair<float, ColorObject *>(color_distance_lch(color, &target_color), color_object));
 	}
 	int count = 0;
 	for (auto item: color_distances){
