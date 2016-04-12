@@ -25,7 +25,7 @@
 #include "Paths.h"
 #include "Converter.h"
 #include "CopyPaste.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
 #include "RegisterSources.h"
 #include "GenerateScheme.h"
 #include "ColorPicker.h"
@@ -1061,22 +1061,22 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	GtkWidget *menu;
 	GtkWidget* item ;
 	gint32 button, event_time;
-	menu = gtk_menu_new ();
+	menu = gtk_menu_new();
 	GtkAccelGroup *accel_group = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), accel_group);
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
-	item = gtk_menu_item_new_with_mnemonic(_("_Copy to Clipboard"));
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_c, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	gtk_widget_set_sensitive(item, (selected_count >= 1));
-	if (total_count>0){
+	if (total_count > 0 && selected_count >= 1){
 		ColorList *color_list = color_list_new(nullptr);
 		palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
 		if (color_list_get_count(color_list) != 0){
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(*color_list->colors.begin(), args->color_list, args->gs));
+			StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->color_list, args->gs);
+		}else{
+			StandardMenu::appendMenu(menu);
 		}
 		color_list_destroy(color_list);
+	}else{
+		StandardMenu::appendMenu(menu);
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = gtk_menu_item_new_with_image (_("_Mix Colors..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));

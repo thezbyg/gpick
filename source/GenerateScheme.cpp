@@ -38,7 +38,8 @@
 #include "Random.h"
 #include "color_names/ColorNames.h"
 #include "Clipboard.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
+#include "NearestColorsMenu.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
@@ -435,20 +436,13 @@ static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEven
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
-	item = gtk_menu_item_new_with_mnemonic (_("_Copy to clipboard"));
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	Color c;
 	gtk_color_get_color(GTK_COLOR(widget), &c);
-
-	ColorObject* color_object;
-	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
+	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+	StandardMenu::appendMenu(menu, color_object, args->gs);
 	color_object->release();
-
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);

@@ -23,7 +23,7 @@
 #include "uiColorInput.h"
 #include "CopyPaste.h"
 #include "Clipboard.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "Internationalisation.h"
@@ -374,21 +374,16 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (add_all_to_palette_cb), args);
 
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
-		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 		if (selection_avail){
-			ColorObject* color_object;
+			ColorObject *color_object;
 			source_get_color(args, &color_object);
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
+			StandardMenu::appendMenu(menu, color_object, args->gs);
 			color_object->release();
 		}else{
-			gtk_widget_set_sensitive(item, false);
+			StandardMenu::appendMenu(menu);
 		}
-
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 		item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);

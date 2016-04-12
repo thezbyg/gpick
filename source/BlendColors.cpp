@@ -37,7 +37,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
 #include "ToolColorNaming.h"
 #include "Internationalisation.h"
 #include <gdk/gdkkeysyms.h>
@@ -267,17 +267,18 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+
 		if (selection_avail){
 			ColorList *color_list = color_list_new(nullptr);
 			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
 			if (color_list_get_count(color_list) != 0){
-				gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(*color_list->colors.begin(), args->preview_list, args->gs));
+				StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->preview_list, args->gs);
+			}else{
+				StandardMenu::appendMenu(menu);
 			}
 			color_list_destroy(color_list);
 		}else{
-			gtk_widget_set_sensitive(item, false);
+			StandardMenu::appendMenu(menu);
 		}
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		button = event->button;

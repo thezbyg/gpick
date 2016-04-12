@@ -37,7 +37,7 @@
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
 #include "layout/Style.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/format.hpp>
 #include <math.h>
@@ -231,15 +231,13 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		item = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		if (selection_avail){
 			ColorObject* color_object;
 			source_get_color(args, &color_object);
-			gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), CopyMenu::newMenu(color_object, args->gs));
+			StandardMenu::appendMenu(menu, color_object, args->gs);
 			color_object->release();
 		}else{
-			gtk_widget_set_sensitive(item, false);
+			StandardMenu::appendMenu(menu);
 		}
 		if (edit_avail){
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
