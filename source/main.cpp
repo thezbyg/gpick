@@ -31,6 +31,7 @@ static gchar **commandline_filename = nullptr;
 static gchar *commandline_geometry = nullptr;
 static gboolean pick_color = FALSE;
 static gboolean output_picked_color = FALSE;
+static gboolean output_without_newline = FALSE;
 static gboolean single_color_pick_mode = FALSE;
 static gboolean version_information = FALSE;
 static GOptionEntry commandline_entries[] =
@@ -39,6 +40,7 @@ static GOptionEntry commandline_entries[] =
 	{"pick", 'p', 0, G_OPTION_ARG_NONE, &pick_color, "Pick a color", nullptr},
 	{"single", 's', 0, G_OPTION_ARG_NONE, &single_color_pick_mode, "Pick one color and exit", nullptr},
 	{"output", 'o', 0, G_OPTION_ARG_NONE, &output_picked_color, "Output picked color", nullptr},
+	{"no-newline", 0, 0, G_OPTION_ARG_NONE, &output_without_newline, "Output picked color without newline", nullptr},
 	{"version", 'v', 0, G_OPTION_ARG_NONE, &version_information, "Print version information", nullptr},
 	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, nullptr, "[FILE...]"},
 	{nullptr}
@@ -73,6 +75,7 @@ int main(int argc, char **argv)
 	AppOptions options;
 	options.floating_picker_mode = pick_color;
 	options.output_picked_color = output_picked_color;
+	options.output_without_newline = output_without_newline;
 	options.single_color_pick_mode = single_color_pick_mode;
 	AppArgs *args = app_create_main(&options);
 	if (args){

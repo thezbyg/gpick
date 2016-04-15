@@ -74,7 +74,7 @@ if not env.GetOption('clean'):
 	if not env['TOOLCHAIN'] == 'msvc':
 		libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
 		libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
-		libs['LUA_PC'] = {'checks':{'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
+		libs['LUA_PC'] = {'checks':{'lua5.3':'>= 5.3', 'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
 
 	if env['DOWNLOAD_RESENE_COLOR_LIST']:
 		libs['CURL_PC'] = {'checks':{'libcurl':'>= 7'}}

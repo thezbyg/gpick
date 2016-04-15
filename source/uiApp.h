@@ -33,6 +33,7 @@ struct AppOptions
 {
 	bool floating_picker_mode;
 	bool output_picked_color;
+	bool output_without_newline;
 	bool single_color_pick_mode;
 };
 

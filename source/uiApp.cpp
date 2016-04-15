@@ -1654,7 +1654,11 @@ class FloatingPickerAction
 			string text;
 			if (converter_get_text(color, ConverterArrayType::copy, args->gs, text)){
 				if (args->options.output_picked_color){
-					cout << text << endl;
+					if (args->options.output_without_newline){
+						cout << text;
+					}else{
+						cout << text << endl;
+					}
 				}else{
 					Clipboard::set(text);
 					clipboard_touched = true;
