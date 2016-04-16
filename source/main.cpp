@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 	if (version_information){
 		string version = string(program_name) + " version " + string(gpick_build_version);
 		string revision = "Revision " + string(gpick_build_revision);
-		string build_date = "Built at " + string(gpick_build_date);
+		string build_date = "Date " + string(gpick_build_date);
 		g_print("%s\n%s\n%s\n", version.c_str(), revision.c_str(), build_date.c_str());
 		return 0;
 	}

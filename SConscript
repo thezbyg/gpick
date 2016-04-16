@@ -117,7 +117,7 @@ if not env['TOOLCHAIN'] == 'msvc':
 		)
 
 	if env['BUILD_TARGET'] == 'win32':
-		env.Append(	
+		env.Append(
 				LINKFLAGS = ['-Wl,--enable-auto-import', '-static-libgcc', '-static-libstdc++'],
 				CPPDEFINES = ['_WIN32_WINNT=0x0501'],
 				)
@@ -188,13 +188,14 @@ env.Alias(target="nsis", source=[
 	env.WriteNsisVersion("version.py")
 ])
 
-tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
 
 for item in parser_files:
 	tarFiles.append(str(item))
 
 if 'TAR' in env:
-	env.Alias(target="tar", source=[
+	env.Alias(target = "tar", source = [
+		env.Template(target = "#version.txt", source = "version.template"),
 		env.Append(TARFLAGS = ['-z']),
 		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
 		env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)

@@ -14,6 +14,7 @@ from flex import *
 from gettext import *
 from resource_template import *
 from ragel import *
+from template import *
 
 from SCons.Script import *
 from SCons.Util import *
@@ -62,6 +63,7 @@ class GpickEnvironment(SConsEnvironment):
 		addFlexBuilder(self)
 		addGettextBuilder(self)
 		addResourceTemplateBuilder(self)
+		addTemplateBuilder(self)
 		addRagelBuilder(self)
 		
 	def DefineLibrary(self, library_name, library):
@@ -142,15 +144,29 @@ class GpickEnvironment(SConsEnvironment):
 
 	def GetVersionInfo(self):
 		try:
-			revision = subprocess.Popen(['git', 'rev-parse', 'HEAD'], shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
-			match = re.search('[\d\w]+', str(revision))
-			revision = match.group(0)
+			revision = subprocess.Popen(['git', 'show', '--no-patch', '--format="%H %ct"'], shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
+			match = re.search('([\d\w]+) (\d+)', str(revision))
+			rev_hash = match.group(1)
+			commit_date = time.gmtime(int(match.group(2)))
+			rev_date = time.strftime("%Y-%m-%d", commit_date)
+			rev_time = time.strftime("%H:%M:%S", commit_date)
 		except:
-			revision = 'not under version control system'
-
-		self.Replace(GPICK_BUILD_REVISION = revision,
-			GPICK_BUILD_DATE = time.strftime("%Y-%m-%d"),
-			GPICK_BUILD_TIME = time.strftime("%H:%M:%S"));
+			try:
+				with open("../version.txt", "r") as version_file:
+					lines = version_file.read().splitlines()
+					rev_hash = lines[0]
+					rev_date = lines[1]
+					rev_time = lines[2]
+			except:
+				rev_hash = 'unknown'
+				commit_date = time.gmtime()
+				rev_date = time.strftime("%Y-%m-%d", commit_date)
+				rev_time = time.strftime("%H:%M:%S", commit_date)
+		self.Replace(
+			GPICK_BUILD_REVISION = rev_hash,
+			GPICK_BUILD_DATE = rev_date,
+			GPICK_BUILD_TIME = rev_time,
+		);
 
 def RegexEscape(str):
 	return str.replace('\\', '\\\\')
