@@ -34,6 +34,7 @@ static gboolean output_picked_color = FALSE;
 static gboolean output_without_newline = FALSE;
 static gboolean single_color_pick_mode = FALSE;
 static gboolean version_information = FALSE;
+static gboolean do_not_start = FALSE;
 static GOptionEntry commandline_entries[] =
 {
 	{"geometry", 'g', 0, G_OPTION_ARG_STRING, &commandline_geometry, "Window geometry", "GEOMETRY"},
@@ -41,6 +42,7 @@ static GOptionEntry commandline_entries[] =
 	{"single", 's', 0, G_OPTION_ARG_NONE, &single_color_pick_mode, "Pick one color and exit", nullptr},
 	{"output", 'o', 0, G_OPTION_ARG_NONE, &output_picked_color, "Output picked color", nullptr},
 	{"no-newline", 0, 0, G_OPTION_ARG_NONE, &output_without_newline, "Output picked color without newline", nullptr},
+	{"no-start", 0, 0, G_OPTION_ARG_NONE, &do_not_start, "Do not start Gpick if it is not already running", nullptr},
 	{"version", 'v', 0, G_OPTION_ARG_NONE, &version_information, "Print version information", nullptr},
 	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, nullptr, "[FILE...]"},
 	{nullptr}
@@ -77,7 +79,9 @@ int main(int argc, char **argv)
 	options.output_picked_color = output_picked_color;
 	options.output_without_newline = output_without_newline;
 	options.single_color_pick_mode = single_color_pick_mode;
-	AppArgs *args = app_create_main(&options);
+	options.do_not_start = do_not_start;
+	int return_value = 0;
+	AppArgs *args = app_create_main(&options, return_value);
 	if (args){
 		if (!single_color_pick_mode){
 			if (commandline_filename){
@@ -98,5 +102,5 @@ int main(int argc, char **argv)
 		}
 	}
 	g_option_context_free(context);
-	return 0;
+	return return_value;
 }

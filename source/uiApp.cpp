@@ -85,7 +85,6 @@ typedef struct AppArgs{
 	uiStatusIcon* status_icon;
 	FloatingPicker floating_picker;
 	AppOptions options;
-	guint bus_id;
 	struct dynvSystem *params;
 	GlobalState *gs;
 	char* current_filename;
@@ -94,6 +93,7 @@ typedef struct AppArgs{
 	gint x, y;
 	gint width, height;
 	bool initialization;
+	dbus::Control dbus_control;
 }AppArgs;
 
 static void app_release(AppArgs *args);
@@ -1368,21 +1368,6 @@ bool app_is_autoload_enabled(AppArgs *args)
 	return dynv_get_bool_wd(args->params, "main.save_restore_palette", true);
 }
 
-static bool app_on_control_activate_floating_picker(void *userdata)
-{
-	AppArgs *args = reinterpret_cast<AppArgs*>(userdata);
-	floating_picker_activate(args->floating_picker, false, false);
-	return true;
-}
-
-static bool app_on_single_instance_activate(void *userdata)
-{
-	AppArgs *args = reinterpret_cast<AppArgs*>(userdata);
-	status_icon_set_visible(args->status_icon, false);
-	main_show_window(args->window, args->params);
-	return true;
-}
-
 static void app_initialize_variables(AppArgs *args)
 {
 	args->current_filename = 0;
@@ -1430,7 +1415,7 @@ static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 	gtk_widget_show(widget);
 }
 
-AppArgs* app_create_main(const AppOptions *options)
+AppArgs* app_create_main(const AppOptions *options, int &return_value)
 {
 	AppArgs* args = new AppArgs;
 	args->initialization = true;
@@ -1444,15 +1429,33 @@ AppArgs* app_create_main(const AppOptions *options)
 		args->initialization = false;
 		return args; // No main UI initialization needed
 	}else{
-		args->bus_id = gpick_own_name(app_on_control_activate_floating_picker, app_on_single_instance_activate, args);
+		args->dbus_control.onActivateFloatingPicker = [args]{
+			floating_picker_activate(args->floating_picker, false, false);
+			return true;
+		};
+		args->dbus_control.onSingleInstanceActivate = [args]{
+			status_icon_set_visible(args->status_icon, false);
+			main_show_window(args->window, args->params);
+			return true;
+		};
+		args->dbus_control.ownName();
 		bool cancel_startup = false;
 		if (!cancel_startup && args->options.floating_picker_mode){
-			if (gpick_control_activate_floating_picker()){
+			if (args->dbus_control.activateFloatingPicker()){
+				cancel_startup = true;
+			}else if (args->options.do_not_start){
+				return_value = 1;
+				cancel_startup = true;
+			}
+		}
+		if (args->options.do_not_start){
+			if (args->dbus_control.checkIfRunning()){
+				return_value = 1;
 				cancel_startup = true;
 			}
 		}
 		if (!cancel_startup && dynv_get_bool_wd(args->gs->getSettings(), "gpick.main.single_instance", false)){
-			if (gpick_single_instance_activate()){
+			if (args->dbus_control.singleInstanceActivate()){
 				cancel_startup = true;
 			}
 		}
@@ -1706,7 +1709,7 @@ int app_run(AppArgs *args)
 			floating_picker_activate(args->floating_picker, false, false);
 		gtk_main();
 		app_save_recent_file_list(args);
-		gpick_unown_name(args->bus_id);
+		args->dbus_control.unownName();
 		status_icon_destroy(args->status_icon);
 	}
 	args->gs->writeSettings();

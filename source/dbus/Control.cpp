@@ -16,131 +16,208 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "Control.h"
+#ifndef WIN32
 #include "DbusInterface.h"
-
 #include <iostream>
 using namespace std;
 
-static GDBusObjectManagerServer *manager = nullptr;
-
-typedef struct DbusInterface {
-	bool (*on_control_activate_floating_picker)(void *userdata);
-	bool (*on_single_instance_activate)(void *userdata);
-	void *userdata;
-}DbusInterface;
-
-static DbusInterface dbus_interface;
-
-static gboolean on_control_activate_floating_picker(GpickControl *control, GDBusMethodInvocation *invocation, gpointer user_data)
+namespace dbus
 {
-	DbusInterface *dbus_interface = reinterpret_cast<DbusInterface*>(user_data);
-	bool result = dbus_interface->on_control_activate_floating_picker(dbus_interface->userdata);
-	gpick_control_complete_activate_floating_picker(control, invocation);
-	return result;
-}
+	class Control::Impl
+	{
+		public:
+			Control *m_decl;
+			GDBusObjectManagerServer *m_manager;
+			guint m_bus_id;
+			Impl(Control *decl):
+				m_decl(decl),
+				m_manager(nullptr),
+				m_bus_id(0)
+			{
+			}
+			void ownName()
+			{
+				m_bus_id = g_bus_own_name(G_BUS_TYPE_SESSION, "org.gpick", GBusNameOwnerFlags(G_BUS_NAME_OWNER_FLAGS_REPLACE), (GBusAcquiredCallback)on_bus_acquired, (GBusNameAcquiredCallback)on_name_acquired, (GBusNameLostCallback)on_name_lost, this, nullptr);
+			}
+			void unownName()
+			{
+				g_bus_unown_name(m_bus_id);
+				m_bus_id = 0;
+			}
+			GDBusObjectManager* getManager()
+			{
+				GDBusObjectManager *manager;
+				GError *error = nullptr;
+				manager = gpick_object_manager_client_new_for_bus_sync(G_BUS_TYPE_SESSION, G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE, "org.gpick", "/org/gpick", nullptr, &error);
+				if (manager == nullptr) {
+					cerr << "Error getting object manager client: " << error->message << endl;
+					g_error_free (error);
+					return 0;
+				}
+				return manager;
+			}
+			bool activateFloatingPicker()
+			{
+				GDBusObjectManager *manager = getManager();
+				if (!manager) return false;
+				GError *error = nullptr;
+				GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/org/gpick/Control", "org.gpick.Control");
+				bool result = false;
+				if (interface){
+					if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), nullptr, &error)){
+						cerr << "Error calling \"Control.ActivateFloatingPicker\": " << error->message << endl;
+						g_error_free (error);
+					}else result = true;
+					g_object_unref(interface);
+				}
+				g_object_unref(manager);
+				return result;
+			}
+			bool checkIfRunning()
+			{
+				GDBusObjectManager *manager = getManager();
+				if (!manager) return false;
+				GError *error = nullptr;
+				GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/org/gpick/Control", "org.gpick.Control");
+				bool result = false;
+				if (interface){
+					if (!gpick_control_call_check_if_running_sync(GPICK_CONTROL(interface), nullptr, &error)){
+						cerr << "Error calling \"Control.CheckIfRunning\": " << error->message << endl;
+						g_error_free (error);
+					}else result = true;
+					g_object_unref(interface);
+				}
+				g_object_unref(manager);
+				return result;
+			}
+			bool singleInstanceActivate()
+			{
+				GDBusObjectManager *manager = getManager();
+				if (!manager) return false;
+				GError *error = nullptr;
+				GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/org/gpick/SingleInstance", "org.gpick.SingleInstance");
+				bool result = false;
+				if (interface){
+					if (!gpick_single_instance_call_activate_sync(GPICK_SINGLE_INSTANCE(interface), nullptr, &error)){
+						cerr << "Error calling \"SingleInstance.Activate\": " << error->message << endl;
+						g_error_free (error);
+					}else result = true;
+					g_object_unref(interface);
+				}
+				g_object_unref(manager);
+				return result;
+			}
+			static gboolean on_control_activate_floating_picker(GpickControl *control, GDBusMethodInvocation *invocation, Impl *impl)
+			{
+				bool result = impl->m_decl->onActivateFloatingPicker();
+				gpick_control_complete_activate_floating_picker(control, invocation);
+				return result;
+			}
+			static gboolean on_control_check_if_running(GpickControl *control, GDBusMethodInvocation *invocation, Impl*)
+			{
+				gpick_control_complete_activate_floating_picker(control, invocation);
+				return true;
+			}
+			static gboolean on_single_instance_activate(GpickSingleInstance *single_instance, GDBusMethodInvocation *invocation, Impl *impl)
+			{
+				bool result = impl->m_decl->onSingleInstanceActivate();
+				gpick_single_instance_complete_activate(single_instance, invocation);
+				return result;
+			}
+			static void on_bus_acquired(GDBusConnection *connection, const gchar *name, Impl *impl)
+			{
+				auto manager = g_dbus_object_manager_server_new("/org/gpick");
+				impl->m_manager = manager;
 
-static gboolean on_single_instance_activate(GpickSingleInstance *single_instance, GDBusMethodInvocation *invocation, gpointer user_data)
-{
-	DbusInterface *dbus_interface = reinterpret_cast<DbusInterface*>(user_data);
-	bool result = dbus_interface->on_single_instance_activate(dbus_interface->userdata);
-	gpick_single_instance_complete_activate(single_instance, invocation);
-	return result;
-}
+				GpickObjectSkeleton *object;
+				object = gpick_object_skeleton_new("/org/gpick/Control");
+				GpickControl *control;
+				control = gpick_control_skeleton_new();
+				gpick_object_skeleton_set_control(object, control);
+				g_object_unref(control);
 
-static void on_bus_acquired(GDBusConnection *connection, const gchar *name, gpointer user_data)
-{
-	GpickObjectSkeleton *object;
-	manager = g_dbus_object_manager_server_new ("/gpick");
+				g_signal_connect(control, "handle-activate-floating-picker", G_CALLBACK(on_control_activate_floating_picker), impl);
+				g_signal_connect(control, "handle-check-if-running", G_CALLBACK(on_control_check_if_running), impl);
+				g_dbus_object_manager_server_export(manager, G_DBUS_OBJECT_SKELETON(object));
+				g_object_unref(object);
 
-	GpickControl *control;
-	object = gpick_object_skeleton_new("/gpick/Control");
-	control = gpick_control_skeleton_new();
-	gpick_object_skeleton_set_control(object, control);
-	g_object_unref(control);
+				GpickSingleInstance *single_instance;
+				object = gpick_object_skeleton_new("/org/gpick/SingleInstance");
+				single_instance = gpick_single_instance_skeleton_new();
+				gpick_object_skeleton_set_single_instance(object, single_instance);
+				g_object_unref(single_instance);
 
-	g_signal_connect(control, "handle-activate-floating-picker", G_CALLBACK(on_control_activate_floating_picker), user_data);
-	g_dbus_object_manager_server_export(manager, G_DBUS_OBJECT_SKELETON(object));
-	g_object_unref(object);
+				g_signal_connect(single_instance, "handle-activate", G_CALLBACK(on_single_instance_activate), impl);
+				g_dbus_object_manager_server_export(manager, G_DBUS_OBJECT_SKELETON(object));
+				g_object_unref(object);
 
-	GpickSingleInstance *single_instance;
-	object = gpick_object_skeleton_new("/gpick/SingleInstance");
-	single_instance = gpick_single_instance_skeleton_new();
-	gpick_object_skeleton_set_single_instance(object, single_instance);
-	g_object_unref(single_instance);
-
-	g_signal_connect(single_instance, "handle-activate", G_CALLBACK(on_single_instance_activate), user_data);
-	g_dbus_object_manager_server_export(manager, G_DBUS_OBJECT_SKELETON(object));
-	g_object_unref(object);
-
-	g_dbus_object_manager_server_set_connection(manager, connection);
-}
-
-static void on_name_acquired(GDBusConnection *connection, const gchar *name, gpointer user_data)
-{
-}
-
-static void on_name_lost(GDBusConnection *connection, const gchar *name, gpointer user_data)
-{
-}
-
-guint gpick_own_name(bool (*on_control_activate_floating_picker)(void *userdata), bool (*on_single_instance_activate)(void *userdata), void *userdata)
-{
-	dbus_interface.on_control_activate_floating_picker = on_control_activate_floating_picker;
-	dbus_interface.on_single_instance_activate = on_single_instance_activate;
-	dbus_interface.userdata = userdata;
-	return g_bus_own_name(G_BUS_TYPE_SESSION, "com.google.code.gpick", GBusNameOwnerFlags(G_BUS_NAME_OWNER_FLAGS_REPLACE), on_bus_acquired, on_name_acquired, on_name_lost, &dbus_interface, nullptr);
-}
-
-void gpick_unown_name(guint bus_id)
-{
-	g_bus_unown_name(bus_id);
-}
-
-GDBusObjectManager* gpick_get_manager()
-{
-	GDBusObjectManager *manager;
-	GError *error = nullptr;
-	manager = gpick_object_manager_client_new_for_bus_sync(G_BUS_TYPE_SESSION, G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE, "com.google.code.gpick", "/gpick", nullptr, &error);
-	if (manager == nullptr) {
-		cerr << "Error getting object manager client: " << error->message << endl;
-		g_error_free (error);
-		return 0;
+				g_dbus_object_manager_server_set_connection(manager, connection);
+			}
+			static void on_name_acquired(GDBusConnection *connection, const gchar *name, Impl*)
+			{
+			}
+			static void on_name_lost(GDBusConnection *connection, const gchar *name, Impl*)
+			{
+			};
+	};
+	Control::Control()
+	{
+		m_impl = make_unique<Impl>(this);
 	}
-	return manager;
-}
-
-bool gpick_control_activate_floating_picker()
-{
-	GDBusObjectManager *manager = gpick_get_manager();
-	if (!manager) return false;
-	GError *error = nullptr;
-	GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/gpick/Control", "com.google.code.gpick.Control");
-	bool result = false;
-	if (interface){
-		if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), nullptr, &error)){
-			cerr << "Error calling \"Control.ActivateFloatingPicker\": " << error->message << endl;
-			g_error_free (error);
-		}else result = true;
-		g_object_unref(interface);
+	Control::~Control()
+	{
 	}
-	g_object_unref(manager);
-	return result;
-}
-
-bool gpick_single_instance_activate()
-{
-	GDBusObjectManager *manager = gpick_get_manager();
-	if (!manager) return false;
-	GError *error = nullptr;
-	GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/gpick/SingleInstance", "com.google.code.gpick.SingleInstance");
-	bool result = false;
-	if (interface){
-		if (!gpick_single_instance_call_activate_sync(GPICK_SINGLE_INSTANCE(interface), nullptr, &error)){
-			cerr << "Error calling \"SingleInstance.Activate\": " << error->message << endl;
-			g_error_free (error);
-		}else result = true;
-		g_object_unref(interface);
+	void Control::ownName()
+	{
+		m_impl->ownName();
 	}
-	g_object_unref(manager);
-	return result;
+	void Control::unownName()
+	{
+		m_impl->unownName();
+	}
+	bool Control::singleInstanceActivate()
+	{
+		return m_impl->singleInstanceActivate();
+	}
+	bool Control::activateFloatingPicker()
+	{
+		return m_impl->activateFloatingPicker();
+	}
+	bool Control::checkIfRunning()
+	{
+		return m_impl->checkIfRunning();
+	}
 }
+#else
+namespace dbus
+{
+	class Control::Impl
+	{
+	};
+	Control::Control()
+	{
+	}
+	Control::~Control()
+	{
+	}
+	void Control::ownName()
+	{
+	}
+	void Control::unownName()
+	{
+	}
+	bool Control::singleInstanceActivate()
+	{
+		return false;
+	}
+	bool Control::activateFloatingPicker()
+	{
+		return false;
+	}
+	bool Control::checkIfRunning()
+	{
+		return false;
+	}
+}
+#endif

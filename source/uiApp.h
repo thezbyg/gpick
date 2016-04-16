@@ -35,9 +35,10 @@ struct AppOptions
 	bool output_picked_color;
 	bool output_without_newline;
 	bool single_color_pick_mode;
+	bool do_not_start;
 };
 
-AppArgs* app_create_main(const AppOptions *options);
+AppArgs* app_create_main(const AppOptions *options, int &return_value);
 int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
 int app_run(AppArgs *args);
 int app_parse_geometry(AppArgs *args, const char *geometry);

@@ -168,8 +168,8 @@
 	<Fragment>
 		<Property Id="ARPCOMMENTS" Value="$(var.Description)" />
 		<Property Id="ARPPRODUCTICON" Value="GpickIcon" />
-		<Property Id="ARPURLINFOABOUT" Value="http://gpick.googlecode.com/" />
-		<Property Id="ARPHELPLINK" Value="http://gpick.googlecode.com/" />
+		<Property Id="ARPURLINFOABOUT" Value="http://www.gpick.org/" />
+		<Property Id="ARPHELPLINK" Value="http://www.gpick.org/" />
 		<CustomAction Id="SetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
 		<InstallExecuteSequence>
 			<Custom Action="SetARPINSTALLLOCATION" After="InstallValidate" />

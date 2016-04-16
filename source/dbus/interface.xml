@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<node name="/com/google/code/gpick">
-	<interface name="com.google.code.gpick.SingleInstance">
+<node name="/org/gpick">
+	<interface name="org.gpick.SingleInstance">
 		<method name="Activate">
 		</method>
 	</interface>
-	<interface name="com.google.code.gpick.Control">
+	<interface name="org.gpick.Control">
 		<method name="ActivateFloatingPicker">
+		</method>
+		<method name="CheckIfRunning">
 		</method>
 	</interface>
 </node>

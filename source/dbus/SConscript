@@ -12,7 +12,7 @@ if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 if not env['BUILD_TARGET'] == 'win32':
 	sources = local_env.Glob('*.c') + local_env.Glob('*.cpp')
 else:
-	sources = local_env.Glob('win32dummy/*.cpp')
+	sources = local_env.Glob('*.cpp')
 
 objects = local_env.StaticObject(source = [sources])
 Return('objects')
