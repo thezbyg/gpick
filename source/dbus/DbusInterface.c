@@ -1026,12 +1026,29 @@ gpick_single_instance_skeleton_new (void)
 
 /* ---- Introspection data for org.gpick.Control ---- */
 
+static const _ExtendedGDBusArgInfo _gpick_control_method_info_activate_floating_picker_IN_ARG_converter_name =
+{
+  {
+    -1,
+    (gchar *) "converter_name",
+    (gchar *) "s",
+    NULL
+  },
+  FALSE
+};
+
+static const _ExtendedGDBusArgInfo * const _gpick_control_method_info_activate_floating_picker_IN_ARG_pointers[] =
+{
+  &_gpick_control_method_info_activate_floating_picker_IN_ARG_converter_name,
+  NULL
+};
+
 static const _ExtendedGDBusMethodInfo _gpick_control_method_info_activate_floating_picker =
 {
   {
     -1,
     (gchar *) "ActivateFloatingPicker",
-    NULL,
+    (GDBusArgInfo **) &_gpick_control_method_info_activate_floating_picker_IN_ARG_pointers,
     NULL,
     NULL
   },
@@ -1130,6 +1147,7 @@ gpick_control_default_init (GpickControlIface *iface)
    * GpickControl::handle-activate-floating-picker:
    * @object: A #GpickControl.
    * @invocation: A #GDBusMethodInvocation.
+   * @arg_converter_name: Argument passed by remote caller.
    *
    * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org-gpick-Control.ActivateFloatingPicker">ActivateFloatingPicker()</link> D-Bus method.
    *
@@ -1145,8 +1163,8 @@ gpick_control_default_init (GpickControlIface *iface)
     NULL,
     g_cclosure_marshal_generic,
     G_TYPE_BOOLEAN,
-    1,
-    G_TYPE_DBUS_METHOD_INVOCATION);
+    2,
+    G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_STRING);
 
   /**
    * GpickControl::handle-check-if-running:
@@ -1175,6 +1193,7 @@ gpick_control_default_init (GpickControlIface *iface)
 /**
  * gpick_control_call_activate_floating_picker:
  * @proxy: A #GpickControlProxy.
+ * @arg_converter_name: Argument to pass with the method invocation.
  * @cancellable: (allow-none): A #GCancellable or %NULL.
  * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
  * @user_data: User data to pass to @callback.
@@ -1188,13 +1207,15 @@ gpick_control_default_init (GpickControlIface *iface)
 void
 gpick_control_call_activate_floating_picker (
     GpickControl *proxy,
+    const gchar *arg_converter_name,
     GCancellable *cancellable,
     GAsyncReadyCallback callback,
     gpointer user_data)
 {
   g_dbus_proxy_call (G_DBUS_PROXY (proxy),
     "ActivateFloatingPicker",
-    g_variant_new ("()"),
+    g_variant_new ("(s)",
+                   arg_converter_name),
     G_DBUS_CALL_FLAGS_NONE,
     -1,
     cancellable,
@@ -1232,6 +1253,7 @@ _out:
 /**
  * gpick_control_call_activate_floating_picker_sync:
  * @proxy: A #GpickControlProxy.
+ * @arg_converter_name: Argument to pass with the method invocation.
  * @cancellable: (allow-none): A #GCancellable or %NULL.
  * @error: Return location for error or %NULL.
  *
@@ -1244,13 +1266,15 @@ _out:
 gboolean
 gpick_control_call_activate_floating_picker_sync (
     GpickControl *proxy,
+    const gchar *arg_converter_name,
     GCancellable *cancellable,
     GError **error)
 {
   GVariant *_ret;
   _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
     "ActivateFloatingPicker",
-    g_variant_new ("()"),
+    g_variant_new ("(s)",
+                   arg_converter_name),
     G_DBUS_CALL_FLAGS_NONE,
     -1,
     cancellable,

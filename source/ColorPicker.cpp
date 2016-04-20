@@ -249,7 +249,7 @@ static void on_swatch_color_activated(GtkWidget *widget, ColorPickerArgs *args)
 }
 static void on_swatch_center_activated(GtkWidget *widget, ColorPickerArgs *args)
 {
-	floating_picker_activate(args->floating_picker, true, false);
+	floating_picker_activate(args->floating_picker, true, false, nullptr);
 }
 static void on_picker_toggled(GtkWidget *widget, ColorPickerArgs *args)
 {

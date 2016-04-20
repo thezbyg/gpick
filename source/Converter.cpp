@@ -283,7 +283,7 @@ Converter* converters_get(Converters *converters, const char* name)
 	if (i != converters->converters.end()){
 		return (*i).second;
 	}else{
-		return 0;
+		return nullptr;
 	}
 }
 Converter* converters_get_first(Converters *converters, ConverterArrayType type)
@@ -412,7 +412,6 @@ int converters_set(Converters *converters, Converter* converter, ConverterArrayT
 	}
 	return 0;
 }
-
 bool converter_get_text(const Color &color, ConverterArrayType type, GlobalState *gs, std::string &text)
 {
 	auto converters = gs->getConverters();

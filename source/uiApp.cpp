@@ -590,7 +590,7 @@ static void menu_file_activate(GtkWidget *widget, gpointer data)
 
 static void floating_picker_show_cb(GtkWidget *widget, AppArgs* args)
 {
-	floating_picker_activate(args->floating_picker, false, false);
+	floating_picker_activate(args->floating_picker, false, false, nullptr);
 }
 
 static void show_about_box_cb(GtkWidget *widget, AppArgs* args)
@@ -1415,11 +1415,11 @@ static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 	gtk_widget_show(widget);
 }
 
-AppArgs* app_create_main(const AppOptions *options, int &return_value)
+AppArgs* app_create_main(const AppOptions &options, int &return_value)
 {
 	AppArgs* args = new AppArgs;
 	args->initialization = true;
-	memcpy(&args->options, options, sizeof(AppOptions));
+	args->options = options;
 	color_init();
 	args->gs = new GlobalState();
 	args->gs->loadSettings();
@@ -1429,8 +1429,12 @@ AppArgs* app_create_main(const AppOptions *options, int &return_value)
 		args->initialization = false;
 		return args; // No main UI initialization needed
 	}else{
-		args->dbus_control.onActivateFloatingPicker = [args]{
-			floating_picker_activate(args->floating_picker, false, false);
+		args->dbus_control.onActivateFloatingPicker = [args](const char *converter_name){
+			if (converter_name != nullptr && string(converter_name).length() > 0){
+				floating_picker_activate(args->floating_picker, false, false, converter_name);
+			}else{
+				floating_picker_activate(args->floating_picker, false, false, nullptr);
+			}
 			return true;
 		};
 		args->dbus_control.onSingleInstanceActivate = [args]{
@@ -1441,7 +1445,7 @@ AppArgs* app_create_main(const AppOptions *options, int &return_value)
 		args->dbus_control.ownName();
 		bool cancel_startup = false;
 		if (!cancel_startup && args->options.floating_picker_mode){
-			if (args->dbus_control.activateFloatingPicker()){
+			if (args->dbus_control.activateFloatingPicker(args->options.converter_name)){
 				cancel_startup = true;
 			}else if (args->options.do_not_start){
 				return_value = 1;
@@ -1655,7 +1659,15 @@ class FloatingPickerAction
 		void colorPicked(FloatingPicker fp, const Color &color)
 		{
 			string text;
-			if (converter_get_text(color, ConverterArrayType::copy, args->gs, text)){
+			if (args->options.converter_name.length() > 0){
+				auto converter = converters_get(args->gs->getConverters(), args->options.converter_name.c_str());
+				auto color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+				converter_get_text(color_object, converter, args->gs, text);
+				color_object->release();
+			}else{
+				converter_get_text(color, ConverterArrayType::copy, args->gs, text);
+			}
+			if (text.length() > 0){
 				if (args->options.output_picked_color){
 					if (args->options.output_without_newline){
 						cout << text;
@@ -1693,7 +1705,7 @@ int app_run(AppArgs *args)
 			pick_action.done(fp);
 		});
 		floating_picker_enable_custom_pick_action(args->floating_picker);
-		floating_picker_activate(args->floating_picker, false, true);
+		floating_picker_activate(args->floating_picker, false, true, args->options.converter_name.c_str());
 		gtk_main();
 		app_release(args);
 	}else{
@@ -1706,7 +1718,7 @@ int app_run(AppArgs *args)
 		gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
 		gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
 		if (args->options.floating_picker_mode)
-			floating_picker_activate(args->floating_picker, false, false);
+			floating_picker_activate(args->floating_picker, false, false, args->options.converter_name.c_str());
 		gtk_main();
 		app_save_recent_file_list(args);
 		args->dbus_control.unownName();

@@ -57,7 +57,7 @@ namespace dbus
 				}
 				return manager;
 			}
-			bool activateFloatingPicker()
+			bool activateFloatingPicker(const std::string &converter_name)
 			{
 				GDBusObjectManager *manager = getManager();
 				if (!manager) return false;
@@ -65,7 +65,7 @@ namespace dbus
 				GDBusInterface *interface = g_dbus_object_manager_get_interface(manager, "/org/gpick/Control", "org.gpick.Control");
 				bool result = false;
 				if (interface){
-					if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), nullptr, &error)){
+					if (!gpick_control_call_activate_floating_picker_sync(GPICK_CONTROL(interface), converter_name.c_str(), nullptr, &error)){
 						cerr << "Error calling \"Control.ActivateFloatingPicker\": " << error->message << endl;
 						g_error_free (error);
 					}else result = true;
@@ -108,15 +108,15 @@ namespace dbus
 				g_object_unref(manager);
 				return result;
 			}
-			static gboolean on_control_activate_floating_picker(GpickControl *control, GDBusMethodInvocation *invocation, Impl *impl)
+			static gboolean on_control_activate_floating_picker(GpickControl *control, GDBusMethodInvocation *invocation, const char *converter_name, Impl *impl)
 			{
-				bool result = impl->m_decl->onActivateFloatingPicker();
+				bool result = impl->m_decl->onActivateFloatingPicker ? impl->m_decl->onActivateFloatingPicker(converter_name) : false;
 				gpick_control_complete_activate_floating_picker(control, invocation);
 				return result;
 			}
 			static gboolean on_control_check_if_running(GpickControl *control, GDBusMethodInvocation *invocation, Impl*)
 			{
-				gpick_control_complete_activate_floating_picker(control, invocation);
+				gpick_control_complete_check_if_running(control, invocation);
 				return true;
 			}
 			static gboolean on_single_instance_activate(GpickSingleInstance *single_instance, GDBusMethodInvocation *invocation, Impl *impl)
@@ -180,9 +180,9 @@ namespace dbus
 	{
 		return m_impl->singleInstanceActivate();
 	}
-	bool Control::activateFloatingPicker()
+	bool Control::activateFloatingPicker(const std::string &converter_name)
 	{
-		return m_impl->activateFloatingPicker();
+		return m_impl->activateFloatingPicker(converter_name);
 	}
 	bool Control::checkIfRunning()
 	{

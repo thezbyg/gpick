@@ -188,7 +188,8 @@ struct _GpickControlIface
 
   gboolean (*handle_activate_floating_picker) (
     GpickControl *object,
-    GDBusMethodInvocation *invocation);
+    GDBusMethodInvocation *invocation,
+    const gchar *arg_converter_name);
 
   gboolean (*handle_check_if_running) (
     GpickControl *object,
@@ -216,6 +217,7 @@ void gpick_control_complete_check_if_running (
 /* D-Bus method calls: */
 void gpick_control_call_activate_floating_picker (
     GpickControl *proxy,
+    const gchar *arg_converter_name,
     GCancellable *cancellable,
     GAsyncReadyCallback callback,
     gpointer user_data);
@@ -227,6 +229,7 @@ gboolean gpick_control_call_activate_floating_picker_finish (
 
 gboolean gpick_control_call_activate_floating_picker_sync (
     GpickControl *proxy,
+    const gchar *arg_converter_name,
     GCancellable *cancellable,
     GError **error);
 

@@ -68,7 +68,7 @@ static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint ac
 static void status_icon_activate(GtkWidget *widget, gpointer user_data)
 {
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-	floating_picker_activate(si->floating_picker, false, false);
+	floating_picker_activate(si->floating_picker, false, false, nullptr);
 }
 void status_icon_set_visible(struct uiStatusIcon* si, bool visible)
 {

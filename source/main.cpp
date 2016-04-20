@@ -35,6 +35,7 @@ static gboolean output_without_newline = FALSE;
 static gboolean single_color_pick_mode = FALSE;
 static gboolean version_information = FALSE;
 static gboolean do_not_start = FALSE;
+static gchar *converter_name = nullptr;
 static GOptionEntry commandline_entries[] =
 {
 	{"geometry", 'g', 0, G_OPTION_ARG_STRING, &commandline_geometry, "Window geometry", "GEOMETRY"},
@@ -43,6 +44,7 @@ static GOptionEntry commandline_entries[] =
 	{"output", 'o', 0, G_OPTION_ARG_NONE, &output_picked_color, "Output picked color", nullptr},
 	{"no-newline", 0, 0, G_OPTION_ARG_NONE, &output_without_newline, "Output picked color without newline", nullptr},
 	{"no-start", 0, 0, G_OPTION_ARG_NONE, &do_not_start, "Do not start Gpick if it is not already running", nullptr},
+	{"converter-name", 'c', 0, G_OPTION_ARG_STRING, &converter_name, "Converter name used for floating picker mode", nullptr},
 	{"version", 'v', 0, G_OPTION_ARG_NONE, &version_information, "Print version information", nullptr},
 	{G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_FILENAME_ARRAY, &commandline_filename, nullptr, "[FILE...]"},
 	{nullptr}
@@ -54,17 +56,21 @@ int main(int argc, char **argv)
 	initialize_internationalisation();
 	g_set_application_name(program_name);
 	gchar* tmp;
-	GtkIconTheme *icon_theme;
-	icon_theme = gtk_icon_theme_get_default();
-	gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(0));
-	g_free(tmp);
 	GError *error = nullptr;
-	GOptionContext *context;
-	context = g_option_context_new("- advanced color picker");
+	GOptionContext *context = g_option_context_new("- advanced color picker");
 	g_option_context_add_main_entries(context, commandline_entries, 0);
 	g_option_context_add_group(context, gtk_get_option_group(TRUE));
-	if (!g_option_context_parse(context, &argc, &argv, &error)){
+	gchar **argv_copy;
+#ifdef WIN32
+	argv_copy = g_win32_get_command_line();
+#else
+	argv_copy  = g_strdupv(argv);
+#endif
+	if (!g_option_context_parse_strv(context, &argv_copy, &error)){
 		g_print("option parsing failed: %s\n", error->message);
+		g_clear_error(&error);
+		g_option_context_free(context);
+		g_strfreev(argv_copy);
 		return -1;
 	}
 	if (version_information){
@@ -72,6 +78,8 @@ int main(int argc, char **argv)
 		string revision = "Revision " + string(gpick_build_revision);
 		string build_date = "Date " + string(gpick_build_date);
 		g_print("%s\n%s\n%s\n", version.c_str(), revision.c_str(), build_date.c_str());
+		g_option_context_free(context);
+		g_strfreev(argv_copy);
 		return 0;
 	}
 	AppOptions options;
@@ -80,9 +88,15 @@ int main(int argc, char **argv)
 	options.output_without_newline = output_without_newline;
 	options.single_color_pick_mode = single_color_pick_mode;
 	options.do_not_start = do_not_start;
+	if (converter_name != nullptr)
+		options.converter_name = converter_name;
 	int return_value = 0;
-	AppArgs *args = app_create_main(&options, return_value);
+	AppArgs *args = app_create_main(options, return_value);
 	if (args){
+		GtkIconTheme *icon_theme;
+		icon_theme = gtk_icon_theme_get_default();
+		gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(0));
+		g_free(tmp);
 		if (!single_color_pick_mode){
 			if (commandline_filename){
 				app_load_file(args, commandline_filename[0]);
@@ -95,12 +109,9 @@ int main(int argc, char **argv)
 			}
 		}
 		if (commandline_geometry) app_parse_geometry(args, commandline_geometry);
-		int r = app_run(args);
-		if (r){
-			g_option_context_free(context);
-			return r;
-		}
+		return_value = app_run(args);
 	}
 	g_option_context_free(context);
+	g_strfreev(argv_copy);
 	return return_value;
 }

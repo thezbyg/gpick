@@ -6,6 +6,8 @@
 	</interface>
 	<interface name="org.gpick.Control">
 		<method name="ActivateFloatingPicker">
+			<arg type="s" name="converter_name" direction="in">
+			</arg>
 		</method>
 		<method name="CheckIfRunning">
 		</method>

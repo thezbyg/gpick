@@ -45,6 +45,7 @@ typedef struct FloatingPickerArgs
 	GtkWidget* color_widget;
 	guint timeout_source_id;
 	ColorSource *color_source;
+	Converter *converter;
 	GlobalState* gs;
 	bool release_mode;
 	bool single_pick_mode;
@@ -132,13 +133,24 @@ static gboolean update_display(FloatingPickerArgs *args)
 	Color c;
 	get_color_sample(args, true, &c);
 	string text;
-	converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	if (args->converter != nullptr){
+		auto color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+		converter_get_text(color_object, args->converter, args->gs, text);
+		color_object->release();
+	}else{
+		converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	}
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text.c_str());
 	return true;
 }
-void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_release, bool single_pick_mode)
+void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_release, bool single_pick_mode, const char *converter_name)
 {
 #ifndef WIN32 //Pointer grabbing in Windows is broken, disabling floating picker for now
+	if (converter_name != nullptr){
+		args->converter = converters_get(args->gs->getConverters(), converter_name);
+	}else{
+		args->converter = nullptr;
+	}
 	args->release_mode = hide_on_mouse_release && !single_pick_mode;
 	args->single_pick_mode = single_pick_mode;
 	args->click_mode = true;
@@ -194,10 +206,10 @@ static void complete_picking(FloatingPickerArgs *args)
 			ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 			if (args->single_pick_mode){
-				Clipboard::set(color_object, args->gs);
+				Clipboard::set(color_object, args->gs, args->converter);
 			}else{
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", false)){
-					Clipboard::set(color_object, args->gs);
+					Clipboard::set(color_object, args->gs, args->converter);
 				}
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", false)){
 					PickerColorNameAssigner name_assigner(args->gs);

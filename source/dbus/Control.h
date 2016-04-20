@@ -21,6 +21,7 @@
 
 #include <memory>
 #include <functional>
+#include <string>
 namespace dbus
 {
 	class Control
@@ -31,9 +32,9 @@ namespace dbus
 			void ownName();
 			void unownName();
 			bool singleInstanceActivate();
-			bool activateFloatingPicker();
+			bool activateFloatingPicker(const std::string &converter_name);
 			bool checkIfRunning();
-			std::function<bool()> onActivateFloatingPicker;
+			std::function<bool(const char *)> onActivateFloatingPicker;
 			std::function<bool()> onSingleInstanceActivate;
 		private:
 			class Impl;
