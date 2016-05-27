@@ -1,31 +1,25 @@
 #!/usr/bin/env python
-
 import os
 import time
 import SCons
 import re
 import string
-import sys
 import glob
 import subprocess
-
 from lemon import *
 from flex import *
 from gettext import *
 from resource_template import *
 from ragel import *
 from template import *
-
 from SCons.Script import *
 from SCons.Util import *
 from SCons.Script.SConscript import SConsEnvironment
-
 import SCons.Script.SConscript
 import SCons.SConf
 import SCons.Conftest
 
 def MatchFiles (files, path, repath, dir_exclude_pattern,  file_exclude_pattern):
-
 	for filename in os.listdir(path):
 		fullname = os.path.join (path, filename)
 		repath_file =  os.path.join (repath, filename);
@@ -51,13 +45,36 @@ def CheckProgram(context, env, name, member_name):
 		context.Result(False)
 		return False
 
+def CompareVersions(a, b):
+	for i in range(0, min(len(a), len(b))):
+		if a[i] < b[i]:
+			return 1
+		if a[i] > b[i]:
+			return -1
+	return 0
+
+def CheckBoost(context, version):
+	context.Message('Checking for library boost >= %s... ' % (version))
+	result, boost_version = context.TryRun("""
+#include <boost/version.hpp>
+#include <iostream>
+int main(){
+std::cout << BOOST_LIB_VERSION << std::endl;
+return 0;
+}
+""", '.cpp')
+	if result:
+		found_version = boost_version.strip('\r\n\t ').split('_')
+		required_version = version.strip('\r\n\t ').split('.')
+		result = CompareVersions(required_version, found_version) >= 0
+	context.Result(result)
+	return result
+
 class GpickLibrary(NodeList):
 	include_dirs = []
 
 class GpickEnvironment(SConsEnvironment):
-	
 	extern_libs = {}
-	
 	def AddCustomBuilders(self):
 		addLemonBuilder(self)
 		addFlexBuilder(self)
@@ -112,6 +129,13 @@ class GpickEnvironment(SConsEnvironment):
 						self.Exit(1)
 				else:
 					self.Exit(1)
+
+	def ConfirmBoost(self, conf, version):
+		conf.AddTests({'CheckBoost': CheckBoost})
+		if conf.CheckBoost(version):
+			return
+		else:
+			self.Exit(1)
 
 	def InstallPerm(self, dir, source, perm):
 		obj = self.Install(dir, source)

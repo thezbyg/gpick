@@ -53,6 +53,16 @@ try:
 except OSError:     # ignore on systems that don't support umask
 	pass
 
+if os.environ.has_key('CC'):
+	env['CC'] = os.environ['CC']
+if os.environ.has_key('CFLAGS'):
+	env['CCFLAGS'] += SCons.Util.CLVar(os.environ['CFLAGS'])
+if os.environ.has_key('CXX'):
+	env['CXX'] = os.environ['CXX']
+if os.environ.has_key('CXXFLAGS'):
+	env['CXXFLAGS'] += SCons.Util.CLVar(os.environ['CXXFLAGS'])
+if os.environ.has_key('LDFLAGS'):
+	env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
 
 if not env.GetOption('clean'):
 	conf = Configure(env)
@@ -80,20 +90,10 @@ if not env.GetOption('clean'):
 		libs['CURL_PC'] = {'checks':{'libcurl':'>= 7'}}
 
 	env.ConfirmLibs(conf, libs)
+	env.ConfirmBoost(conf, '1.58')
 
 	env = conf.Finish()
 
-if os.environ.has_key('CC'):
-	env['CC'] = os.environ['CC']
-if os.environ.has_key('CFLAGS'):
-	env['CCFLAGS'] += SCons.Util.CLVar(os.environ['CFLAGS'])
-if os.environ.has_key('CXX'):
-	env['CXX'] = os.environ['CXX']
-if os.environ.has_key('CXXFLAGS'):
-	env['CXXFLAGS'] += SCons.Util.CLVar(os.environ['CXXFLAGS'])
-if os.environ.has_key('LDFLAGS'):
-	env['LINKFLAGS'] += SCons.Util.CLVar(os.environ['LDFLAGS'])
-	
 Decider('MD5-timestamp')
 
 if not env['TOOLCHAIN'] == 'msvc':
