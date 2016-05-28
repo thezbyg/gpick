@@ -217,11 +217,11 @@ bool ImportExport::importGPL()
 }
 bool ImportExport::importGPA()
 {
-	return palette_file_load(m_filename, m_color_list);
+	return palette_file_load(m_filename, m_color_list) == 0;
 }
 bool ImportExport::exportGPA()
 {
-	return palette_file_save(m_filename, m_color_list);
+	return palette_file_save(m_filename, m_color_list) == 0;
 }
 bool ImportExport::exportTXT()
 {
