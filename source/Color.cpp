@@ -825,15 +825,10 @@ float color_distance_lch(const Color* a, const Color* b)
 		pow((pow(a->lab.a - b->lab.a, 2) + pow(a->lab.b - b->lab.b, 2) - (bl.lch.C - al.lch.C)) / (1 + 0.015 * al.lch.C), 2)
 	);
 }
-static inline float abs(float a)
-{
-	if (a < 0) return -a;
-	return a;
-}
 bool color_equal(const Color* a, const Color* b)
 {
 	for (int i = 0; i < 4; i++){
-		if (abs(a->ma[i] - b->ma[i]) > 1e-6) return false;
+		if (abs_float(a->ma[i] - b->ma[i]) > 1e-6) return false;
 	}
 	return true;
 }
