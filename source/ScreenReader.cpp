@@ -16,35 +16,33 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "ScreenReader.h"
 #include "Rect2.h"
-
 #include <algorithm>
-
 using namespace math;
 
-struct ScreenReader{
-	GdkPixbuf *pixbuf;
+struct ScreenReader
+{
+	cairo_surface_t *surface;
 	int max_size;
 	GdkScreen *screen;
 	Rect2<int> read_area;
 };
-
-struct ScreenReader* screen_reader_new(){
-	struct ScreenReader* screen = new struct ScreenReader;
-	screen->max_size = 150;
-	screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, 150, 150);
-	screen->screen = nullptr;
+struct ScreenReader* screen_reader_new()
+{
+	ScreenReader* screen = new ScreenReader;
+	screen->max_size = 0;
+	screen->surface = 0;
+	screen->screen = 0;
 	return screen;
 }
-
-void screen_reader_destroy(struct ScreenReader *screen) {
-	if (screen->pixbuf) g_object_unref(screen->pixbuf);
+void screen_reader_destroy(ScreenReader *screen)
+{
+	if (screen->surface) cairo_surface_destroy(screen->surface);
 	delete screen;
 }
-
-void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, Rect2<int>& rect){
+void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdk_screen, Rect2<int>& rect)
+{
 	if (screen->screen && (screen->screen == gdk_screen)){
 		screen->read_area += rect;
 	}else{
@@ -52,33 +50,37 @@ void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, 
 		screen->screen = gdk_screen;
 	}
 }
-
-void screen_reader_reset_rect(struct ScreenReader *screen){
+void screen_reader_reset_rect(ScreenReader *screen)
+{
 	screen->read_area = Rect2<int>();
-	screen->screen = nullptr;
+	screen->screen = NULL;
 }
-
-void screen_reader_update_pixbuf(struct ScreenReader *screen, Rect2<int>* update_rect){
+void screen_reader_update_surface(ScreenReader *screen, Rect2<int>* update_rect)
+{
 	if (!screen->screen) return;
-
 	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
-	GdkColormap* colormap = gdk_screen_get_system_colormap(screen->screen);
-
 	int left = screen->read_area.getX();
 	int top = screen->read_area.getY();
 	int width = screen->read_area.getWidth();
 	int height = screen->read_area.getHeight();
-
 	if (width > screen->max_size || height > screen->max_size){
-		if (screen->pixbuf) g_object_unref(screen->pixbuf);
+		if (screen->surface) cairo_surface_destroy(screen->surface);
 		screen->max_size = (std::max(width, height) / 150 + 1) * 150;
-		screen->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, screen->max_size, screen->max_size);
+		screen->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, screen->max_size, screen->max_size);
 	}
-
-	gdk_pixbuf_get_from_drawable(screen->pixbuf, root_window, colormap, left, top, 0, 0, width, height);
+	cairo_t *root_cr = gdk_cairo_create(root_window);
+	cairo_surface_t *root_surface = cairo_get_target(root_cr);
+	cairo_t *cr = cairo_create(screen->surface);
+	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+	cairo_set_source_surface(cr, root_surface, -left, -top);
+	cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+	cairo_rectangle(cr, 0, 0, width, height);
+	cairo_fill(cr);
+	cairo_destroy(cr);
+	cairo_destroy(root_cr);
 	*update_rect = screen->read_area;
 }
-
-GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen){
-	return screen->pixbuf;
+cairo_surface_t* screen_reader_get_surface(ScreenReader *screen)
+{
+	return screen->surface;
 }

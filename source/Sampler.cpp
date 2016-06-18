@@ -16,98 +16,93 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "Sampler.h"
+#include "ScreenReader.h"
 #include "MathUtil.h"
 #include <math.h>
 #include <gdk/gdk.h>
-
 using namespace math;
 
-struct Sampler{
+struct Sampler
+{
 	int oversample;
-	enum SamplerFalloff falloff;
+	SamplerFalloff falloff;
 	float (*falloff_fnc)(float distance);
-	struct ScreenReader* screen_reader;
+	ScreenReader* screen_reader;
 };
-
-static float sampler_falloff_none(float distance) {
+static float sampler_falloff_none(float distance)
+{
 	return 1;
 }
-
-static float sampler_falloff_linear(float distance) {
-	return 1-distance;
+static float sampler_falloff_linear(float distance)
+{
+	return 1 - distance;
 }
-
-static float sampler_falloff_quadratic(float distance) {
-	return 1-(distance*distance);
+static float sampler_falloff_quadratic(float distance)
+{
+	return 1 - (distance * distance);
 }
-
-static float sampler_falloff_cubic(float distance) {
-	return 1-(distance*distance*distance);
+static float sampler_falloff_cubic(float distance)
+{
+	return 1 - (distance * distance * distance);
 }
-
-static float sampler_falloff_exponential(float distance) {
-	return 1/exp(5*distance*distance);
+static float sampler_falloff_exponential(float distance)
+{
+	return 1 / exp(5 * distance * distance);
 }
-
-struct Sampler* sampler_new(struct ScreenReader* screen_reader) {
-	struct Sampler* sampler = new struct Sampler;
-	sampler->oversample=0;
-	sampler_set_falloff(sampler, NONE);
+struct Sampler* sampler_new(ScreenReader* screen_reader)
+{
+	Sampler* sampler = new Sampler;
+	sampler->oversample = 0;
+	sampler_set_falloff(sampler, SamplerFalloff::none);
 	sampler->screen_reader = screen_reader;
 	return sampler;
 }
-
-void sampler_destroy(struct Sampler *sampler) {
-	//g_object_unref (sampler->pixbuf);
+void sampler_destroy(Sampler *sampler)
+{
 	delete sampler;
 }
-
-
-void sampler_set_falloff(struct Sampler *sampler, enum SamplerFalloff falloff) {
+void sampler_set_falloff(Sampler *sampler, SamplerFalloff falloff)
+{
 	sampler->falloff = falloff;
 	switch (falloff){
-	case NONE:
+	case SamplerFalloff::none:
 		sampler->falloff_fnc = sampler_falloff_none;
 		break;
-	case LINEAR:
+	case SamplerFalloff::linear:
 		sampler->falloff_fnc = sampler_falloff_linear;
 		break;
-	case QUADRATIC:
+	case SamplerFalloff::quadratic:
 		sampler->falloff_fnc = sampler_falloff_quadratic;
 		break;
-	case CUBIC:
+	case SamplerFalloff::cubic:
 		sampler->falloff_fnc = sampler_falloff_cubic;
 		break;
-	case EXPONENTIAL:
+	case SamplerFalloff::exponential:
 		sampler->falloff_fnc = sampler_falloff_exponential;
 		break;
 	default:
 		sampler->falloff_fnc = 0;
 	}
 }
-
-void sampler_set_oversample(struct Sampler *sampler, int oversample){
+void sampler_set_oversample(Sampler *sampler, int oversample)
+{
 	sampler->oversample = oversample;
 }
-
-static void get_pixel(const guchar *pixels, int row_stride, int x, int y, Color* color)
+static void get_pixel(unsigned char *data, int stride, int x, int y, Color* color)
 {
-	const guchar *p;
-	p = pixels + y * row_stride + x * 3;
-	color->rgb.red = p[0] / 255.0;
-	color->rgb.green = p[1] / 255.0;
-	color->rgb.blue = p[2] / 255.0;
+	unsigned char *p;
+	p = data + y * stride + x * 4;
+	color->rgb.red = p[2] * (1 / 255.0);
+	color->rgb.green = p[1] * (1 / 255.0);
+	color->rgb.blue = p[0] * (1 / 255.0);
 }
-#define GDK_PIXBUF_VERSION_GE(a, b) (GDK_PIXBUF_MAJOR > a || (GDK_PIXBUF_MAJOR == a && GDK_PIXBUF_MINOR >= b))
-int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<int>& screen_rect, Vec2<int>& offset, Color* color)
+int sampler_get_color_sample(Sampler *sampler, Vec2<int>& pointer, Rect2<int>& screen_rect, Vec2<int>& offset, Color* color)
 {
-	Color sample;
-	Color result;
+	Color sample, result;
 	float divider = 0;
 	color_zero(&result);
-	GdkPixbuf* pixbuf = screen_reader_get_pixbuf(sampler->screen_reader);
+	cairo_surface_t *surface = screen_reader_get_surface(sampler->screen_reader);
 	int x = pointer.x, y = pointer.y;
 	int left, right, top, bottom;
 	left = max_int(screen_rect.getLeft(), x - sampler->oversample);
@@ -118,18 +113,14 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<
 	int height = bottom - top;
 	int center_x = x - left;
 	int center_y = y - top;
-	int row_stride = gdk_pixbuf_get_rowstride(pixbuf);
-#if GDK_PIXBUF_VERSION_GE(2, 32)
-	const guchar *pixels = gdk_pixbuf_read_pixels(pixbuf);
-#else
-	const guchar *pixels = gdk_pixbuf_get_pixels(pixbuf);
-#endif
 	float max_distance = 1 / sqrt(2 * pow((double)sampler->oversample, 2));
+	unsigned char *data = cairo_image_surface_get_data(surface);
+	int stride = cairo_image_surface_get_stride(surface);
 	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
 		for (int y=-sampler->oversample; y <= sampler->oversample; ++y){
 			if ((center_x + x < 0) || (center_y + y < 0)) continue;
 			if ((center_x + x >= width) || (center_y + y >= height)) continue;
-			get_pixel(pixels, row_stride, offset.x + center_x+x, offset.y + center_y+y, &sample);
+			get_pixel(data, stride, offset.x + center_x + x, offset.y + center_y + y, &sample);
 			float f;
 			if (sampler->oversample){
 				f = sampler->falloff_fnc(sqrt((double)(x * x + y * y)) * max_distance);
@@ -138,7 +129,7 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<
 			}
 			color_multiply(&sample, f);
 			color_add(&result, &sample);
-			divider+=f;
+			divider += f;
 		}
 	}
 	if (divider > 0)
@@ -146,16 +137,15 @@ int sampler_get_color_sample(struct Sampler *sampler, Vec2<int>& pointer, Rect2<
 	color_copy(&result, color);
 	return 0;
 }
-
-enum SamplerFalloff sampler_get_falloff(struct Sampler *sampler){
+enum SamplerFalloff sampler_get_falloff(Sampler *sampler)
+{
 	return sampler->falloff;
 }
-
-int sampler_get_oversample(struct Sampler *sampler) {
+int sampler_get_oversample(Sampler *sampler)
+{
 	return sampler->oversample;
 }
-
-void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
+void sampler_get_screen_rect(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
 {
 	int left, right, top, bottom;
 	left = max_int(screen_rect.getLeft(), pointer.x - sampler->oversample);

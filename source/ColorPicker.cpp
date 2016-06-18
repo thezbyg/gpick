@@ -42,6 +42,7 @@
 #include "StandardMenu.h"
 #include "Internationalisation.h"
 #include "color_names/ColorNames.h"
+#include "ScreenReader.h"
 #include "Sampler.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
@@ -133,7 +134,7 @@ static gboolean updateMainColor( gpointer data ){
 		gtk_zoomed_get_screen_rect(GTK_ZOOMED(args->zoomed_display), pointer, screen_rect, &zoomed_rect);
 		screen_reader_add_rect(screen_reader, screen, zoomed_rect);
 	}
-	screen_reader_update_pixbuf(screen_reader, &final_rect);
+	screen_reader_update_surface(screen_reader, &final_rect);
 	Vec2<int> offset;
 	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
 	Color c;
@@ -144,7 +145,7 @@ static gboolean updateMainColor( gpointer data ){
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	if (zoomed_enabled){
 		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
-		gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, screen_rect, offset, screen_reader_get_pixbuf(screen_reader));
+		gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, screen_rect, offset, screen_reader_get_surface(screen_reader));
 	}
 	return TRUE;
 }
@@ -678,12 +679,12 @@ static GtkWidget* create_falloff_type_list (void){
 		{"gpick-falloff-cubic", _("Cubic")},
 		{"gpick-falloff-exponential", _("Exponential")},
 	};
-	gint32 falloff_type_ids[]={
-		NONE,
-		LINEAR,
-		QUADRATIC,
-		CUBIC,
-		EXPONENTIAL,
+	SamplerFalloff falloff_type_ids[]={
+		SamplerFalloff::none,
+		SamplerFalloff::linear,
+		SamplerFalloff::quadratic,
+		SamplerFalloff::cubic,
+		SamplerFalloff::exponential,
 	};
 	GtkIconTheme *icon_theme;
 	icon_theme = gtk_icon_theme_get_default ();
@@ -720,7 +721,7 @@ static int source_destroy(ColorPickerArgs *args)
 	}
 
 	dynv_set_int32(args->params, "sampler.oversample", sampler_get_oversample(args->gs->getSampler()));
-	dynv_set_int32(args->params, "sampler.falloff", sampler_get_falloff(args->gs->getSampler()));
+	dynv_set_int32(args->params, "sampler.falloff", static_cast<int>(sampler_get_falloff(args->gs->getSampler())));
 
 	dynv_set_float(args->params, "zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed_display)));
 	dynv_set_int32(args->params, "zoom_size", gtk_zoomed_get_size(GTK_ZOOMED(args->zoomed_display)));
@@ -1039,7 +1040,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Falloff:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 				widget = create_falloff_type_list();
 				g_signal_connect (G_OBJECT (widget), "changed", G_CALLBACK (on_oversample_falloff_changed), args);
-				gtk_combo_box_set_active(GTK_COMBO_BOX(widget), dynv_get_int32_wd(args->params, "sampler.falloff", NONE));
+				gtk_combo_box_set_active(GTK_COMBO_BOX(widget), dynv_get_int32_wd(args->params, "sampler.falloff", static_cast<int>(SamplerFalloff::none)));
 				gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 				table_y++;
 

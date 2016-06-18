@@ -20,19 +20,15 @@
 #define SCREENREADER_H_
 
 #include <gdk/gdk.h>
+#include <cairo/cairo.h>
 #include "Rect2.h"
 
 struct ScreenReader;
-
-struct ScreenReader* screen_reader_new();
-
-void screen_reader_reset_rect(struct ScreenReader *screen);
-
-void screen_reader_add_rect(struct ScreenReader *screen, GdkScreen *gdk_screen, math::Rect2<int>& rect);
-
-void screen_reader_update_pixbuf(struct ScreenReader *screen, math::Rect2<int>* update_rect);
-GdkPixbuf* screen_reader_get_pixbuf(struct ScreenReader *screen);
-
-void screen_reader_destroy(struct ScreenReader *screen);
+ScreenReader* screen_reader_new();
+void screen_reader_reset_rect(ScreenReader *screen);
+void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdk_screen, math::Rect2<int>& rect);
+void screen_reader_update_surface(ScreenReader *screen, math::Rect2<int>* update_rect);
+cairo_surface_t* screen_reader_get_surface(ScreenReader *screen);
+void screen_reader_destroy(ScreenReader *screen);
 
 #endif /* SCREENREADER_H_ */

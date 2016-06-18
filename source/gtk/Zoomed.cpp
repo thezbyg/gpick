@@ -43,12 +43,11 @@ enum
 };
 
 static guint gtk_zoomed_signals[LAST_SIGNAL] = { 0 };
-typedef struct GtkZoomedPrivate GtkZoomedPrivate;
-typedef struct GtkZoomedPrivate
+struct GtkZoomedPrivate
 {
 	Color color;
 	gfloat zoom;
-	GdkPixbuf *pixbuf;
+	cairo_surface_t *surface;
 	vector2 point;
 	vector2 point_size;
 	int32_t width_height;
@@ -59,7 +58,7 @@ typedef struct GtkZoomedPrivate
 	math::Vec2<int> pointer;
 	math::Rect2<int> screen_rect;
 	bool fade;
-}GtkZoomedPrivate;
+};
 
 static void gtk_zoomed_class_init(GtkZoomedClass *zoomed_class)
 {
@@ -94,16 +93,7 @@ GtkWidget* gtk_zoomed_new()
 	ns->point.x = 0;
 	ns->point.y = 0;
 	ns->width_height = 150;
-	ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
-	int rowstride;
-	rowstride = gdk_pixbuf_get_rowstride(ns->pixbuf);
-	guchar *pixels = gdk_pixbuf_get_pixels(ns->pixbuf);
-	for (int y = 0; y < ns->width_height; y++){
-		guchar *p = pixels + y * rowstride;
-		for (int x = 0; x < ns->width_height * 3; x++){
-			p[x] = 0x80;
-		}
-	}
+	ns->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ns->width_height, ns->width_height);
 	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->width_height + widget->style->xthickness * 2, ns->width_height + widget->style->ythickness * 2);
 	return widget;
 }
@@ -116,21 +106,12 @@ void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
 	if (ns->width_height != width_height){
-		if (ns->pixbuf){
-			g_object_unref(ns->pixbuf);
-			ns->pixbuf = 0;
+		if (ns->surface){
+			cairo_surface_destroy(ns->surface);
+			ns->surface = 0;
 		}
 		ns->width_height = width_height;
-		ns->pixbuf = gdk_pixbuf_new(GDK_COLORSPACE_RGB, false, 8, ns->width_height, ns->width_height);
-		int rowstride;
-		rowstride = gdk_pixbuf_get_rowstride(ns->pixbuf);
-		guchar *pixels = gdk_pixbuf_get_pixels(ns->pixbuf);
-		for (int y = 0; y < ns->width_height; y++){
-			guchar *p = pixels + y * rowstride;
-			for (int x = 0; x < ns->width_height * 3; x++){
-				p[x] = 0x80;
-			}
-		}
+		ns->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ns->width_height, ns->width_height);
 		gtk_widget_set_size_request(GTK_WIDGET(zoomed), ns->width_height + GTK_WIDGET(zoomed)->style->xthickness * 2, ns->width_height + GTK_WIDGET(zoomed)->style->ythickness * 2);
 	}
 }
@@ -143,9 +124,9 @@ void gtk_zoomed_set_fade(GtkZoomed* zoomed, bool fade)
 static void gtk_zoomed_finalize(GObject *zoomed_obj)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed_obj);
-	if (ns->pixbuf){
-		g_object_unref(ns->pixbuf);
-		ns->pixbuf = 0;
+	if (ns->surface){
+		cairo_surface_destroy(ns->surface);
+		ns->surface = 0;
 	}
 	G_OBJECT_CLASS(parent_class)->finalize(zoomed_obj);
 }
@@ -221,7 +202,7 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 	math::Vec2<int> result((xl + xh) / 2.0, (yl + yh) / 2.0);
 	return result;
 }
-void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, GdkPixbuf *pixbuf)
+void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface)
 {
 	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
 	ns->pointer = pointer;
@@ -260,7 +241,13 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<
 	ns->point_size.y = yh - yl;
 	int width = right - left;
 	int height = bottom - top;
-	gdk_pixbuf_scale(pixbuf, ns->pixbuf, 0, 0, ns->width_height, ns->width_height, -offset.x * ns->width_height / (double)width, -offset.y * ns->width_height / (double)height, ns->width_height / (double)width, ns->width_height / (double)height, GDK_INTERP_NEAREST);
+	cairo_t *cr = cairo_create(ns->surface);
+	cairo_scale(cr, ns->width_height / (double)width, ns->width_height / (double)height);
+	cairo_set_source_surface(cr, surface, offset.x, offset.y);
+	cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+	cairo_rectangle(cr, 0, 0, ns->width_height, ns->width_height);
+	cairo_fill(cr);
+	cairo_destroy(cr);
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }
 void gtk_zoomed_set_zoom(GtkZoomed *zoomed, gfloat zoom)
@@ -286,12 +273,19 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 	cairo_t *cr;
 	cr = gdk_cairo_create(widget->window);
 	cairo_translate(cr, widget->style->xthickness, widget->style->ythickness);
-	if (ns->pixbuf){
-		gdk_cairo_set_source_pixbuf(cr, ns->pixbuf, widget->style->xthickness, widget->style->ythickness);
-		if (ns->fade){
-			cairo_paint_with_alpha(cr, 0.2);
-		}else{
-			cairo_paint(cr);
+	if (ns->surface){
+		gint pixbuf_x = event->area.x-widget->style->xthickness;
+		gint pixbuf_y = event->area.y-widget->style->ythickness;
+		gint pixbuf_width = min(ns->width_height - pixbuf_x, ns->width_height);
+		gint pixbuf_height = min(ns->width_height - pixbuf_y, ns->width_height);
+		if (pixbuf_width > 0 && pixbuf_height > 0){
+			cairo_set_source_surface(cr, ns->surface, pixbuf_x, pixbuf_y);
+			cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
+			if (ns->fade){
+				cairo_paint_with_alpha(cr, 0.2);
+			}else{
+				cairo_paint(cr);
+			}
 		}
 	}
 	if (!ns->fade){

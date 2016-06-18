@@ -16,35 +16,29 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#ifndef SAMPLER_H_
-#define SAMPLER_H_
+#ifndef GPICK_SAMPLER_H_
+#define GPICK_SAMPLER_H_
 
 #include "Color.h"
 #include "Rect2.h"
 #include "Vector2.h"
-#include "ScreenReader.h"
-
-enum SamplerFalloff{
-	NONE = 0,
-	LINEAR = 1,
-	QUADRATIC = 2,
-	CUBIC = 3,
-	EXPONENTIAL = 4,
-};
-
 struct Sampler;
+struct ScreenReader;
+enum class SamplerFalloff: int
+{
+	none = 0,
+	linear = 1,
+	quadratic = 2,
+	cubic = 3,
+	exponential = 4,
+};
+Sampler* sampler_new(ScreenReader* screen_reader);
+void sampler_set_falloff(Sampler *sampler, SamplerFalloff falloff);
+void sampler_set_oversample(Sampler *sampler, int oversample);
+SamplerFalloff sampler_get_falloff(Sampler *sampler);
+int sampler_get_oversample(Sampler *sampler);
+void sampler_destroy(Sampler *sampler);
+int sampler_get_color_sample(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, Color* color);
+void sampler_get_screen_rect(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
 
-struct Sampler* sampler_new(struct ScreenReader* screen_reader);
-void sampler_set_falloff(struct Sampler *sampler, enum SamplerFalloff falloff);
-void sampler_set_oversample(struct Sampler *sampler, int oversample);
-
-enum SamplerFalloff sampler_get_falloff(struct Sampler *sampler);
-int sampler_get_oversample(struct Sampler *sampler);
-
-void sampler_destroy(struct Sampler *sampler);
-
-int sampler_get_color_sample(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, Color* color);
-void sampler_get_screen_rect(struct Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
-
-#endif /* SAMPLER_H_ */
+#endif /* GPICK_SAMPLER_H_ */
