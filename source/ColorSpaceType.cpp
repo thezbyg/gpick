@@ -26,28 +26,28 @@ extern "C"{
 using namespace std;
 
 const ColorSpaceType color_space_types[] = {
-	{hsv, 3,
+	{GtkColorComponentComp::hsv, 3,
 		{
 			{_("Hue"), 360, 0, 360, 0.01},
 			{_("Saturation"), 100, 0, 100, 0.01},
 			{_("Value"), 100, 0, 100, 0.01},
 		},
 	},
-	{hsl, 3,
+	{GtkColorComponentComp::hsl, 3,
 		{
 			{_("Hue"), 360, 0, 360, 0.01},
 			{_("Saturation"), 100, 0, 100, 0.01},
 			{_("Lightness"), 100, 0, 100, 0.01},
 		},
 	},
-	{rgb, 3,
+	{GtkColorComponentComp::rgb, 3,
 		{
 			{_("Red"), 255, 0, 255, 0.01},
 			{_("Green"), 255, 0, 255, 0.01},
 			{_("Blue"), 255, 0, 255, 0.01},
 		},
 	},
-	{cmyk, 4,
+	{GtkColorComponentComp::cmyk, 4,
 		{
 			{_("Cyan"), 255, 0, 255, 0.01},
 			{_("Magenta"), 255, 0, 255, 0.01},
@@ -55,14 +55,14 @@ const ColorSpaceType color_space_types[] = {
 			{_("Key"), 255, 0, 255, 0.01}
 		}
 	},
-	{lab, 3,
+	{GtkColorComponentComp::lab, 3,
 		{
 			{_("Lightness"), 1, 0, 100, 0.0001},
 			{"a", 1, -145, 145, 0.0001},
 			{"b", 1, -145, 145, 0.0001}
 		}
 	},
-	{lch, 3,
+	{GtkColorComponentComp::lch, 3,
 		{
 			{_("Lightness"), 1, 0, 100, 0.0001},
 			{"Chroma", 1, 0, 100, 0.0001},
@@ -70,7 +70,6 @@ const ColorSpaceType color_space_types[] = {
 		}
 	},
 };
-
 const ColorSpaceType* color_space_get_types()
 {
 	return color_space_types;
@@ -84,22 +83,17 @@ std::list<std::string> color_space_color_to_text(const char *type, const Color *
 	list<string> result;
 	int status;
 	int stack_top = lua_gettop(L);
-
 	lua_getglobal(L, "gpick");
 	int gpick_namespace = lua_gettop(L);
 	if (lua_type(L, -1) != LUA_TNIL){
-
 		lua_pushstring(L, "component_to_text");
 		lua_gettable(L, gpick_namespace);
 		if (lua_type(L, -1) != LUA_TNIL){
-
 			lua_pushstring(L, type);
 			lua_pushcolor(L, color);
-
 			status = lua_pcall(L, 2, 1, 0);
 			if (status == 0){
 				if (lua_type(L, -1) == LUA_TTABLE){
-
 					for (int i = 0; i < 4; i++){
 						lua_pushinteger(L, i + 1);
 						lua_gettable(L, -2);
@@ -109,7 +103,6 @@ std::list<std::string> color_space_color_to_text(const char *type, const Color *
 						}
 						lua_pop(L, 1);
 					}
-
 					lua_settop(L, stack_top);
 					return result;
 				}else{
@@ -122,7 +115,6 @@ std::list<std::string> color_space_color_to_text(const char *type, const Color *
 			cerr << "gpick.component_to_text: no such function" << endl;
 		}
 	}
-
 	lua_settop(L, stack_top);
 	return result;
 }

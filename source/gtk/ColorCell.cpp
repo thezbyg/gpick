@@ -20,13 +20,19 @@
 #include "../ColorObject.h"
 #include <boost/math/special_functions/round.hpp>
 
-static void custom_cell_renderer_color_init(CustomCellRendererColor *cellcolor);
-static void custom_cell_renderer_color_class_init(CustomCellRendererColorClass *klass);
-static void custom_cell_renderer_color_get_property(GObject *object, guint param_id, GValue *value, GParamSpec *pspec);
-static void custom_cell_renderer_color_set_property(GObject *object, guint param_id, const GValue *value, GParamSpec *pspec);
-static void custom_cell_renderer_color_finalize(GObject *gobject);
-static void custom_cell_renderer_color_get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width, gint *height);
-static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable *window, GtkWidget *widget, GdkRectangle *background_area, GdkRectangle *cell_area, GdkRectangle *expose_area, GtkCellRendererState flags);
+static void init(CustomCellRendererColor *cellcolor);
+static void class_init(CustomCellRendererColorClass *klass);
+static void get_property(GObject *object, guint param_id, GValue *value, GParamSpec *pspec);
+static void set_property(GObject *object, guint param_id, const GValue *value, GParamSpec *pspec);
+static void finalize(GObject *gobject);
+#if GTK_MAJOR_VERSION >= 3
+static void get_preferred_width(GtkCellRenderer *cell, GtkWidget *widget, gint *minimum_size, gint *natural_size);
+static void get_preferred_height(GtkCellRenderer *cell, GtkWidget *widget, gint *minimum_size, gint *natural_size);
+static void render(GtkCellRenderer *cell, cairo_t *cr, GtkWidget *widget, const GdkRectangle *background_area, const GdkRectangle *cell_area, GtkCellRendererState flags);
+#else
+static void get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width, gint *height);
+static void render(GtkCellRenderer *cell, GdkDrawable *window, GtkWidget *widget, GdkRectangle *background_area, GdkRectangle *cell_area, GdkRectangle *expose_area, GtkCellRendererState flags);
+#endif
 
 enum
 {
@@ -40,40 +46,48 @@ GType custom_cell_renderer_color_get_type()
 	if (cell_color_type == 0){
 		static const GTypeInfo cell_color_info = { sizeof(CustomCellRendererColorClass), nullptr, /* base_init */
 		nullptr, /* base_finalize */
-		(GClassInitFunc) custom_cell_renderer_color_class_init, nullptr, /* class_finalize */
+		(GClassInitFunc) class_init, nullptr, /* class_finalize */
 		nullptr, /* class_data */
 		sizeof(CustomCellRendererColor), 0, /* n_preallocs */
-		(GInstanceInitFunc) custom_cell_renderer_color_init, };
+		(GInstanceInitFunc) init, };
 		cell_color_type = g_type_register_static(GTK_TYPE_CELL_RENDERER, "CustomCellRendererColor", &cell_color_info, (GTypeFlags) 0);
 	}
 	return cell_color_type;
 }
-static void custom_cell_renderer_color_init(CustomCellRendererColor *cellrenderercolor)
+static void init(CustomCellRendererColor *cellrenderercolor)
 {
+#if GTK_MAJOR_VERSION >= 3
+#else
 	GTK_CELL_RENDERER(cellrenderercolor)->mode = GTK_CELL_RENDERER_MODE_INERT;
 	GTK_CELL_RENDERER(cellrenderercolor)->xpad = 2;
 	GTK_CELL_RENDERER(cellrenderercolor)->ypad = 2;
-	cellrenderercolor->width=32;
-	cellrenderercolor->height=16;
-	cellrenderercolor->color=0;
+#endif
+	cellrenderercolor->width = 32;
+	cellrenderercolor->height = 16;
+	cellrenderercolor->color = nullptr;
 }
-static void custom_cell_renderer_color_class_init(CustomCellRendererColorClass *klass)
+static void class_init(CustomCellRendererColorClass *klass)
 {
 	GtkCellRendererClass *cell_class = GTK_CELL_RENDERER_CLASS(klass);
 	GObjectClass *object_class = G_OBJECT_CLASS(klass);
 	parent_class = g_type_class_peek_parent(klass);
-	object_class->finalize = custom_cell_renderer_color_finalize;
-	object_class->get_property = custom_cell_renderer_color_get_property;
-	object_class->set_property = custom_cell_renderer_color_set_property;
-	cell_class->get_size = custom_cell_renderer_color_get_size;
-	cell_class->render = custom_cell_renderer_color_render;
+	object_class->finalize = finalize;
+	object_class->get_property = get_property;
+	object_class->set_property = set_property;
+#if GTK_MAJOR_VERSION >= 3
+	cell_class->get_preferred_width = get_preferred_width;
+	cell_class->get_preferred_height = get_preferred_height;
+#else
+	cell_class->get_size = get_size;
+#endif
+	cell_class->render = render;
 	g_object_class_install_property(object_class, PROP_COLOR, g_param_spec_pointer("color", "Color", "ColorObject pointer", (GParamFlags) G_PARAM_READWRITE));
 }
-static void custom_cell_renderer_color_finalize(GObject *object)
+static void finalize(GObject *object)
 {
 	(*G_OBJECT_CLASS(parent_class)->finalize)(object);
 }
-static void custom_cell_renderer_color_get_property(GObject *object, guint param_id, GValue *value, GParamSpec *psec)
+static void get_property(GObject *object, guint param_id, GValue *value, GParamSpec *psec)
 {
 	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(object);
 	switch (param_id){
@@ -85,9 +99,9 @@ static void custom_cell_renderer_color_get_property(GObject *object, guint param
 		break;
 	}
 }
-static void custom_cell_renderer_color_set_property(GObject *object, guint param_id, const GValue *value, GParamSpec *pspec)
+static void set_property(GObject *object, guint param_id, const GValue *value, GParamSpec *pspec)
 {
-	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR (object);
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(object);
 	switch (param_id){
 	case PROP_COLOR:
 		cellcolor->color = (ColorObject*)g_value_get_pointer(value);
@@ -97,9 +111,9 @@ static void custom_cell_renderer_color_set_property(GObject *object, guint param
 		break;
 	}
 }
-GtkCellRenderer * custom_cell_renderer_color_new()
+GtkCellRenderer *custom_cell_renderer_color_new()
 {
-	return (GtkCellRenderer *) g_object_new(CUSTOM_TYPE_CELL_RENDERER_COLOR, nullptr);
+	return (GtkCellRenderer*)g_object_new(CUSTOM_TYPE_CELL_RENDERER_COLOR, nullptr);
 }
 void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint height)
 {
@@ -107,7 +121,31 @@ void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint
 	cellcolor->width = width;
 	cellcolor->height = height;
 }
-static void custom_cell_renderer_color_get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width, gint *height)
+#if GTK_MAJOR_VERSION >= 3
+static void get_preferred_width(GtkCellRenderer *cell, GtkWidget *widget, gint *minimum_size, gint *natural_size)
+{
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
+	if (minimum_size)
+		*minimum_size = 1;
+	*natural_size = cellcolor->width;
+}
+static void get_preferred_height(GtkCellRenderer *cell, GtkWidget *widget, gint *minimum_size, gint *natural_size)
+{
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
+	if (minimum_size)
+		*minimum_size = 1;
+	*natural_size = cellcolor->height;
+}
+static void render(GtkCellRenderer *cell, cairo_t *cr, GtkWidget *widget, const GdkRectangle *background_area, const GdkRectangle *cell_area, GtkCellRendererState flags)
+{
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
+	cairo_rectangle(cr, cell_area->x, cell_area->y, cell_area->width, cell_area->height);
+	Color color = cellcolor->color->getColor();
+	cairo_set_source_rgb(cr, round(color.rgb.red * 255.0) / 255.0, round(color.rgb.green * 255.0) / 255.0, round(color.rgb.blue * 255.0) / 255.0);
+	cairo_fill(cr);
+}
+#else
+static void get_size(GtkCellRenderer *cell, GtkWidget *widget, GdkRectangle *cell_area, gint *x_offset, gint *y_offset, gint *width, gint *height)
 {
 	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
 	gint calc_width;
@@ -129,10 +167,10 @@ static void custom_cell_renderer_color_get_size(GtkCellRenderer *cell, GtkWidget
 		}
 	}
 }
-static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable *window, GtkWidget *widget, GdkRectangle *background_area, GdkRectangle *cell_area, GdkRectangle *expose_area, GtkCellRendererState flags)
+static void render(GtkCellRenderer *cell, GdkDrawable *window, GtkWidget *widget, GdkRectangle *background_area, GdkRectangle *cell_area, GdkRectangle *expose_area, GtkCellRendererState flags)
 {
 	using boost::math::round;
-	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR (cell);
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
 	cairo_t *cr;
 	cr = gdk_cairo_create(window);
 	cairo_rectangle(cr, expose_area->x, expose_area->y, expose_area->width, expose_area->height);
@@ -143,3 +181,4 @@ static void custom_cell_renderer_color_render(GtkCellRenderer *cell, GdkDrawable
 	cairo_fill(cr);
 	cairo_destroy(cr);
 }
+#endif

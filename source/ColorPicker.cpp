@@ -512,8 +512,8 @@ static void ser_decimal_get(GtkColorComponentComp component, int component_id, C
 	stringstream ss(text);
 	ss >> v;
 	switch (component){
-		case hsv:
-		case hsl:
+		case GtkColorComponentComp::hsv:
+		case GtkColorComponentComp::hsl:
 			if (component_id == 0){
 				color->ma[component_id] = v / 360;
 			}else{
@@ -528,8 +528,8 @@ static void ser_decimal_get(GtkColorComponentComp component, int component_id, C
 static string ser_decimal_set(GtkColorComponentComp component, int component_id, Color* color){
 	stringstream ss;
 	switch (component){
-		case hsv:
-		case hsl:
+		case GtkColorComponentComp::hsv:
+		case GtkColorComponentComp::hsl:
 			if (component_id == 0){
 				ss << setprecision(0) << fixed << color->ma[component_id] * 360;
 			}else{
@@ -1056,7 +1056,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderHSV=expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(hsv);
+				widget = gtk_color_component_new(GtkColorComponentComp::hsv);
 				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsv_labels);
 				args->hsv_control = widget;
@@ -1070,7 +1070,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderHSL = expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(hsl);
+				widget = gtk_color_component_new(GtkColorComponentComp::hsl);
 				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsl_labels);
 				args->hsl_control = widget;
@@ -1084,7 +1084,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderRGB = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(rgb);
+				widget = gtk_color_component_new(GtkColorComponentComp::rgb);
 				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), rgb_labels);
 				args->rgb_control = widget;
@@ -1098,7 +1098,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderCMYK = expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(cmyk);
+				widget = gtk_color_component_new(GtkColorComponentComp::cmyk);
 				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), cmyk_labels);
 				args->cmyk_control = widget;
@@ -1112,7 +1112,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderLAB = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(lab);
+				widget = gtk_color_component_new(GtkColorComponentComp::lab);
 				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->lab_control = widget;
@@ -1126,7 +1126,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 			args->expanderLCH = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(lch);
+				widget = gtk_color_component_new(GtkColorComponentComp::lch);
 				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lch_labels);
 				args->lch_control = widget;

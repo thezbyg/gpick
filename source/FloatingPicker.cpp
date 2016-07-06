@@ -159,11 +159,15 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.zoom", 2));
 	update_display(args);
 	gtk_widget_show(args->window);
-	gdk_pointer_grab(args->window->window, false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), nullptr, cursor, GDK_CURRENT_TIME);
-	gdk_keyboard_grab(args->window->window, false, GDK_CURRENT_TIME);
+	gdk_pointer_grab(gtk_widget_get_window(args->window), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK), nullptr, cursor, GDK_CURRENT_TIME);
+	gdk_keyboard_grab(gtk_widget_get_window(args->window), false, GDK_CURRENT_TIME);
 	float refresh_rate = dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000 / refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
-	gdk_cursor_destroy(cursor);
+#if GTK_MAJOR_VERSION >= 3
+	g_object_unref(cursor);
+#else
+	gdk_cursor_unref(cursor);
+#endif
 #endif
 }
 void floating_picker_deactivate(FloatingPickerArgs *args)

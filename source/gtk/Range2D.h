@@ -16,49 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RANGE_2D_H_
-#define RANGE_2D_H_
-
+#ifndef GPICK_GTK_RANGE_2D_H_
+#define GPICK_GTK_RANGE_2D_H_
 
 #include <gtk/gtk.h>
-#include "../Color.h"
+#define GTK_TYPE_RANGE_2D (gtk_range_2d_get_type ())
+#define GTK_RANGE_2D(obj) (G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_RANGE_2D, GtkRange2D))
+#define GTK_RANGE_2D_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST ((obj), GTK_RANGE_2D, GtkRange2DClass))
+#define GTK_IS_RANGE_2D(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_RANGE_2D))
+#define GTK_IS_RANGE_2D_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_RANGE_2D))
+#define GTK_RANGE_2D_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_RANGE_2D, GtkRange2DClass))
 
-
-G_BEGIN_DECLS
-
-#define GTK_TYPE_RANGE_2D		(gtk_range_2d_get_type ())
-#define GTK_RANGE_2D(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), GTK_TYPE_RANGE_2D, GtkRange2D))
-#define GTK_RANGE_2D_CLASS(obj)	(G_TYPE_CHECK_CLASS_CAST ((obj), GTK_RANGE_2D, GtkRange2DClass))
-#define GTK_IS_RANGE_2D(obj)		(G_TYPE_CHECK_INSTANCE_TYPE ((obj), GTK_TYPE_RANGE_2D))
-#define GTK_IS_RANGE_2D_CLASS(obj)	(G_TYPE_CHECK_CLASS_TYPE ((obj), GTK_TYPE_RANGE_2D))
-#define GTK_RANGE_2D_GET_CLASS	(G_TYPE_INSTANCE_GET_CLASS ((obj), GTK_TYPE_RANGE_2D, GtkRange2DClass))
-
-typedef struct GtkRange2D			GtkRange2D;
-typedef struct GtkRange2DClass		GtkRange2DClass;
-
-typedef gpointer GtkRange2DObject;
-
-typedef struct GtkRange2D
+struct GtkRange2D
 {
 	GtkDrawingArea parent;
-}GtkRange2D;
-
-typedef struct GtkRange2DClass{
+};
+struct GtkRange2DClass
+{
 	GtkDrawingAreaClass parent_class;
 	void (*values_changed)(GtkWidget *widget, gpointer userdata);
-}GtkRange2DClass;
-
-GtkWidget* gtk_range_2d_new(void);
-
+};
+GtkWidget* gtk_range_2d_new();
 void gtk_range_2d_set_values(GtkRange2D *range_2d, double x, double y);
 void gtk_range_2d_set_axis(GtkRange2D *range_2d, const char *x, const char *y);
-
 double gtk_range_2d_get_x(GtkRange2D *range_2d);
 double gtk_range_2d_get_y(GtkRange2D *range_2d);
+GType gtk_range_2d_get_type();
 
-GType gtk_range_2d_get_type(void);
-
-G_END_DECLS
-
-
-#endif /* RANGE_2D_H_ */
+#endif /* GPICK_GTK_RANGE_2D_H_ */

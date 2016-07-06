@@ -18,8 +18,17 @@
 
 #include "ScreenReader.h"
 #include "Rect2.h"
+#include <gtk/gtk.h>
+#if GTK_MAJOR_VERSION >= 3
+#define COGL_ENABLE_EXPERIMENTAL_2_0_API
+#define CLUTTER_ENABLE_EXPERIMENTAL_API
+#include <clutter/clutter.h>
+#include <cogl/cogl.h>
+#endif
 #include <algorithm>
+#include <iostream>
 using namespace math;
+using namespace std;
 
 struct ScreenReader
 {
@@ -58,7 +67,6 @@ void screen_reader_reset_rect(ScreenReader *screen)
 void screen_reader_update_surface(ScreenReader *screen, Rect2<int>* update_rect)
 {
 	if (!screen->screen) return;
-	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
 	int left = screen->read_area.getX();
 	int top = screen->read_area.getY();
 	int width = screen->read_area.getWidth();
@@ -68,8 +76,13 @@ void screen_reader_update_surface(ScreenReader *screen, Rect2<int>* update_rect)
 		screen->max_size = (std::max(width, height) / 150 + 1) * 150;
 		screen->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, screen->max_size, screen->max_size);
 	}
+	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
 	cairo_t *root_cr = gdk_cairo_create(root_window);
 	cairo_surface_t *root_surface = cairo_get_target(root_cr);
+	if (cairo_surface_status(root_surface) != CAIRO_STATUS_SUCCESS){
+		cerr << "can not get root window surface" << endl;
+		return;
+	}
 	cairo_t *cr = cairo_create(screen->surface);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface(cr, root_surface, -left, -top);

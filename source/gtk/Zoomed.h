@@ -30,8 +30,7 @@
 #define GTK_ZOOMED_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), GTK_ZOOMED, GtkZoomedClass))
 #define GTK_IS_ZOOMED(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_ZOOMED))
 #define GTK_IS_ZOOMED_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_ZOOMED))
-#define GTK_ZOOMED_GET_CLASS (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_ZOOMED, GtkZoomedClass))
-
+#define GTK_ZOOMED_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_ZOOMED, GtkZoomedClass))
 struct GtkZoomed
 {
 	GtkDrawingArea parent;
@@ -52,6 +51,6 @@ void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vec2<int>& position
 void gtk_zoomed_clear_mark(GtkZoomed *zoomed, int index);
 void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface);
 void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
-GType gtk_zoomed_get_type(void);
+GType gtk_zoomed_get_type();
 
 #endif /* GPICK_GTK_ZOOMED_H_ */

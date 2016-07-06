@@ -20,6 +20,7 @@ vars.Add(BoolVariable('EXPERIMENTAL_CSS_PARSER', 'Compile with experimental CSS 
 vars.Add(BoolVariable('DOWNLOAD_RESENE_COLOR_LIST', 'Download Resene color list file at program startup', False))
 vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
+vars.Add(BoolVariable('USE_GTK3', 'Use GTK3 instead of GTK2', False))
 vars.Update(env)
 
 if env['LOCALEDIR'] == '':
@@ -82,8 +83,12 @@ if not env.GetOption('clean'):
 	libs = {}
 
 	if not env['TOOLCHAIN'] == 'msvc':
-		libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
-		libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
+		if not env['USE_GTK3']:
+			libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
+			libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
+		else:
+			libs['GTK_PC'] = {'checks':{'gtk+-3.0':'>= 3.0.0'}}
+			libs['CLUTTER_PC'] = {'checks':{'clutter-1.0':'>= 1.0'}}
 		libs['LUA_PC'] = {'checks':{'lua5.3':'>= 5.3', 'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
 
 	if env['DOWNLOAD_RESENE_COLOR_LIST']:

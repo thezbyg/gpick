@@ -16,13 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORCOMPONENT_H_
-#define COLORCOMPONENT_H_
+#ifndef GPICK_GTK_COLOR_COMPONENT_H_
+#define GPICK_GTK_COLOR_COMPONENT_H_
 
 #include <gtk/gtk.h>
 #include "../Color.h"
-
-G_BEGIN_DECLS
 
 #define GTK_TYPE_COLOR_COMPONENT (gtk_color_component_get_type())
 #define GTK_COLOR_COMPONENT(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponent))
@@ -31,19 +29,18 @@ G_BEGIN_DECLS
 #define GTK_IS_COLOR_COMPONENT_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_COLOR_COMPONENT))
 #define GTK_COLOR_COMPONENT_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentClass))
 
-typedef struct GtkColorComponent GtkColorComponent;
-typedef struct GtkColorComponentClass GtkColorComponentClass;
-typedef gpointer GtkColorComponentObject;
-typedef struct GtkColorComponent{
+struct GtkColorComponent
+{
 	GtkDrawingArea parent;
-}GtkColorComponent;
-typedef struct GtkColorComponentClass{
+};
+struct GtkColorComponentClass
+{
 	GtkDrawingAreaClass parent_class;
 	void (*color_changed)(GtkWidget* widget, Color* c, gpointer userdata);
 	void (*input_clicked)(GtkWidget* widget, int component_id, gpointer userdata);
-}GtkColorComponentClass;
-
-enum GtkColorComponentComp{
+};
+enum class GtkColorComponentComp: int
+{
 	rgb,
 	hsv,
 	hsl,
@@ -52,9 +49,7 @@ enum GtkColorComponentComp{
 	lab,
 	lch,
 };
-
-GtkWidget* gtk_color_component_new (GtkColorComponentComp component);
-
+GtkWidget* gtk_color_component_new(GtkColorComponentComp component);
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_text(GtkColorComponent* color_component, const char **text);
 const char* gtk_color_component_get_text(GtkColorComponent* color_component, gint component_id);
@@ -64,19 +59,12 @@ void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color
 void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color);
 void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color);
-
 void gtk_color_component_set_out_of_gamut_mask(GtkColorComponent* color_component, bool mask_enabled);
 bool gtk_color_component_get_out_of_gamut_mask(GtkColorComponent* color_component);
-
 void gtk_color_component_set_lab_illuminant(GtkColorComponent* color_component, ReferenceIlluminant illuminant);
 void gtk_color_component_set_lab_observer(GtkColorComponent* color_component, ReferenceObserver observer);
-
 GtkColorComponentComp gtk_color_component_get_component(GtkColorComponent* color_component);
 int gtk_color_component_get_component_id_at(GtkColorComponent* color_component, gint x, gint y);
+GType gtk_color_component_get_type();
 
-GType gtk_color_component_get_type(void);
-
-G_END_DECLS
-
-
-#endif /* UICOLORCOMPONENT_H_ */
+#endif /* GPICK_GTK_COLOR_COMPONENT_H_ */

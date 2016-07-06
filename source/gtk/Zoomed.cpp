@@ -26,23 +26,22 @@
 #include <vector>
 using namespace std;
 
-#define GTK_ZOOMED_GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
-
+#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
 G_DEFINE_TYPE(GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA);
-
-static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event);
-static void gtk_zoomed_finalize(GObject *zoomed_obj);
-static gboolean gtk_zoomed_button_press(GtkWidget *node_system, GdkEventButton *event);
-static GtkWindowClass *parent_class = nullptr;
-
+static void finalize(GObject *zoomed_obj);
+static gboolean button_press(GtkWidget *node_system, GdkEventButton *event);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
+#endif
 enum
 {
 	COLOR_CHANGED,
 	ACTIVATED,
 	LAST_SIGNAL
 };
-
-static guint gtk_zoomed_signals[LAST_SIGNAL] = { 0 };
+static guint signals[LAST_SIGNAL] = { 0 };
 struct GtkZoomedPrivate
 {
 	Color color;
@@ -58,77 +57,101 @@ struct GtkZoomedPrivate
 	math::Vec2<int> pointer;
 	math::Rect2<int> screen_rect;
 	bool fade;
+#if GTK_MAJOR_VERSION >= 3
+	GtkStyleContext *context;
+#endif
 };
-
 static void gtk_zoomed_class_init(GtkZoomedClass *zoomed_class)
 {
-	GObjectClass *obj_class;
-	GtkWidgetClass *widget_class;
-	obj_class = G_OBJECT_CLASS(zoomed_class);
-	widget_class = GTK_WIDGET_CLASS(zoomed_class);
-	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(zoomed_class));
-	widget_class->expose_event = gtk_zoomed_expose;
-	widget_class->button_press_event = gtk_zoomed_button_press;
-	obj_class->finalize = gtk_zoomed_finalize;
+	GObjectClass *obj_class = G_OBJECT_CLASS(zoomed_class);
+	obj_class->finalize = finalize;
 	g_type_class_add_private(obj_class, sizeof(GtkZoomedPrivate));
-	gtk_zoomed_signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkZoomedClass, activated), nullptr, nullptr,
-			g_cclosure_marshal_VOID__VOID,
-			G_TYPE_NONE, 0);
-	gtk_zoomed_signals[COLOR_CHANGED] = g_signal_new("color-changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
-			G_STRUCT_OFFSET(GtkZoomedClass, color_changed), nullptr, nullptr,
-			g_cclosure_marshal_VOID__POINTER,
-			G_TYPE_NONE, 1, G_TYPE_POINTER);
+	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(zoomed_class);
+	widget_class->button_press_event = button_press;
+#if GTK_MAJOR_VERSION >= 3
+	widget_class->draw = draw;
+#else
+	widget_class->expose_event = expose;
+#endif
+	signals[ACTIVATED] = g_signal_new("activated", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET(GtkZoomedClass, activated), nullptr, nullptr,
+		g_cclosure_marshal_VOID__VOID,
+		G_TYPE_NONE, 0);
+	signals[COLOR_CHANGED] = g_signal_new("color-changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST,
+		G_STRUCT_OFFSET(GtkZoomedClass, color_changed), nullptr, nullptr,
+		g_cclosure_marshal_VOID__POINTER,
+		G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 static void gtk_zoomed_init(GtkZoomed *zoomed)
 {
 	gtk_widget_add_events(GTK_WIDGET(zoomed), GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_MOTION_MASK | GDK_2BUTTON_PRESS);
 }
+#if GTK_MAJOR_VERSION >= 3
+static GtkStyleContext* get_style_context(GType type)
+{
+	GtkWidgetPath* path = gtk_widget_path_new();
+	gtk_widget_path_append_type(path, type);
+	GtkStyleContext *context = gtk_style_context_new();
+	gtk_style_context_set_path(context, path);
+	gtk_widget_path_free(path);
+	return context;
+}
+#endif
 GtkWidget* gtk_zoomed_new()
 {
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_ZOOMED, nullptr);
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(widget);
+	GtkZoomedPrivate *ns = GET_PRIVATE(widget);
 	ns->fade = false;
 	ns->zoom = 20;
 	ns->point.x = 0;
 	ns->point.y = 0;
-	ns->width_height = 150;
-	ns->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ns->width_height, ns->width_height);
-	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->width_height + widget->style->xthickness * 2, ns->width_height + widget->style->ythickness * 2);
+	ns->width_height = 0;
+	ns->surface = nullptr;
+#if GTK_MAJOR_VERSION >= 3
+	ns->context = get_style_context(GTK_TYPE_ZOOMED);
+#endif
+	gtk_zoomed_set_size(GTK_ZOOMED(widget), 150);
 	return widget;
 }
 int32_t gtk_zoomed_get_size(GtkZoomed *zoomed)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	return ns->width_height;
 }
 void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	if (ns->width_height != width_height){
 		if (ns->surface){
 			cairo_surface_destroy(ns->surface);
-			ns->surface = 0;
+			ns->surface = nullptr;
 		}
 		ns->width_height = width_height;
 		ns->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ns->width_height, ns->width_height);
+#if GTK_MAJOR_VERSION >= 3
+		gtk_widget_set_size_request(GTK_WIDGET(zoomed), ns->width_height, ns->width_height);
+#else
 		gtk_widget_set_size_request(GTK_WIDGET(zoomed), ns->width_height + GTK_WIDGET(zoomed)->style->xthickness * 2, ns->width_height + GTK_WIDGET(zoomed)->style->ythickness * 2);
+#endif
 	}
 }
 void gtk_zoomed_set_fade(GtkZoomed* zoomed, bool fade)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->fade = fade;
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }
-static void gtk_zoomed_finalize(GObject *zoomed_obj)
+static void finalize(GObject *zoomed_obj)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed_obj);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed_obj);
 	if (ns->surface){
 		cairo_surface_destroy(ns->surface);
-		ns->surface = 0;
+		ns->surface = nullptr;
 	}
-	G_OBJECT_CLASS(parent_class)->finalize(zoomed_obj);
+#if GTK_MAJOR_VERSION >= 3
+	g_object_unref(ns->context);
+#endif
+	G_OBJECT_CLASS(g_type_class_peek_parent(G_OBJECT_CLASS(GTK_ZOOMED_GET_CLASS(zoomed_obj))))->finalize(zoomed_obj);
 }
 static double zoom_transformation(double value)
 {
@@ -136,12 +159,12 @@ static double zoom_transformation(double value)
 }
 void gtk_zoomed_get_current_screen_rect(GtkZoomed* zoomed, math::Rect2<int> *rect)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gtk_zoomed_get_screen_rect(zoomed, ns->pointer, ns->screen_rect, rect);
 }
 void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gint32 x = pointer.x, y = pointer.y;
 	gint32 left, right, top, bottom;
 	gint32 area_width = uint32_t(ns->width_height * zoom_transformation(ns->zoom));
@@ -170,7 +193,7 @@ void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, mat
 }
 math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Vec2<int>& position)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gint32 x = ns->pointer.x, y = ns->pointer.y;
 	gint32 left, right, top, bottom;
 	gint32 area_width = uint32_t(ns->width_height * zoom_transformation(ns->zoom));
@@ -204,7 +227,7 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 }
 void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->pointer = pointer;
 	ns->screen_rect = screen_rect;
 	gint32 x = pointer.x, y = pointer.y;
@@ -252,7 +275,7 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<
 }
 void gtk_zoomed_set_zoom(GtkZoomed *zoomed, gfloat zoom)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	if (zoom < 0){
 		ns->zoom = 0;
 	}else if (zoom > 100){
@@ -264,18 +287,22 @@ void gtk_zoomed_set_zoom(GtkZoomed *zoomed, gfloat zoom)
 }
 gfloat gtk_zoomed_get_zoom(GtkZoomed* zoomed)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	return ns->zoom;
 }
-static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
+static gboolean draw(GtkWidget *widget, cairo_t *cr)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(widget);
-	cairo_t *cr;
-	cr = gdk_cairo_create(widget->window);
-	cairo_translate(cr, widget->style->xthickness, widget->style->ythickness);
+	GtkZoomedPrivate *ns = GET_PRIVATE(widget);
+#if GTK_MAJOR_VERSION >= 3
+	int padding_x = 0, padding_y = 0;
+	gint pixbuf_x = padding_x;
+	gint pixbuf_y = padding_y;
+#else
+	int padding_x = widget->style->xthickness, padding_y = widget->style->ythickness;
+	gint pixbuf_x = -padding_x;
+	gint pixbuf_y = -padding_y;
+#endif
 	if (ns->surface){
-		gint pixbuf_x = event->area.x-widget->style->xthickness;
-		gint pixbuf_y = event->area.y-widget->style->ythickness;
 		gint pixbuf_width = min(ns->width_height - pixbuf_x, ns->width_height);
 		gint pixbuf_height = min(ns->width_height - pixbuf_y, ns->width_height);
 		if (pixbuf_width > 0 && pixbuf_height > 0){
@@ -317,7 +344,7 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 	math::Rect2<int> area_rect;
 	math::Rect2<int> widget_rect = math::Rect2<int>(5, 5, ns->width_height - 5, ns->width_height - 5);
 	gtk_zoomed_get_current_screen_rect(GTK_ZOOMED(widget), &area_rect);
-	cairo_rectangle(cr, 0, 0, ns->width_height - widget->style->xthickness * 2, ns->width_height - widget->style->ythickness * 2);
+	cairo_rectangle(cr, 0, 0, ns->width_height - padding_x * 2, ns->width_height - padding_y * 2);
 	cairo_clip(cr);
 	vector<math::Vec2<int> > relative_positions(2);
 	bool draw_distance = true;
@@ -374,9 +401,9 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 	for (int layer = 0; layer != 2; layer++){
 		if (draw_distance){
 			double distance = math::Vec2<double>::distance(
-					math::Vec2<double>(ns->marks[0].position.x, ns->marks[0].position.y),
-					math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
-					);
+				math::Vec2<double>(ns->marks[0].position.x, ns->marks[0].position.y),
+				math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
+			);
 			math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
 			stringstream ss;
 			ss << fixed << setprecision(1) << distance << endl << 1 + abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + abs(ns->marks[0].position.y - ns->marks[1].position.y);
@@ -404,28 +431,43 @@ static gboolean gtk_zoomed_expose(GtkWidget *widget, GdkEventExpose *event)
 	}
 	g_object_unref(layout);
 	pango_font_description_free(font_description);
-	cairo_destroy (cr);
-	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, &event->area, widget, 0, widget->style->xthickness, widget->style->ythickness, ns->width_height + widget->style->xthickness * 2, ns->width_height + widget->style->ythickness * 2);
+#if GTK_MAJOR_VERSION >= 3
+	gtk_render_frame(ns->context, cr, 0, 0, ns->width_height, ns->width_height);
+#else
+	gtk_paint_shadow(widget->style, widget->window, GTK_STATE_NORMAL, GTK_SHADOW_IN, nullptr, widget, 0, widget->style->xthickness, widget->style->ythickness, ns->width_height + widget->style->xthickness * 2, ns->width_height + widget->style->ythickness * 2);
+#endif
 	return true;
 }
-static gboolean gtk_zoomed_button_press(GtkWidget *widget, GdkEventButton *event)
+#if GTK_MAJOR_VERSION < 3
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event)
+{
+	cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
+	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
+	cairo_clip(cr);
+	cairo_translate(cr, widget->style->xthickness + 0.5, widget->style->ythickness + 0.5);
+	gboolean result = draw(widget, cr);
+	cairo_destroy(cr);
+	return result;
+}
+#endif
+static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 {
 	gtk_widget_grab_focus(widget);
 	if ((event->type == GDK_2BUTTON_PRESS) && (event->button == 1)) {
-		g_signal_emit(widget, gtk_zoomed_signals[ACTIVATED], 0);
+		g_signal_emit(widget, signals[ACTIVATED], 0);
 	}
 	return FALSE;
 }
 void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vec2<int>& position)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->marks[index].position = position;
 	ns->marks[index].valid = true;
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }
 void gtk_zoomed_clear_mark(GtkZoomed *zoomed, int index)
 {
-	GtkZoomedPrivate *ns = GTK_ZOOMED_GET_PRIVATE(zoomed);
+	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->marks[index].valid = false;
 	gtk_widget_queue_draw(GTK_WIDGET(zoomed));
 }

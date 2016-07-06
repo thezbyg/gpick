@@ -29,17 +29,14 @@ class ColorObject;
 #define CUSTOM_IS_CELL_COLOR_COLOR_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR))
 #define CUSTOM_CELL_RENDERER_COLOR_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColorClass))
 
-typedef struct _CustomCellRendererColor CustomCellRendererColor;
-typedef struct _CustomCellRendererColorClass CustomCellRendererColorClass;
-
-struct _CustomCellRendererColor
+struct CustomCellRendererColor
 {
 	GtkCellRenderer parent;
 	ColorObject *color;
 	int width;
 	int height;
 };
-struct _CustomCellRendererColorClass
+struct CustomCellRendererColorClass
 {
 	GtkCellRendererClass parent_class;
 };
