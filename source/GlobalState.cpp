@@ -21,7 +21,6 @@
 #include "ScreenReader.h"
 #include "Converter.h"
 #include "Random.h"
-#include "color_names/DownloadNameFile.h"
 #include "color_names/ColorNames.h"
 #include "Sampler.h"
 #include "ColorList.h"
@@ -179,17 +178,9 @@ class GlobalState::Impl
 		{
 			if (m_color_names != nullptr) return false;
 			m_color_names = color_names_new();
-			gchar* tmp;
-			if (color_names_load_from_file(m_color_names, tmp = build_filename("colors.txt")) != 0){
-				g_free(tmp);
-				if (color_names_load_from_file(m_color_names, tmp = build_config_path("colors.txt")) != 0){
-					download_name_file(tmp);
-					color_names_load_from_file(m_color_names, tmp);
-				}
-			}
-			g_free(tmp);
-			color_names_load_from_file(m_color_names, tmp = build_filename("colors0.txt"));
-			g_free(tmp);
+			dynvSystem *params = dynv_get_dynv(m_settings, "gpick");
+			color_names_load(m_color_names, params);
+			dynv_system_release(params);
 			return true;
 		}
 		bool initializeRandomGenerator()
@@ -338,8 +329,8 @@ class GlobalState::Impl
 			m_screen_reader = screen_reader_new();
 			m_sampler = sampler_new(m_screen_reader);
 			initializeRandomGenerator();
-			loadColorNames();
 			loadSettings();
+			loadColorNames();
 			createColorList();
 			initializeLua();
 			loadConverters();

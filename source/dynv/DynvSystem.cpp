@@ -57,7 +57,12 @@ struct dynvSystem* dynv_system_create(struct dynvHandlerMap* handler_map){
 	dynv_system_set_handler_map(dynv_system, handler_map);
 	return dynv_system;
 }
-
+struct dynvSystem* dynv_system_create(struct dynvSystem* dynv_system){
+	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(dynv_system);
+	struct dynvSystem* new_dynv = dynv_system_create(handler_map);
+	dynv_handler_map_release(handler_map);
+	return new_dynv;
+}
 int dynv_system_release(struct dynvSystem* dynv_system){
 	if (dynv_system->refcnt){
 		dynv_system->refcnt--;

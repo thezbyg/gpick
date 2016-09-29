@@ -40,6 +40,7 @@ struct dynvSystem{
 };
 
 struct dynvSystem* dynv_system_create(struct dynvHandlerMap* handler_map);
+struct dynvSystem* dynv_system_create(struct dynvSystem* dynv_system);
 int dynv_system_release(struct dynvSystem* dynv_system);
 struct dynvSystem* dynv_system_ref(struct dynvSystem* dynv_system);
 

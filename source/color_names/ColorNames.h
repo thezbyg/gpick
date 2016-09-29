@@ -20,6 +20,7 @@
 #define GPICK_COLOR_NAMES_COLOR_NAMES_H_
 
 #include "../Color.h"
+#include "../DynvHelpers.h"
 #include <string>
 #include <list>
 
@@ -37,6 +38,8 @@ typedef struct ColorNames{
 	float (*color_space_distance)(const Color* a, const Color* b);
 }ColorNames;
 ColorNames* color_names_new();
+void color_names_clear(ColorNames *cnames);
+void color_names_load(ColorNames *cnames, dynvSystem *params);
 int color_names_load_from_file(ColorNames* cnames, const char* filename);
 void color_names_destroy(ColorNames* cnames);
 std::string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix);

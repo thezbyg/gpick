@@ -40,6 +40,7 @@
 #include "uiDialogGenerate.h"
 #include "uiDialogAutonumber.h"
 #include "uiDialogSort.h"
+#include "uiColorDictionaries.h"
 #include "uiTransformations.h"
 #include "uiDialogOptions.h"
 #include "uiConverter.h"
@@ -239,6 +240,12 @@ static void show_dialog_transformations(GtkWidget *widget, AppArgs *args)
 static void show_dialog_options(GtkWidget *widget, AppArgs *args)
 {
 	dialog_options_show(GTK_WINDOW(args->window), args->gs);
+	return;
+}
+
+static void show_dialog_color_dictionaries(GtkWidget *widget, AppArgs *args)
+{
+	dialog_color_dictionaries_show(GTK_WINDOW(args->window), args->gs);
 	return;
 }
 
@@ -766,6 +773,9 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	item = gtk_menu_item_new_with_image(_("Display _Filters..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_transformations), args);
+	item = gtk_menu_item_new_with_image(_("Color _Dictionaries..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(show_dialog_color_dictionaries), args);
 	if (gtk_stock_lookup(GTK_STOCK_PREFERENCES, &stock_item)){
 		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);

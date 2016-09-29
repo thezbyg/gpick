@@ -144,13 +144,13 @@ const Color** dynv_get_color_array_wd(struct dynvSystem* dynv_system, const char
 	}else return (const Color**)r;
 }
 
-const struct dynvSystem** dynv_get_dynv_array_wd(struct dynvSystem* dynv_system, const char *path, const struct dynvSystem** default_value, uint32_t default_count, uint32_t *count){
+struct dynvSystem** dynv_get_dynv_array_wd(struct dynvSystem* dynv_system, const char *path, struct dynvSystem** default_value, uint32_t default_count, uint32_t *count){
 	int error;
 	void** r = dynv_get_array(dynv_system, "dynv", path, count, &error);
 	if (error){
 		if (count) *count = default_count;
 		return default_value;
-	}else return (const struct dynvSystem**)r;
+	}else return (struct dynvSystem**)r;
 }
 
 void dynv_set_int32_array(struct dynvSystem* dynv_system, const char *path, int32_t* values, uint32_t count){

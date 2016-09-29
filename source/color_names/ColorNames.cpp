@@ -18,6 +18,7 @@
 
 #include "ColorNames.h"
 #include "../Color.h"
+#include "../Paths.h"
 #include <string.h>
 #include <sstream>
 #include <fstream>
@@ -29,6 +30,23 @@ ColorNames* color_names_new()
 	cnames->color_space_convert = color_rgb_to_lab_d50;
 	cnames->color_space_distance = color_distance_lch;
 	return cnames;
+}
+void color_names_clear(ColorNames *cnames)
+{
+	for (auto i = cnames->names.begin(); i != cnames->names.end(); i++){
+		delete *i;
+	}
+	cnames->names.clear();
+	for (int x = 0; x < 8; x++){
+		for (int y = 0; y < 8; y++){
+			for (int z = 0; z < 8; z++){
+				for (auto i = cnames->colors[x][y][z].begin(); i != cnames->colors[x][y][z].end(); ++i){
+					delete *i;
+				}
+				cnames->colors[x][y][z].clear();
+			}
+		}
+	}
 }
 static void color_names_strip_spaces(string& string_x, string& stripchars)
 {
@@ -99,18 +117,7 @@ int color_names_load_from_file(ColorNames* cnames, const char* filename)
 }
 void color_names_destroy(ColorNames* cnames)
 {
-	for (list<ColorNameEntry*>::iterator i=cnames->names.begin();i != cnames->names.end();++i){
-		delete (*i);
-	}
-	for (int x=0;x<8;x++){
-		for (int y=0;y<8;y++){
-			for (int z=0;z<8;z++){
-				for (list<ColorEntry*>::iterator i=cnames->colors[x][y][z].begin();i != cnames->colors[x][y][z].end();++i){
-					delete (*i);
-				}
-			}
-		}
-	}
+	color_names_clear(cnames);
 	delete cnames;
 }
 string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix)
@@ -156,4 +163,29 @@ string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_
 		return s.str();
 	}
 	return string("");
+}
+void color_names_load(ColorNames *cnames, dynvSystem *params)
+{
+	uint32_t dictionary_count = 0;
+	struct dynvSystem** dictionaries = dynv_get_dynv_array_wd(params, "color_dictionaries.items", nullptr, 0, &dictionary_count);
+	if (dictionaries){
+		for (uint32_t i = 0; i < dictionary_count; i++){
+			bool enable = dynv_get_bool_wd(dictionaries[i], "enable", "false");
+			if (enable){
+				bool built_in = dynv_get_bool_wd(dictionaries[i], "built_in", "false");
+				string path = dynv_get_string_wd(dictionaries[i], "path", "");
+				if (built_in){
+					if (path == "built_in_0"){
+						gchar *tmp;
+						color_names_load_from_file(cnames, tmp = build_filename("color_dictionary_0.txt"));
+						g_free(tmp);
+					}
+				}else{
+					color_names_load_from_file(cnames, path.c_str());
+				}
+			}
+			dynv_system_release(dictionaries[i]);
+		}
+		if (dictionaries) delete [] dictionaries;
+	}
 }
