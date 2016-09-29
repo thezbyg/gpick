@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2009-2016 Albertas Vyšniauskas -->
 <component type="desktop">
 	<id>gpick.desktop</id>
 	<metadata_license>CC0-1.0</metadata_license>
@@ -17,11 +18,24 @@
 	</description>
 	<screenshots>
 		<screenshot type="default">
-			<image>http://static.gpick.org/image/appdata-screenshot.png</image>
+			<image>http://static.gpick.org/image/appdata-screenshot-0.2.6.png</image>
 			<caption>The main window showing the application in action</caption>
 		</screenshot>
 	</screenshots>
 	<url type="homepage">http://www.gpick.org</url>
 	<url type="bugtracker">https://github.com/thezbyg/gpick</url>
 	<update_contact>albertas.vysniauskas@gpick.org</update_contact>
+	<developer_name>Albertas Vyšniauskas</developer_name>
+	<url type="donation">http://www.gpick.org</url>
+	<url type="help">https://www.gpick.org/help</url>
+	<translation type="gettext">gpick</translation>
+	<keywords>
+		<keyword>color</keyword>
+		<keyword>picker</keyword>
+		<keyword>eye</keyword>
+		<keyword>dropper</keyword>
+		<keyword>palette</keyword>
+		<keyword>scheme</keyword>
+	</keywords>
+	<url type="translate">http://www.gpick.org/translation</url>
 </component>
