@@ -35,6 +35,7 @@ enum class FileType
 	mtl,
 	css,
 	html,
+	rgbtxt,
 	unknown,
 };
 class ImportExport
@@ -86,6 +87,7 @@ class ImportExport
 		bool exportMTL();
 		bool exportHTML();
 		bool importTextFile(const text_file_parser::Configuration &configuration);
+		bool importRGBTXT();
 		bool importType(FileType type);
 		bool exportType(FileType type);
 		Error getLastError() const;

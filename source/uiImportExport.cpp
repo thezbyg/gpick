@@ -295,6 +295,8 @@ class ImportExportDialogOptions
 			ImportExportFormat *format = (ImportExportFormat*)g_object_get_data(G_OBJECT(filter), "format");
 			gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
 			gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
+			gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
+			gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html);
 		}
 		static void filterChanged(GtkFileChooserDialog*, GParamSpec*, ImportExportDialogOptions *import_export_dialog)
 		{
@@ -325,6 +327,7 @@ bool ImportExportDialog::showImport()
 		{_("GIMP/Inkscape Palette (*.gpl)"), "*.gpl", FileType::gpl},
 		{_("Adobe Swatch Exchange (*.ase)"), "*.ase", FileType::ase},
 		{_("Text File (*.txt)"), "*.txt", FileType::txt},
+		{_("rgb.txt File (rgb.txt)"), "rgb.txt", FileType::rgbtxt},
 	};
 	const size_t n_formats = sizeof(formats) / sizeof(ImportExportFormat);
 	const char* default_path = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.path", "");

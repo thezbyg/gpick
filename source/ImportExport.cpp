@@ -492,6 +492,7 @@ bool ImportExport::exportType(FileType type)
 			return exportCSS();
 		case FileType::html:
 			return exportHTML();
+		case FileType::rgbtxt:
 		case FileType::unknown:
 			return false;
 	}
@@ -707,30 +708,97 @@ bool ImportExport::importASE()
 	f.close();
 	return true;
 }
+static string::size_type rfind_first_of_not(string const& str, string::size_type const pos, string const& chars)
+{
+	auto start = str.rend() - pos - 1;
+	auto found = std::find_first_of(start, str.rend(), chars.begin(), chars.end());
+	return found == str.rend() ? string::npos : pos - (found - start);
+}
+static int hexToInt(char hex)
+{
+	if (hex >= '0' && hex <= '9') return hex - '0';
+	if (hex >= 'a' && hex <= 'f') return hex - 'a' + 10;
+	if (hex >= 'A' && hex <= 'F') return hex - 'A' + 10;
+	return 0;
+}
+static int hexPairToInt(const char *hex_pair)
+{
+	return hexToInt(hex_pair[0]) << 4 | hexToInt(hex_pair[1]);
+}
+bool ImportExport::importRGBTXT()
+{
+	ifstream f(m_filename, ios::in);
+	if (!f.is_open()){
+		m_last_error = Error::could_not_open_file;
+		return false;
+	}
+	string line;
+	Color c;
+	ColorObject* color_object;
+	string strip_chars = " \t";
+	for(;;){
+		getline(f, line);
+		if (!f.good()) break;
+		stripLeadingTrailingChars(line, strip_chars);
+		if (line.length() > 0 && line[0] == '#'){ // skip comment lines
+			continue;
+		}
+		size_t hash_position = line.find('#');
+		if (hash_position != string::npos){
+			size_t last_non_space = rfind_first_of_not(line, hash_position, " \t");
 
+			c.rgb.red = hexPairToInt(&line.at(hash_position + 1)) / 255.0;
+			c.rgb.green = hexPairToInt(&line.at(hash_position + 3)) / 255.0;
+			c.rgb.blue = hexPairToInt(&line.at(hash_position + 5)) / 255.0;
+
+			color_object = color_list_new_color_object(m_color_list, &c);
+			if (last_non_space != string::npos){
+				color_object->setName(line.substr(0, last_non_space));
+			}
+			color_list_add_color_object(m_color_list, color_object, true);
+			color_object->release();
+		}
+	}
+	if (!f.eof()) {
+		f.close();
+		m_last_error = Error::file_read_error;
+		return false;
+	}
+	f.close();
+	return true;
+}
 FileType ImportExport::getFileType(const char *filename)
 {
 	const struct{
 		FileType type;
 		const char *extension;
+		bool full_name;
 	}extensions[] = {
-		{FileType::gpa, ".gpa"},
-		{FileType::gpl, ".gpl"},
-		{FileType::ase, ".ase"},
-		{FileType::txt, ".txt"},
-		{FileType::mtl, ".mtl"},
-		{FileType::css, ".css"},
-		{FileType::html, ".html"},
-		{FileType::html, ".htm"},
-		{FileType::unknown, nullptr},
+		{FileType::gpa, ".gpa", false},
+		{FileType::gpl, ".gpl", false},
+		{FileType::ase, ".ase", false},
+		{FileType::txt, ".txt", false},
+		{FileType::mtl, ".mtl", false},
+		{FileType::css, ".css", false},
+		{FileType::html, ".html", false},
+		{FileType::html, ".htm", false},
+		{FileType::rgbtxt, "rgb.txt", true},
+		{FileType::unknown, nullptr, false},
 	};
 	boost::filesystem::path path(filename);
+	string name = path.filename().string();
+	boost::algorithm::to_lower(name);
+	for (size_t i = 0; extensions[i].type != FileType::unknown; ++i){
+		if (extensions[i].full_name && name == extensions[i].extension){
+			return extensions[i].type;
+		}
+	}
 	string extension = path.extension().string();
 	if (extension.length() == 0)
 		return FileType::unknown;
 	boost::algorithm::to_lower(extension);
 	for (size_t i = 0; extensions[i].type != FileType::unknown; ++i){
-		if (extension == extensions[i].extension){
+		if (!extensions[i].full_name && extension == extensions[i].extension){
 			return extensions[i].type;
 		}
 	}
@@ -747,6 +815,8 @@ bool ImportExport::importType(FileType type)
 			return importASE();
 		case FileType::txt:
 			return importTXT();
+		case FileType::rgbtxt:
+			return importRGBTXT();
 		case FileType::mtl:
 		case FileType::css:
 		case FileType::html:
