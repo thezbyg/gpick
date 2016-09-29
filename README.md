@@ -40,8 +40,6 @@ Used libraries:
 
 gettext ([http://www.gnu.org/s/gettext](http://www.gnu.org/s/gettext)). Required if ENABLE\_NLS is enabled. Required by default.
 
-libcurl 7 or newer ([https://curl.haxx.se/libcurl](https://curl.haxx.se/libcurl)). Required if DOWNLOAD\_RESENE\_COLOR\_LIST is enabled. Not required by default.
-
 ### Building
 
 `scons` to compile all files and place executable file in `build/source/`.
