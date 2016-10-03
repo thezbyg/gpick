@@ -25,6 +25,7 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <gdk/gdkkeysyms.h>
 using namespace std;
 
@@ -51,11 +52,19 @@ struct ColorDictionary
 	}
 	string path;
 	bool built_in, enable;
-	bool operator==(const ColorDictionary &color_dictionary)
+	size_t index;
+	bool operator==(const ColorDictionary &color_dictionary) const
 	{
 		if (this == &color_dictionary) return true;
 		if (path == color_dictionary.path && built_in == color_dictionary.built_in && enable == color_dictionary.enable) return true;
 		return false;
+	}
+};
+struct ColorDictionarySort
+{
+	bool operator()(const ColorDictionary &a, const ColorDictionary &b)
+	{
+		return a.index < b.index;
 	}
 };
 struct ColorDictionariesArgs
@@ -189,6 +198,20 @@ static gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, ColorDict
 	}
 	return false;
 }
+static void reorder(ColorDictionariesArgs *args)
+{
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->dictionary_list));
+	GtkTreeIter iter1;
+	bool valid = gtk_tree_model_get_iter_first(model, &iter1);
+	size_t index = 0;
+	while (valid){
+		ColorDictionary *color_dictionary;
+		gtk_tree_model_get(GTK_TREE_MODEL(model), &iter1, ColorDictionaryList::pointer, &color_dictionary, -1);
+		color_dictionary->index = index++;
+		valid = gtk_tree_model_iter_next(model, &iter1);
+	}
+	args->color_dictionaries.sort(ColorDictionarySort());
+}
 void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 {
 	ColorDictionariesArgs *args = new ColorDictionariesArgs;
@@ -265,6 +288,7 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		size_t item_count = args->color_dictionaries.size();
 		if (item_count){
+			reorder(args);
 			vector<dynvSystem*> serialized;
 			serialized.resize(item_count);
 			size_t i = 0;
