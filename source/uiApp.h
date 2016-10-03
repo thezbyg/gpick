@@ -40,6 +40,7 @@ struct AppOptions
 	bool do_not_start;
 };
 
+void app_initialize();
 AppArgs* app_create_main(const AppOptions &options, int &return_value);
 int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
 int app_run(AppArgs *args);

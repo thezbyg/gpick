@@ -25,6 +25,7 @@
 #include "DynvHelpers.h"
 #include <gtk/gtk.h>
 #include <string>
+#include <iostream>
 using namespace std;
 
 static gchar **commandline_filename = nullptr;
@@ -55,7 +56,6 @@ int main(int argc, char **argv)
 	gtk_init(&argc, &argv);
 	initialize_internationalisation();
 	g_set_application_name(program_name);
-	gchar* tmp;
 	GError *error = nullptr;
 	GOptionContext *context = g_option_context_new("- advanced color picker");
 	g_option_context_add_main_entries(context, commandline_entries, 0);
@@ -91,12 +91,9 @@ int main(int argc, char **argv)
 	if (converter_name != nullptr)
 		options.converter_name = converter_name;
 	int return_value = 0;
+	app_initialize();
 	AppArgs *args = app_create_main(options, return_value);
 	if (args){
-		GtkIconTheme *icon_theme;
-		icon_theme = gtk_icon_theme_get_default();
-		gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(0));
-		g_free(tmp);
 		if (!single_color_pick_mode){
 			if (commandline_filename){
 				app_load_file(args, commandline_filename[0]);

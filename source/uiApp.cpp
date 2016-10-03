@@ -1424,7 +1424,13 @@ static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Color pic_ker")));
 	gtk_widget_show(widget);
 }
-
+void app_initialize()
+{
+	GtkIconTheme *icon_theme = gtk_icon_theme_get_default();
+	gchar *tmp;
+	gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(nullptr));
+	g_free(tmp);
+}
 AppArgs* app_create_main(const AppOptions &options, int &return_value)
 {
 	AppArgs* args = new AppArgs;
