@@ -60,22 +60,32 @@ static void color_names_strip_spaces(string& string_x, string& stripchars)
 	}
 	string_x = string_x.substr(startIndex, (endIndex-startIndex)+1 );
 }
-void color_names_get_color_xyz(ColorNames* cnames, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
+void color_names_normalize(const Color &color, Color &out)
 {
-	*x1 = clamp_int(int(c->xyz.x * 8 - 0.5), 0, 7);
-	*y1 = clamp_int(int(c->xyz.y * 8 - 0.5), 0, 7);
-	*z1 = clamp_int(int(c->xyz.z * 8 - 0.5), 0, 7);
-	*x2 = clamp_int(int(c->xyz.x * 8 + 0.5), 0, 7);
-	*y2 = clamp_int(int(c->xyz.y * 8 + 0.5), 0, 7);
-	*z2 = clamp_int(int(c->xyz.z * 8 + 0.5), 0, 7);
+	out.xyz.x = color.xyz.x / 100.0;
+	out.xyz.y = (color.xyz.y + 86.1825) / (86.1825 + 98.2346);
+	out.xyz.z = (color.xyz.z + 107.86) / (107.86 + 94.478);
 }
-list<ColorEntry*>* color_names_get_color_list(ColorNames* cnames, Color* c)
+void color_names_get_color_xyz(ColorNames* color_names, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
 {
+	Color n;
+	color_names_normalize(*c, n);
+	*x1 = clamp_int(int(n.xyz.x * 8 - 0.5), 0, 7);
+	*y1 = clamp_int(int(n.xyz.y * 8 - 0.5), 0, 7);
+	*z1 = clamp_int(int(n.xyz.z * 8 - 0.5), 0, 7);
+	*x2 = clamp_int(int(n.xyz.x * 8 + 0.5), 0, 7);
+	*y2 = clamp_int(int(n.xyz.y * 8 + 0.5), 0, 7);
+	*z2 = clamp_int(int(n.xyz.z * 8 + 0.5), 0, 7);
+}
+static list<ColorEntry*>* color_names_get_color_list(ColorNames* color_names, Color* c)
+{
+	Color n;
+	color_names_normalize(*c, n);
 	int x,y,z;
-	x = clamp_int(int(c->xyz.x * 8), 0, 7);
-	y = clamp_int(int(c->xyz.y * 8), 0, 7);
-	z = clamp_int(int(c->xyz.z * 8), 0, 7);
-	return &cnames->colors[x][y][z];
+	x = clamp_int(int(n.xyz.x * 8), 0, 7);
+	y = clamp_int(int(n.xyz.y * 8), 0, 7);
+	z = clamp_int(int(n.xyz.z * 8), 0, 7);
+	return &color_names->colors[x][y][z];
 }
 int color_names_load_from_file(ColorNames* cnames, const char* filename)
 {
