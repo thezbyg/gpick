@@ -601,6 +601,8 @@ void** dynv_get_array(struct dynvSystem* dynv_system, const char* handler_name, 
 	int error_redir;
 	if (error == nullptr) error = &error_redir;
 
+	if (count)
+		*count = 0;
 	*error = 0;
 
 	struct dynvSystem* dlevel = dynv_system_ref(dynv_system);
