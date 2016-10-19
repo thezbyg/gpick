@@ -269,7 +269,7 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 		if (selection_avail){
-			ColorList *color_list = color_list_new(nullptr);
+			ColorList *color_list = color_list_new();
 			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
 			if (color_list_get_count(color_list) != 0){
 				StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->preview_list, args->gs);

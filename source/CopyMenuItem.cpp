@@ -61,7 +61,7 @@ class CopyMenuItemState
 			string text_line;
 			if (copy_menu_item_state->m_palette_widget){
 				stringstream text(ios::out);
-				ColorList *color_list = color_list_new(nullptr);
+				ColorList *color_list = color_list_new();
 				palette_list_foreach_selected(copy_menu_item_state->m_palette_widget, (PaletteListCallback)addToColorList, color_list);
 				ConverterSerializePosition position(color_list->colors.size());
 				if (position.count > 0){

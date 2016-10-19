@@ -40,7 +40,9 @@ class ColorList
 		void* userdata;
 };
 
+ColorList* color_list_new();
 ColorList* color_list_new(struct dynvHandlerMap *handler_map);
+ColorList* color_list_new(ColorList *color_list);
 ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color);
 void color_list_destroy(ColorList *color_list);
 ColorObject* color_list_new_color_object(ColorList *color_list, const Color *color);

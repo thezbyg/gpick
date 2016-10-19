@@ -22,14 +22,10 @@
 #include <algorithm>
 using namespace std;
 
-ColorList* color_list_new(struct dynvHandlerMap* handler_map)
+ColorList* color_list_new()
 {
 	ColorList* color_list = new ColorList;
-	if (handler_map){
-		color_list->params = dynv_system_create(handler_map);
-	}else{
-		color_list->params = nullptr;
-	}
+	color_list->params = nullptr;
 	color_list->on_insert = nullptr;
 	color_list->on_change = nullptr;
 	color_list->on_delete = nullptr;
@@ -39,9 +35,31 @@ ColorList* color_list_new(struct dynvHandlerMap* handler_map)
 	color_list->userdata = nullptr;
 	return color_list;
 }
+ColorList* color_list_new(ColorList *color_list)
+{
+	ColorList *result = color_list_new();
+	if (color_list){
+		dynvHandlerMap *handler_map = dynv_system_get_handler_map(color_list->params);
+		result->params = dynv_system_create(handler_map);
+		dynv_handler_map_release(handler_map);
+	}else{
+		result->params = nullptr;
+	}
+	return result;
+}
+ColorList* color_list_new(struct dynvHandlerMap* handler_map)
+{
+	ColorList *result = color_list_new();
+	if (handler_map){
+		result->params = dynv_system_create(handler_map);
+	}else{
+		result->params = nullptr;
+	}
+	return result;
+}
 ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color)
 {
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	ColorObject *color_object = new ColorObject("", *color);
 	color_list_add_color_object(color_list, color_object, 1);
 	return color_list;

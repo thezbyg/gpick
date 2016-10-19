@@ -848,7 +848,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text)
 {
 	stringstream text(ios::out);
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	if (palette_widget){
 		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
 	}else{
@@ -1001,7 +1001,7 @@ static PaletteListCallbackReturn color_list_reverse_replace(ColorObject** color_
 
 static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	ReplaceState state;
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	state.iter = color_list->colors.rbegin();
@@ -1016,7 +1016,7 @@ gint32 palette_popup_menu_mix_list(Color* color, void *userdata)
 
 static void palette_popup_menu_mix(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_mix_show(GTK_WINDOW(args->window), color_list, args->gs);
 	color_list_destroy(color_list);
@@ -1034,7 +1034,7 @@ static void palette_popup_menu_variations(GtkWidget *widget, AppArgs* args)
 
 static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_generate_show(GTK_WINDOW(args->window), color_list, args->gs);
 	color_list_destroy(color_list);
@@ -1054,8 +1054,8 @@ static PaletteListCallbackReturn color_list_group_and_sort_replace(ColorObject**
 
 static void palette_popup_menu_group_and_sort(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new(nullptr);
-	ColorList *sorted_color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
+	ColorList *sorted_color_list = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	if (dialog_sort_show(GTK_WINDOW(args->window), color_list, sorted_color_list, args->gs)){
 		GroupAndSortState state;
@@ -1077,7 +1077,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
 	if (total_count > 0 && selected_count >= 1){
-		ColorList *color_list = color_list_new(nullptr);
+		ColorList *color_list = color_list_new();
 		palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
 		if (color_list_get_count(color_list) != 0){
 			StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->color_list, args->gs);
@@ -1185,7 +1185,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 		case GDK_KEY_6:
 		case GDK_KEY_KP_6:
 			{
-				ColorList *color_list = color_list_new(nullptr);
+				ColorList *color_list = color_list_new();
 				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
 				if (color_list_get_count(color_list) > 0){
 					ColorSource *color_source = args->gs->getCurrentColorSource();

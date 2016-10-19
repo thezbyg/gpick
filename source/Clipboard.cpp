@@ -60,7 +60,7 @@ void Clipboard::set(GtkWidget *palette_widget, GlobalState *gs, Converter *conve
 	if (converter == nullptr)
 		converter = converters_get_first(gs->getConverters(), ConverterArrayType::copy);
 	stringstream text(ios::out);
-	ColorList *color_list = color_list_new(nullptr);
+	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(palette_widget, (PaletteListCallback)addToColorList, color_list);
 	string text_line;
 	ConverterSerializePosition position(color_list->colors.size());
