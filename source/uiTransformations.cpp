@@ -299,53 +299,38 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-
-	GtkWidget *widget;
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
-	GtkWidget *vbox2 = gtk_vbox_new(false, 5);
-
-	args->enabled = widget = gtk_check_button_new_with_mnemonic (_("_Enable display filters"));
+	GtkWidget *widget = args->enabled = gtk_check_button_new_with_mnemonic(_("_Enable display filters"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->transformations_params, "enabled", false));
 	gtk_box_pack_start(GTK_BOX(vbox), args->enabled, false, false, 0);
-
-
- 	args->vpaned = gtk_vpaned_new();
+	args->vpaned = gtk_vpaned_new();
 	gtk_box_pack_start(GTK_BOX(vbox), args->vpaned, true, true, 0);
-
-
-	GtkWidget *list, *scrolled;
-	GtkTreeIter iter1;
-	GtkTreeModel *model;
 
 	GtkWidget *hbox = gtk_hbox_new(false, 5);
 
-	args->available_transformations = list = transformations_list_new(true);
+	GtkWidget *list = args->available_transformations = transformations_list_new(true);
 	g_signal_connect(G_OBJECT(list), "row-activated", G_CALLBACK(available_transformation_row_activated), args);
-	scrolled = gtk_scrolled_window_new(0, 0);
+	GtkWidget *scrolled = gtk_scrolled_window_new(0, 0);
 	gtk_container_add(GTK_CONTAINER(scrolled), list);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_box_pack_start(GTK_BOX(hbox), scrolled, true, true, 0);
 
-	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	vector<transformation::Factory::TypeInfo> types = transformation::Factory::getAllTypes();
 	for (size_t i = 0; i != types.size(); i++){
-		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-		available_tranformations_update_row(model, &iter1, &types[i], args);
+		GtkTreeIter iter;
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+		available_tranformations_update_row(model, &iter, &types[i], args);
 	}
 
 	GtkWidget *vbox3 = gtk_vbox_new(5, true);
-
 	GtkWidget *button = gtk_button_new_from_stock(GTK_STOCK_ADD);
 	gtk_box_pack_start(GTK_BOX(vbox3), button, false, false, 0);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(add_transformation_cb), args);
-
 	button = gtk_button_new_from_stock(GTK_STOCK_REMOVE);
 	gtk_box_pack_start(GTK_BOX(vbox3), button, false, false, 0);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(remove_transformation_cb), args);
-
 	gtk_box_pack_start(GTK_BOX(hbox), vbox3, false, false, 0);
-
-
 	args->transformation_list = list = transformations_list_new(false);
 	g_signal_connect(G_OBJECT(list), "row-activated", G_CALLBACK(transformation_chain_row_activated), args);
 	g_signal_connect(G_OBJECT(list), "cursor-changed", G_CALLBACK(transformation_chain_cursor_changed), args);
@@ -362,37 +347,27 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 
 	args->config_vbox = gtk_vbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(config_wrap_vbox), args->config_vbox, true, true, 0);
-
 	gtk_paned_pack2(GTK_PANED(args->vpaned), config_wrap_vbox, false, false);
 
 	auto chain = args->gs->getTransformationChain();
 	model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	for (auto transformation: chain->getAll()){
-		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-		tranformations_update_row(model, &iter1, transformation.get(), args);
+		GtkTreeIter iter;
+		gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+		tranformations_update_row(model, &iter, transformation.get(), args);
 	}
-
 	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
-
 	gtk_widget_show_all(vbox);
 	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
 
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		apply_configuration(args);
-
+		GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		GtkTreeIter iter;
-		GtkListStore *store;
-		gboolean valid;
-
-		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
-		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
-
-
+		bool valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
 		bool enabled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->enabled));
 		dynv_set_bool(args->transformations_params, "enabled", enabled);
 		chain->setEnabled(enabled);
-
 		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), nullptr);
 		if (count > 0){
 			struct dynvSystem** config_array = new struct dynvSystem*[count];
@@ -433,18 +408,14 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 			}
 			dynv_system_release(config_array[i]);
 		}
-
 		delete [] config_array;
 	}
-
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
 	dynv_set_int32(args->params, "transformations.window.width", width);
 	dynv_set_int32(args->params, "transformations.window.height", height);
 	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->vpaned)));
-
 	gtk_widget_destroy(dialog);
-
 	dynv_system_release(args->transformations_params);
 	dynv_system_release(args->params);
 	delete args;
