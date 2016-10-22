@@ -26,8 +26,8 @@
 	<url type="bugtracker">https://github.com/thezbyg/gpick</url>
 	<update_contact>albertas.vysniauskas@gpick.org</update_contact>
 	<developer_name>Albertas Vyšniauskas</developer_name>
-	<url type="donation">http://www.gpick.org</url>
-	<url type="help">https://www.gpick.org/help</url>
+	<url type="donation">http://www.gpick.org/help/donation.html</url>
+	<url type="help">http://www.gpick.org/help.html</url>
 	<translation type="gettext">gpick</translation>
 	<keywords>
 		<keyword>color</keyword>
@@ -37,5 +37,5 @@
 		<keyword>palette</keyword>
 		<keyword>scheme</keyword>
 	</keywords>
-	<url type="translate">http://www.gpick.org/translation</url>
+	<url type="translate">http://www.gpick.org/help/translation.html</url>
 </component>
