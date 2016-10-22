@@ -655,58 +655,45 @@ static void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 	}
 }
 
-static GtkWidget* create_falloff_type_list (void){
-	GtkListStore *store;
-	GtkCellRenderer *renderer;
-	GtkWidget *widget;
-	store = gtk_list_store_new (3, GDK_TYPE_PIXBUF,G_TYPE_STRING,G_TYPE_INT);
-	widget = gtk_combo_box_new_with_model (GTK_TREE_MODEL(store));
-	gtk_combo_box_set_add_tearoffs (GTK_COMBO_BOX (widget), 0);
-	renderer = gtk_cell_renderer_pixbuf_new();
-	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (widget),renderer,0);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"pixbuf",0,nullptr);
-
+static GtkWidget* create_falloff_type_list()
+{
+	GtkListStore *store = gtk_list_store_new(3, GDK_TYPE_PIXBUF, G_TYPE_STRING, G_TYPE_INT);
+	GtkWidget *widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
+	GtkCellRenderer *renderer = gtk_cell_renderer_pixbuf_new();
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget),renderer, 0);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "pixbuf", 0, nullptr);
 	renderer = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (widget),renderer,0);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (widget), renderer,"text",1,nullptr);
-
-	g_object_unref (GTK_TREE_MODEL(store));
-	GtkTreeIter iter1;
-	const char* falloff_types[][2] = {
-		{"gpick-falloff-none", _("None")},
-		{"gpick-falloff-linear", _("Linear")},
-		{"gpick-falloff-quadratic", _("Quadratic")},
-		{"gpick-falloff-cubic", _("Cubic")},
-		{"gpick-falloff-exponential", _("Exponential")},
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 1, nullptr);
+	g_object_unref(GTK_TREE_MODEL(store));
+	struct{
+		const char *icon;
+		const char *label;
+		SamplerFalloff falloff;
+	}falloff_types[] = {
+		{"gpick-falloff-none", _("None"), SamplerFalloff::none},
+		{"gpick-falloff-linear", _("Linear"), SamplerFalloff::linear},
+		{"gpick-falloff-quadratic", _("Quadratic"), SamplerFalloff::quadratic},
+		{"gpick-falloff-cubic", _("Cubic"), SamplerFalloff::cubic},
+		{"gpick-falloff-exponential", _("Exponential"), SamplerFalloff::exponential},
 	};
-	SamplerFalloff falloff_type_ids[]={
-		SamplerFalloff::none,
-		SamplerFalloff::linear,
-		SamplerFalloff::quadratic,
-		SamplerFalloff::cubic,
-		SamplerFalloff::exponential,
-	};
-	GtkIconTheme *icon_theme;
-	icon_theme = gtk_icon_theme_get_default ();
+	GtkIconTheme *icon_theme = gtk_icon_theme_get_default();
 	gint icon_size;
 	gtk_icon_size_lookup(GTK_ICON_SIZE_MENU, 0, &icon_size);
-
-	for (guint32 i=0;i<sizeof(falloff_type_ids)/sizeof(gint32);++i){
+	for (size_t i = 0; i < sizeof(falloff_types) / sizeof(falloff_types[0]); ++i){
 		GError *error = nullptr;
-
-		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, falloff_types[i][0], icon_size, GtkIconLookupFlags(0), &error);
-		if (error) g_error_free (error);
-
+		GdkPixbuf* pixbuf = gtk_icon_theme_load_icon(icon_theme, falloff_types[i].icon, icon_size, GtkIconLookupFlags(0), &error);
+		if (error) g_error_free(error);
+		GtkTreeIter iter1;
 		gtk_list_store_append(store, &iter1);
 		gtk_list_store_set(store, &iter1,
 			0, pixbuf,
-			1, falloff_types[i][1],
-			2, falloff_type_ids[i],
+			1, falloff_types[i].label,
+			2, falloff_types[i].falloff,
 		-1);
-
 		if (pixbuf) g_object_unref (pixbuf);
 	}
-
 	return widget;
 }
 static int source_destroy(ColorPickerArgs *args)
