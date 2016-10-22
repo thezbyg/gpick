@@ -195,6 +195,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	gtk_widget_get_allocation(widget, &rectangle);
 	int width = rectangle.width - widget->style->xthickness * 2 - 1, height = rectangle.height - widget->style->ythickness * 2 - 1;
 #endif
+	bool sensitive = gtk_widget_get_sensitive(widget);
 	if (ns->rounded_rectangle){
 		cairo_rounded_rectangle(cr, 0, 0, width, height, ns->roundness);
 		if (ns->transformation_chain){
@@ -202,8 +203,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		}else{
 			color_copy(&ns->color, &color);
 		}
-		cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
-		cairo_fill_preserve(cr);
+		if (sensitive){
+			cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
+			cairo_fill_preserve(cr);
+		}
 		if (gtk_widget_has_focus(widget)){
 #if GTK_MAJOR_VERSION >= 3
 			//TODO: GTK3 get border color
@@ -222,10 +225,12 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		}else{
 			color_copy(&ns->color, &color);
 		}
-		cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
-		cairo_paint(cr);
+		if (sensitive){
+			cairo_set_source_rgb(cr, color.rgb.red, color.rgb.green, color.rgb.blue);
+			cairo_paint(cr);
+		}
 	}
-	if (ns->text){
+	if (sensitive && ns->text){
 		PangoLayout *layout;
 		PangoFontDescription *font_description;
 		font_description = pango_font_description_new();

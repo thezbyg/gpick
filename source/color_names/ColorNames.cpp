@@ -22,43 +22,63 @@
 #include <string.h>
 #include <sstream>
 #include <fstream>
+#include <functional>
+#include <list>
 using namespace std;
 
+struct ColorNameEntry
+{
+	std::string name;
+};
+struct ColorEntry
+{
+	Color color;
+	Color original_color;
+	ColorNameEntry* name;
+};
+const int SpaceDivisions = 8;
+struct ColorNames
+{
+	std::list<ColorNameEntry*> names;
+	std::vector<ColorEntry*> colors[SpaceDivisions][SpaceDivisions][SpaceDivisions];
+	void (*color_space_convert)(const Color* a, Color* b);
+	float (*color_space_distance)(const Color* a, const Color* b);
+};
 ColorNames* color_names_new()
 {
-	ColorNames* cnames = new ColorNames;
-	cnames->color_space_convert = color_rgb_to_lab_d50;
-	cnames->color_space_distance = color_distance_lch;
-	return cnames;
+	ColorNames* color_names = new ColorNames;
+	color_names->color_space_convert = color_rgb_to_lab_d50;
+	color_names->color_space_distance = color_distance_lch;
+	return color_names;
 }
-void color_names_clear(ColorNames *cnames)
+void color_names_clear(ColorNames *color_names)
 {
-	for (auto i = cnames->names.begin(); i != cnames->names.end(); i++){
+	for (auto i = color_names->names.begin(); i != color_names->names.end(); i++){
 		delete *i;
 	}
-	cnames->names.clear();
-	for (int x = 0; x < 8; x++){
-		for (int y = 0; y < 8; y++){
-			for (int z = 0; z < 8; z++){
-				for (auto i = cnames->colors[x][y][z].begin(); i != cnames->colors[x][y][z].end(); ++i){
+	color_names->names.clear();
+	for (int x = 0; x < SpaceDivisions; x++){
+		for (int y = 0; y < SpaceDivisions; y++){
+			for (int z = 0; z < SpaceDivisions; z++){
+				for (auto i = color_names->colors[x][y][z].begin(); i != color_names->colors[x][y][z].end(); ++i){
 					delete *i;
 				}
-				cnames->colors[x][y][z].clear();
+				color_names->colors[x][y][z].clear();
 			}
 		}
 	}
 }
-static void color_names_strip_spaces(string& string_x, string& stripchars)
+static void color_names_strip_spaces(string& string_x, const string& strip_chars)
 {
-	if(string_x.empty()) return;
-	if (stripchars.empty()) return;
-	size_t startIndex = string_x.find_first_not_of(stripchars);
-	size_t endIndex = string_x.find_last_not_of(stripchars);
-	if ((startIndex == string::npos) || (endIndex == string::npos)){
+	if (string_x.empty()) return;
+	if (strip_chars.empty()) return;
+	size_t start_index = string_x.find_first_not_of(strip_chars);
+	size_t end_index = string_x.find_last_not_of(strip_chars);
+	if ((start_index == string::npos) || (end_index == string::npos)){
 		string_x.erase();
 		return;
 	}
-	string_x = string_x.substr(startIndex, (endIndex-startIndex)+1 );
+	string_x = string_x.substr(start_index, (end_index - start_index) + 1);
 }
 void color_names_normalize(const Color &color, Color &out)
 {
@@ -68,35 +88,31 @@ void color_names_normalize(const Color &color, Color &out)
 }
 void color_names_get_color_xyz(ColorNames* color_names, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
 {
-	Color n;
-	color_names_normalize(*c, n);
-	*x1 = clamp_int(int(n.xyz.x * 8 - 0.5), 0, 7);
-	*y1 = clamp_int(int(n.xyz.y * 8 - 0.5), 0, 7);
-	*z1 = clamp_int(int(n.xyz.z * 8 - 0.5), 0, 7);
-	*x2 = clamp_int(int(n.xyz.x * 8 + 0.5), 0, 7);
-	*y2 = clamp_int(int(n.xyz.y * 8 + 0.5), 0, 7);
-	*z2 = clamp_int(int(n.xyz.z * 8 + 0.5), 0, 7);
+	*x1 = clamp_int(int(c->xyz.x / 100 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*y1 = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*z1 = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*x2 = clamp_int(int(c->xyz.x / 100 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
+	*y2 = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
+	*z2 = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
 }
-static list<ColorEntry*>* color_names_get_color_list(ColorNames* color_names, Color* c)
+static vector<ColorEntry*>* color_names_get_color_list(ColorNames* color_names, Color* c)
 {
-	Color n;
-	color_names_normalize(*c, n);
 	int x,y,z;
-	x = clamp_int(int(n.xyz.x * 8), 0, 7);
-	y = clamp_int(int(n.xyz.y * 8), 0, 7);
-	z = clamp_int(int(n.xyz.z * 8), 0, 7);
+	x = clamp_int(int(c->xyz.x / 100 * SpaceDivisions), 0, SpaceDivisions - 1);
+	y = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
+	z = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
 	return &color_names->colors[x][y][z];
 }
-int color_names_load_from_file(ColorNames* cnames, const char* filename)
+int color_names_load_from_file(ColorNames* color_names, const char* filename)
 {
+	float a = 0, b = 0, c = 0;
 	ifstream file(filename, ifstream::in);
-	if (file.is_open()) {
+	if (file.is_open()){
 		string line;
 		stringstream rline (ios::in | ios::out);
 		Color color;
 		string name;
-		string strip_chars = " \t,.\n\r";
-		while (!(file.eof())) {
+		while (!(file.eof())){
 			getline(file, line);
 			if (line.empty()) continue;
 			if (line.at(0) == '!') continue;
@@ -104,77 +120,88 @@ int color_names_load_from_file(ColorNames* cnames, const char* filename)
 			rline.str(line);
 			rline >> color.rgb.red >> color.rgb.green >> color.rgb.blue;
 			getline(rline, name);
+			const string strip_chars = " \t,.\n\r";
 			color_names_strip_spaces(name, strip_chars);
 			string::iterator i(name.begin());
-			if (i != name.end())
+			if (i != name.end()){
 				name[0] = toupper((unsigned char)name[0]);
-			while(++i != name.end()){
-				*i = tolower((unsigned char)*i);
+				while(++i != name.end()){
+					*i = tolower((unsigned char)*i);
+				}
+				color_multiply(&color, 1 / 255.0);
+				ColorNameEntry* name_entry = new ColorNameEntry;
+				name_entry->name = name;
+				color_names->names.push_back(name_entry);
+				ColorEntry* color_entry = new ColorEntry;
+				color_entry->name = name_entry;
+				color_names->color_space_convert(&color, &color_entry->color);
+				color_copy(&color, &color_entry->original_color);
+				color_names_get_color_list(color_names, &color_entry->color)->push_back(color_entry);
 			}
-			color_multiply(&color, 1/255.0);
-			ColorNameEntry* name_entry = new ColorNameEntry;
-			name_entry->name=name;
-			cnames->names.push_back(name_entry);
-			ColorEntry* color_entry = new ColorEntry;
-			color_entry->name=name_entry;
-			cnames->color_space_convert(&color, &color_entry->color);
-			color_names_get_color_list(cnames, &color_entry->color)->push_back(color_entry);
 		}
 		file.close();
 		return 0;
 	}
 	return -1;
 }
-void color_names_destroy(ColorNames* cnames)
+void color_names_destroy(ColorNames* color_names)
 {
-	color_names_clear(cnames);
-	delete cnames;
+	color_names_clear(color_names);
+	delete color_names;
 }
-string color_names_get(ColorNames* cnames, const Color* color, bool imprecision_postfix)
+static void color_names_iterate(ColorNames* color_names, const Color* color, function<bool(ColorEntry*, float)> on_color, function<bool()> on_expansion)
 {
 	Color c1;
-	cnames->color_space_convert(color, &c1);
+	color_names->color_space_convert(color, &c1);
 	int x1, y1, z1, x2, y2, z2;
-	color_names_get_color_xyz(cnames, &c1, &x1, &y1, &z1, &x2, &y2, &z2);
-	float result_delta=1e5;
-	ColorEntry* color_entry = nullptr;
-	char skip_mask[8][8][8];
+	color_names_get_color_xyz(color_names, &c1, &x1, &y1, &z1, &x2, &y2, &z2);
+	char skip_mask[SpaceDivisions][SpaceDivisions][SpaceDivisions];
 	memset(&skip_mask, 0, sizeof(skip_mask));
-	/* Search expansion should be from 0 to 7, but this would only increase search time and return
+	/* Search expansion should be from 0 to SpaceDivisions, but this would only increase search time and return
 	 * wrong color names when no closely matching color is found. Search expansion is only useful
 	 * when color name database is very small (16 colors)
 	 */
-	for (int expansion = 0; expansion < 7; ++expansion){
-		int x_start = std::max(x1 - expansion, 0), x_end = std::min(x2 + expansion, 7);
-		int y_start = std::max(y1 - expansion, 0), y_end = std::min(y2 + expansion, 7);
-		int z_start = std::max(z1 - expansion, 0), z_end = std::min(z2 + expansion, 7);
-		for (int x_i = x_start; x_i <= x_end; ++x_i) {
-			for (int y_i = y_start; y_i <= y_end; ++y_i) {
-				for (int z_i = z_start; z_i <= z_end; ++z_i) {
+	for (int expansion = 0; expansion < SpaceDivisions - 1; ++expansion){
+		int x_start = std::max(x1 - expansion, 0), x_end = std::min(x2 + expansion, SpaceDivisions - 1);
+		int y_start = std::max(y1 - expansion, 0), y_end = std::min(y2 + expansion, SpaceDivisions - 1);
+		int z_start = std::max(z1 - expansion, 0), z_end = std::min(z2 + expansion, SpaceDivisions - 1);
+		for (int x_i = x_start; x_i <= x_end; ++x_i){
+			for (int y_i = y_start; y_i <= y_end; ++y_i){
+				for (int z_i = z_start; z_i <= z_end; ++z_i){
 					if (skip_mask[x_i][y_i][z_i]) continue; // skip checked items
 					skip_mask[x_i][y_i][z_i] = 1;
-					for (list<ColorEntry*>::iterator i=cnames->colors[x_i][y_i][z_i].begin(); i != cnames->colors[x_i][y_i][z_i].end();++i){
-						float delta = cnames->color_space_distance(&(*i)->color, &c1);
-						if (delta < result_delta) {
-							result_delta=delta;
-							color_entry=*i;
-						}
+					for (auto i = color_names->colors[x_i][y_i][z_i].begin(); i != color_names->colors[x_i][y_i][z_i].end(); ++i){
+						float delta = color_names->color_space_distance(&(*i)->color, &c1);
+						if (!on_color(*i, delta)) return;
 					}
 				}
 			}
 		}
-		//no need for further expansion if we have found a match
-		if (color_entry) break;
+		if (on_expansion && !on_expansion()) return;
 	}
-	if (color_entry){
+}
+string color_names_get(ColorNames* color_names, const Color* color, bool imprecision_postfix)
+{
+	float result_delta = 1e5;
+	ColorEntry* found_color_entry = nullptr;
+	color_names_iterate(color_names, color, [&](ColorEntry *color_entry, float delta){
+		if (delta < result_delta){
+			result_delta = delta;
+			found_color_entry = color_entry;
+		}
+		return true;
+	}, [&](){
+		return found_color_entry == nullptr; // stop further expansion if we have found a match
+	});
+	if (found_color_entry){
 		stringstream s;
-		s << color_entry->name->name;
-		if (imprecision_postfix) if (result_delta>0.1) s<<" ~";
+		s << found_color_entry->name->name;
+		if (imprecision_postfix) if (result_delta > 0.1) s << " ~";
 		return s.str();
 	}
 	return string("");
 }
-void color_names_load(ColorNames *cnames, dynvSystem *params)
+void color_names_load(ColorNames *color_names, dynvSystem *params)
 {
 	uint32_t dictionary_count = 0;
 	struct dynvSystem** dictionaries = dynv_get_dynv_array_wd(params, "color_dictionaries.items", nullptr, 0, &dictionary_count);
@@ -187,15 +214,34 @@ void color_names_load(ColorNames *cnames, dynvSystem *params)
 				if (built_in){
 					if (path == "built_in_0"){
 						gchar *tmp;
-						color_names_load_from_file(cnames, tmp = build_filename("color_dictionary_0.txt"));
+						color_names_load_from_file(color_names, tmp = build_filename("color_dictionary_0.txt"));
 						g_free(tmp);
 					}
 				}else{
-					color_names_load_from_file(cnames, path.c_str());
+					color_names_load_from_file(color_names, path.c_str());
 				}
 			}
 			dynv_system_release(dictionaries[i]);
 		}
 		if (dictionaries) delete [] dictionaries;
+	}
+}
+void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors)
+{
+	multimap<float, ColorEntry*> found_colors;
+	color_names_iterate(color_names, &color, [&](ColorEntry *color_entry, float delta){
+		found_colors.insert(pair<float, ColorEntry*>(delta, color_entry));
+		return true;
+	}, [&](){
+		return found_colors.size() < count;
+	});
+	if (found_colors.size() >= count)
+		colors.resize(count);
+	else
+		colors.resize(found_colors.size());
+	size_t index = 0;
+	for (auto &item: found_colors){
+		if (index >= count) break;
+		colors[index++] = pair<const char*, Color>(item.second->name->name.c_str(), item.second->original_color);
 	}
 }

@@ -16,11 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef REGISTERSOURCES_H_
-#define REGISTERSOURCES_H_
-
+#ifndef GPICK_REGISTER_SOURCES_H_
+#define GPICK_REGISTER_SOURCES_H_
 #include "ColorSourceManager.h"
-
 int register_sources(ColorSourceManager *csm);
-
-#endif /* REGISTERSOURCES_H_ */
+#endif /* GPICK_REGISTER_SOURCES_H_ */
