@@ -18,7 +18,7 @@ def addGettextBuilder(env):
 	XgettextAction = SCons.Action.Action("$XGETTEXTCOM", "$XGETTEXTCOMSTR")
 	
 	env["XGETTEXT"]    = env.Detect("xgettext")
-	env["XGETTEXTCOM"] = "$XGETTEXT --keyword=_ --from-code utf8 --package-name=gpick $XGETTEXT_FLAGS --output=$TARGET $SOURCES"
+	env["XGETTEXTCOM"] = "$XGETTEXT --keyword=_ --from-code utf-8 --package-name=gpick $XGETTEXT_FLAGS --output=$TARGET $SOURCES"
 	
 	builder = Builder(
 		action = XgettextAction,
