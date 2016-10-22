@@ -185,8 +185,12 @@ env.Alias(target="install", source=[
 	env.InstallDataAutoDir(dir=env['DESTDIR'] + '/share/locale/', relative_dir='share/locale/', source=[env.Glob('share/locale/*/LC_MESSAGES/gpick.mo')]),
 ])
 
-env.Alias(target="nsis", source=[
+env.Alias(target = "nsis", source = [
 	env.WriteNsisVersion("version.py")
+])
+
+env.Alias(target = "version", source = [
+	env.Template(target = "#version.txt", source = "version.template"),
 ])
 
 tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
@@ -196,7 +200,7 @@ for item in parser_files:
 
 if 'TAR' in env:
 	env.Alias(target = "tar", source = [
-		env.Template(target = "#version.txt", source = "version.template"),
+		'version',
 		env.Append(TARFLAGS = ['-z']),
 		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
 		env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)
