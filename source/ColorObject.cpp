@@ -26,7 +26,8 @@ ColorObject::ColorObject():
 	m_position(0),
 	m_position_set(false),
 	m_selected(false),
-	m_visited(false)
+	m_visited(false),
+	m_visible(true)
 {
 }
 ColorObject::ColorObject(const char *name, const Color &color):
@@ -36,7 +37,8 @@ ColorObject::ColorObject(const char *name, const Color &color):
 	m_position(0),
 	m_position_set(false),
 	m_selected(false),
-	m_visited(false)
+	m_visited(false),
+	m_visible(true)
 {
 }
 ColorObject::ColorObject(const std::string &name, const Color &color):
@@ -46,7 +48,8 @@ ColorObject::ColorObject(const std::string &name, const Color &color):
 	m_position(0),
 	m_position_set(false),
 	m_selected(false),
-	m_visited(false)
+	m_visited(false),
+	m_visible(true)
 {
 }
 ColorObject *ColorObject::reference()
@@ -103,6 +106,10 @@ bool ColorObject::isPositionSet() const
 {
 	return m_position_set;
 }
+bool ColorObject::isVisible() const
+{
+	return m_visible;
+}
 void ColorObject::setPosition(size_t position)
 {
 	m_position = position;
@@ -119,6 +126,10 @@ void ColorObject::setSelected(bool selected)
 void ColorObject::setVisited(bool visited)
 {
 	m_visited = visited;
+}
+void ColorObject::setVisible(bool visible)
+{
+	m_visible = visible;
 }
 size_t ColorObject::getReferenceCount() const
 {

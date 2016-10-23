@@ -22,6 +22,7 @@
 #include "DynvHelpers.h"
 #include "ImportExport.h"
 #include "StringUtils.h"
+#include "ColorList.h"
 #include "Converter.h"
 #include "GlobalState.h"
 #include "Internationalisation.h"
@@ -388,10 +389,12 @@ bool ImportExportDialog::showImport()
 				auto converters = m_gs->getConverters();
 				for (size_t i = 0; i != n_formats; ++i){
 					if (formats[i].type == type){
-						ImportExport import_export(m_color_list, filename, m_gs);
+						ColorList *color_list = color_list_new(m_color_list);
+						ImportExport import_export(color_list, filename, m_gs);
 						import_export.setConverters(converters);
 						if (import_export.importType(formats[i].type)){
 							finished = true;
+							color_list_add(m_color_list, color_list, true);
 						}else{
 							message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 							gtk_window_set_title(GTK_WINDOW(message), _("Import"));
@@ -400,6 +403,7 @@ bool ImportExportDialog::showImport()
 						}
 						const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
 						dynv_set_string(m_gs->getSettings(), "gpick.import.filter", identification);
+						color_list_destroy(color_list);
 						break;
 					}
 				}
@@ -431,7 +435,8 @@ bool ImportExportDialog::showImportTextFile()
 			import_export_dialog_options.saveState();
 			GtkWidget* message;
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-			ImportExport import_export(m_color_list, filename, m_gs);
+			ColorList *color_list = color_list_new(m_color_list);
+			ImportExport import_export(color_list, filename, m_gs);
 			auto converters = m_gs->getConverters();
 			import_export.setConverters(converters);
 			text_file_parser::Configuration configuration;
@@ -446,6 +451,7 @@ bool ImportExportDialog::showImportTextFile()
 			configuration.float_values = import_export_dialog_options.isFloatValuesEnabled();
 			if (import_export.importTextFile(configuration)){
 				finished = true;
+				color_list_add(m_color_list, color_list, true);
 			}else{
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 				gtk_window_set_title(GTK_WINDOW(message), _("Import text file"));
@@ -453,6 +459,7 @@ bool ImportExportDialog::showImportTextFile()
 				gtk_widget_destroy(message);
 			}
 			g_free(filename);
+			color_list_destroy(color_list);
 		}else break;
 	}
 	gtk_widget_destroy(dialog);

@@ -45,6 +45,8 @@ class ColorObject
 		void setSelected(bool selected);
 		void setVisited(bool visited);
 		size_t getReferenceCount() const;
+		void setVisible(bool visible);
+		bool isVisible() const;
 	private:
 		size_t m_refcnt;
 		std::string m_name;
@@ -53,6 +55,7 @@ class ColorObject
 		bool m_position_set;
 		bool m_selected;
 		bool m_visited;
+		bool m_visible;
 };
 
 #endif /* GPICK_COLOR_OBJECT_H_ */

@@ -67,7 +67,8 @@
 #include <iostream>
 using namespace std;
 
-typedef struct AppArgs{
+struct AppArgs
+{
 	GtkWidget *window;
 	map<string, ColorSource*> color_source;
 	vector<ColorSource*> color_source_index;
@@ -88,14 +89,15 @@ typedef struct AppArgs{
 	AppOptions options;
 	struct dynvSystem *params;
 	GlobalState *gs;
-	char* current_filename;
+	string current_filename;
+	bool current_filename_set;
 	bool imported;
 	GtkWidget *precision_loss_icon;
 	gint x, y;
 	gint width, height;
 	bool initialization;
 	dbus::Control dbus_control;
-}AppArgs;
+};
 
 static void app_release(AppArgs *args);
 
@@ -203,12 +205,12 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args)
 static void app_update_program_name(AppArgs *args)
 {
 	stringstream program_title;
-	if (args->current_filename == 0){
+	if (!args->current_filename_set){
 		program_title << _("New palette");
 		if (args->precision_loss_icon)
 			gtk_widget_hide(args->precision_loss_icon);
 	}else{
-		gchar* filename = g_path_get_basename(args->current_filename);
+		gchar* filename = g_path_get_basename(args->current_filename.c_str());
 		if (args->imported){
 			program_title << filename << " " << _("(Imported)");
 			if (args->precision_loss_icon)
@@ -251,25 +253,24 @@ static void show_dialog_color_dictionaries(GtkWidget *widget, AppArgs *args)
 
 static void menu_file_new(GtkWidget *widget, AppArgs *args)
 {
-	if (args->current_filename) g_free(args->current_filename);
-	args->current_filename = 0;
+	args->current_filename_set = false;
 	color_list_remove_all(args->gs->getColorList());
 	app_update_program_name(args);
 }
 
 int app_save_file(AppArgs *args, const char *filename)
 {
-	if (filename == nullptr){
-		if (args->current_filename){
-			filename = args->current_filename;
-		}else{
-			return -1;
-		}
+	string current_filename;
+	if (filename != nullptr){
+		current_filename = filename;
+	}else{
+		if (!args->current_filename_set) return -1;
+		current_filename = args->current_filename;
 	}
 	FileType filetype;
-	ImportExport import_export(args->gs->getColorList(), filename, args->gs);
+	ImportExport import_export(args->gs->getColorList(), current_filename.c_str(), args->gs);
 	bool return_value = false;
-	switch (filetype = ImportExport::getFileType(filename)){
+	switch (filetype = ImportExport::getFileType(current_filename.c_str())){
 		case FileType::gpl:
 			return_value = import_export.exportGPL();
 			break;
@@ -288,12 +289,10 @@ int app_save_file(AppArgs *args, const char *filename)
 		}else{
 			args->imported = true;
 		}
-		if (filename != args->current_filename){ // do not touch current_filename if it is assigned to filename
-			if (args->current_filename) g_free(args->current_filename);
-			args->current_filename = g_strdup(filename);
-		}
+		args->current_filename = current_filename;
+		args->current_filename_set = true;
 		app_update_program_name(args);
-		update_recent_file_list(args, filename, true);
+		update_recent_file_list(args, current_filename.c_str(), true);
 		return 0;
 	}else{
 		app_update_program_name(args);
@@ -302,12 +301,13 @@ int app_save_file(AppArgs *args, const char *filename)
 	return 0;
 }
 
-int app_load_file(AppArgs *args, const char *filename, bool autoload)
+int app_load_file(AppArgs *args, const char *filename, ColorList *color_list, bool autoload)
 {
+	string current_filename(filename);
 	bool imported = false;
 	bool return_value = false;
-	ImportExport import_export(args->gs->getColorList(), filename, args->gs);
-	switch (ImportExport::getFileType(filename)){
+	ImportExport import_export(color_list, current_filename.c_str(), args->gs);
+	switch (ImportExport::getFileType(current_filename.c_str())){
 		case FileType::gpl:
 			return_value = import_export.importGPL();
 			imported = true;
@@ -322,8 +322,7 @@ int app_load_file(AppArgs *args, const char *filename, bool autoload)
 		default:
 			return_value = import_export.importGPA();
 	}
-	if (args->current_filename) g_free(args->current_filename);
-	args->current_filename = nullptr;
+	args->current_filename_set = false;
 	if (return_value){
 		if (imported){
 			args->imported = true;
@@ -331,8 +330,9 @@ int app_load_file(AppArgs *args, const char *filename, bool autoload)
 			args->imported = false;
 		}
 		if (!autoload){
-			args->current_filename = g_strdup(filename);
-			update_recent_file_list(args, filename, false);
+			args->current_filename = current_filename;
+			args->current_filename_set = true;
+			update_recent_file_list(args, current_filename.c_str(), false);
 		}
 		app_update_program_name(args);
 	}else{
@@ -340,6 +340,17 @@ int app_load_file(AppArgs *args, const char *filename, bool autoload)
 		return -1;
 	}
 	return 0;
+}
+int app_load_file(AppArgs *args, const char *filename, bool autoload)
+{
+	int r = 0;
+	ColorList *color_list = color_list_new(args->gs->getColorList());
+	if ((r = app_load_file(args, filename, color_list, autoload)) == 0){
+		color_list_remove_all(args->gs->getColorList());
+		color_list_add(args->gs->getColorList(), color_list, true);
+	}
+	color_list_destroy(color_list);
+	return r;
 }
 
 int app_parse_geometry(AppArgs *args, const char *geometry)
@@ -350,14 +361,8 @@ int app_parse_geometry(AppArgs *args, const char *geometry)
 
 static void menu_file_revert(GtkWidget *widget, AppArgs *args)
 {
-	string filename;
-	if (args->current_filename){
-		filename = args->current_filename;
-	}else{
-		return;
-	}
-	color_list_remove_all(args->gs->getColorList());
-	if (app_load_file(args, filename.c_str()) == 0){
+	if (!args->current_filename_set) return;
+	if (app_load_file(args, args->current_filename.c_str()) == 0){
 	}else{
 		GtkWidget* message;
 		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
@@ -370,7 +375,6 @@ static void menu_file_revert(GtkWidget *widget, AppArgs *args)
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args)
 {
 	const char *filename = args->recent_files.begin()->c_str();
-	color_list_remove_all(args->gs->getColorList());
 	if (app_load_file(args, filename) == 0){
 	}else{
 		GtkWidget* message;
@@ -387,7 +391,6 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args)
 	uintptr_t index = (uintptr_t)g_object_get_data(G_OBJECT(widget), "index");
 	std::advance(i, index);
 	const char *filename = (*i).c_str();
-	color_list_remove_all(args->gs->getColorList());
 	if (app_load_file(args, filename) == 0){
 	}else{
 		GtkWidget* message;
@@ -454,7 +457,6 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(args->params, "open.path", path);
 			g_free(path);
-			color_list_remove_all(args->gs->getColorList());
 			if (app_load_file(args, filename) == 0){
 				finished = TRUE;
 			}else{
@@ -509,9 +511,8 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 
 static void menu_file_save(GtkWidget *widget, AppArgs *args)
 {
-	// If file has no name, "Save As" dialog is shown instead.
-	if (args->current_filename == 0){
-		menu_file_save_as(widget, args);
+	if (!args->current_filename_set){
+		menu_file_save_as(widget, args); // if file has no name, "Save As" dialog is shown instead.
 	}else{
 		if (app_save_file(args, nullptr) == 0){
 		}else{
@@ -629,10 +630,6 @@ static void view_palette_cb(GtkWidget *widget, AppArgs* args)
 static void palette_from_image_cb(GtkWidget *widget, AppArgs* args)
 {
 	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
-}
-static void palette_from_css_file_cb(GtkWidget *widget, AppArgs* args)
-{
-	tools_palette_from_css_file_show(GTK_WINDOW(args->window), args->gs);
 }
 static void color_space_sampler_cb(GtkWidget *widget, AppArgs* args)
 {
@@ -1380,7 +1377,7 @@ bool app_is_autoload_enabled(AppArgs *args)
 
 static void app_initialize_variables(AppArgs *args)
 {
-	args->current_filename = 0;
+	args->current_filename_set = false;
 	args->imported = false;
 	args->precision_loss_icon = 0;
 	args->current_color_source = 0;
@@ -1743,7 +1740,6 @@ int app_run(AppArgs *args)
 	args->gs->writeSettings();
 	dynv_system_release(args->params);
 	delete args->gs;
-	if (args->current_filename) g_free(args->current_filename);
 	color_source_manager_destroy(args->csm);
 	delete args;
 	return 0;

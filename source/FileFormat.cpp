@@ -117,7 +117,9 @@ int palette_file_load(const char* filename, ColorList* color_list)
 				color_objects.sort(color_object_position_sort);
 
 				for (list<ColorObject*>::iterator i=color_objects.begin(); i != color_objects.end(); ++i){
-					color_list_add_color_object(color_list, *i, ((*i)->getPosition() != ~(size_t)0));
+					bool visible = (*i)->getPosition() != ~(size_t)0;
+					(*i)->setVisible(visible);
+					color_list_add_color_object(color_list, *i, visible);
 					(*i)->release();
 				}
 

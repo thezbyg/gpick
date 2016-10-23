@@ -202,6 +202,7 @@ bool ImportExport::importGPL()
 		c.rgb.green = g / 255.0;
 		c.rgb.blue = b / 255.0;
 		color_object = color_list_new_color_object(m_color_list, &c);
+		stripLeadingTrailingChars(line, strip_chars);
 		color_object->setName(line);
 		color_list_add_color_object(m_color_list, color_object, true);
 		color_object->release();

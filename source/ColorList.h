@@ -47,7 +47,8 @@ ColorList* color_list_new_with_one_color(ColorList *template_color_list, const C
 void color_list_destroy(ColorList *color_list);
 ColorObject* color_list_new_color_object(ColorList *color_list, const Color *color);
 ColorObject* color_list_add_color(ColorList *color_list, const Color *color);
-int color_list_add_color_object(ColorList *color_list, ColorObject *color_object, int add_to_palette);
+int color_list_add_color_object(ColorList *color_list, ColorObject *color_object, bool add_to_palette);
+int color_list_add(ColorList *color_list, ColorList *items, bool add_to_palette);
 int color_list_remove_color_object(ColorList *color_list, ColorObject *color_object);
 int color_list_remove_selected(ColorList *color_list);
 int color_list_remove_all(ColorList *color_list);
