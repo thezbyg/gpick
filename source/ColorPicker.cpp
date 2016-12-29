@@ -650,7 +650,7 @@ static void on_oversample_falloff_changed(GtkWidget *widget, gpointer data) {
 		gtk_tree_model_get(model, &iter, 2, &falloff_id, -1);
 
 		ColorPickerArgs* args = (ColorPickerArgs*)data;
-		sampler_set_falloff(args->gs->getSampler(), (enum SamplerFalloff) falloff_id);
+		sampler_set_falloff(args->gs->getSampler(), (SamplerFalloff) falloff_id);
 
 	}
 }

@@ -211,7 +211,7 @@ namespace dbus
 	{
 		return false;
 	}
-	bool Control::activateFloatingPicker()
+	bool Control::activateFloatingPicker(const std::string &converter_name)
 	{
 		return false;
 	}

@@ -26,6 +26,7 @@
 #include "../uiUtilities.h"
 #include "../ToolColorNaming.h"
 #include <sstream>
+#include <algorithm>
 using namespace std;
 
 #define N_AXIS 3

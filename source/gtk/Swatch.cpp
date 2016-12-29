@@ -227,10 +227,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		gtk_paint_focus(widget->style, widget->window, GTK_STATE_ACTIVE, nullptr, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 136);
 #endif
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
-		cairo_arc(cr, 150 - 11.5, 12.5, 6, 0, 2 * M_PI);
+		cairo_arc(cr, 150 - 11.5, 12.5, 6, 0, 2 * PI);
 		cairo_fill(cr);
 		cairo_set_source_rgb(cr, 1, 0, 0);
-		cairo_arc(cr, 150 - 12, 12, 6, 0, 2 * M_PI);
+		cairo_arc(cr, 150 - 12, 12, 6, 0, 2 * PI);
 		cairo_fill(cr);
 	}
 	cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);

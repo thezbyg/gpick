@@ -102,7 +102,7 @@ struct dynvVariable* dynv_system_add_empty(struct dynvSystem* dynv_system, struc
 		variable=(*i).second;
 	}
 
-	if ((variable->flags & dynvVariable::Flag::read_only) != dynvVariable::Flag::none) return 0;
+	if ((variable->flags & dynvVariable::Flag::read_only) == dynvVariable::Flag::read_only) return 0;
 
 	if (variable->handler == handler){
 		return variable;
@@ -143,7 +143,7 @@ int dynv_system_set(struct dynvSystem* dynv_system, const char* handler_name, co
 		variable=(*i).second;
 	}
 
-	if ((variable->flags & dynvVariable::Flag::read_only) != dynvVariable::Flag::none) return -4;
+	if ((variable->flags & dynvVariable::Flag::read_only) == dynvVariable::Flag::read_only) return -4;
 
 	if (variable->handler == handler){
 		return variable->handler->set(variable, value, false);
@@ -311,7 +311,7 @@ int dynv_system_set_array(dynvSystem* dynv_system, const char* handler_name, con
 	}else{
 		variable = (*i).second;
 	}
-	if ((variable->flags & dynvVariable::Flag::read_only) != dynvVariable::Flag::none) return -4;
+	if ((variable->flags & dynvVariable::Flag::read_only) == dynvVariable::Flag::read_only) return -4;
 	dynv_variable_destroy_data(variable);
 	variable->handler = handler;
 	variable->handler->create(variable);

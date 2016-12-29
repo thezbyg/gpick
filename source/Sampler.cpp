@@ -137,7 +137,7 @@ int sampler_get_color_sample(Sampler *sampler, Vec2<int>& pointer, Rect2<int>& s
 	color_copy(&result, color);
 	return 0;
 }
-enum SamplerFalloff sampler_get_falloff(Sampler *sampler)
+SamplerFalloff sampler_get_falloff(Sampler *sampler)
 {
 	return sampler->falloff;
 }

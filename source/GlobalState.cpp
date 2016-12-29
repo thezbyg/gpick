@@ -149,7 +149,7 @@ class GlobalState::Impl
 #ifndef _MSC_VER
 				g_mkdir(config_dir, S_IRWXU);
 #else
-				g_mkdir(config_dir, nullptr);
+				g_mkdir(config_dir, 0);
 #endif
 			}
 			g_free(config_dir);

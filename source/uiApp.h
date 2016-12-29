@@ -23,7 +23,7 @@
 #include <gtk/gtk.h>
 class GlobalState;
 class ColorObject;
-struct Converters;
+class Converters;
 struct Color;
 
 int main_show_window(GtkWidget* window, struct dynvSystem *main_params);

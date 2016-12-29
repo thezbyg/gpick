@@ -27,7 +27,7 @@ class ColorList;
 struct dynvSystem;
 struct lua_State;
 struct Random;
-struct Converters;
+class Converters;
 struct ColorSource;
 typedef struct _GtkWidget GtkWidget;
 namespace layout {

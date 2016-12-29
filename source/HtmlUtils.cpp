@@ -19,6 +19,7 @@
 #include "HtmlUtils.h"
 #include "Color.h"
 #include <algorithm>
+#include <iterator>
 #include <boost/math/special_functions/round.hpp>
 using namespace std;
 

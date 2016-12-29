@@ -20,8 +20,8 @@
 #define GPICK_IMPORT_EXPORT_H_
 
 class ColorList;
-struct Converter;
-struct Converters;
+class Converter;
+class Converters;
 class GlobalState;
 namespace text_file_parser {
 class Configuration;

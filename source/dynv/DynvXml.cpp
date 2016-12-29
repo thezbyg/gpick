@@ -31,7 +31,7 @@ int dynv_xml_serialize(struct dynvSystem* dynv_system, ostream& out)
 {
 	for (auto variable_item: dynv_system->variables){
 		dynvVariable *variable = variable_item.second;
-		if ((variable->flags & dynvVariable::Flag::no_save) != dynvVariable::Flag::none) continue;
+		if ((variable->flags & dynvVariable::Flag::no_save) == dynvVariable::Flag::no_save) continue;
 		if (variable->handler->serialize_xml){
 			if (variable->next){
 				out << "<" << variable->name << " type=\"" << variable->handler->name << "\" list=\"true\">";
