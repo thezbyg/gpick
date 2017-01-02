@@ -54,6 +54,11 @@ if local_env['BUILD_TARGET'] == 'win32':
 	objects.append(SConscript(['winres/SConscript'], exports='env'))
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt', 'expat'])
+elif local_env['BUILD_TARGET'].startswith('gnu0'):
+	local_env.Append(LIBS=['rt', 'expat'])
+elif local_env['BUILD_TARGET'].startswith('gnukfreebsd'):
+	local_env.Append(LIBS=['rt', 'expat'])
+
 local_env.Append(CPPPATH=['#source'])
 
 text_file_parser_objects = local_env.StaticObject(source = ['parser/TextFile.cpp', local_env.Ragel('parser/TextFileParser.rl')])
