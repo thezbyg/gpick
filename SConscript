@@ -156,23 +156,22 @@ if 'debian' in COMMAND_LINE_TARGETS:
 
 
 if env['ENABLE_NLS']:
-	locales = env.Gettext(env.Glob('share/locale/*/LC_MESSAGES/gpick.po'))
+	translations = env.Glob('share/locale/*/LC_MESSAGES/gpick.po')
+	locales = env.Gettext(translations)
 	Depends(executable, locales)
-	
-	env.Alias(target="locales", source=[
-		locales
-	])
-
+	stripped_locales = []
+	for translation in translations:
+		stripped_locales.append(env.Msgcat(translation, File(translation).srcnode(), MSGCAT_FLAGS = ['--no-location', '--sort-output', '--no-wrap', '--to-code=utf-8']))
+	env.Alias(target = "strip_locales", source = stripped_locales)
+	env.Alias(target = "locales", source = locales)
 	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
-
 	template = env.Msgcat("template.pot", [template_c, template_lua], MSGCAT_FLAGS = ['--use-first'])
-
-	env.Alias(target="template", source=[
+	env.Alias(target = "template", source=[
 		template
 	])
 
-env.Alias(target="install", source=[
+env.Alias(target = "install", source=[
 	env.InstallProgram(dir=env['DESTDIR'] +'/bin', source=[executable]),
 	env.InstallData(dir=env['DESTDIR'] +'/share/appdata', source=['share/appdata/gpick.appdata.xml']),
 	env.InstallData(dir=env['DESTDIR'] +'/share/applications', source=['share/applications/gpick.desktop']),
