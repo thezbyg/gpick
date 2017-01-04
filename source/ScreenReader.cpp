@@ -19,12 +19,6 @@
 #include "ScreenReader.h"
 #include "Rect2.h"
 #include <gtk/gtk.h>
-#if GTK_MAJOR_VERSION >= 3
-#define COGL_ENABLE_EXPERIMENTAL_2_0_API
-#define CLUTTER_ENABLE_EXPERIMENTAL_API
-#include <clutter/clutter.h>
-#include <cogl/cogl.h>
-#endif
 #include <algorithm>
 #include <iostream>
 using namespace math;

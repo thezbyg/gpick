@@ -87,7 +87,6 @@ if not env.GetOption('clean'):
 			libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
 		else:
 			libs['GTK_PC'] = {'checks':{'gtk+-3.0':'>= 3.0.0'}}
-			libs['CLUTTER_PC'] = {'checks':{'clutter-1.0':'>= 1.0'}}
 		libs['LUA_PC'] = {'checks':{'lua5.3':'>= 5.3', 'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
 
 	env.ConfirmLibs(conf, libs)

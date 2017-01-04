@@ -10,8 +10,6 @@ local_env = env.Clone()
 
 if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	local_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
-	if env['USE_GTK3']:
-		local_env.ParseConfig('pkg-config --cflags --libs $CLUTTER_PC')
 	local_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
 
 if local_env['ENABLE_NLS']:
