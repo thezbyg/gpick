@@ -183,7 +183,7 @@ class GpickEnvironment(SConsEnvironment):
 					rev_time = lines[2]
 			except:
 				rev_hash = 'unknown'
-				commit_date = time.gmtime()
+				commit_date = time.gmtime(int(os.environ.get('SOURCE_DATE_EPOCH', time.time())))
 				rev_date = time.strftime("%Y-%m-%d", commit_date)
 				rev_time = time.strftime("%H:%M:%S", commit_date)
 		self.Replace(
