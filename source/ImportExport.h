@@ -18,6 +18,7 @@
 
 #ifndef GPICK_IMPORT_EXPORT_H_
 #define GPICK_IMPORT_EXPORT_H_
+#include <string>
 
 class ColorList;
 class Converter;
@@ -92,11 +93,12 @@ class ImportExport
 		bool exportType(FileType type);
 		Error getLastError() const;
 		static FileType getFileType(const char *filename);
+		void fixFileExtension(const char *selected_filter);
 	private:
 		ColorList *m_color_list;
 		Converter *m_converter;
 		Converters *m_converters;
-		const char* m_filename;
+		std::string m_filename;
 		ItemSize m_item_size;
 		Background m_background;
 		GlobalState *m_gs;

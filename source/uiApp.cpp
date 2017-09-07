@@ -65,6 +65,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <boost/filesystem.hpp>
 using namespace std;
 
 struct AppArgs
@@ -258,14 +259,22 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args)
 	app_update_program_name(args);
 }
 
-int app_save_file(AppArgs *args, const char *filename)
+int app_save_file(AppArgs *args, const char *filename, const char *filter)
 {
+	using namespace boost::filesystem;
 	string current_filename;
 	if (filename != nullptr){
 		current_filename = filename;
 	}else{
 		if (!args->current_filename_set) return -1;
 		current_filename = args->current_filename;
+	}
+	if (filter && filter[0] == '*'){
+		string name = path(current_filename).filename().string();
+		size_t i = name.find_last_of('.');
+		if (i == string::npos){
+			current_filename += &filter[1];
+		}
 	}
 	FileType filetype;
 	ImportExport import_export(args->gs->getColorList(), current_filename.c_str(), args->gs);
@@ -401,7 +410,7 @@ static void menu_file_open_nth(GtkWidget *widget, AppArgs *args)
 	}
 }
 
-static void add_file_filters(GtkWidget *dialog, FileType preselect)
+static void add_file_filters(GtkWidget *dialog, const char *selected_filter)
 {
 	const struct{
 		FileType type;
@@ -417,20 +426,29 @@ static void add_file_filters(GtkWidget *dialog, FileType preselect)
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All files"));
 	gtk_file_filter_add_pattern(filter, "*");
+	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
+	if (g_strcmp0(selected_filter, "all") == 0){
+		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	}
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All supported formats"));
 	for (gint i = 0; filters[i].type != FileType::unknown; ++i) {
 		gtk_file_filter_add_pattern(filter, filters[i].filter);
 	}
+	if (g_strcmp0(selected_filter, "all_supported") == 0){
+		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
+	}
+	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all_supported");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
 	gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 	for (gint i = 0; filters[i].type != FileType::unknown; ++i) {
 		filter = gtk_file_filter_new();
 		gtk_file_filter_set_name(filter, filters[i].label);
 		gtk_file_filter_add_pattern(filter, filters[i].filter);
+		g_object_set_data(G_OBJECT(filter), "identification", (gpointer)filters[i].filter);
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-		if (preselect == filters[i].type){
+		if (g_strcmp0(filters[i].filter, selected_filter) == 0){
 			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 		}
 	}
@@ -447,7 +465,8 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	const gchar* default_path = dynv_get_string_wd(args->params, "open.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	add_file_filters(dialog, FileType::unknown);
+	const char* selected_filter = dynv_get_string_wd(args->params, "open.filter", "all_supported");
+	add_file_filters(dialog, selected_filter);
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -457,6 +476,8 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(args->params, "open.path", path);
 			g_free(path);
+			const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
+			dynv_set_string(args->params, "open.filter", identification);
 			if (app_load_file(args, filename) == 0){
 				finished = TRUE;
 			}else{
@@ -484,7 +505,8 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
 	const gchar* default_path = dynv_get_string_wd(args->params, "save.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	add_file_filters(dialog, FileType::unknown);
+	const char* selected_filter = dynv_get_string_wd(args->params, "save.filter", "all_supported");
+	add_file_filters(dialog, selected_filter);
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -494,7 +516,9 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			dynv_set_string(args->params, "save.path", path);
 			g_free(path);
-			if (app_save_file(args, filename) == 0){
+			const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
+			dynv_set_string(args->params, "save.filter", identification);
+			if (app_save_file(args, filename, identification) == 0){
 				finished = TRUE;
 			}else{
 				GtkWidget* message;
@@ -514,7 +538,7 @@ static void menu_file_save(GtkWidget *widget, AppArgs *args)
 	if (!args->current_filename_set){
 		menu_file_save_as(widget, args); // if file has no name, "Save As" dialog is shown instead.
 	}else{
-		if (app_save_file(args, nullptr) == 0){
+		if (app_save_file(args, nullptr, nullptr) == 0){
 		}else{
 			GtkWidget* message;
 			message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be saved"));

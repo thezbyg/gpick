@@ -513,6 +513,7 @@ bool ImportExportDialog::showExport()
 			for (size_t i = 0; i != n_formats; ++i){
 				if (formats[i].name == format_name){
 					ImportExport import_export(m_color_list, filename, m_gs);
+					import_export.fixFileExtension(formats[i].pattern);
 					import_export.setConverter(import_export_dialog_options.getSelectedConverter());
 					string item_size = import_export_dialog_options.getSelectedItemSize();
 					import_export.setItemSize(item_size.c_str());

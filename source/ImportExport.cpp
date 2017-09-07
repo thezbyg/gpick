@@ -78,6 +78,22 @@ ImportExport::ImportExport(ColorList *color_list, const char* filename, GlobalSt
 	m_last_error(Error::none)
 {
 }
+void ImportExport::fixFileExtension(const char *selected_filter)
+{
+	using namespace boost::filesystem;
+	if (selected_filter && selected_filter[0] == '*'){
+		string name = path(m_filename).filename().string();
+		size_t i = name.find_last_of('.');
+		if (i == string::npos){
+			size_t length = m_filename.length();
+			m_filename += &selected_filter[1];
+			size_t additional_extension = m_filename.find_first_of(',', length);
+			if (additional_extension != string::npos){
+				m_filename = m_filename.substr(0, additional_extension);
+			}
+		}
+	}
+}
 void ImportExport::setConverter(Converter *converter)
 {
 	m_converter = converter;
@@ -218,15 +234,15 @@ bool ImportExport::importGPL()
 }
 bool ImportExport::importGPA()
 {
-	return palette_file_load(m_filename, m_color_list) == 0;
+	return palette_file_load(m_filename.c_str(), m_color_list) == 0;
 }
 bool ImportExport::exportGPA()
 {
-	return palette_file_save(m_filename, m_color_list) == 0;
+	return palette_file_save(m_filename.c_str(), m_color_list) == 0;
 }
 bool ImportExport::exportTXT()
 {
-	ofstream f(m_filename, ios::out | ios::trunc);
+	ofstream f(m_filename.c_str(), ios::out | ios::trunc);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -259,7 +275,7 @@ bool ImportExport::exportTXT()
 }
 bool ImportExport::importTXT()
 {
-	ifstream f(m_filename, ios::in);
+	ifstream f(m_filename.c_str(), ios::in);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -330,7 +346,7 @@ static void cssColor(ColorObject* color_object, ostream &stream)
 }
 bool ImportExport::exportCSS()
 {
-	ofstream f(m_filename, ios::out | ios::trunc);
+	ofstream f(m_filename.c_str(), ios::out | ios::trunc);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -378,7 +394,7 @@ static string getHtmlColor(ColorObject* color_object)
 }
 bool ImportExport::exportHTML()
 {
-	ofstream f(m_filename, ios::out | ios::trunc);
+	ofstream f(m_filename.c_str(), ios::out | ios::trunc);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -510,7 +526,7 @@ static void mtlColor(ColorObject* color_object, ostream &stream)
 }
 bool ImportExport::exportMTL()
 {
-	ofstream f(m_filename, ios::out | ios::trunc);
+	ofstream f(m_filename.c_str(), ios::out | ios::trunc);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -567,7 +583,7 @@ static void aseColor(ColorObject* color_object, ostream &stream)
 }
 bool ImportExport::exportASE()
 {
-	ofstream f(m_filename, ios::out | ios::trunc | ios::binary);
+	ofstream f(m_filename.c_str(), ios::out | ios::trunc | ios::binary);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -593,7 +609,7 @@ bool ImportExport::exportASE()
 }
 bool ImportExport::importASE()
 {
-	ifstream f(m_filename, ios::binary);
+	ifstream f(m_filename.c_str(), ios::binary);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
@@ -728,7 +744,7 @@ static int hexPairToInt(const char *hex_pair)
 }
 bool ImportExport::importRGBTXT()
 {
-	ifstream f(m_filename, ios::in);
+	ifstream f(m_filename.c_str(), ios::in);
 	if (!f.is_open()){
 		m_last_error = Error::could_not_open_file;
 		return false;
