@@ -32,7 +32,6 @@
 #include <glib.h>
 #include <fstream>
 #include <string>
-#include <iostream>
 #include <sstream>
 #include <boost/math/special_functions/round.hpp>
 #include <boost/filesystem.hpp>
@@ -82,9 +81,15 @@ void ImportExport::fixFileExtension(const char *selected_filter)
 {
 	using namespace boost::filesystem;
 	if (selected_filter && selected_filter[0] == '*'){
-		string name = path(m_filename).filename().string();
-		size_t i = name.find_last_of('.');
-		if (i == string::npos){
+		string extension = path(m_filename).extension().string();
+		bool append = false;
+		if (extension.length() == 0){
+			append = true;
+		}else{
+			if (getFileTypeByExtension(extension.c_str()) == FileType::unknown)
+				append = true;
+		}
+		if (append){
 			size_t length = m_filename.length();
 			m_filename += &selected_filter[1];
 			size_t additional_extension = m_filename.find_first_of(',', length);
@@ -784,24 +789,54 @@ bool ImportExport::importRGBTXT()
 	f.close();
 	return true;
 }
+static bool compareChunkType(const char *chunk_type, const char *data)
+{
+	int i;
+	for (i = 0; i < 16; i++){
+		if (chunk_type[i] != data[i]) return false;
+		if (chunk_type[i] == 0) break;
+	}
+	for (; i < 16; i++){
+		if (data[i] != 0) return false;
+	}
+	return true;
+}
+FileType ImportExport::getFileTypeByContent(const char *filename)
+{
+	ifstream f(filename, ios::in);
+	if (!f.is_open())
+		return FileType::unknown;
+	char data[64];
+	f.read(data, 64);
+	size_t have = f.gcount();
+	if (have >= 16){
+		if (compareChunkType("GPA version", data))
+			return FileType::gpa;
+	}
+	if (have >= 13){
+		if (strncmp("GIMP Palette", data, 12) == 0 && (data[12] == '\r' || data[12] == '\n'))
+			return FileType::gpl;
+	}
+	return FileType::unknown;
+}
+static struct{
+	FileType type;
+	const char *extension;
+	bool full_name;
+}extensions[] = {
+	{FileType::gpa, ".gpa", false},
+	{FileType::gpl, ".gpl", false},
+	{FileType::ase, ".ase", false},
+	{FileType::txt, ".txt", false},
+	{FileType::mtl, ".mtl", false},
+	{FileType::css, ".css", false},
+	{FileType::html, ".html", false},
+	{FileType::html, ".htm", false},
+	{FileType::rgbtxt, "rgb.txt", true},
+	{FileType::unknown, nullptr, false},
+};
 FileType ImportExport::getFileType(const char *filename)
 {
-	const struct{
-		FileType type;
-		const char *extension;
-		bool full_name;
-	}extensions[] = {
-		{FileType::gpa, ".gpa", false},
-		{FileType::gpl, ".gpl", false},
-		{FileType::ase, ".ase", false},
-		{FileType::txt, ".txt", false},
-		{FileType::mtl, ".mtl", false},
-		{FileType::css, ".css", false},
-		{FileType::html, ".html", false},
-		{FileType::html, ".htm", false},
-		{FileType::rgbtxt, "rgb.txt", true},
-		{FileType::unknown, nullptr, false},
-	};
 	boost::filesystem::path path(filename);
 	string name = path.filename().string();
 	boost::algorithm::to_lower(name);
@@ -812,10 +847,21 @@ FileType ImportExport::getFileType(const char *filename)
 	}
 	string extension = path.extension().string();
 	if (extension.length() == 0)
-		return FileType::unknown;
+		return getFileTypeByContent(filename);
 	boost::algorithm::to_lower(extension);
 	for (size_t i = 0; extensions[i].type != FileType::unknown; ++i){
 		if (!extensions[i].full_name && extension == extensions[i].extension){
+			return extensions[i].type;
+		}
+	}
+	return getFileTypeByContent(filename);
+}
+FileType ImportExport::getFileTypeByExtension(const char *extension)
+{
+	string extension_lowercase = extension;
+	boost::algorithm::to_lower(extension_lowercase);
+	for (size_t i = 0; extensions[i].type != FileType::unknown; ++i){
+		if (!extensions[i].full_name && extension_lowercase == extensions[i].extension){
 			return extensions[i].type;
 		}
 	}
@@ -914,4 +960,8 @@ bool ImportExport::importTextFile(const text_file_parser::Configuration &configu
 		color_object->release();
 	}
 	return true;
+}
+const std::string &ImportExport::getFilename() const
+{
+	return m_filename;
 }

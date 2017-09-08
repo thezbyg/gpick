@@ -93,7 +93,10 @@ class ImportExport
 		bool exportType(FileType type);
 		Error getLastError() const;
 		static FileType getFileType(const char *filename);
+		static FileType getFileTypeByExtension(const char *extension);
+		static FileType getFileTypeByContent(const char *filename);
 		void fixFileExtension(const char *selected_filter);
+		const std::string &getFilename() const;
 	private:
 		ColorList *m_color_list;
 		Converter *m_converter;

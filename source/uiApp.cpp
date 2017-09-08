@@ -269,15 +269,10 @@ int app_save_file(AppArgs *args, const char *filename, const char *filter)
 		if (!args->current_filename_set) return -1;
 		current_filename = args->current_filename;
 	}
-	if (filter && filter[0] == '*'){
-		string name = path(current_filename).filename().string();
-		size_t i = name.find_last_of('.');
-		if (i == string::npos){
-			current_filename += &filter[1];
-		}
-	}
 	FileType filetype;
 	ImportExport import_export(args->gs->getColorList(), current_filename.c_str(), args->gs);
+	import_export.fixFileExtension(filter);
+	current_filename = import_export.getFilename();
 	bool return_value = false;
 	switch (filetype = ImportExport::getFileType(current_filename.c_str())){
 		case FileType::gpl:
