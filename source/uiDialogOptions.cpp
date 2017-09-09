@@ -53,6 +53,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *default_drag_action[2];
 	GtkWidget *hex_case[2];
 	GtkWidget *save_restore_palette;
+	GtkWidget *always_use_floating_picker;
 	GtkWidget *hide_cursor;
 	GtkWidget *add_on_release;
 	GtkWidget *add_to_palette;
@@ -66,6 +67,8 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *out_of_gamut_mask;
 	GtkWidget *lab_illuminant;
 	GtkWidget *lab_observer;
+	GtkWidget *add_to_swatch_on_release;
+	GtkWidget *rotate_swatch_on_release;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }DialogOptionsArgs;
@@ -117,9 +120,12 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit)
 		dynv_set_string(args->params, "options.hex_case", "upper");
 	dynv_set_float(args->params, "picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
 	dynv_set_int32(args->params, "picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
+	dynv_set_bool(args->params, "picker.always_use_floating_picker", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->always_use_floating_picker)));
 	dynv_set_bool(args->params, "picker.hide_cursor", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hide_cursor)));
 	dynv_set_bool(args->params, "picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.copy_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_on_release)));
+	dynv_set_bool(args->params, "picker.sampler.add_to_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_swatch_on_release)));
+	dynv_set_bool(args->params, "picker.sampler.rotate_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
 	dynv_set_bool(args->params, "picker.sampler.copy_to_clipboard", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_to_clipboard)));
 	dynv_set_bool(args->params, "picker.sampler.rotate_swatch_after_sample", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch)));
@@ -261,6 +267,10 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
+	args->always_use_floating_picker = widget = gtk_check_button_new_with_mnemonic(_("_Always use floating picker"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.always_use_floating_picker", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
 	args->hide_cursor = widget = gtk_check_button_new_with_mnemonic(_("_Hide cursor"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.hide_cursor", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
@@ -279,6 +289,14 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y++;
 	args->copy_on_release = widget = gtk_check_button_new_with_mnemonic(_("_Copy to clipboard"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.copy_on_release", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+	args->add_to_swatch_on_release = widget = gtk_check_button_new_with_mnemonic(_("A_dd to swatch"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_to_swatch_on_release", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+	args->rotate_swatch_on_release = widget = gtk_check_button_new_with_mnemonic(_("R_otate swatch"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.rotate_swatch_on_release", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	frame = gtk_frame_new(_("'Spacebar' button behaviour"));

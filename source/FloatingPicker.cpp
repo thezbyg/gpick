@@ -223,6 +223,12 @@ static void complete_picking(FloatingPickerArgs *args)
 					name_assigner.assign(color_object, &c);
 					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_to_swatch_on_release", false)){
+					color_picker_set_current_color(args->color_source);
+				}
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.rotate_swatch_on_release", false)){
+					color_picker_rotate_swatch(args->color_source);
+				}
 			}
 			color_object->release();
 		}

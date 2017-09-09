@@ -1000,6 +1000,11 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 	menu = GTK_MENU(gtk_menu_new());
+	item = gtk_menu_item_new_with_mnemonic(_("_Pick colors..."));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(floating_picker_show_cb), args);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = gtk_menu_item_new_with_mnemonic(_("Palette From _Image..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_from_image_cb), args);

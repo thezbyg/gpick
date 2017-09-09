@@ -89,6 +89,7 @@ typedef struct ColorPickerArgs{
 	struct dynvSystem *params;
 	struct dynvSystem *global_params;
 	GlobalState* gs;
+	bool ignore_callback;
 }ColorPickerArgs;
 
 struct ColorCompItem{
@@ -177,7 +178,7 @@ static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget)
 	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display),&c);
 	if (except_widget != args->hsl_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsl_control), &c);
 	if (except_widget != args->hsv_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsv_control), &c);
-	if (except_widget != args->rgb_control)	gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->rgb_control), &c);
+	if (except_widget != args->rgb_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->rgb_control), &c);
 	if (except_widget != args->cmyk_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->cmyk_control), &c);
 	if (except_widget != args->lab_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lab_control), &c);
 	if (except_widget != args->lch_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lch_control), &c);
@@ -254,8 +255,15 @@ static void on_swatch_center_activated(GtkWidget *widget, ColorPickerArgs *args)
 }
 static void on_picker_toggled(GtkWidget *widget, ColorPickerArgs *args)
 {
+	if (args->ignore_callback)
+		return;
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))){
-		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
+		if (dynv_get_bool_wd(args->params, "always_use_floating_picker", false)){
+			floating_picker_activate(args->floating_picker, false, false, nullptr);
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), false);
+		}else{
+			gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
+		}
 	}else{
 		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), false);
 	}
@@ -355,8 +363,12 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 	ColorPickerArgs* args = (ColorPickerArgs*)data;
 	if (event->in){
 		gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"), _("Press Spacebar to sample color under mouse pointer"));
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->pick_button), true);
-		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
+		if (!dynv_get_bool_wd(args->params, "always_use_floating_picker", false)){
+			args->ignore_callback = true;
+			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->pick_button), true);
+			args->ignore_callback = false;
+			gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), true);
+		}
 	}else{
 		gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "swatch_focused"));
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->pick_button), false);
@@ -911,6 +923,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->global_params = dynv_get_dynv(gs->getSettings(), "gpick.picker");
 	args->statusbar = gs->getStatusBar();
 	args->floating_picker = 0;
+	args->ignore_callback = false;
 
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -1188,4 +1201,17 @@ int color_picker_source_register(ColorSourceManager *csm)
 	color_source->default_accelerator = GDK_KEY_c;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
+}
+void color_picker_set_current_color(ColorSource* color_source)
+{
+	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
+	updateMainColor(args);
+	gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
+	updateDisplays(args, nullptr);
+}
+void color_picker_rotate_swatch(ColorSource* color_source)
+{
+	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
+	gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
+	updateDisplays(args, nullptr);
 }
