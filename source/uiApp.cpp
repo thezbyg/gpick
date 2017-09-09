@@ -66,6 +66,8 @@
 #include <functional>
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include <boost/interprocess/sync/named_mutex.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 using namespace std;
 
 struct AppArgs
@@ -1804,9 +1806,24 @@ static void app_release(AppArgs *args)
 	floating_picker_free(args->floating_picker);
 	if (!args->options.single_color_pick_mode){
 		if (app_is_autoload_enabled(args)){
-			gchar* autosave_file = build_config_path("autosave.gpa");
-			palette_file_save(autosave_file, args->gs->getColorList());
-			g_free(autosave_file);
+			using namespace boost::interprocess;
+			using namespace boost::filesystem;
+			try{
+				named_mutex mutex(open_or_create, "gpick.autosave");
+				scoped_lock<named_mutex> lock(mutex);
+				gchar* autosave_file = build_config_path("autosave.gpa");
+				gchar* autosave_file_tmp = build_config_path("autosave.gpa.tmp");
+				palette_file_save(autosave_file_tmp, args->gs->getColorList());
+				boost::system::error_code error;
+				rename(path(autosave_file_tmp), path(autosave_file), error);
+				g_free(autosave_file);
+				g_free(autosave_file_tmp);
+				if (error){
+					cerr << "failed to save autosave: " << error << endl;
+				}
+			}catch(const interprocess_exception &e){
+				cerr << "failed to save autosave: " << e.what() << endl;
+			}
 		}
 	}
 	color_list_remove_all(args->gs->getColorList());

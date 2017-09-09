@@ -34,6 +34,7 @@ Used libraries:
 
  * Filesystem.
  * System.
+ * Interprocess.
  * Test (only when building/running tests).
 
 ### Optional dependencies
