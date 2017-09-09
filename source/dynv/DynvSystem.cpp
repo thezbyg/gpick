@@ -416,8 +416,11 @@ int dynv_system_deserialize(struct dynvSystem* dynv_system, dynvHandlerMap::Hand
 
 			dynv_io_read(io, &length, 4, &read);
 			length=UINT32_FROM_LE(length);
+			if (read != 4) return -1;
 			name=new char [length+1];
+			if (name == nullptr) return -1;
 			dynv_io_read(io, name, length, &read);
+			if (read != length) return -1;
 			name[length]=0;
 
 			variable=dynv_system_add_empty(dynv_system, handler_vec[handler_id], name);
