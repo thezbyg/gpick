@@ -85,6 +85,7 @@ struct AppArgs
 	GtkWidget *statusbar;
 	GtkWidget *hpaned;
 	GtkWidget *vpaned;
+	GtkWidget *palette;
 	uiStatusIcon* status_icon;
 	FloatingPicker floating_picker;
 	AppOptions options;
@@ -625,24 +626,149 @@ static void show_about_box_cb(GtkWidget *widget, AppArgs* args)
 	show_about_box(args->window);
 }
 
-static void view_palette_cb(GtkWidget *widget, AppArgs* args)
+static void repositionViews(AppArgs* args)
 {
-	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
-		g_object_ref(args->vpaned);
-		GtkWidget *vbox = gtk_widget_get_parent(GTK_WIDGET(args->vpaned));
-		gtk_container_remove(GTK_CONTAINER(vbox), args->vpaned);
-		gtk_paned_pack1(GTK_PANED(args->hpaned), args->vpaned, false, false);
-		g_object_unref(args->vpaned);
+	bool palette = dynv_get_bool_wd(args->params, "view.palette", true);
+	bool primary_view = dynv_get_bool_wd(args->params, "view.primary_view", true);
+	bool secondary_view = gtk_widget_get_visible(args->secondary_source_container);
+	string layout = dynv_get_string_wd(args->params, "view.layout", "primary+secondary_palette");
+	GtkWidget *widgets[4] = { args->palette, args->vpaned, args->secondary_source_container, args->notebook };
+	for (size_t i = 0; i < sizeof(widgets) / sizeof(GtkWidget*); i++){
+		g_object_ref(widgets[i]);
+		GtkWidget *parent = gtk_widget_get_parent(widgets[i]);
+		if (parent != nullptr)
+			gtk_container_remove(GTK_CONTAINER(parent), widgets[i]);
+	}
+	struct NamedLayoutWidget{
+		const char *name;
+		GtkWidget *widget;
+		bool visible;
+	}named_widgets[] = {
+		{"palette", args->palette, palette},
+		{"primary", args->notebook, primary_view},
+		{"secondary", args->secondary_source_container, secondary_view},
+	};
+	NamedLayoutWidget *left[2], *right[2];
+	int left_index = 0, right_index = 0;
+	bool left_side = true;
+	size_t previous_position = 0;
+	string name;
+	for (;;){
+		size_t split_position = layout.find_first_of("_+", previous_position);
+		char type;
+		if (split_position != string::npos){
+			name = layout.substr(previous_position, split_position - previous_position);
+			type = layout[split_position];
+		}else{
+			name = layout.substr(previous_position);
+			type = 0;
+		}
+		for (size_t i = 0; i < sizeof(named_widgets) / sizeof(NamedLayoutWidget); i++){
+			if (name == named_widgets[i].name){
+				if (!named_widgets[i].visible)
+					break;
+				if (left_side)
+					left[left_index++] = &named_widgets[i];
+				else
+					right[right_index++] = &named_widgets[i];
+				break;
+			}
+		}
+		previous_position = split_position + 1;
+		if (type == '_')
+			left_side = false;
+		else if (type == 0)
+			break;
+	}
+	bool vpaned_unused = false;
+	if (left_index != 0 && right_index != 0){
+		if (left_index > 1){
+			gtk_paned_pack1(GTK_PANED(args->hpaned), args->vpaned, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, false, false);
+			gtk_paned_pack1(GTK_PANED(args->vpaned), left[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, false, false);
+		}else if (right_index > 1){
+			gtk_paned_pack1(GTK_PANED(args->hpaned), left[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), args->vpaned, false, false);
+			gtk_paned_pack1(GTK_PANED(args->vpaned), right[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, false, false);
+		}else{
+			gtk_paned_pack1(GTK_PANED(args->hpaned), left[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, false, false);
+			vpaned_unused = true;
+		}
 		gtk_widget_show(GTK_WIDGET(args->hpaned));
-		dynv_set_bool(args->params, "view.palette", true);
+	}else if (left_index != 0 || right_index != 0){
+		gtk_widget_hide(GTK_WIDGET(args->hpaned));
+		GtkWidget *widget;
+		if (left_index > 1){
+			widget = args->vpaned;
+			gtk_paned_pack1(GTK_PANED(args->vpaned), left[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, false, false);
+		}else if (right_index > 1){
+			widget = args->vpaned;
+			gtk_paned_pack1(GTK_PANED(args->vpaned), right[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, false, false);
+		}else if (left_index == 1){
+			widget = left[0]->widget;
+			vpaned_unused = true;
+		}else if (right_index == 1){
+			widget = right[0]->widget;
+			vpaned_unused = true;
+		}
+		gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(args->hpaned)), widget, true, true, 5);
 	}else{
 		gtk_widget_hide(GTK_WIDGET(args->hpaned));
-		g_object_ref(args->vpaned);
-		gtk_container_remove(GTK_CONTAINER(args->hpaned), args->vpaned);
-		GtkWidget *vbox = gtk_widget_get_parent(GTK_WIDGET(args->hpaned));
-		gtk_box_pack_start(GTK_BOX(vbox), args->vpaned, TRUE, TRUE, 5);
-		g_object_unref(args->vpaned);
-		dynv_set_bool(args->params, "view.palette", false);
+		vpaned_unused = true;
+	}
+	if (vpaned_unused){
+		gtk_widget_hide(args->vpaned);
+		gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(args->hpaned)), args->vpaned, true, true, 5);
+	}else{
+		gtk_widget_show(args->vpaned);
+	}
+	for (size_t i = 0; i < sizeof(named_widgets) / sizeof(NamedLayoutWidget); i++){
+		bool used = false;
+		for (int j = 0; j < left_index; j++){
+			if (left[j]->widget == named_widgets[i].widget){
+				used = true;
+				break;
+			}
+		}
+		for (int j = 0; j < right_index; j++){
+			if (right[j]->widget == named_widgets[i].widget){
+				used = true;
+				break;
+			}
+		}
+		if (!used){
+			gtk_widget_hide(named_widgets[i].widget);
+			gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(args->hpaned)), named_widgets[i].widget, true, true, 5);
+		}else{
+			gtk_widget_show(named_widgets[i].widget);
+		}
+	}
+	for (size_t i = 0; i < sizeof(widgets) / sizeof(GtkWidget*); i++){
+		g_object_unref(widgets[i]);
+	}
+}
+static void view_palette_cb(GtkWidget *widget, AppArgs* args)
+{
+	bool view = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
+	dynv_set_bool(args->params, "view.palette", view);
+	repositionViews(args);
+}
+static void view_primary_view_cb(GtkWidget *widget, AppArgs* args)
+{
+	bool view = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
+	dynv_set_bool(args->params, "view.primary_view", view);
+	repositionViews(args);
+}
+static void view_layout_cb(GtkWidget *widget, AppArgs* args)
+{
+	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
+		dynv_set_string(args->params, "view.layout", static_cast<const char*>(g_object_get_data(G_OBJECT(widget), "source")));
+		repositionViews(args);
 	}
 }
 
@@ -703,7 +829,17 @@ static void secondary_view_cb(GtkWidget *widget, AppArgs *args)
 	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
 		ColorSource *source = static_cast<ColorSource*>(g_object_get_data(G_OBJECT(widget), "source"));
 		activate_secondary_source(args, source);
+		repositionViews(args);
 	}
+}
+
+static void addLayoutMenuItem(const char *layout, const char *label, GtkMenu *menu, GSList *&group, AppArgs *args)
+{
+	GtkWidget *item = gtk_radio_menu_item_new_with_label(group, label);
+	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+	g_object_set_data_full(G_OBJECT(item), "source", const_cast<char*>(layout), (GDestroyNotify)nullptr);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_layout_cb), args);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 }
 
 static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group)
@@ -802,8 +938,24 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 	menu = GTK_MENU(gtk_menu_new());
+
 	GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 	GSList *group = nullptr;
+	addLayoutMenuItem("primary+secondary_palette", _("Primary/Secondary, Palette"), menu2, group, args);
+	addLayoutMenuItem("primary+palette_secondary", _("Primary/Palette, Secondary"), menu2, group, args);
+	addLayoutMenuItem("primary_palette+secondary", _("Primary, Palette/Secondary"), menu2, group, args);
+	addLayoutMenuItem("palette+secondary_primary", _("Palette/Secondary, Primary"), menu2, group, args);
+	addLayoutMenuItem("palette+primary_secondary", _("Palette/Primary, Secondary"), menu2, group, args);
+	addLayoutMenuItem("palette_primary+secondary", _("Palette, Primary/Secondary"), menu2, group, args);
+	addLayoutMenuItem("secondary+primary_palette", _("Secondary/Primary, Palette"), menu2, group, args);
+	addLayoutMenuItem("secondary+palette_primary", _("Secondary/Palette, Primary"), menu2, group, args);
+	addLayoutMenuItem("secondary_primary+palette", _("Secondary, Primary/Palette"), menu2, group, args);
+	item = gtk_menu_item_new_with_mnemonic(_("_Layout"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), GTK_WIDGET(menu2));
+
+	menu2 = GTK_MENU(gtk_menu_new());
+	group = nullptr;
 	ColorSource *source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
 	item = gtk_radio_menu_item_new_with_label(group, _("None"));
 	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
@@ -830,12 +982,18 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	item = gtk_menu_item_new_with_mnemonic(_("_Secondary View"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), GTK_WIDGET(menu2));
+
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+	item = gtk_check_menu_item_new_with_mnemonic(_("_Primary View"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.primary_view", true));
+	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_primary_view_cb), args);
 	item = gtk_check_menu_item_new_with_mnemonic(_("Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.palette", true));
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
+
 	file_item = gtk_menu_item_new_with_mnemonic (_("_View"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
@@ -1521,26 +1679,17 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	menu_bar = gtk_menu_bar_new ();
 	gtk_box_pack_start (GTK_BOX(vbox_main), menu_bar, FALSE, FALSE, 0);
 	hpaned = gtk_hpaned_new();
-	bool color_list_visible = dynv_get_bool_wd(args->params, "view.palette", true);
 	vpaned = gtk_vpaned_new();
 	args->vpaned = vpaned;
-	if (color_list_visible)
-		gtk_paned_pack1(GTK_PANED(hpaned), vpaned, false, false);
-	else
-		gtk_box_pack_start(GTK_BOX(vbox_main), vpaned, TRUE, TRUE, 5);
 	notebook = gtk_notebook_new();
 	g_signal_connect(G_OBJECT(notebook), "switch-page", G_CALLBACK(notebook_switch_cb), args);
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
 	statusbar = gtk_statusbar_new();
 	args->gs->setStatusBar(statusbar);
-	gtk_paned_pack1(GTK_PANED(vpaned), notebook, false, false);
-	if (color_list_visible){
-		gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
-		gtk_widget_show_all(vbox_main);
-	}else{
-		gtk_widget_show_all(vbox_main);
-		gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, TRUE, TRUE, 5);
-	}
+	gtk_widget_show_all(notebook);
+	gtk_widget_show_all(vpaned);
+	gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, true, true, 5);
+	gtk_widget_show_all(vbox_main);
 	ColorSource *source;
 	struct dynvSystem *dynv_namespace;
 	app_initialize_floating_picker(args);
@@ -1555,7 +1704,6 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	gtk_widget_show(widget);
 	{
 		widget = gtk_vbox_new(false, 0);
-		gtk_paned_pack2(GTK_PANED(vpaned), widget, false, false);
 		args->secondary_source_container = widget;
 		source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
 		if (source) activate_secondary_source(args, source);
@@ -1580,10 +1728,11 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), args->color_list );
-	gtk_paned_pack2(GTK_PANED(hpaned), scrolled_window, TRUE, FALSE);
 	gtk_widget_show(scrolled_window);
+	args->palette = scrolled_window;
 	args->hpaned = hpaned;
 	args->notebook = notebook;
+	repositionViews(args);
 	{
 		const char *tab = dynv_get_string_wd(args->params, "color_source", "");
 		map<string, ColorSource*>::iterator i = args->color_source.find(tab);
