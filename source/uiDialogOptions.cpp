@@ -53,6 +53,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *default_drag_action[2];
 	GtkWidget *hex_case[2];
 	GtkWidget *save_restore_palette;
+	GtkWidget *hide_cursor;
 	GtkWidget *add_on_release;
 	GtkWidget *add_to_palette;
 	GtkWidget *copy_to_clipboard;
@@ -116,6 +117,7 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit)
 		dynv_set_string(args->params, "options.hex_case", "upper");
 	dynv_set_float(args->params, "picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
 	dynv_set_int32(args->params, "picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
+	dynv_set_bool(args->params, "picker.hide_cursor", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hide_cursor)));
 	dynv_set_bool(args->params, "picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.copy_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_on_release)));
 	dynv_set_bool(args->params, "picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
@@ -251,6 +253,19 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->zoom_size), dynv_get_int32_wd(args->params, "picker.zoom_size", 150));
 	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 	table_y++;
+
+	frame = gtk_frame_new(_("Picker"));
+	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
+	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y++;
+	table = gtk_table_new(5, 3, FALSE);
+	table_y=0;
+	gtk_container_add(GTK_CONTAINER(frame), table);
+	args->hide_cursor = widget = gtk_check_button_new_with_mnemonic(_("_Hide cursor"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.hide_cursor", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+
 	frame = gtk_frame_new(_("Floating picker click behaviour"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
 	gtk_table_attach(GTK_TABLE(table_m), frame, 0, 1, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
@@ -288,8 +303,8 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_m_y = 0;
 	frame = gtk_frame_new(_("Enabled color spaces"));
 	gtk_frame_set_shadow_type(GTK_FRAME(frame), GTK_SHADOW_NONE);
-	gtk_table_attach(GTK_TABLE(table_m), frame, 1, 2, table_m_y, table_m_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
-	table_m_y++;
+	gtk_table_attach(GTK_TABLE(table_m), frame, 1, 2, table_m_y, table_m_y+2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	table_m_y+=2;
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);

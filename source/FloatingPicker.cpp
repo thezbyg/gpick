@@ -155,7 +155,10 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	args->single_pick_mode = single_pick_mode;
 	args->click_mode = true;
 	GdkCursor* cursor;
-	cursor = gdk_cursor_new(GDK_TCROSS);
+	if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.hide_cursor", false))
+		cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
+	else
+		cursor = gdk_cursor_new(GDK_TCROSS);
 	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.zoom", 2));
 	update_display(args);
 	gtk_widget_show(args->window);
