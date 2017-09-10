@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,6 +23,7 @@
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
 #include "DragDrop.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "CopyPaste.h"
@@ -40,7 +41,7 @@
 #include "uiConverter.h"
 #include "CopyMenu.h"
 #include "StandardMenu.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "ScreenReader.h"
 #include "Sampler.h"
@@ -107,8 +108,7 @@ static void updateMainColorNow(ColorPickerArgs* args)
 	if (!dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
 		Color c;
 		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-		string text;
-		converter_get_text(c, ConverterArrayType::display, args->gs, text);
+		string text = args->gs->converters().serialize(c, Converters::Type::display);
 		gtk_color_set_color(GTK_COLOR(args->color_code), &c, text.c_str());
 		gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	}
@@ -140,8 +140,7 @@ static gboolean updateMainColor( gpointer data ){
 	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
 	Color c;
 	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, &c);
-	string text;
-	converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	string text = args->gs->converters().serialize(c, Converters::Type::display);
 	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text.c_str());
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	if (zoomed_enabled){
@@ -159,8 +158,8 @@ static void updateComponentText(ColorPickerArgs *args, GtkColorComponent *compon
 {
 	Color transformed_color;
 	gtk_color_component_get_transformed_color(component, &transformed_color);
-	lua_State* L = args->gs->getLua();
-	list<string> str = color_space_color_to_text(type, &transformed_color, L);
+	lua::Script &script = args->gs->script();
+	list<string> str = color_space_color_to_text(type, &transformed_color, script, args->gs);
 	int j = 0;
 	const char *text[4];
 	memset(text, 0, sizeof(text));

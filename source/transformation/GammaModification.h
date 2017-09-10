@@ -18,26 +18,23 @@
 
 #ifndef TRANSFORMATION_GAMMA_MODIFICATION_H_
 #define TRANSFORMATION_GAMMA_MODIFICATION_H_
-
 #include "Transformation.h"
-
-namespace transformation {
-
-class GammaModification;
-
-class GammaModificationConfig: public Configuration{
+namespace transformation
+{
+struct GammaModification;
+struct GammaModificationConfig: public Configuration
+{
 	protected:
 		GtkWidget *main;
 		GtkWidget *value;
 	public:
 		GammaModificationConfig(GammaModification &transformation);
 		virtual ~GammaModificationConfig();
-
 		virtual GtkWidget* getWidget();
 		virtual void applyConfig(dynvSystem *dynv);
 };
-
-class GammaModification: public Transformation{
+struct GammaModification: public Transformation
+{
 	public:
 		static const char *getName();
 		static const char *getReadableName();
@@ -48,15 +45,10 @@ class GammaModification: public Transformation{
 		GammaModification();
 		GammaModification(float value);
 		virtual ~GammaModification();
-
 		virtual void serialize(struct dynvSystem *dynv);
 		virtual void deserialize(struct dynvSystem *dynv);
-
 		virtual boost::shared_ptr<Configuration> getConfig();
-
-	friend class GammaModificationConfig;
+	friend struct GammaModificationConfig;
 };
-
 }
-
 #endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */

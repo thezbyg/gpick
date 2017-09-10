@@ -19,7 +19,7 @@
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "ColorObject.h"
 #include <string>

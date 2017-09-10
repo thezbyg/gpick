@@ -17,12 +17,13 @@
  */
 
 #include "uiColorInput.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "uiUtilities.h"
 #include "GlobalState.h"
 #include "gtk/ColorWheel.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
 #include "ColorObject.h"
@@ -31,23 +32,19 @@
 #include <string>
 using namespace std;
 
-int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* color_object, ColorObject** new_color_object)
+int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *color_object, ColorObject **new_color_object)
 {
-	string text;
-	converter_get_text(color_object, ConverterArrayType::display, gs, text);
-
+	string text = gs->converters().serialize(color_object, Converters::Type::display);
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		nullptr);
-
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
 	GtkWidget* hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
 
-	GtkWidget *widget;
-	widget = gtk_color_new();
+	GtkWidget *widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
@@ -69,8 +66,7 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* col
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		ColorObject* color_object;
-
-		if (converter_get_color_object((char*)gtk_entry_get_text(GTK_ENTRY(entry)), gs, &color_object)){
+		if (gs->converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object)){
 			*new_color_object = color_object;
 			gtk_widget_destroy(dialog);
 			return 0;
@@ -80,14 +76,15 @@ int dialog_color_input_show(GtkWindow* parent, GlobalState* gs, ColorObject* col
 	return -1;
 }
 
-typedef struct ColorPickerComponentEditArgs{
+struct ColorPickerComponentEditArgs
+{
 	GtkWidget* value[4];
 	GtkColorComponentComp component;
 	int component_id;
 	struct dynvSystem *params;
-}ColorPickerComponentEditArgs;
+};
 
-void dialog_color_component_input_show(GtkWindow* parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params)
+void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *color_component, int component_id, dynvSystem *params)
 {
 	GtkColorComponentComp component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(color_component));
 	ColorPickerComponentEditArgs *args = new ColorPickerComponentEditArgs;

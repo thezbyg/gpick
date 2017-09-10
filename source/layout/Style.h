@@ -16,52 +16,38 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_STYLE_H_
-#define LAYOUT_STYLE_H_
-
+#ifndef GPICK_LAYOUT_STYLE_H_
+#define GPICK_LAYOUT_STYLE_H_
 #include "../Color.h"
-
 #include "ReferenceCounter.h"
 #include "Box.h"
-
 #include <string>
 #include <list>
-
-namespace layout{
-
-class Box;
-
-class Style:public ReferenceCounter{
-public:
+namespace layout
+{
+struct Box;
+struct Style: public ReferenceCounter
+{
 	std::string ident_name;
-	std::string human_name;
-
+	std::string label;
 	Color color;
 	float font_size;
-
 	enum{
 		TYPE_UNKNOWN = 0,
 		TYPE_COLOR,
 		TYPE_BACKGROUND,
 		TYPE_BORDER,
 	}style_type;
-
 	bool dirty;
-
 	bool highlight;
 	Box* selected_box;
-
 	bool IsDirty();
 	void SetDirty(bool dirty);
-
 	bool GetHighlight();
 	Box* GetBox();
 	void SetState(bool highlight, Box *box);
-
 	Style(const char* name, Color* color, float font_size);
 	virtual ~Style();
 };
-
 }
-
 #endif /* LAYOUT_STYLE_H_ */

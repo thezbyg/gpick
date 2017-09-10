@@ -18,29 +18,22 @@
 
 #ifndef TRANSFORMATION_CONFIGURATION_H_
 #define TRANSFORMATION_CONFIGURATION_H_
-
 #include "../DynvHelpers.h"
 #include <gtk/gtk.h>
-
 /** \file source/transformation/Configuration.h
- * \brief Class for transformation object configuration handling.
+ * \brief Struct for transformation object configuration handling.
  */
-
-namespace transformation {
-
-/** \class Configuration
- * \brief Transformation object configuration management class.
+namespace transformation
+{
+/** \struct Configuration
+ * \brief Transformation object configuration management struct.
  */
-class Configuration{
-	protected:
-	public:
-		Configuration();
-		virtual ~Configuration();
-
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
+struct Configuration
+{
+	Configuration();
+	virtual ~Configuration();
+	virtual GtkWidget* getWidget();
+	virtual void applyConfig(dynvSystem *dynv);
 };
-
 }
-
 #endif /* TRANSFORMATION_CONFIGURATION_H_ */

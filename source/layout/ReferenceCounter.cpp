@@ -17,35 +17,29 @@
  */
 
 #include "ReferenceCounter.h"
-
-#include <iostream>
 using namespace std;
-
-namespace layout{
-
-
-ReferenceCounter::ReferenceCounter(){
+namespace layout
+{
+ReferenceCounter::ReferenceCounter()
+{
 	refcnt = 0;
 }
-
-ReferenceCounter::~ReferenceCounter(){
-
+ReferenceCounter::~ReferenceCounter()
+{
 }
-
-ReferenceCounter* ReferenceCounter::ref(){
+ReferenceCounter* ReferenceCounter::ref()
+{
 	refcnt++;
 	return this;
 }
-
-bool ReferenceCounter::unref(ReferenceCounter* rc){
+bool ReferenceCounter::unref(ReferenceCounter* rc)
+{
 	if (rc->refcnt){
 		rc->refcnt--;
 		return false;
 	}else{
-		//cout<<rc<<endl;
 		delete rc;
 		return true;
 	}
 }
-
 }

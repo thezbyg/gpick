@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 struct dynvSystem{
-	class dynvKeyCompare{
+	struct dynvKeyCompare{
 	public:
 		bool operator() (const char* const& x, const char* const& y) const;
 	};

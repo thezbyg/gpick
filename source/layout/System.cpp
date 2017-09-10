@@ -17,52 +17,50 @@
  */
 
 #include "System.h"
-
 using namespace std;
-
-namespace layout{
-
-System::System(){
+namespace layout
+{
+System::System()
+{
 	box = 0;
 }
-
-System::~System(){
+System::~System()
+{
 	for (list<Style*>::iterator i=styles.begin(); i != styles.end(); i++){
 		Style::unref(*i);
 	}
 	styles.clear();
 	Box::unref(box);
 }
-
-void System::Draw(Context *context, const math::Rect2<float>& parent_rect ){
+void System::Draw(Context *context, const math::Rect2<float>& parent_rect)
+{
 	if (!box) return;
 	box->Draw(context, parent_rect);
 }
-
-void System::AddStyle(Style *_style){
+void System::AddStyle(Style *_style)
+{
 	styles.push_back(static_cast<Style*>(_style->ref()));
 }
-
-void System::SetBox(Box *_box){
+void System::SetBox(Box *_box)
+{
 	if (box){
 		Box::unref(box);
 		box = 0;
 	}
 	box = static_cast<Box*>(_box->ref());
 }
-
-Box* System::GetBoxAt(const math::Vec2<float>& point){
+Box* System::GetBoxAt(const math::Vec2<float>& point)
+{
 	if (box)
 		return box->GetBoxAt(point);
 	else
 		return 0;
 }
-
-Box* System::GetNamedBox(const char *name){
+Box* System::GetNamedBox(const char *name)
+{
 	if (box)
 		return box->GetNamedBox(name);
 	else
 		return 0;
 }
-
 }

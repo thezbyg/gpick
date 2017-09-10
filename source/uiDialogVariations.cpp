@@ -25,7 +25,7 @@
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <sstream>
 using namespace std;
 
@@ -40,7 +40,7 @@ typedef struct DialogVariationsArgs
 	GlobalState* gs;
 }DialogVariationsArgs;
 
-class VariationsColorNameAssigner: public ToolColorNameAssigner
+struct VariationsColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

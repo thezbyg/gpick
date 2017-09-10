@@ -18,13 +18,11 @@
 
 #ifndef GPICK_UI_STATUS_ICON_H_
 #define GPICK_UI_STATUS_ICON_H_
-
-class GlobalState;
 #include "FloatingPicker.h"
 #include <gtk/gtk.h>
+struct GlobalState;
 struct uiStatusIcon;
 uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, FloatingPicker floating_picker);
 void status_icon_set_visible(uiStatusIcon* si, bool visible);
 void status_icon_destroy(uiStatusIcon* si);
-
 #endif /* GPICK_UI_STATUS_ICON_H_ */

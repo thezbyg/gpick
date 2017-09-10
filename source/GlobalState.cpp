@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,13 +19,14 @@
 #include "GlobalState.h"
 #include "Paths.h"
 #include "ScreenReader.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "Random.h"
 #include "color_names/ColorNames.h"
 #include "Sampler.h"
 #include "ColorList.h"
-#include "layout/LuaBindings.h"
 #include "layout/Layout.h"
+#include "layout/Layouts.h"
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
 #include "dynv/DynvMemoryIO.h"
@@ -38,6 +39,9 @@
 #include "dynv/DynvVarBool.h"
 #include "dynv/DynvXml.h"
 #include "DynvHelpers.h"
+#include "lua/Script.h"
+#include "lua/Extensions.h"
+#include "lua/Callbacks.h"
 #include <stdlib.h>
 #include <glib/gstdio.h>
 extern "C"{
@@ -48,301 +52,275 @@ extern "C"{
 #include <iostream>
 using namespace std;
 
-class GlobalState::Impl
+struct GlobalState::Impl
 {
-	public:
-		ColorNames *m_color_names;
-		Sampler *m_sampler;
-		ScreenReader *m_screen_reader;
-		ColorList *m_color_list;
-		dynvSystem *m_settings;
-		lua_State *m_lua;
-		Random *m_random;
-		Converters *m_converters;
-		layout::Layouts *m_layouts;
-		transformation::Chain *m_transformation_chain;
-		GtkWidget *m_status_bar;
-		ColorSource *m_color_source;
-		Impl():
-			m_color_names(nullptr),
-			m_sampler(nullptr),
-			m_screen_reader(nullptr),
-			m_color_list(nullptr),
-			m_settings(nullptr),
-			m_lua(nullptr),
-			m_random(nullptr),
-			m_converters(nullptr),
-			m_layouts(nullptr),
-			m_transformation_chain(nullptr),
-			m_status_bar(nullptr),
-			m_color_source(nullptr)
-		{
-		}
-		~Impl()
-		{
-			if (m_converters != nullptr)
-				converters_term(m_converters);
-			if (m_layouts != nullptr)
-				layout::layouts_term(m_layouts);
-			if (m_transformation_chain != nullptr)
-				delete m_transformation_chain;
-			if (m_color_list != nullptr)
-				color_list_destroy(m_color_list);
-			if (m_random != nullptr)
-				random_destroy(m_random);
-			if (m_color_names != nullptr)
-				color_names_destroy(m_color_names);
-			if (m_sampler != nullptr)
-				sampler_destroy(m_sampler);
-			if (m_screen_reader != nullptr)
-				screen_reader_destroy(m_screen_reader);
-			if (m_settings != nullptr)
-				dynv_system_release(m_settings);
-			if (m_lua)
-				lua_close(m_lua);
-		}
-		bool writeSettings()
-		{
-			gchar* config_file = build_config_path("settings.xml");
-			ofstream settings_file(config_file);
-			if (!settings_file.is_open()){
-				g_free(config_file);
-				return false;
-			}
-			settings_file << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
-			dynv_xml_serialize(m_settings, settings_file);
-			settings_file << "</root>" << endl;
-			settings_file.close();
+	GlobalState *m_decl;
+	ColorNames *m_color_names;
+	Sampler *m_sampler;
+	ScreenReader *m_screen_reader;
+	ColorList *m_color_list;
+	dynvSystem *m_settings;
+	lua::Script m_script;
+	Random *m_random;
+	Converters m_converters;
+	layout::Layouts m_layouts;
+	lua::Callbacks m_callbacks;
+	transformation::Chain *m_transformation_chain;
+	GtkWidget *m_status_bar;
+	ColorSource *m_color_source;
+	Impl(GlobalState *decl):
+		m_decl(decl),
+		m_color_names(nullptr),
+		m_sampler(nullptr),
+		m_screen_reader(nullptr),
+		m_color_list(nullptr),
+		m_settings(nullptr),
+		m_random(nullptr),
+		m_transformation_chain(nullptr),
+		m_status_bar(nullptr),
+		m_color_source(nullptr)
+	{
+	}
+	~Impl()
+	{
+		if (m_transformation_chain != nullptr)
+			delete m_transformation_chain;
+		if (m_color_list != nullptr)
+			color_list_destroy(m_color_list);
+		if (m_random != nullptr)
+			random_destroy(m_random);
+		if (m_color_names != nullptr)
+			color_names_destroy(m_color_names);
+		if (m_sampler != nullptr)
+			sampler_destroy(m_sampler);
+		if (m_screen_reader != nullptr)
+			screen_reader_destroy(m_screen_reader);
+		if (m_settings != nullptr)
+			dynv_system_release(m_settings);
+	}
+	bool writeSettings()
+	{
+		gchar* config_file = build_config_path("settings.xml");
+		ofstream settings_file(config_file);
+		if (!settings_file.is_open()){
 			g_free(config_file);
-			return true;
+			return false;
 		}
-		bool loadSettings()
-		{
-			if (m_settings != nullptr) return false;
-			struct dynvHandlerMap* handler_map = dynv_handler_map_create();
-			dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
-			dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
-			m_settings = dynv_system_create(handler_map);
-			dynv_handler_map_release(handler_map);
-			gchar* config_file = build_config_path("settings.xml");
-			ifstream settings_file(config_file);
-			if (!settings_file.is_open()){
-				g_free(config_file);
-				return false;
-			}
-			dynv_xml_deserialize(m_settings, settings_file);
-			settings_file.close();
+		settings_file << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
+		dynv_xml_serialize(m_settings, settings_file);
+		settings_file << "</root>" << endl;
+		settings_file.close();
+		g_free(config_file);
+		return true;
+	}
+	bool loadSettings()
+	{
+		if (m_settings != nullptr) return false;
+		struct dynvHandlerMap* handler_map = dynv_handler_map_create();
+		dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
+		dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
+		m_settings = dynv_system_create(handler_map);
+		dynv_handler_map_release(handler_map);
+		gchar* config_file = build_config_path("settings.xml");
+		ifstream settings_file(config_file);
+		if (!settings_file.is_open()){
 			g_free(config_file);
-			return true;
+			return false;
 		}
-		bool checkConfigurationDirectory()
-		{
-			//create configuration directory if it doesn't exist
-			GStatBuf st;
-			gchar* config_dir = build_config_path(nullptr);
-			if (g_stat(config_dir, &st) != 0){
+		dynv_xml_deserialize(m_settings, settings_file);
+		settings_file.close();
+		g_free(config_file);
+		return true;
+	}
+	bool checkConfigurationDirectory()
+	{
+		//create configuration directory if it doesn't exist
+		GStatBuf st;
+		gchar* config_dir = build_config_path(nullptr);
+		if (g_stat(config_dir, &st) != 0){
 #ifndef _MSC_VER
-				g_mkdir(config_dir, S_IRWXU);
+			g_mkdir(config_dir, S_IRWXU);
 #else
-				g_mkdir(config_dir, 0);
+			g_mkdir(config_dir, 0);
 #endif
-			}
-			g_free(config_dir);
-			return true;
 		}
-		bool checkUserInitFile()
-		{
-			//check if user has user_init.lua file, if not, then create empty file
-			gchar *user_init_file = build_config_path("user_init.lua");
-			ifstream f(user_init_file);
-			if (f.is_open()){
-				f.close();
-				g_free(user_init_file);
-				return true;
-			}
-			ofstream new_file(user_init_file);
-			if (!f.is_open()){
-				g_free(user_init_file);
-				return false;
-			}
-			new_file.close();
+		g_free(config_dir);
+		return true;
+	}
+	bool checkUserInitFile()
+	{
+		//check if user has user_init.lua file, if not, then create empty file
+		gchar *user_init_file = build_config_path("user_init.lua");
+		ifstream f(user_init_file);
+		if (f.is_open()){
+			f.close();
 			g_free(user_init_file);
 			return true;
 		}
-		bool loadColorNames()
-		{
-			if (m_color_names != nullptr) return false;
-			m_color_names = color_names_new();
-			dynvSystem *params = dynv_get_dynv(m_settings, "gpick");
-			color_names_load(m_color_names, params);
-			dynv_system_release(params);
-			return true;
+		ofstream new_file(user_init_file);
+		if (!f.is_open()){
+			g_free(user_init_file);
+			return false;
 		}
-		bool initializeRandomGenerator()
-		{
-			m_random = random_new("SHR3");
-			size_t seed_value = time(0) | 1;
-			random_seed(m_random, &seed_value);
-			return true;
+		new_file.close();
+		g_free(user_init_file);
+		return true;
+	}
+	bool loadColorNames()
+	{
+		if (m_color_names != nullptr) return false;
+		m_color_names = color_names_new();
+		dynvSystem *params = dynv_get_dynv(m_settings, "gpick");
+		color_names_load(m_color_names, params);
+		dynv_system_release(params);
+		return true;
+	}
+	bool initializeRandomGenerator()
+	{
+		m_random = random_new("SHR3");
+		size_t seed_value = time(0) | 1;
+		random_seed(m_random, &seed_value);
+		return true;
+	}
+	bool createColorList()
+	{
+		if (m_color_list != nullptr) return false;
+		//create color list / callbacks must be defined elsewhere
+		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(m_settings);
+		m_color_list = color_list_new(handler_map);
+		dynv_handler_map_release(handler_map);
+		return true;
+	}
+	string gcharToString(gchar *value)
+	{
+		string result(value);
+		g_free(value);
+		return result;
+	}
+	bool initializeLua()
+	{
+		lua_State *L = m_script;
+		lua::registerAll(L, *m_decl);
+		vector<string> paths;
+		paths.push_back(gcharToString(build_filename("")));
+		paths.push_back(gcharToString(build_config_path("")));
+		m_script.setPaths(paths);
+		bool result = m_script.load("init");
+		if (!result){
+			cerr << m_script.getLastError() << endl;
 		}
-		bool createColorList()
-		{
-			if (m_color_list != nullptr) return false;
-			//create color list / callbacks must be defined elsewhere
-			struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(m_settings);
-			m_color_list = color_list_new(handler_map);
-			dynv_handler_map_release(handler_map);
-			return true;
-		}
-		bool initializeLua()
-		{
-			lua_State *L = luaL_newstate();
-			luaL_openlibs(L);
-			int status;
-			char *tmp;
-			lua_ext_colors_openlib(L);
-			layout::lua_ext_layout_openlib(L);
-			gchar* lua_root_path = build_filename("?.lua");
-			gchar* lua_user_path = build_config_path("?.lua");
-			gchar* lua_path = g_strjoin(";", lua_root_path, lua_user_path, nullptr);
-			lua_getglobal(L, "package");
-			lua_pushstring(L, "path");
-			lua_pushstring(L, lua_path);
-			lua_settable(L, -3);
-			lua_pop(L, 1);
-			g_free(lua_path);
-			g_free(lua_root_path);
-			g_free(lua_user_path);
-			tmp = build_filename("init.lua");
-			status = luaL_loadfile(L, tmp) || lua_pcall(L, 0, 0, 0);
-			if (status) {
-				cerr << "init script load failed: " << lua_tostring(L, -1) << endl;
-			}
-			g_free(tmp);
-			m_lua = L;
-			return true;
-		}
-		bool loadConverters()
-		{
-			if (m_converters != nullptr) return false;
-			Converters *converters = converters_init(m_lua, m_settings);
-			char** source_array;
-			uint32_t source_array_size;
-			if ((source_array = (char**)dynv_get_string_array_wd(m_settings, "gpick.converters.names", 0, 0, &source_array_size))){
-				bool* copy_array;
-				uint32_t copy_array_size=0;
-				bool* paste_array;
-				uint32_t paste_array_size=0;
-				copy_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.copy", 0, 0, &copy_array_size);
-				paste_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.paste", 0, 0, &paste_array_size);
-				gsize source_array_i = 0;
-				Converter *converter;
-				if (copy_array_size > 0 || paste_array_size > 0){
-					while (source_array_i<source_array_size){
-						converter = converters_get(converters, source_array[source_array_i]);
-						if (converter){
-							if (source_array_i<copy_array_size) converter->copy = converter->serialize_available & copy_array[source_array_i];
-							if (source_array_i<paste_array_size) converter->paste = converter->deserialize_available & paste_array[source_array_i];
-						}
-						++source_array_i;
-					}
-				}else{
-					while (source_array_i<source_array_size){
-						converter = converters_get(converters, source_array[source_array_i]);
-						if (converter){
-							converter->copy = converter->serialize_available;
-							converter->paste = converter->deserialize_available;
-						}
-						++source_array_i;
-					}
-				}
-				if (copy_array) delete [] copy_array;
-				if (paste_array) delete [] paste_array;
-				converters_reorder(converters, (const char**)source_array, source_array_size);
-				if (source_array) delete [] source_array;
-			}else{
-				//Initialize default values
-				const char* name_array[]={
-					"color_web_hex",
-					"color_css_rgb",
-					"color_css_hsl",
-				};
-				source_array_size = sizeof(name_array)/sizeof(name_array[0]);
-				gsize source_array_i = 0;
-				Converter* converter;
+		return result;
+	}
+	bool loadConverters()
+	{
+		char** source_array;
+		uint32_t source_array_size;
+		if ((source_array = (char**)dynv_get_string_array_wd(m_settings, "gpick.converters.names", 0, 0, &source_array_size))){
+			bool *copy_array, *paste_array;
+			uint32_t copy_array_size = 0, paste_array_size = 0;
+			copy_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.copy", 0, 0, &copy_array_size);
+			paste_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.paste", 0, 0, &paste_array_size);
+			gsize source_array_i = 0;
+			Converter *converter;
+			if (copy_array_size > 0 || paste_array_size > 0){
 				while (source_array_i < source_array_size){
-					converter = converters_get(converters, name_array[source_array_i]);
+					converter = m_converters.byName(source_array[source_array_i]);
 					if (converter){
-						converter->copy = converter->serialize_available;
-						converter->paste = converter->deserialize_available;
+						if (source_array_i < copy_array_size)
+							converter->copy(converter->hasSerialize() && copy_array[source_array_i]);
+						if (source_array_i < paste_array_size)
+							converter->paste(converter->hasDeserialize() && paste_array[source_array_i]);
 					}
 					++source_array_i;
 				}
-				converters_reorder(converters, name_array, source_array_size);
-			}
-			converters_rebuild_arrays(converters, ConverterArrayType::copy);
-			converters_rebuild_arrays(converters, ConverterArrayType::paste);
-			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.display", "color_web_hex")), ConverterArrayType::display);
-			converters_set(converters, converters_get(converters, dynv_get_string_wd(m_settings, "gpick.converters.color_list", "color_web_hex")), ConverterArrayType::color_list);
-			m_converters = converters;
-			return true;
-		}
-		bool loadLayouts()
-		{
-			if (m_layouts != nullptr) return false;
-			m_layouts = layout::layouts_init(m_lua, m_settings);
-			return true;
-		}
-		bool loadTransformationChain()
-		{
-			if (m_transformation_chain != nullptr) return false;
-			transformation::Chain *chain = new transformation::Chain();
-			chain->setEnabled(dynv_get_bool_wd(m_settings, "gpick.transformations.enabled", false));
-			struct dynvSystem** config_array;
-			uint32_t config_size;
-			if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(m_settings, "gpick.transformations.items", 0, 0, &config_size))){
-				for (uint32_t i = 0; i != config_size; i++){
-					const char *name = dynv_get_string_wd(config_array[i], "name", 0);
-					if (name){
-						boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-						if (tran){
-							tran->deserialize(config_array[i]);
-							chain->add(tran);
-						}
+			}else{
+				while (source_array_i < source_array_size){
+					converter = m_converters.byName(source_array[source_array_i]);
+					if (converter){
+						converter->copy(converter->hasSerialize());
+						converter->paste(converter->hasDeserialize());
 					}
-					dynv_system_release(config_array[i]);
+					++source_array_i;
 				}
-				delete [] config_array;
 			}
-			m_transformation_chain = chain;
-			return true;
+			if (copy_array) delete [] copy_array;
+			if (paste_array) delete [] paste_array;
+			m_converters.reorder((const char**)source_array, source_array_size);
+			if (source_array) delete [] source_array;
+		}else{
+			//Initialize default values
+			const char* name_array[] = {
+				"color_web_hex",
+				"color_css_rgb",
+				"color_css_hsl",
+			};
+			source_array_size = sizeof(name_array) / sizeof(name_array[0]);
+			gsize source_array_i = 0;
+			Converter* converter;
+			while (source_array_i < source_array_size){
+				converter = m_converters.byName(name_array[source_array_i]);
+				if (converter){
+					converter->copy(converter->hasSerialize());
+					converter->paste(converter->hasDeserialize());
+				}
+				++source_array_i;
+			}
+			m_converters.reorder(name_array, source_array_size);
 		}
-		bool loadAll()
-		{
-			checkConfigurationDirectory();
-			checkUserInitFile();
-			m_screen_reader = screen_reader_new();
-			m_sampler = sampler_new(m_screen_reader);
-			initializeRandomGenerator();
-			loadSettings();
-			loadColorNames();
-			createColorList();
-			initializeLua();
-			loadConverters();
-			loadLayouts();
-			loadTransformationChain();
-			return true;
+		m_converters.rebuildCopyPasteArrays();
+		m_converters.display(dynv_get_string_wd(m_settings, "gpick.converters.display", "color_web_hex"));
+		m_converters.colorList(dynv_get_string_wd(m_settings, "gpick.converters.color_list", "color_web_hex"));
+		return true;
+	}
+	bool loadTransformationChain()
+	{
+		if (m_transformation_chain != nullptr) return false;
+		transformation::Chain *chain = new transformation::Chain();
+		chain->setEnabled(dynv_get_bool_wd(m_settings, "gpick.transformations.enabled", false));
+		struct dynvSystem** config_array;
+		uint32_t config_size;
+		if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(m_settings, "gpick.transformations.items", 0, 0, &config_size))){
+			for (uint32_t i = 0; i != config_size; i++){
+				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
+				if (name){
+					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
+					if (tran){
+						tran->deserialize(config_array[i]);
+						chain->add(tran);
+					}
+				}
+				dynv_system_release(config_array[i]);
+			}
+			delete [] config_array;
 		}
+		m_transformation_chain = chain;
+		return true;
+	}
+	bool loadAll()
+	{
+		checkConfigurationDirectory();
+		checkUserInitFile();
+		m_screen_reader = screen_reader_new();
+		m_sampler = sampler_new(m_screen_reader);
+		initializeRandomGenerator();
+		loadSettings();
+		loadColorNames();
+		createColorList();
+		initializeLua();
+		loadConverters();
+		loadTransformationChain();
+		return true;
+	}
 };
 
 GlobalState::GlobalState()
 {
-	m_impl = make_unique<Impl>();
+	m_impl = make_unique<Impl>(this);
 }
 GlobalState::~GlobalState()
 {
@@ -379,19 +357,23 @@ dynvSystem *GlobalState::getSettings()
 {
 	return m_impl->m_settings;
 }
-lua_State *GlobalState::getLua()
+lua::Script &GlobalState::script()
 {
-	return m_impl->m_lua;
+	return m_impl->m_script;
+}
+lua::Callbacks &GlobalState::callbacks()
+{
+	return m_impl->m_callbacks;
 }
 Random *GlobalState::getRandom()
 {
 	return m_impl->m_random;
 }
-Converters *GlobalState::getConverters()
+Converters &GlobalState::converters()
 {
 	return m_impl->m_converters;
 }
-layout::Layouts *GlobalState::getLayouts()
+layout::Layouts &GlobalState::layouts()
 {
 	return m_impl->m_layouts;
 }

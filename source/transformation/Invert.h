@@ -18,19 +18,15 @@
 
 #ifndef TRANSFORMATION_INVERT_H_
 #define TRANSFORMATION_INVERT_H_
-
 #include "Transformation.h"
-
-namespace transformation {
-
-class Invert : public Transformation{
+namespace transformation
+{
+struct Invert: public Transformation
+{
+	Invert();
+	virtual ~Invert();
 	protected:
-		virtual void apply(Color *input, Color *output);
-	public:
-		Invert();
-		virtual ~Invert();
+	virtual void apply(Color *input, Color *output);
 };
-
 }
-
 #endif /* TRANSFORMATION_INVERT_H_ */

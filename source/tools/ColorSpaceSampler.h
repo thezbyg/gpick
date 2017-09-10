@@ -18,9 +18,7 @@
 
 #ifndef GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
 #define GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_
-
-class GlobalState;
 #include <gtk/gtk.h>
+struct GlobalState;
 void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs);
-
 #endif /* GPICK_TOOLS_COLOR_SPACE_SAMPLER_H_ */

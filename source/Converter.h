@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,66 +18,44 @@
 
 #ifndef GPICK_CONVERTER_H_
 #define GPICK_CONVERTER_H_
-
-class Converters;
-struct lua_State;
-struct dynvSystem;
-class ColorObject;
-class GlobalState;
-struct Color;
 #include <string>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <stdint.h>
-
-enum class ConverterArrayType{
-	copy,
-	paste,
-	display,
-	color_list,
-};
-
-class Converter
+#include "lua/Ref.h"
+struct ColorObject;
+struct Color;
+struct ConverterSerializePosition
 {
-	public:
-		char* function_name;
-		char* human_readable;
-		bool copy, serialize_available;
-		bool paste, deserialize_available;
-		Converters *converters;
+	ConverterSerializePosition();
+	ConverterSerializePosition(size_t count);
+	bool first() const;
+	bool last() const;
+	size_t index() const;
+	size_t count() const;
+	void incrementIndex();
+	void first(bool value);
+	void last(bool value);
+	private:
+	bool m_first, m_last;
+	size_t m_index, m_count;
 };
-
-Converters* converters_init(lua_State *lua, dynvSystem *settings);
-int converters_term(Converters *converters);
-Converter* converters_get(Converters *converters, const char* name);
-int converters_set(Converters *converters, Converter* converter, ConverterArrayType type);
-Converter* converters_get_first(Converters *converters, ConverterArrayType type);
-Converter** converters_get_all_type(Converters *converters, ConverterArrayType type, size_t *size);
-Converter** converters_get_all(Converters *converters, size_t *size);
-
-class ConverterSerializePosition
+struct Converter
 {
-	public:
-		ConverterSerializePosition();
-		ConverterSerializePosition(size_t count);
-		bool first;
-		bool last;
-		size_t index;
-		size_t count;
+	Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize);
+	const std::string &name() const;
+	const std::string &label() const;
+	bool hasSerialize() const;
+	bool hasDeserialize() const;
+	bool copy() const;
+	bool paste() const;
+	void copy(bool value);
+	void paste(bool value);
+	std::string serialize(const ColorObject *color_object, const ConverterSerializePosition &position);
+	std::string serialize(const ColorObject *color_object);
+	std::string serialize(const Color &color);
+	bool deserialize(const char *value, ColorObject *color_object, float &quality);
+	private:
+	std::string m_name;
+	std::string m_label;
+	lua::Ref m_serialize, m_deserialize;
+	bool m_copy, m_paste;
 };
-
-int converters_color_serialize(Converters* converters, const char* function, const ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
-int converters_color_serialize(Converter* converter, const ColorObject* color_object, const ConverterSerializePosition &position, std::string& result);
-int converters_color_deserialize(Converters* converters, const char* function, const char* text, ColorObject* color_object, float* conversion_quality);
-int converters_color_deserialize(Converter *converter, const char* text, ColorObject *color_object, float* conversion_quality);
-int converters_rebuild_arrays(Converters *converters, ConverterArrayType type);
-int converters_reorder(Converters *converters, const char** priority_names, size_t priority_names_size);
-
-bool converter_get_text(const Color &color, ConverterArrayType type, GlobalState *gs, std::string &text);
-bool converter_get_text(const ColorObject *color_object, ConverterArrayType type, GlobalState *gs, std::string &text);
-bool converter_get_text(const ColorObject *color_object, Converter *converter, GlobalState *gs, std::string &text);
-
-bool converter_get_color_object(const char *text, GlobalState* gs, ColorObject** output_color_object);
-
 #endif /* GPICK_CONVERTER_H_ */

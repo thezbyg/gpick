@@ -18,10 +18,9 @@
 
 #ifndef GPICK_DRAG_DROP_H_
 #define GPICK_DRAG_DROP_H_
-
 #include <gtk/gtk.h>
-class GlobalState;
-class ColorObject;
+struct GlobalState;
+struct ColorObject;
 struct dynvHandlerMap;
 enum DragDropFlags{
 	DRAGDROP_SOURCE = 1<<1,
@@ -61,5 +60,4 @@ struct DragDrop{
 };
 int dragdrop_init(DragDrop* dd, GlobalState *gs);
 int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, DragDrop *dd);
-
 #endif /* GPICK_DRAG_DROP_H_ */

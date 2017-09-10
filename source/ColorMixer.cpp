@@ -34,7 +34,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
@@ -90,7 +90,7 @@ typedef struct ColorMixerArgs{
 	GlobalState* gs;
 }ColorMixerArgs;
 
-class ColorMixerColorNameAssigner: public ToolColorNameAssigner {
+struct ColorMixerColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
 		const char *m_ident;

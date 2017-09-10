@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-
-import os
-import string
-import sys
-
+import os, string, sys
 from tools.gpick import *
 
-env = GpickEnvironment(ENV=os.environ, BUILDERS = {'WriteNsisVersion' : Builder(action = WriteNsisVersion, suffix = ".nsi")})
+env = GpickEnvironment(ENV = os.environ, BUILDERS = {'WriteNsisVersion': Builder(action = WriteNsisVersion, suffix = ".nsi")})
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
@@ -50,7 +46,7 @@ env.GetVersionInfo()
 
 try:
 	umask = os.umask(022)
-except OSError:     # ignore on systems that don't support umask
+except OSError: # ignore on systems that don't support umask
 	pass
 
 if os.environ.has_key('CC'):
@@ -69,29 +65,27 @@ if not env.GetOption('clean'):
 
 	programs = {}
 	if env['ENABLE_NLS']:
-		programs['GETTEXT'] = {'checks':{'msgfmt':'GETTEXT'}}
-		programs['XGETTEXT'] = {'checks':{'xgettext':'XGETTEXT'}, 'required':False}
-		programs['MSGMERGE'] = {'checks':{'msgmerge':'MSGMERGE'}, 'required':False}
-		programs['MSGCAT'] = {'checks':{'msgcat':'MSGCAT'}, 'required':False}
-	programs['RAGEL'] = {'checks':{'ragel':'RAGEL'}}
+		programs['GETTEXT'] = {'checks':{'msgfmt': 'GETTEXT'}}
+		programs['XGETTEXT'] = {'checks':{'xgettext': 'XGETTEXT'}, 'required': False}
+		programs['MSGMERGE'] = {'checks':{'msgmerge': 'MSGMERGE'}, 'required': False}
+		programs['MSGCAT'] = {'checks':{'msgcat': 'MSGCAT'}, 'required': False}
+	programs['RAGEL'] = {'checks':{'ragel': 'RAGEL'}}
 	if env['EXPERIMENTAL_CSS_PARSER'] and not env['PREBUILD_GRAMMAR']:
-		programs['LEMON'] = {'checks':{'lemon':'LEMON'}}
-		programs['FLEX'] = {'checks':{'flex':'FLEX'}}
+		programs['LEMON'] = {'checks':{'lemon': 'LEMON'}}
+		programs['FLEX'] = {'checks':{'flex': 'FLEX'}}
 	env.ConfirmPrograms(conf, programs)
 
 	libs = {}
 
 	if not env['TOOLCHAIN'] == 'msvc':
 		if not env['USE_GTK3']:
-			libs['GTK_PC'] = {'checks':{'gtk+-2.0':'>= 2.24.0'}}
-			libs['GIO_PC'] = {'checks':{'gio-unix-2.0':'>= 2.26.0', 'gio-2.0':'>= 2.26.0'}}
+			libs['GTK_PC'] = {'checks':{'gtk+-2.0': '>= 2.24.0'}}
+			libs['GIO_PC'] = {'checks':{'gio-unix-2.0': '>= 2.26.0', 'gio-2.0': '>= 2.26.0'}}
 		else:
-			libs['GTK_PC'] = {'checks':{'gtk+-3.0':'>= 3.0.0'}}
-		libs['LUA_PC'] = {'checks':{'lua5.3':'>= 5.3', 'lua':'>= 5.2', 'lua5.2':'>= 5.2'}}
-
+			libs['GTK_PC'] = {'checks':{'gtk+-3.0': '>= 3.0.0'}}
+		libs['LUA_PC'] = {'checks':{'lua5.3': '>= 5.3', 'lua': '>= 5.2', 'lua5.2': '>= 5.2'}}
 	env.ConfirmLibs(conf, libs)
 	env.ConfirmBoost(conf, '1.58')
-
 	env = conf.Finish()
 
 Decider('MD5-timestamp')
@@ -140,20 +134,19 @@ env.Append(
 	CPPPATH = ['#extern'],
 )
 
-extern_libs = SConscript(['extern/SConscript'], exports='env')
-executable, tests, parser_files = SConscript(['source/SConscript'], exports='env')
+extern_libs = SConscript(['extern/SConscript'], exports = 'env')
+executable, tests, parser_files = SConscript(['source/SConscript'], exports = 'env')
 
-env.Alias(target="build", source=[
+env.Alias(target = "build", source=[
 	executable,
 ])
 
-env.Alias(target="test", source=[
+env.Alias(target = "test", source=[
 	tests,
 ])
 
 if 'debian' in COMMAND_LINE_TARGETS:
-	SConscript("deb/SConscript", exports='env')
-
+	SConscript("deb/SConscript", exports = 'env')
 
 if env['ENABLE_NLS']:
 	translations = env.Glob('share/locale/*/LC_MESSAGES/gpick.po')
@@ -167,21 +160,21 @@ if env['ENABLE_NLS']:
 	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
 	template = env.Msgcat("template.pot", [template_c, template_lua], MSGCAT_FLAGS = ['--use-first'])
-	env.Alias(target = "template", source=[
+	env.Alias(target = "template", source = [
 		template
 	])
 
-env.Alias(target = "install", source=[
-	env.InstallProgram(dir=env['DESTDIR'] +'/bin', source=[executable]),
-	env.InstallData(dir=env['DESTDIR'] +'/share/appdata', source=['share/appdata/gpick.appdata.xml']),
-	env.InstallData(dir=env['DESTDIR'] +'/share/applications', source=['share/applications/gpick.desktop']),
-	env.InstallData(dir=env['DESTDIR'] +'/share/mime/packages', source=['share/mime/packages/gpick.xml']),
-	env.InstallData(dir=env['DESTDIR'] +'/share/doc/gpick', source=['share/doc/gpick/copyright']),
-	env.InstallData(dir=env['DESTDIR'] +'/share/gpick', source=[env.Glob('share/gpick/*.png'), env.Glob('share/gpick/*.lua'), env.Glob('share/gpick/*.txt')]),
-	env.InstallData(dir=env['DESTDIR'] +'/share/man/man1', source=['share/man/man1/gpick.1']),
-	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/48x48/apps/', source=[env.Glob('share/icons/hicolor/48x48/apps/*.png')]),
-	env.InstallData(dir=env['DESTDIR'] +'/share/icons/hicolor/scalable/apps/', source=[env.Glob('share/icons/hicolor/scalable/apps/*.svg')]),
-	env.InstallDataAutoDir(dir=env['DESTDIR'] + '/share/locale/', relative_dir='share/locale/', source=[env.Glob('share/locale/*/LC_MESSAGES/gpick.mo')]),
+env.Alias(target = "install", source = [
+	env.InstallProgram(dir = env['DESTDIR'] +'/bin', source = [executable]),
+	env.InstallData(dir = env['DESTDIR'] +'/share/appdata', source = ['share/appdata/gpick.appdata.xml']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/applications', source = ['share/applications/gpick.desktop']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/mime/packages', source = ['share/mime/packages/gpick.xml']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/doc/gpick', source = ['share/doc/gpick/copyright']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/gpick', source = [env.Glob('share/gpick/*.png'), env.Glob('share/gpick/*.lua'), env.Glob('share/gpick/*.txt')]),
+	env.InstallData(dir = env['DESTDIR'] +'/share/man/man1', source = ['share/man/man1/gpick.1']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/icons/hicolor/48x48/apps/', source = [env.Glob('share/icons/hicolor/48x48/apps/*.png')]),
+	env.InstallData(dir = env['DESTDIR'] +'/share/icons/hicolor/scalable/apps/', source = [env.Glob('share/icons/hicolor/scalable/apps/*.svg')]),
+	env.InstallDataAutoDir(dir = env['DESTDIR'] + '/share/locale/', relative_dir = 'share/locale/', source = [env.Glob('share/locale/*/LC_MESSAGES/gpick.mo')]),
 ])
 
 env.Alias(target = "nsis", source = [
@@ -192,7 +185,7 @@ env.Alias(target = "version", source = [
 	env.Template(target = "#version.txt", source = "version.template"),
 ])
 
-tarFiles = env.GetSourceFiles( "("+RegexEscape(os.sep)+r"\.)|("+RegexEscape(os.sep)+r"\.svn$)|(^"+RegexEscape(os.sep)+r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+tarFiles = env.GetSourceFiles("(" + RegexEscape(os.sep) + r"\.)|(" + RegexEscape(os.sep) + r"\.svn$)|(^" + RegexEscape(os.sep) + r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
 
 for item in parser_files:
 	tarFiles.append(str(item))
@@ -201,8 +194,8 @@ if 'TAR' in env:
 	env.Alias(target = "tar", source = [
 		'version',
 		env.Append(TARFLAGS = ['-z']),
-		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_'+str(env['GPICK_BUILD_VERSION'])+'/,x"']),
-		env.Tar('gpick_'+str(env['GPICK_BUILD_VERSION'])+'.tar.gz', tarFiles)
+		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_' + str(env['GPICK_BUILD_VERSION']) + '/,x"']),
+		env.Tar('gpick_' + str(env['GPICK_BUILD_VERSION']) + '.tar.gz', tarFiles)
 	])
 
 env.Default(executable)

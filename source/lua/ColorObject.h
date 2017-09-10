@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,23 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_LUABINDINGS_H_
-#define LAYOUT_LUABINDINGS_H_
-
-#include "../LuaExt.h"
-#include "Box.h"
-#include "System.h"
-
-namespace layout{
-
-int lua_ext_layout_openlib(lua_State *L);
-
-Box* lua_checklbox (lua_State *L, int index);
-int lua_pushlbox (lua_State *L, Box* box);
-
-System* lua_checklsystem (lua_State *L, int index);
-int lua_pushlsystem (lua_State *L, System* system);
-
+#ifndef GPICK_LUA_COLOR_OBJECT_H_
+#define GPICK_LUA_COLOR_OBJECT_H_
+struct lua_State;
+struct ColorObject;
+namespace lua
+{
+int registerColorObject(lua_State *L);
+ColorObject* checkColorObject(lua_State *L, int index);
+int pushColorObject(lua_State *L, ColorObject* color_object);
 }
-
-#endif /* LAYOUT_LUABINDINGS_H_ */
+#endif /* GPICK_LUA_COLOR_OBJECT_H_ */

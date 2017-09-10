@@ -18,14 +18,14 @@
 
 #ifndef GPICK_VECTOR2_H_
 #define GPICK_VECTOR2_H_
-
 #include <math.h>
-namespace math{
-/** \class Vec2
+namespace math
+{
+/** \struct Vec2
  * \brief Two dimensional vector
  */
 template<typename T>
-class Vec2
+struct Vec2
 {
 	public:
 		Vec2()
@@ -83,5 +83,4 @@ class Vec2
 		T y;
 };
 }
-
 #endif /* GPICK_VECTOR2_H_ */

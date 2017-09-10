@@ -20,7 +20,7 @@
 #include "../ColorList.h"
 #include "../ColorObject.h"
 #include "../GlobalState.h"
-#include "../Internationalisation.h"
+#include "../I18N.h"
 #include "../DynvHelpers.h"
 #include "../uiListPalette.h"
 #include "../uiUtilities.h"
@@ -31,7 +31,7 @@ using namespace std;
 
 #define N_AXIS 3
 
-typedef struct AxisOptions
+struct AxisOptions
 {
 	GtkWidget *range_samples;
 	GtkWidget *range_min_value;
@@ -41,9 +41,9 @@ typedef struct AxisOptions
 	float min_value;
 	float max_value;
 	bool include_max_value;
-}AxisOptions;
+};
 
-typedef struct ColorSpaceSamplerArgs
+struct ColorSpaceSamplerArgs
 {
 	GtkWidget *combo_color_space;
 	GtkWidget *toggle_linearization;
@@ -55,9 +55,9 @@ typedef struct ColorSpaceSamplerArgs
 	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
-}ColorSpaceSamplerArgs;
+};
 
-class ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner
+struct ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

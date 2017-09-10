@@ -19,7 +19,7 @@
 #include "StandardMenu.h"
 #include "CopyMenu.h"
 #include "NearestColorsMenu.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <gdk/gdkkeysyms.h>
 
 static void buildMenu(GtkWidget *menu, GtkWidget **copy_to_clipboard, GtkWidget **nearest_from_palette)

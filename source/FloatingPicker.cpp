@@ -26,6 +26,7 @@
 #include "CopyMenu.h"
 #include "GlobalState.h"
 #include "ColorPicker.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "ToolColorNaming.h"
@@ -56,7 +57,7 @@ typedef struct FloatingPickerArgs
 	function<void(FloatingPicker)> custom_done_action;
 }FloatingPickerArgs;
 
-class PickerColorNameAssigner: public ToolColorNameAssigner
+struct PickerColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;
@@ -133,13 +134,12 @@ static gboolean update_display(FloatingPickerArgs *args)
 	Color c;
 	get_color_sample(args, true, &c);
 	string text;
-	if (args->converter != nullptr){
-		auto color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-		converter_get_text(color_object, args->converter, args->gs, text);
-		color_object->release();
-	}else{
-		converter_get_text(c, ConverterArrayType::display, args->gs, text);
+	auto converter = args->converter;
+	if (!converter){
+		converter = args->gs->converters().display();
 	}
+	if (converter)
+		text = converter->serialize(c);
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &c, text.c_str());
 	return true;
 }
@@ -147,7 +147,7 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 {
 #ifndef WIN32 //Pointer grabbing in Windows is broken, disabling floating picker for now
 	if (converter_name != nullptr){
-		args->converter = converters_get(args->gs->getConverters(), converter_name);
+		args->converter = args->gs->converters().byName(converter_name);
 	}else{
 		args->converter = nullptr;
 	}

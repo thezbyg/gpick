@@ -16,11 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_CONTEXT_H_
-#define LAYOUT_CONTEXT_H_
-
+#ifndef GPICK_LAYOUT_CONTEXT_H_
+#define GPICK_LAYOUT_CONTEXT_H_
 #include "../transformation/Chain.h"
-
 #include <gtk/gtk.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
@@ -28,21 +26,17 @@
 #include <stdint.h>
 #include <list>
 #include <string>
-
-namespace layout{
-
-class Context{
-protected:
-	cairo_t *cr;
-	transformation::Chain *chain;
-public:
+namespace layout
+{
+struct Context
+{
 	Context(cairo_t *cr, transformation::Chain *chain);
 	~Context();
-
 	cairo_t* getCairo() const;
 	transformation::Chain* getTransformationChain() const;
+private:
+	cairo_t *cr;
+	transformation::Chain *chain;
 };
-
 }
-
-#endif /* LAYOUT_SYSTEM_H_ */
+#endif /* GPICK_LAYOUT_CONTEXT_H_ */

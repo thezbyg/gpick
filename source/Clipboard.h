@@ -20,21 +20,19 @@
 #define GPICK_CLIPBOARD_H_
 
 #include <string>
-class ColorObject;
-class GlobalState;
-class Converter;
+struct ColorObject;
+struct GlobalState;
+struct Converter;
 struct Color;
 typedef struct _GtkWidget GtkWidget;
-class Clipboard
+struct Clipboard
 {
-	public:
-		static void set(const std::string &value);
-		static void set(const ColorObject *color_object, GlobalState *gs, const char *converter_name = nullptr);
-		static void set(const Color &color, GlobalState *gs, const char *converter_name = nullptr);
-		static void set(GtkWidget *palette_widget, GlobalState *gs, const char *converter_name = nullptr);
-		static void set(const ColorObject *color_object, GlobalState *gs, Converter *converter);
-		static void set(const Color &color, GlobalState *gs, Converter *converter);
-		static void set(GtkWidget *palette_widget, GlobalState *gs, Converter *converter);
+	static void set(const std::string &value);
+	static void set(const ColorObject *color_object, GlobalState *gs, const char *converter_name = nullptr);
+	static void set(const Color &color, GlobalState *gs, const char *converter_name = nullptr);
+	static void set(GtkWidget *palette_widget, GlobalState *gs, const char *converter_name = nullptr);
+	static void set(const ColorObject *color_object, GlobalState *gs, Converter *converter);
+	static void set(const Color &color, GlobalState *gs, Converter *converter);
+	static void set(GtkWidget *palette_widget, GlobalState *gs, Converter *converter);
 };
-
 #endif /* GPICK_CLIPBOARD_H_ */

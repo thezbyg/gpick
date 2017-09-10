@@ -18,27 +18,25 @@
 
 #ifndef TRANSFORMATION_FACTORY_H_
 #define TRANSFORMATION_FACTORY_H_
-
 #include "Transformation.h"
 #include <boost/shared_ptr.hpp>
 #include <vector>
-
 /** \file source/transformation/Factory.h
- * \brief Class for transformation object creation.
+ * \brief Struct for transformation object creation.
  */
-
-namespace transformation {
-
-/** \class Factory
- * \brief Transformation object creation management class.
+namespace transformation
+{
+/** \struct Factory
+ * \brief Transformation object creation management struct.
  */
-class Factory{
+struct Factory
+{
 	public:
-		typedef struct TypeInfo{
+		struct TypeInfo{
 			const char *name;
 			const char *human_name;
 			TypeInfo(const char *name, const char *human_name);
-		}TypeInfo;
+		};
 
 		/**
 		 * Create new transformation object.
@@ -53,7 +51,5 @@ class Factory{
 		 */
 		static std::vector<TypeInfo> getAllTypes();
 };
-
 }
-
 #endif /* TRANSFORMATION_FACTORY_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,6 +21,7 @@
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "gtk/ColorWidget.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "dynv/DynvXml.h"
 #include <string.h>
@@ -220,7 +221,7 @@ static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint 
 				gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
 				if (data[gtk_selection_data_get_length(selection_data)] != 0) break; //not null terminated
 				ColorObject* color_object = nullptr;
-				if (!converter_get_color_object(data, dd->gs, &color_object)){
+				if (!dd->gs->converters().deserialize(data, &color_object)){
 					gtk_drag_finish (context, false, false, time);
 					return;
 				}
@@ -380,10 +381,8 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 
 			case TARGET_STRING:
 				{
-					string text;
-					if (converter_get_text(color_object, ConverterArrayType::copy, dd->gs, text)){
-						gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
-					}
+					string text = dd->gs->converters().serialize(color_object, Converters::Type::copy);
+					gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
 				}
 				break;
 
@@ -456,13 +455,13 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 			case TARGET_STRING:
 				{
 					stringstream ss;
-					string text;
-					for (uint32_t i = 0; i != color_object_n; i++){
-						if (converter_get_text(color_objects[i], ConverterArrayType::copy, dd->gs, text)){
-							ss << text << endl;
+					auto converter = dd->gs->converters().firstCopy();
+					if (converter){
+						for (uint32_t i = 0; i != color_object_n; i++){
+							ss << converter->serialize(color_objects[i]) << endl;
 						}
 					}
-					text = ss.str();
+					string text = ss.str();
 					gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
 				}
 				break;
@@ -511,13 +510,15 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			gtk_container_add(GTK_CONTAINER(dragwindow), hbox);
 			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24 * std::min(color_object_n, (size_t)5));
 
-			for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
-				GtkWidget* color_widget = gtk_color_new();
-				string text;
-				converter_get_text(color_objects[i], ConverterArrayType::display, dd->gs, text);
-				Color color = color_objects[i]->getColor();
-				gtk_color_set_color(GTK_COLOR(color_widget), &color, text.c_str());
-				gtk_box_pack_start(GTK_BOX(hbox), color_widget, true, true, 0);
+			auto converter = dd->gs->converters().firstCopy();
+			if (converter){
+				for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
+					GtkWidget* color_widget = gtk_color_new();
+					string text = converter->serialize(color_objects[i]);
+					Color color = color_objects[i]->getColor();
+					gtk_color_set_color(GTK_COLOR(color_widget), &color, text.c_str());
+					gtk_box_pack_start(GTK_BOX(hbox), color_widget, true, true, 0);
+				}
 			}
 
 			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
@@ -537,8 +538,7 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			GtkWidget* colorwidget = gtk_color_new();
 			gtk_container_add(GTK_CONTAINER(dragwindow), colorwidget);
 			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24);
-			string text;
-			converter_get_text(color_object, ConverterArrayType::display, dd->gs, text);
+			string text = dd->gs->converters().serialize(color_object, Converters::Type::display);
 			Color color = color_object->getColor();
 			gtk_color_set_color(GTK_COLOR(colorwidget), &color, text.c_str());
 			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);

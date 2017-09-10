@@ -34,7 +34,7 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
@@ -87,7 +87,8 @@ typedef struct VariationsArgs{
 	GlobalState* gs;
 }VariationsArgs;
 
-class VariationsColorNameAssigner: public ToolColorNameAssigner {
+struct VariationsColorNameAssigner: public ToolColorNameAssigner
+{
 	protected:
 		stringstream m_stream;
 		const char *m_ident;

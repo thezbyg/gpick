@@ -137,7 +137,7 @@ void gtk_color_set_roundness(GtkColor* widget, double roundness)
 	gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
-void gtk_color_set_color(GtkColor* widget, Color* color, const char* text)
+void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	color_copy(color, &ns->color);

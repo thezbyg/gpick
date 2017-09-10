@@ -20,9 +20,11 @@
 #include "uiUtilities.h"
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
-#include "Internationalisation.h"
-#include "LuaExt.h"
+#include "I18N.h"
 #include "DynvHelpers.h"
+#include "lua/Script.h"
+#include "lua/DynvSystem.h"
+#include "lua/Callbacks.h"
 #include <string>
 #include <iostream>
 using namespace std;
@@ -73,33 +75,26 @@ typedef struct DialogOptionsArgs{
 	GlobalState* gs;
 }DialogOptionsArgs;
 
-int dialog_options_update(lua_State *lua, dynvSystem *settings)
+bool dialog_options_update(lua::Script &script, dynvSystem *settings, GlobalState *gs)
 {
-	if (lua == nullptr || settings == nullptr) return -1;
-	lua_State* L = lua;
-	int status;
+	if (settings == nullptr)
+		return false;
+	if (!gs->callbacks().optionChange().valid())
+		return false;
+	lua_State* L = script;
 	int stack_top = lua_gettop(L);
-	lua_getglobal(L, "gpick");
-	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1) != LUA_TNIL){
-		lua_pushstring(L, "options_update");
-		lua_gettable(L, gpick_namespace);
-		if (lua_type(L, -1) != LUA_TNIL){
-			lua_pushdynvsystem(L, settings);
-			status = lua_pcall(L, 1, 0, 0);
-			dynv_system_release(settings);
-			if (status == 0){
-				lua_settop(L, stack_top);
-				return 0;
-			}else{
-				cerr << "gpick.options_update: " << lua_tostring(L, -1) << endl;
-			}
-		}else{
-			cerr << "gpick.options_update: no such function \"options_update\"" << endl;
-		}
+	gs->callbacks().optionChange().get();
+	lua::pushDynvSystem(L, settings);
+	int status = lua_pcall(L, 1, 0, 0);
+	dynv_system_release(settings);
+	if (status == 0){
+		lua_settop(L, stack_top);
+		return true;
+	}else{
+		cerr << "optionsUpdate: " << lua_tostring(L, -1) << endl;
 	}
 	lua_settop(L, stack_top);
-	return -1;
+	return false;
 }
 
 static void calc( DialogOptionsArgs *args, bool preview, int limit)
@@ -432,7 +427,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), notebook);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		calc(args, false, 0);
-		dialog_options_update(args->gs->getLua(), args->gs->getSettings());
+		dialog_options_update(args->gs->script(), args->gs->getSettings(), args->gs);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

@@ -8,7 +8,7 @@
 #include "Color.h"
 using namespace std;
 
-class TextFile: public text_file_parser::TextFile
+struct TextFile: public text_file_parser::TextFile
 {
 	public:
 		istream *m_stream;

@@ -18,26 +18,23 @@
 
 #ifndef GPICK_COLOR_LIST_H_
 #define GPICK_COLOR_LIST_H_
-
-class ColorObject;
-struct dynvSystem;
 #include "Color.h"
 #include <list>
 #include <cstddef>
-
-class ColorList
+struct ColorObject;
+struct dynvSystem;
+struct ColorList
 {
-	public:
-		std::list<ColorObject*> colors;
-		typedef std::list<ColorObject*>::iterator iter;
-		dynvSystem *params;
-		int (*on_insert)(ColorList *color_list, ColorObject *color_object);
-		int (*on_delete)(ColorList *color_list, ColorObject *color_object);
-		int (*on_delete_selected)(ColorList *color_list);
-		int (*on_change)(ColorList *color_list, ColorObject *color_object);
-		int (*on_clear)(ColorList *color_list);
-		int (*on_get_positions)(ColorList *color_list);
-		void* userdata;
+	std::list<ColorObject*> colors;
+	typedef std::list<ColorObject*>::iterator iter;
+	dynvSystem *params;
+	int (*on_insert)(ColorList *color_list, ColorObject *color_object);
+	int (*on_delete)(ColorList *color_list, ColorObject *color_object);
+	int (*on_delete_selected)(ColorList *color_list);
+	int (*on_change)(ColorList *color_list, ColorObject *color_object);
+	int (*on_clear)(ColorList *color_list);
+	int (*on_get_positions)(ColorList *color_list);
+	void* userdata;
 };
 
 ColorList* color_list_new();

@@ -17,6 +17,7 @@
  */
 
 #include "Clipboard.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
 #include "ColorObject.h"
@@ -32,14 +33,6 @@ static PaletteListCallbackReturn addToColorList(ColorObject* color_object, Color
 	color_list_add_color_object(color_list, color_object, 1);
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
-static Converter *getConverter(Converters *converters, const char *converter_name)
-{
-	if (converter_name != nullptr){
-		auto converter = converters_get(converters, converter_name);
-		if (converter != nullptr) return converter;
-	}
-	return converters_get_first(converters, ConverterArrayType::copy);
-}
 void Clipboard::set(const std::string &value)
 {
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), value.c_str(), -1);
@@ -48,35 +41,35 @@ void Clipboard::set(const std::string &value)
 void Clipboard::set(const ColorObject *color_object, GlobalState *gs, Converter *converter)
 {
 	if (converter == nullptr)
-		converter = converters_get_first(gs->getConverters(), ConverterArrayType::copy);
-	string text_line;
+		converter = gs->converters().firstCopyOrAny();
+	if (converter == nullptr)
+		return;
 	ConverterSerializePosition position;
-	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
-		set(text_line);
-	}
+	set(converter->serialize(color_object, position));
 }
 void Clipboard::set(GtkWidget *palette_widget, GlobalState *gs, Converter *converter)
 {
 	if (converter == nullptr)
-		converter = converters_get_first(gs->getConverters(), ConverterArrayType::copy);
+		converter = gs->converters().firstCopyOrAny();
+	if (converter == nullptr)
+		return;
 	stringstream text(ios::out);
 	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(palette_widget, (PaletteListCallback)addToColorList, color_list);
 	string text_line;
 	ConverterSerializePosition position(color_list->colors.size());
-	if (position.count > 0){
-		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			if (position.index + 1 == position.count)
-				position.last = true;
-			if (converters_color_serialize(converter, *i, position, text_line) == 0){
-				if (position.first){
-					text << text_line;
-					position.first = false;
-				}else{
-					text << endl << text_line;
-				}
-				position.index++;
+	if (position.count() > 0){
+		for (auto &color: color_list->colors){
+			if (position.index() + 1 == position.count())
+				position.last(true);
+			text_line = converter->serialize(color, position);
+			if (position.first()){
+				text << text_line;
+				position.first(false);
+			}else{
+				text << endl << text_line;
 			}
+			position.incrementIndex();
 		}
 	}
 	color_list_destroy(color_list);
@@ -87,18 +80,29 @@ void Clipboard::set(GtkWidget *palette_widget, GlobalState *gs, Converter *conve
 }
 void Clipboard::set(const Color &color, GlobalState *gs, Converter *converter)
 {
+	if (converter == nullptr)
+		return;
 	ColorObject color_object("", color);
 	set(&color_object, gs, converter);
 }
 void Clipboard::set(const ColorObject *color_object, GlobalState *gs, const char *converter_name)
 {
-	set(color_object, gs, getConverter(gs->getConverters(), converter_name));
+	auto converter = gs->converters().byNameOrFirstCopy(converter_name);
+	if (converter == nullptr)
+		return;
+	set(color_object, gs, converter);
 }
 void Clipboard::set(const Color &color, GlobalState *gs, const char *converter_name)
 {
-	set(color, gs, getConverter(gs->getConverters(), converter_name));
+	auto converter = gs->converters().byNameOrFirstCopy(converter_name);
+	if (converter == nullptr)
+		return;
+	set(color, gs, converter);
 }
 void Clipboard::set(GtkWidget *palette_widget, GlobalState *gs, const char *converter_name)
 {
-	set(palette_widget, gs, getConverter(gs->getConverters(), converter_name));
+	auto converter = gs->converters().byNameOrFirstCopy(converter_name);
+	if (converter == nullptr)
+		return;
+	set(palette_widget, gs, converter);
 }

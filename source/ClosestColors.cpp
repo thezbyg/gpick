@@ -29,7 +29,7 @@
 #include "uiColorInput.h"
 #include "CopyPaste.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
@@ -47,7 +47,7 @@ struct ClosestColorsArgs
 	GlobalState* gs;
 };
 
-class ClosestColorsColorNameAssigner: public ToolColorNameAssigner
+struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

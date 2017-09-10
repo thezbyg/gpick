@@ -19,8 +19,8 @@
 #ifndef GPICK_GTK_COLOR_CELL_H_
 #define GPICK_GTK_COLOR_CELL_H_
 
-class ColorObject;
 #include <gtk/gtk.h>
+struct ColorObject;
 
 #define CUSTOM_TYPE_CELL_RENDERER_COLOR (custom_cell_renderer_color_get_type())
 #define CUSTOM_CELL_RENDERER_COLOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), CUSTOM_TYPE_CELL_RENDERER_COLOR, CustomCellRendererColor))

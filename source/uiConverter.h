@@ -18,9 +18,7 @@
 
 #ifndef GPICK_UI_CONVERTER_H_
 #define GPICK_UI_CONVERTER_H_
-
-class GlobalState;
 #include <gtk/gtk.h>
-void dialog_converter_show(GtkWindow* parent, GlobalState* gs);
-
+struct GlobalState;
+void dialog_converter_show(GtkWindow *parent, GlobalState *gs);
 #endif /* GPICK_UI_CONVERTER_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,17 +18,14 @@
 
 #ifndef GPICK_COPY_MENU_ITEM_H_
 #define GPICK_COPY_MENU_ITEM_H_
-
 #include <gtk/gtk.h>
-class GlobalState;
-class ColorObject;
-class Converter;
-class CopyMenuItem
+struct GlobalState;
+struct ColorObject;
+struct Converter;
+struct CopyMenuItem
 {
-	public:
-		static GtkWidget* newItem(ColorObject *color_object, GlobalState *gs, bool include_name);
-		static GtkWidget* newItem(ColorObject *color_object, Converter *converter, GlobalState *gs);
-		static GtkWidget* newItem(ColorObject *color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs);
+	static GtkWidget* newItem(ColorObject *color_object, GlobalState *gs, bool include_name);
+	static GtkWidget* newItem(ColorObject *color_object, Converter *converter, GlobalState *gs);
+	static GtkWidget* newItem(ColorObject *color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs);
 };
-
 #endif /* GPICK_COPY_MENU_ITEM_H_ */

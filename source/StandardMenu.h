@@ -18,16 +18,13 @@
 
 #ifndef GPICK_STANDARD_MENU_H_
 #define GPICK_STANDARD_MENU_H_
-
 #include <gtk/gtk.h>
-class ColorObject;
-class GlobalState;
-class StandardMenu
+struct ColorObject;
+struct GlobalState;
+struct StandardMenu
 {
-	public:
-		static void appendMenu(GtkWidget *menu, ColorObject* color_object, GlobalState *gs);
-		static void appendMenu(GtkWidget *menu, ColorObject* color_object, GtkWidget *palette_widget, GlobalState *gs);
-		static void appendMenu(GtkWidget *menu);
+	static void appendMenu(GtkWidget *menu, ColorObject* color_object, GlobalState *gs);
+	static void appendMenu(GtkWidget *menu, ColorObject* color_object, GtkWidget *palette_widget, GlobalState *gs);
+	static void appendMenu(GtkWidget *menu);
 };
-
 #endif /* GPICK_STANDARD_MENU_H_ */

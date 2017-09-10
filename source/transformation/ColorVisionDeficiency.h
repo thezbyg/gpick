@@ -18,21 +18,18 @@
 
 #ifndef TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
 #define TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
-
 #include "Transformation.h"
-
-namespace transformation {
-
-class ColorVisionDeficiency;
-
-class ColorVisionDeficiencyConfig: public Configuration{
+namespace transformation
+{
+struct ColorVisionDeficiency;
+struct ColorVisionDeficiencyConfig: public Configuration
+{
 	protected:
 		GtkWidget *main;
 		GtkWidget *info_bar;
 		GtkWidget *info_label;
 		GtkWidget *type;
 		GtkWidget *strength;
-
 		static void type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_);
 		static void info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiencyConfig *this_);
 	public:
@@ -42,8 +39,8 @@ class ColorVisionDeficiencyConfig: public Configuration{
 		virtual GtkWidget* getWidget();
 		virtual void applyConfig(dynvSystem *dynv);
 };
-
-class ColorVisionDeficiency: public Transformation{
+struct ColorVisionDeficiency: public Transformation
+{
 	public:
 		enum DeficiencyType{
 			PROTANOMALY,
@@ -75,7 +72,7 @@ class ColorVisionDeficiency: public Transformation{
 
 		DeficiencyType typeFromString(const char *type_string);
 
-	friend class ColorVisionDeficiencyConfig;
+	friend struct ColorVisionDeficiencyConfig;
 };
 
 }

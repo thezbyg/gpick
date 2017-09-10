@@ -18,9 +18,7 @@
 
 #ifndef GPICK_UI_DIALOG_AUTONUMBER_H_
 #define GPICK_UI_DIALOG_AUTONUMBER_H_
-
-class GlobalState;
 #include <gtk/gtk.h>
+struct GlobalState;
 int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState* gs);
-
 #endif /* GPICK_UI_DIALOG_AUTONUMBER_H_ */

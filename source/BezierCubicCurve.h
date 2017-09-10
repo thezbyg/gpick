@@ -16,37 +16,37 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef BEZIERCUBICCURVE_H_
-#define BEZIERCUBICCURVE_H_
-
-namespace math{
+#ifndef GPICK_BEZIER_CUBIC_CURVE_H_
+#define GPICK_BEZIER_CUBIC_CURVE_H_
+namespace math
+{
 template<typename PT, typename T>
-class BezierCubicCurve{
-public:
-
-	BezierCubicCurve(const PT &p0_, const PT &p1_, const PT &p2_, const PT &p3_):p0(p0_),p1(p1_),p2(p2_),p3(p3_){
+struct BezierCubicCurve
+{
+	BezierCubicCurve(const PT &p0_, const PT &p1_, const PT &p2_, const PT &p3_):
+		p0(p0_),
+		p1(p1_),
+		p2(p2_),
+		p3(p3_)
+	{
 	};
-
-	PT operator() (const T &t){
-		T t2 = 1-t;
-		return p0*(t2*t2*t2) + p1*(3*(t2*t2)*t) + p2*(3*t2*t*t) + p3*(t*t*t);
+	PT operator() (const T &t)
+	{
+		T t2 = 1 - t;
+		return p0 * (t2 * t2 * t2) + p1 * (3 * (t2 * t2) * t) + p2 * (3 * t2 * t * t) + p3 * (t * t * t);
 	};
-
-	BezierCubicCurve& operator= (const BezierCubicCurve& curve){
+	BezierCubicCurve& operator= (const BezierCubicCurve& curve)
+	{
 		p0 = curve.p0;
 		p1 = curve.p1;
 		p2 = curve.p2;
 		p3 = curve.p3;
 		return *this;
 	};
-
 	PT p0;
 	PT p1;
 	PT p2;
 	PT p3;
 };
-
-
 }
-
-#endif /* BEZIERCUBICCURVE_H_ */
+#endif /* GPICK_BEZIER_CUBIC_CURVE_H_ */

@@ -29,7 +29,7 @@
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "Random.h"
 #include <math.h>
 #include <sstream>
@@ -59,7 +59,7 @@ typedef struct ColorWheelType
 	void (*rgbhue_to_hue)(double rgbhue, double *hue);
 }ColorWheelType;
 
-class GenerateColorNameAssigner: public ToolColorNameAssigner
+struct GenerateColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

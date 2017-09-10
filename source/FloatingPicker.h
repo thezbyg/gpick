@@ -22,7 +22,7 @@
 struct Color;
 #include <functional>
 
-class GlobalState;
+struct GlobalState;
 struct ColorSource;
 typedef struct FloatingPickerArgs* FloatingPicker;
 FloatingPicker floating_picker_new(GlobalState *gs);

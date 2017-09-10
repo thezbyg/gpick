@@ -32,10 +32,11 @@
 #include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
+#include "layout/Layouts.h"
 #include "layout/Style.h"
 #include "StandardMenu.h"
 #include <gdk/gdkkeysyms.h>
@@ -55,12 +56,11 @@ typedef struct BrightnessDarknessArgs{
 	GtkWidget *brightness_darkness;
 	GtkWidget *layout_view;
 	System* layout_system;
-	Layouts* layouts;
 	struct dynvSystem *params;
 	GlobalState* gs;
 }BrightnessDarknessArgs;
 
-class BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
+struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;
@@ -129,7 +129,7 @@ static int source_get_color(BrightnessDarknessArgs *args, ColorObject** color)
 		}
 		*color = color_list_new_color_object(args->gs->getColorList(), &c);
 		BrightnessDarknessColorNameAssigner name_assigner(args->gs);
-		name_assigner.assign(*color, &c, style->human_name.c_str());
+		name_assigner.assign(*color, &c, style->label.c_str());
 		return 0;
 	}
 	return -1;
@@ -202,7 +202,7 @@ static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *arg
 	BrightnessDarknessColorNameAssigner name_assigner(args->gs);
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
 		color_object = color_list_new_color_object(args->gs->getColorList(), &(*i)->color);
-		name_assigner.assign(color_object, &(*i)->color, (*i)->human_name.c_str());
+		name_assigner.assign(color_object, &(*i)->color, (*i)->label.c_str());
 		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 		color_object->release();
 	}
@@ -296,8 +296,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
-	auto layouts = gs->getLayouts();
-	args->layouts = layouts;
 	args->layout_system = 0;
 	GtkWidget *hbox, *widget;
 	hbox = gtk_hbox_new(FALSE, 0);
@@ -323,7 +321,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	args->gs = gs;
-	System* layout_system = layouts_get(args->layouts, "std_layout_brightness_darkness");
+	auto layout = gs->layouts().byName("std_layout_brightness_darkness");
+	System* layout_system = layout->build();
 	gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout_view), layout_system);
 	if (args->layout_system) System::unref(args->layout_system);
 	args->layout_system = layout_system;

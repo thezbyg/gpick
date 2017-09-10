@@ -24,9 +24,10 @@
 #include "CopyPaste.h"
 #include "Clipboard.h"
 #include "StandardMenu.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
@@ -36,6 +37,7 @@
 #include <gdk/gdkkeysyms.h>
 #include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
+#include "layout/Layouts.h"
 #include "layout/Style.h"
 #include <math.h>
 #include <sstream>
@@ -48,16 +50,16 @@ using namespace layout;
 typedef struct LayoutPreviewArgs{
 	ColorSource source;
 	GtkWidget *main;
-	GtkWidget* statusbar;
+	GtkWidget *statusbar;
 	GtkWidget *layout;
-	System* layout_system;
-	Layouts* layouts;
+	System *layout_system;
 	string last_filename;
 	struct dynvSystem *params;
 	GlobalState *gs;
 }LayoutPreviewArgs;
 
-class LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
+struct LayoutPreviewColorNameAssigner: public ToolColorNameAssigner
+{
 	protected:
 		stringstream m_stream;
 		const char *m_ident;
@@ -76,13 +78,13 @@ class LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
 };
 
 typedef enum{
-	LAYOUTLIST_HUMAN_NAME = 0,
+	LAYOUTLIST_LABEL = 0,
 	LAYOUTLIST_PTR,
 	LAYOUTLIST_N_COLUMNS
 }LayoutListColumns;
 
 typedef enum{
-	STYLELIST_HUMAN_NAME = 0,
+	STYLELIST_LABEL = 0,
 	STYLELIST_CSS_SELECTOR,
 	STYLELIST_PTR,
 	STYLELIST_N_COLUMNS
@@ -138,7 +140,7 @@ static GtkWidget* style_list_new(LayoutPreviewArgs *args)
 	gtk_tree_view_column_set_title(col, _("Style item"));
 	renderer = gtk_cell_renderer_text_new();
 	gtk_tree_view_column_pack_start(col, renderer, true);
-	gtk_tree_view_column_add_attribute(col, renderer, "text", STYLELIST_HUMAN_NAME);
+	gtk_tree_view_column_add_attribute(col, renderer, "text", STYLELIST_LABEL);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
 	col = gtk_tree_view_column_new();
@@ -192,7 +194,7 @@ static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,
-			STYLELIST_HUMAN_NAME, (*i)->human_name.c_str(),
+			STYLELIST_LABEL, (*i)->label.c_str(),
 			STYLELIST_CSS_SELECTOR, css_selector,
 			STYLELIST_PTR, (*i),
 		-1);
@@ -298,7 +300,7 @@ static GtkWidget* layout_preview_dropdown_new(LayoutPreviewArgs *args, GtkTreeMo
 	}
 	renderer = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start (GTK_CELL_LAYOUT (combo), renderer, true);
-	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", LAYOUTLIST_HUMAN_NAME, nullptr);
+	gtk_cell_layout_set_attributes (GTK_CELL_LAYOUT (combo), renderer, "text", LAYOUTLIST_LABEL, nullptr);
 	if (store) g_object_unref (store);
 	return combo;
 }
@@ -398,52 +400,37 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		if (copypaste_is_color_object_available(args->gs) != 0){
 			gtk_widget_set_sensitive(item, false);
 		}
-
 		gtk_widget_show_all (GTK_WIDGET(menu));
-
 		button = event->button;
 		event_time = event->time;
-
 		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-
 		g_object_ref_sink(menu);
 		g_object_unref(menu);
-
 		return TRUE;
 	}
 	return FALSE;
 }
-
 static void layout_changed_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 {
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)){
 		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
-
 		Layout* layout;
 		gtk_tree_model_get(model, &iter, LAYOUTLIST_PTR, &layout, -1);
-
 		save_colors(args);
-
-		System* layout_system = layouts_get(args->layouts, layout->name);
+		System* layout_system = layout->build();
 		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout), layout_system);
 		if (args->layout_system) System::unref(args->layout_system);
 		args->layout_system = layout_system;
-
-		dynv_set_string(args->params, "layout_name", layout->name);
-
+		dynv_set_string(args->params, "layout_name", layout->name().c_str());
 		load_colors(args);
 	}
 }
-
-
 static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 {
 	ofstream file(filename, ios::out);
 	if (file.is_open()){
-		auto converters = args->gs->getConverters();
-		Converter *converter = converters_get_first(converters, ConverterArrayType::copy);
-
+		auto converter = args->gs->converters().firstCopy();
 		ColorObject *co_color, *co_background_color;
 		Color t;
 		co_color = color_list_new_color_object(args->gs->getColorList(), &t);
@@ -455,8 +442,7 @@ static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 			const char *css_selector = dynv_get_string_wd(assignments_params, ident_selector.c_str(), (*i)->ident_name.c_str());
 			if (css_selector[0] != 0){
 				co_color->setColor((*i)->color);
-				string text;
-				converter_get_text(co_color, converter, args->gs, text);
+				string text = converter->serialize(co_color);
 				file << css_selector << " {" << endl;
 				if ((*i)->style_type == Style::TYPE_BACKGROUND){
 					file << "\tbackground-color: " << text << ";" << endl;
@@ -565,135 +551,95 @@ static int source_activate(LayoutPreviewArgs *args)
 	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
 	return 0;
 }
-
 static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struct dynvSystem *dynv_namespace)
 {
 	LayoutPreviewArgs* args = new LayoutPreviewArgs;
 	args->params = dynv_system_ref(dynv_namespace);
 	args->statusbar = gs->getStatusBar();
 	args->layout_system = 0;
-
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
-
-	auto layouts = gs->getLayouts();
-	args->layouts = layouts;
-
 	GtkWidget *table, *vbox, *hbox;
-
 	vbox = gtk_vbox_new(false, 10);
 	hbox = gtk_hbox_new(false, 10);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 5);
-
 	gint table_y;
 	table = gtk_table_new(4, 4, false);
 	gtk_box_pack_start(GTK_BOX(hbox), table, true, true, 5);
 	table_y = 0;
-
 	GtkToolItem *tool;
-
 	GtkWidget *toolbar = gtk_toolbar_new();
 	gtk_table_attach(GTK_TABLE(table), toolbar, 0, 3, table_y, table_y+1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
 	table_y++;
-
 	tool = gtk_tool_item_new();
 	gtk_tool_item_set_expand(tool, true);
 	GtkWidget *layout_dropdown = layout_preview_dropdown_new(args, 0);
 	gtk_container_add(GTK_CONTAINER(tool), attach_label(layout_dropdown, _("Layout:")));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
 	g_signal_connect (G_OBJECT(layout_dropdown), "changed", G_CALLBACK(layout_changed_cb), args);
-
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
-
 	tool = gtk_menu_tool_button_new(gtk_image_new_from_stock(GTK_STOCK_SAVE, GTK_ICON_SIZE_BUTTON), _("Export CSS File"));
 	gtk_tool_item_set_tooltip_text(tool, _("Export CSS file"));
 	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(export_css_cb), args);
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
-
 	GtkWidget *menu;
 	GtkWidget* item;
-
 	menu = gtk_menu_new ();
-
 	item = gtk_menu_item_new_with_image(_("_Export CSS File As..."), gtk_image_new_from_stock(GTK_STOCK_SAVE_AS, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (export_css_as_cb), args);
-
 	item = gtk_menu_item_new_with_mnemonic(_("_Assign CSS Selectors..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (assign_css_selectors_cb), args);
-
 	gtk_widget_show_all(menu);
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(tool), menu);
-
 	GtkWidget *scrolled = gtk_scrolled_window_new(0, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_table_attach(GTK_TABLE(table), scrolled, 0, 3, table_y, table_y+1 ,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GtkAttachOptions(GTK_FILL | GTK_EXPAND),0,0);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), args->layout = gtk_layout_preview_new());
 	g_signal_connect_after(G_OBJECT(args->layout), "button-press-event", G_CALLBACK(button_press_cb), args);
 	table_y++;
-
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
-
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
 	dd.test_at = test_at;
 	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
-
 	gtk_drag_dest_set(args->layout, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set(args->layout, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 	dragdrop_widget_attach(args->layout, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-
 	args->gs = gs;
-
-
-
 	// Restore settings and fill list
 	const char* layout_name = dynv_get_string_wd(args->params, "layout_name", "std_layout_menu_1");
-
 	GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(layout_dropdown));
-	size_t n_layouts;
-	Layout** layout_table = layouts_get_all(layouts, &n_layouts);
 	GtkTreeIter iter1;
 	bool layout_found = false;
-
-	for (size_t i = 0; i != n_layouts; ++i){
-		if (layout_table[i]->mask != 0) continue;
-
+	for (auto &layout: gs->layouts().all()){
+		if (layout->mask() != 0)
+			continue;
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
-
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,
-			LAYOUTLIST_HUMAN_NAME, layout_table[i]->human_readable,
-			LAYOUTLIST_PTR, layout_table[i],
+			LAYOUTLIST_LABEL, layout->label().c_str(),
+			LAYOUTLIST_PTR, layout,
 		-1);
-
-		if (g_strcmp0(layout_name, layout_table[i]->name) == 0){
+		if (layout->name() == layout_name){
 			gtk_combo_box_set_active_iter(GTK_COMBO_BOX(layout_dropdown), &iter1);
 			layout_found = true;
 		}
 	}
-
 	if (!layout_found){
 		gtk_combo_box_set_active(GTK_COMBO_BOX(layout_dropdown), 0);
 	}
-
-
 	gtk_widget_show_all(vbox);
-
-	//update(0, args);
-
 	args->main = vbox;
 	args->source.widget =vbox;
-
 	return (ColorSource*)args;
 }
-
 int layout_preview_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;

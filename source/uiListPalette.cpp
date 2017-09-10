@@ -24,11 +24,12 @@
 #include "ColorSource.h"
 #include "DragDrop.h"
 #include "GlobalState.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
 #include "DynvHelpers.h"
 #include "Vector2.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <boost/format.hpp>
 #include <sstream>
 #include <iostream>
@@ -199,14 +200,12 @@ static void palette_list_vertical_autoscroll(GtkTreeView *treeview)
 
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	string text;
-	converter_get_text(color_object, ConverterArrayType::color_list, args->gs, text);
+	string text = args->gs->converters().serialize(color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 0, color_object->reference(), 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_row(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	string text;
-	converter_get_text(color_object, ConverterArrayType::color_list, args->gs, text);
+	string text = args->gs->converters().serialize(color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_name(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object)

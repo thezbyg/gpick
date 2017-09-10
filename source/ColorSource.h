@@ -18,11 +18,9 @@
 
 #ifndef GPICK_COLOR_SOURCE_H_
 #define GPICK_COLOR_SOURCE_H_
-
 #include <gtk/gtk.h>
-
-class GlobalState;
-class ColorObject;
+struct GlobalState;
+struct ColorObject;
 struct ColorSourceSlot{
 	const char *identificator;
 	const char *hr_name;
@@ -32,8 +30,7 @@ struct ColorSourceSlot{
 		bool write;
 	}supports;
 };
-
-typedef struct ColorSource{
+struct ColorSource{
 	char *identificator;
 	char *hr_name;
 	int (*set_color)(ColorSource *source, ColorObject *color);
@@ -51,8 +48,7 @@ typedef struct ColorSource{
 	int default_accelerator;
 	GtkWidget *widget;
 	void* userdata;
-}ColorSource;
-
+};
 int color_source_init(ColorSource* source, const char *identificator, const char *name);
 int color_source_activate(ColorSource *source);
 int color_source_deactivate(ColorSource *source);
@@ -64,5 +60,4 @@ int color_source_get_default_accelerator(ColorSource *source);
 ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
 GtkWidget* color_source_get_widget(ColorSource* source);
 int color_source_destroy(ColorSource* source);
-
 #endif /* GPICK_COLOR_SOURCE_H_ */

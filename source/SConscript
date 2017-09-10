@@ -1,10 +1,6 @@
 #!/usr/bin/env python
-
-import os
-import sys
-
+import os, sys
 from tools.gpick import *
-
 Import('*')
 local_env = env.Clone()
 
@@ -23,20 +19,21 @@ local_env.Append(
 sources = local_env.Glob('*.cpp') + local_env.Glob('transformation/*.cpp')
 
 objects = []
-objects.append(SConscript(['version/SConscript'], exports='env'))
-objects.append(SConscript(['gtk/SConscript'], exports='env'))
-objects.append(SConscript(['layout/SConscript'], exports='env'))
-objects.append(SConscript(['internationalisation/SConscript'], exports='env'))
-objects.append(SConscript(['dbus/SConscript'], exports='env'))
-objects.append(SConscript(['tools/SConscript'], exports='env'))
+objects += SConscript(['version/SConscript'], exports='env')
+objects += SConscript(['gtk/SConscript'], exports='env')
+objects += SConscript(['layout/SConscript'], exports='env')
+objects += SConscript(['i18n/SConscript'], exports='env')
+objects += SConscript(['dbus/SConscript'], exports='env')
+objects += SConscript(['tools/SConscript'], exports='env')
+objects += SConscript(['lua/SConscript'], exports='env')
 
 if env['EXPERIMENTAL_CSS_PARSER']:
 	parser_objects, generated_files = SConscript(['cssparser/SConscript'], exports='env')
-	objects.append(parser_objects)
+	objects += parser_objects
 else:
 	generated_files = []
 
-objects.append(SConscript(['color_names/SConscript'], exports='env'))
+objects += SConscript(['color_names/SConscript'], exports='env')
 
 if env['TOOLCHAIN'] == 'msvc':
 	local_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'expat2.1', 'pango-1.0', 'pangocairo-1.0', 'intl'])
@@ -49,7 +46,7 @@ if local_env['BUILD_TARGET'] == 'win32':
 		local_env.Append(LIBS=['expat'])
 	else:
 		local_env.Append(LINKFLAGS = ['/SUBSYSTEM:WINDOWS', '/ENTRY:mainCRTStartup'], CPPDEFINES = ['XML_STATIC'])
-	objects.append(SConscript(['winres/SConscript'], exports='env'))
+	objects += SConscript(['winres/SConscript'], exports='env')
 elif local_env['BUILD_TARGET'] == 'linux2':
 	local_env.Append(LIBS=['rt', 'expat'])
 elif local_env['BUILD_TARGET'].startswith('gnu0'):
@@ -60,16 +57,20 @@ elif local_env['BUILD_TARGET'].startswith('gnukfreebsd'):
 local_env.Append(CPPPATH=['#source'])
 
 text_file_parser_objects = local_env.StaticObject(source = ['parser/TextFile.cpp', local_env.Ragel('parser/TextFileParser.rl')])
-objects.append(text_file_parser_objects)
+objects += text_file_parser_objects
 
 dynv_objects = local_env.StaticObject(source = local_env.Glob('dynv/*.cpp'))
-objects.append(dynv_objects)
+objects += dynv_objects
 
 gpick_objects = local_env.StaticObject(source = sources)
-gpick_object_map = {}
-for obj in gpick_objects:
-	gpick_object_map[os.path.splitext(obj.name)[0]] = obj
-objects.append(gpick_objects)
+objects += gpick_objects
+
+object_map = {}
+for obj in objects:
+	if str(obj.dir) == '.':
+		object_map[os.path.splitext(obj.name)[0]] = obj
+	else:
+		object_map[str(obj.dir) + '/' + os.path.splitext(obj.name)[0]] = obj
 
 executable = local_env.Program('gpick', source = [objects])
 
@@ -77,8 +78,9 @@ test_env = local_env.Clone()
 test_env.Append(LIBS = ['boost_unit_test_framework'])
 
 test_dynv = test_env.Program('test_dynv', source = ['test/DynvTest.cpp', dynv_objects])
-test_text_file = test_env.Program('test_text_file', source = ['test/TextFileTest.cpp', text_file_parser_objects, gpick_object_map['Color'], gpick_object_map['MathUtil']])
-tests = [test_dynv, test_text_file]
+test_text_file = test_env.Program('test_text_file', source = ['test/TextFileTest.cpp', text_file_parser_objects, object_map['Color'], object_map['MathUtil']])
+test_lua_script = test_env.Program('test_lua_script', source = ['test/ScriptTest.cpp', object_map['lua/Script']])
+tests = [test_dynv, test_text_file, test_lua_script]
 
 Return('executable', 'tests', 'generated_files')
 

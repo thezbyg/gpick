@@ -26,7 +26,7 @@
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
@@ -43,7 +43,7 @@ typedef struct DialogMixArgs{
 	GlobalState* gs;
 }DialogMixArgs;
 
-class MixColorNameAssigner: public ToolColorNameAssigner
+struct MixColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

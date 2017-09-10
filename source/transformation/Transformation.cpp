@@ -17,48 +17,37 @@
  */
 
 #include "Transformation.h"
-
-namespace transformation {
-
+namespace transformation
+{
 Transformation::Transformation(const char *name_, const char *readable_name_)
 {
 	name = name_;
 	readable_name = readable_name_;
 }
-
 Transformation::~Transformation()
 {
-
 }
-
 void Transformation::apply(Color *input, Color *output)
 {
 	color_copy(input, output);
 }
-
 std::string Transformation::getName() const
 {
 	return name;
 }
-
 std::string Transformation::getReadableName() const
 {
 	return readable_name;
 }
-
 void Transformation::serialize(struct dynvSystem *dynv)
 {
 	dynv_set_string(dynv, "name", name.c_str());
 }
-
 void Transformation::deserialize(struct dynvSystem *dynv)
 {
-
 }
-
 boost::shared_ptr<Configuration> Transformation::getConfig()
 {
 	return boost::shared_ptr<Configuration>();
 }
-
 }

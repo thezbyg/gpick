@@ -18,44 +18,40 @@
 
 #ifndef GPICK_COLOR_OBJECT_H_
 #define GPICK_COLOR_OBJECT_H_
-
-class ColorObject;
 #include "Color.h"
 #include <string>
-
-class ColorObject
+struct ColorObject
 {
-	public:
-		ColorObject();
-		ColorObject(const char *name, const Color &color);
-		ColorObject(const std::string &name, const Color &color);
-		ColorObject *reference();
-		void release();
-		const Color &getColor() const;
-		void setColor(const Color &color);
-		const std::string &getName() const;
-		void setName(const std::string &name);
-		ColorObject* copy() const;
-		bool isSelected() const;
-		bool isVisited() const;
-		size_t getPosition() const;
-		bool isPositionSet() const;
-		void setPosition(size_t position);
-		void resetPosition();
-		void setSelected(bool selected);
-		void setVisited(bool visited);
-		size_t getReferenceCount() const;
-		void setVisible(bool visible);
-		bool isVisible() const;
+	ColorObject();
+	ColorObject(const char *name, const Color &color);
+	ColorObject(const std::string &name, const Color &color);
+	ColorObject *reference();
+	void release();
+	const Color &getColor() const;
+	void setColor(const Color &color);
+	const std::string &getName() const;
+	void setName(const std::string &name);
+	ColorObject* copy() const;
+	bool isSelected() const;
+	bool isVisited() const;
+	size_t getPosition() const;
+	bool isPositionSet() const;
+	void setPosition(size_t position);
+	void resetPosition();
+	void setSelected(bool selected);
+	void setVisited(bool visited);
+	size_t getReferenceCount() const;
+	void setVisible(bool visible);
+	bool isVisible() const;
 	private:
-		size_t m_refcnt;
-		std::string m_name;
-		Color m_color;
-		size_t m_position;
-		bool m_position_set;
-		bool m_selected;
-		bool m_visited;
-		bool m_visible;
+	size_t m_refcnt;
+	std::string m_name;
+	Color m_color;
+	size_t m_position;
+	bool m_position_set;
+	bool m_selected;
+	bool m_visited;
+	bool m_visible;
 };
 
 #endif /* GPICK_COLOR_OBJECT_H_ */

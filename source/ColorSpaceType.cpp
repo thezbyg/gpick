@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,8 +17,11 @@
  */
 
 #include "ColorSpaceType.h"
-#include "Internationalisation.h"
-#include "LuaExt.h"
+#include "I18N.h"
+#include "GlobalState.h"
+#include "lua/Color.h"
+#include "lua/Script.h"
+#include "lua/Callbacks.h"
 extern "C"{
 #include <lua.h>
 }
@@ -70,7 +73,7 @@ const ColorSpaceType color_space_types[] = {
 		}
 	},
 };
-const ColorSpaceType* color_space_get_types()
+const ColorSpaceType *color_space_get_types()
 {
 	return color_space_types;
 }
@@ -78,42 +81,35 @@ size_t color_space_count_types()
 {
 	return sizeof(color_space_types) / sizeof(ColorSpaceType);
 }
-std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua_State* L)
+std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua::Script &script, GlobalState *gs)
 {
 	list<string> result;
-	int status;
+	if (!gs->callbacks().componentToText().valid())
+		return result;
+	lua_State *L = script;
 	int stack_top = lua_gettop(L);
-	lua_getglobal(L, "gpick");
-	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1) != LUA_TNIL){
-		lua_pushstring(L, "component_to_text");
-		lua_gettable(L, gpick_namespace);
-		if (lua_type(L, -1) != LUA_TNIL){
-			lua_pushstring(L, type);
-			lua_pushcolor(L, color);
-			status = lua_pcall(L, 2, 1, 0);
-			if (status == 0){
-				if (lua_type(L, -1) == LUA_TTABLE){
-					for (int i = 0; i < 4; i++){
-						lua_pushinteger(L, i + 1);
-						lua_gettable(L, -2);
-						if (lua_type(L, -1) == LUA_TSTRING){
-							const char* converted = lua_tostring(L, -1);
-							result.push_back(string(converted));
-						}
-						lua_pop(L, 1);
-					}
-					lua_settop(L, stack_top);
-					return result;
-				}else{
-					cerr << "gpick.component_to_text: returned not a table value, type is \"" << type << "\"" << endl;
+	gs->callbacks().componentToText().get();
+	lua_pushstring(L, type);
+	lua::pushColor(L, *color);
+	int status = lua_pcall(L, 2, 1, 0);
+	if (status == 0){
+		if (lua_type(L, -1) == LUA_TTABLE){
+			for (int i = 0; i < 4; i++){
+				lua_pushinteger(L, i + 1);
+				lua_gettable(L, -2);
+				if (lua_type(L, -1) == LUA_TSTRING){
+					const char* converted = lua_tostring(L, -1);
+					result.push_back(string(converted));
 				}
-			}else{
-				cerr << "gpick.component_to_text: " << lua_tostring (L, -1) << endl;
+				lua_pop(L, 1);
 			}
+			lua_settop(L, stack_top);
+			return result;
 		}else{
-			cerr << "gpick.component_to_text: no such function" << endl;
+			cerr << "componentToText: returned not a table value, type is \"" << type << "\"" << endl;
 		}
+	}else{
+		cerr << "componentToText: " << lua_tostring(L, -1) << endl;
 	}
 	lua_settop(L, stack_top);
 	return result;

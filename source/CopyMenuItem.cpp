@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,6 +19,7 @@
 #include "CopyMenuItem.h"
 #include "ColorObject.h"
 #include "ColorList.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
 #include "DynvHelpers.h"
@@ -33,80 +34,75 @@ static PaletteListCallbackReturn addToColorList(ColorObject* color_object, Color
 	color_list_add_color_object(color_list, color_object, 1);
 	return PALETTE_LIST_CALLBACK_NO_UPDATE;
 }
-
-class CopyMenuItemState
+struct CopyMenuItemState
 {
-	public:
-		CopyMenuItemState(Converter *converter, ColorObject *color_object, GlobalState *gs):
-			m_converter(converter),
-			m_color_object(color_object),
-			m_gs(gs),
-			m_palette_widget(nullptr)
-		{
-		}
-		~CopyMenuItemState()
-		{
-			m_color_object->release();
-		}
-		void setPaletteWidget(GtkWidget *palette_widget)
-		{
-			m_palette_widget = palette_widget;
-		}
-		static void onRelease(CopyMenuItemState *copy_menu_item)
-		{
-			delete copy_menu_item;
-		}
-		static void onActivate(GtkWidget *widget, CopyMenuItemState *copy_menu_item_state)
-		{
-			string text_line;
-			if (copy_menu_item_state->m_palette_widget){
-				stringstream text(ios::out);
-				ColorList *color_list = color_list_new();
-				palette_list_foreach_selected(copy_menu_item_state->m_palette_widget, (PaletteListCallback)addToColorList, color_list);
-				ConverterSerializePosition position(color_list->colors.size());
-				if (position.count > 0){
-					string text_line;
-					for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-						if (position.index + 1 == position.count)
-							position.last = true;
-						if (converters_color_serialize(copy_menu_item_state->m_converter, *i, position, text_line) == 0){
-							if (position.first){
-								text << text_line;
-								position.first = false;
-							}else{
-								text << endl << text_line;
-							}
-							position.index++;
-						}
+	CopyMenuItemState(Converter *converter, ColorObject *color_object, GlobalState *gs):
+		m_gs(gs),
+		m_converter(converter),
+		m_color_object(color_object),
+		m_palette_widget(nullptr)
+	{
+	}
+	~CopyMenuItemState()
+	{
+		m_color_object->release();
+	}
+	void setPaletteWidget(GtkWidget *palette_widget)
+	{
+		m_palette_widget = palette_widget;
+	}
+	static void onRelease(CopyMenuItemState *copy_menu_item)
+	{
+		delete copy_menu_item;
+	}
+	static void onActivate(GtkWidget *widget, CopyMenuItemState *copy_menu_item_state)
+	{
+		string text_line;
+		if (copy_menu_item_state->m_palette_widget){
+			stringstream text(ios::out);
+			ColorList *color_list = color_list_new();
+			palette_list_foreach_selected(copy_menu_item_state->m_palette_widget, (PaletteListCallback)addToColorList, color_list);
+			ConverterSerializePosition position(color_list->colors.size());
+			if (position.count() > 0){
+				string text_line;
+				for (auto &color: color_list->colors){
+					if (position.index() + 1 == position.count())
+						position.last(true);
+					text_line = copy_menu_item_state->m_converter->serialize(color, position);
+					if (position.first()){
+						text << text_line;
+						position.first(false);
+					}else{
+						text << endl << text_line;
 					}
-				}
-				color_list_destroy(color_list);
-				text_line = text.str();
-				if (text_line.length() > 0){
-					gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text_line.c_str(), -1);
-					gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text_line.c_str(), -1);
-				}
-			}else{
-				ConverterSerializePosition position;
-				if (converters_color_serialize(copy_menu_item_state->m_converter, copy_menu_item_state->m_color_object, position, text_line) == 0){
-					gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text_line.c_str(), -1);
-					gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text_line.c_str(), -1);
+					position.incrementIndex();
 				}
 			}
+			color_list_destroy(color_list);
+			text_line = text.str();
+			if (text_line.length() > 0){
+				gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text_line.c_str(), -1);
+				gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text_line.c_str(), -1);
+			}
+		}else{
+			ConverterSerializePosition position;
+			text_line = copy_menu_item_state->m_converter->serialize(copy_menu_item_state->m_color_object, position);
+			gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text_line.c_str(), -1);
+			gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text_line.c_str(), -1);
 		}
-		Converter *m_converter;
-		ColorObject *m_color_object;
-		GtkWidget *m_palette_widget;
-		GlobalState *m_gs;
+	}
+	GlobalState *m_gs;
+	Converter *m_converter;
+	ColorObject *m_color_object;
+	GtkWidget *m_palette_widget;
 };
 GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GlobalState *gs, bool include_name)
 {
 	GtkWidget* item = nullptr;
-	string text_line;
 	ConverterSerializePosition position;
-	auto converters = gs->getConverters();
-	Converter *converter = converters_get_first(converters, ConverterArrayType::copy);
-	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
+	Converter *converter = gs->converters().firstCopyOrAny();
+	if (converter){
+		string text_line = converter->serialize(color_object, position);
 		if (include_name){
 			text_line += " - ";
 			text_line += color_object->getName();
@@ -115,33 +111,31 @@ GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GlobalState *gs, boo
 		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
 		g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
+	}else{
+		item = gtk_menu_item_new_with_image("-", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
 	}
 	return item;
 }
 GtkWidget* CopyMenuItem::newItem(ColorObject *color_object, Converter *converter, GlobalState *gs)
 {
 	GtkWidget* item = nullptr;
-	string text_line;
 	ConverterSerializePosition position;
-	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
-		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
-		g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
-	}
+	string text_line = converter->serialize(color_object, position);
+	item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
+	g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
 	return item;
 }
 GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GtkWidget *palette_widget, Converter *converter, GlobalState *gs)
 {
 	GtkWidget* item = nullptr;
-	string text_line;
 	ConverterSerializePosition position;
-	if (converters_color_serialize(converter, color_object, position, text_line) == 0){
-		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
-		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
-		copy_menu_item_state->setPaletteWidget(palette_widget);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
-		g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
-	}
+	string text_line = converter->serialize(color_object, position);
+	item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
+	copy_menu_item_state->setPaletteWidget(palette_widget);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
+	g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
 	return item;
 }

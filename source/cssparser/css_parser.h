@@ -30,8 +30,8 @@
 typedef struct parse_parm_s parse_parm;
 namespace css_parser
 {
-class css_file;
-class css_base;
+struct css_file;
+struct css_base;
 }
 
 typedef struct parse_parm_s
@@ -93,7 +93,7 @@ typedef union css_yystype{
 
 namespace css_parser {
 
-class css_base{
+struct css_base{
 public:
 	css_base();
 	void* operator new(size_t num_bytes, parse_parm* parm);
@@ -101,7 +101,7 @@ public:
 	virtual void polymorphic();
 };
 
-class css_property: public css_base{
+struct css_property: public css_base{
 public:
 	const char* name_;
 	std::list<css_base*> values_;
@@ -109,20 +109,20 @@ public:
 	void addValue(css_base* value);
 };
 
-class css_properties: public css_base{
+struct css_properties: public css_base{
 public:
 	std::list<css_property*> properties_;
 	css_properties();
 	void addProperty(css_property* property);
 };
 
-class css_simple_selector: public css_base{
+struct css_simple_selector: public css_base{
 public:
 	const char* name_;
 	css_simple_selector(const char* name);
 };
 
-class css_selector: public css_base{
+struct css_selector: public css_base{
 public:
 	std::list<css_simple_selector*> simple_selectors_;
 	css_selector();
@@ -131,14 +131,14 @@ public:
 	void prependSimpleSelector(css_simple_selector* simple_selector);
 };
 
-class css_selectors: public css_base{
+struct css_selectors: public css_base{
 public:
 	std::list<css_selector*> selectors_;
 	css_selectors();
 	void addSelector(css_selector* selector);
 };
 
-class css_ruleset: public css_base{
+struct css_ruleset: public css_base{
 public:
 	std::list<css_selector*> selectors_;
 	std::list<css_property*> properties_;
@@ -149,14 +149,14 @@ public:
 	void addProperties(css_properties* properties);
 };
 
-class css_file: public css_base{
+struct css_file: public css_base{
 public:
 	std::list<css_ruleset*> rulesets_;
 	css_file();
 	void addRuleset(css_ruleset* ruleset);
 };
 
-class css_function: public css_base{
+struct css_function: public css_base{
 public:
 	const char* name_;
 	std::list<css_base*> arguments_;
@@ -164,26 +164,26 @@ public:
 	void addArgument(css_base* argument);
 };
 
-class css_hex: public css_base{
+struct css_hex: public css_base{
 public:
 	uint32_t value_;
 	css_hex(uint32_t value);
 	css_hex(const char *value);
 };
 
-class css_number: public css_base{
+struct css_number: public css_base{
 public:
 	double value_;
 	css_number(double value);
 };
 
-class css_percentage: public css_base{
+struct css_percentage: public css_base{
 public:
 	double value_;
 	css_percentage(double value);
 };
 
-class css_string: public css_base{
+struct css_string: public css_base{
 public:
 	const char* value_;
 	css_string(const char* value);

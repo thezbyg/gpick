@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,165 +17,49 @@
  */
 
 #include "Layout.h"
-#include "LuaBindings.h"
-#include "../LuaExt.h"
-#include "../DynvHelpers.h"
-#include <string.h>
-#include <stdlib.h>
-#include <fstream>
-#include <string>
-#include <sstream>
-#include <map>
-#include <list>
-#include <vector>
+#include "System.h"
+#include "../lua/Layout.h"
 #include <iostream>
 extern "C"{
-#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 }
 using namespace std;
-
-namespace layout{
-
-class LayoutKeyCompare{
-public:
-	bool operator() (const char* const& x, const char* const& y) const {
-		return strcmp(x,y)<0;
-	};
-};
-
-class Layouts{
-public:
-	typedef std::map<const char*, Layout*, LayoutKeyCompare> LayoutMap;
-	LayoutMap layouts;
-	vector<Layout*> all_layouts;
-	lua_State *L;
-	~Layouts();
-};
-
-Layouts::~Layouts(){
-	Layouts::LayoutMap::iterator i;
-	for (i = layouts.begin(); i != layouts.end(); ++i){
-		g_free(((*i).second)->human_readable);
-		g_free(((*i).second)->name);
-		delete ((*i).second);
-	}
-	layouts.clear();
-}
-
-Layouts* layouts_init(lua_State *lua, dynvSystem* settings)
+namespace layout
 {
-	if (lua == nullptr || settings == nullptr) return nullptr;
-	lua_State* L = lua;
-	Layouts *layouts = new Layouts;
-	layouts->L = L;
+Layout::Layout(const char *name, const char *label, int mask, lua::Ref &&callback):
+	m_name(name),
+	m_label(label),
+	m_mask(mask),
+	m_callback(move(callback))
+{
+}
+const std::string &Layout::name() const
+{
+	return m_name;
+}
+const std::string &Layout::label() const
+{
+	return m_label;
+}
+const int Layout::mask() const
+{
+	return m_mask;
+}
+System *Layout::build()
+{
+	lua_State *L = m_callback.script();
+	m_callback.get();
+	System *system = new System();
+	lua::pushLayoutSystem(L, system);
 	int status;
-	int stack_top = lua_gettop(L);
-	lua_getglobal(L, "gpick");
-	int gpick_namespace = lua_gettop(L);
-	if (lua_type(L, -1) != LUA_TNIL){
-
-		lua_pushstring(L, "layouts");
-		lua_gettable(L, gpick_namespace);
-		int layouts_table = lua_gettop(L);
-
-		lua_pushstring(L, "layouts_get");
-		lua_gettable(L, gpick_namespace);
-		if (lua_type(L, -1) != LUA_TNIL){
-
-			if ((status=lua_pcall(L, 0, 1, 0)) == 0){
-				if (lua_type(L, -1) == LUA_TTABLE){
-					int table_index = lua_gettop(L);
-
-					for (int i=1;;i++){
-						lua_pushinteger(L, i);
-						lua_gettable(L, table_index);
-						if (lua_isnil(L, -1)) break;
-
-						lua_pushstring(L, lua_tostring(L, -1)); //duplicate, because lua_gettable replaces stack top
-						lua_gettable(L, layouts_table);
-
-						lua_pushstring(L, "human_readable");
-						lua_gettable(L, -2);
-
-						lua_pushstring(L, "mask");
-						lua_gettable(L, -3);
-
-						Layout *layout = new Layout;
-						layout->human_readable = g_strdup(lua_tostring(L, -2));
-						layout->name = g_strdup(lua_tostring(L, -4));
-						layout->mask = lua_tointeger(L, -1);
-						layouts->layouts[layout->name] = layout;
-						layouts->all_layouts.push_back(layout);
-						lua_pop(L, 3);
-					}
-				}
-			}else{
-				cerr<<"layouts_get: "<<lua_tostring (L, -1)<<endl;
-			}
-		}
-	}
-	lua_settop(L, stack_top);
-	return layouts;
-}
-
-int layouts_term(Layouts *layouts){
-	delete layouts;
-	return 0;
-}
-
-Layout** layouts_get_all(Layouts *layouts, size_t *size){
-	*size = layouts->all_layouts.size();
-	return &layouts->all_layouts[0];
-}
-
-System* layouts_get(Layouts *layouts, const char* name){
-	Layouts::LayoutMap::iterator i;
-	i=layouts->layouts.find(name);
-	if (i != layouts->layouts.end()){
-		//layout name matched, build layout
-
-		lua_State* L = layouts->L;
-
-		int status;
-		int stack_top = lua_gettop(L);
-		lua_getglobal(L, "gpick");
-		int gpick_namespace = lua_gettop(L);
-		if (lua_type(L, -1) != LUA_TNIL){
-
-			lua_pushstring(L, "layouts");
-			lua_gettable(L, gpick_namespace);
-			int layouts_table = lua_gettop(L);
-
-			lua_pushstring(L, name);
-			lua_gettable(L, layouts_table);
-
-			lua_pushstring(L, "build");
-			lua_gettable(L, -2);
-
-			if (!lua_isnil(L, -1)){
-
-				System *layout_system = new System;
-				lua_pushlsystem(L, layout_system);
-
-				if ((status=lua_pcall(L, 1, 1, 0)) == 0){
-
-					if (!lua_isnil(L, -1)){
-						lua_settop(L, stack_top);
-						return layout_system;
-					}
-
-				}else{
-					cerr<<"layouts.build: "<<lua_tostring (L, -1)<<endl;
-				}
-
-				delete layout_system;
-			}
-		}
-		lua_settop(L, stack_top);
-		return 0;
+	if ((status = lua_pcall(L, 1, 0, 0)) == 0){
+		return system;
 	}else{
-		return 0;
+		cerr << "layout.build: " << lua_tostring(L, -1) << endl;
 	}
+	lua_pop(L, 1);
+	delete system;
+	return nullptr;
 }
-
 }

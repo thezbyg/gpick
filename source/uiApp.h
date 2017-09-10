@@ -18,18 +18,14 @@
 
 #ifndef GPICK_UI_APP_H_
 #define GPICK_UI_APP_H_
-
 #include <string>
 #include <gtk/gtk.h>
-class GlobalState;
-class ColorObject;
-class Converters;
+struct GlobalState;
+struct ColorObject;
+struct Converters;
 struct Color;
-
 int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
-
-typedef struct AppArgs AppArgs;
-
+struct AppArgs;
 struct AppOptions
 {
 	bool floating_picker_mode;
@@ -39,13 +35,10 @@ struct AppOptions
 	bool single_color_pick_mode;
 	bool do_not_start;
 };
-
 void app_initialize();
 AppArgs* app_create_main(const AppOptions &options, int &return_value);
 int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
 int app_run(AppArgs *args);
 int app_parse_geometry(AppArgs *args, const char *geometry);
-
 bool app_is_autoload_enabled(AppArgs *args);
-
 #endif /* GPICK_UI_APP_H_ */

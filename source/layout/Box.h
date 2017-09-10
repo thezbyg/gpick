@@ -16,66 +16,52 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_BOX_H_
-#define LAYOUT_BOX_H_
-
+#ifndef GPICK_LAYOUT_BOX_H_
+#define GPICK_LAYOUT_BOX_H_
 #include "../Color.h"
 #include "../Rect2.h"
 #include "../Vector2.h"
-
 #include "ReferenceCounter.h"
 #include "Style.h"
 #include "Context.h"
-
 #include <gtk/gtk.h>
-
 #include <string>
 #include <list>
-
-namespace layout{
-
-class Box: public ReferenceCounter{
-public:
+namespace layout
+{
+struct Box: public ReferenceCounter
+{
+	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect);
+	void DrawChildren(Context *context, const math::Rect2<float>& parent_rect);
+	void AddChild(Box* box);
+	void SetStyle(Style *style);
+	Box* GetBoxAt(const math::Vec2<float>& point);
+	Box* GetNamedBox(const char *name);
+	Box(const char* name, float x, float y, float width, float height);
+	virtual ~Box();
 	std::string name;
 	Style *style;
 	bool helper_only;
 	bool locked;
-
 	math::Rect2<float> rect;
-
 	std::list<Box*> child;
-	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	void DrawChildren(Context *context, const math::Rect2<float>& parent_rect );
-	void AddChild(Box* box);
-
-	void SetStyle(Style *style);
-
-	Box* GetBoxAt(const math::Vec2<float>& point);
-	Box* GetNamedBox(const char *name);
-
-	Box(const char* name, float x, float y, float width, float height);
-	virtual ~Box();
-
 };
-
-class Text:public Box{
-public:
+struct Text: public Box
+{
+	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
+	Text(const char* name, float x, float y, float width, float height):
+		Box(name,x,y,width,height)
+	{
+	};
 	std::string text;
-
+};
+struct Fill: public Box
+{
 	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	Text(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
+	Fill(const char* name, float x, float y, float width, float height):
+		Box(name,x,y,width,height)
+	{
 	};
 };
-
-class Fill:public Box{
-public:
-	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	Fill(const char* name, float x, float y, float width, float height):Box(name,x,y,width,height){
-	};
-};
-
-
-
 }
-
-#endif /* LAYOUT_BOX_H_ */
+#endif /* GPICK_LAYOUT_BOX_H_ */

@@ -23,44 +23,47 @@
 struct ColorNames;
 struct Sampler;
 struct ScreenReader;
-class ColorList;
+struct ColorList;
 struct dynvSystem;
-struct lua_State;
 struct Random;
-class Converters;
+struct Converters;
 struct ColorSource;
 typedef struct _GtkWidget GtkWidget;
 namespace layout {
-	class Layouts;
+	struct Layouts;
 }
 namespace transformation {
-	class Chain;
+	struct Chain;
 }
-class GlobalState
+namespace lua {
+	struct Script;
+	struct Callbacks;
+}
+struct GlobalState
 {
-	public:
-		GlobalState();
-		~GlobalState();
-		bool loadSettings();
-		bool loadAll();
-		bool writeSettings();
-		ColorNames *getColorNames();
-		Sampler *getSampler();
-		ScreenReader *getScreenReader();
-		ColorList *getColorList();
-		dynvSystem *getSettings();
-		lua_State *getLua();
-		Random *getRandom();
-		Converters *getConverters();
-		layout::Layouts *getLayouts();
-		transformation::Chain *getTransformationChain();
-		GtkWidget *getStatusBar();
-		void setStatusBar(GtkWidget *status_bar);
-		ColorSource *getCurrentColorSource();
-		void setCurrentColorSource(ColorSource *color_source);
+	GlobalState();
+	~GlobalState();
+	bool loadSettings();
+	bool loadAll();
+	bool writeSettings();
+	ColorNames *getColorNames();
+	Sampler *getSampler();
+	ScreenReader *getScreenReader();
+	ColorList *getColorList();
+	dynvSystem *getSettings();
+	lua::Script &script();
+	lua::Callbacks &callbacks();
+	Converters &converters();
+	Random *getRandom();
+	layout::Layouts &layouts();
+	transformation::Chain *getTransformationChain();
+	GtkWidget *getStatusBar();
+	void setStatusBar(GtkWidget *status_bar);
+	ColorSource *getCurrentColorSource();
+	void setCurrentColorSource(ColorSource *color_source);
 	private:
-		class Impl;
-		std::unique_ptr<Impl> m_impl;
+	struct Impl;
+	std::unique_ptr<Impl> m_impl;
 };
 
 #endif /* GPICK_GLOBAL_STATE_H_ */

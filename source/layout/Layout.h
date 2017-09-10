@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,26 +18,25 @@
 
 #ifndef GPICK_LAYOUT_LAYOUT_H_
 #define GPICK_LAYOUT_LAYOUT_H_
-
-struct dynvSystem;
-struct lua_State;
-#include <cstddef>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <stdint.h>
-namespace layout{
-class Layouts;
-class System;
-typedef struct Layout{
-	char* name;
-	char* human_readable;
-	uint32_t mask;
-}Layout;
-Layouts* layouts_init(lua_State *lua, dynvSystem* params);
-int layouts_term(Layouts *layouts);
-Layout** layouts_get_all(Layouts *layouts, size_t *size);
-System* layouts_get(Layouts *layouts, const char* name);
+#include "../lua/Ref.h"
+#include <string>
+#include <map>
+#include <vector>
+namespace layout
+{
+struct System;
+struct Layout
+{
+	Layout(const char *name, const char *label, int mask, lua::Ref &&callback);
+	const std::string &name() const;
+	const std::string &label() const;
+	const int mask() const;
+	System *build();
+	private:
+	std::string m_name;
+	std::string m_label;
+	int m_mask;
+	lua::Ref m_callback;
+};
 }
-
 #endif /* GPICK_LAYOUT_LAYOUT_H_ */

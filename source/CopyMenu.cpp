@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,32 +17,24 @@
  */
 
 #include "CopyMenu.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
 #include "CopyMenuItem.h"
-
 GtkWidget* CopyMenu::newMenu(ColorObject *color_object, GtkWidget *palette_widget, GlobalState *gs)
 {
-	auto converters = gs->getConverters();
-	GtkWidget *menu;
-	menu = gtk_menu_new();
-	size_t converter_table_size = 0;
-	Converter** converter_table = converters_get_all_type(converters, ConverterArrayType::copy, &converter_table_size);
-	for (size_t i = 0; i < converter_table_size; ++i){
-		GtkWidget* item = CopyMenuItem::newItem(color_object, palette_widget, converter_table[i], gs);
+	GtkWidget *menu = gtk_menu_new();
+	for (auto &converter: gs->converters().allCopy()){
+		GtkWidget *item = CopyMenuItem::newItem(color_object, palette_widget, converter, gs);
 		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	}
 	return menu;
 }
 GtkWidget* CopyMenu::newMenu(ColorObject *color_object, GlobalState *gs)
 {
-	auto converters = gs->getConverters();
-	GtkWidget *menu;
-	menu = gtk_menu_new();
-	size_t converter_table_size = 0;
-	Converter** converter_table = converters_get_all_type(converters, ConverterArrayType::copy, &converter_table_size);
-	for (size_t i = 0; i < converter_table_size; ++i){
-		GtkWidget* item = CopyMenuItem::newItem(color_object, converter_table[i], gs);
+	GtkWidget *menu = gtk_menu_new();
+	for (auto &converter: gs->converters().allCopy()){
+		GtkWidget *item = CopyMenuItem::newItem(color_object, converter, gs);
 		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	}
 	return menu;

@@ -18,7 +18,6 @@
 
 #ifndef TRANSFORMATION_H_
 #define TRANSFORMATION_H_
-
 #include "../Color.h"
 #include "Configuration.h"
 #include "../DynvHelpers.h"
@@ -26,15 +25,15 @@
 #include <boost/shared_ptr.hpp>
 
 /** \file source/transformation/Transformation.h
- * \brief Color transformation class.
+ * \brief Color transformation struct.
  */
-
-namespace transformation {
-
-/** \class Transformation
- * \brief Transformation object class.
+namespace transformation
+{
+/** \struct Transformation
+ * \brief Transformation object struct.
  */
-class Transformation{
+struct Transformation
+{
 	protected:
 		std::string name; /**< System name */
 		std::string readable_name; /**< Human readable name */
@@ -88,9 +87,7 @@ class Transformation{
 		 */
 		std::string getReadableName() const;
 
-		friend class Chain;
+	friend struct Chain;
 };
-
 }
-
 #endif /* TRANSFORMATION_H_ */

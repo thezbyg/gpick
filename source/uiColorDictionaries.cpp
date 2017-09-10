@@ -21,7 +21,7 @@
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "color_names/ColorNames.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <list>
 #include <string>
 #include <vector>

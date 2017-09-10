@@ -20,9 +20,10 @@
 #include "ColorObject.h"
 #include "ColorList.h"
 #include "FileFormat.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "Endian.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "StringUtils.h"
 #include "HtmlUtils.h"
 #include "GlobalState.h"
@@ -254,21 +255,16 @@ bool ImportExport::exportTXT()
 	}
 	vector<ColorObject*> ordered;
 	getOrderedColors(m_color_list, ordered);
-	ConverterSerializePosition position;
-	position.index = 0;
-	position.count = ordered.size();
-	position.first = true;
-	position.last = position.count <= 1;
+	ConverterSerializePosition position(ordered.size());
 	for (auto color: ordered){
-		string line;
-		converters_color_serialize(m_converter, color, position, line);
+		string line = m_converter->serialize(color, position);
 		f << line << endl;
-		position.index++;
-		if (position.index + 1 == position.count){
-			position.last = true;
+		position.incrementIndex();
+		if (position.index() + 1 == position.count()){
+			position.last(true);
 		}
-		if (position.first)
-			position.first = false;
+		if (position.first())
+			position.first(false);
 		if (!f.good()){
 			f.close();
 			m_last_error = Error::file_write_error;
@@ -285,13 +281,9 @@ bool ImportExport::importTXT()
 		m_last_error = Error::could_not_open_file;
 		return false;
 	}
-	size_t table_size;
-	Converter *converter = nullptr;
-	Converter **converter_table = converters_get_all_type(m_converters, ConverterArrayType::paste, &table_size);
-	ColorObject* color_object;
+	ColorObject *color_object;
 	Color dummy_color;
-	typedef multimap<float, ColorObject*, greater<float>> ValidConverters;
-	ValidConverters valid_converters;
+	multimap<float, ColorObject*, greater<float>> valid_converters;
 	string line;
 	string strip_chars = " \t";
 	bool imported = false;
@@ -299,12 +291,12 @@ bool ImportExport::importTXT()
 		getline(f, line);
 		stripLeadingTrailingChars(line, strip_chars);
 		if (!line.empty()){
-			for (size_t i = 0; i != table_size; ++i){
-				converter = converter_table[i];
-				if (!converter->deserialize_available) continue;
+			for (auto &converter: m_converters->allPaste()){
+				if (!converter->hasDeserialize())
+					continue;
 				color_object = color_list_new_color_object(m_color_list, &dummy_color);
 				float quality;
-				if (converters_color_deserialize(m_converters, converter->function_name, line.c_str(), color_object, &quality) == 0){
+				if (converter->deserialize(line.c_str(), color_object, quality)){
 					if (quality > 0){
 						valid_converters.insert(make_pair(quality, color_object));
 					}else{
@@ -892,48 +884,47 @@ ImportExport::Error ImportExport::getLastError() const
 {
 	return m_last_error;
 }
-class ImportTextFile: public text_file_parser::TextFile
+struct ImportTextFile: public text_file_parser::TextFile
 {
-	public:
-		ifstream m_file;
-		list<Color> m_colors;
-		bool m_failed;
-		ImportTextFile(const string &filename)
-		{
-			m_failed = false;
-			m_file.open(filename, ios::in);
-		}
-		bool isOpen()
-		{
-			return m_file.is_open();
-		}
-		virtual ~ImportTextFile()
-		{
-			m_file.close();
-		}
-		virtual void outOfMemory()
-		{
+	ifstream m_file;
+	list<Color> m_colors;
+	bool m_failed;
+	ImportTextFile(const string &filename)
+	{
+		m_failed = false;
+		m_file.open(filename, ios::in);
+	}
+	bool isOpen()
+	{
+		return m_file.is_open();
+	}
+	virtual ~ImportTextFile()
+	{
+		m_file.close();
+	}
+	virtual void outOfMemory()
+	{
+		m_failed = true;
+	}
+	virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn)
+	{
+		m_failed = true;
+	}
+	virtual size_t read(char *buffer, size_t length)
+	{
+		m_file.read(buffer, length);
+		size_t bytes = m_file.gcount();
+		if (bytes > 0) return bytes;
+		if (m_file.eof()) return 0;
+		if (!m_file.good()){
 			m_failed = true;
 		}
-		virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn)
-		{
-			m_failed = true;
-		}
-		virtual size_t read(char *buffer, size_t length)
-		{
-			m_file.read(buffer, length);
-			size_t bytes = m_file.gcount();
-			if (bytes > 0) return bytes;
-			if (m_file.eof()) return 0;
-			if (!m_file.good()){
-				m_failed = true;
-			}
-			return 0;
-		}
-		virtual void addColor(const Color &color)
-		{
-			m_colors.push_back(color);
-		}
+		return 0;
+	}
+	virtual void addColor(const Color &color)
+	{
+		m_colors.push_back(color);
+	}
 };
 bool ImportExport::importTextFile(const text_file_parser::Configuration &configuration)
 {

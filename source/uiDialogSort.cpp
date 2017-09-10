@@ -27,7 +27,7 @@
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>

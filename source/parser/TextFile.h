@@ -18,35 +18,31 @@
 
 #ifndef GPICK_PARSER_TEXT_FILE_H_
 #define GPICK_PARSER_TEXT_FILE_H_
-
-class Color;
 #include <cstddef>
-
-namespace text_file_parser {
-	class Configuration
+struct Color;
+namespace text_file_parser
+{
+	struct Configuration
 	{
-		public:
-			Configuration();
-			bool single_line_c_comments;
-			bool single_line_hash_comments;
-			bool multi_line_c_comments;
-			bool short_hex;
-			bool full_hex;
-			bool css_rgb;
-			bool css_rgba;
-			bool float_values;
-			bool int_values;
+		Configuration();
+		bool single_line_c_comments;
+		bool single_line_hash_comments;
+		bool multi_line_c_comments;
+		bool short_hex;
+		bool full_hex;
+		bool css_rgb;
+		bool css_rgba;
+		bool float_values;
+		bool int_values;
 	};
-	class TextFile
+	struct TextFile
 	{
-		public:
-			bool parse(const Configuration &configuration);
-			virtual ~TextFile();
-			virtual void outOfMemory() = 0;
-			virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn) = 0;
-			virtual size_t read(char *buffer, size_t length) = 0;
-			virtual void addColor(const Color &color) = 0;
+		bool parse(const Configuration &configuration);
+		virtual ~TextFile();
+		virtual void outOfMemory() = 0;
+		virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn) = 0;
+		virtual size_t read(char *buffer, size_t length) = 0;
+		virtual void addColor(const Color &color) = 0;
 	};
 }
-
 #endif /* GPICK_PARSER_TEXT_FILE_H_ */

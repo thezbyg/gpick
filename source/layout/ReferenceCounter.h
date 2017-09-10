@@ -18,25 +18,20 @@
 
 #ifndef LAYOUT_REFERENCECOUNTER_H_
 #define LAYOUT_REFERENCECOUNTER_H_
-
 #include <stdint.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
-
-namespace layout{
-
-class ReferenceCounter{
-protected:
-	uint32_t refcnt;
-public:
+namespace layout
+{
+struct ReferenceCounter
+{
 	ReferenceCounter();
 	virtual ~ReferenceCounter();
-
 	ReferenceCounter* ref();
 	static bool unref(ReferenceCounter* rc);
+	private:
+	uint32_t refcnt;
 };
-
 }
-
 #endif /* LAYOUT_REFERENCECOUNTER_H_ */

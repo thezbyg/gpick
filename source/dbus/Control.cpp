@@ -24,7 +24,7 @@ using namespace std;
 
 namespace dbus
 {
-	class Control::Impl
+	struct Control::Impl
 	{
 		public:
 			Control *m_decl;
@@ -192,7 +192,7 @@ namespace dbus
 #else
 namespace dbus
 {
-	class Control::Impl
+	struct Control::Impl
 	{
 	};
 	Control::Control()

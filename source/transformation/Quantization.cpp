@@ -20,7 +20,7 @@
 #include "Quantization.h"
 #include "../MathUtil.h"
 #include "../uiUtilities.h"
-#include "../Internationalisation.h"
+#include "../I18N.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>

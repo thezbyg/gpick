@@ -20,7 +20,7 @@
 #include "Paths.h"
 #include "uiAbout.h"
 #include "uiApp.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "version/Version.h"
 #include "DynvHelpers.h"
 #include <gtk/gtk.h>
@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 {
 	setlocale(LC_ALL, "");
 	gtk_init(&argc, &argv);
-	initialize_internationalisation();
+	initialize_i18n();
 	g_set_application_name(program_name);
 	GError *error = nullptr;
 	GOptionContext *context = g_option_context_new("- advanced color picker");

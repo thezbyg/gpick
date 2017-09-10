@@ -18,21 +18,21 @@
 
 #ifndef TRANSFORMATION_CHAIN_H_
 #define TRANSFORMATION_CHAIN_H_
-
 #include "Transformation.h"
 #include <boost/shared_ptr.hpp>
 #include <list>
 
 /** \file source/transformation/Chain.h
- * \brief Class for transformation object list handling.
+ * \brief Struct for transformation object list handling.
  */
+namespace transformation
+{
 
-namespace transformation {
-
-/** \class Chain
- * \brief Transformation object chain management class.
+/** \struct Chain
+ * \brief Transformation object chain management struct.
  */
-class Chain{
+struct Chain
+{
 	public:
 		typedef std::list<boost::shared_ptr<Transformation> > TransformationList;
 	protected:

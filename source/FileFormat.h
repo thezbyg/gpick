@@ -19,7 +19,7 @@
 #ifndef GPICK_FILE_FORMAT_H_
 #define GPICK_FILE_FORMAT_H_
 
-class ColorList;
+struct ColorList;
 int palette_file_save(const char* filename, ColorList* color_list);
 int palette_file_load(const char* filename, ColorList* color_list);
 

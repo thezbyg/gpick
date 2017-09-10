@@ -24,7 +24,7 @@
 #include "../GlobalState.h"
 #include "../ToolColorNaming.h"
 #include "../DynvHelpers.h"
-#include "../Internationalisation.h"
+#include "../I18N.h"
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -41,28 +41,28 @@ using namespace std;
  *
  * Each node can b
  */
-typedef struct Node{
+struct Node{
 	uint32_t n_pixels; /**< Number of colors in current Node and its children */
 	uint32_t n_pixels_in; /**< Number of colors in current Node */
 	float color[3]; /**< Sum of color values */
 	float distance; /**< Squared distances from Node center of colors in Node */
 	Node *child[8]; /**< Pointers to child Nodes */
 	Node *parent; /**< Pointer to parent Node */
-}Node;
+};
 
 /** \struct Cube
  * \brief Cube structure holds all information necessary to define cube size and position in space
  */
-typedef struct Cube{
+struct Cube{
 	float x; /**< X position */
 	float w; /**< Width */
 	float y; /**< Y position */
 	float h; /**< Height */
 	float z; /**< Z position */
 	float d; /**< Depth */
-}Cube;
+};
 
-typedef struct PaletteFromImageArgs{
+struct PaletteFromImageArgs{
 	GtkWidget *file_browser;
 	GtkWidget *range_colors;
 	GtkWidget *merge_threshold;
@@ -75,9 +75,9 @@ typedef struct PaletteFromImageArgs{
 	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
-}PaletteFromImageArgs;
+};
 
-class PaletteColorNameAssigner: public ToolColorNameAssigner {
+struct PaletteColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
 		const char *m_filename;

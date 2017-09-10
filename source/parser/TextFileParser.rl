@@ -8,10 +8,9 @@
 #include <string>
 #include <iostream>
 using namespace std;
-
-namespace text_file_parser {
-
-class FSM
+namespace text_file_parser
+{
+struct FSM
 {
 	public:
 		int cs;

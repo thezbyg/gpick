@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,19 +16,36 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_LUA_EXT_H_
-#define GPICK_LUA_EXT_H_
-
-class ColorObject;
-struct dynvSystem;
-struct lua_State;
-typedef struct Color Color;
-int lua_ext_colors_openlib(lua_State *lua);
-int lua_pushcolorobject(lua_State *L, ColorObject* color_object);
-ColorObject** lua_checkcolorobject(lua_State *L, int index);
-int lua_pushdynvsystem(lua_State *L, dynvSystem* params);
-dynvSystem* lua_checkdynvsystem(lua_State *L, int index);
-int lua_pushcolor(lua_State *L, const Color* color);
-Color* lua_checkcolor(lua_State *L, int index);
-
-#endif /* GPICK_LUA_EXT_H_ */
+#include "Layouts.h"
+#include "Layout.h"
+#include "System.h"
+using namespace std;
+namespace layout
+{
+Layouts::Layouts()
+{
+}
+Layouts::~Layouts()
+{
+	for (auto layout: m_all_layouts){
+		delete layout;
+	}
+}
+void Layouts::add(Layout *layout)
+{
+	m_all_layouts.push_back(layout);
+	m_layouts[layout->name()] = layout;
+}
+const std::vector<Layout*> &Layouts::all() const
+{
+	return m_all_layouts;
+}
+Layout* Layouts::byName(const char *name) const
+{
+	auto i = m_layouts.find(name);
+	if (i != m_layouts.end()){
+		return i->second;
+	}
+	return nullptr;
+}
+}

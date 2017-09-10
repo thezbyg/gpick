@@ -20,9 +20,9 @@
 #define GPICK_TOOL_COLOR_NAMING_H_
 
 #include <string>
-class GlobalState;
+struct GlobalState;
 struct Color;
-class ColorObject;
+struct ColorObject;
 enum ToolColorNamingType {
 	TOOL_COLOR_NAMING_UNKNOWN = 0,
 	TOOL_COLOR_NAMING_EMPTY,
@@ -38,7 +38,8 @@ typedef struct ToolColorNamingOption{
 const ToolColorNamingOption* tool_color_naming_get_options();
 ToolColorNamingType tool_color_naming_name_to_type(const char *name);
 
-class ToolColorNameAssigner{
+struct ToolColorNameAssigner
+{
 	protected:
 		ToolColorNamingType m_color_naming_type;
 		GlobalState* m_gs;

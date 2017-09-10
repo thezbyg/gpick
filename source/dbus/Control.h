@@ -24,7 +24,7 @@
 #include <string>
 namespace dbus
 {
-	class Control
+	struct Control
 	{
 		public:
 			Control();
@@ -37,7 +37,7 @@ namespace dbus
 			std::function<bool(const char *)> onActivateFloatingPicker;
 			std::function<bool()> onSingleInstanceActivate;
 		private:
-			class Impl;
+			struct Impl;
 			std::unique_ptr<Impl> m_impl;
 	};
 }

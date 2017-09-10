@@ -16,30 +16,23 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "Context.h"
-
-namespace layout{
-
+namespace layout
+{
 Context::Context(cairo_t *cr_, transformation::Chain *chain_)
 {
 	cr = cr_;
 	chain = chain_;
 }
-
 Context::~Context()
 {
-
 }
-
 cairo_t* Context::getCairo() const
 {
 	return cr;
 }
-
 transformation::Chain* Context::getTransformationChain() const
 {
 	return chain;
 }
-
 }

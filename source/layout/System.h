@@ -16,16 +16,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_SYSTEM_H_
-#define LAYOUT_SYSTEM_H_
-
+#ifndef GPICK_LAYOUT_SYSTEM_H_
+#define GPICK_LAYOUT_SYSTEM_H_
 #include "../Rect2.h"
 #include "../Vector2.h"
 #include "Box.h"
 #include "Style.h"
 #include "Context.h"
 #include "ReferenceCounter.h"
-
 #include <gtk/gtk.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
@@ -33,27 +31,19 @@
 #include <stdint.h>
 #include <list>
 #include <string>
-
-namespace layout{
-
-class System:public ReferenceCounter{
-public:
-	std::list<Style*> styles;
-	Box* box;
-
+namespace layout
+{
+struct System: public ReferenceCounter
+{
 	System();
 	virtual ~System();
-
 	void Draw(Context *context, const math::Rect2<float>& parent_rect );
-
 	Box* GetBoxAt(const math::Vec2<float>& point);
 	Box* GetNamedBox(const char *name);
-
 	void AddStyle(Style *style);
 	void SetBox(Box *box);
-
+	std::list<Style*> styles;
+	Box* box;
 };
-
 }
-
-#endif /* LAYOUT_SYSTEM_H_ */
+#endif /* GPICK_LAYOUT_SYSTEM_H_ */

@@ -18,9 +18,7 @@
 
 #ifndef GPICK_TOOLS_PALETTE_FROM_IMAGE_H_
 #define GPICK_TOOLS_PALETTE_FROM_IMAGE_H_
-
 #include <gtk/gtk.h>
-class GlobalState;
+struct GlobalState;
 void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs);
-
 #endif /* GPICK_TOOLS_PALETTE_FROM_IMAGE_H_ */

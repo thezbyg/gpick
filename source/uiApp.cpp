@@ -24,6 +24,7 @@
 #include "ColorSource.h"
 #include "Paths.h"
 #include "Converter.h"
+#include "Converters.h"
 #include "CopyPaste.h"
 #include "StandardMenu.h"
 #include "RegisterSources.h"
@@ -53,7 +54,7 @@
 #include "FileFormat.h"
 #include "MathUtil.h"
 #include "Clipboard.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "color_names/ColorNames.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
@@ -1035,25 +1036,21 @@ void converter_get_text(const gchar* function, ColorObject* color_object, GtkWid
 	}else{
 		color_list_add_color_object(color_list, color_object, 1);
 	}
-	ConverterSerializePosition position;
-	position.first = true;
-	position.last = false;
-	position.index = 0;
-	position.count = color_list->colors.size();
-	if (position.count > 0){
+	ConverterSerializePosition position(color_list->colors.size());
+	auto converter = converters->byName(function);
+	if (converter && position.count() > 0){
 		string text_line;
-		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			if (position.index + 1 == position.count)
-				position.last = true;
-			if (converters_color_serialize(converters, function, *i, position, text_line) == 0){
-				if (position.first){
-					text << text_line;
-					position.first = false;
-				}else{
-					text << endl << text_line;
-				}
-				position.index++;
+		for (auto &color: color_list->colors){
+			if (position.index() + 1 == position.count())
+				position.last(true);
+			text_line = converter->serialize(color, position);
+			if (position.first()){
+				text << text_line;
+				position.first(false);
+			}else{
+				text << endl << text_line;
 			}
+			position.incrementIndex();
 		}
 	}
 	color_list_destroy(color_list);
@@ -1569,7 +1566,7 @@ static void app_initialize_variables(AppArgs *args)
 	args->secondary_source_widget = 0;
 	args->secondary_source_scrolled_viewpoint = 0;
 	args->gs->loadAll();
-	dialog_options_update(args->gs->getLua(), args->gs->getSettings());
+	dialog_options_update(args->gs->script(), args->gs->getSettings(), args->gs);
 	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.main");
 	args->csm = color_source_manager_create();
 	register_sources(args->csm);
@@ -1849,7 +1846,7 @@ static void app_save_recent_file_list(AppArgs *args)
 	delete [] recent_array;
 }
 
-class FloatingPickerAction
+struct FloatingPickerAction
 {
 	public:
 		AppArgs *args;
@@ -1863,12 +1860,17 @@ class FloatingPickerAction
 		{
 			string text;
 			if (args->options.converter_name.length() > 0){
-				auto converter = converters_get(args->gs->getConverters(), args->options.converter_name.c_str());
-				auto color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-				converter_get_text(color_object, converter, args->gs, text);
-				color_object->release();
+				auto converter = args->gs->converters().byName(args->options.converter_name.c_str());
+				if (converter != nullptr){
+					auto color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+					text = converter->serialize(color_object);
+					color_object->release();
+				}
 			}else{
-				converter_get_text(color, ConverterArrayType::copy, args->gs, text);
+				auto converter = args->gs->converters().firstCopy();
+				if (converter != nullptr){
+					text = converter->serialize(color);
+				}
 			}
 			if (text.length() > 0){
 				if (args->options.output_picked_color){

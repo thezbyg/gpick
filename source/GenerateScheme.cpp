@@ -32,9 +32,10 @@
 #include "ColorWheelType.h"
 #include "uiColorInput.h"
 #include "CopyPaste.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "Random.h"
 #include "color_names/ColorNames.h"
 #include "Clipboard.h"
@@ -102,7 +103,7 @@ const SchemeType scheme_types[]={
 	{N_("Six-Tone"), 5, 2, {30, 90}},
 };
 
-class GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
+struct GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 	protected:
 		stringstream m_stream;
 		int32_t m_ident;
@@ -153,7 +154,7 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 	saturation /= 100.0;
 	lightness /= 100.0;
 
-	Color color, hsl, r;
+	Color hsl, r;
 	gint step_i;
 
 	ColorList *color_list;
@@ -209,11 +210,9 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 			gtk_widget_show(args->colors[i]);
 		args->colors_visible = total_colors;
 		size_t j = 0;
-		for (ColorList::iter i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			color = (*i)->getColor();
-			string text;
-			converter_get_text(color, ConverterArrayType::display, args->gs, text);
-			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color, text.c_str());
+		for (auto &color: color_list->colors){
+			string text = args->gs->converters().serialize(color, Converters::Type::display);
+			gtk_color_set_color(GTK_COLOR(args->colors[j]), &color->getColor(), text.c_str());
 			++j;
 			if (j >= total_colors) break;
 		}

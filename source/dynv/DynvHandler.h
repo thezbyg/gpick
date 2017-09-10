@@ -54,7 +54,7 @@ struct dynvHandler* dynv_handler_create(const char* name);
 void dynv_handler_destroy(struct dynvHandler* handler);
 
 struct dynvHandlerMap{
-	class dynvKeyCompare{
+	struct dynvKeyCompare{
 	public:
 		bool operator() (const char* const& x, const char* const& y) const;
 	};

@@ -18,14 +18,12 @@
 
 #ifndef TRANSFORMATION_QUANTIZATION_H_
 #define TRANSFORMATION_QUANTIZATION_H_
-
 #include "Transformation.h"
-
-namespace transformation {
-
-class Quantization;
-
-class QuantizationConfig: public Configuration{
+namespace transformation
+{
+struct Quantization;
+struct QuantizationConfig: public Configuration
+{
 	protected:
 		GtkWidget *main;
 		GtkWidget *value;
@@ -33,12 +31,11 @@ class QuantizationConfig: public Configuration{
 	public:
 		QuantizationConfig(Quantization &transformation);
 		virtual ~QuantizationConfig();
-
 		virtual GtkWidget* getWidget();
 		virtual void applyConfig(dynvSystem *dynv);
 };
-
-class Quantization: public Transformation{
+struct Quantization: public Transformation
+{
 	public:
 		static const char *getName();
 		static const char *getReadableName();
@@ -50,15 +47,10 @@ class Quantization: public Transformation{
 		Quantization();
 		Quantization(float value);
 		virtual ~Quantization();
-
 		virtual void serialize(struct dynvSystem *dynv);
 		virtual void deserialize(struct dynvSystem *dynv);
-
 		virtual boost::shared_ptr<Configuration> getConfig();
-
-	friend class QuantizationConfig;
+	friend struct QuantizationConfig;
 };
-
 }
-
 #endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */

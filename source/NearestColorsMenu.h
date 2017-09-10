@@ -18,14 +18,11 @@
 
 #ifndef GPICK_NEAREST_COLORS_MENU_H_
 #define GPICK_NEAREST_COLORS_MENU_H_
-
 #include <gtk/gtk.h>
-class ColorObject;
-class GlobalState;
-class NearestColorsMenu
+struct ColorObject;
+struct GlobalState;
+struct NearestColorsMenu
 {
-	public:
-		static GtkWidget* newMenu(ColorObject* color_object, GlobalState *gs);
+	static GtkWidget* newMenu(ColorObject* color_object, GlobalState *gs);
 };
-
 #endif /* GPICK_NEAREST_COLORS_MENU_H_ */

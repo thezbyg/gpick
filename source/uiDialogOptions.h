@@ -18,12 +18,14 @@
 
 #ifndef GPICK_UI_DIALOG_OPTIONS_H_
 #define GPICK_UI_DIALOG_OPTIONS_H_
-
-class GlobalState;
+#include <gtk/gtk.h>
+struct GlobalState;
 struct dynvSystem;
 struct lua_State;
-#include <gtk/gtk.h>
+namespace lua
+{
+struct Script;
+}
 void dialog_options_show(GtkWindow* parent, GlobalState* gs);
-int dialog_options_update(lua_State *lua, dynvSystem *settings);
-
+bool dialog_options_update(lua::Script &script, dynvSystem *settings, GlobalState* gs);
 #endif /* GPICK_UI_DIALOG_OPTIONS_H_ */

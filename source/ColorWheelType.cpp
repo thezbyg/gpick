@@ -19,7 +19,7 @@
 #include "ColorWheelType.h"
 #include "ColorRYB.h"
 #include "MathUtil.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 
 
 static void rgb_hue2hue(double hue, Color* hsl){

@@ -16,21 +16,28 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RECT2_H_
-#define RECT2_H_
-
-namespace math{
+#ifndef GPICK_RECT2_H_
+#define GPICK_RECT2_H_
+namespace math
+{
 template<typename T>
-class Rect2{
-public:
-	Rect2(){
-		empty=true;
+struct Rect2
+{
+	Rect2()
+	{
+		empty = true;
 	};
-	Rect2(const T &x1_, const T &y1_, const T &x2_, const T &y2_):x1(x1_),y1(y1_),x2(x2_),y2(y2_){
-		empty=false;
+	Rect2(const T &x1_, const T &y1_, const T &x2_, const T &y2_):
+		x1(x1_),
+		y1(y1_),
+		x2(x2_),
+		y2(y2_)
+	{
+		empty = false;
 	};
 
-	const Rect2 operator=(const Rect2 &rect){
+	const Rect2 operator=(const Rect2 &rect)
+	{
 		x1 = rect.x1;
 		y1 = rect.y1;
 		x2 = rect.x2;
@@ -38,33 +45,28 @@ public:
 		empty = rect.empty;
 		return *this;
 	};
-
-	const Rect2 operator+(const Rect2 &rect) const{
-
+	const Rect2 operator+(const Rect2 &rect) const
+	{
 		if (rect.empty) return *this;
 		if (empty) return rect;
-
 		Rect2 r;
-
 		if (x1 < rect.x1) r.x1 = x1;
 		else r.x1 = rect.x1;
 		if (y1 < rect.y1) r.y1 = y1;
 		else r.y1 = rect.y1;
-
 		if (x2 > rect.x2) r.x2 = x2;
 		else r.x2 = rect.x2;
 		if (y2 > rect.y2) r.y2 = y2;
 		else r.y2 = rect.y2;
-
 		return r;
 	};
-
-	const Rect2 operator+=(const Rect2 &rect){
-		*this=*this+rect;
+	const Rect2 operator+=(const Rect2 &rect)
+	{
+		*this = *this+rect;
 		return *this;
 	};
-
-	Rect2 impose(const Rect2 &rect) const{
+	Rect2 impose(const Rect2 &rect) const
+	{
 		Rect2 r;
 		r.x1 = rect.x1 + x1 * rect.getWidth();
 		r.y1 = rect.y1 + y1 * rect.getHeight();
@@ -73,22 +75,22 @@ public:
 		r.empty = false;
 		return r;
 	}
-
-	bool isInside(const T &x, const T &y) const{
-		if (x<x1 || x>x2 || y<y1 || y>y2)
+	bool isInside(const T &x, const T &y) const
+	{
+		if (x < x1 || x > x2 || y < y1 || y > y2)
 			return false;
 		else
 			return true;
 	}
-
-	bool isInside(const Rect2 &r) const{
+	bool isInside(const Rect2 &r) const
+	{
 		if (empty || r.empty) return false;
 		if (x1 < r.x1 || x2 > r.x2) return false;
 		if (y1 < r.y1 || y2 > r.y2) return false;
 		return true;
 	}
-
-	Rect2 positionInside(const Rect2& rect) const{
+	Rect2 positionInside(const Rect2& rect) const
+	{
 		Rect2 r;
 		r.empty = false;
 		if (rect.x1 < x1){
@@ -113,48 +115,53 @@ public:
 		}
 		return r;
 	}
-
-	bool isEmpty() const{
+	bool isEmpty() const
+	{
 		return empty;
 	};
-
-	const T& getX() const{
+	const T& getX() const
+	{
 		return x1;
 	};
-	const T& getY() const{
+	const T& getY() const
+	{
 		return y1;
 	};
-	T getWidth() const{
-		return x2-x1;
+	T getWidth() const
+	{
+		return x2 - x1;
 	};
-	T getHeight() const{
-		return y2-y1;
+	T getHeight() const
+	{
+		return y2 - y1;
 	};
-	T getCenterX() const{
+	T getCenterX() const
+	{
 		return (x1 + x2) / 2;
 	};
-	T getCenterY() const{
+	T getCenterY() const
+	{
 		return (y1 + y2) / 2;
 	};
-	const T& getLeft() const{
+	const T& getLeft() const
+	{
 		return x1;
 	};
-	const T& getTop() const{
+	const T& getTop() const
+	{
 		return y1;
 	};
-	const T& getRight() const{
+	const T& getRight() const
+	{
 		return x2;
 	};
-	const T& getBottom() const{
+	const T& getBottom() const
+	{
 		return y2;
 	};
-
-private:
+	private:
 	bool empty;
 	T x1, y1, x2, y2;
 };
-
-
 }
-
-#endif /* RECT2_H_ */
+#endif /* GPICK_RECT2_H_ */

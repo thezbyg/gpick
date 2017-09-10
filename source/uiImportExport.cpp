@@ -23,9 +23,10 @@
 #include "ImportExport.h"
 #include "StringUtils.h"
 #include "ColorList.h"
+#include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "parser/TextFile.h"
 #include <functional>
 #include <iostream>
@@ -33,279 +34,270 @@ using namespace std;
 
 struct ImportExportFormat
 {
-	const char* name;
-	const char* pattern;
+	const char *name;
+	const char *pattern;
 	FileType type;
 };
 struct ListOption
 {
-	const char* name;
-	const char* label;
+	const char *name;
+	const char *label;
 };
-
-class ImportExportDialogOptions
+struct ImportExportDialogOptions
 {
-	public:
-		enum class Options {
-			import,
-			import_text_file,
+	enum class Options
+	{
+		import,
+		import_text_file,
+	};
+	Options m_options;
+	GtkWidget *m_dialog;
+	GtkWidget *m_converters, *m_item_sizes, *m_backgrounds, *m_include_color_names;
+	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_float_values, *m_int_values;
+	GlobalState *m_gs;
+	ImportExportDialogOptions(GtkWidget *dialog, GlobalState *gs)
+	{
+		m_dialog = dialog;
+		m_gs = gs;
+	}
+	void createImportOptions()
+	{
+		m_options = Options::import;
+		m_converters = newConverterList();
+		g_signal_connect(G_OBJECT(m_dialog), "notify::filter", G_CALLBACK(filterChanged), this);
+		GtkTreeIter iter;
+		GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_converters));
+		bool converter_found = false;
+		string converter_name = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.converter", "");
+		for (auto &converter: m_gs->converters().all()){
+			gtk_list_store_append(GTK_LIST_STORE(model), &iter);
+			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, converter->label().c_str(), 1, converter, -1);
+			if (converter->name() == converter_name){
+				gtk_combo_box_set_active_iter(GTK_COMBO_BOX(m_converters), &iter);
+				converter_found = true;
+			}
+		}
+		if (!converter_found){
+			gtk_combo_box_set_active(GTK_COMBO_BOX(m_converters), 0);
+		}
+		const ListOption item_size_options[] = {
+			{"small", _("Small")},
+			{"medium", _("Medium")},
+			{"big", _("Big")},
+			{"controllable", _("User controllable")},
 		};
-		Options m_options;
-		GtkWidget *m_dialog;
-		GtkWidget *m_converters, *m_item_sizes, *m_backgrounds, *m_include_color_names;
-		GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_float_values, *m_int_values;
-		GlobalState *m_gs;
-		ImportExportDialogOptions(GtkWidget *dialog, GlobalState *gs)
-		{
-			m_dialog = dialog;
-			m_gs = gs;
-		}
-		void createImportOptions()
-		{
-			m_options = Options::import;
-			m_converters = newConverterList();
-			g_signal_connect(G_OBJECT(m_dialog), "notify::filter", G_CALLBACK(filterChanged), this);
-			auto converters = m_gs->getConverters();
-			Converter **converter_table;
-			size_t total_converters;
-			converter_table = converters_get_all(converters, &total_converters);
-			GtkTreeIter iter;
+		m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.item_size", "medium"));
+
+		const ListOption background_options[] = {
+			{"none", _("None")},
+			{"white", _("White")},
+			{"gray", _("Gray")},
+			{"black", _("Black")},
+			{"first_color", _("First color")},
+			{"last_color", _("Last color")},
+			{"controllable", _("User controllable")},
+		};
+		m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.background", "none"));
+
+		m_include_color_names = newCheckbox(_("Include color names"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import.include_color_names", true));
+
+		afterFilterChanged();
+		int y = 0;
+		GtkWidget *table = gtk_table_new(2, 3, false);
+		addOption(_("Converter:"), m_converters, 0, y, table);
+		addOption(_("Item size:"), m_item_sizes, 0, y, table);
+		addOption(_("Background:"), m_backgrounds, 0, y, table);
+		addOption(m_include_color_names, 0, y, table);
+		gtk_widget_show_all(table);
+		gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
+	}
+	void createImportTextFileOptions()
+	{
+		m_options = Options::import_text_file;
+		int y = 0;
+		GtkWidget *table = gtk_table_new(2, 3, false);
+		addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), 0, y, table);
+		addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), 0, y, table);
+		addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), 0, y, table);
+		y = 0;
+		addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgb", true)), 1, y, table);
+		addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgba", true)), 1, y, table);
+		addOption(m_full_hex = newCheckbox(_("Full hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.full_hex", true)), 1, y, table);
+		y = 0;
+		addOption(m_short_hex = newCheckbox(_("Short hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.short_hex", true)), 2, y, table);
+		addOption(m_int_values = newCheckbox(_("Integer values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.int_values", true)), 2, y, table);
+		addOption(m_float_values = newCheckbox(_("Real values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.float_values", true)), 2, y, table);
+		gtk_widget_show_all(table);
+		gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
+	}
+	GtkWidget *addOption(const char *label, GtkWidget *widget, int x, int &y, GtkWidget *table)
+	{
+		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(label, 0, 0.5, 0, 0), x * 3, x * 3 + 1, y, y + 1, GTK_FILL, GTK_FILL, 3, 1);
+		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
+		y++;
+		return widget;
+	}
+	GtkWidget *addOption(GtkWidget *widget, int x, int &y, GtkWidget *table)
+	{
+		gtk_table_attach(GTK_TABLE(table), widget, x * 3 + 1, x * 3 + 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
+		y++;
+		return widget;
+	}
+	Converter *getSelectedConverter()
+	{
+		GtkTreeIter iter;
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(m_converters), &iter)){
 			GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_converters));
-			bool converter_found = false;
-			string converter_name = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.converter", "");
-			for (size_t i = 0; i < total_converters; i++){
-				gtk_list_store_append(GTK_LIST_STORE(model), &iter);
-				gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, converter_table[i]->human_readable, 1, converter_table[i], -1);
-				if (converter_name == converter_table[i]->function_name){
-					gtk_combo_box_set_active_iter(GTK_COMBO_BOX(m_converters), &iter);
-					converter_found = true;
-				}
-			}
-			if (!converter_found){
-				gtk_combo_box_set_active(GTK_COMBO_BOX(m_converters), 0);
-			}
-			delete [] converter_table;
-
-			const ListOption item_size_options[] = {
-				{"small", _("Small")},
-				{"medium", _("Medium")},
-				{"big", _("Big")},
-				{"controllable", _("User controllable")},
-			};
-			m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.item_size", "medium"));
-
-			const ListOption background_options[] = {
-				{"none", _("None")},
-				{"white", _("White")},
-				{"gray", _("Gray")},
-				{"black", _("Black")},
-				{"first_color", _("First color")},
-				{"last_color", _("Last color")},
-				{"controllable", _("User controllable")},
-			};
-			m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.background", "none"));
-
-			m_include_color_names = newCheckbox(_("Include color names"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import.include_color_names", true));
-
-			afterFilterChanged();
-			int y = 0;
-			GtkWidget *table = gtk_table_new(2, 3, false);
-			addOption(_("Converter:"), m_converters, 0, y, table);
-			addOption(_("Item size:"), m_item_sizes, 0, y, table);
-			addOption(_("Background:"), m_backgrounds, 0, y, table);
-			addOption(m_include_color_names, 0, y, table);
-			gtk_widget_show_all(table);
-			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
+			Converter *converter;
+			gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 1, &converter, -1);
+			return converter;
 		}
-		void createImportTextFileOptions()
-		{
-			m_options = Options::import_text_file;
-			int y = 0;
-			GtkWidget *table = gtk_table_new(2, 3, false);
-			addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), 0, y, table);
-			addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), 0, y, table);
-			addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), 0, y, table);
-			y = 0;
-			addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgb", true)), 1, y, table);
-			addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgba", true)), 1, y, table);
-			addOption(m_full_hex = newCheckbox(_("Full hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.full_hex", true)), 1, y, table);
-			y = 0;
-			addOption(m_short_hex = newCheckbox(_("Short hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.short_hex", true)), 2, y, table);
-			addOption(m_int_values = newCheckbox(_("Integer values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.int_values", true)), 2, y, table);
-			addOption(m_float_values = newCheckbox(_("Real values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.float_values", true)), 2, y, table);
-			gtk_widget_show_all(table);
-			gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
+		return nullptr;
+	}
+	string getOptionValue(GtkWidget *widget)
+	{
+		GtkTreeIter iter;
+		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)){
+			GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
+			gchar *value;
+			gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 1, &value, -1);
+			string result(value);
+			g_free(value);
+			return result;
 		}
-		GtkWidget *addOption(const char *label, GtkWidget *widget, int x, int &y, GtkWidget *table)
-		{
-			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(label, 0, 0.5, 0, 0), x * 3, x * 3 + 1, y, y + 1, GTK_FILL, GTK_FILL, 3, 1);
-			gtk_table_attach(GTK_TABLE(table), widget, 1, 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
-			y++;
-			return widget;
+		return string();
+	}
+	string getSelectedItemSize()
+	{
+		return getOptionValue(m_item_sizes);
+	}
+	string getSelectedBackground()
+	{
+		return getOptionValue(m_backgrounds);
+	}
+	bool isIncludeColorNamesEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_include_color_names));
+	}
+	bool isSingleLineCCommentsEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_c_comments));
+	}
+	bool isMultiLineCCommentsEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_multi_line_c_comments));
+	}
+	bool isSingleLineHashCommentsEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_hash_comments));
+	}
+	bool isCssRgbEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgb));
+	}
+	bool isCssRgbaEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgba));
+	}
+	bool isFullHexEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex));
+	}
+	bool isShortHexEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_short_hex));
+	}
+	bool isIntValuesEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_int_values));
+	}
+	bool isFloatValuesEnabled()
+	{
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_float_values));
+	}
+	void saveState()
+	{
+		auto settings = m_gs->getSettings();
+		if (m_options == Options::import){
+			Converter *converter = getSelectedConverter();
+			if (converter)
+				dynv_set_string(settings, "gpick.import.converter", converter->name().c_str());
+			string item_size = getSelectedItemSize();
+			dynv_set_string(settings, "gpick.import.item_size", item_size.c_str());
+			string background = getSelectedBackground();
+			dynv_set_string(settings, "gpick.import.background", background.c_str());
+			dynv_set_bool(settings, "gpick.import.include_color_names", isIncludeColorNamesEnabled());
+		}else if (m_options == Options::import_text_file){
+			dynv_set_bool(settings, "gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.css_rgb", isCssRgbEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.css_rgba", isCssRgbaEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.full_hex", isFullHexEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.short_hex", isShortHexEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.int_values", isIntValuesEnabled());
+			dynv_set_bool(settings, "gpick.import_text_file.float_values", isFloatValuesEnabled());
 		}
-		GtkWidget *addOption(GtkWidget *widget, int x, int &y, GtkWidget *table)
-		{
-			gtk_table_attach(GTK_TABLE(table), widget, x * 3 + 1, x * 3 + 2, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 3, 1);
-			y++;
-			return widget;
-		}
-		Converter *getSelectedConverter()
-		{
-			GtkTreeIter iter;
-			if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(m_converters), &iter)){
-				GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_converters));
-				Converter *converter;
-				gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 1, &converter, -1);
-				return converter;
-			}
-			return nullptr;
-		}
-		string getOptionValue(GtkWidget *widget)
-		{
-			GtkTreeIter iter;
-			if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)){
-				GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
-				gchar *value;
-				gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 1, &value, -1);
-				string result(value);
-				g_free(value);
-				return result;
-			}
-			return string();
-		}
-		string getSelectedItemSize()
-		{
-			return getOptionValue(m_item_sizes);
-		}
-		string getSelectedBackground()
-		{
-			return getOptionValue(m_backgrounds);
-		}
-		bool isIncludeColorNamesEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_include_color_names));
-		}
-		bool isSingleLineCCommentsEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_c_comments));
-		}
-		bool isMultiLineCCommentsEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_multi_line_c_comments));
-		}
-		bool isSingleLineHashCommentsEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_hash_comments));
-		}
-		bool isCssRgbEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgb));
-		}
-		bool isCssRgbaEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgba));
-		}
-		bool isFullHexEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex));
-		}
-		bool isShortHexEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_short_hex));
-		}
-		bool isIntValuesEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_int_values));
-		}
-		bool isFloatValuesEnabled()
-		{
-			return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_float_values));
-		}
-		void saveState()
-		{
-			auto settings = m_gs->getSettings();
-			if (m_options == Options::import){
-				Converter *converter = getSelectedConverter();
-				if (converter)
-					dynv_set_string(settings, "gpick.import.converter", converter->function_name);
-				string item_size = getSelectedItemSize();
-				dynv_set_string(settings, "gpick.import.item_size", item_size.c_str());
-				string background = getSelectedBackground();
-				dynv_set_string(settings, "gpick.import.background", background.c_str());
-				dynv_set_bool(settings, "gpick.import.include_color_names", isIncludeColorNamesEnabled());
-			}else if (m_options == Options::import_text_file){
-				dynv_set_bool(settings, "gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.css_rgb", isCssRgbEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.css_rgba", isCssRgbaEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.full_hex", isFullHexEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.short_hex", isShortHexEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.int_values", isIntValuesEnabled());
-				dynv_set_bool(settings, "gpick.import_text_file.float_values", isFloatValuesEnabled());
+	}
+	GtkWidget* newConverterList()
+	{
+		GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
+		GtkWidget *list = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+		GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(list), renderer, true);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(list), renderer, "text", 0, nullptr);
+		if (store) g_object_unref(store);
+		return list;
+	}
+	GtkWidget* newOptionList(const ListOption *options, size_t n_options, const string &selected_value)
+	{
+		GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+		GtkWidget *list = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+		GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+		gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(list), renderer, true);
+		gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(list), renderer, "text", 0, nullptr);
+		bool found = false;
+		GtkTreeIter iter;
+		for (size_t i = 0; i != n_options; i++){
+			gtk_list_store_append(store, &iter);
+			gtk_list_store_set(store, &iter, 0, options[i].label, 1, options[i].name, -1);
+			if (selected_value == options[i].name){
+				gtk_combo_box_set_active_iter(GTK_COMBO_BOX(list), &iter);
+				found = true;
 			}
 		}
-		GtkWidget* newConverterList()
-		{
-			GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_POINTER);
-			GtkWidget *list = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-			GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(list), renderer, true);
-			gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(list), renderer, "text", 0, nullptr);
-			if (store) g_object_unref(store);
-			return list;
+		if (!found){
+			gtk_combo_box_set_active(GTK_COMBO_BOX(list), 0);
 		}
-		GtkWidget* newOptionList(const ListOption *options, size_t n_options, const string &selected_value)
-		{
-			GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
-			GtkWidget *list = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-			GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(list), renderer, true);
-			gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(list), renderer, "text", 0, nullptr);
-			bool found = false;
-			GtkTreeIter iter;
-			for (size_t i = 0; i != n_options; i++){
-				gtk_list_store_append(store, &iter);
-				gtk_list_store_set(store, &iter, 0, options[i].label, 1, options[i].name, -1);
-				if (selected_value == options[i].name){
-					gtk_combo_box_set_active_iter(GTK_COMBO_BOX(list), &iter);
-					found = true;
-				}
-			}
-			if (!found){
-				gtk_combo_box_set_active(GTK_COMBO_BOX(list), 0);
-			}
-			g_object_unref(store);
-			return list;
-		}
-		GtkWidget *newCheckbox(const char *label, bool value)
-		{
-			GtkWidget *widget = gtk_check_button_new_with_label(label);
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
-			return widget;
-		}
-		GtkWidget *newCheckbox(const string &label, bool value)
-		{
-			GtkWidget *widget = gtk_check_button_new_with_label(label.c_str());
-			gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
-			return widget;
-		}
-		void afterFilterChanged()
-		{
-			GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(m_dialog));
-			ImportExportFormat *format = (ImportExportFormat*)g_object_get_data(G_OBJECT(filter), "format");
-			gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
-			gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
-			gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
-			gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html);
-		}
-		static void filterChanged(GtkFileChooserDialog*, GParamSpec*, ImportExportDialogOptions *import_export_dialog)
-		{
-			import_export_dialog->afterFilterChanged();
-		}
+		g_object_unref(store);
+		return list;
+	}
+	GtkWidget *newCheckbox(const char *label, bool value)
+	{
+		GtkWidget *widget = gtk_check_button_new_with_label(label);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
+		return widget;
+	}
+	GtkWidget *newCheckbox(const string &label, bool value)
+	{
+		GtkWidget *widget = gtk_check_button_new_with_label(label.c_str());
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), value);
+		return widget;
+	}
+	void afterFilterChanged()
+	{
+		GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(m_dialog));
+		ImportExportFormat *format = (ImportExportFormat*)g_object_get_data(G_OBJECT(filter), "format");
+		gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
+		gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
+		gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
+		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html);
+	}
+	static void filterChanged(GtkFileChooserDialog*, GParamSpec*, ImportExportDialogOptions *import_export_dialog)
+	{
+		import_export_dialog->afterFilterChanged();
+	}
 };
-
-
 ImportExportDialog::ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs):
 	m_parent(parent),
 	m_color_list(color_list),
@@ -386,12 +378,11 @@ bool ImportExportDialog::showImport()
 				gtk_dialog_run(GTK_DIALOG(message));
 				gtk_widget_destroy(message);
 			}else{
-				auto converters = m_gs->getConverters();
 				for (size_t i = 0; i != n_formats; ++i){
 					if (formats[i].type == type){
 						ColorList *color_list = color_list_new(m_color_list);
 						ImportExport import_export(color_list, filename, m_gs);
-						import_export.setConverters(converters);
+						import_export.setConverters(&m_gs->converters());
 						if (import_export.importType(formats[i].type)){
 							finished = true;
 							color_list_add(m_color_list, color_list, true);
@@ -437,8 +428,7 @@ bool ImportExportDialog::showImportTextFile()
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			ColorList *color_list = color_list_new(m_color_list);
 			ImportExport import_export(color_list, filename, m_gs);
-			auto converters = m_gs->getConverters();
-			import_export.setConverters(converters);
+			import_export.setConverters(&m_gs->converters());
 			text_file_parser::Configuration configuration;
 			configuration.single_line_c_comments = import_export_dialog_options.isSingleLineCCommentsEnabled();
 			configuration.multi_line_c_comments = import_export_dialog_options.isMultiLineCCommentsEnabled();

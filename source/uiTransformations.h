@@ -18,9 +18,7 @@
 
 #ifndef GPICK_UI_TRANSFORMATIONS_H_
 #define GPICK_UI_TRANSFORMATIONS_H_
-
-class GlobalState;
 #include <gtk/gtk.h>
+struct GlobalState;
 void dialog_transformations_show(GtkWindow* parent, GlobalState* gs);
-
 #endif /* GPICK_UI_TRANSFORMATIONS_H_ */

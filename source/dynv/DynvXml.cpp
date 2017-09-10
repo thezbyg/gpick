@@ -53,7 +53,7 @@ int dynv_xml_serialize(struct dynvSystem* dynv_system, ostream& out)
 	return 0;
 }
 
-class XmlEntity
+struct XmlEntity
 {
 	public:
 		stringstream entity_data;
@@ -72,7 +72,7 @@ class XmlEntity
 			first_item = true;
 		};
 };
-class XmlCtx
+struct XmlCtx
 {
 	public:
 		bool root_found;

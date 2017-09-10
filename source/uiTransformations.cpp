@@ -21,7 +21,7 @@
 #include "uiUtilities.h"
 #include "DynvHelpers.h"
 #include "GlobalState.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
 #include "transformation/ColorVisionDeficiency.h"

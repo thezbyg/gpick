@@ -18,9 +18,7 @@
 
 #ifndef GPICK_UI_COLOR_DICTIONARIES_H_
 #define GPICK_UI_COLOR_DICTIONARIES_H_
-
-class GlobalState;
 #include <gtk/gtk.h>
+struct GlobalState;
 void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs);
-
 #endif /* GPICK_UI_COLOR_DICTIONARIES_H_ */

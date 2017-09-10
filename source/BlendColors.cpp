@@ -39,7 +39,7 @@
 #include "DynvHelpers.h"
 #include "StandardMenu.h"
 #include "ToolColorNaming.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
@@ -66,7 +66,7 @@ typedef struct BlendColorsArgs{
 	GlobalState* gs;
 }BlendColorsArgs;
 
-class BlendColorNameAssigner: public ToolColorNameAssigner
+struct BlendColorNameAssigner: public ToolColorNameAssigner
 {
 	protected:
 		stringstream m_stream;

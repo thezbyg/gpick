@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2017, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,11 +18,9 @@
 
 #ifndef GPICK_COPY_PASTE_H_
 #define GPICK_COPY_PASTE_H_
-
-class ColorObject;
-class GlobalState;
-int copypaste_set_color_object(ColorObject* color_object, GlobalState* gs);
-int copypaste_get_color_object(ColorObject** color_object, GlobalState* gs);
-int copypaste_is_color_object_available(GlobalState* gs);
-
+struct ColorObject;
+struct GlobalState;
+int copypaste_set_color_object(ColorObject *color_object, GlobalState *gs);
+int copypaste_get_color_object(ColorObject **color_object, GlobalState *gs);
+int copypaste_is_color_object_available(GlobalState *gs);
 #endif /* GPICK_COPY_PASTE_H_ */

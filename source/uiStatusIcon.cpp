@@ -26,7 +26,7 @@
 #include "FloatingPicker.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 #include <gdk/gdkkeysyms.h>
 using namespace math;
 

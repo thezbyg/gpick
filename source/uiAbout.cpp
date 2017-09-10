@@ -18,7 +18,7 @@
 
 #include "uiAbout.h"
 #include "version/Version.h"
-#include "Internationalisation.h"
+#include "I18N.h"
 
 const gchar* program_name = "Gpick";
 

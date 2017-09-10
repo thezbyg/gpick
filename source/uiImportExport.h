@@ -18,22 +18,19 @@
 
 #ifndef GPICK_UI_IMPORT_EXPORT_H_
 #define GPICK_UI_IMPORT_EXPORT_H_
-
 #include <gtk/gtk.h>
-class GlobalState;
-class ColorList;
-class ImportExportDialog
+struct GlobalState;
+struct ColorList;
+struct ImportExportDialog
 {
-	public:
-		ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs);
-		~ImportExportDialog();
-		bool showImport();
-		bool showImportTextFile();
-		bool showExport();
+	ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs);
+	~ImportExportDialog();
+	bool showImport();
+	bool showImportTextFile();
+	bool showExport();
 	private:
-		GtkWindow *m_parent;
-		ColorList *m_color_list;
-		GlobalState *m_gs;
+	GtkWindow *m_parent;
+	ColorList *m_color_list;
+	GlobalState *m_gs;
 };
-
 #endif /* GPICK_UI_IMPORT_EXPORT_H_ */
