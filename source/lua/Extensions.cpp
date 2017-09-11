@@ -37,10 +37,17 @@ extern "C"{
 }
 namespace lua
 {
+static void checkArgumentIsFunctionOrNil(lua_State *L, int index)
+{
+	auto type = lua_type(L, index);
+	bool type_matches = type == LUA_TFUNCTION || type == LUA_TNIL;
+	luaL_argcheck(L, type_matches, index, "function or nil expected");
+}
 static int addLayout(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
 	const char *label = luaL_checkstring(L, 3);
+	checkArgumentIsFunctionOrNil(L, 4);
 	int mask = luaL_optinteger(L, 5, 0);
 	getGlobalState(L).layouts().add(new layout::Layout(name, label, mask, Ref(L, 4)));
 	return 0;
@@ -49,7 +56,12 @@ static int addConverter(lua_State *L)
 {
 	const char *name = luaL_checkstring(L, 2);
 	const char *label = luaL_checkstring(L, 3);
-	getGlobalState(L).converters().add(new Converter(name, label, Ref(L, 4), Ref(L, 5)));
+	checkArgumentIsFunctionOrNil(L, 4);
+	if (lua_gettop(L) >= 5) checkArgumentIsFunctionOrNil(L, 5);
+	if (lua_gettop(L) == 4)
+		getGlobalState(L).converters().add(new Converter(name, label, Ref(L, 4), Ref()));
+	else if (lua_gettop(L) >= 5)
+		getGlobalState(L).converters().add(new Converter(name, label, Ref(L, 4), Ref(L, 5)));
 	return 0;
 }
 static int setOptionChangeCallback(lua_State *L)
