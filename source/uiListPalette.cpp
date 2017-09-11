@@ -949,3 +949,39 @@ gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback cal
 	g_list_free(list);
 	return 0;
 }
+ColorObject *palette_list_get_first_selected(GtkWidget* widget)
+{
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *i = list;
+	ColorObject *color_object = nullptr;
+	if (i){
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, reinterpret_cast<GtkTreePath*>(i->data));
+		gtk_tree_model_get(model, &iter, 0, &color_object, -1);
+	}
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
+	g_list_free(list);
+	return color_object;
+}
+void palette_list_update_first_selected(GtkWidget* widget, bool only_name)
+{
+	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *i = list;
+	ColorObject *color_object = nullptr;
+	if (i){
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, reinterpret_cast<GtkTreePath*>(i->data));
+		gtk_tree_model_get(model, &iter, 0, &color_object, -1);
+		if (only_name)
+			palette_list_entry_update_name(GTK_LIST_STORE(model), &iter, color_object);
+		else
+			palette_list_entry_update_row(GTK_LIST_STORE(model), &iter, color_object, args);
+	}
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
+	g_list_free(list);
+}

@@ -43,4 +43,6 @@ gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback cal
 gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata);
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
+ColorObject *palette_list_get_first_selected(GtkWidget* widget);
+void palette_list_update_first_selected(GtkWidget* widget, bool only_name);
 #endif /* GPICK_UI_LIST_PALETTE_H_ */
