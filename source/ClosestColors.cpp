@@ -105,7 +105,7 @@ static void on_color_edit(GtkWidget *widget, ClosestColorsArgs *args)
 	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	ColorObject* new_color_object = nullptr;
 	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object) == 0){
-		source_set_color(args, color_object);
+		source_set_color(args, new_color_object);
 		new_color_object->release();
 	}
 	color_object->release();
