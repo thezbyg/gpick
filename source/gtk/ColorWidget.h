@@ -47,6 +47,9 @@ void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);
 void gtk_color_set_roundness(GtkColor* widget, double roundness);
 void gtk_color_set_hcenter(GtkColor* widget, bool hcenter);
 void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain *chain);
+void gtk_color_set_split_color(GtkColor* widget, const Color* color);
+void gtk_color_get_split_color(GtkColor* widget, Color* color);
+void gtk_color_enable_split(GtkColor* widget, bool enable);
 GType gtk_color_get_type();
 
 #endif /* GPICK_GTK_COLOR_WIDGET_H_ */

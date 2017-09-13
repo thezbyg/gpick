@@ -132,6 +132,8 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
+	gtk_color_enable_split(GTK_COLOR(widget), true);
+	gtk_color_set_split_color(GTK_COLOR(widget), &color_object->getColor());
 	gtk_box_pack_start(GTK_BOX(hbox), widget, true, true, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0), false, false, 0);
 
