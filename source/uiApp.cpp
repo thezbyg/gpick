@@ -844,6 +844,9 @@ static void addLayoutMenuItem(const char *layout, const char *label, GtkMenu *me
 	g_object_set_data_full(G_OBJECT(item), "source", const_cast<char*>(layout), (GDestroyNotify)nullptr);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_layout_cb), args);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	string current_layout = dynv_get_string_wd(args->params, "view.layout", "primary+secondary_palette");
+	if (current_layout == layout)
+		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 }
 
 static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *accel_group)
