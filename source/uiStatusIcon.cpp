@@ -84,7 +84,7 @@ struct uiStatusIcon* status_icon_new(GtkWidget* parent, GlobalState* gs, Floatin
 	si->parent = gtk_widget_get_toplevel(parent);
 	GtkStatusIcon *status_icon = gtk_status_icon_new();
 	gtk_status_icon_set_visible(status_icon, FALSE);
-	gtk_status_icon_set_from_icon_name(status_icon, "gpick");
+	gtk_status_icon_set_from_icon_name(status_icon, "gpick-tray");
 	g_signal_connect(G_OBJECT(status_icon), "popup-menu", G_CALLBACK(status_icon_popup), si);
 #ifndef WIN32
 	g_signal_connect(G_OBJECT(status_icon), "activate", G_CALLBACK(status_icon_activate), si);
