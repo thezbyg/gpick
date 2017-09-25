@@ -166,7 +166,7 @@ if env['ENABLE_NLS']:
 
 env.Alias(target = "install", source = [
 	env.InstallProgram(dir = env['DESTDIR'] +'/bin', source = [executable]),
-	env.InstallData(dir = env['DESTDIR'] +'/share/appdata', source = ['share/appdata/gpick.appdata.xml']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/metainfo', source = ['share/metainfo/gpick.appdata.xml']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/applications', source = ['share/applications/gpick.desktop']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/mime/packages', source = ['share/mime/packages/gpick.xml']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/doc/gpick', source = ['share/doc/gpick/copyright']),
