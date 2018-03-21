@@ -7,8 +7,8 @@
 !define PRODUCT_VERSION "${VERSION}"
 !define PRODUCT_NAME "Gpick"
 !define PRODUCT_NAME_SMALL "gpick"
-!define PRODUCT_PUBLISHER "Albertas Vyðniauskas"
-!define PRODUCT_WEB_SITE "http://code.google.com/p/gpick/"
+!define PRODUCT_PUBLISHER "Albertas VyÃ°niauskas"
+!define PRODUCT_WEB_SITE "http://www.gpick.org/"
 
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
 !define PRODUCT_UNINST_ROOT_KEY "HKLM"
