@@ -84,6 +84,9 @@ GtkWidget* gtk_color_new()
 	ns->roundness = 20;
 	ns->transformation_chain = 0;
 	gtk_widget_set_can_focus(widget, true);
+#if GTK_MAJOR_VERSION >= 3
+	gtk_widget_set_size_request(GTK_WIDGET(widget), 32, 16);
+#endif
 	return widget;
 }
 #if GTK_MAJOR_VERSION < 3

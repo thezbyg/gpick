@@ -688,17 +688,17 @@ static void repositionViews(AppArgs* args)
 	if (left_index != 0 && right_index != 0){
 		if (left_index > 1){
 			gtk_paned_pack1(GTK_PANED(args->hpaned), args->vpaned, false, false);
-			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, true, false);
 			gtk_paned_pack1(GTK_PANED(args->vpaned), left[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, true, false);
 		}else if (right_index > 1){
 			gtk_paned_pack1(GTK_PANED(args->hpaned), left[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->hpaned), args->vpaned, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), args->vpaned, true, false);
 			gtk_paned_pack1(GTK_PANED(args->vpaned), right[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, true, false);
 		}else{
 			gtk_paned_pack1(GTK_PANED(args->hpaned), left[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->hpaned), right[0]->widget, true, false);
 			vpaned_unused = true;
 		}
 		gtk_widget_show(GTK_WIDGET(args->hpaned));
@@ -708,11 +708,11 @@ static void repositionViews(AppArgs* args)
 		if (left_index > 1){
 			widget = args->vpaned;
 			gtk_paned_pack1(GTK_PANED(args->vpaned), left[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), left[1]->widget, true, false);
 		}else if (right_index > 1){
 			widget = args->vpaned;
 			gtk_paned_pack1(GTK_PANED(args->vpaned), right[0]->widget, false, false);
-			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, false, false);
+			gtk_paned_pack2(GTK_PANED(args->vpaned), right[1]->widget, true, false);
 		}else if (left_index == 1){
 			widget = left[0]->widget;
 			vpaned_unused = true;
@@ -1923,10 +1923,10 @@ int app_run(AppArgs *args)
 		if (args->options.floating_picker_mode || dynv_get_bool_wd(args->params, "start_in_tray", false)){
 			status_icon_set_visible(args->status_icon, true);
 		}else{
+			gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", 0));
+			gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", 0));
 			main_show_window(args->window, args->params);
 		}
-		gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
-		gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", -1));
 		if (args->options.floating_picker_mode)
 			floating_picker_activate(args->floating_picker, false, false, args->options.converter_name.c_str());
 		gtk_main();
