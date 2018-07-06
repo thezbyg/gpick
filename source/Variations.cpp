@@ -38,8 +38,8 @@
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
+#include "Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <boost/format.hpp>
 #include <math.h>
 #include <string.h>
 #include <sstream>
@@ -109,13 +109,6 @@ struct VariationsColorNameAssigner: public ToolColorNameAssigner
 			return m_stream.str();
 		}
 };
-
-static boost::format format_ignore_arg_errors(const std::string &f_string) {
-	boost::format fmter(f_string);
-	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
-	return fmter;
-}
-
 
 static int set_rgb_color(VariationsArgs *args, ColorObject* color, uint32_t color_index);
 static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color, GtkWidget* color_widget);
@@ -223,21 +216,13 @@ static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
 		return _("all colors");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == widget){
-			try{
-				return (format_ignore_arg_errors(_("primary %d")) % (i + 1)).str();
-			}catch(const boost::io::format_error &e){
-				return (format_ignore_arg_errors("primary %d") % (i + 1)).str();
-			}
+			return format(_("primary {}"), i + 1);
 		}
 		for (int j = 0; j <= VAR_COLOR_WIDGETS; ++j){
 			if (args->color[i].var_colors[j] == widget){
 				if (j > VAR_COLOR_WIDGETS / 2)
 					j--;
-				try{
-					return (format_ignore_arg_errors(_("result %d line %d")) % (j + 1) % (i + 1)).str();
-				}catch(const boost::io::format_error &e){
-					return (format_ignore_arg_errors("result %d line %d") % (j + 1) % (i + 1)).str();
-				}
+				return format(_("result {} line {}"), j + 1, i + 1);
 			}
 		}
 	}

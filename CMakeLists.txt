@@ -82,6 +82,11 @@ set_compile_options(color)
 target_link_libraries(color PUBLIC math)
 target_include_directories(color PUBLIC source)
 
+file(GLOB FORMAT_SOURCES source/Format.cpp source/Format.h)
+add_library(format ${FORMAT_SOURCES})
+set_compile_options(format)
+target_include_directories(format PUBLIC source)
+
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
 add_library(dynv ${DYNV_SOURCES})
 set_compile_options(dynv)
@@ -137,6 +142,7 @@ target_link_libraries(gpick PUBLIC
 	dynv
 	lua
 	parser
+	format
 	${Boost_FILESYSTEM_LIBRARY}
 	${Boost_SYSTEM_LIBRARY}
 	${Lua_LIBRARIES}
@@ -160,6 +166,7 @@ target_link_libraries(tests PUBLIC
 	dynv
 	lua
 	parser
+	format
 	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 	${Lua_LIBRARIES}
 	${Expat_LIBRARIES}

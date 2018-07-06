@@ -77,7 +77,7 @@ executable = local_env.Program('gpick', source = [objects])
 test_env = local_env.Clone()
 test_env.Append(LIBS = ['boost_unit_test_framework'], CPPDEFINES = ['BOOST_TEST_DYN_LINK'])
 
-tests = test_env.Program('tests', source = test_env.Glob('test/*.cpp') + [object_map['Color'], object_map['MathUtil'], object_map['lua/Script']] + dynv_objects + text_file_parser_objects)
+tests = test_env.Program('tests', source = test_env.Glob('test/*.cpp') + [object_map['Color'], object_map['MathUtil'], object_map['lua/Script'], object_map['Format']] + dynv_objects + text_file_parser_objects)
 
 Return('executable', 'tests', 'generated_files')
 

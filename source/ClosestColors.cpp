@@ -33,8 +33,8 @@
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
+#include "Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <boost/format.hpp>
 #include <sstream>
 using namespace std;
 
@@ -110,23 +110,13 @@ static void on_color_edit(GtkWidget *widget, ClosestColorsArgs *args)
 	}
 	color_object->release();
 }
-static boost::format format_ignore_arg_errors(const std::string &f_string)
-{
-	boost::format fmter(f_string);
-	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
-	return fmter;
-}
 static string identify_color_widget(GtkWidget *widget, ClosestColorsArgs *args)
 {
 	if (args->color == widget){
 		return _("target");
 	}else for (int i = 0; i < 9; ++i){
 		if (args->closest_colors[i] == widget){
-			try{
-				return (format_ignore_arg_errors(_("match %d")) % (i + 1)).str();
-			}catch(const boost::io::format_error &e){
-				return (format_ignore_arg_errors("match %d") % (i + 1)).str();
-			}
+			return format(_("match {}"), i + 1);
 		}
 	}
 	return "unknown";

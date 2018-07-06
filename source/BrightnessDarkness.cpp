@@ -39,8 +39,8 @@
 #include "layout/Layouts.h"
 #include "layout/Style.h"
 #include "StandardMenu.h"
+#include "Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <boost/format.hpp>
 #include <math.h>
 #include <string.h>
 #include <sstream>
@@ -82,6 +82,10 @@ struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
 			return m_stream.str();
 		}
 };
+static string format(char prefix, int index)
+{
+	return prefix + as_string(index);
+}
 static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 {
 	double brightness = gtk_range_2d_get_x(GTK_RANGE_2D(args->brightness_darkness));
@@ -99,7 +103,7 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
-		name = boost::str(boost::format("b%d") % i);
+		name = format('b', i);
 		box = args->layout_system->GetNamedBox(name.c_str());
 		if (box && box->style){
 			color_copy(&r, &box->style->color);
@@ -107,7 +111,7 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
-		name = boost::str(boost::format("c%d") % i);
+		name = format('c', i);
 		box = args->layout_system->GetNamedBox(name.c_str());
 		if (box && box->style){
 			color_copy(&r, &box->style->color);

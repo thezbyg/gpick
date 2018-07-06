@@ -38,8 +38,8 @@
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
+#include "Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <boost/format.hpp>
 #include <math.h>
 #include <string.h>
 #include <sstream>
@@ -204,30 +204,15 @@ static void on_color_edit(GtkWidget *widget, ColorMixerArgs *args)
 	color_object->release();
 }
 
-static boost::format format_ignore_arg_errors(const std::string &f_string)
-{
-	boost::format fmter(f_string);
-	fmter.exceptions(boost::io::all_error_bits ^ (boost::io::too_many_args_bit | boost::io::too_few_args_bit));
-	return fmter;
-}
-
 static string identify_color_widget(GtkWidget *widget, ColorMixerArgs *args)
 {
 	if (args->secondary_color == widget){
 		return _("secondary");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].input == widget){
-			try{
-				return (format_ignore_arg_errors(_("primary %d")) % (i + 1)).str();
-			}catch(const boost::io::format_error &e){
-				return (format_ignore_arg_errors("primary %d") % (i + 1)).str();
-			}
+			return format(_("primary {}"), i + 1);
 		}else if (args->color[i].output == widget){
-			try{
-				return (format_ignore_arg_errors(_("result %d")) % (i + 1)).str();
-			}catch(const boost::io::format_error &e){
-				return (format_ignore_arg_errors("result %d") % (i + 1)).str();
-			}
+			return format(_("result {}"), i + 1);
 		}
 	}
 	return "unknown";
