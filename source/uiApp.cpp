@@ -1031,40 +1031,6 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 }
 
-void converter_get_text(const gchar* function, ColorObject* color_object, GtkWidget* palette_widget, Converters *converters, gchar** out_text)
-{
-	stringstream text(ios::out);
-	ColorList *color_list = color_list_new();
-	if (palette_widget){
-		palette_list_foreach_selected(palette_widget, color_list_selected, color_list);
-	}else{
-		color_list_add_color_object(color_list, color_object, 1);
-	}
-	ConverterSerializePosition position(color_list->colors.size());
-	auto converter = converters->byName(function);
-	if (converter && position.count() > 0){
-		string text_line;
-		for (auto &color: color_list->colors){
-			if (position.index() + 1 == position.count())
-				position.last(true);
-			text_line = converter->serialize(color, position);
-			if (position.first()){
-				text << text_line;
-				position.first(false);
-			}else{
-				text << endl << text_line;
-			}
-			position.incrementIndex();
-		}
-	}
-	color_list_destroy(color_list);
-	if (text.str().length() > 0){
-		*out_text = g_strdup(text.str().c_str());
-	}else{
-		*out_text = 0;
-	}
-}
-
 static PaletteListCallbackReturn color_list_mark_selected(ColorObject* color_object, void *userdata)
 {
 	color_object->setSelected(true);
