@@ -61,7 +61,7 @@ struct TextFile: public text_file_parser::TextFile
 BOOST_AUTO_TEST_CASE(full_hex)
 {
 	ifstream file("test/textImport01.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(full_hex)
 BOOST_AUTO_TEST_CASE(short_hex)
 {
 	ifstream file("test/textImport02.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(short_hex)
 BOOST_AUTO_TEST_CASE(css_rgb)
 {
 	ifstream file("test/textImport03.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(css_rgb)
 BOOST_AUTO_TEST_CASE(css_rgba)
 {
 	ifstream file("test/textImport04.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(css_rgba)
 BOOST_AUTO_TEST_CASE(int_values)
 {
 	ifstream file("test/textImport05.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE(int_values)
 BOOST_AUTO_TEST_CASE(float_values)
 {
 	ifstream file("test/textImport06.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(float_values)
 BOOST_AUTO_TEST_CASE(single_line_c_comments)
 {
 	ifstream file("test/textImport07.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(single_line_c_comments)
 BOOST_AUTO_TEST_CASE(multi_line_c_comments)
 {
 	ifstream file("test/textImport08.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(multi_line_c_comments)
 BOOST_AUTO_TEST_CASE(single_line_hash_comments)
 {
 	ifstream file("test/textImport09.txt");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);

@@ -30,9 +30,9 @@ BOOST_AUTO_TEST_CASE(xml_deserialization)
 {
 	auto dynv = buildDynv();
 	ifstream file("test/config01.xml");
-	BOOST_CHECK(file.is_open());
+	BOOST_REQUIRE(file.is_open());
 	if (file.is_open()){
-		BOOST_CHECK(dynv_xml_deserialize(dynv, file) == 0);
+		BOOST_REQUIRE(dynv_xml_deserialize(dynv, file) == 0);
 		file.close();
 	}
 	const char *data[] = {"a", "b", "c"};

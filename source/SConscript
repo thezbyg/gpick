@@ -75,12 +75,9 @@ for obj in objects:
 executable = local_env.Program('gpick', source = [objects])
 
 test_env = local_env.Clone()
-test_env.Append(LIBS = ['boost_unit_test_framework'])
+test_env.Append(LIBS = ['boost_unit_test_framework'], CPPDEFINES = ['BOOST_TEST_DYN_LINK'])
 
-test_dynv = test_env.Program('test_dynv', source = ['test/DynvTest.cpp', dynv_objects])
-test_text_file = test_env.Program('test_text_file', source = ['test/TextFileTest.cpp', text_file_parser_objects, object_map['Color'], object_map['MathUtil']])
-test_lua_script = test_env.Program('test_lua_script', source = ['test/ScriptTest.cpp', object_map['lua/Script']])
-tests = [test_dynv, test_text_file, test_lua_script]
+tests = test_env.Program('tests', source = test_env.Glob('test/*.cpp') + [object_map['Color'], object_map['MathUtil'], object_map['lua/Script']] + dynv_objects + text_file_parser_objects)
 
 Return('executable', 'tests', 'generated_files')
 
