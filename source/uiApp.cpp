@@ -837,11 +837,45 @@ static void secondary_view_cb(GtkWidget *widget, AppArgs *args)
 	}
 }
 
-static void addLayoutMenuItem(const char *layout, const char *label, GtkMenu *menu, GSList *&group, AppArgs *args)
+static void addLayoutMenuItem(const string &layout, GtkMenu *menu, GSList *&group, AppArgs *args)
 {
-	GtkWidget *item = gtk_radio_menu_item_new_with_label(group, label);
+	const char *components[] = {
+		 _("Primary"),
+		 _("Palette"),
+		 _("Secondary"),
+	};
+	string label;
+	size_t previous_position = 0;
+	for (;;){
+		size_t split_position = layout.find_first_of("_+", previous_position);
+		char type;
+		string name;
+		if (split_position != string::npos){
+			name = layout.substr(previous_position, split_position - previous_position);
+			type = layout[split_position];
+		}else{
+			name = layout.substr(previous_position);
+			type = 0;
+		}
+		if (name == "primary"){
+			label += components[0];
+		}else if (name == "palette"){
+			label += components[1];
+		}else if (name == "secondary"){
+			label += components[2];
+		}
+		if (type == '_'){
+			label += ", ";
+		}else if (type == '+'){
+			label += "/";
+		}else if (type == 0){
+			break;
+		}
+		previous_position = split_position + 1;
+	}
+	GtkWidget *item = gtk_radio_menu_item_new_with_label(group, label.c_str());
 	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-	g_object_set_data_full(G_OBJECT(item), "source", const_cast<char*>(layout), (GDestroyNotify)nullptr);
+	g_object_set_data_full(G_OBJECT(item), "source", const_cast<char*>(layout.c_str()), (GDestroyNotify)nullptr);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_layout_cb), args);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	string current_layout = dynv_get_string_wd(args->params, "view.layout", "primary+secondary_palette");
@@ -948,15 +982,15 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 
 	GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 	GSList *group = nullptr;
-	addLayoutMenuItem("primary+secondary_palette", _("Primary/Secondary, Palette"), menu2, group, args);
-	addLayoutMenuItem("primary+palette_secondary", _("Primary/Palette, Secondary"), menu2, group, args);
-	addLayoutMenuItem("primary_palette+secondary", _("Primary, Palette/Secondary"), menu2, group, args);
-	addLayoutMenuItem("palette+secondary_primary", _("Palette/Secondary, Primary"), menu2, group, args);
-	addLayoutMenuItem("palette+primary_secondary", _("Palette/Primary, Secondary"), menu2, group, args);
-	addLayoutMenuItem("palette_primary+secondary", _("Palette, Primary/Secondary"), menu2, group, args);
-	addLayoutMenuItem("secondary+primary_palette", _("Secondary/Primary, Palette"), menu2, group, args);
-	addLayoutMenuItem("secondary+palette_primary", _("Secondary/Palette, Primary"), menu2, group, args);
-	addLayoutMenuItem("secondary_primary+palette", _("Secondary, Primary/Palette"), menu2, group, args);
+	addLayoutMenuItem("primary+secondary_palette", menu2, group, args);
+	addLayoutMenuItem("primary+palette_secondary", menu2, group, args);
+	addLayoutMenuItem("primary_palette+secondary", menu2, group, args);
+	addLayoutMenuItem("palette+secondary_primary", menu2, group, args);
+	addLayoutMenuItem("palette+primary_secondary", menu2, group, args);
+	addLayoutMenuItem("palette_primary+secondary", menu2, group, args);
+	addLayoutMenuItem("secondary+primary_palette", menu2, group, args);
+	addLayoutMenuItem("secondary+palette_primary", menu2, group, args);
+	addLayoutMenuItem("secondary_primary+palette", menu2, group, args);
 	item = gtk_menu_item_new_with_mnemonic(_("_Layout"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(item), GTK_WIDGET(menu2));
