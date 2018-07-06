@@ -99,6 +99,8 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 	color_rgb_to_hsl(&color, &hsl_orig);
 	Box* box;
 	string name;
+	if (args->layout_system == nullptr)
+		return;
 	for (int i = 1; i <= 4; i++){
 		color_copy(&hsl_orig, &hsl);
 		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
@@ -202,6 +204,8 @@ static void add_to_palette_cb(GtkWidget *widget, gpointer item)
 }
 static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *args)
 {
+	if (args->layout_system == nullptr)
+		return;
 	ColorObject *color_object;
 	BrightnessDarknessColorNameAssigner name_assigner(args->gs);
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
@@ -270,7 +274,7 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 static int source_destroy(BrightnessDarknessArgs *args)
 {
 	if (args->layout_system) System::unref(args->layout_system);
-	args->layout_system = 0;
+	args->layout_system = nullptr;
 	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
@@ -300,7 +304,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
-	args->layout_system = 0;
+	args->layout_system = nullptr;
 	GtkWidget *hbox, *widget;
 	hbox = gtk_hbox_new(FALSE, 0);
 	struct DragDrop dd;
@@ -326,10 +330,15 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	args->gs = gs;
 	auto layout = gs->layouts().byName("std_layout_brightness_darkness");
-	System* layout_system = layout->build();
-	gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout_view), layout_system);
-	if (args->layout_system) System::unref(args->layout_system);
-	args->layout_system = layout_system;
+	if (layout != nullptr){
+		System* layout_system = layout->build();
+		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout_view), layout_system);
+		if (args->layout_system) System::unref(args->layout_system);
+		args->layout_system = layout_system;
+	}else{
+		if (args->layout_system) System::unref(args->layout_system);
+		args->layout_system = nullptr;
+	}
 	Color c;
 	color_set(&c, 0.5);
 	Color *color = dynv_get_color_wdc(dynv_namespace, "color", &c);

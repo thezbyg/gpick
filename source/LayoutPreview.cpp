@@ -98,30 +98,30 @@ static void style_cell_edited_cb(GtkCellRendererText *cell, gchar *path, gchar *
 }
 static void load_colors(LayoutPreviewArgs* args)
 {
-	if (args->layout_system){
-		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
-		string ident_selector;
-		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-			ident_selector = (*i)->ident_name + ".color";
-			const Color *color = dynv_get_color_wd(assignments_params, ident_selector.c_str(), 0);
-			if (color){
-				color_copy((Color*)color, &(*i)->color);
-			}
+	if (args->layout_system == nullptr)
+		return;
+	struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
+	string ident_selector;
+	for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
+		ident_selector = (*i)->ident_name + ".color";
+		const Color *color = dynv_get_color_wd(assignments_params, ident_selector.c_str(), 0);
+		if (color){
+			color_copy((Color*)color, &(*i)->color);
 		}
-		dynv_system_release(assignments_params);
 	}
+	dynv_system_release(assignments_params);
 }
 static void save_colors(LayoutPreviewArgs* args)
 {
-	if (args->layout_system){
-		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
-		string ident_selector;
-		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-			ident_selector = (*i)->ident_name + ".color";
-			dynv_set_color(assignments_params, ident_selector.c_str(), &(*i)->color);
-		}
-		dynv_system_release(assignments_params);
+	if (args->layout_system == nullptr)
+		return;
+	struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
+	string ident_selector;
+	for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
+		ident_selector = (*i)->ident_name + ".color";
+		dynv_set_color(assignments_params, ident_selector.c_str(), &(*i)->color);
 	}
+	dynv_system_release(assignments_params);
 }
 
 static GtkWidget* style_list_new(LayoutPreviewArgs *args)
@@ -160,6 +160,8 @@ static GtkWidget* style_list_new(LayoutPreviewArgs *args)
 }
 static void assign_css_selectors_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 {
+	if (args->layout_system == nullptr)
+		return;
 	GtkWidget *table;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Assign CSS selectors"), GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -233,7 +235,7 @@ static int source_destroy(LayoutPreviewArgs *args)
 {
 	save_colors(args);
 	if (args->layout_system) System::unref(args->layout_system);
-	args->layout_system = 0;
+	args->layout_system = nullptr;
 	gtk_widget_destroy(args->main);
 	dynv_system_release(args->params);
 	delete args;
@@ -349,6 +351,8 @@ static void add_to_palette_cb(GtkWidget *widget, gpointer item)
 
 static void add_all_to_palette_cb(GtkWidget *widget, LayoutPreviewArgs *args)
 {
+	if (args->layout_system == nullptr)
+		return;
 	LayoutPreviewColorNameAssigner name_assigner(args->gs);
 	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
 		add_color_to_palette(*i, name_assigner, args);
@@ -428,39 +432,40 @@ static void layout_changed_cb(GtkWidget *widget, LayoutPreviewArgs* args)
 }
 static int save_css_file(const char* filename, LayoutPreviewArgs* args)
 {
+	if (args->layout_system == nullptr)
+		return -1;
 	ofstream file(filename, ios::out);
-	if (file.is_open()){
-		auto converter = args->gs->converters().firstCopy();
-		ColorObject *co_color, *co_background_color;
-		Color t;
-		co_color = color_list_new_color_object(args->gs->getColorList(), &t);
-		co_background_color = color_list_new_color_object(args->gs->getColorList(), &t);
-		struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
-		string ident_selector;
-		for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-			ident_selector = (*i)->ident_name + ".selector";
-			const char *css_selector = dynv_get_string_wd(assignments_params, ident_selector.c_str(), (*i)->ident_name.c_str());
-			if (css_selector[0] != 0){
-				co_color->setColor((*i)->color);
-				string text = converter->serialize(co_color);
-				file << css_selector << " {" << endl;
-				if ((*i)->style_type == Style::TYPE_BACKGROUND){
-					file << "\tbackground-color: " << text << ";" << endl;
-				}else if ((*i)->style_type == Style::TYPE_COLOR){
-					file << "\tcolor: " << text << ";" << endl;
-				}else if ((*i)->style_type == Style::TYPE_BORDER){
-					file << "\tborder-color: " << text << ";" << endl;
-				}
-				file << "}" << endl << endl;
+	if (!file.is_open())
+		return -1;
+	auto converter = args->gs->converters().firstCopy();
+	ColorObject *co_color, *co_background_color;
+	Color t;
+	co_color = color_list_new_color_object(args->gs->getColorList(), &t);
+	co_background_color = color_list_new_color_object(args->gs->getColorList(), &t);
+	struct dynvSystem *assignments_params = dynv_get_dynv(args->params, "css_selectors.assignments");
+	string ident_selector;
+	for (list<Style*>::iterator i=args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
+		ident_selector = (*i)->ident_name + ".selector";
+		const char *css_selector = dynv_get_string_wd(assignments_params, ident_selector.c_str(), (*i)->ident_name.c_str());
+		if (css_selector[0] != 0){
+			co_color->setColor((*i)->color);
+			string text = converter->serialize(co_color);
+			file << css_selector << " {" << endl;
+			if ((*i)->style_type == Style::TYPE_BACKGROUND){
+				file << "\tbackground-color: " << text << ";" << endl;
+			}else if ((*i)->style_type == Style::TYPE_COLOR){
+				file << "\tcolor: " << text << ";" << endl;
+			}else if ((*i)->style_type == Style::TYPE_BORDER){
+				file << "\tborder-color: " << text << ";" << endl;
 			}
+			file << "}" << endl << endl;
 		}
-		dynv_system_release(assignments_params);
-		co_color->release();
-		co_background_color->release();
-		file.close();
-		return 0;
 	}
-	return -1;
+	dynv_system_release(assignments_params);
+	co_color->release();
+	co_background_color->release();
+	file.close();
+	return 0;
 }
 
 static void export_css_cb(GtkWidget *widget, LayoutPreviewArgs* args){
@@ -556,7 +561,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState* gs, struc
 	LayoutPreviewArgs* args = new LayoutPreviewArgs;
 	args->params = dynv_system_ref(dynv_namespace);
 	args->statusbar = gs->getStatusBar();
-	args->layout_system = 0;
+	args->layout_system = nullptr;
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
 	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
