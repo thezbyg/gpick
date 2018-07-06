@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2018, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -37,7 +37,7 @@ static GtkWidget* new_page(const char *text)
 void show_about_box(GtkWidget *widget)
 {
 	const char *license = {
-"Copyright \xc2\xa9 2009-2017, Albertas Vyšniauskas\n"
+"Copyright \xc2\xa9 2009-2018, Albertas Vyšniauskas\n"
 "\n"
 "All rights reserved.\n"
 "\n"
@@ -60,7 +60,7 @@ void show_about_box(GtkWidget *widget)
 "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
 	};
 	const char *lua_license = {
-"Copyright \xc2\xa9 1994-2008 Lua.org, PUC-Rio.\n"
+"Copyright \xc2\xa9 1994-2017 Lua.org, PUC-Rio.\n"
 "\n"
 "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n"
 "\n"
@@ -101,7 +101,7 @@ void show_about_box(GtkWidget *widget)
 	gtk_label_set_selectable(GTK_LABEL(comments), true);
 	gtk_label_set_justify(GTK_LABEL(comments), GTK_JUSTIFY_CENTER);
 	gtk_box_pack_start(GTK_BOX(vbox2), comments, false, false, 0);
-	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyright © 2009-2017, Albertas Vyšniauskas and Gpick development team"));
+	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyright © 2009-2018, Albertas Vyšniauskas and Gpick development team"));
 	GtkWidget *copyright = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(copyright), true);
 	gtk_label_set_justify(GTK_LABEL(copyright), GTK_JUSTIFY_CENTER);

@@ -9,7 +9,7 @@ local_env = env.Clone()
 if not local_env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 	if not env['USE_GTK3']:
 		local_env.ParseConfig('pkg-config --cflags $GIO_PC')
-        else:
+	else:
 		local_env.ParseConfig('pkg-config --cflags $GTK_PC')
 
 if not env['BUILD_TARGET'] == 'win32':

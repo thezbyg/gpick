@@ -93,6 +93,8 @@ void registerAll(lua_State *L, GlobalState &global_state)
 		luaL_newlib(L, functions);
 		lua_pushstring(L, gpick_build_version);
 		lua_setfield(L, -2, "version");
+		lua_pushstring(L, gpick_build_revision);
+		lua_setfield(L, -2, "revision");
 		lua_pushcclosure(L, getText, 0);
 		lua_setfield(L, -2, "_");
 		return 1;

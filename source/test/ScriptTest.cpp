@@ -1,5 +1,3 @@
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE luaScript
 #include <boost/test/unit_test.hpp>
 #include "lua/Script.h"
 extern "C"{
