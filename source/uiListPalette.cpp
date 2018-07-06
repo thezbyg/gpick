@@ -156,7 +156,8 @@ static void update_counts(ListPaletteArgs *args){
 #else
 	s << "Total " << total_colors << ((total_colors == 1) ? " color" : " colors");
 #endif
-	gtk_label_set_text(GTK_LABEL(args->count_label), s.str().c_str());
+	auto message = s.str();
+	gtk_label_set_text(GTK_LABEL(args->count_label), message.c_str());
 }
 static void palette_list_vertical_autoscroll(GtkTreeView *treeview)
 {

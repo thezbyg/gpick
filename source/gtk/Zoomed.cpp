@@ -383,7 +383,8 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				}
 				stringstream ss;
 				ss << ns->marks[i].position.x << "x" << ns->marks[i].position.y;
-				pango_layout_set_text(layout, ss.str().c_str(), -1);
+				auto text = ss.str();
+				pango_layout_set_text(layout, text.c_str(), -1);
 				pango_cairo_update_layout(cr, layout);
 				cairo_move_to(cr, relative_positions[i].x + 5, relative_positions[i].y);
 				if (layer == 0){
@@ -407,7 +408,8 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
 			stringstream ss;
 			ss << fixed << setprecision(1) << distance << endl << 1 + abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + abs(ns->marks[0].position.y - ns->marks[1].position.y);
-			pango_layout_set_text(layout, ss.str().c_str(), -1);
+			auto text = ss.str();
+			pango_layout_set_text(layout, text.c_str(), -1);
 			pango_cairo_update_layout(cr, layout);
 			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
 			PangoRectangle rect;

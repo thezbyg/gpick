@@ -208,7 +208,8 @@ static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget)
 	complementary *= std::sin(hsl1.hsl.lightness * M_PI) * std::sin(hsl2.hsl.lightness * M_PI);
 	complementary *= std::sin(hsl1.hsl.saturation * M_PI / 2) * std::sin(hsl2.hsl.saturation * M_PI / 2);
 	ss << std::setprecision(1) << std::abs(c_lab.lab.L - c2_lab.lab.L) + complementary * 50 << "%";
-	gtk_label_set_text(GTK_LABEL(args->contrastCheckMsg), ss.str().c_str());
+	auto message = ss.str();
+	gtk_label_set_text(GTK_LABEL(args->contrastCheckMsg), message.c_str());
 }
 static void on_swatch_active_color_changed(GtkWidget *widget, gint32 new_active_color, gpointer data)
 {

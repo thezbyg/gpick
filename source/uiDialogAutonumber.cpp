@@ -65,7 +65,8 @@ static void update(GtkWidget *widget, DialogAutonumberArgs *args)
 	ss.fill('0');
 	ss.width(nplaces);
 	ss << right << startindex;
-	gtk_entry_set_text(GTK_ENTRY(args->sample), ss.str().c_str());
+	auto text = ss.str();
+	gtk_entry_set_text(GTK_ENTRY(args->sample), text.c_str());
 	dynv_set_string (args->params, "name", name);
 	dynv_set_bool (args->params, "append", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_append)));
 	dynv_set_bool (args->params, "decreasing", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing)));

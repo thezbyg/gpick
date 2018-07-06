@@ -555,8 +555,9 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 			for (int j = 0; extensions[j]; j++){
 				ss.str("");
 				ss << "*." << extensions[j];
-				gtk_file_filter_add_pattern(filter, ss.str().c_str());
-				gtk_file_filter_add_pattern(all_image_filter, ss.str().c_str());
+				auto pattern = ss.str();
+				gtk_file_filter_add_pattern(filter, pattern.c_str());
+				gtk_file_filter_add_pattern(all_image_filter, pattern.c_str());
 			}
 			g_strfreev(extensions);
 		}
