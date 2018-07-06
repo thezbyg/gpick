@@ -19,6 +19,7 @@
 #include "uiAbout.h"
 #include "version/Version.h"
 #include "I18N.h"
+#include "Paths.h"
 
 const gchar* program_name = "Gpick";
 
@@ -85,22 +86,19 @@ void show_about_box(GtkWidget *widget)
 	gtk_box_pack_end(GTK_BOX(align_box), gtk_vbox_new(false, 0), true, true, 0);
 	GtkWidget *hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(align_box), hbox, false, false, 0);
-	GtkWidget *image = gtk_image_new();
-	gtk_image_set_from_icon_name(GTK_IMAGE(image), "gpick", GTK_ICON_SIZE_DIALOG);
+	gchar* logo_filename = build_filename("logo.png");
+	GtkWidget *image = gtk_image_new_from_file(logo_filename);
+	g_free(logo_filename);
 	gtk_box_pack_start(GTK_BOX(hbox), image, false, false, 0);
 	GtkWidget *vbox2 = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox2, false, false, 0);
-	gchar *tmp_string = g_markup_printf_escaped("<span size=\"xx-large\" weight=\"bold\">%s %s</span>", program_name, gpick_build_version);
+	gchar *tmp_string = g_markup_printf_escaped("<span size=\"xx-large\" weight=\"bold\">%s %s</span>\n<span size=\"small\">%s: %s</span>", program_name, gpick_build_version, _("Revision"), gpick_build_revision);
 	GtkWidget *name = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(name), true);
 	gtk_label_set_justify(GTK_LABEL(name), GTK_JUSTIFY_CENTER);
 	gtk_label_set_markup(GTK_LABEL(name), tmp_string);
 	gtk_box_pack_start(GTK_BOX(vbox2), name, false, false, 0);
 	g_free(tmp_string);
-	GtkWidget *comments = gtk_label_new(_("Advanced color picker"));
-	gtk_label_set_selectable(GTK_LABEL(comments), true);
-	gtk_label_set_justify(GTK_LABEL(comments), GTK_JUSTIFY_CENTER);
-	gtk_box_pack_start(GTK_BOX(vbox2), comments, false, false, 0);
 	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyright © 2009-2018, Albertas Vyšniauskas and Gpick development team"));
 	GtkWidget *copyright = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(copyright), true);
