@@ -342,6 +342,7 @@ static void destroy_cb(GtkWidget *widget, FloatingPickerArgs *args)
 FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 {
 	FloatingPickerArgs *args = new FloatingPickerArgs;
+	args->timeout_source_id = 0;
 	args->gs = gs;
 	args->window = gtk_window_new(GTK_WINDOW_POPUP);
 	args->color_source = nullptr;
