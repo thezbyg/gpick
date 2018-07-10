@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2018, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -77,6 +77,7 @@ void screen_reader_update_surface(ScreenReader *screen, Rect2<int>* update_rect)
 		cerr << "can not get root window surface" << endl;
 		return;
 	}
+	cairo_surface_mark_dirty_rectangle(root_surface, left, top, width, height);
 	cairo_t *cr = cairo_create(screen->surface);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_surface(cr, root_surface, -left, -top);
