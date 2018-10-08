@@ -109,6 +109,16 @@ if not env['TOOLCHAIN'] == 'msvc':
 		env.Append(
 			CPPFLAGS = ['-std=c++14'],
 		)
+	else:
+		stdMissing = True
+		for flag in env['CXXFLAGS']:
+			if flag.startswith('-std='):
+				stdMissing = False
+				break
+		if stdMissing:
+			env.Append(
+				CPPFLAGS = ['-std=c++14'],
+			)
 
 	if env['BUILD_TARGET'] == 'win32':
 		env.Append(
