@@ -119,40 +119,40 @@ rgb_to_lms[2][0] + rgb_to_lms[2][1] + rgb_to_lms[2][2],
 
 const vector3 protanopia_abc[2] = {
 	{{{
-		rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7],
-		rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8],
-		rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6],
+		static_cast<float>(rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7]),
+		static_cast<float>(rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8]),
+		static_cast<float>(rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6]),
 	}}},
 	{{{
-		rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1],
-		rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2],
-		rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0],
+		static_cast<float>(rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1]),
+		static_cast<float>(rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2]),
+		static_cast<float>(rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0]),
 	}}},
 };
 
 const vector3 deuteranopia_abc[2] = {
 	{{{
-		rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7],
-		rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8],
-		rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6],
+		static_cast<float>(rgb_anchor[1] * anchor[8] - rgb_anchor[2] * anchor[7]),
+		static_cast<float>(rgb_anchor[2] * anchor[6] - rgb_anchor[0] * anchor[8]),
+		static_cast<float>(rgb_anchor[0] * anchor[7] - rgb_anchor[1] * anchor[6]),
 	}}},
 	{{{
-		rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1],
-		rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2],
-		rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0],
+		static_cast<float>(rgb_anchor[1] * anchor[2] - rgb_anchor[2] * anchor[1]),
+		static_cast<float>(rgb_anchor[2] * anchor[0] - rgb_anchor[0] * anchor[2]),
+		static_cast<float>(rgb_anchor[0] * anchor[1] - rgb_anchor[1] * anchor[0]),
 	}}},
 };
 
 const vector3 tritanopia_abc[2] = {
 	{{{
-		rgb_anchor[1] * anchor[11] - rgb_anchor[2] * anchor[10],
-		rgb_anchor[2] * anchor[9] - rgb_anchor[0] * anchor[11],
-		rgb_anchor[0] * anchor[10] - rgb_anchor[1] * anchor[9],
+		static_cast<float>(rgb_anchor[1] * anchor[11] - rgb_anchor[2] * anchor[10]),
+		static_cast<float>(rgb_anchor[2] * anchor[9] - rgb_anchor[0] * anchor[11]),
+		static_cast<float>(rgb_anchor[0] * anchor[10] - rgb_anchor[1] * anchor[9]),
 	}}},
 	{{{
-		rgb_anchor[1] * anchor[5] - rgb_anchor[2] * anchor[4],
-		rgb_anchor[2] * anchor[3] - rgb_anchor[0] * anchor[5],
-		rgb_anchor[0] * anchor[4] - rgb_anchor[1] * anchor[3],
+		static_cast<float>(rgb_anchor[1] * anchor[5] - rgb_anchor[2] * anchor[4]),
+		static_cast<float>(rgb_anchor[2] * anchor[3] - rgb_anchor[0] * anchor[5]),
+		static_cast<float>(rgb_anchor[0] * anchor[4] - rgb_anchor[1] * anchor[3]),
 	}}},
 };
 
