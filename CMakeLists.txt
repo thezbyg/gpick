@@ -73,22 +73,26 @@ endfunction()
 
 file(GLOB MATH_SOURCES source/MathUtil.cpp source/MathUtil.h)
 add_library(math ${MATH_SOURCES})
+set_target_properties(math PROPERTIES OUTPUT_NAME "gpick-math")
 set_compile_options(math)
 target_include_directories(math PUBLIC source)
 
 file(GLOB COLOR_SOURCES source/Color.cpp source/Color.h)
 add_library(color ${COLOR_SOURCES})
+set_target_properties(color PROPERTIES OUTPUT_NAME "gpick-color")
 set_compile_options(color)
 target_link_libraries(color PUBLIC math)
 target_include_directories(color PUBLIC source)
 
 file(GLOB FORMAT_SOURCES source/Format.cpp source/Format.h)
 add_library(format ${FORMAT_SOURCES})
+set_target_properties(format PROPERTIES OUTPUT_NAME "gpick-format")
 set_compile_options(format)
 target_include_directories(format PUBLIC source)
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
 add_library(dynv ${DYNV_SOURCES})
+set_target_properties(dynv PROPERTIES OUTPUT_NAME "gpick-dynv")
 set_compile_options(dynv)
 target_link_libraries(dynv PUBLIC color)
 target_include_directories(dynv PUBLIC
@@ -98,6 +102,7 @@ target_include_directories(dynv PUBLIC
 
 file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
 add_library(lua ${LUA_SOURCES})
+set_target_properties(lua PROPERTIES OUTPUT_NAME "gpick-lua")
 set_compile_options(lua)
 target_link_libraries(lua PUBLIC
 	${Lua_LIBRARIES}
@@ -111,6 +116,7 @@ file(GLOB PARSER_SOURCES source/parser/*.cpp source/parser/*.h)
 ragel_target(text_file_parser source/parser/TextFileParser.rl ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TextFileParser.cpp)
 list(APPEND PARSER_SOURCES ${RAGEL_text_file_parser_OUTPUTS})
 add_library(parser ${PARSER_SOURCES})
+set_target_properties(parser PROPERTIES OUTPUT_NAME "gpick-parser")
 set_compile_options(parser)
 target_include_directories(parser PUBLIC source)
 
