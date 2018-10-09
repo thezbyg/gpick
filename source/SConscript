@@ -47,12 +47,10 @@ if local_env['BUILD_TARGET'] == 'win32':
 	else:
 		local_env.Append(LINKFLAGS = ['/SUBSYSTEM:WINDOWS', '/ENTRY:mainCRTStartup'], CPPDEFINES = ['XML_STATIC'])
 	objects += SConscript(['winres/SConscript'], exports='env')
-elif local_env['BUILD_TARGET'].startswith('linux'):
-	local_env.Append(LIBS=['rt', 'expat'])
-elif local_env['BUILD_TARGET'].startswith('gnu0'):
-	local_env.Append(LIBS=['rt', 'expat'])
-elif local_env['BUILD_TARGET'].startswith('gnukfreebsd'):
-	local_env.Append(LIBS=['rt', 'expat'])
+else:
+	local_env.Append(LIBS=['expat'])
+	if local_env['BUILD_TARGET'].startswith('linux') or local_env['BUILD_TARGET'].startswith('gnu0') or local_env['BUILD_TARGET'].startswith('gnukfreebsd'):
+		local_env.Append(LIBS=['rt'])
 
 local_env.Append(CPPPATH=['#source'])
 
