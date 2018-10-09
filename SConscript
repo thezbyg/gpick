@@ -94,7 +94,7 @@ if not env['TOOLCHAIN'] == 'msvc':
 	if not (os.environ.has_key('CFLAGS') or os.environ.has_key('CXXFLAGS') or os.environ.has_key('LDFLAGS')):
 		if env['DEBUG']:
 			env.Append(
-				CPPFLAGS = ['-Wall', '-g3', '-O0'],
+				CXXFLAGS = ['-Wall', '-g3', '-O0'],
 				CFLAGS = ['-Wall', '-g3', '-O0'],
 				LINKFLAGS = ['-Wl,-as-needed'],
 				)
@@ -102,12 +102,12 @@ if not env['TOOLCHAIN'] == 'msvc':
 			env.Append(
 				CPPDEFINES = ['NDEBUG'],
 				CDEFINES = ['NDEBUG'],
-				CPPFLAGS = ['-Wall', '-O3'],
+				CXXFLAGS = ['-Wall', '-O3'],
 				CFLAGS = ['-Wall', '-O3'],
 				LINKFLAGS = ['-Wl,-as-needed', '-s'],
 				)
 		env.Append(
-			CPPFLAGS = ['-std=c++14'],
+			CXXFLAGS = ['-std=c++14'],
 		)
 	else:
 		stdMissing = True
@@ -117,7 +117,7 @@ if not env['TOOLCHAIN'] == 'msvc':
 				break
 		if stdMissing:
 			env.Append(
-				CPPFLAGS = ['-std=c++14'],
+				CXXFLAGS = ['-std=c++14'],
 			)
 
 	if env['BUILD_TARGET'] == 'win32':
@@ -129,13 +129,13 @@ else:
 	env['LINKCOM'] = [env['LINKCOM'], 'mt.exe -nologo -manifest ${TARGET}.manifest -outputresource:$TARGET;1']
 	if env['DEBUG']:
 		env.Append(
-				CPPFLAGS = ['/Od', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CXXFLAGS = ['/Od', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
 				CPPDEFINES = ['WIN32', '_DEBUG', 'NOMINMAX'],
 				LINKFLAGS = ['/MANIFEST', '/DEBUG'],
 			)
 	else:
 		env.Append(
-				CPPFLAGS = ['/O2', '/Oi', '/GL', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
+				CXXFLAGS = ['/O2', '/Oi', '/GL', '/EHsc', '/MD', '/Gy', '/Zi', '/TP', '/wd4819'],
 				CPPDEFINES = ['WIN32', 'NDEBUG', 'NOMINMAX'],
 				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
