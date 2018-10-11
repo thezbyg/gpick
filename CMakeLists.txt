@@ -36,35 +36,35 @@ find_package(Ragel 6.9 REQUIRED)
 
 function(set_compile_options target)
 	if (MSVC)
-		target_compile_options(${target} PUBLIC /MD /utf-8)
-		target_compile_options(${target} PUBLIC $<$<COMPILE_LANGUAGE:C>:/TP>)
-		target_compile_definitions(${target} PUBLIC UNICODE GSEAL_ENABLE)
+		target_compile_options(${target} PRIVATE /MD /utf-8)
+		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:/TP>)
+		target_compile_definitions(${target} PRIVATE UNICODE GSEAL_ENABLE)
 		if (ENABLE_NLS)
-			target_compile_definitions(${target} PUBLIC ENABLE_NLS)
+			target_compile_definitions(${target} PRIVATE ENABLE_NLS)
 		endif()
 	else()
-		target_compile_options(${target} PUBLIC -Wall -Wfloat-conversion)
-		target_compile_options(${target} PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
+		target_compile_options(${target} PRIVATE -Wall -Wfloat-conversion)
+		target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++14>)
 		if (ENABLE_NLS)
-			target_compile_definitions(${target} PUBLIC ENABLE_NLS "LOCALEDIR=${CMAKE_INSTALL_PREFIX}/share/locale")
+			target_compile_definitions(${target} PRIVATE ENABLE_NLS "LOCALEDIR=${CMAKE_INSTALL_PREFIX}/share/locale")
 		endif()
 	endif()
 endfunction()
 
 function(add_gtk_options target)
 	if (USE_GTK3)
-		target_link_libraries(${target} PUBLIC
+		target_link_libraries(${target} PRIVATE
 			${GTK3_LIBRARIES}
 		)
-		target_include_directories(${target} PUBLIC
+		target_include_directories(${target} PRIVATE
 			${GTK3_INCLUDE_DIRS}
 		)
 	else()
-		target_link_libraries(${target} PUBLIC
+		target_link_libraries(${target} PRIVATE
 			${GTK2_LIBRARIES}
 			${GioUnix_LIBRARIES}
 		)
-		target_include_directories(${target} PUBLIC
+		target_include_directories(${target} PRIVATE
 			${GTK2_INCLUDE_DIRS}
 			${GioUnix_INCLUDE_DIRS}
 		)
@@ -72,42 +72,37 @@ function(add_gtk_options target)
 endfunction()
 
 file(GLOB MATH_SOURCES source/MathUtil.cpp source/MathUtil.h)
-add_library(math ${MATH_SOURCES})
-set_target_properties(math PROPERTIES OUTPUT_NAME "gpick-math")
-set_compile_options(math)
-target_include_directories(math PUBLIC source)
+add_library(gpick-math ${MATH_SOURCES})
+set_compile_options(gpick-math)
+target_include_directories(gpick-math PRIVATE source)
 
 file(GLOB COLOR_SOURCES source/Color.cpp source/Color.h)
-add_library(color ${COLOR_SOURCES})
-set_target_properties(color PROPERTIES OUTPUT_NAME "gpick-color")
-set_compile_options(color)
-target_link_libraries(color PUBLIC math)
-target_include_directories(color PUBLIC source)
+add_library(gpick-color ${COLOR_SOURCES})
+set_compile_options(gpick-color)
+target_link_libraries(gpick-color PRIVATE gpick-math)
+target_include_directories(gpick-color PRIVATE source)
 
 file(GLOB FORMAT_SOURCES source/Format.cpp source/Format.h)
-add_library(format ${FORMAT_SOURCES})
-set_target_properties(format PROPERTIES OUTPUT_NAME "gpick-format")
-set_compile_options(format)
-target_include_directories(format PUBLIC source)
+add_library(gpick-format ${FORMAT_SOURCES})
+set_compile_options(gpick-format)
+target_include_directories(gpick-format PRIVATE source)
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
-add_library(dynv ${DYNV_SOURCES})
-set_target_properties(dynv PROPERTIES OUTPUT_NAME "gpick-dynv")
-set_compile_options(dynv)
-target_link_libraries(dynv PUBLIC color)
-target_include_directories(dynv PUBLIC
+add_library(gpick-dynv ${DYNV_SOURCES})
+set_compile_options(gpick-dynv)
+target_link_libraries(gpick-dynv PRIVATE gpick-color)
+target_include_directories(gpick-dynv PRIVATE
 	source
 	${Expat_INCLUDE_DIRS}
 )
 
 file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
-add_library(lua ${LUA_SOURCES})
-set_target_properties(lua PROPERTIES OUTPUT_NAME "gpick-lua")
-set_compile_options(lua)
-target_link_libraries(lua PUBLIC
+add_library(gpick-lua ${LUA_SOURCES})
+set_compile_options(gpick-lua)
+target_link_libraries(gpick-lua PRIVATE
 	${Lua_LIBRARIES}
 )
-target_include_directories(lua PUBLIC
+target_include_directories(gpick-lua PRIVATE
 	source
 	${Lua_INCLUDE_DIRS}
 )
@@ -115,10 +110,9 @@ target_include_directories(lua PUBLIC
 file(GLOB PARSER_SOURCES source/parser/*.cpp source/parser/*.h)
 ragel_target(text_file_parser source/parser/TextFileParser.rl ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TextFileParser.cpp)
 list(APPEND PARSER_SOURCES ${RAGEL_text_file_parser_OUTPUTS})
-add_library(parser ${PARSER_SOURCES})
-set_target_properties(parser PROPERTIES OUTPUT_NAME "gpick-parser")
-set_compile_options(parser)
-target_include_directories(parser PUBLIC source)
+add_library(gpick-parser ${PARSER_SOURCES})
+set_compile_options(gpick-parser)
+target_include_directories(gpick-parser PRIVATE source)
 
 if (ENABLE_NLS)
 	find_package(Gettext REQUIRED)
@@ -142,20 +136,20 @@ endif()
 add_executable(gpick ${SOURCES})
 set_compile_options(gpick)
 add_gtk_options(gpick)
-target_link_libraries(gpick PUBLIC
-	color
-	math
-	dynv
-	lua
-	parser
-	format
+target_link_libraries(gpick PRIVATE
+	gpick-color
+	gpick-math
+	gpick-dynv
+	gpick-lua
+	gpick-parser
+	gpick-format
 	${Boost_FILESYSTEM_LIBRARY}
 	${Boost_SYSTEM_LIBRARY}
 	${Lua_LIBRARIES}
 	${Expat_LIBRARIES}
 	Threads::Threads
 )
-target_include_directories(gpick PUBLIC
+target_include_directories(gpick PRIVATE
 	source
 	${Boost_INCLUDE_DIRS}
 	${Lua_INCLUDE_DIRS}
@@ -165,20 +159,20 @@ target_include_directories(gpick PUBLIC
 file(GLOB TESTS_SOURCES source/test/*.cpp source/test/*.h)
 add_executable(tests ${TESTS_SOURCES})
 set_compile_options(tests)
-target_compile_definitions(tests PUBLIC BOOST_TEST_DYN_LINK)
-target_link_libraries(tests PUBLIC
-	color
-	math
-	dynv
-	lua
-	parser
-	format
+target_compile_definitions(tests PRIVATE BOOST_TEST_DYN_LINK)
+target_link_libraries(tests PRIVATE
+	gpick-color
+	gpick-math
+	gpick-dynv
+	gpick-lua
+	gpick-parser
+	gpick-format
 	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 	${Lua_LIBRARIES}
 	${Expat_LIBRARIES}
 	Threads::Threads
 )
-target_include_directories(tests PUBLIC
+target_include_directories(tests PRIVATE
 	source
 	${Boost_INCLUDE_DIRS}
 	${Lua_INCLUDE_DIRS}
