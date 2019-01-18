@@ -1,0 +1,1106 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gpick 0.2.6\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-09-07 19:53+0300\n"
+"PO-Revision-Date: 2019-01-18 03:20+0100\n"
+"Last-Translator: Åke Engelbrektson <eson@svenskasprakfiler.se>\n"
+"Language-Team: Svenska Språkfiler <contactform@svenskasprakfiler.se>\n"
+"Language: sv\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.0.6\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#, c-format
+msgid "%d color"
+msgid_plural "%d colors"
+msgstr[0] "%d färg"
+msgstr[1] "%d färger"
+
+msgid "'Spacebar' button behaviour"
+msgstr "Mellanslagsbeteende"
+
+msgid "(Imported)"
+msgstr "(Importerat)"
+
+msgid "A_dd all to palette"
+msgstr "L_ägg till alla i paletten"
+
+msgid "About Gpick"
+msgstr "Om Gpick"
+
+msgid "About us"
+msgstr "Om oss"
+
+msgid "Absence of blue receptors"
+msgstr "Avsaknad av blå receptorer"
+
+msgid "Absence of green receptors"
+msgstr "Avsaknad av gröna receptorer"
+
+msgid "Absence of red receptors"
+msgstr "Avsaknad av röda receptorer"
+
+msgid "Active filters"
+msgstr "Aktiva filter"
+
+msgid "Add"
+msgstr "Lägg till"
+
+msgid "Add color dictionary file"
+msgstr "Lägg till färglexikonfil"
+
+msgid "Adobe Swatch Exchange (*.ase)"
+msgstr "Adobe Swatch Exchange (*.ase)"
+
+msgid "Advanced color picker"
+msgstr "Avancerad färgväljare"
+
+msgid "Alias/WaveFront Material (*.mtl)"
+msgstr "Alias/WaveFront Material (*.mtl)"
+
+msgid "All files"
+msgstr "Alla filer"
+
+msgid "All images"
+msgstr "Alla bilder"
+
+msgid "All supported formats"
+msgstr "Alla format som stöds"
+
+msgid "Altered spectral sensitivity of blue receptors"
+msgstr "Förändrad spektral känslighet hos blå receptorer"
+
+msgid "Altered spectral sensitivity of green receptors"
+msgstr "Förändrad spektral känslighet hos gröna receptorer"
+
+msgid "Altered spectral sensitivity of red receptors"
+msgstr "Förändrad spektral känslighet hos röda receptorer"
+
+msgid "Analogous"
+msgstr "Analog"
+
+msgid "Assign CSS selectors"
+msgstr "Tilldela CSS-väljare"
+
+msgid "Auto_number..."
+msgstr "Autonumrera..."
+
+msgid "Autona_me"
+msgstr "Namnge automatiskt"
+
+msgid "Autonumber colors"
+msgstr "Automatisk färgnumrering"
+
+msgid "Available filters"
+msgstr "Tillgängliga filter"
+
+msgid "Background color"
+msgstr "Bakgrundsfärg"
+
+msgid "Background:"
+msgstr "Bakgrund:"
+
+msgid "Big"
+msgstr "Stor"
+
+msgid "Black"
+msgstr "Svart"
+
+msgid "Blend colors"
+msgstr "Blanda färger"
+
+msgid "Blue"
+msgstr "Blå"
+
+msgid "Brightness"
+msgstr "Ljusstyrka"
+
+msgid "Brightness Darkness"
+msgstr "Ljusstyrka mörker"
+
+msgid "Brightness-Darkness"
+msgstr "Ljusstyrka-Mörker"
+
+msgid "Built in"
+msgstr "Inbyggt"
+
+msgid "Button"
+msgstr "Knapp"
+
+msgid "Button (hover)"
+msgstr "Knapp (hovring)"
+
+msgid "Button text"
+msgstr "Knapptext"
+
+msgid "Button text (hover)"
+msgstr "Knapptext (hovring)"
+
+msgid "C style multi-line comments"
+msgstr "C-stil flerraderskommentarer"
+
+msgid "C style single-line comments"
+msgstr "C-stil enkelradskommentarer"
+
+msgid "CSS selector"
+msgstr "CSS-väljare"
+
+msgid "CSS: hue saturation lightness"
+msgstr "CSS: nyans mättnad ljusstyrka"
+
+msgid "CSS: red green blue"
+msgstr "CSS: röd grön blå"
+
+msgid "C_lear names"
+msgstr "_Rensa namn"
+
+msgid "Cascading Style Sheet (*.css)"
+msgstr "Cascading Style Sheet (*.css)"
+
+msgid "Cascading Style Sheets *.css"
+msgstr "Cascading Style Sheets *.css"
+
+msgid "Chaos:"
+msgstr "Kaos:"
+
+msgid "Clash"
+msgstr "Konflikt"
+
+msgid "Click on swatch area to begin adding colors to palette"
+msgstr "Klicka på färgrutan för att börja lägga till färger i paletten"
+
+msgid "Clip top-end"
+msgstr "Clip top-end"
+
+msgid "Closest colors"
+msgstr "Närmaste färg"
+
+msgid "Color"
+msgstr "Färg"
+
+msgid "Color Space _Sampler..."
+msgstr "Färgrymds_sampler..."
+
+msgid "Color _Dictionaries..."
+msgstr "Färg_lexikon..."
+
+msgid "Color dictionaries"
+msgstr "Färglexikon"
+
+msgid "Color dictionary file"
+msgstr "Färglexikonfil"
+
+msgid "Color list:"
+msgstr "Färglista:"
+
+msgid "Color mixer"
+msgstr "Färgblandare"
+
+msgid "Color name generation"
+msgstr "Generering av färgnamn"
+
+msgid "Color name:"
+msgstr "Färgnamn:"
+
+msgid "Color pic_ker"
+msgstr "Färg_väljare"
+
+msgid "Color picker"
+msgstr "Färgväljare"
+
+msgid "Color space sampler"
+msgstr "Färgrymdssampler"
+
+msgid "Color space:"
+msgstr "Färgrymd:"
+
+msgid "Color vision deficiency"
+msgstr "Färgblindhet"
+
+msgid "Color wheel:"
+msgstr "Färghjul:"
+
+msgid "Color:"
+msgstr "Färg:"
+
+msgid "Colors:"
+msgstr "Färger:"
+
+msgid "Complementary"
+msgstr "Kompletterande"
+
+msgid "Contact us"
+msgstr "Kontakta oss"
+
+msgid "Content"
+msgstr "Innehåll"
+
+msgid "Content text"
+msgstr "Innehållstext"
+
+msgid "Contrast:"
+msgstr "Kontrast:"
+
+msgid "Converter:"
+msgstr "Omvandlare:"
+
+msgid "Converters"
+msgstr "Omvandlare"
+
+msgid "Cop_y"
+msgstr "_Kopiera"
+
+msgid "Copy"
+msgstr "Kopiera"
+
+msgid "Copyright © 2009-2016, Albertas Vyšniauskas and Gpick development team"
+msgstr "Copyright © 2009-2016, Albertas Vyšniauskas and Gpick development team"
+
+msgid "Credits"
+msgstr "Tack"
+
+msgid "Cubic"
+msgstr "Kubisk"
+
+msgid "Cyan"
+msgstr "Cyan"
+
+msgid "Darkness"
+msgstr "Mörker"
+
+msgid "Decimal places:"
+msgstr "Decimalplacering:"
+
+msgid "Default drag action"
+msgstr "Standard dragåtgärd"
+
+msgid "Deuteranomaly"
+msgstr "Deuteranomali"
+
+msgid "Deuteranopia"
+msgstr "Deuteranopi"
+
+msgid "Difference"
+msgstr "Differens"
+
+msgid "Display"
+msgstr "Skärm"
+
+msgid "Display _Filters..."
+msgstr "Skärm_filter..."
+
+msgid "Display filters"
+msgstr "Skärmfilter"
+
+msgid "Displays:"
+msgstr "Skärmar:"
+
+msgid "Edit"
+msgstr "Redigera"
+
+msgid "Edit _Converters..."
+msgstr "Redigera _omvandlare..."
+
+msgid "Edit color"
+msgstr "Redigera färg"
+
+msgid "Enable"
+msgstr "Aktivera"
+
+msgid "Enabled color spaces"
+msgstr "Aktiverade färgrymder"
+
+msgid "End steps:"
+msgstr "Slutsteg:"
+
+msgid "End:"
+msgstr "Slut:"
+
+msgid "Ex_port..."
+msgstr "Ex_portera..."
+
+msgid "Example"
+msgstr "Exempel"
+
+msgid "Expat License"
+msgstr "Expat-licens"
+
+msgid "Expo_rt Selected..."
+msgstr "Expo_rtera markerat..."
+
+msgid "Exponential"
+msgstr "Exponentiell"
+
+msgid "Export"
+msgstr "Exportera"
+
+msgid "Export CSS File"
+msgstr "Exportera CSS-fil"
+
+msgid "Export CSS file"
+msgstr "Exportera CSS-fil"
+
+msgid "Falloff:"
+msgstr "Falloff:"
+
+msgid "File could not be exported"
+msgstr "Filen kunde inte exporteras"
+
+msgid "File could not be imported"
+msgstr "Filen kunde inte importeras"
+
+msgid "File could not be opened"
+msgstr "Filen kunde inte öppnas"
+
+msgid "File could not be saved"
+msgstr "Filen kunde inte sparas"
+
+msgid "File format is not supported"
+msgstr "Filformatet stöds inte"
+
+msgid "File is currently in a non-native format, possible loss of precision and/or metadata."
+msgstr "Filen är för närvarande i ett främmande format, eventuell förlust av precision och/eller metadata."
+
+msgid "First color"
+msgstr "Första färg"
+
+msgid "Five-Tone"
+msgstr "Fem-ton"
+
+msgid "Floating picker click behaviour"
+msgstr "Klickbeteende för flytande färgväljare"
+
+msgid "Footer"
+msgstr "Sidfot"
+
+msgid "Full hex"
+msgstr "Full hex"
+
+msgid "Function name"
+msgstr "Funktionsnamn"
+
+msgid "GIMP/Inkscape Palette (*.gpl)"
+msgstr "GIMP/Inkscape Palette (*.gpl)"
+
+msgid "Gamma modification"
+msgstr "Gammamodifiering"
+
+msgid "Generate colors"
+msgstr "Generera färger"
+
+msgid "Gpick Palette (*.gpa)"
+msgstr "Gpick Palette (*.gpa)"
+
+msgid "Gray"
+msgstr "Grå"
+
+msgid "Green"
+msgstr "Grön"
+
+msgid "Grid (4x3)"
+msgstr "Rutnät (4x3)"
+
+msgid "Grid (5x4)"
+msgstr "Rutnät (5x4)"
+
+msgid "Group and _sort..."
+msgstr "Gruppera och _sortera..."
+
+msgid "Group and sort"
+msgstr "Gruppera och sortera"
+
+msgid "Group type:"
+msgstr "Grupptyp:"
+
+msgid "Grouping sensitivity:"
+msgstr "Grupperingskänslighet:"
+
+msgid "HSL"
+msgstr "HSL"
+
+msgid "HSL Hue"
+msgstr "HSL-nyans"
+
+msgid "HSL Lightness"
+msgstr "HSL-ljusstyrka"
+
+msgid "HSL Saturation"
+msgstr "HSL-mättnad"
+
+msgid "HSV"
+msgstr "HSV"
+
+msgid "Hash single-line comments"
+msgstr "Hash-beräkna enkelradskommentarer"
+
+msgid "Header"
+msgstr "Sidhuvud"
+
+msgid "Header text"
+msgstr "Sidhuvudstext"
+
+msgid "Hex format"
+msgstr "Hex-format"
+
+msgid "Homepage"
+msgstr "Hemsida"
+
+msgid "Hue"
+msgstr "Nyans"
+
+msgid "Hue:"
+msgstr "Nyans:"
+
+msgid "Hyper Text Markup Language (*.html, *.htm)"
+msgstr "Hyper Text Markup Language (*.html, *.htm)"
+
+msgid "Image"
+msgstr "Bild"
+
+msgid "Image file"
+msgstr "Bildfil"
+
+msgid "Import"
+msgstr "Importera"
+
+msgid "Import _Text File..."
+msgstr "Importera _textfil..."
+
+msgid "Import text file"
+msgstr "Importera textfil"
+
+msgid "Include color names"
+msgstr "Inkludera färgnamn"
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Integer values"
+msgstr "Heltalsvärden"
+
+msgid "Item"
+msgstr "Objekt"
+
+msgid "Item size"
+msgstr "Objektstorlek"
+
+msgid "Item size:"
+msgstr "Objektstorlek:"
+
+msgid "Item text"
+msgstr "Objekttext"
+
+msgid "Key"
+msgstr "Nyckel"
+
+msgid "LAB"
+msgstr "LAB"
+
+msgid "LCH"
+msgstr "LCH"
+
+msgid "LCh Chroma"
+msgstr "LCh-kroma"
+
+msgid "LCh Hue"
+msgstr "LCh-nyans"
+
+msgid "LCh Lightness"
+msgstr "LCh-ljusstyrka"
+
+msgid "Lab A"
+msgstr "Lab A"
+
+msgid "Lab B"
+msgstr "Lab B"
+
+msgid "Lab Lightness"
+msgstr "Lab ljusstyrka"
+
+msgid "Lab settings"
+msgstr "Lab inställningar"
+
+msgid "Last color"
+msgstr "Senaste färg"
+
+msgid "Lay_out preview"
+msgstr "Lay_outgranskning"
+
+msgid "Layout preview"
+msgstr "Layoutgranskning"
+
+msgid "Layout:"
+msgstr "Layout:"
+
+msgid "License"
+msgstr "Licens"
+
+msgid "Lightness"
+msgstr "Ljusstyrka"
+
+msgid "Lightness (Lab)"
+msgstr "Ljusstyrka (Lab)"
+
+msgid "Lightness:"
+msgstr "Ljusstyrka:"
+
+msgid "Linear"
+msgstr "Linjär"
+
+msgid "Links to us"
+msgstr "Länkar till oss"
+
+msgid "Lower case"
+msgstr "gemener"
+
+msgid "Lua License"
+msgstr "Lua-licens"
+
+msgid "M_ove"
+msgstr "Fl_ytta"
+
+msgid "Magenta"
+msgstr "Magenta"
+
+msgid "Maximal value"
+msgstr "Maxvärde"
+
+msgid "Maximum number of groups:"
+msgstr "Max antal grupper:"
+
+msgid "Medium"
+msgstr "Medel"
+
+msgid "Menu"
+msgstr "Meny"
+
+msgid "Middle:"
+msgstr "Mitten:"
+
+msgid "Minimal value"
+msgstr "Minimivärde"
+
+msgid "Mix colors"
+msgstr "Blanda färger"
+
+msgid "Multiply"
+msgstr "Multiplicera"
+
+msgid "Name"
+msgstr "Namn"
+
+msgid "Name:"
+msgstr "Namn:"
+
+msgid "Neutral"
+msgstr "Neutral"
+
+msgid "New palette"
+msgstr "Ny palett"
+
+msgid "No filter selected"
+msgstr "Inget filter valt"
+
+msgid "None"
+msgstr "Ingen"
+
+msgid "Normal"
+msgstr "Normal"
+
+msgid "Opacity:"
+msgstr "Opacitet:"
+
+msgid "Open"
+msgstr "Öppna"
+
+msgid "Open File"
+msgstr "Öppna fil"
+
+msgid "Open Last File"
+msgstr "Öppna senaste filen"
+
+msgid "Options"
+msgstr "Alternativ"
+
+msgid "Other settings"
+msgstr "Andra inställningar"
+
+msgid "Oversample:"
+msgstr "Översampling:"
+
+msgid "Palette"
+msgstr "Palett"
+
+msgid "Palette From _Image..."
+msgstr "Palett från _bild..."
+
+msgid "Palette from image"
+msgstr "Palett från bild"
+
+msgid "Paste"
+msgstr "Klistra in"
+
+msgid "Path"
+msgstr "Sökväg"
+
+msgid "Pick color"
+msgstr "Välj färg"
+
+msgid "Pick colors (Ctrl+P)"
+msgstr "Välj färger (Ctrl+P)"
+
+msgid "Press Spacebar to sample color under mouse pointer"
+msgstr "Tryck mellanslag för att granska färgen under muspekaren"
+
+msgid "Preview"
+msgstr "Förhandsgranska"
+
+msgid "Privacy"
+msgstr "Integritet"
+
+msgid "Protanomaly"
+msgstr "Protanomali"
+
+msgid "Protanopia"
+msgstr "Protanopi"
+
+msgid "Quadratic"
+msgstr "Kvadratisk"
+
+msgid "Quantization"
+msgstr "Kvantisering"
+
+msgid "RGB"
+msgstr "RGB"
+
+msgid "RGB Blue"
+msgstr "RGB blå"
+
+msgid "RGB Grayscale"
+msgstr "RGB gråskala"
+
+msgid "RGB Green"
+msgstr "RGB grön"
+
+msgid "RGB Red"
+msgstr "RGB röd"
+
+msgid "RSS"
+msgstr "RSS"
+
+msgid "RYB v1"
+msgstr "RYB v1"
+
+msgid "RYB v2"
+msgstr "RYB v2"
+
+msgid "R_everse"
+msgstr "O_mvänt"
+
+msgid "Real values"
+msgstr "Verkliga värden"
+
+msgid "Recent _Files"
+msgstr "Tidigare _filer"
+
+msgid "Rectangle (tetradic)"
+msgstr "Rektangel (tetradic)"
+
+msgid "Red"
+msgstr "Röd"
+
+msgid "Remove _All"
+msgstr "Ta bort _alla"
+
+msgid "Rotation:"
+msgstr "Rotation:"
+
+msgid "Sample"
+msgstr "Prov"
+
+msgid "Sample count"
+msgstr "Antal prov"
+
+msgid "Sample:"
+msgstr "Prov:"
+
+msgid "Saturation"
+msgstr "Mättnad"
+
+msgid "Saturation:"
+msgstr "Mättnad:"
+
+msgid "Save"
+msgstr "Spara"
+
+msgid "Save As"
+msgstr "Spara som"
+
+msgid "Save/_Restore palette"
+msgstr "Spara/_Återställ palett"
+
+msgid "Scheme _generation"
+msgstr "Schema_generering"
+
+msgid "Scheme generation"
+msgstr "Schemagenerering"
+
+msgid "Seed:"
+msgstr "Startvärde:"
+
+msgid "Settings"
+msgstr "Inställningar"
+
+msgid "Short hex"
+msgstr "Kort hex"
+
+msgid "Sidebar"
+msgstr "Sidofält"
+
+msgid "Six-Tone"
+msgstr "Sex-ton"
+
+msgid "Small"
+msgstr "Liten"
+
+msgid "Sort type:"
+msgstr "Sorteringstyp:"
+
+msgid "Split-Complementary"
+msgstr "Split-Complementary"
+
+msgid "Square"
+msgstr "Kvadrat"
+
+msgid "Start steps:"
+msgstr "Startsteg:"
+
+msgid "Start:"
+msgstr "Start:"
+
+msgid "Starting number:"
+msgstr "Startnummer:"
+
+msgid "Static"
+msgstr "Statisk"
+
+msgid "Steps:"
+msgstr "Steg:"
+
+msgid "Strength:"
+msgstr "Styrka:"
+
+msgid "Style item"
+msgstr "Stilobjekt"
+
+msgid "System"
+msgstr "System"
+
+msgid "System tray"
+msgstr "Systemfält"
+
+msgid "Terms"
+msgstr "Villkor"
+
+msgid "Test color"
+msgstr "Testfärg"
+
+msgid "Text File (*.txt)"
+msgstr "Textfil (*.txt)"
+
+msgid "Text file (*.txt)"
+msgstr "Textfil (*.txt)"
+
+msgid "The quick brown fox jumps over the lazy dog"
+msgstr "Flygande bäckasiner söka strax hwila på mjuka tuvor"
+
+msgid "Tool color naming"
+msgstr "Verktygsfärgnamn"
+
+#, c-format
+msgid "Total %d color"
+msgid_plural "Total %d colors"
+msgstr[0] "Totalt %d färg"
+msgstr[1] "Totalt %d färger"
+
+msgid "Triadic"
+msgstr "Triadisk"
+
+msgid "Tritanomaly"
+msgstr "Tritanomali"
+
+msgid "Tritanopia"
+msgstr "Tritanopi"
+
+msgid "Type:"
+msgstr "Typ:"
+
+msgid "Upper case"
+msgstr "VERSALER"
+
+msgid "User controllable"
+msgstr "Kontrollerbar för användaren"
+
+msgid "Value"
+msgstr "Värde"
+
+msgid "Value:"
+msgstr "Värde:"
+
+msgid "Variations"
+msgstr "Variationer"
+
+msgid "Web: hex code"
+msgstr "Webb: Hex-kod"
+
+msgid "Web: hex code (3 digits)"
+msgstr "Webb: Hex-kod (3 siffror)"
+
+msgid "Web: hex code (no hash symbol)"
+msgstr "Webb: Hex-kod (ingen hash-symbol)"
+
+msgid "Webpage"
+msgstr "Webbsida"
+
+msgid "White"
+msgstr "Vit"
+
+msgid "X axis"
+msgstr "X-axel"
+
+msgid "Y axis"
+msgstr "Y-axel"
+
+msgid "Yellow"
+msgstr "Gul"
+
+msgid "Z axis"
+msgstr "Z-axel"
+
+msgid "Zoom:"
+msgstr "Zoom:"
+
+msgid "_Add to palette"
+msgstr "_Lägg till i paletten"
+
+msgid "_Append"
+msgstr "_Bifoga"
+
+msgid "_Assign CSS Selectors..."
+msgstr "_Tilldela CSS-väljare..."
+
+msgid "_Automatic name"
+msgstr "_Automatiskt namn"
+
+msgid "_Close to system tray"
+msgstr "Stäng till systemfältet"
+
+msgid "_Color names"
+msgstr "_Färgnamn"
+
+msgid "_Copy to clipboard"
+msgstr "Kopiera till _urklipp"
+
+msgid "_Decreasing"
+msgstr "_Sjunkande"
+
+msgid "_Edit"
+msgstr "_Redigera"
+
+msgid "_Edit..."
+msgstr "_Redigera..."
+
+msgid "_Empty"
+msgstr "_Tom"
+
+msgid "_Enable display filters"
+msgstr "_Aktivera skärmfilter"
+
+msgid "_Export CSS File As..."
+msgstr "_Exportera CSS-fil som..."
+
+msgid "_File"
+msgstr "_Arkiv"
+
+msgid "_Generate..."
+msgstr "_Generera..."
+
+msgid "_Help"
+msgstr "_Hjälp"
+
+msgid "_Illuminant:"
+msgstr "_Belysning:"
+
+msgid "_Import..."
+msgstr "_Importera..."
+
+msgid "_Imprecision postfix"
+msgstr "Imprecis postfix"
+
+msgid "_Include Endpoints"
+msgstr "_Inkludera ändpunkter"
+
+msgid "_Linearization"
+msgstr "_Linjärisering"
+
+msgid "_Linked"
+msgstr "_Länkat"
+
+msgid "_Magnified area size:"
+msgstr "_Storlek på förstorat område:"
+
+msgid "_Main"
+msgstr "_Allmänt"
+
+msgid "_Mask out of gamut colors"
+msgstr "_Mask av gamut-färger"
+
+msgid "_Minimize to system tray"
+msgstr "_Minimera till systemfältet"
+
+msgid "_Mix Colors..."
+msgstr "_Blanda färger..."
+
+msgid "_Nearest from palette"
+msgstr "Närmast från palett"
+
+msgid "_Observer:"
+msgstr "_Observatör:"
+
+msgid "_Paste"
+msgstr "_Klistra in"
+
+msgid "_Picker"
+msgstr "_Väljare"
+
+msgid "_Quit"
+msgstr "A_vsluta"
+
+msgid "_Refresh rate:"
+msgstr "_Uppdateringsintervall:"
+
+msgid "_Remove"
+msgstr "_Ta bort"
+
+msgid "_Reset"
+msgstr "_Återställ"
+
+msgid "_Reset scheme"
+msgstr "_Återställningsschema"
+
+msgid "_Reverse"
+msgstr "_Omvänt"
+
+msgid "_Reverse group order"
+msgstr "_Omvänd gruppordning"
+
+msgid "_Reverse order inside groups"
+msgstr "_Omvänd ordning i grupper"
+
+msgid "_Rotate swatch"
+msgstr "_Rotera färgrutan"
+
+msgid "_Secondary View"
+msgstr "_Sekundär vy"
+
+msgid "_Show Main Window"
+msgstr "_Visa huvudfönstret"
+
+msgid "_Single instance"
+msgstr "_Endast en instans"
+
+msgid "_Start in system tray"
+msgstr "_Starta i systemfältet"
+
+msgid "_Tool specific"
+msgstr "_Verktygsspecifik"
+
+msgid "_Tools"
+msgstr "_Verktyg"
+
+msgid "_Use multiplication"
+msgstr "_Använd multiplicering"
+
+msgid "_Variations..."
+msgstr "_Variationer..."
+
+msgid "_View"
+msgstr "V_isa"
+
+msgid "all colors"
+msgstr "alla färger"
+
+msgid "blend"
+msgstr "blanda"
+
+msgid "blend node"
+msgstr "blandnod"
+
+msgid "brightness darkness"
+msgstr "ljusstyrka mörker"
+
+msgid "closest color"
+msgstr "närmaste färg"
+
+msgid "color mixer"
+msgstr "färgblandare"
+
+msgid "color space"
+msgstr "färgrymd"
+
+msgid "error"
+msgstr "fel"
+
+msgid "layout preview"
+msgstr "layoutgranskning"
+
+msgid "main"
+msgstr "allmänt"
+
+#, c-format
+msgid "match %d"
+msgstr "matcha %d"
+
+msgid "mix"
+msgstr "blanda"
+
+msgid "mix node"
+msgstr "mix-nod"
+
+#, c-format
+msgid "primary %d"
+msgstr "primär %d"
+
+#, c-format
+msgid "result %d"
+msgstr "resultat %d"
+
+#, c-format
+msgid "result %d line %d"
+msgstr "resultat %d rad %d"
+
+msgid "rgb.txt File (rgb.txt)"
+msgstr "rgb textfil (rgb.txt)"
+
+msgid "scheme"
+msgstr "schema"
+
+msgid "secondary"
+msgstr "sekundär"
+
+msgid "selected"
+msgstr "markerad"
+
+msgid "target"
+msgstr "mål"
+
+msgid "variation"
+msgstr "variation"
+
+msgid "variations"
+msgstr "variationer"
