@@ -386,6 +386,39 @@ static ColorObject* get_color_object(struct DragDrop* dd){
 	return 0;
 }
 
+static bool get_path_at(GtkTreeView *tree_view, int x, int y, GtkTreePath *&path, GtkTreeViewDropPosition &position){
+	if (gtk_tree_view_get_dest_row_at_pos(tree_view, x, y, &path, &position)){
+		GdkModifierType mask;
+		gdk_window_get_pointer(gtk_tree_view_get_bin_window(tree_view), nullptr, nullptr, &mask);
+		if ((mask & GDK_CONTROL_MASK) && (position == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || position == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
+			position = GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
+		}else	if (position == GTK_TREE_VIEW_DROP_BEFORE || position == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
+			position = GTK_TREE_VIEW_DROP_BEFORE;
+		}else if (position == GTK_TREE_VIEW_DROP_AFTER || position == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
+			position = GTK_TREE_VIEW_DROP_AFTER;
+		}
+		return true;
+	}else{
+		int tx, ty;
+		gtk_tree_view_convert_widget_to_tree_coords(tree_view, x, y, &tx, &ty);
+		GtkTreeModel *model = gtk_tree_view_get_model(tree_view);
+		GtkTreeIter last, iter;
+		gtk_tree_model_get_iter_first(model, &iter);
+		if (ty >= 0){
+			do{
+				last = iter;
+			}while (gtk_tree_model_iter_next(model, &iter));
+			position = GTK_TREE_VIEW_DROP_AFTER;
+			iter = last;
+		} else {
+			position = GTK_TREE_VIEW_DROP_BEFORE;
+		}
+		path = gtk_tree_model_get_path(model, &iter);
+		return true;
+	}
+	return false;
+}
+
 static int set_color_object_list_at(DragDrop* dd, ColorObject** color_objects, size_t color_object_n, int x, int y, bool move){
 	ListPaletteArgs* args = (ListPaletteArgs*)dd->userdata;
 	remove_scroll_timeout(args);
@@ -398,9 +431,9 @@ static int set_color_object_list_at(DragDrop* dd, ColorObject** color_objects, s
 	bool copy = false;
 	bool path_is_valid = false;
 
-	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
+	if (get_path_at(GTK_TREE_VIEW(dd->widget), x, y, path, pos)){
 		gtk_tree_model_get_iter(model, &iter, path);
-
+		gtk_tree_path_free(path);
 		if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
 			path_is_valid = true;
 		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
@@ -421,8 +454,10 @@ static int set_color_object_list_at(DragDrop* dd, ColorObject** color_objects, s
 		}
 
 		if (move){
-			ColorObject *reference_color_object;
-			gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &reference_color_object, -1);
+			ColorObject *reference_color_object = nullptr;
+			if (path_is_valid){
+				gtk_tree_model_get(GTK_TREE_MODEL(model), &iter, 0, &reference_color_object, -1);
+			}
 			if (reference_color_object == color_object){
 				// Reference item is going to be removed, so any further inserts
 				// will fail if the same iterator is used. Iterator is moved forward
@@ -488,8 +523,9 @@ static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, i
 		color_object = color_object->copy();
 		copy = true;
 	}
-	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
+	if (get_path_at(GTK_TREE_VIEW(dd->widget), x, y, path, pos)){
 		gtk_tree_model_get_iter(model, &iter, path);
+		gtk_tree_path_free(path);
 		GdkModifierType mask;
 		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), nullptr, nullptr, &mask);
 		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
@@ -524,23 +560,13 @@ static bool test_at(struct DragDrop* dd, int x, int y)
 {
 	GtkTreePath* path;
 	GtkTreeViewDropPosition pos;
-	if (gtk_tree_view_get_dest_row_at_pos(GTK_TREE_VIEW(dd->widget), x, y, &path, &pos)){
-		GdkModifierType mask;
-		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(dd->widget)), nullptr, nullptr, &mask);
-		if ((mask & GDK_CONTROL_MASK) && (pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE)){
-			pos = GTK_TREE_VIEW_DROP_INTO_OR_BEFORE;
-		}else	if (pos == GTK_TREE_VIEW_DROP_BEFORE || pos == GTK_TREE_VIEW_DROP_INTO_OR_BEFORE){
-			pos = GTK_TREE_VIEW_DROP_BEFORE;
-		}else if (pos == GTK_TREE_VIEW_DROP_AFTER || pos == GTK_TREE_VIEW_DROP_INTO_OR_AFTER){
-			pos = GTK_TREE_VIEW_DROP_AFTER;
-		}
-
+	if (get_path_at(GTK_TREE_VIEW(dd->widget), x, y, path, pos)){
 		gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(dd->widget), path, pos);
-		add_scroll_timeout((ListPaletteArgs*)dd->userdata);
+		gtk_tree_path_free(path);
 	}else{
-		gtk_tree_view_unset_rows_drag_dest(GTK_TREE_VIEW(dd->widget));
+		gtk_tree_view_set_drag_dest_row(GTK_TREE_VIEW(dd->widget), nullptr, GTK_TREE_VIEW_DROP_AFTER);
 	}
-
+	add_scroll_timeout((ListPaletteArgs*)dd->userdata);
 	return true;
 }
 
