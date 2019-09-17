@@ -18,6 +18,7 @@
 
 #ifndef GPICK_RECT2_H_
 #define GPICK_RECT2_H_
+#include "Vector2.h"
 namespace math
 {
 template<typename T>
@@ -159,6 +160,18 @@ struct Rect2
 	{
 		return y2;
 	};
+	Vec2<T> position() const
+	{
+		return Vec2<T>(x1, y1);
+	}
+	Vec2<T> center() const
+	{
+		return Vec2<T>((x1 + x2) / 2, (y1 + y2) / 2);
+	}
+	Vec2<T> size() const
+	{
+		return Vec2<T>(x2 - x1, y2 - y1);
+	}
 	private:
 	bool empty;
 	T x1, y1, x2, y2;

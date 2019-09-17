@@ -69,6 +69,20 @@ struct Vec2
 			r.y = y + v.y;
 			return r;
 		};
+		Vec2 operator-(const Vec2 &v)
+		{
+			Vec2 r;
+			r.x = x - v.x;
+			r.y = y - v.y;
+			return r;
+		};
+		const Vec2 operator-() const
+		{
+			Vec2 r;
+			r.x = -x;
+			r.y = -y;
+			return r;
+		};
 		friend bool operator!=(const Vec2 &lhs, const Vec2 &rhs)
 		{
 			if (lhs.x != rhs.x) return false;

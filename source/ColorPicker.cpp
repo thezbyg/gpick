@@ -137,14 +137,14 @@ static gboolean updateMainColor( gpointer data ){
 	}
 	screen_reader_update_surface(screen_reader, &final_rect);
 	Vec2<int> offset;
-	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
+	offset = sampler_rect.position() - final_rect.position();
 	Color c;
 	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, &c);
 	string text = args->gs->converters().serialize(c, Converters::Type::display);
 	gtk_color_set_color(GTK_COLOR(args->color_code), &c, text.c_str());
 	gtk_swatch_set_main_color(GTK_SWATCH(args->swatch_display), &c);
 	if (zoomed_enabled){
-		offset = Vec2<int>(zoomed_rect.getX()-final_rect.getX(), zoomed_rect.getY()-final_rect.getY());
+		offset = final_rect.position() - zoomed_rect.position();
 		gtk_zoomed_update(GTK_ZOOMED(args->zoomed_display), pointer, screen_rect, offset, screen_reader_get_surface(screen_reader));
 	}
 	return TRUE;

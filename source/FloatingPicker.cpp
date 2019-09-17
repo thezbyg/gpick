@@ -99,10 +99,10 @@ static void get_color_sample(FloatingPickerArgs *args, bool update_widgets, Colo
 	}
 	screen_reader_update_surface(screen_reader, &final_rect);
 	Vec2<int> offset;
-	offset = Vec2<int>(sampler_rect.getX() - final_rect.getX(), sampler_rect.getY() - final_rect.getY());
+	offset = sampler_rect.position() - final_rect.position();
 	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, c);
 	if (update_widgets){
-		offset = Vec2<int>(zoomed_rect.getX() - final_rect.getX(), zoomed_rect.getY() - final_rect.getY());
+		offset = final_rect.position() - zoomed_rect.position();
 		gtk_zoomed_update(GTK_ZOOMED(args->zoomed), pointer, screen_rect, offset, screen_reader_get_surface(screen_reader));
 	}
 }
