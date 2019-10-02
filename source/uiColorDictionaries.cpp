@@ -256,8 +256,8 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 		for (uint32_t i = 0; i < dictionary_count; i++){
 			ColorDictionary dictionary;
 			dictionary.path = dynv_get_string_wd(dictionaries[i], "path", "");
-			dictionary.enable = dynv_get_bool_wd(dictionaries[i], "enable", "false");
-			dictionary.built_in = dynv_get_bool_wd(dictionaries[i], "built_in", "false");
+			dictionary.enable = dynv_get_bool_wd(dictionaries[i], "enable", false);
+			dictionary.built_in = dynv_get_bool_wd(dictionaries[i], "built_in", false);
 			if (dictionary.built_in){
 				if (dictionary.path == "built_in_0"){
 					built_in_found = true;

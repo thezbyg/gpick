@@ -208,9 +208,9 @@ void color_names_load(ColorNames *color_names, dynvSystem *params)
 	struct dynvSystem** dictionaries = dynv_get_dynv_array_wd(params, "color_dictionaries.items", nullptr, 0, &dictionary_count);
 	if (dictionaries){
 		for (uint32_t i = 0; i < dictionary_count; i++){
-			bool enable = dynv_get_bool_wd(dictionaries[i], "enable", "false");
+			bool enable = dynv_get_bool_wd(dictionaries[i], "enable", false);
 			if (enable){
-				bool built_in = dynv_get_bool_wd(dictionaries[i], "built_in", "false");
+				bool built_in = dynv_get_bool_wd(dictionaries[i], "built_in", false);
 				string path = dynv_get_string_wd(dictionaries[i], "path", "");
 				if (built_in){
 					if (path == "built_in_0"){
@@ -225,6 +225,10 @@ void color_names_load(ColorNames *color_names, dynvSystem *params)
 			dynv_system_release(dictionaries[i]);
 		}
 		if (dictionaries) delete [] dictionaries;
+	}else{
+		gchar *tmp;
+		color_names_load_from_file(color_names, tmp = build_filename("color_dictionary_0.txt"));
+		g_free(tmp);
 	}
 }
 void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors)
