@@ -16,19 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_UTILITIES_H_
-#define GPICK_UI_UTILITIES_H_
+#ifndef GPICK_TOOLS_TEXT_PARSER_H_
+#define GPICK_TOOLS_TEXT_PARSER_H_
 #include <gtk/gtk.h>
-#include <string>
-GtkWidget* gtk_menu_item_new_with_image(const gchar* label, GtkWidget *image);
-GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign = 0, gfloat yalign = 0, gfloat xscale = 0, gfloat yscale = 0);
-GtkWidget* gtk_label_mnemonic_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
-GtkWidget* gtk_widget_aligned_new(GtkWidget* widget, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
-GtkWidget *addOption(const char *label, GtkWidget *widget, int x, int &y, GtkWidget *table);
-GtkWidget *addOption(GtkWidget *widget, int x, int &y, GtkWidget *table);
-GtkWidget *newCheckbox(const char *label, bool value);
-GtkWidget *newCheckbox(const std::string &label, bool value);
-GtkWidget *newTextView(const std::string &text);
-std::string getTextViewText(GtkWidget *widget);
-GtkWidget *newLabel(const std::string &text);
-#endif /* GPICK_UI_UTILITIES_H_ */
+struct GlobalState;
+void tools_text_parser_show(GtkWindow* parent, GlobalState* gs);
+#endif /* GPICK_TOOLS_TEXT_PARSER_H_ */

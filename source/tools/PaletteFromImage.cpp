@@ -17,14 +17,14 @@
  */
 
 #include "PaletteFromImage.h"
-#include "../ColorList.h"
-#include "../ColorObject.h"
-#include "../uiUtilities.h"
-#include "../uiListPalette.h"
-#include "../GlobalState.h"
-#include "../ToolColorNaming.h"
-#include "../DynvHelpers.h"
-#include "../I18N.h"
+#include "ColorList.h"
+#include "ColorObject.h"
+#include "uiUtilities.h"
+#include "uiListPalette.h"
+#include "GlobalState.h"
+#include "ToolColorNaming.h"
+#include "DynvHelpers.h"
+#include "I18N.h"
 #include <string.h>
 #include <iostream>
 #include <sstream>

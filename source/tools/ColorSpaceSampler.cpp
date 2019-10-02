@@ -17,14 +17,14 @@
  */
 
 #include "ColorSpaceSampler.h"
-#include "../ColorList.h"
-#include "../ColorObject.h"
-#include "../GlobalState.h"
-#include "../I18N.h"
-#include "../DynvHelpers.h"
-#include "../uiListPalette.h"
-#include "../uiUtilities.h"
-#include "../ToolColorNaming.h"
+#include "ColorList.h"
+#include "ColorObject.h"
+#include "GlobalState.h"
+#include "I18N.h"
+#include "DynvHelpers.h"
+#include "uiListPalette.h"
+#include "uiUtilities.h"
+#include "ToolColorNaming.h"
 #include <sstream>
 #include <algorithm>
 using namespace std;
