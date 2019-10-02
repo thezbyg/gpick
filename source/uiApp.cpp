@@ -1110,7 +1110,7 @@ static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args)
 {
 	AutonameState state;
 	state.color_names = args->gs->getColorNames();
-	state.imprecision_postfix = dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true);
+	state.imprecision_postfix = dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false);
 	palette_list_foreach_selected(args->color_list, color_list_autoname, &state);
 }
 
@@ -1539,8 +1539,8 @@ int main_show_window(GtkWidget* window, struct dynvSystem *main_params)
 	gint width, height;
 	x = dynv_get_int32_wd(main_params, "window.x", -1);
 	y = dynv_get_int32_wd(main_params, "window.y", -1);
-	width = dynv_get_int32_wd(main_params, "window.width", -1);
-	height = dynv_get_int32_wd(main_params, "window.height", -1);
+	width = dynv_get_int32_wd(main_params, "window.width", 640);
+	height = dynv_get_int32_wd(main_params, "window.height", 400);
 	if (x < 0 || y < 0 || x > gdk_screen_width() || y > gdk_screen_height()){
 		gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	}else{

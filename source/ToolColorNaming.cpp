@@ -50,9 +50,9 @@ ToolColorNamingType tool_color_naming_name_to_type(const char *name)
 ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
 	m_gs(gs)
 {
-	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->getSettings(), "gpick.color_names.tool_color_naming", "tool_specific"));
+	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->getSettings(), "gpick.color_names.tool_color_naming", "automatic_name"));
 	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
-		m_imprecision_postfix = dynv_get_bool_wd(m_gs->getSettings(), "gpick.color_names.imprecision_postfix", true);
+		m_imprecision_postfix = dynv_get_bool_wd(m_gs->getSettings(), "gpick.color_names.imprecision_postfix", false);
 	}else{
 		m_imprecision_postfix = false;
 	}

@@ -215,18 +215,18 @@ static void complete_picking(FloatingPickerArgs *args)
 			if (args->single_pick_mode){
 				Clipboard::set(color_object, args->gs, args->converter);
 			}else{
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", false)){
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", true)){
 					Clipboard::set(color_object, args->gs, args->converter);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", false)){
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", true)){
 					PickerColorNameAssigner name_assigner(args->gs);
 					name_assigner.assign(color_object, &c);
 					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_to_swatch_on_release", false)){
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_to_swatch_on_release", true)){
 					color_picker_set_current_color(args->color_source);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.rotate_swatch_on_release", false)){
+				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.rotate_swatch_on_release", true)){
 					color_picker_rotate_swatch(args->color_source);
 				}
 			}

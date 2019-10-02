@@ -270,7 +270,7 @@ static void on_color_activate(GtkWidget *widget, VariationsArgs* args)
 	Color color;
 	gtk_color_get_color(GTK_COLOR(widget), &color);
 	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", true));
+	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
 	color_object->setName(name);
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 	color_object->release();
