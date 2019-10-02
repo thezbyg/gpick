@@ -1190,6 +1190,14 @@ static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs* args)
 	palette_list_foreach_selected(args->color_list, color_list_reverse_replace, &state);
 }
 
+static void palette_popup_menu_add(GtkWidget *widget, AppArgs* args)
+{
+	ColorObject *new_color_object = nullptr;
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, nullptr, &new_color_object) == 0){
+		color_list_add_color_object(args->gs->getColorList(), new_color_object, 1);
+		new_color_object->release();
+	}
+}
 static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 {
 	ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
@@ -1294,6 +1302,10 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 		StandardMenu::appendMenu(menu);
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+
+	item = gtk_menu_item_new_with_image(_("A_dd..."), gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_add), args);
 
 	item = gtk_menu_item_new_with_image(_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);

@@ -28,6 +28,7 @@
 #include "gtk/ColorWidget.h"
 #include "ColorObject.h"
 #include "ColorSpaceType.h"
+#include "color_names/ColorNames.h"
 #include <string.h>
 #include <string>
 #include <iostream>
@@ -117,8 +118,14 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	auto args = new DialogInputArgs();
 	args->gs = gs;
 	args->params = dynv_get_dynv(gs->getSettings(), "gpick.color_input");
-	args->color_object = color_object->copy();
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
+	bool new_item = false;
+	if (color_object) {
+		args->color_object = color_object->copy();
+	} else {
+		new_item = true;
+		args->color_object = new ColorObject();
+	}
+	GtkWidget *dialog = gtk_dialog_new_with_buttons(new_item ? _("Add color") : _("Edit color"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		nullptr);
@@ -132,14 +139,17 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
-	gtk_color_enable_split(GTK_COLOR(widget), true);
-	gtk_color_set_split_color(GTK_COLOR(widget), &color_object->getColor());
+	if (!new_item) {
+		gtk_color_enable_split(GTK_COLOR(widget), true);
+		gtk_color_set_split_color(GTK_COLOR(widget), &color_object->getColor());
+	}
 	gtk_box_pack_start(GTK_BOX(hbox), widget, true, true, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0), false, false, 0);
 
 	GtkWidget* entry = args->text_input = gtk_entry_new();
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
 	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
+	gtk_widget_grab_focus(entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(onTextChanged), args);
 
 	const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), nullptr};
@@ -155,13 +165,17 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", nullptr};
 	addComponentEditor(vbox, "LCH", "expander.lch", GtkColorComponentComp::lch, lch_labels, args, args->lch_expander, args->lch_control);
 
-	update(args, nullptr);
+	update(args, new_item ? args->text_input : nullptr);
 
 	gtk_widget_show_all(vbox);
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 	int result = -1;
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
+		if (new_item) {
+			string name = color_names_get(args->gs->getColorNames(), &args->color_object->getColor(), dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+			args->color_object->setName(name);
+		}
 		*new_color_object = args->color_object->reference();
 		result = 0;
 	}

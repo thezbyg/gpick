@@ -138,7 +138,7 @@ static GtkWidget* converter_list_new(ConverterArgs *args)
 	gtk_tree_view_column_set_attributes(col, renderer, "active", CONVERTERLIST_COPY, "activatable", CONVERTERLIST_COPY_ENABLED, (void*)0);
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-	gtk_tree_view_column_set_title(col, _("Paste"));
+	gtk_tree_view_column_set_title(col, _("Paste / Edit"));
 	renderer = gtk_cell_renderer_toggle_new();
 	gtk_tree_view_column_pack_start(col, renderer, false);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
@@ -160,8 +160,8 @@ void dialog_converter_show(GtkWindow *parent, GlobalState *gs)
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "converters.window.width", -1),
-		dynv_get_int32_wd(args->params, "converters.window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "converters.window.width", 640),
+		dynv_get_int32_wd(args->params, "converters.window.height", 400));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *vbox = gtk_vbox_new(false, 5);
 	GtkWidget *list = converter_list_new(args);
