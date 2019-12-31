@@ -1,24 +1,24 @@
 # Translation of Gpick into Russian
 # Александр Прокудин <alexandre.prokoudine@gmail.com>, 2011-2017
-# Alexandre Prokoudine <alexandre.prokoudine@gmail.com>, 2017.
+# Alexandre Prokoudine <alexandre.prokoudine@gmail.com>, 2017-2020.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-12-05 01:42+0300\n"
-"PO-Revision-Date: 2017-12-05 02:07+0300\n"
+"POT-Creation-Date: 2020-01-01 01:53+0300\n"
+"PO-Revision-Date: 2020-01-01 02:07+0300\n"
 "Last-Translator: Alexandre Prokoudine <alexandre.prokoudine@gmail.com>\n"
-"Language-Team: русский <>\n"
+"Language-Team: русский <gnome-cyr@lists.gnome.org>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2)\n"
 "X-Poedit-Language: Russian\n"
 "X-Poedit-Country: RUSSIAN FEDERATION\n"
-"X-Generator: Gtranslator 2.91.7\n"
+"X-Generator: Gtranslator 3.33.90\n"
 
 #: source/BlendColors.cpp:114 source/BlendColors.cpp:116
 msgid "blend node"
@@ -28,18 +28,18 @@ msgstr "основной"
 msgid "blend"
 msgstr "переход"
 
-#: source/BlendColors.cpp:262 source/BrightnessDarkness.cpp:226
-#: source/ClosestColors.cpp:175 source/ColorMixer.cpp:304
-#: source/ColorPicker.cpp:320 source/GenerateScheme.cpp:428
-#: source/LayoutPreview.cpp:370 source/Variations.cpp:326
+#: source/BlendColors.cpp:262 source/BrightnessDarkness.cpp:234
+#: source/ClosestColors.cpp:165 source/ColorMixer.cpp:289
+#: source/ColorPicker.cpp:321 source/GenerateScheme.cpp:428
+#: source/LayoutPreview.cpp:374 source/Variations.cpp:311
 #: source/uiDialogOptions.cpp:281 source/uiDialogOptions.cpp:304
 msgid "_Add to palette"
 msgstr "_Добавить в палитру"
 
-#: source/BlendColors.cpp:266 source/BrightnessDarkness.cpp:230
-#: source/ClosestColors.cpp:179 source/ColorMixer.cpp:309
-#: source/ColorPicker.cpp:324 source/GenerateScheme.cpp:433
-#: source/LayoutPreview.cpp:375 source/Variations.cpp:331
+#: source/BlendColors.cpp:266 source/BrightnessDarkness.cpp:238
+#: source/ClosestColors.cpp:169 source/ColorMixer.cpp:294
+#: source/ColorPicker.cpp:325 source/GenerateScheme.cpp:433
+#: source/LayoutPreview.cpp:379 source/Variations.cpp:316
 msgid "A_dd all to palette"
 msgstr "Доб_авить все в палитру"
 
@@ -101,29 +101,29 @@ msgstr "Переход между цветами"
 msgid "brightness darkness"
 msgstr "Яркость-Темнота"
 
-#: source/BrightnessDarkness.cpp:244 source/ClosestColors.cpp:192
-#: source/ColorMixer.cpp:350 source/ColorPicker.cpp:334
-#: source/GenerateScheme.cpp:446 source/LayoutPreview.cpp:390
-#: source/Variations.cpp:372 source/uiApp.cpp:1298
+#: source/BrightnessDarkness.cpp:252 source/ClosestColors.cpp:182
+#: source/ColorMixer.cpp:335 source/ColorPicker.cpp:335
+#: source/GenerateScheme.cpp:446 source/LayoutPreview.cpp:394
+#: source/Variations.cpp:357 source/uiApp.cpp:1318
 msgid "_Edit..."
 msgstr "_Изменить…"
 
-#: source/BrightnessDarkness.cpp:248 source/ClosestColors.cpp:196
-#: source/ColorMixer.cpp:355 source/ColorPicker.cpp:338
-#: source/GenerateScheme.cpp:451 source/LayoutPreview.cpp:395
-#: source/Variations.cpp:377 source/uiApp.cpp:1303
+#: source/BrightnessDarkness.cpp:256 source/ClosestColors.cpp:186
+#: source/ColorMixer.cpp:340 source/ColorPicker.cpp:339
+#: source/GenerateScheme.cpp:451 source/LayoutPreview.cpp:399
+#: source/Variations.cpp:362 source/uiApp.cpp:1323
 msgid "_Paste"
 msgstr "_Вставить"
 
-#: source/BrightnessDarkness.cpp:311
+#: source/BrightnessDarkness.cpp:319
 msgid "Brightness"
 msgstr "Яркость"
 
-#: source/BrightnessDarkness.cpp:311
+#: source/BrightnessDarkness.cpp:319
 msgid "Darkness"
 msgstr "Темнота"
 
-#: source/BrightnessDarkness.cpp:344
+#: source/BrightnessDarkness.cpp:357
 msgid "Brightness Darkness"
 msgstr "Яркость-Темнота"
 
@@ -131,16 +131,15 @@ msgstr "Яркость-Темнота"
 msgid "closest color"
 msgstr "ближайший цвет"
 
-#: source/ClosestColors.cpp:122
+#: source/ClosestColors.cpp:116
 msgid "target"
 msgstr ""
 
-#: source/ClosestColors.cpp:126
-#, c-format
-msgid "match %d"
-msgstr ""
+#: source/ClosestColors.cpp:119
+msgid "match {}"
+msgstr "совпадение {}"
 
-#: source/ClosestColors.cpp:410
+#: source/ClosestColors.cpp:400
 msgid "Closest colors"
 msgstr "Ближайшие цвета"
 
@@ -160,26 +159,26 @@ msgstr "Добавление"
 msgid "Difference"
 msgstr "Разница"
 
-#: source/ColorMixer.cpp:70 source/ColorPicker.cpp:1059
-#: source/ColorPicker.cpp:1073 source/ColorSpaceType.cpp:34
+#: source/ColorMixer.cpp:70 source/ColorPicker.cpp:1066
+#: source/ColorPicker.cpp:1080 source/ColorSpaceType.cpp:34
 #: source/ColorSpaceType.cpp:41 source/Variations.cpp:66
-#: source/uiColorInput.cpp:145 source/uiColorInput.cpp:147
+#: source/uiColorInput.cpp:155 source/uiColorInput.cpp:157
 msgid "Hue"
 msgstr "Тон"
 
-#: source/ColorMixer.cpp:71 source/ColorPicker.cpp:1059
-#: source/ColorPicker.cpp:1073 source/ColorSpaceType.cpp:35
+#: source/ColorMixer.cpp:71 source/ColorPicker.cpp:1066
+#: source/ColorPicker.cpp:1080 source/ColorSpaceType.cpp:35
 #: source/ColorSpaceType.cpp:42 source/Variations.cpp:67
-#: source/uiColorInput.cpp:145 source/uiColorInput.cpp:147
+#: source/uiColorInput.cpp:155 source/uiColorInput.cpp:157
 msgid "Saturation"
 msgstr "Насыщенность"
 
-#: source/ColorMixer.cpp:72 source/ColorPicker.cpp:1073
-#: source/ColorPicker.cpp:1115 source/ColorPicker.cpp:1129
+#: source/ColorMixer.cpp:72 source/ColorPicker.cpp:1080
+#: source/ColorPicker.cpp:1122 source/ColorPicker.cpp:1136
 #: source/ColorSpaceType.cpp:43 source/ColorSpaceType.cpp:63
 #: source/ColorSpaceType.cpp:70 source/Variations.cpp:68
-#: source/uiColorInput.cpp:147 source/uiColorInput.cpp:153
-#: source/uiColorInput.cpp:155
+#: source/uiColorInput.cpp:157 source/uiColorInput.cpp:163
+#: source/uiColorInput.cpp:165
 msgid "Lightness"
 msgstr "Светлота"
 
@@ -187,146 +186,144 @@ msgstr "Светлота"
 msgid "color mixer"
 msgstr "Микшер цветов"
 
-#: source/ColorMixer.cpp:217
+#: source/ColorMixer.cpp:210
 msgid "secondary"
 msgstr "первичный"
 
-#: source/ColorMixer.cpp:221 source/Variations.cpp:227
-#, c-format
-msgid "primary %d"
-msgstr "вторичный %d"
+#: source/ColorMixer.cpp:213 source/Variations.cpp:219
+msgid "primary {}"
+msgstr "первичный {}"
 
-#: source/ColorMixer.cpp:227
-#, c-format
-msgid "result %d"
-msgstr "результат %d"
+#: source/ColorMixer.cpp:215
+msgid "result {}"
+msgstr "результат {}"
 
-#: source/ColorMixer.cpp:647
+#: source/ColorMixer.cpp:632
 msgid "Opacity:"
 msgstr "Непрозрачность:"
 
-#: source/ColorMixer.cpp:670
+#: source/ColorMixer.cpp:655
 msgid "Color mixer"
 msgstr "Микшер цветов"
 
-#: source/ColorPicker.cpp:364
+#: source/ColorPicker.cpp:365
 msgid "Press Spacebar to sample color under mouse pointer"
 msgstr "Нажмите пробел для добавления цвета под указателем"
 
-#: source/ColorPicker.cpp:620 source/uiConverter.cpp:133
+#: source/ColorPicker.cpp:621 source/uiConverter.cpp:133
 msgid "Copy"
 msgstr "Копирование"
 
-#: source/ColorPicker.cpp:624 source/uiConverter.cpp:141
+#: source/ColorPicker.cpp:625
 msgid "Paste"
 msgstr "Вставка"
 
-#: source/ColorPicker.cpp:630 source/uiColorInput.cpp:202
+#: source/ColorPicker.cpp:631 source/uiColorInput.cpp:216
 msgid "Edit"
 msgstr "Изменить"
 
-#: source/ColorPicker.cpp:686 source/uiApp.cpp:967 source/uiDialogSort.cpp:223
+#: source/ColorPicker.cpp:687 source/uiApp.cpp:1006 source/uiDialogSort.cpp:223
 #: source/uiImportExport.cpp:92
 msgid "None"
 msgstr "Нет"
 
-#: source/ColorPicker.cpp:687
+#: source/ColorPicker.cpp:688
 msgid "Linear"
 msgstr "Линейное"
 
-#: source/ColorPicker.cpp:688
+#: source/ColorPicker.cpp:689
 msgid "Quadratic"
 msgstr "Квадратичное"
 
-#: source/ColorPicker.cpp:689
+#: source/ColorPicker.cpp:690
 msgid "Cubic"
 msgstr "Кубическое"
 
-#: source/ColorPicker.cpp:690
+#: source/ColorPicker.cpp:691
 msgid "Exponential"
 msgstr "Экспоненциальное"
 
-#: source/ColorPicker.cpp:832
+#: source/ColorPicker.cpp:833
 msgid "Click on swatch area to begin adding colors to palette"
 msgstr "Щёлкните по области с образцами, чтобы добавить цвет в палитру"
 
-#: source/ColorPicker.cpp:947
+#: source/ColorPicker.cpp:948
 msgid "Pick color"
 msgstr "Снять цвет"
 
-#: source/ColorPicker.cpp:1022
+#: source/ColorPicker.cpp:1029
 msgid "Settings"
 msgstr "Параметры"
 
-#: source/ColorPicker.cpp:1032
+#: source/ColorPicker.cpp:1039
 msgid "Oversample:"
 msgstr "Оверсэмплинг:"
 
-#: source/ColorPicker.cpp:1039
+#: source/ColorPicker.cpp:1046
 msgid "Falloff:"
 msgstr "Спадание:"
 
-#: source/ColorPicker.cpp:1046
+#: source/ColorPicker.cpp:1053
 msgid "Zoom:"
 msgstr "Масштаб:"
 
-#: source/ColorPicker.cpp:1059 source/ColorSpaceType.cpp:36
-#: source/uiColorInput.cpp:145
+#: source/ColorPicker.cpp:1066 source/ColorSpaceType.cpp:36
+#: source/uiColorInput.cpp:155
 msgid "Value"
 msgstr "Значение"
 
-#: source/ColorPicker.cpp:1087 source/ColorSpaceType.cpp:48
-#: source/uiColorInput.cpp:149
+#: source/ColorPicker.cpp:1094 source/ColorSpaceType.cpp:48
+#: source/uiColorInput.cpp:159
 msgid "Red"
 msgstr "Красный"
 
-#: source/ColorPicker.cpp:1087 source/ColorSpaceType.cpp:49
-#: source/uiColorInput.cpp:149
+#: source/ColorPicker.cpp:1094 source/ColorSpaceType.cpp:49
+#: source/uiColorInput.cpp:159
 msgid "Green"
 msgstr "Зелёный"
 
-#: source/ColorPicker.cpp:1087 source/ColorSpaceType.cpp:50
-#: source/uiColorInput.cpp:149
+#: source/ColorPicker.cpp:1094 source/ColorSpaceType.cpp:50
+#: source/uiColorInput.cpp:159
 msgid "Blue"
 msgstr "Синий"
 
-#: source/ColorPicker.cpp:1101 source/ColorSpaceType.cpp:55
-#: source/uiColorInput.cpp:151
+#: source/ColorPicker.cpp:1108 source/ColorSpaceType.cpp:55
+#: source/uiColorInput.cpp:161
 msgid "Cyan"
 msgstr "Cyan"
 
-#: source/ColorPicker.cpp:1101 source/ColorSpaceType.cpp:56
-#: source/uiColorInput.cpp:151
+#: source/ColorPicker.cpp:1108 source/ColorSpaceType.cpp:56
+#: source/uiColorInput.cpp:161
 msgid "Magenta"
 msgstr "Magenta"
 
-#: source/ColorPicker.cpp:1101 source/ColorSpaceType.cpp:57
-#: source/uiColorInput.cpp:151
+#: source/ColorPicker.cpp:1108 source/ColorSpaceType.cpp:57
+#: source/uiColorInput.cpp:161
 msgid "Yellow"
 msgstr "Yellow"
 
-#: source/ColorPicker.cpp:1101 source/ColorSpaceType.cpp:58
-#: source/uiColorInput.cpp:151
+#: source/ColorPicker.cpp:1108 source/ColorSpaceType.cpp:58
+#: source/uiColorInput.cpp:161
 msgid "Key"
 msgstr "Key"
 
-#: source/ColorPicker.cpp:1137
+#: source/ColorPicker.cpp:1144
 msgid "Info"
 msgstr "Информация"
 
-#: source/ColorPicker.cpp:1146
+#: source/ColorPicker.cpp:1153
 msgid "Color name:"
 msgstr "Название цвета:"
 
-#: source/ColorPicker.cpp:1159
+#: source/ColorPicker.cpp:1166
 msgid "Contrast:"
 msgstr "Контраст:"
 
-#: source/ColorPicker.cpp:1164 source/ColorPicker.cpp:1170
+#: source/ColorPicker.cpp:1171 source/ColorPicker.cpp:1177
 msgid "Sample"
 msgstr "Образец"
 
-#: source/ColorPicker.cpp:1197
+#: source/ColorPicker.cpp:1204
 msgid "Color picker"
 msgstr "Пипетка"
 
@@ -430,45 +427,45 @@ msgstr "Объект стиля"
 msgid "CSS selector"
 msgstr "Селектор CSS"
 
-#: source/LayoutPreview.cpp:164
+#: source/LayoutPreview.cpp:166
 msgid "Assign CSS selectors"
 msgstr "Назначить селекторы CSS"
 
-#: source/LayoutPreview.cpp:474 source/LayoutPreview.cpp:522
-#: source/uiApp.cpp:525 source/uiApp.cpp:544
+#: source/LayoutPreview.cpp:479 source/LayoutPreview.cpp:527
+#: source/uiApp.cpp:526 source/uiApp.cpp:545
 msgid "File could not be saved"
 msgstr "Не удалось сохранить файл"
 
-#: source/LayoutPreview.cpp:485 source/uiImportExport.cpp:460
+#: source/LayoutPreview.cpp:490 source/uiImportExport.cpp:460
 #: source/uiImportExport.cpp:517
 msgid "Export"
 msgstr "Экспортировать"
 
-#: source/LayoutPreview.cpp:499
+#: source/LayoutPreview.cpp:504
 msgid "Cascading Style Sheets *.css"
 msgstr "Каскадные таблицы стилей (*.css)"
 
-#: source/LayoutPreview.cpp:581
+#: source/LayoutPreview.cpp:586
 msgid "Layout:"
 msgstr "Макет:"
 
-#: source/LayoutPreview.cpp:585
+#: source/LayoutPreview.cpp:590
 msgid "Export CSS File"
 msgstr "Экспортировать файл CSS"
 
-#: source/LayoutPreview.cpp:586
+#: source/LayoutPreview.cpp:591
 msgid "Export CSS file"
 msgstr "Экспортировать файл CSS"
 
-#: source/LayoutPreview.cpp:592
+#: source/LayoutPreview.cpp:597
 msgid "_Export CSS File As..."
 msgstr "_Экспортировать файл CSS как…"
 
-#: source/LayoutPreview.cpp:595
+#: source/LayoutPreview.cpp:600
 msgid "_Assign CSS Selectors..."
 msgstr "_Назначить селекторы CSS…"
 
-#: source/LayoutPreview.cpp:646
+#: source/LayoutPreview.cpp:651
 msgid "Layout preview"
 msgstr "Просмотр макета"
 
@@ -501,287 +498,265 @@ msgstr "Светлота (Lab)"
 msgid "variations"
 msgstr "Вариации"
 
-#: source/Variations.cpp:223
+#: source/Variations.cpp:216
 msgid "all colors"
 msgstr "все цвета"
 
-#: source/Variations.cpp:237
-#, c-format
-msgid "result %d line %d"
-msgstr "результат %d строка %d"
+#: source/Variations.cpp:225
+msgid "result {} line {}"
+msgstr "результат {} строка {}"
 
-#: source/Variations.cpp:687
+#: source/Variations.cpp:672
 #: source/transformation/ColorVisionDeficiency.cpp:386
 msgid "Strength:"
 msgstr "Сила:"
 
-#: source/Variations.cpp:710 source/uiDialogVariations.cpp:146
+#: source/Variations.cpp:695 source/uiDialogVariations.cpp:146
 msgid "Variations"
 msgstr "Вариации светлоты и насыщенности"
 
-#: source/uiAbout.cpp:79
+#: source/uiAbout.cpp:80
 msgid "About Gpick"
 msgstr "О программе Gpick"
 
-#: source/uiAbout.cpp:100
-msgid "Advanced color picker"
-msgstr "Продвинутая цветовая пипетка"
+#: source/uiAbout.cpp:95
+msgid "Revision"
+msgstr "Редакция"
 
-#: source/uiAbout.cpp:104
-msgid "Copyright © 2009-2017, Albertas Vyšniauskas and Gpick development team"
+#: source/uiAbout.cpp:102
+msgid "Copyright © 2009-2018, Albertas Vyšniauskas and Gpick development team"
 msgstr ""
-"Авторские права © 2009-2017, Albertas Vyšniauskas и команда разработчиков "
+"Авторские права © 2009-2020, Albertas Vyšniauskas и команда разработчиков "
 "Gpick"
 
-#: source/uiAbout.cpp:116
+#: source/uiAbout.cpp:114
 msgid "License"
 msgstr "Лицензия"
 
-#: source/uiAbout.cpp:117
+#: source/uiAbout.cpp:115
 msgid "Credits"
 msgstr "Авторы"
 
-#: source/uiAbout.cpp:118
+#: source/uiAbout.cpp:116
 msgid "Expat License"
 msgstr "Лицензия на Expat"
 
-#: source/uiAbout.cpp:119
+#: source/uiAbout.cpp:117
 msgid "Lua License"
 msgstr "Лицензия на Lua"
 
-#: source/uiApp.cpp:215
+#: source/uiApp.cpp:216
 msgid "New palette"
 msgstr "Новая палитра"
 
-#: source/uiApp.cpp:221
+#: source/uiApp.cpp:222
 msgid "(Imported)"
 msgstr "(импортировано)"
 
-#: source/uiApp.cpp:377 source/uiApp.cpp:390 source/uiApp.cpp:406
-#: source/uiApp.cpp:485
+#: source/uiApp.cpp:378 source/uiApp.cpp:391 source/uiApp.cpp:407
+#: source/uiApp.cpp:486
 msgid "File could not be opened"
 msgstr "Не удалось открыть файл"
 
-#: source/uiApp.cpp:378 source/uiApp.cpp:391 source/uiApp.cpp:407
-#: source/uiApp.cpp:486
+#: source/uiApp.cpp:379 source/uiApp.cpp:392 source/uiApp.cpp:408
+#: source/uiApp.cpp:487
 msgid "Open"
 msgstr "Открыть"
 
-#: source/uiApp.cpp:420 source/uiImportExport.cpp:319
+#: source/uiApp.cpp:421 source/uiImportExport.cpp:319
 #: source/uiImportExport.cpp:468
 msgid "Gpick Palette (*.gpa)"
 msgstr "Палитры Gpick (*.gpa)"
 
-#: source/uiApp.cpp:421 source/uiImportExport.cpp:320
+#: source/uiApp.cpp:422 source/uiImportExport.cpp:320
 #: source/uiImportExport.cpp:469
 msgid "GIMP/Inkscape Palette (*.gpl)"
 msgstr "Палитры GIMP/Inkscape (*.gpl)"
 
-#: source/uiApp.cpp:422 source/uiImportExport.cpp:321
+#: source/uiApp.cpp:423 source/uiImportExport.cpp:321
 #: source/uiImportExport.cpp:471
 msgid "Adobe Swatch Exchange (*.ase)"
 msgstr "Палитры Adobe Swatch Exchange (*.ase)"
 
-#: source/uiApp.cpp:427 source/uiImportExport.cpp:330
+#: source/uiApp.cpp:428 source/uiImportExport.cpp:330
 #: source/tools/PaletteFromImage.cpp:531
 msgid "All files"
 msgstr "Все файлы"
 
-#: source/uiApp.cpp:435 source/uiImportExport.cpp:338
+#: source/uiApp.cpp:436 source/uiImportExport.cpp:338
 msgid "All supported formats"
 msgstr "Все поддерживаемые форматы"
 
-#: source/uiApp.cpp:460
+#: source/uiApp.cpp:461
 msgid "Open File"
 msgstr "Открыть файл"
 
-#: source/uiApp.cpp:499 source/uiApp.cpp:526
+#: source/uiApp.cpp:500 source/uiApp.cpp:527
 msgid "Save As"
 msgstr "Сохранить как"
 
-#: source/uiApp.cpp:545
+#: source/uiApp.cpp:546
 msgid "Save"
 msgstr "Сохранить"
 
-#: source/uiApp.cpp:603
+#: source/uiApp.cpp:604
 msgid "Open Last File"
 msgstr "Открыть последний файл"
 
-#: source/uiApp.cpp:872
-msgid "Recent _Files"
-msgstr "_Недавние файлы"
+#: source/uiApp.cpp:848
+msgid "Primary"
+msgstr "Первичный"
 
-#: source/uiApp.cpp:896
-msgid "Ex_port..."
-msgstr "_Экспортировать…"
-
-#: source/uiApp.cpp:901
-msgid "Expo_rt Selected..."
-msgstr "Экспортировать _выделенное…"
-
-#: source/uiApp.cpp:906
-msgid "_Import..."
-msgstr "_Импортировать…"
-
-#: source/uiApp.cpp:911
-msgid "Import _Text File..."
-msgstr "_Импортировать текстовый файл…"
-
-#: source/uiApp.cpp:923
-msgid "_File"
-msgstr "_Файл"
-
-#: source/uiApp.cpp:929
-msgid "Edit _Converters..."
-msgstr "_Конвертеры…"
-
-#: source/uiApp.cpp:932
-msgid "Display _Filters..."
-msgstr "_Экранные фильтры..."
-
-#: source/uiApp.cpp:935
-msgid "Color _Dictionaries..."
-msgstr "_Цветовые словари…"
-
-#: source/uiApp.cpp:944
-msgid "_Edit"
-msgstr "_Правка"
-
-#: source/uiApp.cpp:951
-msgid "Primary/Secondary, Palette"
-msgstr ""
-
-#: source/uiApp.cpp:952
-msgid "Primary/Palette, Secondary"
-msgstr ""
-
-#: source/uiApp.cpp:953
-msgid "Primary, Palette/Secondary"
-msgstr ""
-
-#: source/uiApp.cpp:954
-msgid "Palette/Secondary, Primary"
-msgstr ""
-
-#: source/uiApp.cpp:955
-msgid "Palette/Primary, Secondary"
-msgstr ""
-
-#: source/uiApp.cpp:956
-msgid "Palette, Primary/Secondary"
-msgstr ""
-
-#: source/uiApp.cpp:957
-msgid "Secondary/Primary, Palette"
-msgstr ""
-
-#: source/uiApp.cpp:958
-msgid "Secondary/Palette, Primary"
-msgstr ""
-
-#: source/uiApp.cpp:959
-msgid "Secondary, Primary/Palette"
-msgstr ""
-
-#: source/uiApp.cpp:960
-msgid "_Layout"
-msgstr "_Макет"
-
-#: source/uiApp.cpp:989
-msgid "_Secondary View"
-msgstr "_Дополнительная панель"
-
-#: source/uiApp.cpp:994
-#, fuzzy
-msgid "_Primary View"
-msgstr "_Дополнительная панель"
-
-#: source/uiApp.cpp:998
+#: source/uiApp.cpp:849 source/uiApp.cpp:1037
 msgid "Palette"
 msgstr "Палитра цветов"
 
-#: source/uiApp.cpp:1004
+#: source/uiApp.cpp:850
+msgid "Secondary"
+msgstr "Вторичный"
+
+#: source/uiApp.cpp:911
+msgid "Recent _Files"
+msgstr "_Недавние файлы"
+
+#: source/uiApp.cpp:935
+msgid "Ex_port..."
+msgstr "_Экспортировать…"
+
+#: source/uiApp.cpp:940
+msgid "Expo_rt Selected..."
+msgstr "Экспортировать _выделенное…"
+
+#: source/uiApp.cpp:945
+msgid "_Import..."
+msgstr "_Импортировать…"
+
+#: source/uiApp.cpp:950
+msgid "Import _Text File..."
+msgstr "_Импортировать текстовый файл…"
+
+#: source/uiApp.cpp:962
+msgid "_File"
+msgstr "_Файл"
+
+#: source/uiApp.cpp:968
+msgid "Edit _Converters..."
+msgstr "_Конвертеры…"
+
+#: source/uiApp.cpp:971
+msgid "Display _Filters..."
+msgstr "_Экранные фильтры..."
+
+#: source/uiApp.cpp:974
+msgid "Color _Dictionaries..."
+msgstr "_Цветовые словари…"
+
+#: source/uiApp.cpp:983
+msgid "_Edit"
+msgstr "_Правка"
+
+#: source/uiApp.cpp:999
+msgid "_Layout"
+msgstr "_Макет"
+
+#: source/uiApp.cpp:1028
+msgid "_Secondary View"
+msgstr "_Дополнительная панель"
+
+#: source/uiApp.cpp:1033
+msgid "_Primary View"
+msgstr "_Первичный вид"
+
+#: source/uiApp.cpp:1043
 msgid "_View"
 msgstr "_Вид"
 
-#: source/uiApp.cpp:1008
+#: source/uiApp.cpp:1047
 msgid "_Pick colors..."
 msgstr "С_нимать цвета…"
 
-#: source/uiApp.cpp:1013
+#: source/uiApp.cpp:1052
 msgid "Palette From _Image..."
 msgstr "_Палитра из изображения…"
 
-#: source/uiApp.cpp:1016
+#: source/uiApp.cpp:1055
 #, fuzzy
 msgid "Color Space _Sampler..."
 msgstr "П_ипетка"
 
-#: source/uiApp.cpp:1019
+#: source/uiApp.cpp:1058
+msgid "_Text Parser..."
+msgstr "Парсер _текста…"
+
+#: source/uiApp.cpp:1061
 msgid "_Tools"
 msgstr "_Инструменты"
 
-#: source/uiApp.cpp:1029
+#: source/uiApp.cpp:1071
 msgid "_Help"
 msgstr "_Справка"
 
-#: source/uiApp.cpp:1309
+#: source/uiApp.cpp:1314
+msgid "A_dd..."
+msgstr "_Добавить…"
+
+#: source/uiApp.cpp:1329
 msgid "_Mix Colors..."
 msgstr "С_мешать цвета…"
 
-#: source/uiApp.cpp:1313
+#: source/uiApp.cpp:1333
 msgid "_Variations..."
 msgstr "Вариации _светлоты и насыщенности…"
 
-#: source/uiApp.cpp:1317
+#: source/uiApp.cpp:1337
 msgid "_Generate..."
 msgstr "Вариации _тонов…"
 
-#: source/uiApp.cpp:1322
+#: source/uiApp.cpp:1342
 msgid "C_lear names"
 msgstr "Ст_ереть названия"
 
-#: source/uiApp.cpp:1327
+#: source/uiApp.cpp:1347
 msgid "Autona_me"
 msgstr "_Автоматически подобрать названия"
 
-#: source/uiApp.cpp:1332
+#: source/uiApp.cpp:1352
 msgid "Auto_number..."
 msgstr "Автоматически _пронумеровать..."
 
-#: source/uiApp.cpp:1338
+#: source/uiApp.cpp:1358
 msgid "R_everse"
 msgstr "_Развернуть"
 
-#: source/uiApp.cpp:1343
+#: source/uiApp.cpp:1363
 msgid "Group and _sort..."
 msgstr "С_группировать и отсортировать..."
 
-#: source/uiApp.cpp:1349
+#: source/uiApp.cpp:1369
 msgid "_Remove"
 msgstr "_Удалить"
 
-#: source/uiApp.cpp:1354
+#: source/uiApp.cpp:1374
 msgid "Remove _All"
 msgstr "Удалить _все"
 
-#: source/uiApp.cpp:1641
+#: source/uiApp.cpp:1661
 msgid "Color pic_ker"
 msgstr "П_ипетка"
 
-#: source/uiApp.cpp:1746
+#: source/uiApp.cpp:1766
 msgid "Scheme _generation"
 msgstr "Создание _цветовой схемы"
 
-#: source/uiApp.cpp:1760
+#: source/uiApp.cpp:1780
 msgid "Lay_out preview"
 msgstr "Просмотр _макета"
 
-#: source/uiApp.cpp:1799
+#: source/uiApp.cpp:1819
 msgid "Pick colors (Ctrl+P)"
 msgstr "Снять цвет пипеткой (Ctrl+P)"
 
-#: source/uiApp.cpp:1806
+#: source/uiApp.cpp:1826
 msgid ""
 "File is currently in a non-native format, possible loss of precision and/or "
 "metadata."
@@ -813,11 +788,15 @@ msgstr "Файл цветового словаря"
 msgid "Built in"
 msgstr "Встроенный"
 
-#: source/uiColorInput.cpp:121
+#: source/uiColorInput.cpp:128
+msgid "Add color"
+msgstr "Добавить цвет"
+
+#: source/uiColorInput.cpp:128
 msgid "Edit color"
 msgstr "Изменить цвет"
 
-#: source/uiColorInput.cpp:138
+#: source/uiColorInput.cpp:147
 msgid "Color:"
 msgstr "Цвет:"
 
@@ -833,6 +812,10 @@ msgstr "Название функции"
 msgid "Example"
 msgstr "Пример"
 
+#: source/uiConverter.cpp:141
+msgid "Paste / Edit"
+msgstr "Вставка / Ред."
+
 #: source/uiConverter.cpp:159
 msgid "Converters"
 msgstr "Конвертеры"
@@ -845,31 +828,31 @@ msgstr "Показывает:"
 msgid "Color list:"
 msgstr "Список цветов:"
 
-#: source/uiDialogAutonumber.cpp:103
+#: source/uiDialogAutonumber.cpp:104
 msgid "Autonumber colors"
 msgstr "Автоматически пронумеровать цвета"
 
-#: source/uiDialogAutonumber.cpp:118
+#: source/uiDialogAutonumber.cpp:119
 msgid "Name:"
 msgstr "Название:"
 
-#: source/uiDialogAutonumber.cpp:128
+#: source/uiDialogAutonumber.cpp:129
 msgid "Decimal places:"
 msgstr "Число разрядов:"
 
-#: source/uiDialogAutonumber.cpp:135
+#: source/uiDialogAutonumber.cpp:136
 msgid "Starting number:"
 msgstr "Начать с цифры:"
 
-#: source/uiDialogAutonumber.cpp:142
+#: source/uiDialogAutonumber.cpp:143
 msgid "_Decreasing"
 msgstr "По _нисходящей"
 
-#: source/uiDialogAutonumber.cpp:148
+#: source/uiDialogAutonumber.cpp:149
 msgid "_Append"
 msgstr "_Добавлять поверх"
 
-#: source/uiDialogAutonumber.cpp:154
+#: source/uiDialogAutonumber.cpp:155
 msgid "Sample:"
 msgstr "Образец:"
 
@@ -881,7 +864,7 @@ msgstr ""
 msgid "Generate colors"
 msgstr "Вариации тонов"
 
-#: source/uiDialogGenerate.cpp:210 source/tools/PaletteFromImage.cpp:579
+#: source/uiDialogGenerate.cpp:210 source/tools/PaletteFromImage.cpp:580
 msgid "Colors:"
 msgstr "Цветов:"
 
@@ -921,7 +904,7 @@ msgstr "Шагов:"
 msgid "_Include Endpoints"
 msgstr "_Включая оконечные цвета"
 
-#: source/uiDialogOptions.cpp:151 source/tools/PaletteFromImage.cpp:571
+#: source/uiDialogOptions.cpp:151 source/tools/PaletteFromImage.cpp:572
 msgid "Options"
 msgstr "Параметры"
 
@@ -1213,31 +1196,31 @@ msgstr "Размер объектов:"
 msgid "Background:"
 msgstr "Цвет фона:"
 
-#: source/uiImportExport.cpp:119
+#: source/uiImportExport.cpp:119 source/tools/TextParser.cpp:116
 msgid "C style single-line comments"
 msgstr "Однострочные комментарии в стиле C"
 
-#: source/uiImportExport.cpp:120
+#: source/uiImportExport.cpp:120 source/tools/TextParser.cpp:117
 msgid "C style multi-line comments"
 msgstr "Многострочные комментарии в стиле C"
 
-#: source/uiImportExport.cpp:121
+#: source/uiImportExport.cpp:121 source/tools/TextParser.cpp:118
 msgid "Hash single-line comments"
 msgstr "Комментарии, начинающиеся решёткой"
 
-#: source/uiImportExport.cpp:125
+#: source/uiImportExport.cpp:125 source/tools/TextParser.cpp:122
 msgid "Full hex"
 msgstr "Полный HEX"
 
-#: source/uiImportExport.cpp:127
+#: source/uiImportExport.cpp:127 source/tools/TextParser.cpp:124
 msgid "Short hex"
 msgstr "Короткий HEX"
 
-#: source/uiImportExport.cpp:128
+#: source/uiImportExport.cpp:128 source/tools/TextParser.cpp:125
 msgid "Integer values"
 msgstr "Целые значения"
 
-#: source/uiImportExport.cpp:129
+#: source/uiImportExport.cpp:129 source/tools/TextParser.cpp:126
 msgid "Real values"
 msgstr "Реальные значения"
 
@@ -1286,35 +1269,33 @@ msgstr "Текстовые файлы (*.txt)"
 msgid "File could not be exported"
 msgstr "Не удалось экспортировать файл"
 
-#: source/uiListPalette.cpp:157 source/uiListPalette.cpp:159
-#, c-format
-msgid "%d color"
-msgid_plural "%d colors"
-msgstr[0] "%d цвет"
-msgstr[1] "%d цвета"
-msgstr[2] "%d цветов"
+#: source/uiListPalette.cpp:148
+msgid "{} color"
+msgid_plural "{} colors"
+msgstr[0] "{} цвет"
+msgstr[1] "{} цвета"
+msgstr[2] "{} цветов"
 
-#: source/uiListPalette.cpp:165
+#: source/uiListPalette.cpp:152
 msgid "selected"
 msgstr "выбрано"
 
-#: source/uiListPalette.cpp:171 source/uiListPalette.cpp:173
-#, c-format
-msgid "Total %d color"
-msgid_plural "Total %d colors"
-msgstr[0] "Всего %d цвет"
-msgstr[1] "Всего %d цвета"
-msgstr[2] "Всего %d цветов"
+#: source/uiListPalette.cpp:155
+msgid "Total {} color"
+msgid_plural "Total {} colors"
+msgstr[0] "Всего {} цвет"
+msgstr[1] "Всего {} цвета"
+msgstr[2] "Всего {} цветов"
 
-#: source/uiListPalette.cpp:328
+#: source/uiListPalette.cpp:309
 msgid "Preview"
 msgstr "Предпросмотр"
 
-#: source/uiListPalette.cpp:663 source/uiListPalette.cpp:672
+#: source/uiListPalette.cpp:670 source/uiListPalette.cpp:679
 msgid "Color"
 msgstr "Цвет"
 
-#: source/uiListPalette.cpp:681
+#: source/uiListPalette.cpp:688
 msgid "Name"
 msgstr "Название"
 
@@ -1402,6 +1383,14 @@ msgstr "Файл изображения"
 #: source/tools/PaletteFromImage.cpp:539
 msgid "All images"
 msgstr "Все изображения"
+
+#: source/tools/TextParser.cpp:103
+msgid "Text parser"
+msgstr "Парсер текста"
+
+#: source/tools/TextParser.cpp:112
+msgid "Text"
+msgstr "Текст"
 
 #: source/transformation/ColorVisionDeficiency.cpp:41
 msgid "Color vision deficiency"
@@ -1596,6 +1585,9 @@ msgstr "Item text"
 #: share/gpick/layouts.lua:118
 msgid "Grid (5x4)"
 msgstr "Сетка (5x4)"
+
+#~ msgid "Advanced color picker"
+#~ msgstr "Продвинутая цветовая пипетка"
 
 #~ msgid "HSV shortest hue distance"
 #~ msgstr "HSV, кратчайшее расстояние"
