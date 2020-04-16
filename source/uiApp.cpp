@@ -588,6 +588,7 @@ typedef struct FileMenuItems{
 	GtkWidget *export_all;
 	GtkWidget *export_selected;
 	GtkWidget *recent_files;
+	GtkWidget *revert;
 }FileMenuItems;
 
 static void menu_file_activate(GtkWidget *widget, gpointer data)
@@ -598,6 +599,7 @@ static void menu_file_activate(GtkWidget *widget, gpointer data)
 	FileMenuItems *items = (FileMenuItems*) g_object_get_data(G_OBJECT(widget), "items");
 	gtk_widget_set_sensitive(items->export_all, (total_count >= 1));
 	gtk_widget_set_sensitive(items->export_selected, (selected_count >= 1));
+	gtk_widget_set_sensitive(items->revert, args->current_filename_set);
 	if (args->recent_files.size() > 0){
 		GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 		GtkWidget *item;
@@ -917,6 +919,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_r, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_F5, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_revert), args);
+		items->revert = item;
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new ());
 	if (gtk_stock_lookup(GTK_STOCK_SAVE, &stock_item)){
