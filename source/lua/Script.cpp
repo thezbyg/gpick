@@ -104,8 +104,11 @@ bool Script::run(int arguments_on_stack, int results)
 }
 static int registerLuaPackage(lua_State *L)
 {
-	auto &script = *reinterpret_cast<Script*>(lua_touserdata(L, -5));
-	auto &extension = *reinterpret_cast<function<int(Script &)>*>(lua_touserdata(L, -4));
+	lua_getglobal(L, "__script");
+	auto &script = *reinterpret_cast<Script*>(lua_touserdata(L, -1));
+	lua_getglobal(L, "__extension");
+	auto &extension = *reinterpret_cast<function<int(Script &)>*>(lua_touserdata(L, -1));
+	lua_pop(L, 2);
 	return extension(script);
 }
 bool Script::registerExtension(const char *name, std::function<int(Script &)> extension)
@@ -117,9 +120,15 @@ bool Script::registerExtension(const char *name, std::function<int(Script &)> ex
 	else
 		full_name = string("gpick/") + name;
 	lua_pushlightuserdata(L, this);
+	lua_setglobal(L, "__script");
 	lua_pushlightuserdata(L, &extension);
+	lua_setglobal(L, "__extension");
 	luaL_requiref(m_state, full_name.c_str(), registerLuaPackage, 0);
-	lua_pop(L, 3);
+	lua_pushnil(L);
+	lua_setglobal(L, "__script");
+	lua_pushnil(L);
+	lua_setglobal(L, "__extension");
+	lua_pop(L, 1);
 	return true;
 }
 std::string Script::getString(int index)
