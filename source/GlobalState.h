@@ -20,6 +20,8 @@
 #define GPICK_GLOBAL_STATE_H_
 
 #include <memory>
+#include <boost/optional.hpp>
+#include <cstdint>
 struct ColorNames;
 struct Sampler;
 struct ScreenReader;
@@ -61,6 +63,7 @@ struct GlobalState
 	void setStatusBar(GtkWidget *status_bar);
 	ColorSource *getCurrentColorSource();
 	void setCurrentColorSource(ColorSource *color_source);
+	boost::optional<uint32_t> latinKeysGroup;
 	private:
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;

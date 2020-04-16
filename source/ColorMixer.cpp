@@ -384,7 +384,7 @@ static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, Color
 	ColorObject* color_object;
 	GtkWidget* color_widget = widget;
 
-	switch(event->keyval){
+	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
 		case GDK_KEY_c:
 			if ((event->state&modifiers) == GDK_CONTROL_MASK){
 				gtk_color_get_color(GTK_COLOR(color_widget), &c);

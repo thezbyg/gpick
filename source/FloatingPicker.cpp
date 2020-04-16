@@ -270,7 +270,7 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	gint add_x = 0, add_y = 0;
-	switch (event->keyval){
+	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
 		case GDK_KEY_Return:
 			complete_picking(args);
 			finish_picking(args);

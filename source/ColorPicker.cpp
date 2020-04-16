@@ -380,8 +380,7 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch(event->keyval)
-	{
+	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
 		case GDK_KEY_m:
 			{
 				int x, y;

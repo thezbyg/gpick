@@ -20,6 +20,7 @@
 #define GPICK_UI_UTILITIES_H_
 #include <gtk/gtk.h>
 #include <string>
+#include <boost/optional.hpp>
 GtkWidget* gtk_menu_item_new_with_image(const gchar* label, GtkWidget *image);
 GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign = 0, gfloat yalign = 0, gfloat xscale = 0, gfloat yscale = 0);
 GtkWidget* gtk_label_mnemonic_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale);
@@ -31,4 +32,5 @@ GtkWidget *newCheckbox(const std::string &label, bool value);
 GtkWidget *newTextView(const std::string &text);
 std::string getTextViewText(GtkWidget *widget);
 GtkWidget *newLabel(const std::string &text);
+guint getKeyval(const GdkEventKey &key, boost::optional<uint32_t> latinKeysGroup);
 #endif /* GPICK_UI_UTILITIES_H_ */

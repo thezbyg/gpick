@@ -79,3 +79,8 @@ std::string getTextViewText(GtkWidget *widget) {
 GtkWidget *newLabel(const std::string &text) {
 	return gtk_label_aligned_new(text.c_str(), 0, 0.5, 0, 0);
 }
+guint getKeyval(const GdkEventKey &key, boost::optional<uint32_t> latinKeysGroup) {
+	guint keyval;
+	gdk_keymap_translate_keyboard_state(gdk_keymap_get_for_display(gdk_display_get_default()), key.hardware_keycode, static_cast<GdkModifierType>(0), latinKeysGroup ? *latinKeysGroup : 0, &keyval, nullptr, nullptr, nullptr);
+	return keyval;
+}

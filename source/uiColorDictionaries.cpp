@@ -188,7 +188,7 @@ static void remove_selected(ColorDictionariesArgs *args)
 }
 static gboolean key_press_event(GtkWidget *widget, GdkEventKey *event, ColorDictionariesArgs *args)
 {
-	switch (event->keyval){
+	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
 		case GDK_KEY_Delete:
 			remove_selected(args);
 			break;

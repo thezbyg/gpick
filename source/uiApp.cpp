@@ -133,6 +133,22 @@ static gboolean delete_event(GtkWidget *widget, GdkEvent *event, AppArgs *args)
 	}
 	return false;
 }
+static void detectLatinKeyGroup(GdkKeymap *, AppArgs *args) {
+	GdkKeymapKey *keys;
+	gint keyCount;
+	args->gs->latinKeysGroup.reset();
+	if (gdk_keymap_get_entries_for_keyval(gdk_keymap_get_for_display(gdk_display_get_default()), GDK_KEY_a, &keys, &keyCount)) {
+		if (keyCount > 0) {
+			for (size_t i = 0; i < static_cast<size_t>(keyCount); i++) {
+				if (!args->gs->latinKeysGroup)
+					args->gs->latinKeysGroup = keys[i].group;
+				else if (keys[i].group >= 0 && static_cast<uint32_t>(keys[i].group) < *args->gs->latinKeysGroup)
+					args->gs->latinKeysGroup = keys[i].group;
+			}
+		}
+		g_free(keys);
+	}
+}
 
 static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *event, AppArgs *args)
 {
@@ -707,7 +723,7 @@ static void repositionViews(AppArgs* args)
 		gtk_widget_show(GTK_WIDGET(args->hpaned));
 	}else if (left_index != 0 || right_index != 0){
 		gtk_widget_hide(GTK_WIDGET(args->hpaned));
-		GtkWidget *widget;
+		GtkWidget *widget = nullptr;
 		if (left_index > 1){
 			widget = args->vpaned;
 			gtk_paned_pack1(GTK_PANED(args->vpaned), left[0]->widget, false, false);
@@ -723,7 +739,8 @@ static void repositionViews(AppArgs* args)
 			widget = right[0]->widget;
 			vpaned_unused = true;
 		}
-		gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(args->hpaned)), widget, true, true, 5);
+		if (widget)
+			gtk_box_pack_start(GTK_BOX(gtk_widget_get_parent(args->hpaned)), widget, true, true, 5);
 	}else{
 		gtk_widget_hide(GTK_WIDGET(args->hpaned));
 		vpaned_unused = true;
@@ -1410,8 +1427,8 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event, AppArgs *args)
 {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch(event->keyval)
-	{
+	guint keyval;
+	switch((keyval = getKeyval(*event, args->gs->latinKeysGroup))) {
 		case GDK_KEY_1:
 		case GDK_KEY_KP_1:
 		case GDK_KEY_2:
@@ -1430,7 +1447,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 				if (color_list_get_count(color_list) > 0){
 					ColorSource *color_source = args->gs->getCurrentColorSource();
 					uint32_t color_index = 0;
-					switch(event->keyval)
+					switch(keyval)
 					{
 						case GDK_KEY_KP_1:
 						case GDK_KEY_1: color_index = 0; break;
@@ -1726,6 +1743,8 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 		app_initialize_variables(args);
 		app_initialize_color_list(args);
 	}
+	g_signal_connect(G_OBJECT(gdk_keymap_get_for_display(gdk_display_get_default())), "keys-changed", G_CALLBACK(detectLatinKeyGroup), args);
+	detectLatinKeyGroup(nullptr, args);
 	args->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	set_main_window_icon();
 	app_update_program_name(args);
