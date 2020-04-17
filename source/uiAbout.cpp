@@ -17,6 +17,7 @@
  */
 
 #include "uiAbout.h"
+#include "uiUtilities.h"
 #include "version/Version.h"
 #include "I18N.h"
 #include "Paths.h"
@@ -116,8 +117,7 @@ void show_about_box(GtkWidget *widget)
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(expat_license), gtk_label_new(_("Expat License")));
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), new_page(lua_license), gtk_label_new(_("Lua License")));
 	gtk_box_pack_start(GTK_BOX(vbox), notebook, true, true, 0);
-	gtk_widget_show_all(vbox);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
+	setDialogContent(dialog, vbox);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), 400, 300);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);

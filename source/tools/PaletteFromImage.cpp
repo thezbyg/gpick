@@ -591,7 +591,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	args->preview_color_list = preview_color_list;
 
 	gtk_widget_show_all(table_m);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table_m);
+	setDialogContent(dialog, table_m);
 
 	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(destroy_cb), args);
 	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(response_cb), args);

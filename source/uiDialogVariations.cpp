@@ -208,7 +208,7 @@ void dialog_variations_show(GtkWindow* parent, ColorList *selected_color_list, G
 	args->preview_color_list = preview_color_list;
 	update(0, args);
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
+	setDialogContent(dialog, table);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

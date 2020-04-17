@@ -137,7 +137,7 @@ TextParserDialog::TextParserDialog(GtkWindow* parent, GlobalState *gs):
 	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, dynv_get_bool_wd(m_params, "show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 8, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	preview();
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
+	setDialogContent(dialog, table);
 	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(onDestroy), this);
 	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(onResponse), this);
 }

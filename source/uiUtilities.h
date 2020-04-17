@@ -33,4 +33,5 @@ GtkWidget *newTextView(const std::string &text);
 std::string getTextViewText(GtkWidget *widget);
 GtkWidget *newLabel(const std::string &text);
 guint getKeyval(const GdkEventKey &key, boost::optional<uint32_t> latinKeysGroup);
+void setDialogContent(GtkWidget *dialog, GtkWidget *content);
 #endif /* GPICK_UI_UTILITIES_H_ */

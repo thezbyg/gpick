@@ -282,9 +282,7 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		color_dictionaries_update_row(model, &iter1, &dictionary, args);
 	}
-
-	gtk_widget_show_all(vbox);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
+	setDialogContent(dialog, vbox);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		size_t item_count = args->color_dictionaries.size();
 		if (item_count){

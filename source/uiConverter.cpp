@@ -211,8 +211,7 @@ void dialog_converter_show(GtkWindow *parent, GlobalState *gs)
 		gtk_combo_box_set_active(GTK_COMBO_BOX(color_list), 0);
 	}
 	gtk_widget_show_all(vbox);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
-
+	setDialogContent(dialog, vbox);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		GtkTreeIter iter;
 		GtkListStore *store;

@@ -306,7 +306,7 @@ void dialog_mix_show(GtkWindow* parent, ColorList *selected_color_list, GlobalSt
 	update(0, args);
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
+	setDialogContent(dialog, table);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 
 	gint width, height;

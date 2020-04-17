@@ -358,7 +358,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 	}
 	gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "paned_position", -1));
 	gtk_widget_show_all(vbox);
-	gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox, true, true, 5);
+	setDialogContent(dialog, vbox);
 
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		apply_configuration(args);

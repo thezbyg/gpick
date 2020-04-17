@@ -237,7 +237,13 @@ static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
 GtkWidget* palette_list_get_widget(ColorList *color_list){
 	return (GtkWidget*)color_list->userdata;
 }
-
+#if GTK_MAJOR_VERSION >= 3
+static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPaletteArgs *args) {
+	bool expanded = gtk_expander_get_expanded(expander);
+	gtk_widget_set_hexpand(args->treeview, expanded);
+	gtk_widget_set_vexpand(args->treeview, expanded);
+}
+#endif
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list){
 
 	ListPaletteArgs* args = new ListPaletteArgs;
@@ -298,25 +304,23 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 
 	}
 
-	GtkWidget *scrolled_window;
-	scrolled_window=gtk_scrolled_window_new (0,0);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(scrolled_window), view);
-
-	GtkWidget *main_widget = scrolled_window;
+	GtkWidget *scrolledWindow = gtk_scrolled_window_new(0, 0);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledWindow), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolledWindow), GTK_SHADOW_IN);
+	gtk_container_add(GTK_CONTAINER(scrolledWindow), view);
+	GtkWidget *mainWidget = scrolledWindow;
 	if (expander){
-		GtkWidget *expander=gtk_expander_new(_("Preview"));
-		gtk_container_add(GTK_CONTAINER(expander), scrolled_window);
+		GtkWidget *expander = gtk_expander_new(_("Preview"));
+		gtk_container_add(GTK_CONTAINER(expander), scrolledWindow);
+#if GTK_MAJOR_VERSION >= 3
+		g_signal_connect(expander, "notify::expanded", G_CALLBACK(onExpanderStateChange), args);
+#endif
 		gtk_expander_set_expanded(GTK_EXPANDER(expander), expanded);
-
-		main_widget = expander;
+		mainWidget = expander;
 	}
-
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
 	g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
-
-	return main_widget;
+	return mainWidget;
 }
 
 static ColorObject** get_color_object_list(struct DragDrop* dd, size_t *color_object_n){

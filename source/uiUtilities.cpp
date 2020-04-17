@@ -84,3 +84,8 @@ guint getKeyval(const GdkEventKey &key, boost::optional<uint32_t> latinKeysGroup
 	gdk_keymap_translate_keyboard_state(gdk_keymap_get_for_display(gdk_display_get_default()), key.hardware_keycode, static_cast<GdkModifierType>(0), latinKeysGroup ? *latinKeysGroup : 0, &keyval, nullptr, nullptr, nullptr);
 	return keyval;
 }
+void setDialogContent(GtkWidget *dialog, GtkWidget *content) {
+	auto contentArea = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+	gtk_box_pack_start(GTK_BOX(contentArea), content, true, true, 5);
+	gtk_widget_show_all(content);
+}

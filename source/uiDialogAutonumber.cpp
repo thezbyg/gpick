@@ -162,7 +162,7 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 	update(0, args);
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
+	setDialogContent(dialog, table);
 
 	return_val = gtk_dialog_run(GTK_DIALOG(dialog));
 

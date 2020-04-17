@@ -168,7 +168,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	update(args, new_item ? args->text_input : nullptr);
 
 	gtk_widget_show_all(vbox);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), vbox);
+	setDialogContent(dialog, vbox);
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 	int result = -1;
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
@@ -248,7 +248,7 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 	}
 
 	gtk_widget_show_all(table);
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))), table);
+	setDialogContent(dialog, table);
 
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 
