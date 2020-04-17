@@ -1,0 +1,43 @@
+trigger:
+- master
+
+jobs:
+- job: build_on_ubuntu_latest
+  strategy:
+    maxParallel: 2
+    matrix:
+      gcc_gtk3_lua52:
+        publish_prefix: gcc-gtk3-lua52
+        lua_package: liblua5.2-dev
+      gcc_gtk3_lua53:
+        publish_prefix: gcc-gtk3-lua53
+        lua_package: liblua5.3-dev
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - script: >
+      sudo apt-get update && sudo apt-get install
+      git ragel g++ gcc gettext libgtk-3-dev $(lua_package) libexpat1-dev
+      libboost-filesystem-dev libboost-system-dev libboost-test-dev
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(Build.ArtifactStagingDirectory)/ ..'
+  - script: |
+      cmake --build . --config Release
+    workingDirectory: 'build'
+  - script: |
+      ./build/tests --log_format=JUNIT --report_format=HRF -k tests-log.xml -e tests-report.txt --no_result_code
+    workingDirectory: ''
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'tests-*.xml'
+  - script: |
+      cmake --build . --config Release --target install
+    workingDirectory: 'build'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      artifactName: $(publish_prefix)-ubuntu-latest
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+
