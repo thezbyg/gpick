@@ -54,6 +54,7 @@ struct FSM
 			color.rgb.red = hexPairToInt(ts + start_index) / 255.0;
 			color.rgb.green = hexPairToInt(ts + start_index + 2) / 255.0;
 			color.rgb.blue = hexPairToInt(ts + start_index + 4) / 255.0;
+			color.ma[3] = 0;
 			addColor(color);
 		}
 		void colorHexShort(bool with_hash_symbol)
