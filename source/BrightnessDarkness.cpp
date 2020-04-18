@@ -231,11 +231,11 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		menu = gtk_menu_new();
 		bool selection_avail = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
 		bool edit_avail = gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(args->layout_view));
-		item = gtk_menu_item_new_with_image(_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
-		item = gtk_menu_item_new_with_image(_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
@@ -249,11 +249,11 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		}
 		if (edit_avail){
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-			item = gtk_menu_item_new_with_image(_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+			item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(edit_cb), args);
 			if (!selection_avail) gtk_widget_set_sensitive(item, false);
-			item = gtk_menu_item_new_with_image(_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+			item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
 			if (!selection_avail) gtk_widget_set_sensitive(item, false);

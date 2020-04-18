@@ -318,11 +318,11 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		Color c;
 		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
-		item = gtk_menu_item_new_with_image(_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_to_palette), args);
 
-		item = gtk_menu_item_new_with_image(_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_all_to_palette), args);
 
@@ -332,11 +332,11 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		color_object->release();
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-		item = gtk_menu_item_new_with_image(_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_color_edit), args);
 
-		item = gtk_menu_item_new_with_image(_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
 
@@ -617,17 +617,17 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 
 		g_object_set_data_full(G_OBJECT(menu), "comp_item", comp_item, (GDestroyNotify)destroy_comp_item);
 
-		item = gtk_menu_item_new_with_image(_("Copy"), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("Copy"), GTK_STOCK_COPY);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_copy), args);
 
-		item = gtk_menu_item_new_with_image(_("Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("Paste"), GTK_STOCK_PASTE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_paste), args);
 
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-		item = gtk_menu_item_new_with_image(_("Edit"), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("Edit"), GTK_STOCK_EDIT);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_edit), args);
 

@@ -259,11 +259,11 @@ static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *
 		gint32 button, event_time;
 		menu = gtk_menu_new();
 		bool selection_avail = palette_list_get_selected_count(widget) != 0;
-		item = gtk_menu_item_new_with_image(_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_to_palette_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
-		item = gtk_menu_item_new_with_image(_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());

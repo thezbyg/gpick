@@ -107,12 +107,12 @@ GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GlobalState *gs, boo
 			text_line += " - ";
 			text_line += color_object->getName();
 		}
-		item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(text_line.c_str(), GTK_STOCK_COPY);
 		CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
 		g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
 	}else{
-		item = gtk_menu_item_new_with_image("-", gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+		item = newMenuItem("-", GTK_STOCK_COPY);
 	}
 	return item;
 }
@@ -121,7 +121,7 @@ GtkWidget* CopyMenuItem::newItem(ColorObject *color_object, Converter *converter
 	GtkWidget* item = nullptr;
 	ConverterSerializePosition position;
 	string text_line = converter->serialize(color_object, position);
-	item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(text_line.c_str(), GTK_STOCK_COPY);
 	CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);
 	g_object_set_data_full(G_OBJECT(item), "item_data", copy_menu_item_state, (GDestroyNotify)&CopyMenuItemState::onRelease);
@@ -132,7 +132,7 @@ GtkWidget* CopyMenuItem::newItem(ColorObject* color_object, GtkWidget *palette_w
 	GtkWidget* item = nullptr;
 	ConverterSerializePosition position;
 	string text_line = converter->serialize(color_object, position);
-	item = gtk_menu_item_new_with_image(text_line.c_str(), gtk_image_new_from_stock(GTK_STOCK_COPY, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(text_line.c_str(), GTK_STOCK_COPY);
 	CopyMenuItemState *copy_menu_item_state = new CopyMenuItemState(converter, color_object->reference(), gs);
 	copy_menu_item_state->setPaletteWidget(palette_widget);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), copy_menu_item_state);

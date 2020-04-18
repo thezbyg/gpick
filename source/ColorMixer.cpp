@@ -286,12 +286,12 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 
 	menu = gtk_menu_new ();
 
-	item = gtk_menu_item_new_with_image (_("_Add to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-	item = gtk_menu_item_new_with_image (_("A_dd all to palette"), gtk_image_new_from_stock(GTK_STOCK_ADD, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
@@ -332,12 +332,12 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 		}
 
-		item = gtk_menu_item_new_with_image (_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
-		item = gtk_menu_item_new_with_image (_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);

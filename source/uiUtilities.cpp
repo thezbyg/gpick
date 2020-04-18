@@ -17,11 +17,6 @@
  */
 
 #include "uiUtilities.h"
-GtkWidget* gtk_menu_item_new_with_image(const gchar* label, GtkWidget *image) {
-	GtkWidget *menu_item = gtk_image_menu_item_new_with_mnemonic(label);
-	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menu_item), image);
-	return menu_item;
-}
 GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale) {
 	GtkWidget *align = gtk_alignment_new(xalign, yalign, xscale, yscale);
 	GtkWidget *label = gtk_label_new(text);
@@ -88,4 +83,25 @@ void setDialogContent(GtkWidget *dialog, GtkWidget *content) {
 	auto contentArea = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
 	gtk_box_pack_start(GTK_BOX(contentArea), content, true, true, 5);
 	gtk_widget_show_all(content);
+}
+GtkWidget *newIcon(const char *name, IconSize size) {
+#if GTK_MAJOR_VERSION >= 3
+	return gtk_image_new_from_icon_name(name, size == IconSize::menu ? GTK_ICON_SIZE_MENU : GTK_ICON_SIZE_SMALL_TOOLBAR);
+#else
+	return gtk_image_new_from_stock(name, size == IconSize::menu ? GTK_ICON_SIZE_MENU : GTK_ICON_SIZE_SMALL_TOOLBAR);
+#endif
+}
+GtkWidget *newIcon(const char *name, int size) {
+#if GTK_MAJOR_VERSION >= 3
+	auto image = gtk_image_new_from_icon_name(name, GTK_ICON_SIZE_SMALL_TOOLBAR);
+#else
+	auto image = gtk_image_new_from_stock(name, GTK_ICON_SIZE_SMALL_TOOLBAR);
+#endif
+	gtk_image_set_pixel_size(GTK_IMAGE(image), size);
+	return image;
+}
+GtkWidget *newMenuItem(const char *label, const char *iconName) {
+	auto menuItem = gtk_image_menu_item_new_with_mnemonic(label);
+	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menuItem), newIcon(iconName, IconSize::menu));
+	return menuItem;
 }

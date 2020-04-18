@@ -619,7 +619,7 @@ static void menu_file_activate(GtkWidget *widget, gpointer data)
 	if (args->recent_files.size() > 0){
 		GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 		GtkWidget *item;
-		item = gtk_menu_item_new_with_image (_("Open Last File"), gtk_image_new_from_stock(GTK_STOCK_OPEN, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(_("Open Last File"), GTK_STOCK_OPEN);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (menu_file_open_last), args);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), gtk_separator_menu_item_new ());
@@ -916,13 +916,13 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	menu = GTK_MENU(gtk_menu_new());
 	FileMenuItems *items = new FileMenuItems();
 	if (gtk_stock_lookup(GTK_STOCK_NEW, &stock_item)){
-		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append(GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator(item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(menu_file_new), args);
 	}
 	if (gtk_stock_lookup(GTK_STOCK_OPEN, &stock_item)){
-		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator(item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open), args);
@@ -931,7 +931,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	items->recent_files = item;
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	if (gtk_stock_lookup(GTK_STOCK_REVERT_TO_SAVED, &stock_item)){
-		item = gtk_menu_item_new_with_image(stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_r, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 		gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_F5, GdkModifierType(0), GTK_ACCEL_VISIBLE);
@@ -940,13 +940,13 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new ());
 	if (gtk_stock_lookup(GTK_STOCK_SAVE, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_save), args);
 	}
 	if (gtk_stock_lookup(GTK_STOCK_SAVE_AS, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_save_as), args);
@@ -974,7 +974,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	if (gtk_stock_lookup(GTK_STOCK_QUIT, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(destroy_cb), args);
@@ -985,17 +985,17 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu_bar), file_item);
 	menu = GTK_MENU(gtk_menu_new());
-	item = gtk_menu_item_new_with_image(_("Edit _Converters..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("Edit _Converters..."), GTK_STOCK_PROPERTIES);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_converter), args);
-	item = gtk_menu_item_new_with_image(_("Display _Filters..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("Display _Filters..."), GTK_STOCK_PROPERTIES);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (show_dialog_transformations), args);
-	item = gtk_menu_item_new_with_image(_("Color _Dictionaries..."), gtk_image_new_from_stock(GTK_STOCK_PROPERTIES, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("Color _Dictionaries..."), GTK_STOCK_PROPERTIES);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(show_dialog_color_dictionaries), args);
 	if (gtk_stock_lookup(GTK_STOCK_PREFERENCES, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(show_dialog_options), args);
@@ -1083,7 +1083,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
 	menu = GTK_MENU(gtk_menu_new());
 	if (gtk_stock_lookup(GTK_STOCK_ABOUT, &stock_item)){
-		item = gtk_menu_item_new_with_image (stock_item.label, gtk_image_new_from_stock(stock_item.stock_id, GTK_ICON_SIZE_MENU));
+		item = newMenuItem(stock_item.label, stock_item.stock_id);
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		if (stock_item.keyval) gtk_widget_add_accelerator (item, "activate", accel_group, stock_item.keyval, stock_item.modifier, GTK_ACCEL_VISIBLE);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(show_about_box_cb), args);
@@ -1331,30 +1331,30 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	item = gtk_menu_item_new_with_image(_("A_dd..."), gtk_image_new_from_stock(GTK_STOCK_NEW, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("A_dd..."), GTK_STOCK_NEW);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_add), args);
 
-	item = gtk_menu_item_new_with_image(_("_Edit..."), gtk_image_new_from_stock(GTK_STOCK_EDIT, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_edit), args);
 	gtk_widget_set_sensitive(item, (selected_count == 1));
 
-	item = gtk_menu_item_new_with_image(_("_Paste"), gtk_image_new_from_stock(GTK_STOCK_PASTE, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_paste), args);
 	gtk_widget_set_sensitive(item, (selected_count == 1));
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	item = gtk_menu_item_new_with_image (_("_Mix Colors..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+	item = newMenuItem (_("_Mix Colors..."), GTK_STOCK_CONVERT);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_mix), args);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
-	item = gtk_menu_item_new_with_image (_("_Variations..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+	item = newMenuItem (_("_Variations..."), GTK_STOCK_CONVERT);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_variations), args);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
-	item = gtk_menu_item_new_with_image (_("_Generate..."), gtk_image_new_from_stock(GTK_STOCK_CONVERT, GTK_ICON_SIZE_MENU));
+	item = newMenuItem (_("_Generate..."), GTK_STOCK_CONVERT);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_generate), args);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
@@ -1386,12 +1386,12 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_g, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-	item = gtk_menu_item_new_with_image (_("_Remove"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("_Remove"), GTK_STOCK_REMOVE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_selected), args);
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_Delete, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
-	item = gtk_menu_item_new_with_image (_("Remove _All"), gtk_image_new_from_stock(GTK_STOCK_REMOVE, GTK_ICON_SIZE_MENU));
+	item = newMenuItem(_("Remove _All"), GTK_STOCK_REMOVE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_all), args);
 	gtk_widget_set_sensitive(item, (total_count >= 1));
@@ -1745,6 +1745,13 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	}
 	g_signal_connect(G_OBJECT(gdk_keymap_get_for_display(gdk_display_get_default())), "keys-changed", G_CALLBACK(detectLatinKeyGroup), args);
 	detectLatinKeyGroup(nullptr, args);
+#if GTK_MAJOR_VERSION >= 3
+	auto cssProvider = gtk_css_provider_new();
+	GError *error = nullptr;
+	auto style = "button.small-statusbar-button{padding:1px;margin:0;min-height:0;min-width:0;}"s;
+	gtk_css_provider_load_from_data(cssProvider, style.c_str(), style.length(), &error);
+	gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(cssProvider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+#endif
 	args->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	set_main_window_icon();
 	app_update_program_name(args);
@@ -1835,16 +1842,20 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	gtk_box_pack_end (GTK_BOX(vbox_main), statusbar, 0, 0, 0);
 	args->statusbar = statusbar;
 	GtkWidget *button = gtk_button_new();
+#if GTK_MAJOR_VERSION >= 3
+	auto context = gtk_widget_get_style_context(button);
+	gtk_style_context_add_class(context, "small-statusbar-button");
+#endif
 	gtk_button_set_focus_on_click(GTK_BUTTON(button), false);
 	g_signal_connect(G_OBJECT(button), "clicked", G_CALLBACK(floating_picker_show_cb), args);
 	gtk_widget_add_accelerator(button, "clicked", accel_group, GDK_KEY_p, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
 	gtk_widget_set_tooltip_text(button, _("Pick colors (Ctrl+P)"));
-	gtk_container_add(GTK_CONTAINER(button), gtk_image_new_from_icon_name("gpick", GTK_ICON_SIZE_MENU));
+	gtk_container_add(GTK_CONTAINER(button), newIcon("gpick", 16));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
 	gtk_box_pack_end(GTK_BOX(statusbar), count_label, false, false, 0);
 	gtk_widget_show_all(count_label);
-	widget = gtk_image_new_from_stock(GTK_STOCK_DIALOG_WARNING, GTK_ICON_SIZE_MENU);
+	widget = newIcon(GTK_STOCK_DIALOG_WARNING, 16);
 	gtk_widget_set_tooltip_text(widget, _("File is currently in a non-native format, possible loss of precision and/or metadata."));
 	args->precision_loss_icon = widget;
 	if (args->imported)
