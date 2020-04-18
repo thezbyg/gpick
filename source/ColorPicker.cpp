@@ -974,13 +974,12 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 			struct DragDrop dd;
 			dragdrop_init(&dd, gs);
-
+			dd.converterType = Converters::Type::display;
 			dd.userdata = args;
 			dd.get_color_object = get_color_object;
 			dd.set_color_object_at = set_color_object_at;
 			dd.test_at = test_at;
 			dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
-
 			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 			{
@@ -1158,6 +1157,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 					table_y++;
 
 					dragdrop_init(&dd, gs);
+					dd.converterType = Converters::Type::display;
 					dd.userdata = args;
 					dd.get_color_object = get_color_object_contrast;
 					dd.set_color_object_at = set_color_object_at_contrast;

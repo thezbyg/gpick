@@ -56,7 +56,7 @@ static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gi
 
 static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
 static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data);
-static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
+static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd);
 static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
 
 static void drag_destroy(GtkWidget *widget, gpointer user_data);
@@ -494,54 +494,50 @@ static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 	}
 }
 
-static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
-	DragDrop *dd = (DragDrop*)user_data;
-
-	if (dd->get_color_object_list){
-		size_t color_object_n;
-		ColorObject** color_objects = dd->get_color_object_list(dd, &color_object_n);
-		if (color_objects){
+static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd) {
+	if (dd->get_color_object_list) {
+		size_t colorObjectCount;
+		auto colorObjects = dd->get_color_object_list(dd, &colorObjectCount);
+		if (colorObjects) {
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECTS;
-			dd->data.color_objects.color_objects = color_objects;
-			dd->data.color_objects.color_object_n = color_object_n;
-			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
-			GtkWidget* hbox = gtk_vbox_new(true, 0);
-			gtk_container_add(GTK_CONTAINER(dragwindow), hbox);
-			gtk_widget_set_size_request(dragwindow, 164, 24 * std::min(color_object_n, (size_t)5));
-			auto converter = dd->gs->converters().firstCopy();
-			if (converter){
-				for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
-					GtkWidget* color_widget = gtk_color_new();
-					string text = converter->serialize(color_objects[i]);
-					Color color = color_objects[i]->getColor();
-					gtk_color_set_color(GTK_COLOR(color_widget), &color, text.c_str());
-					gtk_box_pack_start(GTK_BOX(hbox), color_widget, true, true, 0);
+			dd->data.color_objects.color_objects = colorObjects;
+			dd->data.color_objects.color_object_n = colorObjectCount;
+			auto dragWindow = gtk_window_new(GTK_WINDOW_POPUP);
+			auto hbox = gtk_vbox_new(true, 0);
+			gtk_container_add(GTK_CONTAINER(dragWindow), hbox);
+			auto showColors = std::min<size_t>(colorObjectCount, 5);
+			gtk_widget_set_size_request(dragWindow, 164, 24 * showColors);
+			auto converter = dd->gs->converters().forType(dd->converterType);
+			if (converter) {
+				for (size_t i = 0; i < showColors; i++) {
+					auto colorWidget = gtk_color_new();
+					auto text = converter ? converter->serialize(colorObjects[i]) : "";
+					Color color = colorObjects[i]->getColor();
+					gtk_color_set_color(GTK_COLOR(colorWidget), &color, text.c_str());
+					gtk_box_pack_start(GTK_BOX(hbox), colorWidget, true, true, 0);
 				}
 			}
-
-			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
-			gtk_widget_show_all(dragwindow);
-
-			dd->dragwidget = dragwindow;
+			gtk_drag_set_icon_widget(context, dragWindow, 0, 0);
+			gtk_widget_show_all(dragWindow);
+			dd->dragwidget = dragWindow;
 			return;
 		}
 	}
-
-	if (dd->get_color_object){
-		ColorObject* color_object = dd->get_color_object(dd);
-		if (color_object){
+	if (dd->get_color_object) {
+		ColorObject* colorObject = dd->get_color_object(dd);
+		if (colorObject) {
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECT;
-			dd->data.color_object.color_object = color_object;
-			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
-			GtkWidget* colorwidget = gtk_color_new();
-			gtk_container_add(GTK_CONTAINER(dragwindow), colorwidget);
-			gtk_widget_set_size_request(dragwindow, 164, 24);
-			string text = dd->gs->converters().serialize(color_object, Converters::Type::display);
-			Color color = color_object->getColor();
-			gtk_color_set_color(GTK_COLOR(colorwidget), &color, text.c_str());
-			gtk_drag_set_icon_widget(context, dragwindow, 0, 0);
-			gtk_widget_show_all(dragwindow);
-			dd->dragwidget = dragwindow;
+			dd->data.color_object.color_object = colorObject;
+			auto dragWindow = gtk_window_new(GTK_WINDOW_POPUP);
+			auto colorWidget = gtk_color_new();
+			gtk_container_add(GTK_CONTAINER(dragWindow), colorWidget);
+			gtk_widget_set_size_request(dragWindow, 164, 24);
+			auto text = dd->gs->converters().serialize(colorObject, dd->converterType);
+			Color color = colorObject->getColor();
+			gtk_color_set_color(GTK_COLOR(colorWidget), &color, text.c_str());
+			gtk_drag_set_icon_widget(context, dragWindow, 0, 0);
+			gtk_widget_show_all(dragWindow);
+			dd->dragwidget = dragWindow;
 			return;
 		}
 	}

@@ -330,6 +330,7 @@ ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
 	DragDrop dd;
 	dragdrop_init(&dd, gs);
+	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;

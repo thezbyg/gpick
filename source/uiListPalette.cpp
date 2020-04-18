@@ -283,13 +283,12 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
-
+	dd.converterType = Converters::Type::colorList;
 	dd.get_color_object = get_color_object;
 	dd.get_color_object_list = get_color_object_list;
 	dd.drag_end = drag_end;
 	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata = args;
-
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE), &dd);
 
 	if (out_color_list) {
@@ -718,7 +717,6 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
-
 	dd.get_color_object = get_color_object;
 	dd.get_color_object_list = get_color_object_list;
 	dd.set_color_object_at = set_color_object_at;
@@ -726,8 +724,8 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.test_at = test_at;
 	dd.drag_end = drag_end;
+	dd.converterType = Converters::Type::colorList;
 	dd.userdata = args;
-
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);

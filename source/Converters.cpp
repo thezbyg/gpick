@@ -83,6 +83,17 @@ Converter *Converters::colorList() const
 {
 	return m_color_list_converter;
 }
+Converter *Converters::forType(Type type) const {
+	switch (type) {
+	case Type::display:
+		return m_display_converter;
+	case Type::colorList:
+		return m_color_list_converter;
+	case Type::copy:
+		return m_copy_converters.size() != 0 ? m_copy_converters.front() : nullptr;
+	}
+	return nullptr;
+}
 void Converters::display(const char *name)
 {
 	m_display_converter = byName(name);

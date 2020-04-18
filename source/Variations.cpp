@@ -570,11 +570,10 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
-
+	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
-
 
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);

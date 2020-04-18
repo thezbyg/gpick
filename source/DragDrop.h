@@ -18,6 +18,7 @@
 
 #ifndef GPICK_DRAG_DROP_H_
 #define GPICK_DRAG_DROP_H_
+#include "Converters.h"
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorObject;
@@ -44,6 +45,7 @@ struct DragDrop{
 		DATA_TYPE_COLOR_OBJECTS,
 	};
 	DataType data_type;
+	Converters::Type converterType;
 	union{
 		struct{
 			ColorObject* color_object;

@@ -41,6 +41,7 @@ struct Converters
 	Converter *byName(const char *name) const;
 	Converter *display() const;
 	Converter *colorList() const;
+	Converter *forType(Type type) const;
 	void display(const char *name);
 	void colorList(const char *name);
 	void display(Converter *converter);
