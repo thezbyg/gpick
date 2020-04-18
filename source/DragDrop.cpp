@@ -504,12 +504,10 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECTS;
 			dd->data.color_objects.color_objects = color_objects;
 			dd->data.color_objects.color_object_n = color_object_n;
-
 			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
 			GtkWidget* hbox = gtk_vbox_new(true, 0);
 			gtk_container_add(GTK_CONTAINER(dragwindow), hbox);
-			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24 * std::min(color_object_n, (size_t)5));
-
+			gtk_widget_set_size_request(dragwindow, 164, 24 * std::min(color_object_n, (size_t)5));
 			auto converter = dd->gs->converters().firstCopy();
 			if (converter){
 				for (size_t i = 0; i < std::min(color_object_n, (size_t)5); i++){
@@ -537,7 +535,7 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user
 			GtkWidget* dragwindow = gtk_window_new(GTK_WINDOW_POPUP);
 			GtkWidget* colorwidget = gtk_color_new();
 			gtk_container_add(GTK_CONTAINER(dragwindow), colorwidget);
-			gtk_window_resize(GTK_WINDOW(dragwindow), 164, 24);
+			gtk_widget_set_size_request(dragwindow, 164, 24);
 			string text = dd->gs->converters().serialize(color_object, Converters::Type::display);
 			Color color = color_object->getColor();
 			gtk_color_set_color(GTK_COLOR(colorwidget), &color, text.c_str());
