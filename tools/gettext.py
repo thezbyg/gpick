@@ -1,56 +1,38 @@
-from SCons.Script import *
-
+from SCons.Script import Builder
+from SCons.Action import Action
 def addGettextBuilder(env):
-
-	GettextAction = SCons.Action.Action("$GETTEXTCOM", "$GETTEXTCOMSTR")
-	
-	env["GETTEXT"]    = env.Detect("msgfmt")
+	env.Append(BUILDERS = {
+		'Gettext': Builder(
+			action = Action("$GETTEXTCOM", "$GETTEXTCOMSTR"),
+			suffix = '.mo',
+			src_suffix = '.po',
+			single_source = True,
+		),
+		'Xgettext': Builder(
+			action = Action("$XGETTEXTCOM", "$XGETTEXTCOMSTR"),
+			suffix = '.pot',
+			src_suffix = '.cpp',
+			single_source = False,
+		),
+		'Msgmerge': Builder(
+			action = Action("$MSGMERGECOM", "$MSGMERGECOMSTR"),
+			suffix = '.pot',
+			src_suffix = '.pot',
+			single_source = False,
+		),
+		'Msgcat': Builder(
+			action = Action("$MSGCATCOM", "$MSGCATCOMSTR"),
+			suffix = '.pot',
+			src_suffix = '.pot',
+			single_source = False,
+		),
+	})
+	env["GETTEXT"] = env.Detect("msgfmt")
 	env["GETTEXTCOM"] = "$GETTEXT --check-format --check-domain -f -o $TARGET $SOURCE"
-	
-	builder = Builder(
-		action = GettextAction,
-		suffix = '.mo',
-		src_suffix = '.po',
-		single_source = True)
-
-	env.Append(BUILDERS = {'Gettext': builder})
-
-	XgettextAction = SCons.Action.Action("$XGETTEXTCOM", "$XGETTEXTCOMSTR")
-	
-	env["XGETTEXT"]    = env.Detect("xgettext")
+	env["XGETTEXT"] = env.Detect("xgettext")
 	env["XGETTEXTCOM"] = "$XGETTEXT --keyword=_ --from-code utf-8 --package-name=gpick $XGETTEXT_FLAGS --output=$TARGET $SOURCES"
-	
-	builder = Builder(
-		action = XgettextAction,
-		suffix = '.pot',
-		src_suffix = '.cpp',
-		single_source = False)
-
-	env.Append(BUILDERS = {'Xgettext': builder})
-
-	MsgmergeAction = SCons.Action.Action("$MSGMERGECOM", "$MSGMERGECOMSTR")
-	
-	env["MSGMERGE"]    = env.Detect("msgmerge")
+	env["MSGMERGE"] = env.Detect("msgmerge")
 	env["MSGMERGECOM"] = "$MSGMERGE $MSGMERGE_FLAGS --output-file=$TARGET $SOURCES"
-	
-	builder = Builder(
-		action = MsgmergeAction,
-		suffix = '.pot',
-		src_suffix = '.pot',
-		single_source = False)
-
-	env.Append(BUILDERS = {'Msgmerge': builder})
-
-	MsgcatAction = SCons.Action.Action("$MSGCATCOM", "$MSGCATCOMSTR")
-	
-	env["MSGCAT"]    = env.Detect("msgcat")
+	env["MSGCAT"] = env.Detect("msgcat")
 	env["MSGCATCOM"] = "$MSGCAT $MSGCAT_FLAGS --output-file=$TARGET $SOURCES"
-	
-	builder = Builder(
-		action = MsgcatAction,
-		suffix = '.pot',
-		src_suffix = '.pot',
-		single_source = False)
-
-	env.Append(BUILDERS = {'Msgcat': builder})
 

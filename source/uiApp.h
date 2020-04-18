@@ -37,7 +37,7 @@ struct AppOptions
 };
 void app_initialize();
 AppArgs* app_create_main(const AppOptions &options, int &return_value);
-int app_load_file(AppArgs *args, const char *filename, bool autoload = false);
+int app_load_file(AppArgs *args, const std::string &filename, bool autoload = false);
 int app_run(AppArgs *args);
 int app_parse_geometry(AppArgs *args, const char *geometry);
 bool app_is_autoload_enabled(AppArgs *args);

@@ -87,9 +87,8 @@ void show_about_box(GtkWidget *widget)
 	gtk_box_pack_end(GTK_BOX(align_box), gtk_vbox_new(false, 0), true, true, 0);
 	GtkWidget *hbox = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(align_box), hbox, false, false, 0);
-	gchar* logo_filename = build_filename("logo.png");
-	GtkWidget *image = gtk_image_new_from_file(logo_filename);
-	g_free(logo_filename);
+	auto logoFilename = buildFilename("logo.png");
+	GtkWidget *image = gtk_image_new_from_file(logoFilename.c_str());
 	gtk_box_pack_start(GTK_BOX(hbox), image, false, false, 0);
 	GtkWidget *vbox2 = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox2, false, false, 0);

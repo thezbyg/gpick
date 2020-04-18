@@ -104,10 +104,9 @@ static vector<ColorEntry*>* color_names_get_color_list(ColorNames* color_names, 
 	z = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
 	return &color_names->colors[x][y][z];
 }
-int color_names_load_from_file(ColorNames* color_names, const char* filename)
+int color_names_load_from_file(ColorNames* color_names, const std::string &filename)
 {
-	float a = 0, b = 0, c = 0;
-	ifstream file(filename, ifstream::in);
+	ifstream file(filename.c_str(), ifstream::in);
 	if (file.is_open()){
 		string line;
 		stringstream rline (ios::in | ios::out);
@@ -214,9 +213,7 @@ void color_names_load(ColorNames *color_names, dynvSystem *params)
 				string path = dynv_get_string_wd(dictionaries[i], "path", "");
 				if (built_in){
 					if (path == "built_in_0"){
-						gchar *tmp;
-						color_names_load_from_file(color_names, tmp = build_filename("color_dictionary_0.txt"));
-						g_free(tmp);
+						color_names_load_from_file(color_names, buildFilename("color_dictionary_0.txt"));
 					}
 				}else{
 					color_names_load_from_file(color_names, path.c_str());
@@ -226,9 +223,7 @@ void color_names_load(ColorNames *color_names, dynvSystem *params)
 		}
 		if (dictionaries) delete [] dictionaries;
 	}else{
-		gchar *tmp;
-		color_names_load_from_file(color_names, tmp = build_filename("color_dictionary_0.txt"));
-		g_free(tmp);
+		color_names_load_from_file(color_names, buildFilename("color_dictionary_0.txt"));
 	}
 }
 void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors)

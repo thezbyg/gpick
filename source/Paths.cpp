@@ -17,51 +17,72 @@
  */
 
 #include "Paths.h"
-#include <glib/gstdio.h>
-
-static gchar* get_data_dir()
-{
-	static gchar* data_dir = nullptr;
-	if (data_dir) return data_dir;
-	GList *paths = nullptr, *i = nullptr;
-	gchar *tmp;
-	i = g_list_append(i, (gchar*)"share");
-	paths = i;
-	i = g_list_append(i, (gchar*)g_get_user_data_dir());
-	const gchar* const *datadirs = g_get_system_data_dirs();
-	for (gint datadirs_i = 0; datadirs[datadirs_i]; ++datadirs_i){
-		i = g_list_append(i, (gchar*)datadirs[datadirs_i]);
+#include <glib.h>
+#include <boost/filesystem.hpp>
+#include <boost/optional.hpp>
+#include <boost/predef.h>
+#include <exception>
+namespace fs = boost::filesystem;
+using path = fs::path;
+struct PathException : std::runtime_error {
+	PathException(const char *message):
+		std::runtime_error(message) {
 	}
-	i = paths;
-	GStatBuf sb;
-	while (i){
-		tmp = g_build_filename((gchar*)i->data, "gpick", nullptr);
-		if (g_stat(tmp, &sb) == 0){
-			data_dir=g_strdup(tmp);
-			g_free(tmp);
-			break;
-		}
-		g_free(tmp);
-		i = g_list_next(i);
+};
+#ifdef BOOST_OS_LINUX
+static std::string getExecutablePath() {
+	std::vector<char> buffer;
+	buffer.resize(4096);
+	while (1) {
+		int count = ::readlink("/proc/self/exe", &buffer.front(), buffer.size());
+		if (count < 0)
+			throw PathException("could not read executable path");
+		if ((size_t)count < buffer.size())
+			return std::string(buffer.begin(), buffer.begin() + count);
+		buffer.resize(buffer.size() * 2);
 	}
-	g_list_free(paths);
-	if (data_dir == nullptr){
-		data_dir=g_strdup("");
-		return data_dir;
-	}
-	return data_dir;
 }
-gchar* build_filename(const gchar* filename)
-{
-	if (filename)
-		return g_build_filename(get_data_dir(), filename, nullptr);
-	else
-		return g_build_filename(get_data_dir(), nullptr);
+#else
+static std::string getExecutablePath() {
+	return "";
 }
-gchar* build_config_path(const gchar *filename)
-{
+#endif
+static path &getUserConfigPath() {
+	static boost::optional<path> configPath;
+	if (configPath)
+		return *configPath;
+	configPath = path(g_get_user_config_dir());
+	return *configPath;
+}
+static path &getDataPath() {
+	static boost::optional<path> dataPath;
+	if (dataPath)
+		return *dataPath;
+	path testPath;
+	try {
+		if (fs::is_directory(fs::status(testPath = (path(getExecutablePath()).remove_filename() / "share" / "gpick"))))
+			return *(dataPath = testPath);
+	} catch (const PathException &) {
+	}
+	if (fs::is_directory(fs::status(testPath = (path(g_get_user_data_dir()) / "gpick"))))
+		return *(dataPath = testPath);
+	auto dataPaths = g_get_system_data_dirs();
+	for (size_t i = 0; dataPaths[i]; ++i) {
+		if (fs::is_directory(fs::status(testPath = (path(dataPaths[i]) / "gpick"))))
+			return *(dataPath = testPath);
+	}
+	dataPath = path();
+	return *dataPath;
+}
+std::string buildFilename(const char *filename) {
 	if (filename)
-		return g_build_filename(g_get_user_config_dir(), "gpick", filename, nullptr);
+		return (getDataPath() / filename).string();
 	else
-		return g_build_filename(g_get_user_config_dir(), "gpick", nullptr);
+		return getDataPath().string();
+}
+std::string buildConfigPath(const char *filename) {
+	if (filename)
+		return (getUserConfigPath() / "gpick" / filename).string();
+	else
+		return (getUserConfigPath() / "gpick").string();
 }

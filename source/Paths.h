@@ -16,10 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PATHS_H_
-#define PATHS_H_
-
-#include <gtk/gtk.h>
+#ifndef GPICK_PATHS_H_
+#define GPICK_PATHS_H_
+#include <string>
 
 /** \file source/Paths.h
  * \brief Data and configuration filename building functions.
@@ -28,15 +27,14 @@
 /**
  * Construct filename to a data file.
  * @param[in] filename Relative data file name.
- * @return Filename to the data file. This value must be released by using g_free.
+ * @return Filename to the data file.
  */
-gchar* build_filename(const gchar* filename);
+std::string buildFilename(const char *filename = nullptr);
 
 /**
  * Construct filename to a configuration file.
  * @param[in] filename Relative configuration file name.
- * @return Filename to the configuration file. This value must be released by using g_free.
+ * @return Filename to the configuration file.
  */
-gchar* build_config_path(const gchar *filename);
-
+std::string buildConfigPath(const char *filename = nullptr);
 #endif /* PATHS_H_ */

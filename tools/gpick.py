@@ -1,23 +1,11 @@
-#!/usr/bin/env python
-import os
-import time
-import SCons
-import re
-import string
-import glob
-import subprocess
-from lemon import *
-from flex import *
-from gettext import *
-from resource_template import *
-from ragel import *
-from template import *
-from SCons.Script import *
-from SCons.Util import *
+import os, time, re, string, glob, subprocess
+from .gettext import *
+from .resource_template import *
+from .ragel import *
+from .template import *
+from SCons.Script import Chmod, Flatten
+from SCons.Util import NodeList
 from SCons.Script.SConscript import SConsEnvironment
-import SCons.Script.SConscript
-import SCons.SConf
-import SCons.Conftest
 
 def MatchFiles (files, path, repath, dir_exclude_pattern,  file_exclude_pattern):
 	for filename in os.listdir(path):
@@ -76,8 +64,6 @@ class GpickLibrary(NodeList):
 class GpickEnvironment(SConsEnvironment):
 	extern_libs = {}
 	def AddCustomBuilders(self):
-		addLemonBuilder(self)
-		addFlexBuilder(self)
 		addGettextBuilder(self)
 		addResourceTemplateBuilder(self)
 		addTemplateBuilder(self)
@@ -100,9 +86,9 @@ class GpickEnvironment(SConsEnvironment):
 	def ConfirmPrograms(self, conf, programs):
 		conf.AddTests({'CheckProgram': CheckProgram})
 		
-		for evar, args in programs.iteritems():
+		for evar, args in programs.items():
 			found = False
-			for name, member_name in args['checks'].iteritems():
+			for name, member_name in args['checks'].items():
 				if conf.CheckProgram(self, name, member_name):
 					found = True;
 					break
@@ -116,9 +102,9 @@ class GpickEnvironment(SConsEnvironment):
 	def ConfirmLibs(self, conf, libs):
 		conf.AddTests({'CheckPKG': CheckPKG})
 		
-		for evar, args in libs.iteritems():
+		for evar, args in libs.items():
 			found = False
-			for name, version in args['checks'].iteritems():
+			for name, version in args['checks'].items():
 				if conf.CheckPKG(name + ' ' + version):
 					self[evar]=name
 					found = True;
@@ -155,9 +141,9 @@ class GpickEnvironment(SConsEnvironment):
 				self.AddPostAction(i, Chmod(i, perm))
 		return dir
 
-	InstallProgram = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0755)
-	InstallData = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0644)
-	InstallDataAutoDir = lambda self, dir, relative_dir, source: GpickEnvironment.InstallPermAutoDir(self, dir, relative_dir, source, 0644)
+	InstallProgram = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0o755)
+	InstallData = lambda self, dir, source: GpickEnvironment.InstallPerm(self, dir, source, 0o644)
+	InstallDataAutoDir = lambda self, dir, relative_dir, source: GpickEnvironment.InstallPermAutoDir(self, dir, relative_dir, source, 0o644)
 
 	def GetSourceFiles(self, dir_exclude_pattern, file_exclude_pattern):
 		dir_exclude_prog = re.compile(dir_exclude_pattern)
@@ -211,5 +197,4 @@ def Glob(path):
 		else:
 			files.append(str(f));
 	return files
-
 

@@ -1,8 +1,10 @@
-from SCons.Script import *
 import re
+from SCons.Script import Builder
+from SCons.Action import Action
+from SCons.Node.FS import File
 def addTemplateBuilder(env):
 	def buildEmitter(target, source, env):
-		data = open(str(File(source[0]).srcnode())).read()
+		data = open(source[0].srcnode().get_path()).read()
 		dict = env.Dictionary()
 		keys = dict.keys()
 		for key in keys:
@@ -12,7 +14,7 @@ def addTemplateBuilder(env):
 	def buildFile(target, source, env):
 		source_dest = str(target[0])
 		wfile = open(source_dest, "w")
-		data = open(str(File(source[0]).srcnode())).read()
+		data = open(source[0].srcnode().get_path()).read()
 		dict = env.Dictionary()
 		keys = dict.keys()
 		for key in keys:
@@ -23,8 +25,9 @@ def addTemplateBuilder(env):
 		return 0
 	def buildString(target, source, env):
 		return "Preparing file %s" % os.path.basename(str(target[0]))
-	builder = Builder(
-		action = SCons.Action.Action(buildFile, buildString),
-		emitter = buildEmitter,
-	)
-	env.Append(BUILDERS = {'Template': builder})
+	env.Append(BUILDERS = {
+		'Template': Builder(
+			action = Action(buildFile, buildString),
+			emitter = buildEmitter,
+		),
+	})

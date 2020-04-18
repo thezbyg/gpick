@@ -129,9 +129,8 @@ GtkWidget *gtk_color_component_new(GtkColorComponentComp component)
 {
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR_COMPONENT, nullptr);
 	GtkColorComponentPrivate *ns = GET_PRIVATE(widget);
-	gchar* pattern_filename = build_filename("gpick-gray-pattern.png");
-	ns->pattern_surface = cairo_image_surface_create_from_png(pattern_filename);
-	g_free(pattern_filename);
+	auto patternFilename = buildFilename("gpick-gray-pattern.png");
+	ns->pattern_surface = cairo_image_surface_create_from_png(patternFilename.c_str());
 	ns->pattern = cairo_pattern_create_for_surface(ns->pattern_surface);
 	cairo_pattern_set_extend(ns->pattern, CAIRO_EXTEND_REPEAT);
 	ns->component = component;

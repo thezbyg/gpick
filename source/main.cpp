@@ -99,9 +99,8 @@ int main(int argc, char **argv)
 				app_load_file(args, commandline_filename[0]);
 			}else{
 				if (app_is_autoload_enabled(args)){
-					gchar* autosave_file = build_config_path("autosave.gpa");
-					app_load_file(args, autosave_file, true);
-					g_free(autosave_file);
+					auto autosaveFile = buildConfigPath("autosave.gpa");
+					app_load_file(args, autosaveFile, true);
 				}
 			}
 		}

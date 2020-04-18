@@ -48,7 +48,6 @@
 #include "uiStatusIcon.h"
 #include "uiColorInput.h"
 #include "tools/PaletteFromImage.h"
-#include "tools/PaletteFromCssFile.h"
 #include "tools/ColorSpaceSampler.h"
 #include "tools/TextParser.h"
 #include "dbus/Control.h"
@@ -327,13 +326,12 @@ int app_save_file(AppArgs *args, const char *filename, const char *filter)
 	return 0;
 }
 
-int app_load_file(AppArgs *args, const char *filename, ColorList *color_list, bool autoload)
+int app_load_file(AppArgs *args, const std::string &filename, ColorList *color_list, bool autoload)
 {
-	string current_filename(filename);
 	bool imported = false;
 	bool return_value = false;
-	ImportExport import_export(color_list, current_filename.c_str(), args->gs);
-	switch (ImportExport::getFileType(current_filename.c_str())){
+	ImportExport import_export(color_list, filename.c_str(), args->gs);
+	switch (ImportExport::getFileType(filename.c_str())){
 		case FileType::gpl:
 			return_value = import_export.importGPL();
 			imported = true;
@@ -356,9 +354,9 @@ int app_load_file(AppArgs *args, const char *filename, ColorList *color_list, bo
 			args->imported = false;
 		}
 		if (!autoload){
-			args->current_filename = current_filename;
+			args->current_filename = filename;
 			args->current_filename_set = true;
-			update_recent_file_list(args, current_filename.c_str(), false);
+			update_recent_file_list(args, filename.c_str(), false);
 		}
 		app_update_program_name(args);
 	}else{
@@ -367,7 +365,7 @@ int app_load_file(AppArgs *args, const char *filename, ColorList *color_list, bo
 	}
 	return 0;
 }
-int app_load_file(AppArgs *args, const char *filename, bool autoload)
+int app_load_file(AppArgs *args, const std::string &filename, bool autoload)
 {
 	int r = 0;
 	ColorList *color_list = color_list_new(args->gs->getColorList());
@@ -1684,9 +1682,8 @@ static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 void app_initialize()
 {
 	GtkIconTheme *icon_theme = gtk_icon_theme_get_default();
-	gchar *tmp;
-	gtk_icon_theme_append_search_path(icon_theme, tmp = build_filename(nullptr));
-	g_free(tmp);
+	auto dataPath = buildFilename();
+	gtk_icon_theme_append_search_path(icon_theme, dataPath.c_str());
 }
 AppArgs* app_create_main(const AppOptions &options, int &return_value)
 {
@@ -1905,13 +1902,11 @@ static void app_release(AppArgs *args)
 			try{
 				named_mutex mutex(open_or_create, "gpick.autosave");
 				scoped_lock<named_mutex> lock(mutex);
-				gchar* autosave_file = build_config_path("autosave.gpa");
-				gchar* autosave_file_tmp = build_config_path("autosave.gpa.tmp");
-				palette_file_save(autosave_file_tmp, args->gs->getColorList());
+				auto autosaveFile = buildConfigPath("autosave.gpa");
+				auto autosaveFileTmp = buildConfigPath("autosave.gpa.tmp");
+				palette_file_save(autosaveFileTmp.c_str(), args->gs->getColorList());
 				boost::system::error_code error;
-				rename(path(autosave_file_tmp), path(autosave_file), error);
-				g_free(autosave_file);
-				g_free(autosave_file_tmp);
+				rename(path(autosaveFileTmp), path(autosaveFile), error);
 				if (error){
 					cerr << "failed to save autosave: " << error << endl;
 				}

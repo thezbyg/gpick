@@ -42,6 +42,7 @@
 #include "lua/Script.h"
 #include "lua/Extensions.h"
 #include "lua/Callbacks.h"
+#include <boost/filesystem.hpp>
 #include <stdlib.h>
 #include <glib/gstdio.h>
 extern "C"{
@@ -98,23 +99,19 @@ struct GlobalState::Impl
 		if (m_settings != nullptr)
 			dynv_system_release(m_settings);
 	}
-	bool writeSettings()
-	{
-		gchar* config_file = build_config_path("settings.xml");
-		ofstream settings_file(config_file);
-		if (!settings_file.is_open()){
-			g_free(config_file);
+	bool writeSettings() {
+		auto configFile = buildConfigPath("settings.xml");
+		std::ofstream settingsFile(configFile.c_str());
+		if (!settingsFile.is_open()){
 			return false;
 		}
-		settings_file << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
-		dynv_xml_serialize(m_settings, settings_file);
-		settings_file << "</root>" << endl;
-		settings_file.close();
-		g_free(config_file);
+		settingsFile << "<?xml version=\"1.0\" encoding='UTF-8'?><root>\n";
+		dynv_xml_serialize(m_settings, settingsFile);
+		settingsFile << "</root>\n";
+		settingsFile.close();
 		return true;
 	}
-	bool loadSettings()
-	{
+	bool loadSettings() {
 		if (m_settings != nullptr) return false;
 		struct dynvHandlerMap* handler_map = dynv_handler_map_create();
 		dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
@@ -126,50 +123,34 @@ struct GlobalState::Impl
 		dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
 		m_settings = dynv_system_create(handler_map);
 		dynv_handler_map_release(handler_map);
-		gchar* config_file = build_config_path("settings.xml");
-		ifstream settings_file(config_file);
-		if (!settings_file.is_open()){
-			g_free(config_file);
+		auto configFile = buildConfigPath("settings.xml");
+		std::ifstream settingsFile(configFile.c_str());
+		if (!settingsFile.is_open()){
 			return false;
 		}
-		dynv_xml_deserialize(m_settings, settings_file);
-		settings_file.close();
-		g_free(config_file);
+		dynv_xml_deserialize(m_settings, settingsFile);
+		settingsFile.close();
 		return true;
 	}
-	bool checkConfigurationDirectory()
-	{
-		//create configuration directory if it doesn't exist
-		GStatBuf st;
-		gchar* config_dir = build_config_path(nullptr);
-		if (g_stat(config_dir, &st) != 0){
-#ifndef _MSC_VER
-			g_mkdir(config_dir, S_IRWXU);
-#else
-			g_mkdir(config_dir, 0);
-#endif
-		}
-		g_free(config_dir);
-		return true;
+	// Creates configuration directory if it doesn't exist
+	void checkConfigurationDirectory() {
+		namespace fs = boost::filesystem;
+		auto configPath = fs::path(buildConfigPath());
+		boost::system::error_code ec;
+		fs::create_directory(configPath, ec);
 	}
-	bool checkUserInitFile()
-	{
-		//check if user has user_init.lua file, if not, then create empty file
-		gchar *user_init_file = build_config_path("user_init.lua");
-		ifstream f(user_init_file);
-		if (f.is_open()){
-			f.close();
-			g_free(user_init_file);
-			return true;
+	// Check if user has user_init.lua file, if not, then create empty file
+	void checkUserInitFile() {
+		namespace fs = boost::filesystem;
+		auto userInitFilePath = fs::path(buildConfigPath("user_init.lua"));
+		if (!fs::exists(fs::status(userInitFilePath)))
+			return;
+		auto pathString = userInitFilePath.string();
+		std::ofstream newFile(pathString.c_str());
+		if (!newFile.is_open()) {
+			return;
 		}
-		ofstream new_file(user_init_file);
-		if (!f.is_open()){
-			g_free(user_init_file);
-			return false;
-		}
-		new_file.close();
-		g_free(user_init_file);
-		return true;
+		newFile.close();
 	}
 	bool loadColorNames()
 	{
@@ -196,23 +177,17 @@ struct GlobalState::Impl
 		dynv_handler_map_release(handler_map);
 		return true;
 	}
-	string gcharToString(gchar *value)
-	{
-		string result(value);
-		g_free(value);
-		return result;
-	}
 	bool initializeLua()
 	{
 		lua_State *L = m_script;
 		lua::registerAll(L, *m_decl);
-		vector<string> paths;
-		paths.push_back(gcharToString(build_filename("")));
-		paths.push_back(gcharToString(build_config_path("")));
+		std::vector<std::string> paths;
+		paths.push_back(buildFilename());
+		paths.push_back(buildConfigPath());
 		m_script.setPaths(paths);
 		bool result = m_script.load("init");
 		if (!result){
-			cerr << m_script.getLastError() << endl;
+			std::cerr << "Lua load error: " << m_script.getLastError() << "\n";
 		}
 		return result;
 	}

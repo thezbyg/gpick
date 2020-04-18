@@ -26,7 +26,7 @@ struct ColorNames;
 ColorNames *color_names_new();
 void color_names_clear(ColorNames *color_names);
 void color_names_load(ColorNames *color_names, dynvSystem *params);
-int color_names_load_from_file(ColorNames *color_names, const char *filename);
+int color_names_load_from_file(ColorNames *color_names, const std::string &filename);
 void color_names_destroy(ColorNames *color_names);
 std::string color_names_get(ColorNames *color_names, const Color *color, bool imprecision_postfix);
 void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors);
