@@ -1,4 +1,4 @@
-import re
+import re, os
 from SCons.Script import Builder
 from SCons.Action import Action
 from SCons.Node.FS import File
