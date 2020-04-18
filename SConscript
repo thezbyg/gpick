@@ -335,8 +335,8 @@ def buildGpick(env):
 
 executable, tests = buildGpick(env)
 
-env.Alias(target = "build", source = [executable])
-env.Alias(target = "test", source = [tests])
+env.Alias(target = "build", source = [executable, env.Install('source', executable)])
+env.Alias(target = "test", source = [tests, env.Install('source', tests)])
 
 if 'debian' in COMMAND_LINE_TARGETS:
 	addDebianPackageAlias(env)
@@ -388,5 +388,5 @@ if 'TAR' in env:
 		env.Tar('gpick_' + str(env['GPICK_BUILD_VERSION']) + '.tar.gz', tarFiles)
 	])
 
-env.Default(executable)
+env.Default(executable, env.Install('source', executable))
 
