@@ -119,9 +119,21 @@ BOOST_AUTO_TEST_CASE(int_values)
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(float_values)
+BOOST_AUTO_TEST_CASE(float_values_separated_by_comma)
 {
 	ifstream file("test/textImport06.txt");
+	BOOST_REQUIRE(file.is_open());
+	TextFile parser(&file);
+	parser.parse();
+	BOOST_CHECK(parser.count() == 1);
+	Color color;
+	color_set(&color, 0xaa, 0xbb, 0xcc);
+	BOOST_CHECK(parser.checkColor(0, color));
+	file.close();
+}
+BOOST_AUTO_TEST_CASE(float_values_separated_by_space)
+{
+	ifstream file("test/textImport10.txt");
 	BOOST_REQUIRE(file.is_open());
 	TextFile parser(&file);
 	parser.parse();
@@ -164,6 +176,18 @@ BOOST_AUTO_TEST_CASE(single_line_hash_comments)
 	BOOST_CHECK(parser.count() == 1);
 	Color color;
 	color_set(&color, 0xaa, 0xbb, 0xcc);
+	BOOST_CHECK(parser.checkColor(0, color));
+	file.close();
+}
+BOOST_AUTO_TEST_CASE(out_of_range_float_value)
+{
+	ifstream file("test/textImport11.txt");
+	BOOST_REQUIRE(file.is_open());
+	TextFile parser(&file);
+	parser.parse();
+	BOOST_CHECK(parser.count() == 1);
+	Color color;
+	color_set(&color, 0xaa, 0xbb, 0);
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }

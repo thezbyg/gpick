@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <cmath>
 using namespace std;
 namespace text_file_parser
 {
@@ -111,7 +112,11 @@ struct FSM
 		double parseDouble(const char *start, const char *end)
 		{
 			string v(start, end);
-			return stod(v.c_str());
+			try {
+				return stod(v.c_str());
+			} catch(...) {
+				return 0;
+			}
 		}
 		void clearNumberStacks()
 		{
@@ -145,6 +150,7 @@ struct FSM
 		( number space* ',' space* number space* ',' space* number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
 		( number space+ number space+ number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
 		( real_number space* ',' space* real_number space* ',' space* real_number ) { if (configuration.float_values) fsm->colorValues(); else fsm->clearNumberStacks(); };
+		( real_number space+ real_number space+ real_number ) { if (configuration.float_values) fsm->colorValues(); else fsm->clearNumberStacks(); };
 		( '//' ) { if (configuration.single_line_c_comments) fgoto single_line_comment; };
 		( '/*' ) {  if (configuration.multi_line_c_comments) fgoto multi_line_comment; };
 		( '#' ) { if (configuration.single_line_hash_comments) fgoto single_line_comment; };
