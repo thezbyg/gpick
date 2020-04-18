@@ -541,7 +541,7 @@ static ColorObject* get_color_object(struct DragDrop* dd){
 	return 0;
 }
 
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move){
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool){
 	VariationsArgs* args = static_cast<VariationsArgs*>(dd->userdata);
 	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;

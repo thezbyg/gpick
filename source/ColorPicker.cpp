@@ -853,7 +853,7 @@ static ColorObject* get_color_object(struct DragDrop* dd){
 	return color_object;
 }
 
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
 {
 	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
 	Color color = color_object->getColor();
@@ -878,7 +878,7 @@ static ColorObject* get_color_object_contrast(struct DragDrop* dd)
 	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
 	return new ColorObject(name, color);
 }
-static int set_color_object_at_contrast(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+static int set_color_object_at_contrast(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
 {
 	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
 	Color color = color_object->getColor();

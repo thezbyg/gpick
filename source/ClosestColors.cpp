@@ -305,7 +305,7 @@ static ColorObject* get_color_object(DragDrop* dd)
 	}
 	return 0;
 }
-static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
 {
 	ClosestColorsArgs *args = static_cast<ClosestColorsArgs*>(dd->userdata);
 	source_set_color(args, color_object);

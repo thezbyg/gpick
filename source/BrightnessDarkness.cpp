@@ -157,7 +157,7 @@ static ColorObject* get_color_object(struct DragDrop* dd)
 	}
 	return 0;
 }
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool move)
+static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
 {
 	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
 	Color color = color_object->getColor();

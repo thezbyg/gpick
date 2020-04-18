@@ -31,9 +31,9 @@ struct DragDrop{
 	GtkWidget* widget;
 	void* userdata;
 	ColorObject* (*get_color_object)(DragDrop* dd);
-	int (*set_color_object_at)(DragDrop* dd, ColorObject* colorobject, int x, int y, bool move);
+	int (*set_color_object_at)(DragDrop* dd, ColorObject* colorobject, int x, int y, bool move, bool sameWidget);
 	ColorObject** (*get_color_object_list)(DragDrop* dd, size_t *colorobject_n);
-	int (*set_color_object_list_at)(DragDrop* dd, ColorObject** colorobject, size_t colorobject_n, int x, int y, bool move);
+	int (*set_color_object_list_at)(DragDrop* dd, ColorObject** colorobject, size_t colorobject_n, int x, int y, bool move, bool sameWidget);
 	bool (*test_at)(DragDrop* dd, int x, int y);
 	bool (*data_received)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time);
 	bool (*data_get)(DragDrop* dd, GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time);
