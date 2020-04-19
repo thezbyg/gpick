@@ -31,6 +31,7 @@
 #include "Vector2.h"
 #include "I18N.h"
 #include "Format.h"
+#include "StandardMenu.h"
 #include <sstream>
 #include <iomanip>
 using namespace math;
@@ -237,18 +238,102 @@ GtkWidget* palette_list_get_widget(ColorList *color_list){
 	return (GtkWidget*)color_list->userdata;
 }
 
-static gboolean disable_palette_selection_function(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
+static gboolean controlSelection(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
 	return args->disable_selection;
 }
-
-static void disable_palette_selection(GtkWidget *widget, gboolean disable, int x, int y, ListPaletteArgs *args) {
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+static void disablePaletteSelection(GtkTreeView *treeView, gboolean disable, int x, int y, ListPaletteArgs *args) {
+	auto selection = gtk_tree_view_get_selection(treeView);
 	args->disable_selection = disable;
-	gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)disable_palette_selection_function, args, nullptr);
+	gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)controlSelection, args, nullptr);
 	args->last_click_position.x = x;
 	args->last_click_position.y = y;
 }
-
+static void onPreviewActivate(GtkTreeView *treeView, GtkTreePath *path, GtkTreeViewColumn *column, ListPaletteArgs *args) {
+	auto model = gtk_tree_view_get_model(treeView);
+	GtkTreeIter iter;
+	gtk_tree_model_get_iter(model, &iter, path);
+	ColorObject *colorObject;
+	gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+	if (colorObject)
+		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
+}
+void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
+	auto model = gtk_tree_view_get_model(treeView);
+	GtkTreeIter iter;
+	auto valid = gtk_tree_model_get_iter_first(model, &iter);
+	while (valid) {
+		ColorObject *colorObject;
+		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+		if (!callback(colorObject))
+			break;
+		valid = gtk_tree_model_iter_next(model, &iter);
+	}
+}
+void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
+	auto model = gtk_tree_view_get_model(treeView);
+	auto selection = gtk_tree_view_get_selection(treeView);
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *i = list;
+	while (i) {
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, reinterpret_cast<GtkTreePath *>(i->data));
+		ColorObject *colorObject;
+		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+		if (!callback(colorObject))
+			break;
+		i = g_list_next(i);
+	}
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
+	g_list_free(list);
+}
+static void onPreviewPaletteAdd(GtkWidget *widget, ListPaletteArgs *args) {
+	foreachSelectedItem(GTK_TREE_VIEW(args->treeview), [args](ColorObject *colorObject) {
+		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
+		return true;
+	});
+}
+static void onPreviewPaletteAddAll(GtkWidget *widget, ListPaletteArgs *args) {
+	foreachItem(GTK_TREE_VIEW(args->treeview), [args](ColorObject *colorObject) {
+		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
+		return true;
+	});
+}
+static void showPreviewPaletteMenu(GtkTreeView *treeView, ListPaletteArgs *args, GdkEventButton *event) {
+	bool selectionAvailable = palette_list_get_selected_count(GTK_WIDGET(treeView)) != 0;
+	bool itemsAvailable = palette_list_get_count(GTK_WIDGET(treeView)) != 0;
+	auto menu = gtk_menu_new();
+	auto item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
+	gtk_widget_set_sensitive(item, selectionAvailable);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onPreviewPaletteAdd), args);
+	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
+	gtk_widget_set_sensitive(item, itemsAvailable);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onPreviewPaletteAddAll), args);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+	if (selectionAvailable) {
+		ColorObject *colorObject = nullptr;
+		foreachSelectedItem(treeView, [&colorObject](ColorObject *rowColorObject) {
+			colorObject = rowColorObject;
+			return false;
+		});
+		StandardMenu::appendMenu(menu, colorObject, GTK_WIDGET(treeView), args->gs);
+	}else{
+		StandardMenu::appendMenu(menu);
+	}
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gint32 button, eventTime;
+	if (event) {
+		button = event->button;
+		eventTime = event->time;
+	}else{
+		button = 0;
+		eventTime = gtk_get_current_event_time();
+	}
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
+}
 #if GTK_MAJOR_VERSION >= 3
 static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPaletteArgs *args) {
 	bool expanded = gtk_expander_get_expanded(expander);
@@ -256,31 +341,35 @@ static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPalet
 	gtk_widget_set_vexpand(args->treeview, expanded);
 }
 #endif
-static gboolean onPreviewButtonPress(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
-	disable_palette_selection(widget, true, -1, -1, args);
+static gboolean onPreviewButtonPress(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS) {
+		showPreviewPaletteMenu(treeView, args, event);
+		return true;
+	}
+	disablePaletteSelection(treeView, true, -1, -1, args);
 	if (event->button != 1)
 		return false;
-	if (event->state & (GDK_SHIFT_MASK|GDK_CONTROL_MASK))
+	if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
 		return false;
 	GtkTreePath *path = nullptr;
-	if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), event->x, event->y, &path, nullptr, nullptr, nullptr))
+	if (!gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, nullptr, nullptr, nullptr))
 		return false;
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	auto selection = gtk_tree_view_get_selection(treeView);
 	if (gtk_tree_selection_path_is_selected(selection, path))
-		disable_palette_selection(widget, false, event->x, event->y, args);
+		disablePaletteSelection(treeView, false, static_cast<int>(event->x), static_cast<int>(event->y), args);
 	if (path)
 		gtk_tree_path_free(path);
 	return false;
 }
-static gboolean onPreviewButtonRelease(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
+static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
 	if (args->last_click_position != Vec2<int>(-1, -1)) {
-		Vec2<int> click_pos = args->last_click_position;
-		disable_palette_selection(widget, true, -1, -1, args);
-		if (click_pos.x == event->x && click_pos.y == event->y) {
+		Vec2<int> clickPosition = args->last_click_position;
+		disablePaletteSelection(treeView, true, -1, -1, args);
+		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
 			GtkTreePath *path = nullptr;
 			GtkTreeViewColumn *column;
-			if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), event->x, event->y, &path, &column, nullptr, nullptr)) {
-				gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
+			if (gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, &column, nullptr, nullptr)) {
+				gtk_tree_view_set_cursor(treeView, path, column, false);
 			}
 			if (path)
 				gtk_tree_path_free(path);
@@ -288,31 +377,24 @@ static gboolean onPreviewButtonRelease(GtkWidget *widget, GdkEventButton *event,
 	}
 	return false;
 }
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list){
-
-	ListPaletteArgs* args = new ListPaletteArgs;
+static void onPreviewPopupMenu(GtkTreeView *treeView, ListPaletteArgs *args) {
+	showPreviewPaletteMenu(treeView, args, nullptr);
+}
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list) {
+	auto args = new ListPaletteArgs;
 	args->gs = gs;
 	args->scroll_timeout = 0;
 	args->count_label = nullptr;
-
-	GtkListStore *store;
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *col;
-	GtkWidget *view;
-
-	view = gtk_tree_view_new();
-	args->treeview = view;
-
+	auto view = args->treeview = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 0);
-
-	store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
-
-	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
+	auto store = gtk_list_store_new(3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
+	auto col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_resizable(col, 0);
-	renderer = custom_cell_renderer_color_new();
+	auto renderer = custom_cell_renderer_color_new();
 	custom_cell_renderer_color_set_size(renderer, 16, 16);
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
@@ -322,10 +404,10 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-
 	g_signal_connect(G_OBJECT(view), "button-press-event", G_CALLBACK(onPreviewButtonPress), args);
 	g_signal_connect(G_OBJECT(view), "button-release-event", G_CALLBACK(onPreviewButtonRelease), args);
-
+	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(onPreviewActivate), args);
+	g_signal_connect(G_OBJECT(view), "popup-menu", G_CALLBACK(onPreviewPopupMenu), args);
 	gtk_drag_source_set(view, GDK_BUTTON1_MASK, 0, 0, GdkDragAction(GDK_ACTION_COPY));
 
 	struct DragDrop dd;
@@ -685,47 +767,40 @@ static void destroy_arguments(gpointer data){
 	delete args;
 }
 
-static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
-	disable_palette_selection(widget, true, -1, -1, args);
-
+static gboolean on_palette_button_press(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
+	disablePaletteSelection(treeView, true, -1, -1, args);
 	if (event->button != 1)
 		return false;
-	if (event->state & (GDK_SHIFT_MASK|GDK_CONTROL_MASK))
+	if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
 		return false;
-
 	GtkTreePath *path = nullptr;
-	if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget),
-				event->x, event->y,
-				&path,
-				nullptr,
-				nullptr, nullptr))
+	if (!gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, nullptr, nullptr, nullptr))
 		return false;
-
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
+	auto selection = gtk_tree_view_get_selection(treeView);
 	if (gtk_tree_selection_path_is_selected(selection, path)) {
-		disable_palette_selection(widget, false, event->x, event->y, args);
+		disablePaletteSelection(treeView, false, static_cast<int>(event->x), static_cast<int>(event->y), args);
 	}
 	if (path)
 		gtk_tree_path_free(path);
-	update_counts((ListPaletteArgs*)args);
+	update_counts(args);
 	return false;
 }
 
-static gboolean on_palette_button_release(GtkWidget *widget, GdkEventButton *event, ListPaletteArgs *args) {
+static gboolean on_palette_button_release(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
 	if (args->last_click_position != Vec2<int>(-1, -1)) {
-		Vec2<int> click_pos = args->last_click_position;
-		disable_palette_selection(widget, true, -1, -1, args);
-		if (click_pos.x == event->x && click_pos.y == event->y) {
+		Vec2<int> clickPosition = args->last_click_position;
+		disablePaletteSelection(treeView, true, -1, -1, args);
+		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
 			GtkTreePath *path = nullptr;
 			GtkTreeViewColumn *column;
-			if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(widget), event->x, event->y, &path, &column, nullptr, nullptr)) {
-				gtk_tree_view_set_cursor(GTK_TREE_VIEW(widget), path, column, FALSE);
+			if (gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, &column, nullptr, nullptr)) {
+				gtk_tree_view_set_cursor(treeView, path, column, FALSE);
 			}
 			if (path)
 				gtk_tree_path_free(path);
 		}
 	}
-	update_counts((ListPaletteArgs*)args);
+	update_counts(args);
 	return false;
 }
 
@@ -744,49 +819,39 @@ static gboolean on_palette_unselect_all(GtkTreeView *treeview, ListPaletteArgs *
 	return FALSE;
 }
 
-GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
-
-	ListPaletteArgs* args = new ListPaletteArgs;
+GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label) {
+	auto args = new ListPaletteArgs;
 	args->gs = gs;
 	args->count_label = count_label;
 	args->scroll_timeout = 0;
-
-	GtkListStore *store;
-	GtkCellRenderer *renderer;
-	GtkTreeViewColumn *col;
-	GtkWidget *view;
-
-	view = gtk_tree_view_new ();
-	args->treeview = view;
-
-	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 1);
-
-	store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
-
-	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+	auto view = args->treeview = gtk_tree_view_new();
+	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), true);
+	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
+	auto store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
+	auto col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_resizable(col,1);
 	gtk_tree_view_column_set_title(col, _("Color"));
-	renderer = custom_cell_renderer_color_new();
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	auto renderer = custom_cell_renderer_color_new();
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
 	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_resizable(col,1);
 	gtk_tree_view_column_set_title(col, _("Color"));
 	renderer = gtk_cell_renderer_text_new();
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 1);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 
 	col = gtk_tree_view_column_new();
-	gtk_tree_view_column_set_sizing(col,GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_resizable(col,1);
 	gtk_tree_view_column_set_title(col, _("Name"));
 	renderer = gtk_cell_renderer_text_new();
-	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	gtk_tree_view_column_pack_start(col, renderer, true);
 	gtk_tree_view_column_add_attribute(col, renderer, "text", 2);
 	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
 	g_object_set(renderer, "editable", TRUE, nullptr);
@@ -796,10 +861,8 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label){
 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(store));
 	g_object_unref(GTK_TREE_MODEL(store));
 
-	GtkTreeSelection *selection = gtk_tree_view_get_selection ( GTK_TREE_VIEW(view) );
-
+	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-
 	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(palette_list_row_activated), args);
 	g_signal_connect(G_OBJECT(view), "button-press-event", G_CALLBACK(on_palette_button_press), args);
 	g_signal_connect(G_OBJECT(view), "button-release-event", G_CALLBACK(on_palette_button_release), args);

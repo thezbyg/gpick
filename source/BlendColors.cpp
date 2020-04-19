@@ -23,7 +23,6 @@
 #include "ColorUtils.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "MathUtil.h"
 #include "DynvHelpers.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
@@ -34,12 +33,8 @@
 #include "ColorRYB.h"
 #include "gtk/ColorWidget.h"
 #include "uiColorInput.h"
-#include "Converter.h"
-#include "DynvHelpers.h"
-#include "StandardMenu.h"
 #include "ToolColorNaming.h"
 #include "I18N.h"
-#include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
 #include <sstream>
@@ -59,7 +54,6 @@ typedef struct BlendColorsArgs{
 	GtkWidget *start_color;
 	GtkWidget *middle_color;
 	GtkWidget *end_color;
-	GtkWidget *preview_list;
 	ColorList *preview_color_list;
 	struct dynvSystem *params;
 	GlobalState* gs;
@@ -225,69 +219,6 @@ static void calc(BlendColorsArgs *args, bool preview, int limit)
 			break;
 		}
 	}
-}
-static PaletteListCallbackReturn add_to_palette_cb_helper(ColorObject* color_object, void *userdata)
-{
-	BlendColorsArgs *args = (BlendColorsArgs*)userdata;
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	return PALETTE_LIST_CALLBACK_NO_UPDATE;
-}
-static gboolean add_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args)
-{
-	palette_list_foreach_selected(args->preview_list, add_to_palette_cb_helper, args);
-	return true;
-}
-static gboolean add_all_to_palette_cb(GtkWidget *widget, BlendColorsArgs *args)
-{
-	palette_list_foreach(args->preview_list, add_to_palette_cb_helper, args);
-	return true;
-}
-static PaletteListCallbackReturn color_list_selected(ColorObject* color_object, void *userdata)
-{
-	color_list_add_color_object((ColorList *)userdata, color_object, 1);
-	return PALETTE_LIST_CALLBACK_NO_UPDATE;
-}
-static gboolean preview_list_button_press_cb(GtkWidget *widget, GdkEventButton *event, BlendColorsArgs *args)
-{
-	GtkWidget *menu;
-	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
-		//add_to_palette_cb(widget, args);
-		//return true;
-	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		GtkWidget* item ;
-		gint32 button, event_time;
-		menu = gtk_menu_new();
-		bool selection_avail = palette_list_get_selected_count(widget) != 0;
-		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_to_palette_cb), args);
-		if (!selection_avail) gtk_widget_set_sensitive(item, false);
-		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-
-		if (selection_avail){
-			ColorList *color_list = color_list_new();
-			palette_list_forfirst_selected(args->preview_list, color_list_selected, color_list);
-			if (color_list_get_count(color_list) != 0){
-				StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->preview_list, args->gs);
-			}else{
-				StandardMenu::appendMenu(menu);
-			}
-			color_list_destroy(color_list);
-		}else{
-			StandardMenu::appendMenu(menu);
-		}
-		gtk_widget_show_all(GTK_WIDGET(menu));
-		button = event->button;
-		event_time = event->time;
-		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-		g_object_ref_sink(menu);
-		g_object_unref(menu);
-		return TRUE;
-	}
-	return FALSE;
 }
 static void update(GtkWidget *widget, BlendColorsArgs *args)
 {
@@ -505,10 +436,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	GtkWidget* preview;
 	ColorList* preview_color_list = nullptr;
 	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->getColorList(), &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
-	args->preview_list = palette_list_get_widget(preview_color_list);
-	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(args->preview_list));
-	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-	g_signal_connect(G_OBJECT(args->preview_list), "button-press-event", G_CALLBACK(preview_list_button_press_cb), args);
 	table_y++;
 	args->preview_color_list = preview_color_list;
 	update(0, args);
