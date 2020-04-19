@@ -25,7 +25,6 @@
 #include "Paths.h"
 #include "Converter.h"
 #include "Converters.h"
-#include "CopyPaste.h"
 #include "StandardMenu.h"
 #include "RegisterSources.h"
 #include "GenerateScheme.h"
@@ -171,6 +170,17 @@ static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *ev
 	return false;
 }
 
+static gboolean on_window_key_press(GtkWidget *widget, GdkEventKey *event, AppArgs *args) {
+	guint modifiers = gtk_accelerator_get_default_mod_mask();
+	if (event->keyval == GDK_KEY_space && (event->state & modifiers) == GDK_CONTROL_MASK) {
+		if (args->current_color_source != nullptr && is_color_picker(args->current_color_source)) {
+			color_picker_focus_swatch(args->current_color_source);
+			return color_picker_key_up(args->current_color_source, event);
+		}
+	}
+	return false;
+}
+
 static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event, AppArgs *args)
 {
 	if (gtk_widget_get_visible(widget)){
@@ -196,8 +206,12 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint pag
 	if (args->current_color_source) color_source_deactivate(args->current_color_source);
 	args->current_color_source = nullptr;
 	if (page_num >= 0 && page_num <= args->color_source_index.size() && args->color_source_index[page_num]){
-		if (!args->initialization) // do not initialize color sources while initializing program
+		if (!args->initialization) { // do not initialize color sources while initializing program
 			color_source_activate(args->color_source_index[page_num]);
+			if (is_color_picker(args->color_source_index[page_num])) {
+				g_idle_add((GSourceFunc)color_picker_focus_swatch, args->color_source_index[page_num]);
+			}
+		}
 		args->current_color_source = args->color_source_index[page_num];
 		args->gs->setCurrentColorSource(args->current_color_source);
 	}else{
@@ -1234,19 +1248,16 @@ static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 	}
 	color_object->release();
 }
-static void palette_popup_menu_paste(GtkWidget *widget, AppArgs* args)
-{
-	ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
-	if (copypaste_get_color_object(&new_color_object, args->gs) == 0){
-		color_object->setColor(new_color_object->getColor());
-		if (new_color_object->getName().length() > 0)
-			color_object->setName(new_color_object->getName());
-		new_color_object->release();
-		palette_list_update_first_selected(args->color_list, false);
+static void palette_popup_menu_paste(GtkWidget *, AppArgs *args) {
+	auto newColorList = clipboard::getColors(args->gs);
+	if (!newColorList)
+		return;
+	auto ourColorList = args->gs->getColorList();
+	for (auto &colorObject: newColorList->colors) {
+		color_list_add_color_object(ourColorList, colorObject, true);
 	}
-	color_object->release();
+	color_list_destroy(newColorList);
 }
-
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata)
 {
 	*((GList**)userdata) = g_list_append(*((GList**)userdata), color);
@@ -1339,9 +1350,10 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_widget_set_sensitive(item, (selected_count == 1));
 
 	item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_paste), args);
-	gtk_widget_set_sensitive(item, (selected_count == 1));
+	gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = newMenuItem (_("_Mix Colors..."), GTK_STOCK_CONVERT);
@@ -1475,32 +1487,24 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 				return true;
 			}
 			return false;
-			break;
 		case GDK_KEY_c:
-			if ((event->state & modifiers) == GDK_CONTROL_MASK){
-				Clipboard::set(args->color_list, args->gs);
+			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+				clipboard::set(args->color_list, args->gs, Converters::Type::copy);
 				return true;
 			}
 			return false;
-			break;
 		case GDK_KEY_v:
-			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-				ColorObject* color_object;
-				if (copypaste_get_color_object(&color_object, args->gs) == 0){
-					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-					color_object->release();
-				}
+			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+				palette_popup_menu_paste(nullptr, args);
 				return true;
-			}else{
+			} else {
 				palette_popup_menu_reverse(widget, args);
 				return true;
 			}
 			return false;
-			break;
 		case GDK_KEY_g:
 			palette_popup_menu_group_and_sort(widget, args);
 			return true;
-			break;
 		case GDK_KEY_Delete:
 			palette_popup_menu_remove_selected(widget, args);
 			break;
@@ -1524,7 +1528,6 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			break;
 		default:
 			return false;
-		break;
 	}
 	return false;
 }
@@ -1758,6 +1761,7 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	g_signal_connect(G_OBJECT(args->window), "window-state-event", G_CALLBACK(on_window_state_event), args);
 	g_signal_connect(G_OBJECT(args->window), "focus-in-event", G_CALLBACK(on_window_focus_change), args);
 	g_signal_connect(G_OBJECT(args->window), "focus-out-event", G_CALLBACK(on_window_focus_change), args);
+	g_signal_connect(G_OBJECT(args->window), "key-press-event", G_CALLBACK(on_window_key_press), args);
 	GtkAccelGroup *accel_group = gtk_accel_group_new();
 	gtk_window_add_accel_group(GTK_WINDOW(args->window), accel_group);
 	g_object_unref(G_OBJECT (accel_group));
@@ -1824,15 +1828,17 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	repositionViews(args);
 	{
 		const char *tab = dynv_get_string_wd(args->params, "color_source", "");
-		map<string, ColorSource*>::iterator i = args->color_source.find(tab);
-		if (i != args->color_source.end()){
-			uint32_t tab_index = 0;
-			for (vector<ColorSource*>::iterator j = args->color_source_index.begin(); j != args->color_source_index.end(); ++j){
-				if ((*j) == (*i).second){
-					gtk_notebook_set_current_page(GTK_NOTEBOOK(args->notebook), tab_index);
+		std::map<std::string, ColorSource*>::iterator i = args->color_source.find(tab);
+		if (i != args->color_source.end()) {
+			size_t tabIndex = 0;
+			for (auto &colorSource: args->color_source_index) {
+				if (colorSource == (*i).second) {
+					gtk_notebook_set_current_page(GTK_NOTEBOOK(args->notebook), tabIndex);
+					if (is_color_picker(colorSource))
+						color_picker_focus_swatch(colorSource);
 					break;
 				}
-				tab_index++;
+				tabIndex++;
 			}
 		}
 	}
@@ -1967,7 +1973,7 @@ struct FloatingPickerAction
 						cout << text << endl;
 					}
 				}else{
-					Clipboard::set(text);
+					clipboard::set(text);
 					clipboard_touched = true;
 				}
 			}

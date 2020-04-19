@@ -26,7 +26,6 @@
 #include "Converters.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
-#include "CopyPaste.h"
 #include "FloatingPicker.h"
 #include "ColorRYB.h"
 #include "ColorWheelType.h"
@@ -280,12 +279,11 @@ static void on_swatch_color_edit(GtkWidget *widget, ColorPickerArgs *args)
 	}
 	color_object->release();
 }
-static void paste_cb(GtkWidget *widget, ColorPickerArgs* args)
-{
-	ColorObject* color_object;
-	if (copypaste_get_color_object(&color_object, args->gs) == 0){
-		source_set_color(args, color_object);
-		color_object->release();
+static void paste_cb(GtkWidget *widget, ColorPickerArgs* args) {
+	auto colorObject = clipboard::getFirst(args->gs);
+	if (colorObject) {
+		source_set_color(args, colorObject);
+		colorObject->release();
 	}
 }
 static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
@@ -315,14 +313,18 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		GtkWidget* item;
 		gint32 button, event_time;
 		menu = gtk_menu_new();
+		GtkAccelGroup *acceleratorGroup = gtk_accel_group_new();
+		gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
 		Color c;
 		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
 
 		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
+		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_A, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_to_palette), args);
 
 		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
+		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_all_to_palette), args);
 
@@ -333,16 +335,15 @@ static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event,
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
+		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_color_edit), args);
 
 		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
+		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
-
-		if (copypaste_is_color_object_available(args->gs) != 0){
-			gtk_widget_set_sensitive(item, false);
-		}
+		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
 
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		if (event){
@@ -376,127 +377,109 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 	}
 	return FALSE;
 }
-static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, gpointer data)
-{
-	ColorPickerArgs* args=(ColorPickerArgs*)data;
+static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, ColorPickerArgs *args) {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-		case GDK_KEY_m:
-			{
-				int x, y;
-				gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
-				math::Vec2<int> position(x, y);
-				if ((event->state&modifiers) == GDK_CONTROL_MASK){
-					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 1, position);
-				}else{
-					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 0, position);
-				}
+	case GDK_KEY_m: {
+			int x, y;
+			gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
+			math::Vec2<int> position(x, y);
+			if ((event->state & modifiers) == GDK_CONTROL_MASK){
+				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 1, position);
+			}else{
+				gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 0, position);
 			}
-			break;
-
-		case GDK_KEY_c:
-			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-				Color c;
-				updateMainColor(args);
-				gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &c);
-				Clipboard::set(c, args->gs);
-				return TRUE;
-			}
-			return FALSE;
-			break;
-
-		case GDK_KEY_1:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_2:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_3:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_4:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_5:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_6:
-			gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_Right:
-			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),1);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_Left:
-			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display),-1);
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_space:
-			updateMainColor(args);
-			gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
-
-			if (dynv_get_bool_wd(args->params, "sampler.add_to_palette", true)){
-				Color color;
-				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
-				ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-				string name=color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
-				color_object->setName(name);
-				color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-				color_object->release();
-			}
-			if (dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", true)){
-				Color color;
-				gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
-				Clipboard::set(color, args->gs);
-			}
-			if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)){
-				gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
-			}
-			updateDisplays(args, widget);
-			return TRUE;
-			break;
-
-		case GDK_KEY_a:
-			on_swatch_menu_add_all_to_palette(nullptr, args);
-			return TRUE;
-			break;
-
-		case GDK_KEY_e:
-			on_swatch_color_edit(nullptr, args);
-			return TRUE;
-			break;
-
-		default:
-			return FALSE;
+		}
 		break;
+	case GDK_KEY_c:
+		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			updateMainColor(args);
+			Color color;
+			gtk_swatch_get_main_color(GTK_SWATCH(args->swatch_display), &color);
+			clipboard::set(color, args->gs, Converters::Type::copy);
+			return true;
+		}
+		return false;
+	case GDK_KEY_v:
+		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			auto colorObject = clipboard::getFirst(args->gs);
+			if (colorObject) {
+				source_set_color(args, colorObject);
+				colorObject->release();
+			}
+			return true;
+		}
+		return false;
+	case GDK_KEY_1:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_2:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_3:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_4:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_5:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_6:
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_Right:
+		gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_Left:
+		gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), -1);
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_space:
+		updateMainColor(args);
+		gtk_swatch_set_color_to_main(GTK_SWATCH(args->swatch_display));
+		if (dynv_get_bool_wd(args->params, "sampler.add_to_palette", true)) {
+			Color color;
+			gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+			ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
+			string name=color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+			color_object->setName(name);
+			color_list_add_color_object(args->gs->getColorList(), color_object, 1);
+			color_object->release();
+		}
+		if (dynv_get_bool_wd(args->params, "sampler.copy_to_clipboard", true)) {
+			Color color;
+			gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
+			clipboard::set(color, args->gs, Converters::Type::copy);
+		}
+		if (dynv_get_bool_wd(args->params, "sampler.rotate_swatch_after_sample", true)) {
+			gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
+		}
+		updateDisplays(args, widget);
+		return true;
+	case GDK_KEY_a:
+		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			on_swatch_menu_add_all_to_palette(nullptr, args);
+		} else {
+			on_swatch_menu_add_to_palette(nullptr, args);
+		}
+		return true;
+	case GDK_KEY_e:
+		on_swatch_color_edit(nullptr, args);
+		return true;
 	}
-	return FALSE;
+	return false;
 }
 
 int color_picker_key_up(ColorSource* color_source, GdkEventKey *event){
-	return on_key_up(0, event, color_source);
+	return on_key_up(0, event, reinterpret_cast<ColorPickerArgs *>(color_source));
 }
 
 static void on_oversample_value_changed(GtkRange *slider, gpointer data){
@@ -1219,4 +1202,11 @@ void color_picker_rotate_swatch(ColorSource* color_source)
 	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	gtk_swatch_move_active(GTK_SWATCH(args->swatch_display), 1);
 	updateDisplays(args, nullptr);
+}
+void color_picker_focus_swatch(ColorSource *color_source) {
+	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
+	gtk_widget_grab_focus(args->swatch_display);
+}
+bool is_color_picker(ColorSource *color_source) {
+	return g_strcmp0(color_source->identificator, "color_picker") == 0;
 }

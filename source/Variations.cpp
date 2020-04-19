@@ -31,7 +31,6 @@
 #include "gtk/ColorWheel.h"
 #include "ColorWheelType.h"
 #include "uiColorInput.h"
-#include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "I18N.h"
@@ -176,19 +175,14 @@ static void update(GtkWidget *widget, VariationsArgs *args ){
 	calc(args, true, false);
 }
 
-
-static void on_color_paste(GtkWidget *widget, gpointer item) {
-	VariationsArgs* args=(VariationsArgs*)item;
-
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-
-	ColorObject* color_object;
-	if (copypaste_get_color_object(&color_object, args->gs) == 0){
-		set_rgb_color_by_widget(args, color_object, color_widget);
-		color_object->release();
+static void on_color_paste(GtkWidget *widget, VariationsArgs *args) {
+	auto colorWidget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
+	auto colorObject = clipboard::getFirst(args->gs);
+	if (colorObject) {
+		set_rgb_color_by_widget(args, colorObject, colorWidget);
+		colorObject->release();
 	}
 }
-
 
 static void on_color_edit(GtkWidget *widget, gpointer item) {
 	VariationsArgs* args=(VariationsArgs*)item;
@@ -363,10 +357,7 @@ static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventBut
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
 		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-		if (copypaste_is_color_object_available(args->gs) != 0){
-			gtk_widget_set_sensitive(item, false);
-		}
+		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
 	}
 
 	gtk_widget_show_all (GTK_WIDGET(menu));
@@ -399,43 +390,33 @@ static void on_color_popup_menu(GtkWidget *widget, VariationsArgs* args){
 }
 
 
-static gboolean on_color_key_press (GtkWidget *widget, GdkEventKey *event, VariationsArgs* args){
+static gboolean on_color_key_press(GtkWidget *widget, GdkEventKey *event, VariationsArgs *args) {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
-
-	Color c;
-	ColorObject* color_object;
-	GtkWidget* color_widget = widget;
-
 	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-		case GDK_KEY_c:
-			if ((event->state & modifiers) == GDK_CONTROL_MASK){
-				gtk_color_get_color(GTK_COLOR(color_widget), &c);
-				Clipboard::set(c, args->gs);
-				return true;
+	case GDK_KEY_c:
+		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			Color color;
+			gtk_color_get_color(GTK_COLOR(widget), &color);
+			clipboard::set(color, args->gs, Converters::Type::copy);
+			return true;
+		}
+		return false;
+	case GDK_KEY_v:
+		if ((event->state & modifiers) == GDK_CONTROL_MASK){
+			auto colorObject = clipboard::getFirst(args->gs);
+			if (colorObject) {
+				set_rgb_color_by_widget(args, colorObject, widget);
+				colorObject->release();
 			}
-			return false;
-			break;
-
-		case GDK_KEY_v:
-			if ((event->state&modifiers) == GDK_CONTROL_MASK){
-				if (copypaste_get_color_object(&color_object, args->gs) == 0){
-					set_rgb_color_by_widget(args, color_object, color_widget);
-					color_object->release();
-				}
-				return true;
-			}
-			return false;
-			break;
-
-		default:
-			return false;
-		break;
+			return true;
+		}
+		return false;
+	default:
+		return false;
 	}
-	return false;
 }
 
 static int source_destroy(VariationsArgs *args){
-
 	Color c;
 	char tmp[32];
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){

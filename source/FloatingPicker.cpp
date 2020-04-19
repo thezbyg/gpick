@@ -213,10 +213,10 @@ static void complete_picking(FloatingPickerArgs *args)
 			ColorObject* color_object;
 			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 			if (args->single_pick_mode){
-				Clipboard::set(color_object, args->gs, args->converter);
+				clipboard::set(color_object, args->gs, args->converter);
 			}else{
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", true)){
-					Clipboard::set(color_object, args->gs, args->converter);
+					clipboard::set(color_object, args->gs, args->converter);
 				}
 				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", true)){
 					PickerColorNameAssigner name_assigner(args->gs);

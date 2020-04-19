@@ -21,7 +21,6 @@
 #include "ColorSource.h"
 #include "DragDrop.h"
 #include "uiColorInput.h"
-#include "CopyPaste.h"
 #include "Clipboard.h"
 #include "StandardMenu.h"
 #include "Converters.h"
@@ -321,12 +320,11 @@ static void edit_cb(GtkWidget *widget, gpointer item)
 	}
 }
 
-static void paste_cb(GtkWidget *widget, LayoutPreviewArgs* args)
-{
-	ColorObject* color_object;
-	if (copypaste_get_color_object(&color_object, args->gs) == 0){
-		source_set_color(args, color_object);
-		color_object->release();
+static void paste_cb(GtkWidget *, LayoutPreviewArgs *args) {
+	auto colorObject = clipboard::getFirst(args->gs);
+	if (colorObject) {
+		source_set_color(args, colorObject);
+		colorObject->release();
 	}
 }
 
@@ -400,10 +398,8 @@ static gboolean button_press_cb (GtkWidget *widget, GdkEventButton *event, Layou
 		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (paste_cb), args);
 		if (!selection_avail) gtk_widget_set_sensitive(item, false);
+		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
 
-		if (copypaste_is_color_object_available(args->gs) != 0){
-			gtk_widget_set_sensitive(item, false);
-		}
 		gtk_widget_show_all (GTK_WIDGET(menu));
 		button = event->button;
 		event_time = event->time;

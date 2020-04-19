@@ -43,6 +43,7 @@ static GtkTargetEntry targets[] = {
 	{ (char*)"application/x-color_object-list", GTK_TARGET_OTHER_APP, TARGET_COLOR_OBJECT_LIST_SERIALIZED },
 	{ (char*)"application/x-color", 0, TARGET_COLOR },
 	{ (char*)"text/plain", 0, TARGET_STRING },
+	{ (char*)"UTF8_STRING", 0, TARGET_STRING },
 	{ (char*)"STRING", 0, TARGET_STRING },
 	{ (char*)"application/x-rootwin-drop", 0, TARGET_ROOTWIN }
 };

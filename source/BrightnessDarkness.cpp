@@ -29,8 +29,8 @@
 #include "gtk/ColorWidget.h"
 #include "gtk/Range2D.h"
 #include "uiColorInput.h"
-#include "CopyPaste.h"
 #include "Converter.h"
+#include "Clipboard.h"
 #include "DynvHelpers.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
@@ -185,12 +185,11 @@ static void edit_cb(GtkWidget *widget, gpointer item)
 		color_object->release();
 	}
 }
-static void paste_cb(GtkWidget *widget, BrightnessDarknessArgs* args)
-{
-	ColorObject* color_object;
-	if (copypaste_get_color_object(&color_object, args->gs) == 0){
-		source_set_color(args, color_object);
-		color_object->release();
+static void paste_cb(GtkWidget *widget, BrightnessDarknessArgs* args) {
+	auto colorObject = clipboard::getFirst(args->gs);
+	if (colorObject) {
+		source_set_color(args, colorObject);
+		colorObject->release();
 	}
 }
 static void add_to_palette_cb(GtkWidget *widget, gpointer item)
@@ -229,17 +228,17 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		GtkWidget* item ;
 		gint32 button, event_time;
 		menu = gtk_menu_new();
-		bool selection_avail = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
+		bool selectionAvailable = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
 		bool edit_avail = gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(args->layout_view));
 		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_to_palette_cb), args);
-		if (!selection_avail) gtk_widget_set_sensitive(item, false);
+		if (!selectionAvailable) gtk_widget_set_sensitive(item, false);
 		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		if (selection_avail){
+		if (selectionAvailable){
 			ColorObject* color_object;
 			source_get_color(args, &color_object);
 			StandardMenu::appendMenu(menu, color_object, args->gs);
@@ -252,14 +251,11 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 			item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(edit_cb), args);
-			if (!selection_avail) gtk_widget_set_sensitive(item, false);
+			if (!selectionAvailable) gtk_widget_set_sensitive(item, false);
 			item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
-			if (!selection_avail) gtk_widget_set_sensitive(item, false);
-			if (copypaste_is_color_object_available(args->gs) != 0){
-				gtk_widget_set_sensitive(item, false);
-			}
+			gtk_widget_set_sensitive(item, selectionAvailable && clipboard::colorObjectAvailable());
 		}
 		gtk_widget_show_all(GTK_WIDGET(menu));
 		button = event->button;

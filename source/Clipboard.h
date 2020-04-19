@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,21 +18,23 @@
 
 #ifndef GPICK_CLIPBOARD_H_
 #define GPICK_CLIPBOARD_H_
-
+#include "Converters.h"
 #include <string>
+#include <boost/variant.hpp>
 struct ColorObject;
 struct GlobalState;
 struct Converter;
 struct Color;
+struct ColorList;
 typedef struct _GtkWidget GtkWidget;
-struct Clipboard
-{
-	static void set(const std::string &value);
-	static void set(const ColorObject *color_object, GlobalState *gs, const char *converter_name = nullptr);
-	static void set(const Color &color, GlobalState *gs, const char *converter_name = nullptr);
-	static void set(GtkWidget *palette_widget, GlobalState *gs, const char *converter_name = nullptr);
-	static void set(const ColorObject *color_object, GlobalState *gs, Converter *converter);
-	static void set(const Color &color, GlobalState *gs, Converter *converter);
-	static void set(GtkWidget *palette_widget, GlobalState *gs, Converter *converter);
-};
+namespace clipboard {
+void set(const std::string &value);
+using ConverterSelection = boost::variant<const char *, Converter *, Converters::Type>;
+void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection converterSelection);
+void set(const Color &color, GlobalState *gs, ConverterSelection converterSelection);
+void set(GtkWidget *paletteWidget, GlobalState *gs, ConverterSelection converterSelection);
+bool colorObjectAvailable();
+ColorObject *getFirst(GlobalState *gs);
+ColorList *getColors(GlobalState *gs);
+}
 #endif /* GPICK_CLIPBOARD_H_ */

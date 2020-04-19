@@ -24,10 +24,8 @@
 struct ColorObject;
 struct Converter;
 struct Color;
-struct Converters
-{
-	enum class Type
-	{
+struct Converters {
+	enum class Type {
 		display,
 		colorList,
 		copy,
@@ -35,9 +33,9 @@ struct Converters
 	Converters();
 	~Converters();
 	void add(Converter *converter);
-	const std::vector<Converter*> &all() const;
-	const std::vector<Converter*> &allCopy() const;
-	const std::vector<Converter*> &allPaste() const;
+	const std::vector<Converter *> &all() const;
+	const std::vector<Converter *> &allCopy() const;
+	const std::vector<Converter *> &allPaste() const;
 	Converter *byName(const char *name) const;
 	Converter *display() const;
 	Converter *colorList() const;
@@ -55,11 +53,11 @@ struct Converters
 	void rebuildCopyPasteArrays();
 	void reorder(const char **names, size_t count);
 	bool hasCopy() const;
-	private:
-	std::map<std::string, Converter*> m_converters;
-	std::vector<Converter*> m_all_converters;
-	std::vector<Converter*> m_copy_converters;
-	std::vector<Converter*> m_paste_converters;
+private:
+	std::map<std::string, Converter *> m_converters;
+	std::vector<Converter *> m_all_converters;
+	std::vector<Converter *> m_copy_converters;
+	std::vector<Converter *> m_paste_converters;
 	Converter *m_display_converter;
 	Converter *m_color_list_converter;
 };

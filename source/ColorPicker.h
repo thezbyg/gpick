@@ -29,5 +29,7 @@ int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
 void color_picker_set_current_color(ColorSource* color_source);
 void color_picker_rotate_swatch(ColorSource* color_source);
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
+void color_picker_focus_swatch(ColorSource *color_source);
+bool is_color_picker(ColorSource *color_source);
 
 #endif /* GPICK_COLOR_PICKER_H_ */

@@ -34,7 +34,6 @@
 #include "ColorRYB.h"
 #include "gtk/ColorWidget.h"
 #include "uiColorInput.h"
-#include "CopyPaste.h"
 #include "Converter.h"
 #include "DynvHelpers.h"
 #include "StandardMenu.h"
