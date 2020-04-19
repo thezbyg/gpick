@@ -201,6 +201,10 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 	return false;
 }
 
+static gboolean setFocusToColorPicker(ColorSource *colorSource) {
+	color_picker_focus_swatch(colorSource);
+	return false;
+}
 static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint page_num, AppArgs *args)
 {
 	if (args->current_color_source) color_source_deactivate(args->current_color_source);
@@ -209,7 +213,7 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint pag
 		if (!args->initialization) { // do not initialize color sources while initializing program
 			color_source_activate(args->color_source_index[page_num]);
 			if (is_color_picker(args->color_source_index[page_num])) {
-				g_idle_add((GSourceFunc)color_picker_focus_swatch, args->color_source_index[page_num]);
+				g_idle_add((GSourceFunc)setFocusToColorPicker, args->color_source_index[page_num]);
 			}
 		}
 		args->current_color_source = args->color_source_index[page_num];
