@@ -315,7 +315,6 @@ static int source_set_color(BlendColorsArgs *args, ColorObject* color)
 }
 static int source_activate(BlendColorsArgs *args)
 {
-	update(0, args);
 	return 0;
 }
 static int source_deactivate(BlendColorsArgs *args)
@@ -434,9 +433,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->steps2 = mix_steps;
 	g_signal_connect(G_OBJECT(mix_steps), "value-changed", G_CALLBACK(update), args);
 	table_y = 3;
-	GtkWidget* preview;
 	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table), preview = palette_list_preview_new(gs, false, false, gs->getColorList(), &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), palette_list_preview_new(gs, false, false, gs->getColorList(), &preview_color_list), 0, 5, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 	args->preview_color_list = preview_color_list;
 	update(0, args);
