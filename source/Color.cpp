@@ -56,6 +56,9 @@ void color_init()
 
 }
 
+Color::Color():
+	ma { 0, 0, 0 ,0 } {
+}
 
 void color_rgb_to_hsv(const Color* a, Color* b)
 {

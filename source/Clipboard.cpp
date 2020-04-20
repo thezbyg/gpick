@@ -293,7 +293,7 @@ ColorObject *getFirst(GlobalState *gs) {
 				}
 				return VisitResult::advance;
 			}
-			static Color defaultColor = { .ma { 0, 0, 0, 0 } };
+			static Color defaultColor = {};
 			result = new ColorObject(dynv_get_string_wd(colors[0], "name", ""), *dynv_get_color_wdc(colors[0], "color", &defaultColor));
 			return VisitResult::stop;
 		} break;
@@ -362,7 +362,7 @@ ColorList *getColors(GlobalState *gs) {
 				}
 				return VisitResult::advance;
 			}
-			static Color defaultColor = { .ma { 0, 0, 0, 0 } };
+			static Color defaultColor = {};
 			for (size_t i = 0; i < colorCount; i++) {
 				color_list_add_color_object(colorList, new ColorObject(dynv_get_string_wd(colors[i], "name", ""), *dynv_get_color_wdc(colors[i], "color", &defaultColor)), false);
 			}

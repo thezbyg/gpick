@@ -35,6 +35,7 @@
 #include "uiColorInput.h"
 #include "ToolColorNaming.h"
 #include "I18N.h"
+#include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
 #include <sstream>

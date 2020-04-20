@@ -28,7 +28,8 @@
 /** \struct Color
  * \brief Color structure is an union of all available color spaces.
  */
-typedef struct Color{
+struct Color {
+	Color();
 	union{
 		struct{
 			float red; /**< Red component */
@@ -79,7 +80,7 @@ typedef struct Color{
 		}m; /**< General data access structure */
 		float ma[4]; /**< General data access array */
 	};
-}Color;
+};
 
 /** \enum ReferenceIlluminant
  * \brief Reference illuminants.
