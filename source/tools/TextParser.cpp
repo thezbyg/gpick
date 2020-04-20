@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2019, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,20 +20,22 @@
 #include "ColorList.h"
 #include "ColorObject.h"
 #include "GlobalState.h"
+#include "ToolColorNaming.h"
 #include "I18N.h"
 #include "DynvHelpers.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "parser/TextFile.h"
 #include <sstream>
-using namespace std;
+using namespace std::string_literals;
 
-struct TextParserDialog {
-	TextParserDialog(GtkWindow* parent, GlobalState *gs);
+struct TextParserDialog: public ToolColorNameAssigner {
+	TextParserDialog(GtkWindow *parent, GlobalState *gs);
 	~TextParserDialog();
 	bool show();
+	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) override;
 	struct TextParser: public text_file_parser::TextFile {
-		TextParser(const string &text):
+		TextParser(const std::string &text):
 			m_text(text),
 			m_failed(false) {
 		}
@@ -42,7 +44,7 @@ struct TextParserDialog {
 		virtual void outOfMemory() {
 			m_failed = true;
 		}
-		virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn) {
+		virtual void syntaxError(size_t, size_t, size_t, size_t) {
 			m_failed = true;
 		}
 		virtual size_t read(char *buffer, size_t length) {
@@ -63,21 +65,22 @@ struct TextParserDialog {
 		bool failed() const {
 			return m_failed;
 		}
-		const list<Color> &colors() const {
+		const std::list<Color> &colors() const {
 			return m_colors;
 		}
 	private:
-		stringstream m_text;
-		list<Color> m_colors;
+		std::stringstream m_text;
+		std::list<Color> m_colors;
 		bool m_failed;
 	};
 private:
 	GtkWindow *m_parent;
-	GtkWidget *m_dialog, *m_text_view;
+	GtkWidget *m_dialog, *m_textView;
 	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_float_values, *m_int_values;
 	GtkWidget *m_preview_expander;
 	ColorList *m_preview_color_list;
 	GlobalState *m_gs;
+	size_t m_index;
 	struct dynvSystem *m_params;
 	bool isSingleLineCCommentsEnabled();
 	bool isMultiLineCCommentsEnabled();
@@ -96,7 +99,8 @@ private:
 	static void onResponse(GtkWidget *widget, gint response_id, TextParserDialog *dialog);
 	static void onChange(GtkWidget *widget, TextParserDialog *dialog);
 };
-TextParserDialog::TextParserDialog(GtkWindow* parent, GlobalState *gs):
+TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
+	ToolColorNameAssigner(gs),
 	m_parent(parent),
 	m_gs(gs) {
 	m_params = dynv_get_dynv(m_gs->getSettings(), "gpick.tools.text_parser");
@@ -106,16 +110,16 @@ TextParserDialog::TextParserDialog(GtkWindow* parent, GlobalState *gs):
 	GtkWidget *table = gtk_table_new(5, 9, false);
 	GtkWidget *scrolled_window = gtk_scrolled_window_new(0, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), m_text_view = newTextView(dynv_get_string_wd(m_params, "text", "")));
-	g_signal_connect(G_OBJECT(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_text_view))), "changed", G_CALLBACK(onChange), this);
+	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), m_textView = newTextView(dynv_get_string_wd(m_params, "text", "")));
+	g_signal_connect(G_OBJECT(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView))), "changed", G_CALLBACK(onChange), this);
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
-	gtk_box_pack_start(GTK_BOX(vbox), newLabel(string(_("Text")) + ":"), false, false, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), newLabel(_("Text") + ":"s), false, false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, true, true, 0);
 	gtk_table_attach(GTK_TABLE(table), vbox, 0, 8, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	int y = 1;
-	addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_params, "single_line_c_comments", true)), 0, y, table);
-	addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_params, "multi_line_c_comments", true)), 0, y, table);
-	addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_params, "single_line_hash_comments", true)), 0, y, table);
+	addOption(m_single_line_c_comments = newCheckbox(_("C style single-line comments") + " (//abc)"s, dynv_get_bool_wd(m_params, "single_line_c_comments", true)), 0, y, table);
+	addOption(m_multi_line_c_comments = newCheckbox(_("C style multi-line comments") + " (/*abc*/)"s, dynv_get_bool_wd(m_params, "multi_line_c_comments", true)), 0, y, table);
+	addOption(m_single_line_hash_comments = newCheckbox(_("Hash single-line comments") + " (#abc)"s, dynv_get_bool_wd(m_params, "single_line_hash_comments", true)), 0, y, table);
 	y = 1;
 	addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_params, "css_rgb", true)), 1, y, table);
 	addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_params, "css_rgba", true)), 1, y, table);
@@ -163,21 +167,24 @@ bool TextParserDialog::parse(ColorList *color_list) {
 	configuration.short_hex = isShortHexEnabled();
 	configuration.int_values = isIntValuesEnabled();
 	configuration.float_values = isFloatValuesEnabled();
-	string text = getTextViewText(m_text_view);
-	TextParser text_parser(text);
-	if (!text_parser.parse(configuration)) {
+	auto text = getTextViewText(m_textView);
+	TextParser textParser(text);
+	if (!textParser.parse(configuration)) {
 		return false;
 	}
-	if (text_parser.failed()) {
+	if (textParser.failed()) {
 		return false;
 	}
-	if (text_parser.colors().size() == 0) {
+	if (textParser.colors().size() == 0) {
 		return false;
 	}
-	for (auto color: text_parser.colors()) {
-		auto color_object = new ColorObject("", color);
-		color_list_add_color_object(color_list, color_object, true);
-		color_object->release();
+	m_index = 0;
+	for (auto color: textParser.colors()) {
+		auto colorObject = new ColorObject("", color);
+		ToolColorNameAssigner::assign(colorObject, &color);
+		color_list_add_color_object(color_list, colorObject, true);
+		colorObject->release();
+		m_index++;
 	}
 	return true;
 }
@@ -190,6 +197,9 @@ void TextParserDialog::preview() {
 }
 void TextParserDialog::apply() {
 	parse(m_gs->getColorList());
+}
+std::string TextParserDialog::getToolSpecificName(ColorObject *colorObject, const Color *color) {
+	return _("Parsed text color") + " #"s + std::to_string(m_index);
 }
 void TextParserDialog::onResponse(GtkWidget *widget, gint response_id, TextParserDialog *dialog) {
 	dialog->saveSettings();
@@ -205,7 +215,7 @@ void TextParserDialog::onResponse(GtkWidget *widget, gint response_id, TextParse
 	}
 }
 void TextParserDialog::saveSettings() {
-	string text = getTextViewText(m_text_view);
+	auto text = getTextViewText(m_textView);
 	dynv_set_string(m_params, "text", text.c_str());
 	dynv_set_bool(m_params, "single_line_c_comments", isSingleLineCCommentsEnabled());
 	dynv_set_bool(m_params, "multi_line_c_comments", isMultiLineCCommentsEnabled());
@@ -249,7 +259,7 @@ bool TextParserDialog::isIntValuesEnabled() {
 bool TextParserDialog::isFloatValuesEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_float_values));
 }
-void tools_text_parser_show(GtkWindow* parent, GlobalState* gs) {
+void tools_text_parser_show(GtkWindow *parent, GlobalState *gs) {
 	auto *dialog = new TextParserDialog(parent, gs);
 	dialog->show();
 }
