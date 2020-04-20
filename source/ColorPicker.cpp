@@ -54,10 +54,14 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <boost/optional.hpp>
 using namespace std;
 using namespace math;
 
-typedef struct ColorPickerArgs{
+struct ColorPickerArgs;
+static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget);
+
+struct ColorPickerArgs {
 	ColorSource source;
 	GtkWidget* main;
 	GtkWidget* expanderRGB;
@@ -90,7 +94,60 @@ typedef struct ColorPickerArgs{
 	struct dynvSystem *global_params;
 	GlobalState* gs;
 	bool ignore_callback;
-}ColorPickerArgs;
+
+	ColorObject *getActive() {
+		Color color;
+		gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
+		std::string name = color_names_get(gs->getColorNames(), &color, dynv_get_bool_wd(gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+		return new ColorObject(name, color);
+	}
+	void addToPalette(ColorObject *colorObject) {
+		color_list_add_color_object(gs->getColorList(), colorObject, true);
+	}
+	void addToPalette(const Color &color) {
+		auto name = color_names_get(gs->getColorNames(), &color, dynv_get_bool_wd(gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+		auto colorObject = new ColorObject(name, color);
+		addToPalette(colorObject);
+		colorObject->release();
+	}
+	void addToPalette() {
+		addToPalette(getActive());
+	}
+	void addAllToPalette() {
+		Color color;
+		for (int i = 1; i < 7; ++i) {
+			gtk_swatch_get_color(GTK_SWATCH(swatch_display), i, &color);
+			addToPalette(color);
+		}
+	}
+	void setColor(const Color &color) {
+		Color copy = color;
+		gtk_swatch_set_active_color(GTK_SWATCH(swatch_display), &copy);
+		updateDisplays(this, nullptr);
+	}
+	void setColor(ColorObject *colorObject) {
+		Color copy = colorObject->getColor();
+		gtk_swatch_set_active_color(GTK_SWATCH(swatch_display), &copy);
+		updateDisplays(this, nullptr);
+	}
+	struct SwatchEditable: public IEditableColorsUI {
+		SwatchEditable(ColorPickerArgs *args):
+			args(args) {
+		}
+		virtual void addToPalette(const ColorObject &) override {
+			args->addToPalette();
+		}
+		virtual void addAllToPalette() override {
+			args->addAllToPalette();
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			args->setColor(colorObject.getColor());
+		}
+	private:
+		ColorPickerArgs *args;
+	};
+	boost::optional<SwatchEditable> swatchEditable;
+};
 
 struct ColorCompItem{
 	GtkWidget *widget;
@@ -220,33 +277,8 @@ static void on_swatch_color_changed(GtkWidget *widget, gpointer data)
 	ColorPickerArgs* args = (ColorPickerArgs*)data;
 	updateDisplays(args, widget);
 }
-static void addToPalette(const Color *color, ColorPickerArgs *args)
-{
-	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), color);
-	string name = color_names_get(args->gs->getColorNames(), color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
-	color_object->setName(name);
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object->release();
-}
-static void on_swatch_menu_add_to_palette(GtkWidget *widget, ColorPickerArgs *args)
-{
-	Color color;
-	gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &color);
-	addToPalette(&color, args);
-}
-static void on_swatch_menu_add_all_to_palette(GtkWidget *widget, ColorPickerArgs *args)
-{
-	Color color;
-	for (int i = 1; i < 7; ++i){
-		gtk_swatch_get_color(GTK_SWATCH(args->swatch_display), i, &color);
-		addToPalette(&color, args);
-	}
-}
-static void on_swatch_color_activated(GtkWidget *widget, ColorPickerArgs *args)
-{
-	Color color;
-	gtk_swatch_get_active_color(GTK_SWATCH(widget), &color);
-	addToPalette(&color, args);
+static void on_swatch_color_activated(GtkWidget *widget, ColorPickerArgs *args) {
+	args->addToPalette();
 }
 static void on_swatch_center_activated(GtkWidget *widget, ColorPickerArgs *args)
 {
@@ -279,13 +311,6 @@ static void on_swatch_color_edit(GtkWidget *widget, ColorPickerArgs *args)
 	}
 	color_object->release();
 }
-static void paste_cb(GtkWidget *widget, ColorPickerArgs* args) {
-	auto colorObject = clipboard::getFirst(args->gs);
-	if (colorObject) {
-		source_set_color(args, colorObject);
-		colorObject->release();
-	}
-}
 static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 {
 	GtkWidget *menu;
@@ -304,58 +329,12 @@ static void swatch_popup_menu_cb(GtkWidget *widget, ColorPickerArgs* args)
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 }
-static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args){
-
-	GtkWidget *menu;
-	int color_index = gtk_swatch_get_color_at(GTK_SWATCH(widget), event->x, event->y);
-
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS && color_index>0){
-		GtkWidget* item;
-		gint32 button, event_time;
-		menu = gtk_menu_new();
-		GtkAccelGroup *acceleratorGroup = gtk_accel_group_new();
-		gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
-		Color c;
-		gtk_swatch_get_active_color(GTK_SWATCH(args->swatch_display), &c);
-
-		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_A, GdkModifierType(0), GTK_ACCEL_VISIBLE);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_to_palette), args);
-
-		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_menu_add_all_to_palette), args);
-
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-		StandardMenu::appendMenu(menu, color_object, args->gs);
-		color_object->release();
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-
-		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
-		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_swatch_color_edit), args);
-
-		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-		gtk_widget_add_accelerator(item, "activate", acceleratorGroup, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
-		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
-
-		gtk_widget_show_all(GTK_WIDGET(menu));
-		if (event){
-			button = event->button;
-			event_time = event->time;
-		}else{
-			button = 0;
-			event_time = gtk_get_current_event_time();
-		}
-		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-		g_object_ref_sink(menu);
-		g_object_unref(menu);
+static gboolean swatch_button_press_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args) {
+	int colorIndex = gtk_swatch_get_color_at(GTK_SWATCH(widget), static_cast<int>(event->x), static_cast<int>(event->y));
+	if (event->button == 3 && event->type == GDK_BUTTON_PRESS && colorIndex > 0) {
+		auto colorObject = args->getActive();
+		StandardMenu::contextForEditableColorObject(colorObject, args->gs, event, &*args->swatchEditable);
+		colorObject->release();
 	}
 	return false;
 }
@@ -466,9 +445,9 @@ static gboolean on_key_up(GtkWidget *widget, GdkEventKey *event, ColorPickerArgs
 		return true;
 	case GDK_KEY_a:
 		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-			on_swatch_menu_add_all_to_palette(nullptr, args);
+			args->addAllToPalette();
 		} else {
-			on_swatch_menu_add_to_palette(nullptr, args);
+			args->addToPalette();
 		}
 		return true;
 	case GDK_KEY_e:
@@ -489,7 +468,7 @@ static void on_oversample_value_changed(GtkRange *slider, gpointer data){
 
 static void on_zoom_value_changed(GtkRange *slider, gpointer data){
 	ColorPickerArgs* args=(ColorPickerArgs*)data;
-	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed_display), gtk_range_get_value(GTK_RANGE(slider)));
+	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed_display), static_cast<float>(gtk_range_get_value(GTK_RANGE(slider))));
 }
 
 static void color_component_change_value(GtkWidget *widget, Color* c, ColorPickerArgs* args){
@@ -509,13 +488,13 @@ static void ser_decimal_get(GtkColorComponentComp component, int component_id, C
 		case GtkColorComponentComp::hsv:
 		case GtkColorComponentComp::hsl:
 			if (component_id == 0){
-				color->ma[component_id] = v / 360;
+				color->ma[component_id] = static_cast<float>(v / 360);
 			}else{
-				color->ma[component_id] = v / 100;
+				color->ma[component_id] = static_cast<float>(v / 100);
 			}
 			break;
 		default:
-			color->ma[component_id] = v / 100;
+			color->ma[component_id] = static_cast<float>(v / 100);
 	}
 }
 
@@ -595,7 +574,7 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 
 		struct ColorCompItem *comp_item = new struct ColorCompItem;
 		comp_item->widget = widget;
-		comp_item->component_id = gtk_color_component_get_component_id_at(GTK_COLOR_COMPONENT(widget), event->x, event->y);
+		comp_item->component_id = gtk_color_component_get_component_id_at(GTK_COLOR_COMPONENT(widget), static_cast<int>(event->x), static_cast<int>(event->y));
 		comp_item->component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(widget));
 
 		g_object_set_data_full(G_OBJECT(menu), "comp_item", comp_item, (GDestroyNotify)destroy_comp_item);
@@ -807,7 +786,7 @@ static int source_activate(ColorPickerArgs *args)
 
 	if (dynv_get_bool_wd(args->params, "zoomed_enabled", true)){
 		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
-		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 
 	gtk_zoomed_set_size(GTK_ZOOMED(args->zoomed_display), dynv_get_int32_wd(args->params, "zoom_size", 150));
@@ -893,13 +872,14 @@ static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 			args->timeout_source_id = 0;
 		}
 		float refresh_rate = dynv_get_float_wd(args->global_params, "refresh_rate", 30);
-		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000/refresh_rate, (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
+		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 	return;
 }
 
 static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
 	ColorPickerArgs* args = new ColorPickerArgs;
+	args->swatchEditable = ColorPickerArgs::SwatchEditable(args);
 
 	args->params = dynv_system_ref(dynv_namespace);
 	args->global_params = dynv_get_dynv(gs->getSettings(), "gpick.picker");

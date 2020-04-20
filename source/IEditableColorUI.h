@@ -16,30 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_STANDARD_MENU_H_
-#define GPICK_STANDARD_MENU_H_
-#include "IEditableColorUI.h"
+#ifndef GPICK_IEDITABLE_COLOR_UI_H_
+#define GPICK_IEDITABLE_COLOR_UI_H_
 #include "IReadonlyColorUI.h"
-#include <gtk/gtk.h>
-#include <boost/variant.hpp>
-struct ColorObject;
-struct GlobalState;
-struct Color;
-struct StandardMenu {
-	static void appendMenu(GtkWidget *menu, ColorObject *colorObject, GlobalState *gs);
-	static void appendMenu(GtkWidget *menu, const Color &color, GlobalState *gs);
-	static void appendMenu(GtkWidget *menu, ColorObject *colorObject, GtkWidget *paletteWidget, GlobalState *gs);
-	static void appendMenu(GtkWidget *menu);
-	struct Appender {
-		Appender(GtkWidget *menu, GtkAccelGroup *acceleratorGroup, void *data);
-		GtkWidget *appendItem(const char *label, const char *icon, guint key, GdkModifierType modifiers, GCallback callback, bool enabled = true);
-		GtkWidget *appendSeparator();
-	private:
-		GtkWidget *menu;
-		GtkAccelGroup *acceleratorGroup;
-		void *data;
-	};
-	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
-	static void contextForEditableColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface);
+struct IEditableColorUI: public IReadonlyColorUI {
+	virtual void setColor(const ColorObject &colorObject) = 0;
 };
-#endif /* GPICK_STANDARD_MENU_H_ */
+struct IEditableColorsUI: public IEditableColorUI, public IReadonlyColorsUI {
+};
+#endif /* GPICK_IEDITABLE_COLOR_UI_H_ */
