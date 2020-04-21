@@ -16,14 +16,25 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IREADONLY_COLOR_UI_H_
-#define GPICK_IREADONLY_COLOR_UI_H_
-struct ColorObject;
-struct IReadonlyColorUI {
-	virtual void addToPalette(const ColorObject &colorObject) = 0;
-	virtual const ColorObject &getColor() = 0;
-};
-struct IReadonlyColorsUI: public IReadonlyColorUI {
-	virtual void addAllToPalette() = 0;
-};
-#endif /* GPICK_IREADONLY_COLOR_UI_H_ */
+#ifndef GPICK_COMMON_CAST_TO_VARIANT_H_
+#define GPICK_COMMON_CAST_TO_VARIANT_H_
+#include <boost/variant.hpp>
+namespace common {
+template<typename TResult, typename TValue>
+TResult castToVariantInternal(TValue value) {
+	return TResult(value);
+}
+template<typename TResult, typename TValue, typename Cast1, typename... CastN>
+TResult castToVariantInternal(TValue value) {
+	auto result = dynamic_cast<Cast1>(value);
+	if (result)
+		return TResult(result);
+	else
+		return castToVariantInternal<TResult, TValue, CastN...>(value);
+}
+template<typename TValue, typename Cast1, typename... CastN>
+boost::variant<TValue, Cast1, CastN...> castToVariant(TValue value) {
+	return castToVariantInternal<boost::variant<TValue, Cast1, CastN...>, TValue, Cast1, CastN...>(value);
+}
+}
+#endif /* GPICK_COMMON_CAST_TO_VARIANT_H_ */

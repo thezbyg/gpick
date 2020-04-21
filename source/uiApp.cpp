@@ -175,7 +175,8 @@ static gboolean on_window_key_press(GtkWidget *widget, GdkEventKey *event, AppAr
 	if (event->keyval == GDK_KEY_space && (event->state & modifiers) == GDK_CONTROL_MASK) {
 		if (args->current_color_source != nullptr && is_color_picker(args->current_color_source)) {
 			color_picker_focus_swatch(args->current_color_source);
-			return color_picker_key_up(args->current_color_source, event);
+			color_picker_pick(args->current_color_source);
+			return true;
 		}
 	}
 	return false;

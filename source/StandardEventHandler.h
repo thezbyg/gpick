@@ -16,14 +16,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IREADONLY_COLOR_UI_H_
-#define GPICK_IREADONLY_COLOR_UI_H_
+#ifndef GPICK_STANDARD_EVENT_HANDLER_H_
+#define GPICK_STANDARD_EVENT_HANDLER_H_
+#include "IEditableColorUI.h"
+#include "IReadonlyColorUI.h"
+#include <gtk/gtk.h>
+#include <boost/variant.hpp>
 struct ColorObject;
-struct IReadonlyColorUI {
-	virtual void addToPalette(const ColorObject &colorObject) = 0;
-	virtual const ColorObject &getColor() = 0;
+struct GlobalState;
+struct StandardEventHandler {
+	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
+	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface);
+private:
+	GlobalState *gs;
 };
-struct IReadonlyColorsUI: public IReadonlyColorUI {
-	virtual void addAllToPalette() = 0;
-};
-#endif /* GPICK_IREADONLY_COLOR_UI_H_ */
+#endif /* GPICK_STANDARD_EVENT_HANDLER_H_ */

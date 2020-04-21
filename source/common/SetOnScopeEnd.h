@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2016, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,14 +16,28 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IREADONLY_COLOR_UI_H_
-#define GPICK_IREADONLY_COLOR_UI_H_
-struct ColorObject;
-struct IReadonlyColorUI {
-	virtual void addToPalette(const ColorObject &colorObject) = 0;
-	virtual const ColorObject &getColor() = 0;
+#ifndef GPICK_COMMON_SET_ON_SCOPE_END_H_
+#define GPICK_COMMON_SET_ON_SCOPE_END_H_
+namespace common {
+template<typename T> struct SetOnScopeEnd {
+	SetOnScopeEnd(T &target, T value):
+		m_target(target),
+		m_value(value),
+		m_canceled(false) {
+	}
+	SetOnScopeEnd(const SetOnScopeEnd &) = delete;
+	SetOnScopeEnd &operator=(const SetOnScopeEnd &) = delete;
+	~SetOnScopeEnd() {
+		if (!m_canceled)
+			m_target = m_value;
+	}
+	void cancel() {
+		m_canceled = true;
+	}
+private:
+	T &m_target;
+	T m_value;
+	bool m_canceled;
 };
-struct IReadonlyColorsUI: public IReadonlyColorUI {
-	virtual void addAllToPalette() = 0;
-};
-#endif /* GPICK_IREADONLY_COLOR_UI_H_ */
+}
+#endif /* HEADER_COMMON_SET_ON_SCOPE_END_H_ */

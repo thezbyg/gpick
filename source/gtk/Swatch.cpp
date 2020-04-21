@@ -346,6 +346,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event) {
 	}else if ((event->type == GDK_BUTTON_PRESS) && ((event->button == 1) || (event->button == 3))) {
 		if (new_color == 0){
 			g_signal_emit(widget, signals[CENTER_ACTIVATED], 0);
+			return true;
 		}else if (new_color<0){
 			g_signal_emit(widget, signals[ACTIVE_COLOR_CHANGED], 0, ns->current_color);
 		}else{
@@ -356,7 +357,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event) {
 			}
 		}
 	}
-	return FALSE;
+	return false;
 }
 static gboolean button_release(GtkWidget *widget, GdkEventButton *event) {
 	return FALSE;

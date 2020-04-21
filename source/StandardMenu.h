@@ -40,6 +40,6 @@ struct StandardMenu {
 		void *data;
 	};
 	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
-	static void contextForEditableColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface);
+	static void contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface);
 };
 #endif /* GPICK_STANDARD_MENU_H_ */

@@ -106,7 +106,7 @@ static void onEditableColorPaste(GtkWidget *widget, IReadonlyColorUI *readonlyCo
 static void releaseColorObject(ColorObject *colorObject) {
 	colorObject->release();
 }
-void StandardMenu::contextForEditableColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface) {
+void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface) {
 	auto menu = gtk_menu_new();
 	auto acceleratorGroup = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);

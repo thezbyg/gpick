@@ -33,6 +33,7 @@
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include "color_names/ColorNames.h"
+#include "common/SetOnScopeEnd.h"
 #include <gdk/gdkkeysyms.h>
 #include <string>
 #include <sstream>
@@ -165,7 +166,7 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	gdk_pointer_grab(gtk_widget_get_window(args->window), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 	gdk_keyboard_grab(gtk_widget_get_window(args->window), false, GDK_CURRENT_TIME);
 	float refresh_rate = dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.refresh_rate", 30);
-	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, 1000 / refresh_rate, (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
+	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
 #if GTK_MAJOR_VERSION >= 3
 	g_object_unref(cursor);
 #else
@@ -266,61 +267,78 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Floati
 	}
 	return false;
 }
-static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerArgs *args)
-{
+static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerArgs *args) {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	gint add_x = 0, add_y = 0;
-	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-		case GDK_KEY_Return:
-			complete_picking(args);
-			finish_picking(args);
-			return TRUE;
-			break;
-		case GDK_KEY_Escape:
-			finish_picking(args);
-			return TRUE;
-			break;
-		case GDK_KEY_m:
-			{
-				int x, y;
-				gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
-				math::Vec2<int> position(x, y);
-				if ((event->state & modifiers) == GDK_CONTROL_MASK){
-					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
-				}else{
-					gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 0, position);
-				}
-			}
-			break;
-		case GDK_KEY_Left:
-			if ((event->state & modifiers) == GDK_SHIFT_MASK)
-				add_x -= 10;
-			else
-				add_x--;
-			break;
-		case GDK_KEY_Right:
-			if ((event->state & modifiers) == GDK_SHIFT_MASK)
-				add_x += 10;
-			else
-				add_x++;
-			break;
-		case GDK_KEY_Up:
-			if ((event->state & modifiers) == GDK_SHIFT_MASK)
-				add_y -= 10;
-			else
-				add_y--;
-			break;
-		case GDK_KEY_Down:
-			if ((event->state & modifiers) == GDK_SHIFT_MASK)
-				add_y += 10;
-			else
-				add_y++;
-			break;
+	auto key = getKeyval(*event, args->gs->latinKeysGroup);
+	switch (key) {
+	case GDK_KEY_Return:
+		complete_picking(args);
+		finish_picking(args);
+		return true;
+	case GDK_KEY_Escape:
+		finish_picking(args);
+		return true;
+	case GDK_KEY_m: {
+		int x, y;
+		gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
+		math::Vec2<int> position(x, y);
+		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 1, position);
+		}else{
+			gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed), 0, position);
+		}
+	} break;
+	case GDK_KEY_Left:
+		if ((event->state & modifiers) == GDK_SHIFT_MASK)
+			add_x -= 10;
+		else
+			add_x--;
+		break;
+	case GDK_KEY_Right:
+		if ((event->state & modifiers) == GDK_SHIFT_MASK)
+			add_x += 10;
+		else
+			add_x++;
+		break;
+	case GDK_KEY_Up:
+		if ((event->state & modifiers) == GDK_SHIFT_MASK)
+			add_y -= 10;
+		else
+			add_y--;
+		break;
+	case GDK_KEY_Down:
+		if ((event->state & modifiers) == GDK_SHIFT_MASK)
+			add_y += 10;
+		else
+			add_y++;
+		break;
+	}
+	if (args->color_source) {
+		common::SetOnScopeEnd<bool> disableReleaseMode(args->release_mode, false);
+		switch (key) {
+		case GDK_KEY_space:
+			color_picker_pick(args->color_source);
+			return true;
+		case GDK_KEY_a:
+			color_picker_add_to_palette(args->color_source);
+			return true;
+		case GDK_KEY_c:
+			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+				color_picker_copy(args->color_source);
+				return true;
+			} break;
+		case GDK_KEY_1:
+		case GDK_KEY_2:
+		case GDK_KEY_3:
+		case GDK_KEY_4:
+		case GDK_KEY_5:
+		case GDK_KEY_6:
+			color_picker_set(args->color_source, key - GDK_KEY_1);
+			return true;
 		default:
-			if (args->color_source && color_picker_key_up(args->color_source, event)){
-				args->release_mode = false; //key pressed and color picked, disable copy on mouse button release
-				return TRUE;
-			}
+			disableReleaseMode.cancel(); // pick/copy/add/set key was not pressed, keep release mode value
+		}
 	}
 	if (add_x || add_y){
 		gint x, y;

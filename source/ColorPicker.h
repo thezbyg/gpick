@@ -31,5 +31,9 @@ void color_picker_rotate_swatch(ColorSource* color_source);
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
 void color_picker_focus_swatch(ColorSource *color_source);
 bool is_color_picker(ColorSource *color_source);
+void color_picker_pick(ColorSource *color_source);
+void color_picker_copy(ColorSource *color_source);
+void color_picker_add_to_palette(ColorSource *color_source);
+void color_picker_set(ColorSource *color_source, int index);
 
 #endif /* GPICK_COLOR_PICKER_H_ */
