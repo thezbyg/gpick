@@ -17,15 +17,131 @@
  */
 
 #include "StandardMenu.h"
-#include "CopyMenu.h"
 #include "ColorObject.h"
-#include "NearestColorsMenu.h"
 #include "Clipboard.h"
+#include "Converters.h"
+#include "Converter.h"
+#include "GlobalState.h"
+#include "ColorList.h"
 #include "uiUtilities.h"
 #include "uiColorInput.h"
 #include "I18N.h"
+#include "common/CastToVariant.h"
 #include <gdk/gdkkeysyms.h>
+#include <map>
 
+struct CopyMenuItemState: public boost::static_visitor<> {
+	CopyMenuItemState(Converter *converter, const ColorObject &colorObject, GlobalState *gs):
+		m_converter(converter),
+		m_data(colorObject),
+		m_gs(gs),
+		m_recursion(false) {
+	}
+	CopyMenuItemState(Converter *converter, IReadonlyColorUI *interface, GlobalState *gs):
+		m_converter(converter),
+		m_data(interface),
+		m_gs(gs),
+		m_recursion(false) {
+	}
+	static void onReleaseState(CopyMenuItemState *state) {
+		delete state;
+	}
+	static void onActivate(GtkWidget *widget, CopyMenuItemState *state) {
+		boost::apply_visitor(*state, state->m_data);
+	}
+	void operator()(const ColorObject &colorObject) {
+		clipboard::set(colorObject, m_gs, m_converter);
+	}
+	// this method will be called recursively if up-casting fails, so m_recursion is used to detect that
+	void operator()(IReadonlyColorUI *interface) {
+		if (m_recursion) {
+			auto color = interface->getColor();
+			clipboard::set(color, m_gs, m_converter);
+			return;
+		}
+		m_recursion = true;
+		boost::apply_visitor(*this, common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IReadonlyColorsUI *>(interface));
+		m_recursion = false;
+	}
+	void operator()(IEditableColorsUI *interface) {
+		auto colors = interface->getColors(true);
+		clipboard::set(colors, m_gs, m_converter);
+	}
+	void operator()(IReadonlyColorsUI *interface) {
+		auto colors = interface->getColors(true);
+		clipboard::set(colors, m_gs, m_converter);
+	}
+private:
+	Converter *m_converter;
+	boost::variant<ColorObject, IReadonlyColorUI *> m_data;
+	GlobalState *m_gs;
+	bool m_recursion;
+};
+GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, GlobalState *gs, bool includeName) {
+	ConverterSerializePosition position;
+	auto converter = gs->converters().firstCopyOrAny();
+	if (!converter)
+		return nullptr;
+	auto textLine = converter->serialize(colorObject, position);
+	if (includeName) {
+		textLine += " - ";
+		textLine += colorObject.getName();
+	}
+	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
+	auto state = new CopyMenuItemState(converter, colorObject, gs);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
+	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
+	return item;
+}
+GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, Converter *converter, GlobalState *gs) {
+	ConverterSerializePosition position;
+	auto textLine = converter->serialize(colorObject, position);
+	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
+	auto state = new CopyMenuItemState(converter, colorObject, gs);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
+	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
+	return item;
+}
+GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, IReadonlyColorUI *interface, Converter *converter, GlobalState *gs) {
+	ConverterSerializePosition position;
+	auto textLine = converter->serialize(colorObject, position);
+	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
+	auto state = new CopyMenuItemState(converter, interface, gs);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
+	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
+	return item;
+}
+GtkWidget* StandardMenu::newMenu(const ColorObject &colorObject, GlobalState *gs) {
+	GtkWidget *menu = gtk_menu_new();
+	for (auto &converter: gs->converters().allCopy()) {
+		GtkWidget *item = newItem(colorObject, converter, gs);
+		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	return menu;
+}
+GtkWidget* StandardMenu::newMenu(const ColorObject &colorObject, IReadonlyColorUI *interface, GlobalState *gs) {
+	GtkWidget *menu = gtk_menu_new();
+	for (auto &converter: gs->converters().allCopy()) {
+		GtkWidget *item = newItem(colorObject, interface, converter, gs);
+		if (item) gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	}
+	return menu;
+}
+GtkWidget* StandardMenu::newNearestColorsMenu(const ColorObject &colorObject, GlobalState *gs) {
+	GtkWidget *menu = gtk_menu_new();
+	std::multimap<float, ColorObject *> colorDistances;
+	Color sourceColor = colorObject.getColor();
+	for (auto &colorObject: gs->getColorList()->colors) {
+		Color targetColor = colorObject->getColor();
+		colorDistances.insert(std::pair<float, ColorObject *>(color_distance_lch(&sourceColor, &targetColor), colorObject));
+	}
+	int count = 0;
+	for (auto item: colorDistances) {
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu), newItem(*item.second, gs, true));
+		if (++count >= 3) break;
+	}
+	return menu;
+}
 static void buildMenu(GtkWidget *menu, GtkWidget **copyToClipboard, GtkWidget **nearestFromPalette) {
 	GtkAccelGroup *accel_group = gtk_menu_get_accel_group(GTK_MENU(menu));
 	GtkWidget *item = *copyToClipboard = gtk_menu_item_new_with_mnemonic(_("_Copy to clipboard"));
@@ -35,25 +151,30 @@ static void buildMenu(GtkWidget *menu, GtkWidget **copyToClipboard, GtkWidget **
 	item = *nearestFromPalette = gtk_menu_item_new_with_mnemonic(_("_Nearest from palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 }
-void StandardMenu::appendMenu(GtkWidget *menu, ColorObject *colorObject, GtkWidget *paletteWidget, GlobalState *gs) {
+void StandardMenu::appendMenu(GtkWidget *menu, const ColorObject &colorObject, GlobalState *gs) {
 	GtkWidget *copyToClipboard, *nearestFromPalette;
 	buildMenu(menu, &copyToClipboard, &nearestFromPalette);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), CopyMenu::newMenu(colorObject, paletteWidget, gs));
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), NearestColorsMenu::newMenu(colorObject, gs));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), newMenu(colorObject, gs));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), newNearestColorsMenu(colorObject, gs));
 }
-void StandardMenu::appendMenu(GtkWidget *menu, ColorObject *colorObject, GlobalState *gs) {
+void StandardMenu::appendMenu(GtkWidget *menu, IReadonlyColorUI *interface, GlobalState *gs) {
 	GtkWidget *copyToClipboard, *nearestFromPalette;
 	buildMenu(menu, &copyToClipboard, &nearestFromPalette);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), CopyMenu::newMenu(colorObject, gs));
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), NearestColorsMenu::newMenu(colorObject, gs));
+	if (interface->hasSelectedColor()) {
+		auto colorObject = interface->getColor();
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), newMenu(colorObject, interface, gs));
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), newNearestColorsMenu(colorObject, gs));
+	} else {
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), gtk_menu_new());
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), gtk_menu_new());
+	}
 }
 void StandardMenu::appendMenu(GtkWidget *menu, const Color &color, GlobalState *gs) {
 	GtkWidget *copyToClipboard, *nearestFromPalette;
 	buildMenu(menu, &copyToClipboard, &nearestFromPalette);
-	auto colorObject = new ColorObject("", color);
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), CopyMenu::newMenu(colorObject, gs));
-	gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), NearestColorsMenu::newMenu(colorObject, gs));
-	colorObject->release();
+	ColorObject colorObject("", color);
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(copyToClipboard), newMenu(colorObject, gs));
+	gtk_menu_item_set_submenu(GTK_MENU_ITEM(nearestFromPalette), newNearestColorsMenu(colorObject, gs));
 }
 void StandardMenu::appendMenu(GtkWidget *menu) {
 	GtkWidget *copyToClipboard, *nearestFromPalette;
@@ -106,49 +227,64 @@ static void onEditableColorPaste(GtkWidget *widget, IReadonlyColorUI *readonlyCo
 static void releaseColorObject(ColorObject *colorObject) {
 	colorObject->release();
 }
+struct InterfaceInspector: public boost::static_visitor<IReadonlyColorUI *> {
+	InterfaceInspector(bool &editable, bool &multiple, bool &hasSelection, bool &hasColor):
+		editable(editable),
+		multiple(multiple),
+		hasSelection(hasSelection),
+		hasColor(hasColor) {
+	}
+	template<typename T>
+	void common(T interface) const {
+		hasSelection = interface->hasSelectedColor();
+		hasColor = interface->hasColor();
+	}
+	IReadonlyColorUI *operator()(IReadonlyColorUI *interface) const {
+		editable = false;
+		multiple = false;
+		hasSelection = interface->hasSelectedColor();
+		hasColor = true;
+		return interface;
+	}
+	IReadonlyColorUI *operator()(IReadonlyColorsUI *interface) const {
+		editable = false;
+		multiple = true;
+		common(interface);
+		return interface;
+	}
+	IReadonlyColorUI *operator()(IEditableColorUI *interface) const {
+		editable = true;
+		multiple = false;
+		hasSelection = interface->hasSelectedColor();
+		hasColor = true;
+		return interface;
+	}
+	IReadonlyColorUI *operator()(IEditableColorsUI *interface) const {
+		editable = true;
+		multiple = true;
+		common(interface);
+		return interface;
+	}
+private:
+	bool &editable, &multiple, &hasSelection, &hasColor;
+};
 void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface) {
 	auto menu = gtk_menu_new();
 	auto acceleratorGroup = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
-	bool editable = false, multiple = false;
-	struct InterfaceInspector: public boost::static_visitor<void *> {
-		InterfaceInspector(bool &editable, bool &multiple):
-			editable(editable),
-			multiple(multiple) {
-		}
-		void *operator()(IReadonlyColorUI *interface) const {
-			editable = false;
-			multiple = false;
-			return interface;
-		}
-		void *operator()(IReadonlyColorsUI *interface) const {
-			editable = false;
-			multiple = true;
-			return interface;
-		}
-		void *operator()(IEditableColorUI *interface) const {
-			editable = true;
-			multiple = false;
-			return interface;
-		}
-		void *operator()(IEditableColorsUI *interface) const {
-			editable = true;
-			multiple = true;
-			return interface;
-		}
-	private:
-		bool &editable, &multiple;
-	};
-	Appender appender(menu, acceleratorGroup, boost::apply_visitor(InterfaceInspector(editable, multiple), interface));
-	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd));
-	if (multiple)
-		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll));
+	bool editable = false, multiple = false, hasSelection = false, hasColor = false;
+	IReadonlyColorUI *baseInterface;
+	Appender appender(menu, acceleratorGroup, (baseInterface = boost::apply_visitor(InterfaceInspector(editable, multiple, hasSelection, hasColor), interface)));
+	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
+	if (multiple) {
+		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
+	}
 	appender.appendSeparator();
-	StandardMenu::appendMenu(menu, colorObject, gs);
+	StandardMenu::appendMenu(menu, baseInterface, gs);
 	if (editable) {
 		appender.appendSeparator();
-		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit));
-		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), clipboard::colorObjectAvailable());
+		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection);
+		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && clipboard::colorObjectAvailable());
 	}
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	gint32 button, eventTime;
@@ -160,6 +296,39 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 		eventTime = gtk_get_current_event_time();
 	}
 	g_object_set_data_full(G_OBJECT(menu), "color", colorObject->reference(), (GDestroyNotify)releaseColorObject);
+	if (editable)
+		g_object_set_data(G_OBJECT(menu), "gs", gs);
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
+}
+void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interface interface) {
+	auto menu = gtk_menu_new();
+	auto acceleratorGroup = gtk_accel_group_new();
+	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
+	bool editable = false, multiple = false, hasSelection = false, hasColor = false;
+	IReadonlyColorUI *baseInterface;
+	Appender appender(menu, acceleratorGroup, (baseInterface = boost::apply_visitor(InterfaceInspector(editable, multiple, hasSelection, hasColor), interface)));
+	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
+	if (multiple) {
+		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
+	}
+	appender.appendSeparator();
+	StandardMenu::appendMenu(menu, baseInterface, gs);
+	if (editable) {
+		appender.appendSeparator();
+		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection);
+		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && clipboard::colorObjectAvailable());
+	}
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gint32 button, eventTime;
+	if (event) {
+		button = event->button;
+		eventTime = event->time;
+	} else {
+		button = 0;
+		eventTime = gtk_get_current_event_time();
+	}
 	if (editable)
 		g_object_set_data(G_OBJECT(menu), "gs", gs);
 	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);

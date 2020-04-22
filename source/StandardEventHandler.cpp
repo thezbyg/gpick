@@ -32,8 +32,22 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 	switch (getKeyval(*event, gs->latinKeysGroup)) {
 	case GDK_KEY_c:
 		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			auto *editableColorsUI = dynamic_cast<IEditableColorsUI *>(readonlyColorUI);
+			if (editableColorsUI) {
+				auto colors = editableColorsUI->getColors(true);
+				if (colors.size() > 0)
+					clipboard::set(colors, gs, Converters::Type::copy);
+				return true;
+			}
+			auto *readonlyColorsUI = dynamic_cast<IReadonlyColorsUI*>(readonlyColorUI);
+			if (readonlyColorsUI) {
+				auto colors = readonlyColorsUI->getColors(true);
+				if (colors.size() > 0)
+					clipboard::set(colors, gs, Converters::Type::copy);
+				return true;
+			}
 			auto &colorObject = readonlyColorUI->getColor();
-			clipboard::set(&colorObject, gs, Converters::Type::copy);
+			clipboard::set(colorObject, gs, Converters::Type::copy);
 			return true;
 		}
 		return false;
@@ -80,28 +94,36 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, IReadonlyColorUI *readonlyColorUI) {
 	if (event->button == 3) {
 		auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
-		auto *colorObject = readonlyColorUI->getColor().copy();
 		auto interface = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(readonlyColorUI);
-		StandardMenu::contextForColorObject(colorObject, gs, event, interface);
-		colorObject->release();
+		StandardMenu::forInterface(gs, event, interface);
 		return true;
 	}
 	return false;
 }
 static void onPopupMenu(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
-	auto *colorObject = readonlyColorUI->getColor().copy();
 	auto interface = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(readonlyColorUI);
-	StandardMenu::contextForColorObject(colorObject, gs, nullptr, interface);
-	colorObject->release();
+	StandardMenu::forInterface(gs, nullptr, interface);
 }
-void StandardEventHandler::forWidget(GtkWidget *widget, GlobalState *gs, Interface interface) {
+StandardEventHandler::Options::Options():
+	m_afterEvents(true) {
+}
+StandardEventHandler::Options &StandardEventHandler::Options::afterEvents(bool enable) {
+	m_afterEvents = enable;
+	return *this;
+}
+void StandardEventHandler::forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options) {
 	void *data = boost::apply_visitor([](auto *interface) -> void * {
 		return interface;
-	},
-		interface);
-	g_signal_connect_after(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data);
-	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data);
-	g_signal_connect_after(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data);
+	}, interface);
+	if (options.m_afterEvents) {
+		g_signal_connect_after(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data);
+		g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data);
+		g_signal_connect_after(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data);
+	} else {
+		g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data);
+		g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data);
+		g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data);
+	}
 	g_object_set_data(G_OBJECT(widget), "gs", gs);
 }

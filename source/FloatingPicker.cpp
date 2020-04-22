@@ -23,7 +23,7 @@
 #include "gtk/ColorWidget.h"
 #include "uiUtilities.h"
 #include "Clipboard.h"
-#include "CopyMenu.h"
+#include "StandardMenu.h"
 #include "GlobalState.h"
 #include "ColorPicker.h"
 #include "Converters.h"
@@ -241,7 +241,7 @@ static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
 	get_color_sample(args, false, &c);
 	GtkWidget *menu;
 	ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
-	menu = CopyMenu::newMenu(*color_list->colors.begin(), args->gs);
+	menu = StandardMenu::newMenu(**color_list->colors.begin(), args->gs);
 	gtk_widget_show_all(GTK_WIDGET(menu));
 	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
 	g_object_ref_sink(menu);

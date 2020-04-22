@@ -26,7 +26,14 @@ struct ColorObject;
 struct GlobalState;
 struct StandardEventHandler {
 	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
-	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface);
+	struct Options {
+		Options();
+		Options &afterEvents(bool enable);
+	private:
+		bool m_afterEvents;
+		friend StandardEventHandler;
+	};
+	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options = {});
 private:
 	GlobalState *gs;
 };

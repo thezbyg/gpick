@@ -47,14 +47,13 @@ Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, 
 	m_paste(false)
 {
 }
-std::string Converter::serialize(const ColorObject *color_object, const ConverterSerializePosition &position)
-{
+std::string Converter::serialize(const ColorObject &colorObject, const ConverterSerializePosition &position) {
 	if (!m_serialize.valid())
 		return "";
 	lua_State *L = m_serialize.script();
 	int stack_top = lua_gettop(L);
 	m_serialize.get();
-	lua::pushColorObject(L, const_cast<ColorObject*>(color_object));
+	lua::pushColorObject(L, colorObject.copy());
 	lua_newtable(L);
 	lua_pushboolean(L, position.first());
 	lua_setfield(L, -2, "first");
@@ -79,6 +78,10 @@ std::string Converter::serialize(const ColorObject *color_object, const Converte
 	lua_settop(L, stack_top);
 	return "";
 }
+std::string Converter::serialize(const ColorObject *color_object, const ConverterSerializePosition &position)
+{
+	return serialize(*color_object, position);
+}
 bool Converter::deserialize(const char *value, ColorObject *color_object, float &quality)
 {
 	if (!m_deserialize.valid())
@@ -91,7 +94,7 @@ bool Converter::deserialize(const char *value, ColorObject *color_object, float 
 	int status = lua_pcall(L, 2, 1, 0);
 	if (status == 0){
 		if (lua_type(L, -1) == LUA_TNUMBER){
-			quality = luaL_checknumber(L, -1);
+			quality = static_cast<float>(luaL_checknumber(L, -1));
 			lua_settop(L, stack_top);
 			return true;
 		}else{
@@ -107,6 +110,10 @@ std::string Converter::serialize(const ColorObject *color_object)
 {
 	ConverterSerializePosition position;
 	return serialize(color_object, position);
+}
+std::string Converter::serialize(const ColorObject &colorObject) {
+	ConverterSerializePosition position;
+	return serialize(colorObject, position);
 }
 std::string Converter::serialize(const Color &color)
 {

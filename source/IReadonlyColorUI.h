@@ -18,12 +18,16 @@
 
 #ifndef GPICK_IREADONLY_COLOR_UI_H_
 #define GPICK_IREADONLY_COLOR_UI_H_
+#include <vector>
 struct ColorObject;
 struct IReadonlyColorUI {
+	virtual bool hasSelectedColor() = 0;
 	virtual void addToPalette(const ColorObject &colorObject) = 0;
 	virtual const ColorObject &getColor() = 0;
 };
 struct IReadonlyColorsUI: public IReadonlyColorUI {
 	virtual void addAllToPalette() = 0;
+	virtual std::vector<ColorObject> getColors(bool selected) = 0;
+	virtual bool hasColor() = 0;
 };
 #endif /* GPICK_IREADONLY_COLOR_UI_H_ */

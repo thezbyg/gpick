@@ -22,6 +22,9 @@
 struct IEditableColorUI: public IReadonlyColorUI {
 	virtual void setColor(const ColorObject &colorObject) = 0;
 };
-struct IEditableColorsUI: public IEditableColorUI, public IReadonlyColorsUI {
+struct IEditableColorsUI: public IEditableColorUI {
+	virtual void addAllToPalette() = 0;
+	virtual std::vector<ColorObject> getColors(bool selected) = 0;
+	virtual bool hasColor() = 0;
 };
 #endif /* GPICK_IEDITABLE_COLOR_UI_H_ */

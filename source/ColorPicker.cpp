@@ -158,6 +158,22 @@ struct ColorPickerArgs {
 			args->getActive(colorObject);
 			return colorObject;
 		}
+		virtual std::vector<ColorObject> getColors(bool selected) override {
+			if (selected) {
+				args->getActive(colorObject);
+				return std::vector<ColorObject> { colorObject };
+			} else {
+				std::vector<ColorObject> result;
+				//TODO: get all six colors
+				return result;
+			}
+		}
+		virtual bool hasColor() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
 	private:
 		ColorPickerArgs *args;
 		ColorObject colorObject;
@@ -357,7 +373,8 @@ static void pick(ColorPickerArgs *args) {
 }
 static gboolean onSwatchKeyPress(GtkWidget *widget, GdkEventKey *event, ColorPickerArgs *args) {
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
+	auto key = getKeyval(*event, args->gs->latinKeysGroup);
+	switch (key) {
 	case GDK_KEY_m: {
 		int x, y;
 		gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
@@ -369,27 +386,12 @@ static gboolean onSwatchKeyPress(GtkWidget *widget, GdkEventKey *event, ColorPic
 		}
 	} break;
 	case GDK_KEY_1:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 1);
-		updateDisplays(args, widget);
-		return true;
 	case GDK_KEY_2:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 2);
-		updateDisplays(args, widget);
-		return true;
 	case GDK_KEY_3:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 3);
-		updateDisplays(args, widget);
-		return true;
 	case GDK_KEY_4:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 4);
-		updateDisplays(args, widget);
-		return true;
 	case GDK_KEY_5:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 5);
-		updateDisplays(args, widget);
-		return true;
 	case GDK_KEY_6:
-		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), 6);
+		gtk_swatch_set_active_index(GTK_SWATCH(args->swatch_display), key - GDK_KEY_1 + 1);
 		updateDisplays(args, widget);
 		return true;
 	case GDK_KEY_Right:

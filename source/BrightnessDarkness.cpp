@@ -241,7 +241,7 @@ static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, Bright
 		if (selectionAvailable){
 			ColorObject* color_object;
 			source_get_color(args, &color_object);
-			StandardMenu::appendMenu(menu, color_object, args->gs);
+			StandardMenu::appendMenu(menu, *color_object, args->gs);
 			color_object->release();
 		}else{
 			StandardMenu::appendMenu(menu);

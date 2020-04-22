@@ -99,7 +99,7 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		auto params = dynv_system_create(handlerMap);
 		std::vector<dynvSystem *> colors;
 		colors.reserve(args->colors->colors.size());
-		for (auto &colorObject : args->colors->colors) {
+		for (auto &colorObject: args->colors->colors) {
 			auto color = dynv_system_create(handlerMap);
 			dynv_set_string(color, "name", colorObject->getName().c_str());
 			dynv_set_color(color, "color", &colorObject->getColor());
@@ -112,7 +112,7 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		dynv_xml_serialize(params, str);
 		str << "</root>";
 		auto data = str.str();
-		for (auto &color : colors) {
+		for (auto &color: colors) {
 			dynv_system_release(color);
 		}
 		dynv_system_release(params);
@@ -137,6 +137,21 @@ static bool setupClipboard(const ColorObject &colorObject, Converter *converter,
 	return false;
 }
 static bool setupClipboard(ColorList *colorList, Converter *converter, GlobalState *gs) {
+	auto args = new CopyPasteArgs(colorList, converter, gs);
+	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
+			reinterpret_cast<GtkClipboardGetFunc>(setData),
+			reinterpret_cast<GtkClipboardClearFunc>(deleteState), args)) {
+		gtk_clipboard_set_can_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), nullptr, 0);
+		return true;
+	}
+	deleteState(nullptr, args);
+	return false;
+}
+static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Converter *converter, GlobalState *gs) {
+	auto colorList = color_list_new();
+	for (auto &colorObject: colorObjects) {
+		color_list_add_color_object(colorList, colorObject.copy(), false);
+	}
 	auto args = new CopyPasteArgs(colorList, converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
@@ -183,6 +198,18 @@ void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection con
 	if (converter == nullptr)
 		return;
 	setupClipboard(*colorObject, converter, gs);
+}
+void set(const std::vector<ColorObject> &colorObjects, GlobalState *gs, ConverterSelection converterSelection) {
+	auto converter = getConverter(converterSelection, gs);
+	if (converter == nullptr)
+		return;
+	setupClipboard(colorObjects, converter, gs);
+}
+void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection converterSelection) {
+	auto converter = getConverter(converterSelection, gs);
+	if (converter == nullptr)
+		return;
+	setupClipboard(colorObject, converter, gs);
 }
 static PaletteListCallbackReturn addToColorList(ColorObject *colorObject, ColorList *colorList) {
 	color_list_add_color_object(colorList, colorObject, 1);
@@ -285,11 +312,11 @@ ColorObject *getFirst(GlobalState *gs) {
 			dynv_handler_map_release(handlerMap);
 			dynv_xml_deserialize(params, textStream);
 			uint32_t colorCount = 0;
-			auto colors = reinterpret_cast<dynvSystem**>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
+			auto colors = reinterpret_cast<dynvSystem **>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
 			if (!colors || colorCount == 0) {
 				dynv_system_release(params);
 				if (colors) {
-					delete [] colors;
+					delete[] colors;
 				}
 				return VisitResult::advance;
 			}
@@ -354,11 +381,11 @@ ColorList *getColors(GlobalState *gs) {
 			dynv_handler_map_release(handlerMap);
 			dynv_xml_deserialize(params, textStream);
 			uint32_t colorCount = 0;
-			auto colors = reinterpret_cast<dynvSystem**>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
+			auto colors = reinterpret_cast<dynvSystem **>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
 			if (!colors || colorCount == 0) {
 				dynv_system_release(params);
 				if (colors) {
-					delete [] colors;
+					delete[] colors;
 				}
 				return VisitResult::advance;
 			}

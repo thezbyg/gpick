@@ -50,6 +50,8 @@ struct Converter
 	void paste(bool value);
 	std::string serialize(const ColorObject *color_object, const ConverterSerializePosition &position);
 	std::string serialize(const ColorObject *color_object);
+	std::string serialize(const ColorObject &colorObject, const ConverterSerializePosition &position);
+	std::string serialize(const ColorObject &colorObject);
 	std::string serialize(const Color &color);
 	bool deserialize(const char *value, ColorObject *color_object, float &quality);
 	private:

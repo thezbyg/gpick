@@ -45,4 +45,5 @@ gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 ColorObject *palette_list_get_first_selected(GtkWidget* widget);
 void palette_list_update_first_selected(GtkWidget* widget, bool only_name);
+void palette_list_append_copy_menu(GtkWidget* widget, GtkWidget *menu);
 #endif /* GPICK_UI_LIST_PALETTE_H_ */

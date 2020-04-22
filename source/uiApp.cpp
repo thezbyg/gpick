@@ -1332,14 +1332,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
 	gint32 total_count = palette_list_get_count(args->color_list);
 	if (total_count > 0 && selected_count >= 1){
-		ColorList *color_list = color_list_new();
-		palette_list_forfirst_selected(args->color_list, color_list_selected, color_list);
-		if (color_list_get_count(color_list) != 0){
-			StandardMenu::appendMenu(menu, *color_list->colors.begin(), args->color_list, args->gs);
-		}else{
-			StandardMenu::appendMenu(menu);
-		}
-		color_list_destroy(color_list);
+		palette_list_append_copy_menu(args->color_list, menu);
 	}else{
 		StandardMenu::appendMenu(menu);
 	}

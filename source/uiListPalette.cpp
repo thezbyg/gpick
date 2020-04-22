@@ -32,12 +32,16 @@
 #include "I18N.h"
 #include "Format.h"
 #include "StandardMenu.h"
+#include "StandardEventHandler.h"
 #include <sstream>
 #include <iomanip>
 using namespace math;
 using namespace std;
 
-typedef struct ListPaletteArgs{
+static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
+static void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
+
+struct ListPaletteArgs : public IReadonlyColorsUI {
 	ColorSource source;
 	GtkWidget *treeview;
 	gint scroll_timeout;
@@ -45,7 +49,60 @@ typedef struct ListPaletteArgs{
 	bool disable_selection;
 	GtkWidget* count_label;
 	GlobalState* gs;
-}ListPaletteArgs;
+
+	virtual ~ListPaletteArgs() {
+	}
+	virtual void addToPalette(const ColorObject &) override {
+		foreachSelectedItem(GTK_TREE_VIEW(treeview), [this](ColorObject *colorObject) {
+			color_list_add_color_object(gs->getColorList(), colorObject, true);
+			return true;
+		});
+	}
+	virtual void addAllToPalette() override {
+		foreachItem(GTK_TREE_VIEW(treeview), [this](ColorObject *colorObject) {
+			color_list_add_color_object(gs->getColorList(), colorObject, true);
+			return true;
+		});
+	}
+	virtual const ColorObject &getColor() override {
+		foreachSelectedItem(GTK_TREE_VIEW(treeview), [this](ColorObject *colorObject) {
+			this->colorObject = *colorObject;
+			return false;
+		});
+		return colorObject;
+	}
+	virtual bool hasColor() override {
+		bool result = false;
+		foreachItem(GTK_TREE_VIEW(treeview), [&result](ColorObject *) {
+			result = true;
+			return false;
+		});
+		return result;
+	}
+	virtual bool hasSelectedColor() override {
+		bool result = false;
+		foreachSelectedItem(GTK_TREE_VIEW(treeview), [&result](ColorObject *) {
+			result = true;
+			return false;
+		});
+		return result;
+	}
+	virtual std::vector<ColorObject> getColors(bool selected) {
+		std::vector<ColorObject> result;
+		if (selected)
+			foreachSelectedItem(GTK_TREE_VIEW(treeview), [&result](ColorObject *colorObject) {
+				result.push_back(*colorObject);
+				return true;
+			});
+		else
+			foreachItem(GTK_TREE_VIEW(treeview), [&result](ColorObject *colorObject) {
+				result.push_back(*colorObject);
+				return true;
+			});
+		return result;
+	}
+	ColorObject colorObject;
+};
 
 static void destroy_arguments(gpointer data);
 static ColorObject* get_color_object(struct DragDrop* dd);
@@ -257,7 +314,7 @@ static void onPreviewActivate(GtkTreeView *treeView, GtkTreePath *path, GtkTreeV
 	if (colorObject)
 		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
 }
-void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
+static void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
 	auto model = gtk_tree_view_get_model(treeView);
 	GtkTreeIter iter;
 	auto valid = gtk_tree_model_get_iter_first(model, &iter);
@@ -269,7 +326,7 @@ void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callb
 		valid = gtk_tree_model_iter_next(model, &iter);
 	}
 }
-void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
+static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback) {
 	auto model = gtk_tree_view_get_model(treeView);
 	auto selection = gtk_tree_view_get_selection(treeView);
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
@@ -286,54 +343,6 @@ void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
 }
-static void onPreviewPaletteAdd(GtkWidget *widget, ListPaletteArgs *args) {
-	foreachSelectedItem(GTK_TREE_VIEW(args->treeview), [args](ColorObject *colorObject) {
-		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
-		return true;
-	});
-}
-static void onPreviewPaletteAddAll(GtkWidget *widget, ListPaletteArgs *args) {
-	foreachItem(GTK_TREE_VIEW(args->treeview), [args](ColorObject *colorObject) {
-		color_list_add_color_object(args->gs->getColorList(), colorObject, true);
-		return true;
-	});
-}
-static void showPreviewPaletteMenu(GtkTreeView *treeView, ListPaletteArgs *args, GdkEventButton *event) {
-	bool selectionAvailable = palette_list_get_selected_count(GTK_WIDGET(treeView)) != 0;
-	bool itemsAvailable = palette_list_get_count(GTK_WIDGET(treeView)) != 0;
-	auto menu = gtk_menu_new();
-	auto item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-	gtk_widget_set_sensitive(item, selectionAvailable);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onPreviewPaletteAdd), args);
-	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-	gtk_widget_set_sensitive(item, itemsAvailable);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onPreviewPaletteAddAll), args);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	if (selectionAvailable) {
-		ColorObject *colorObject = nullptr;
-		foreachSelectedItem(treeView, [&colorObject](ColorObject *rowColorObject) {
-			colorObject = rowColorObject;
-			return false;
-		});
-		StandardMenu::appendMenu(menu, colorObject, GTK_WIDGET(treeView), args->gs);
-	}else{
-		StandardMenu::appendMenu(menu);
-	}
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gint32 button, eventTime;
-	if (event) {
-		button = event->button;
-		eventTime = event->time;
-	}else{
-		button = 0;
-		eventTime = gtk_get_current_event_time();
-	}
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
-}
 #if GTK_MAJOR_VERSION >= 3
 static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPaletteArgs *args) {
 	bool expanded = gtk_expander_get_expanded(expander);
@@ -342,9 +351,8 @@ static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPalet
 }
 #endif
 static gboolean onPreviewButtonPress(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS) {
-		showPreviewPaletteMenu(treeView, args, event);
-		return true;
+	if (event->button == 3) {
+		return false;
 	}
 	disablePaletteSelection(treeView, true, -1, -1, args);
 	if (event->button != 1)
@@ -377,9 +385,6 @@ static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *ev
 	}
 	return false;
 }
-static void onPreviewPopupMenu(GtkTreeView *treeView, ListPaletteArgs *args) {
-	showPreviewPaletteMenu(treeView, args, nullptr);
-}
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list) {
 	auto args = new ListPaletteArgs;
 	args->gs = gs;
@@ -407,7 +412,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	g_signal_connect(G_OBJECT(view), "button-press-event", G_CALLBACK(onPreviewButtonPress), args);
 	g_signal_connect(G_OBJECT(view), "button-release-event", G_CALLBACK(onPreviewButtonRelease), args);
 	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(onPreviewActivate), args);
-	g_signal_connect(G_OBJECT(view), "popup-menu", G_CALLBACK(onPreviewPopupMenu), args);
+	StandardEventHandler::forWidget(view, args->gs, args, StandardEventHandler::Options().afterEvents(false));
 	gtk_drag_source_set(view, GDK_BUTTON1_MASK, 0, 0, GdkDragAction(GDK_ACTION_COPY));
 
 	struct DragDrop dd;
@@ -1152,4 +1157,8 @@ void palette_list_update_first_selected(GtkWidget* widget, bool only_name)
 	}
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
+}
+void palette_list_append_copy_menu(GtkWidget* widget, GtkWidget *menu) {
+	auto args = reinterpret_cast<ListPaletteArgs *>(g_object_get_data(G_OBJECT(widget), "arguments"));
+	StandardMenu::appendMenu(menu, args, args->gs);
 }

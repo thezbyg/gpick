@@ -39,7 +39,6 @@
 #include "color_names/ColorNames.h"
 #include "Clipboard.h"
 #include "StandardMenu.h"
-#include "NearestColorsMenu.h"
 #include <gdk/gdkkeysyms.h>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
@@ -432,11 +431,9 @@ static void color_show_menu(GtkWidget* widget, GenerateSchemeArgs* args, GdkEven
 	g_object_set_data(G_OBJECT(item), "color_widget", widget);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	Color c;
-	gtk_color_get_color(GTK_COLOR(widget), &c);
-	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	StandardMenu::appendMenu(menu, color_object, args->gs);
-	color_object->release();
+	Color color;
+	gtk_color_get_color(GTK_COLOR(widget), &color);
+	StandardMenu::appendMenu(menu, ColorObject("", color), args->gs);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
 	item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);

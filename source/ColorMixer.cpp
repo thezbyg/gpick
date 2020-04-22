@@ -298,7 +298,7 @@ static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventBut
 	Color c;
 	gtk_color_get_color(GTK_COLOR(widget), &c);
 	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	StandardMenu::appendMenu(menu, color_object, args->gs);
+	StandardMenu::appendMenu(menu, *color_object, args->gs);
 	color_object->release();
 
 	int line_id = -1;

@@ -20,6 +20,7 @@
 #define GPICK_CLIPBOARD_H_
 #include "Converters.h"
 #include <string>
+#include <vector>
 #include <boost/variant.hpp>
 struct ColorObject;
 struct GlobalState;
@@ -31,6 +32,8 @@ namespace clipboard {
 void set(const std::string &value);
 using ConverterSelection = boost::variant<const char *, Converter *, Converters::Type>;
 void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection converterSelection);
+void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection converterSelection);
+void set(const std::vector<ColorObject> &colorObjects, GlobalState *gs, ConverterSelection converterSelection);
 void set(const Color &color, GlobalState *gs, ConverterSelection converterSelection);
 void set(GtkWidget *paletteWidget, GlobalState *gs, ConverterSelection converterSelection);
 bool colorObjectAvailable();

@@ -25,11 +25,18 @@
 struct ColorObject;
 struct GlobalState;
 struct Color;
+struct Converter;
 struct StandardMenu {
-	static void appendMenu(GtkWidget *menu, ColorObject *colorObject, GlobalState *gs);
+	static void appendMenu(GtkWidget *menu, const ColorObject &colorObject, GlobalState *gs);
 	static void appendMenu(GtkWidget *menu, const Color &color, GlobalState *gs);
-	static void appendMenu(GtkWidget *menu, ColorObject *colorObject, GtkWidget *paletteWidget, GlobalState *gs);
+	static void appendMenu(GtkWidget *menu, IReadonlyColorUI *interface, GlobalState *gs);
 	static void appendMenu(GtkWidget *menu);
+	static GtkWidget *newMenu(const ColorObject &colorObject, GlobalState *gs);
+	static GtkWidget *newMenu(const ColorObject &colorObject, IReadonlyColorUI *interface, GlobalState *gs);
+	static GtkWidget *newItem(const ColorObject &colorObject, GlobalState *gs, bool includeName);
+	static GtkWidget *newItem(const ColorObject &colorObject, Converter *converter, GlobalState *gs);
+	static GtkWidget *newItem(const ColorObject &colorObject, IReadonlyColorUI *interface, Converter *converter, GlobalState *gs);
+	static GtkWidget *newNearestColorsMenu(const ColorObject &colorObject, GlobalState *gs);
 	struct Appender {
 		Appender(GtkWidget *menu, GtkAccelGroup *acceleratorGroup, void *data);
 		GtkWidget *appendItem(const char *label, const char *icon, guint key, GdkModifierType modifiers, GCallback callback, bool enabled = true);
@@ -41,5 +48,6 @@ struct StandardMenu {
 	};
 	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
 	static void contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface);
+	static void forInterface(GlobalState *gs, GdkEventButton *event, Interface interface);
 };
 #endif /* GPICK_STANDARD_MENU_H_ */
