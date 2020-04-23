@@ -60,7 +60,8 @@ struct CopyMenuItemState: public boost::static_visitor<> {
 			return;
 		}
 		m_recursion = true;
-		boost::apply_visitor(*this, common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IReadonlyColorsUI *>(interface));
+		auto variant = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IReadonlyColorsUI *>(interface);
+		boost::apply_visitor(*this, variant);
 		m_recursion = false;
 	}
 	void operator()(IEditableColorsUI *interface) {
