@@ -36,7 +36,7 @@ typedef struct ToolColorNamingOption{
 }ToolColorNamingOption;
 
 const ToolColorNamingOption* tool_color_naming_get_options();
-ToolColorNamingType tool_color_naming_name_to_type(const char *name);
+ToolColorNamingType tool_color_naming_name_to_type(const std::string &name);
 
 struct ToolColorNameAssigner
 {

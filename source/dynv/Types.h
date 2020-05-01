@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,39 +16,39 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVVARIABLE_H_
-#define DYNVVARIABLE_H_
-
-#include <stdint.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-
-struct dynvHandler;
-struct dynvVariable
-{
-	char* name;
-	struct dynvHandler* handler;
-	union{
-		void* ptr_value;
-		bool bool_value;
-		int32_t int_value;
-		float float_value;
-	};
-	enum class Flag: uintptr_t
-	{
-		none = 0,
-		no_save = 1,
-		read_only = 2,
-	}flags;
-	dynvVariable *next;
+#ifndef GPICK_DYNV_TYPES_H_
+#define GPICK_DYNV_TYPES_H_
+#include "common/Ref.h"
+#include <ostream>
+#include <type_traits>
+namespace dynv {
+struct Map;
+namespace types {
+enum class ValueType : uint8_t {
+	unknown,
+	map,
+	basicBool,
+	basicFloat,
+	basicInt32,
+	color,
+	string,
 };
-
-dynvVariable* dynv_variable_create(const char* name, dynvHandler* handler);
-void dynv_variable_destroy(dynvVariable* variable);
-void dynv_variable_destroy_data(dynvVariable* variable);
-
-dynvVariable::Flag operator&(dynvVariable::Flag x, dynvVariable::Flag y);
-bool operator!=(dynvVariable::Flag x, dynvVariable::Flag y);
-
-#endif /* DYNVVARIABLE_H_ */
+struct KnownHandler {
+	std::string name;
+	ValueType type;
+};
+template<typename T> const KnownHandler &typeHandler();
+namespace xml {
+template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);
+template<typename T, typename std::enable_if_t<!std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, const T &value);
+}
+namespace binary {
+template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);
+template<typename T, typename std::enable_if_t<!std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, const T &value);
+template<typename T> T read(std::istream &stream);
+}
+ValueType stringToType(const char *value);
+ValueType stringToType(const std::string &value);
+}
+}
+#endif /* GPICK_DYNV_TYPES_H_ */

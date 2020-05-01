@@ -14,7 +14,7 @@ file(GLOB SOURCES
 	source/tools/*.cpp source/tools/*.h
 	source/transformation/*.cpp source/transformation/*.h
 )
-list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/MathUtil.cpp source/MathUtil.h source/lua/Script.cpp source/lua/Script.h source/Format.cpp source/Format.h)
+list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/MathUtil.cpp source/MathUtil.h source/lua/Script.cpp source/lua/Script.h)
 include(Version)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/source/version/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp" @ONLY)
 list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp")
@@ -82,10 +82,10 @@ set_compile_options(gpick-color)
 target_link_libraries(gpick-color PRIVATE gpick-math)
 target_include_directories(gpick-color PRIVATE source)
 
-file(GLOB FORMAT_SOURCES source/Format.cpp source/Format.h)
-add_library(gpick-format ${FORMAT_SOURCES})
-set_compile_options(gpick-format)
-target_include_directories(gpick-format PRIVATE source)
+file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h)
+add_library(gpick-common ${COMMON_SOURCES})
+set_compile_options(gpick-common)
+target_include_directories(gpick-common PRIVATE source)
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
 add_library(gpick-dynv ${DYNV_SOURCES})
@@ -142,7 +142,7 @@ target_link_libraries(gpick PRIVATE
 	gpick-dynv
 	gpick-lua
 	gpick-parser
-	gpick-format
+	gpick-common
 	${Boost_FILESYSTEM_LIBRARY}
 	${Boost_SYSTEM_LIBRARY}
 	${Lua_LIBRARIES}
@@ -166,7 +166,7 @@ target_link_libraries(tests PRIVATE
 	gpick-dynv
 	gpick-lua
 	gpick-parser
-	gpick-format
+	gpick-common
 	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 	${Lua_LIBRARIES}
 	${Expat_LIBRARIES}

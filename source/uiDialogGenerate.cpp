@@ -22,7 +22,7 @@
 #include "ColorList.h"
 #include "ColorObject.h"
 #include "MathUtil.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "color_names/ColorNames.h"
@@ -48,7 +48,7 @@ typedef struct DialogGenerateArgs
 	ColorList *color_list;
 	ColorList *selected_color_list;
 	ColorList *preview_color_list;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }DialogGenerateArgs;
 
@@ -123,18 +123,18 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	int32_t color_count = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors)));
-	double chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
+	float chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
 	int32_t chaos_seed = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos_seed)));
 	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
-	double additional_rotation = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_additional_rotation));
+	float additional_rotation = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_additional_rotation));
 	if (!preview){
-		dynv_set_int32(args->params, "type", type);
-		dynv_set_int32(args->params, "wheel_type", wheel_type);
-		dynv_set_int32(args->params, "colors", color_count);
-		dynv_set_float(args->params, "chaos", chaos);
-		dynv_set_int32(args->params, "chaos_seed", chaos_seed);
-		dynv_set_bool(args->params, "reverse", reverse);
-		dynv_set_float(args->params, "additional_rotation", additional_rotation);
+		args->options->set("type", type);
+		args->options->set("wheel_type", wheel_type);
+		args->options->set("colors", color_count);
+		args->options->set("chaos", chaos);
+		args->options->set("chaos_seed", chaos_seed);
+		args->options->set("reverse", reverse);
+		args->options->set("additional_rotation", additional_rotation);
 	}
 	GenerateColorNameAssigner name_assigner(args->gs);
 	Color r, hsl, hsl_results;
@@ -196,11 +196,11 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 {
 	DialogGenerateArgs *args = new DialogGenerateArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.generate");
+	args->options = args->gs->settings().getOrCreateMap("gpick.generate");
 	GtkWidget *table;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Generate colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
-		dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1),
+		args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
@@ -209,7 +209,7 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Colors:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_colors = gtk_spin_button_new_with_range(1, 72, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), dynv_get_int32_wd(args->params, "colors", 1));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), args->options->getInt32("colors", 1));
 	gtk_table_attach(GTK_TABLE(table), args->range_colors,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->range_colors), "value-changed", G_CALLBACK(update), args);
 	table_y++;
@@ -220,7 +220,7 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
 	}
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->gen_type), _("Static"));
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), args->options->getInt32("type", 0));
 	g_signal_connect(G_OBJECT(args->gen_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->gen_type,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 
@@ -229,40 +229,40 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 	for (uint32_t i = 0; i < sizeof(color_wheel_types) / sizeof(ColorWheelType); i++){
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->wheel_type), color_wheel_types[i].name);
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), dynv_get_int32_wd(args->params, "wheel_type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), args->options->getInt32("wheel_type", 0));
 	g_signal_connect(G_OBJECT(args->wheel_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->wheel_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Chaos:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_chaos = gtk_spin_button_new_with_range(0,1,0.001);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_chaos), dynv_get_float_wd(args->params, "chaos", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_chaos), args->options->getFloat("chaos", 0));
 	gtk_table_attach(GTK_TABLE(table), args->range_chaos,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->range_chaos), "value-changed", G_CALLBACK(update), args);
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Seed:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_chaos_seed = gtk_spin_button_new_with_range(0, 0xFFFF, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_chaos_seed), dynv_get_int32_wd(args->params, "chaos_seed", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_chaos_seed), args->options->getInt32("chaos_seed", 0));
 	gtk_table_attach(GTK_TABLE(table), args->range_chaos_seed,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->range_chaos_seed), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Rotation:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_additional_rotation = gtk_spin_button_new_with_range(-360, 360, 0.1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_additional_rotation), dynv_get_float_wd(args->params, "range_additional_rotation", 0));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_additional_rotation), args->options->getFloat("range_additional_rotation", 0));
 	gtk_table_attach(GTK_TABLE(table), args->range_additional_rotation,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->range_additional_rotation), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
 	args->toggle_reverse = gtk_check_button_new_with_mnemonic(_("_Reverse"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse), dynv_get_bool_wd(args->params, "reverse", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse), args->options->getBool("reverse", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_reverse,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->toggle_reverse), "toggled", G_CALLBACK(update), args);
 	table_y++;
 
 	GtkWidget* preview_expander;
 	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
 	args->selected_color_list = selected_color_list;
@@ -273,11 +273,10 @@ void dialog_generate_show(GtkWindow* parent, ColorList *selected_color_list, Glo
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) calc(args, false, 0);
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
+	args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
 	gtk_widget_destroy(dialog);
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	delete args;
 }

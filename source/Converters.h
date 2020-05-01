@@ -37,11 +37,14 @@ struct Converters {
 	const std::vector<Converter *> &allCopy() const;
 	const std::vector<Converter *> &allPaste() const;
 	Converter *byName(const char *name) const;
+	Converter *byName(const std::string &name) const;
 	Converter *display() const;
 	Converter *colorList() const;
 	Converter *forType(Type type) const;
 	void display(const char *name);
 	void colorList(const char *name);
+	void display(const std::string &name);
+	void colorList(const std::string &name);
 	void display(Converter *converter);
 	void colorList(Converter *converter);
 	Converter *firstCopy() const;
@@ -52,6 +55,7 @@ struct Converters {
 	bool deserialize(const char *value, ColorObject **color_object);
 	void rebuildCopyPasteArrays();
 	void reorder(const char **names, size_t count);
+	void reorder(const std::vector<std::string> &names);
 	bool hasCopy() const;
 private:
 	std::map<std::string, Converter *> m_converters;

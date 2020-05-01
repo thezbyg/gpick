@@ -19,36 +19,30 @@
 #ifndef TRANSFORMATION_GAMMA_MODIFICATION_H_
 #define TRANSFORMATION_GAMMA_MODIFICATION_H_
 #include "Transformation.h"
-namespace transformation
-{
+namespace transformation {
 struct GammaModification;
-struct GammaModificationConfig: public Configuration
-{
-	protected:
+struct GammaModification: public Transformation {
+	struct Configuration: public IConfiguration {
+		Configuration(GammaModification &transformation);
+		virtual ~Configuration() override;
+		virtual GtkWidget *getWidget() override;
+		virtual void apply(dynv::Map &options) override;
+	private:
 		GtkWidget *main;
 		GtkWidget *value;
-	public:
-		GammaModificationConfig(GammaModification &transformation);
-		virtual ~GammaModificationConfig();
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
-};
-struct GammaModification: public Transformation
-{
-	public:
-		static const char *getName();
-		static const char *getReadableName();
-	protected:
-		float value;
-		virtual void apply(Color *input, Color *output);
-	public:
-		GammaModification();
-		GammaModification(float value);
-		virtual ~GammaModification();
-		virtual void serialize(struct dynvSystem *dynv);
-		virtual void deserialize(struct dynvSystem *dynv);
-		virtual boost::shared_ptr<Configuration> getConfig();
-	friend struct GammaModificationConfig;
+	};
+	static const char *getId();
+	static const char *getName();
+	GammaModification();
+	GammaModification(float value);
+	virtual ~GammaModification() override;
+	virtual void serialize(dynv::Map &system) override;
+	virtual void deserialize(const dynv::Map &system) override;
+	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
+private:
+	float value;
+	virtual void apply(Color *input, Color *output) override;
+	friend struct Configuration;
 };
 }
 #endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */

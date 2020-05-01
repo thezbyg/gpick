@@ -17,26 +17,22 @@
  */
 
 #include "ColorVisionDeficiency.h"
-#include "../MathUtil.h"
-#include "../uiUtilities.h"
-#include "../I18N.h"
+#include "dynv/Map.h"
+#include "MathUtil.h"
+#include "uiUtilities.h"
+#include "I18N.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>
-
 #include <iostream>
 using namespace std;
-
 namespace transformation {
-
-static const char * transformation_name = "color_vision_deficiency";
-
-const char *ColorVisionDeficiency::getName()
+static const char *transformationId = "color_vision_deficiency";
+const char *ColorVisionDeficiency::getId()
 {
-	return transformation_name;
+	return transformationId;
 }
-
-const char *ColorVisionDeficiency::getReadableName()
+const char *ColorVisionDeficiency::getName()
 {
 	return _("Color vision deficiency");
 }
@@ -268,13 +264,13 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 	color_rgb_normalize(output);
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformation_name, getReadableName())
+ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformationId, getName())
 {
 	type = PROTANOMALY;
 	strength = 0.5;
 }
 
-ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation(transformation_name, getReadableName())
+ColorVisionDeficiency::ColorVisionDeficiency(DeficiencyType type_, float strength_):Transformation(transformationId, getName())
 {
 	type = type_;
 	strength = strength_;
@@ -286,27 +282,23 @@ ColorVisionDeficiency::~ColorVisionDeficiency()
 }
 
 
-void ColorVisionDeficiency::serialize(struct dynvSystem *dynv)
-{
-	dynv_set_float(dynv, "strength", strength);
-	dynv_set_string(dynv, "type", deficiency_type_string[type]);
-	Transformation::serialize(dynv);
+void ColorVisionDeficiency::serialize(dynv::Map &system) {
+	system.set("strength", strength);
+	system.set("type", deficiency_type_string[type]);
+	Transformation::serialize(system);
 }
-
-ColorVisionDeficiency::DeficiencyType ColorVisionDeficiency::typeFromString(const char *type_string)
-{
+ColorVisionDeficiency::DeficiencyType ColorVisionDeficiency::typeFromString(const std::string &type_string) {
 	for (int i = 0; i < DEFICIENCY_TYPE_COUNT; i++){
-		if (strcmp(type_string, deficiency_type_string[i]) == 0){
+		if (type_string == deficiency_type_string[i]) {
 			return (DeficiencyType)i;
 		}
 	}
 	return PROTANOMALY;
 }
 
-void ColorVisionDeficiency::deserialize(struct dynvSystem *dynv)
-{
-	strength = dynv_get_float_wd(dynv, "strength", 0.5);
-	type = typeFromString(dynv_get_string_wd(dynv, "type", "protanomaly"));
+void ColorVisionDeficiency::deserialize(const dynv::Map &system) {
+	strength = system.getFloat("strength", 0.5f);
+	type = typeFromString(system.getString("type", "protanomaly"));
 }
 
 
@@ -345,15 +337,10 @@ static GtkWidget* create_type_list(void){
 
 	return widget;
 }
-
-boost::shared_ptr<Configuration> ColorVisionDeficiency::getConfig(){
-	boost::shared_ptr<ColorVisionDeficiencyConfig> config = boost::shared_ptr<ColorVisionDeficiencyConfig>(new ColorVisionDeficiencyConfig(*this));
-	return config;
+std::unique_ptr<IConfiguration> ColorVisionDeficiency::getConfiguration() {
+	return std::move(std::make_unique<Configuration>(*this));
 }
-
-
-ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation){
-
+ColorVisionDeficiency::Configuration::Configuration(ColorVisionDeficiency &transformation) {
 	GtkWidget *table = gtk_table_new(2, 2, false);
 	GtkWidget *widget;
 	int table_y = 0;
@@ -362,7 +349,7 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	type = widget = create_type_list();
-	g_signal_connect(G_OBJECT(type), "changed", G_CALLBACK(ColorVisionDeficiencyConfig::type_combobox_change_cb), this);
+	g_signal_connect(G_OBJECT(type), "changed", G_CALLBACK(type_combobox_change_cb), this);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
 
@@ -396,27 +383,26 @@ ColorVisionDeficiencyConfig::ColorVisionDeficiencyConfig(ColorVisionDeficiency &
 
 }
 
-ColorVisionDeficiencyConfig::~ColorVisionDeficiencyConfig(){
+ColorVisionDeficiency::Configuration::~Configuration(){
 	g_object_unref(main);
 }
 
-GtkWidget* ColorVisionDeficiencyConfig::getWidget(){
+GtkWidget* ColorVisionDeficiency::Configuration::getWidget(){
 	return main;
 }
 
-void ColorVisionDeficiencyConfig::applyConfig(dynvSystem *dynv){
-	dynv_set_float(dynv, "strength", gtk_range_get_value(GTK_RANGE(strength)) / 100.0f);
-
+void ColorVisionDeficiency::Configuration::apply(dynv::Map &options) {
+	options.set("strength", static_cast<float>(gtk_range_get_value(GTK_RANGE(strength)) / 100.0f));
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(type), &iter)) {
 		GtkTreeModel* model = gtk_combo_box_get_model(GTK_COMBO_BOX(type));
 		ColorVisionDeficiency::DeficiencyType type_id;
 		gtk_tree_model_get(model, &iter, 1, &type_id, -1);
-		dynv_set_string(dynv, "type", ColorVisionDeficiency::deficiency_type_string[type_id]);
+		options.set("type", ColorVisionDeficiency::deficiency_type_string[type_id]);
 	}
 }
 
-void ColorVisionDeficiencyConfig::type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_)
+void ColorVisionDeficiency::Configuration::type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiency::Configuration *this_)
 {
 	const char *descriptions[] = {
 		_("Altered spectral sensitivity of red receptors"),
@@ -440,7 +426,7 @@ void ColorVisionDeficiencyConfig::type_combobox_change_cb(GtkWidget *widget, Col
 	gtk_info_bar_set_message_type(GTK_INFO_BAR(this_->info_bar), GTK_MESSAGE_INFO);
 }
 
-void ColorVisionDeficiencyConfig::info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiencyConfig *this_)
+void ColorVisionDeficiency::Configuration::info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiency::Configuration *this_)
 {
 	gtk_widget_set_size_request(this_->info_label, allocation->width - 16, -1);
 }

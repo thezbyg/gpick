@@ -18,6 +18,7 @@
  */
 
 #include "Quantization.h"
+#include "dynv/Map.h"
 #include "../MathUtil.h"
 #include "../uiUtilities.h"
 #include "../I18N.h"
@@ -25,75 +26,54 @@
 #include <math.h>
 #include <string.h>
 #include <boost/math/special_functions/round.hpp>
-
 namespace transformation {
-
-static const char * transformation_name = "quantization";
-
-const char *Quantization::getName()
-{
-	return transformation_name;
+static const char *transformationId = "quantization";
+const char *Quantization::getId() {
+	return transformationId;
 }
-
-const char *Quantization::getReadableName()
-{
+const char *Quantization::getName() {
 	return _("Quantization");
 }
-
-void Quantization::apply(Color *input, Color *output)
-{
+void Quantization::apply(Color *input, Color *output) {
 	if (clip_top) {
 		float max_intensity = (value - 1) / value;
 		output->rgb.red = MIN(max_intensity, boost::math::round(input->rgb.red * value) / value);
 		output->rgb.green = MIN(max_intensity, boost::math::round(input->rgb.green * value) / value);
 		output->rgb.blue = MIN(max_intensity, boost::math::round(input->rgb.blue * value) / value);
-	}else{
+	} else {
 		float actualmax = value - 1;
 		output->rgb.red = boost::math::round(input->rgb.red * actualmax) / actualmax;
 		output->rgb.green = boost::math::round(input->rgb.green * actualmax) / actualmax;
 		output->rgb.blue = boost::math::round(input->rgb.blue * actualmax) / actualmax;
 	}
 }
-
-Quantization::Quantization():Transformation(transformation_name, getReadableName())
-{
+Quantization::Quantization():
+	Transformation(transformationId, getName()) {
 	value = 16;
 }
-
-Quantization::Quantization(float value_):Transformation(transformation_name, getReadableName())
-{
+Quantization::Quantization(float value_):
+	Transformation(transformationId, getName()) {
 	value = value_;
 }
-
-Quantization::~Quantization()
-{
+Quantization::~Quantization() {
 }
-
-void Quantization::serialize(struct dynvSystem *dynv)
-{
-	dynv_set_float(dynv, "value", value);
-	dynv_set_bool(dynv, "clip-top", clip_top);
-	Transformation::serialize(dynv);
+void Quantization::serialize(dynv::Map &system) {
+	system.set("value", value);
+	system.set("clip-top", clip_top);
+	Transformation::serialize(system);
 }
-
-void Quantization::deserialize(struct dynvSystem *dynv)
-{
-	value = dynv_get_float_wd(dynv, "value", 16);
-	clip_top = dynv_get_bool_wd(dynv, "clip-top", 0);
+void Quantization::deserialize(const dynv::Map &system) {
+	value = system.getFloat("value", 16);
+	clip_top = system.getBool("clip-top", false);
 }
-
-boost::shared_ptr<Configuration> Quantization::getConfig(){
-	boost::shared_ptr<QuantizationConfig> config = boost::shared_ptr<QuantizationConfig>(new QuantizationConfig(*this));
-	return config;
+std::unique_ptr<IConfiguration> Quantization::getConfiguration() {
+	return std::move(std::make_unique<Configuration>(*this));
 }
-
-QuantizationConfig::QuantizationConfig(Quantization &transformation){
+Quantization::Configuration::Configuration(Quantization &transformation) {
 	GtkWidget *table = gtk_table_new(2, 3, false);
 	GtkWidget *widget;
 	int table_y = 0;
-
-	table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	value = widget = gtk_spin_button_new_with_range(2, 256, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
@@ -101,24 +81,18 @@ QuantizationConfig::QuantizationConfig(Quantization &transformation){
 	clip_top = widget = gtk_check_button_new_with_label(_("Clip top-end"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), transformation.clip_top);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-
 	main = table;
 	gtk_widget_show_all(main);
-
 	g_object_ref(main);
 }
-
-QuantizationConfig::~QuantizationConfig(){
+Quantization::Configuration::~Configuration() {
 	g_object_unref(main);
 }
-
-GtkWidget* QuantizationConfig::getWidget(){
+GtkWidget *Quantization::Configuration::getWidget() {
 	return main;
 }
-
-void QuantizationConfig::applyConfig(dynvSystem *dynv){
-	dynv_set_float(dynv, "value", gtk_spin_button_get_value(GTK_SPIN_BUTTON(value)));
-	dynv_set_bool(dynv, "clip-top", gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON(clip_top)));
+void Quantization::Configuration::apply(dynv::Map &system) {
+	system.set<float>("value", gtk_spin_button_get_value(GTK_SPIN_BUTTON(value)));
+	system.set<bool>("clip-top", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(clip_top)));
 }
-
 }

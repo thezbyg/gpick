@@ -20,6 +20,7 @@
 #define GPICK_GTK_COLOR_WIDGET_H_
 
 #include <gtk/gtk.h>
+#include <string>
 #include "../Color.h"
 #include "../transformation/Chain.h"
 
@@ -41,6 +42,8 @@ struct GtkColorClass
 };
 GtkWidget* gtk_color_new();
 void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text);
+void gtk_color_set_color(GtkColor* widget, const Color &color);
+void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text);
 void gtk_color_set_text_color(GtkColor* widget, Color* color);
 void gtk_color_get_color(GtkColor* widget, Color* color);
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);

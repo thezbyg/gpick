@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,54 +16,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_FORMAT_H_
-#define GPICK_FORMAT_H_
-#include <string>
-#include <vector>
-template<typename T>
-std::string as_string(T value)
-{
-	return std::to_string(value);
+#ifndef GPICK_DYNV_BINARY_H_
+#define GPICK_DYNV_BINARY_H_
+#include "Types.h"
+#include <istream>
+#include <ostream>
+#include <unordered_map>
+namespace dynv {
+struct Map;
+namespace binary {
+bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<types::ValueType, uint8_t> &typeMap, bool firstLevel = true);
+bool deserialize(std::istream &stream, Map &map, const std::unordered_map<uint8_t, types::ValueType> &typeMap);
 }
-template<> std::string as_string<const std::string &>(const std::string &value);
-template<> std::string as_string<const char*>(const char* value);
-template<> std::string as_string<int>(int value);
-template<typename ...Args>
-std::string format(const char *format, const Args&... args)
-{
-	std::vector<std::string> values = { as_string(args)... };
-	size_t max_length = 0;
-	for (auto &v: values){
-		max_length += v.length();
-	}
-	char previous_char = 0;
-	size_t i;
-	for (i = 0; format[i]; ++i){
-		if (format[i] == '}' && previous_char == '{'){
-			max_length -= 2;
-		}
-		previous_char = format[i];
-	}
-	max_length += i;
-	std::string result;
-	result.reserve(max_length);
-	previous_char = 0;
-	size_t argument_index = 0;
-	for (i = 0; format[i]; ++i){
-		if (format[i] == '}' && previous_char == '{'){
-			result.pop_back();
-			if (argument_index < values.size()){
-				auto &value = values[argument_index];
-				for (size_t j = 0; j < value.length(); ++j){
-					result.push_back(value[j]);
-				}
-			}
-			argument_index++;
-		}else{
-			result.push_back(format[i]);
-		}
-		previous_char = format[i];
-	}
-	return result;
 }
-#endif /* GPICK_FORMAT_H_ */
+#endif /* GPICK_DYNV_BINARY_H_ */

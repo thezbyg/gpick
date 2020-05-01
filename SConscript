@@ -137,9 +137,7 @@ else:
 				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
 
-env.Append(
-	CPPPATH = ['#extern'],
-)
+env.Append(CPPPATH = ['#source'])
 
 def buildVersion(env):
 	version_env = env.Clone()
@@ -190,7 +188,6 @@ def buildTools(env):
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 		tools_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 		tools_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
-	tools_env.Append(CPPPATH = ['#source'])
 	if tools_env['ENABLE_NLS']:
 		tools_env.Append(CPPDEFINES = ['ENABLE_NLS'])
 	return tools_env.StaticObject(tools_env.Glob('source/tools/*.cpp'))
@@ -283,7 +280,7 @@ def buildGpick(env):
 		gpick_env.ParseConfig('pkg-config --cflags --libs $LUA_PC', None, False)
 	if env['ENABLE_NLS']:
 		gpick_env.Append(CPPDEFINES = ['ENABLE_NLS'])
-	gpick_env.Append(CPPPATH = ['#source'], CPPDEFINES = ['GSEAL_ENABLE'])
+	gpick_env.Append(CPPDEFINES = ['GSEAL_ENABLE'])
 	sources = gpick_env.Glob('source/*.cpp') + gpick_env.Glob('source/transformation/*.cpp')
 
 	objects = []
@@ -314,6 +311,9 @@ def buildGpick(env):
 	dynv_objects = gpick_env.StaticObject(gpick_env.Glob('source/dynv/*.cpp'))
 	objects += dynv_objects
 
+	common_objects = gpick_env.StaticObject(gpick_env.Glob('source/common/*.cpp'))
+	objects += common_objects
+
 	gpick_objects = gpick_env.StaticObject(sources)
 	objects += gpick_objects
 
@@ -329,7 +329,7 @@ def buildGpick(env):
 	test_env = gpick_env.Clone()
 	test_env.Append(LIBS = ['boost_unit_test_framework'], CPPDEFINES = ['BOOST_TEST_DYN_LINK'])
 
-	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/Color'], object_map['source/MathUtil'], object_map['source/lua/Script'], object_map['source/Format']] + dynv_objects + text_file_parser_objects)
+	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/Color'], object_map['source/MathUtil'], object_map['source/lua/Script']] + dynv_objects + text_file_parser_objects + common_objects)
 
 	return executable, tests
 

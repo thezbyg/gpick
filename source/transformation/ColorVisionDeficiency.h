@@ -19,60 +19,48 @@
 #ifndef TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
 #define TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
 #include "Transformation.h"
-namespace transformation
-{
+#include <gtk/gtk.h>
+namespace transformation {
 struct ColorVisionDeficiency;
-struct ColorVisionDeficiencyConfig: public Configuration
-{
-	protected:
+struct ColorVisionDeficiency: public Transformation {
+	struct Configuration: public IConfiguration {
+		Configuration(ColorVisionDeficiency &transformation);
+		virtual ~Configuration() override;
+		virtual GtkWidget *getWidget() override;
+		virtual void apply(dynv::Map &options) override;
+	private:
 		GtkWidget *main;
 		GtkWidget *info_bar;
 		GtkWidget *info_label;
 		GtkWidget *type;
 		GtkWidget *strength;
-		static void type_combobox_change_cb(GtkWidget *widget, ColorVisionDeficiencyConfig *this_);
-		static void info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiencyConfig *this_);
-	public:
-		ColorVisionDeficiencyConfig(ColorVisionDeficiency &transformation);
-		virtual ~ColorVisionDeficiencyConfig();
-
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
-};
-struct ColorVisionDeficiency: public Transformation
-{
-	public:
-		enum DeficiencyType{
-			PROTANOMALY,
-			DEUTERANOMALY,
-			TRITANOMALY,
-			PROTANOPIA,
-			DEUTERANOPIA,
-			TRITANOPIA,
-			DEFICIENCY_TYPE_COUNT,
-		};
-		static const char *deficiency_type_string[];
-
-		static const char *getName();
-		static const char *getReadableName();
-	protected:
-		float strength;
-		DeficiencyType type;
-		virtual void apply(Color *input, Color *output);
-
-	public:
-		ColorVisionDeficiency();
-		ColorVisionDeficiency(DeficiencyType type, float strength);
-		virtual ~ColorVisionDeficiency();
-
-		virtual void serialize(struct dynvSystem *dynv);
-		virtual void deserialize(struct dynvSystem *dynv);
-
-		virtual boost::shared_ptr<Configuration> getConfig();
-
-		DeficiencyType typeFromString(const char *type_string);
-
-	friend struct ColorVisionDeficiencyConfig;
+		static void type_combobox_change_cb(GtkWidget *widget, Configuration *this_);
+		static void info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, Configuration *this_);
+	};
+	enum DeficiencyType {
+		PROTANOMALY,
+		DEUTERANOMALY,
+		TRITANOMALY,
+		PROTANOPIA,
+		DEUTERANOPIA,
+		TRITANOPIA,
+		DEFICIENCY_TYPE_COUNT,
+	};
+	static const char *deficiency_type_string[];
+	static const char *getId();
+	static const char *getName();
+	ColorVisionDeficiency();
+	ColorVisionDeficiency(DeficiencyType type, float strength);
+	virtual ~ColorVisionDeficiency() override;
+	virtual void serialize(dynv::Map &system) override;
+	virtual void deserialize(const dynv::Map &system) override;
+	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
+	DeficiencyType typeFromString(const std::string &type_string);
+private:
+	float strength;
+	DeficiencyType type;
+	virtual void apply(Color *input, Color *output);
+	friend struct Configuration;
 };
 
 }

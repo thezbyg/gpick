@@ -22,12 +22,11 @@
 #include "FileFormat.h"
 #include "Converters.h"
 #include "Converter.h"
-#include "Endian.h"
 #include "I18N.h"
 #include "StringUtils.h"
 #include "HtmlUtils.h"
 #include "GlobalState.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "version/Version.h"
 #include "parser/TextFile.h"
 #include <glib.h>
@@ -37,6 +36,7 @@
 #include <boost/math/special_functions/round.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/endian/conversion.hpp>
 using namespace std;
 
 static bool getOrderedColors(ColorList *color_list, vector<ColorObject*> &ordered)
@@ -460,7 +460,7 @@ bool ImportExport::exportHTML()
 		f << "</form>" << endl;
 	}
 	f << "<div id=\"colors\">" << endl;
-	string hex_case = dynv_get_string_wd(m_gs->getSettings(), "gpick.options.hex_case", "upper");
+	string hex_case = m_gs->settings().getString("gpick.options.hex_case", "upper");
 	if (hex_case == "upper"){
 		f << uppercase;
 	}else{
@@ -553,14 +553,14 @@ static void aseColor(ColorObject* color_object, ostream &stream)
 	glong name_u16_len = 0;
 	gunichar2 *name_u16 = g_utf8_to_utf16(name.c_str(), -1, 0, &name_u16_len, 0);
 	for (glong i = 0; i < name_u16_len; ++i){
-		name_u16[i] = UINT16_TO_BE(name_u16[i]);
+		name_u16[i] = boost::endian::native_to_big<uint16_t>(name_u16[i]);
 	}
-	uint16_t color_entry = UINT16_TO_BE(0x0001);
+	uint16_t color_entry = boost::endian::native_to_big<uint16_t>(0x0001);
 	stream.write((char*)&color_entry, 2);
 	int32_t block_size = 2 + (name_u16_len + 1) * 2 + 4 + (3 * 4) + 2; //name length + name (zero terminated and 2 bytes per char wide) + color name + 3 float values + color type
-	block_size = UINT32_TO_BE(block_size);
+	block_size = boost::endian::native_to_big<uint32_t>(block_size);
 	stream.write((char*)&block_size, 4);
-	uint16_t name_length = UINT16_TO_BE(uint16_t(name_u16_len + 1));
+	uint16_t name_length = boost::endian::native_to_big<uint16_t>(uint16_t(name_u16_len + 1));
 	stream.write((char*)&name_length, 2);
 	stream.write((char*)name_u16, (name_u16_len + 1) * 2);
 	stream << "RGB ";
@@ -568,13 +568,13 @@ static void aseColor(ColorObject* color_object, ostream &stream)
 	r.f = color.rgb.red;
 	g.f = color.rgb.green;
 	b.f = color.rgb.blue;
-	r.i = UINT32_TO_BE(r.i);
-	g.i = UINT32_TO_BE(g.i);
-	b.i = UINT32_TO_BE(b.i);
+	r.i = boost::endian::native_to_big<uint32_t>(r.i);
+	g.i = boost::endian::native_to_big<uint32_t>(g.i);
+	b.i = boost::endian::native_to_big<uint32_t>(b.i);
 	stream.write((char*)&r, 4);
 	stream.write((char*)&g, 4);
 	stream.write((char*)&b, 4);
-	int16_t color_type = UINT16_TO_BE(0);
+	int16_t color_type = boost::endian::native_to_big<uint16_t>(0);
 	stream.write((char*)&color_type, 2);
 	g_free(name_u16);
 }
@@ -586,12 +586,12 @@ bool ImportExport::exportASE()
 		return false;
 	}
 	f << "ASEF"; //magic header
-	uint32_t version = UINT32_TO_BE(0x00010000);
+	uint32_t version = boost::endian::native_to_big<uint32_t>(0x00010000);
 	f.write((char*)&version, 4);
 	vector<ColorObject*> ordered;
 	getOrderedColors(m_color_list, ordered);
 	uint32_t blocks = ordered.size();
-	blocks = UINT32_TO_BE(blocks);
+	blocks = boost::endian::native_to_big<uint32_t>(blocks);
 	f.write((char*)&blocks, 4);
 	for (auto color: ordered){
 		aseColor(color, f);
@@ -620,29 +620,29 @@ bool ImportExport::importASE()
 	}
 	uint32_t version;
 	f.read((char*)&version, 4);
-	version = UINT32_FROM_BE(version);
+	version = boost::endian::big_to_native<uint32_t>(version);
 	uint32_t blocks;
 	f.read((char*)&blocks, 4);
-	blocks = UINT32_FROM_BE(blocks);
+	blocks = boost::endian::big_to_native<uint32_t>(blocks);
 	uint16_t block_type;
 	uint32_t block_size;
 	int color_supported;
 	for (uint32_t i = 0; i < blocks; ++i){
 		f.read((char*)&block_type, 2);
-		block_type = UINT16_FROM_BE(block_type);
+		block_type = boost::endian::big_to_native<uint16_t>(block_type);
 		f.read((char*)&block_size, 4);
-		block_size = UINT32_FROM_BE(block_size);
+		block_size = boost::endian::big_to_native<uint32_t>(block_size);
 		switch (block_type){
 		case 0x0001: //color block
 			{
 				uint16_t name_length;
 				f.read((char*)&name_length, 2);
-				name_length = UINT16_FROM_BE(name_length);
+				name_length = boost::endian::big_to_native<uint16_t>(name_length);
 
 				gunichar2 *name_u16 = (gunichar2*)g_malloc(name_length*2);
 				f.read((char*)name_u16, name_length*2);
 				for (uint32_t j = 0; j < name_length; ++j){
-					name_u16[j] = UINT16_FROM_BE(name_u16[j]);
+					name_u16[j] = boost::endian::big_to_native<uint16_t>(name_u16[j]);
 				}
 				gchar *name = g_utf16_to_utf8(name_u16, name_length, 0, 0, 0);
 				g_free(name_u16);
@@ -655,9 +655,9 @@ bool ImportExport::importASE()
 					f.read((char*)&rgb[0], 4);
 					f.read((char*)&rgb[1], 4);
 					f.read((char*)&rgb[2], 4);
-					rgb[0].i = UINT32_FROM_BE(rgb[0].i);
-					rgb[1].i = UINT32_FROM_BE(rgb[1].i);
-					rgb[2].i = UINT32_FROM_BE(rgb[2].i);
+					rgb[0].i = boost::endian::big_to_native<uint32_t>(rgb[0].i);
+					rgb[1].i = boost::endian::big_to_native<uint32_t>(rgb[1].i);
+					rgb[2].i = boost::endian::big_to_native<uint32_t>(rgb[2].i);
 					c.rgb.red = rgb[0].f;
 					c.rgb.green = rgb[1].f;
 					c.rgb.blue = rgb[2].f;
@@ -669,10 +669,10 @@ bool ImportExport::importASE()
 					f.read((char*)&cmyk[1], 4);
 					f.read((char*)&cmyk[2], 4);
 					f.read((char*)&cmyk[3], 4);
-					cmyk[0].i = UINT32_FROM_BE(cmyk[0].i);
-					cmyk[1].i = UINT32_FROM_BE(cmyk[1].i);
-					cmyk[2].i = UINT32_FROM_BE(cmyk[2].i);
-					cmyk[3].i = UINT32_FROM_BE(cmyk[3].i);
+					cmyk[0].i = boost::endian::big_to_native<uint32_t>(cmyk[0].i);
+					cmyk[1].i = boost::endian::big_to_native<uint32_t>(cmyk[1].i);
+					cmyk[2].i = boost::endian::big_to_native<uint32_t>(cmyk[2].i);
+					cmyk[3].i = boost::endian::big_to_native<uint32_t>(cmyk[3].i);
 					c2.cmyk.c = cmyk[0].f;
 					c2.cmyk.m = cmyk[1].f;
 					c2.cmyk.y = cmyk[2].f;
@@ -682,7 +682,7 @@ bool ImportExport::importASE()
 				}else if (memcmp(color_space, "Gray", 4) == 0){
 					FloatInt gray;
 					f.read((char*)&gray, 4);
-					gray.i = UINT32_FROM_BE(gray.i);
+					gray.i = boost::endian::big_to_native<uint32_t>(gray.i);
 					c.rgb.red = c.rgb.green = c.rgb.blue = gray.f;
 					color_supported = 1;
 				}else if (memcmp(color_space, "LAB ", 4) == 0){
@@ -691,9 +691,9 @@ bool ImportExport::importASE()
 					f.read((char*)&lab[0], 4);
 					f.read((char*)&lab[1], 4);
 					f.read((char*)&lab[2], 4);
-					lab[0].i = UINT32_FROM_BE(lab[0].i);
-					lab[1].i = UINT32_FROM_BE(lab[1].i);
-					lab[2].i = UINT32_FROM_BE(lab[2].i);
+					lab[0].i = boost::endian::big_to_native<uint32_t>(lab[0].i);
+					lab[1].i = boost::endian::big_to_native<uint32_t>(lab[1].i);
+					lab[2].i = boost::endian::big_to_native<uint32_t>(lab[2].i);
 					c2.lab.L = lab[0].f*100;
 					c2.lab.a = lab[1].f;
 					c2.lab.b = lab[2].f;

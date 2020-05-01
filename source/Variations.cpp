@@ -32,12 +32,12 @@
 #include "ColorWheelType.h"
 #include "uiColorInput.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
-#include "Format.h"
+#include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
@@ -81,7 +81,7 @@ typedef struct VariationsArgs{
 		GtkWidget *var_colors[VAR_COLOR_WIDGETS + 1];
 		const VariationType *type;
 	}color[MAX_COLOR_LINES];
-	struct dynvSystem *params;
+	dynv::Ref options;
 	ColorList *preview_color_list;
 	GlobalState* gs;
 }VariationsArgs;
@@ -114,10 +114,10 @@ static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color, Gtk
 
 static void calc(VariationsArgs *args, bool preview, bool save_settings){
 
-	double strength = gtk_range_get_value(GTK_RANGE(args->strength));
+	float strength = gtk_range_get_value(GTK_RANGE(args->strength));
 
 	if (save_settings){
-		dynv_set_float(args->params, "strength", strength);
+		args->options->set("strength", strength);
 	}
 
 	Color color, hsl, lab, r, hsl_mod, lab_mod;
@@ -144,28 +144,28 @@ static void calc(VariationsArgs *args, bool preview, bool save_settings){
 			switch (args->color[i].type->component_id){
 			case COMPONENT_ID_HSL_HUE:
 				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.hue = wrap_float(hsl.hsl.hue + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0);
+				hsl_mod.hsl.hue = wrap_float(hsl.hsl.hue + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f);
 				color_hsl_to_rgb(&hsl_mod, &r);
 				break;
 			case COMPONENT_ID_HSL_SATURATION:
 				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.saturation = clamp_float(hsl.hsl.saturation + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0, 0, 1);
+				hsl_mod.hsl.saturation = clamp_float(hsl.hsl.saturation + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f, 0, 1);
 				color_hsl_to_rgb(&hsl_mod, &r);
 				break;
 			case COMPONENT_ID_HSL_LIGHTNESS:
 				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.lightness = clamp_float(hsl.hsl.lightness + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0, 0, 1);
+				hsl_mod.hsl.lightness = clamp_float(hsl.hsl.lightness + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f, 0, 1);
 				color_hsl_to_rgb(&hsl_mod, &r);
 				break;
 			case COMPONENT_ID_LAB_LIGHTNESS:
 				color_copy(&lab, &lab_mod);
-				lab_mod.lab.L = clamp_float(lab.lab.L + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 4.0, 0, 100);
+				lab_mod.lab.L = clamp_float(lab.lab.L + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 4.0f, 0, 100);
 				color_lab_to_rgb_d50(&lab_mod, &r);
 				color_rgb_normalize(&r);
 				break;
 			}
 
-			gtk_color_set_color(GTK_COLOR(args->color[i].var_colors[j]), &r, "");
+			gtk_color_set_color(GTK_COLOR(args->color[i].var_colors[j]), r);
 		}
 	}
 }
@@ -210,13 +210,13 @@ static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
 		return _("all colors");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].color == widget){
-			return format(_("primary {}"), i + 1);
+			return common::format(_("primary {}"), i + 1);
 		}
 		for (int j = 0; j <= VAR_COLOR_WIDGETS; ++j){
 			if (args->color[i].var_colors[j] == widget){
 				if (j > VAR_COLOR_WIDGETS / 2)
 					j--;
-				return format(_("result {} line {}"), j + 1, i + 1);
+				return common::format(_("result {} line {}"), j + 1, i + 1);
 			}
 		}
 	}
@@ -264,7 +264,7 @@ static void on_color_activate(GtkWidget *widget, VariationsArgs* args)
 	Color color;
 	gtk_color_get_color(GTK_COLOR(widget), &color);
 	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-	string name = color_names_get(args->gs->getColorNames(), &color, dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+	string name = color_names_get(args->gs->getColorNames(), &color, args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
 	color_object->setName(name);
 	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 	color_object->release();
@@ -421,18 +421,17 @@ static int source_destroy(VariationsArgs *args){
 	char tmp[32];
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
 		sprintf(tmp, "type%d", i);
-		dynv_set_string(args->params, tmp, args->color[i].type->unique_name);
+		args->options->set(tmp, args->color[i].type->unique_name);
 
 		sprintf(tmp, "color%d", i);
 		gtk_color_get_color(GTK_COLOR(args->color[i].color), &c);
-		dynv_set_color(args->params, tmp, &c);
+		args->options->set(tmp, c);
 	}
 
 	gtk_color_get_color(GTK_COLOR(args->all_colors), &c);
-	dynv_set_color(args->params, "all_colors", &c);
+	args->options->set("all_colors", c);
 
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -528,10 +527,9 @@ static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, i
 	return 0;
 }
 
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
 	VariationsArgs* args = new VariationsArgs;
-
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->statusbar = gs->getStatusBar();
 
 	color_source_init(&args->source, source->identificator, source->hr_name);
@@ -576,7 +574,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
@@ -606,7 +603,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 				gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 				dd.userdata2 = (void*)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
@@ -616,7 +612,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 				gtk_widget_set_size_request(widget, 30, 25);
 
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 				dd.userdata2 = (void*)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 			}
@@ -628,18 +623,18 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	char tmp[32];
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
 		sprintf(tmp, "type%d", i);
-		const char *type_name = dynv_get_string_wd(args->params, tmp, "lab_lightness");
+		auto type_name = options->getString(tmp, "lab_lightness");
 
 		for (uint32_t j = 0; j < sizeof(variation_types) / sizeof(VariationType); j++){
-			if (g_strcmp0(variation_types[j].unique_name, type_name) == 0){
+			if (variation_types[j].unique_name == type_name){
 				args->color[i].type = &variation_types[j];
 				break;
 			}
 		}
 		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->color[i].color), dynv_get_color_wdc(args->params, tmp, &c), args->color[i].type->symbol);
+		gtk_color_set_color(GTK_COLOR(args->color[i].color), options->getColor(tmp, c), args->color[i].type->symbol);
 	}
-	gtk_color_set_color(GTK_COLOR(args->all_colors), dynv_get_color_wdc(args->params, "all_colors", &c), "");
+	gtk_color_set_color(GTK_COLOR(args->all_colors), options->getColor("all_colors", c));
 
 	hbox2 = gtk_hbox_new(FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
@@ -651,16 +646,12 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
 	args->strength = gtk_hscale_new_with_range(1, 100, 1);
-	gtk_range_set_value(GTK_RANGE(args->strength), dynv_get_float_wd(args->params, "strength", 30));
+	gtk_range_set_value(GTK_RANGE(args->strength), options->getFloat("strength", 30));
 	g_signal_connect(G_OBJECT(args->strength), "value-changed", G_CALLBACK (update), args);
 	gtk_table_attach(GTK_TABLE(table), args->strength,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,0,0);
 	table_y++;
 
-	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	ColorList* preview_color_list = color_list_new(handler_map);
-	dynv_handler_map_release(handler_map);
-
-	args->preview_color_list = preview_color_list;
+	args->preview_color_list = color_list_new();
 	args->gs = gs;
 	gtk_widget_show_all(hbox);
 	update(0, args);
@@ -673,7 +664,7 @@ int variations_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "variations", _("Variations"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
 	color_source->default_accelerator = GDK_KEY_v;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

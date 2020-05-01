@@ -42,6 +42,7 @@ struct GtkSwatchClass
 };
 GtkWidget* gtk_swatch_new();
 void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, Color* color);
+void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, const Color &color);
 void gtk_swatch_set_main_color(GtkSwatch* swatch, Color* color);
 void gtk_swatch_set_active_index(GtkSwatch* swatch, guint32 index);
 void gtk_swatch_set_active_color(GtkSwatch* swatch, Color* color);

@@ -27,10 +27,10 @@
 #include "Converters.h"
 #include "Converter.h"
 #include "GlobalState.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "Vector2.h"
 #include "I18N.h"
-#include "Format.h"
+#include "common/Format.h"
 #include "StandardMenu.h"
 #include "StandardEventHandler.h"
 #include <sstream>
@@ -202,14 +202,14 @@ static void update_counts(ListPaletteArgs *args){
 			s << bounds.min_index;
 		}
 #ifdef ENABLE_NLS
-		s << " (" << format(ngettext("{} color", "{} colors", selected_count), selected_count) << ")";
+		s << " (" << common::format(ngettext("{} color", "{} colors", selected_count), selected_count) << ")";
 #else
 		s << " (" << ((selected_count == 1) ? "color" : "colors") << ")";
 #endif
 		s << " " << _("selected") << ". ";
 	}
 #ifdef ENABLE_NLS
-	s << format(ngettext("Total {} color", "Total {} colors", total_colors), total_colors);
+	s << common::format(ngettext("Total {} color", "Total {} colors", total_colors), total_colors);
 #else
 	s << "Total " << total_colors << ((total_colors == 1) ? " color" : " colors");
 #endif
@@ -421,20 +421,15 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	dd.get_color_object = get_color_object;
 	dd.get_color_object_list = get_color_object_list;
 	dd.drag_end = drag_end;
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata = args;
 	dragdrop_widget_attach(view, DragDropFlags(DRAGDROP_SOURCE), &dd);
 
 	if (out_color_list) {
-		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(color_list->params);
-		ColorList* cl=color_list_new(handler_map);
-		dynv_handler_map_release(handler_map);
-
+		ColorList* cl=color_list_new();
 		cl->userdata=view;
 		cl->on_insert=palette_list_preview_on_insert;
 		cl->on_clear=palette_list_preview_on_clear;
 		*out_color_list=cl;
-
 	}
 
 	GtkWidget *scrolledWindow = gtk_scrolled_window_new(0, 0);
@@ -885,7 +880,6 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label) {
 	dd.get_color_object_list = get_color_object_list;
 	dd.set_color_object_at = set_color_object_at;
 	dd.set_color_object_list_at = set_color_object_list_at;
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.test_at = test_at;
 	dd.drag_end = drag_end;
 	dd.converterType = Converters::Type::colorList;

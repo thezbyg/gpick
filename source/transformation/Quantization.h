@@ -19,38 +19,32 @@
 #ifndef TRANSFORMATION_QUANTIZATION_H_
 #define TRANSFORMATION_QUANTIZATION_H_
 #include "Transformation.h"
-namespace transformation
-{
+namespace transformation {
 struct Quantization;
-struct QuantizationConfig: public Configuration
-{
-	protected:
+struct Quantization: public Transformation {
+	struct Configuration: public IConfiguration {
+		Configuration(Quantization &transformation);
+		virtual ~Configuration() override;
+		virtual GtkWidget *getWidget() override;
+		virtual void apply(dynv::Map &options) override;
+	private:
 		GtkWidget *main;
 		GtkWidget *value;
 		GtkWidget *clip_top;
-	public:
-		QuantizationConfig(Quantization &transformation);
-		virtual ~QuantizationConfig();
-		virtual GtkWidget* getWidget();
-		virtual void applyConfig(dynvSystem *dynv);
-};
-struct Quantization: public Transformation
-{
-	public:
-		static const char *getName();
-		static const char *getReadableName();
-	protected:
-		float value;
-		bool clip_top;
-		virtual void apply(Color *input, Color *output);
-	public:
-		Quantization();
-		Quantization(float value);
-		virtual ~Quantization();
-		virtual void serialize(struct dynvSystem *dynv);
-		virtual void deserialize(struct dynvSystem *dynv);
-		virtual boost::shared_ptr<Configuration> getConfig();
-	friend struct QuantizationConfig;
+	};
+	static const char *getId();
+	static const char *getName();
+	Quantization();
+	Quantization(float value);
+	virtual ~Quantization() override;
+	virtual void serialize(dynv::Map &system) override;
+	virtual void deserialize(const dynv::Map &system) override;
+	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
+private:
+	float value;
+	bool clip_top;
+	virtual void apply(Color *input, Color *output) override;
+	friend struct Configuration;
 };
 }
 #endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */

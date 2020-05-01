@@ -20,7 +20,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "MathUtil.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ColorRYB.h"
 #include "Noise.h"
@@ -39,7 +39,7 @@ typedef struct DialogAutonumberArgs{
 	GtkWidget *toggle_append;
 	uint32_t selected_count;
 	GtkWidget *sample;
-	dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }DialogAutonumberArgs;
 
@@ -57,7 +57,7 @@ static int default_nplaces(uint32_t selected_count)
 }
 static void update(GtkWidget *widget, DialogAutonumberArgs *args)
 {
-	uint32_t nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
+	int nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
 	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
 	const char *name = gtk_entry_get_text(GTK_ENTRY(args->name));
 	stringstream ss;
@@ -67,11 +67,11 @@ static void update(GtkWidget *widget, DialogAutonumberArgs *args)
 	ss << right << startindex;
 	auto text = ss.str();
 	gtk_entry_set_text(GTK_ENTRY(args->sample), text.c_str());
-	dynv_set_string (args->params, "name", name);
-	dynv_set_bool (args->params, "append", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_append)));
-	dynv_set_bool (args->params, "decreasing", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing)));
-	dynv_set_int32 (args->params, "nplaces", nplaces);
-	dynv_set_int32 (args->params, "startindex", startindex);
+	args->options->set("name", name);
+	args->options->set<bool>("append", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_append)));
+	args->options->set<bool>("decreasing", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing)));
+	args->options->set("nplaces", nplaces);
+	args->options->set("startindex", startindex);
 }
 static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args)
 {
@@ -99,15 +99,15 @@ int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState
 	DialogAutonumberArgs *args = new DialogAutonumberArgs;
 	int return_val;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.autonumber");
+	args->options = args->gs->settings().getOrCreateMap("gpick.autonumber");
 	args->selected_count = selected_count;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Autonumber colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			nullptr);
 
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
-		dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1),
+		args->options->getInt32("window.height", -1));
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -118,8 +118,8 @@ int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Name:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->name = gtk_entry_new();
-	// dynv_get_str_wd?
-	gtk_entry_set_text (GTK_ENTRY(args->name), dynv_get_string_wd (args->params, "name", "autonum"));
+	auto name = args->options->getString("name", "autonum");
+	gtk_entry_set_text(GTK_ENTRY(args->name), name.c_str());
 
 	g_signal_connect (G_OBJECT (args->name), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->name,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -128,26 +128,26 @@ int dialog_autonumber_show(GtkWindow* parent, size_t selected_count, GlobalState
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Decimal places:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->nplaces = gtk_spin_button_new_with_range (1, 6, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->nplaces), dynv_get_int32_wd(args->params, "nplaces", default_nplaces (selected_count)));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->nplaces), args->options->getInt32("nplaces", default_nplaces (selected_count)));
 	gtk_table_attach(GTK_TABLE(table), args->nplaces,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT (args->nplaces), "value-changed", G_CALLBACK (update), args);
 	table_y++;
 
 gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->startindex = gtk_spin_button_new_with_range (1, 0x7fffffff, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->startindex), dynv_get_int32_wd(args->params, "startindex", 1));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->startindex), args->options->getInt32("startindex", 1));
 	gtk_table_attach(GTK_TABLE(table), args->startindex,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT (args->startindex), "value-changed", G_CALLBACK (update), args);
 	table_y++;
 
 	args->toggle_decreasing = gtk_check_button_new_with_mnemonic (_("_Decreasing"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing), dynv_get_bool_wd(args->params, "decreasing", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_decreasing), args->options->getBool("decreasing", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_decreasing,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect (G_OBJECT(args->toggle_decreasing), "toggled", G_CALLBACK (update_startindex), args);
 	table_y++;
 
 	args->toggle_append = gtk_check_button_new_with_mnemonic (_("_Append"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_append), dynv_get_bool_wd(args->params, "append", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_append), args->options->getBool("append", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_append,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect (G_OBJECT(args->toggle_append), "toggled", G_CALLBACK (update), args);
 	table_y++;
@@ -168,12 +168,9 @@ gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Starting number:"),0
 
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
 	gtk_widget_destroy(dialog);
-
-	dynv_system_release(args->params);
 	delete args;
 	return return_val;
 }

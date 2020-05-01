@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVVARPTR_H_
-#define DYNVVARPTR_H_
-
-#include "DynvSystem.h"
-
-struct dynvHandler* dynv_var_ptr_new();
-
-#endif /* DYNVVARPTR_H_ */
+#ifndef GPICK_DYNV_XML_H_
+#define GPICK_DYNV_XML_H_
+#include <istream>
+#include <ostream>
+namespace dynv {
+struct Map;
+namespace xml {
+bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true);
+bool deserialize(std::istream &stream, Map &map);
+}
+}
+#endif /* GPICK_DYNV_XML_H_ */

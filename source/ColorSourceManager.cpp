@@ -40,6 +40,13 @@ ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name)
 	}
 	return 0;
 }
+ColorSource* color_source_manager_get(ColorSourceManager *csm, const std::string &name){
+	map<string, ColorSource*>::iterator i = csm->colorsource.find(name);
+	if (i != csm->colorsource.end()){
+		return (*i).second;
+	}
+	return 0;
+}
 
 vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm){
 	vector<ColorSource*> ret;

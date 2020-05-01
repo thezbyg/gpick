@@ -20,6 +20,7 @@
 #define GPICK_COLOR_H_
 
 #include "MathUtil.h"
+#include <string>
 
 /** \file source/Color.h
  * \brief Color structure and functions to convert colors from one color space to another.
@@ -30,6 +31,9 @@
  */
 struct Color {
 	Color();
+	Color(float grayValue);
+	Color(float red, float green, float blue);
+	bool operator==(const Color &color) const;
 	union{
 		struct{
 			float red; /**< Red component */
@@ -476,6 +480,7 @@ const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObse
  * @return Reference illuminant.
  */
 const ReferenceIlluminant color_get_illuminant(const char *illuminant);
+const ReferenceIlluminant color_get_illuminant(const std::string &illuminant);
 
 /**
  * Get observer by name.
@@ -483,6 +488,7 @@ const ReferenceIlluminant color_get_illuminant(const char *illuminant);
  * @return Reference observer.
  */
 const ReferenceObserver color_get_observer(const char *observer);
+const ReferenceObserver color_get_observer(const std::string &observer);
 
 /**
  * Get distance between two colors.

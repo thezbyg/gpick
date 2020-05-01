@@ -19,15 +19,15 @@
 #ifndef GPICK_COLOR_LIST_H_
 #define GPICK_COLOR_LIST_H_
 #include "Color.h"
+#include "dynv/Map.h"
 #include <list>
 #include <cstddef>
 struct ColorObject;
-struct dynvSystem;
 struct ColorList
 {
 	std::list<ColorObject*> colors;
 	typedef std::list<ColorObject*>::iterator iter;
-	dynvSystem *params;
+	dynv::Ref options;
 	int (*on_insert)(ColorList *color_list, ColorObject *color_object);
 	int (*on_delete)(ColorList *color_list, ColorObject *color_object);
 	int (*on_delete_selected)(ColorList *color_list);
@@ -38,7 +38,6 @@ struct ColorList
 };
 
 ColorList* color_list_new();
-ColorList* color_list_new(struct dynvHandlerMap *handler_map);
 ColorList* color_list_new(ColorList *color_list);
 ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color);
 void color_list_destroy(ColorList *color_list);

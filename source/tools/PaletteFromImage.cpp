@@ -23,7 +23,7 @@
 #include "uiListPalette.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include <string.h>
 #include <iostream>
@@ -73,7 +73,7 @@ struct PaletteFromImageArgs{
 	Node *previous_node;
 	ColorList *color_list;
 	ColorList *preview_color_list;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 };
 
@@ -372,9 +372,9 @@ static Node* process_image(PaletteFromImageArgs *args, const char *filename, Nod
 		ptr = image_data + rowstride * y;
 		for (int x = 0; x < width; x++){
 
-			color.xyz.x = ptr[0] / 255.0;
-			color.xyz.y = ptr[1] / 255.0;
-			color.xyz.z = ptr[2] / 255.0;
+			color.xyz.x = ptr[0] / 255.0f;
+			color.xyz.y = ptr[1] / 255.0f;
+			color.xyz.z = ptr[2] / 255.0f;
 
 			node_update(args->previous_node, &color, &cube, 5);
 
@@ -400,16 +400,16 @@ static void get_settings(PaletteFromImageArgs *args){
 }
 
 static void save_settings(PaletteFromImageArgs *args){
-	dynv_set_int32(args->params, "colors", args->n_colors);
+	args->options->set("colors", static_cast<int32_t>(args->n_colors));
 	gchar *current_folder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(args->file_browser));
 	if (current_folder){
-		dynv_set_string(args->params, "current_folder", current_folder);
+		args->options->set("current_folder", current_folder);
 		g_free(current_folder);
 	}
 	GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(args->file_browser));
 	if (filter){
 		const char *filter_name = static_cast<const char*>(g_object_get_data(G_OBJECT(filter), "name"));
-		dynv_set_string(args->params, "filter", filter_name);
+		args->options->set("filter", filter_name);
 	}
 }
 
@@ -459,10 +459,7 @@ static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
 static void destroy_cb(GtkWidget* widget, PaletteFromImageArgs *args){
 
 	if (args->previous_node) node_delete(args->previous_node);
-
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
-
 	delete args;
 }
 
@@ -474,9 +471,9 @@ static void response_cb(GtkWidget* widget, gint response_id, PaletteFromImageArg
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
 
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->preview_expander)));
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
+	args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->preview_expander)));
 
 	switch (response_id){
 		case GTK_RESPONSE_APPLY:
@@ -495,12 +492,12 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	PaletteFromImageArgs *args = new PaletteFromImageArgs;
 	args->previous_filename = "";
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.tools.palette_from_image");
+	args->options = args->gs->settings().getOrCreateMap("gpick.tools.palette_from_image");
 	args->previous_node = 0;
 	GtkWidget *table, *table_m, *widget;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1),
-		dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1),
+		args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 
 	GtkWidget *frame;
@@ -518,12 +515,12 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(frame), table);
 
 	args->file_browser = widget = gtk_file_chooser_button_new(_("Image file"), GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), dynv_get_string_wd(args->params, "current_folder", ""));
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), args->options->getString("current_folder", "").c_str());
 	gtk_table_attach(GTK_TABLE(table), widget, 0, 3, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	g_signal_connect(G_OBJECT(args->file_browser), "file-set", G_CALLBACK(update), args);
 	table_y++;
 
-	const char* selected_filter = dynv_get_string_wd(args->params, "filter", "all_images");
+	auto selected_filter = args->options->getString("filter", "all_images");
 	GtkFileFilter *filter;
 	GtkFileFilter *all_image_filter;
 
@@ -532,14 +529,14 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 	gtk_file_filter_add_pattern(filter, "*");
 	g_object_set_data_full(G_OBJECT(filter), "name", (void*)"all_files", GDestroyNotify(nullptr));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
-	if (g_strcmp0("all_files", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
+	if ("all_files" == selected_filter) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
 
 
 	all_image_filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(all_image_filter, _("All images"));
 	g_object_set_data_full(G_OBJECT(all_image_filter), "name", (void*)"all_images", GDestroyNotify(nullptr));
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
-	if (g_strcmp0("all_images", selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
+	if ("all_images" == selected_filter) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), all_image_filter);
 
 	stringstream ss;
 	GSList *formats = gdk_pixbuf_get_formats();
@@ -563,7 +560,7 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 		}
 		g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(nullptr));
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
-		if (g_strcmp0(gdk_pixbuf_format_get_name(format), selected_filter) == 0) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
+		if (gdk_pixbuf_format_get_name(format) == selected_filter) gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
 
 		i = g_slist_next(i);
 	}
@@ -579,13 +576,13 @@ void tools_palette_from_image_show(GtkWindow* parent, GlobalState* gs)
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Colors:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->range_colors = widget = gtk_spin_button_new_with_range (1, 100, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), dynv_get_int32_wd(args->params, "colors", 3));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->range_colors), args->options->getInt32("colors", 3));
 	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	g_signal_connect(G_OBJECT(args->range_colors), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
 	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
 	args->preview_color_list = preview_color_list;

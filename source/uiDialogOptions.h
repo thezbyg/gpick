@@ -20,12 +20,6 @@
 #define GPICK_UI_DIALOG_OPTIONS_H_
 #include <gtk/gtk.h>
 struct GlobalState;
-struct dynvSystem;
-struct lua_State;
-namespace lua
-{
-struct Script;
-}
 void dialog_options_show(GtkWindow* parent, GlobalState* gs);
-bool dialog_options_update(lua::Script &script, dynvSystem *settings, GlobalState* gs);
+bool dialog_options_update(GlobalState* gs);
 #endif /* GPICK_UI_DIALOG_OPTIONS_H_ */

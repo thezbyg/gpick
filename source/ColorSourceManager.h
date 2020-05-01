@@ -29,6 +29,7 @@ struct ColorSourceManager{
 ColorSourceManager* color_source_manager_create();
 int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source);
 ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name);
+ColorSource* color_source_manager_get(ColorSourceManager *csm, const std::string &name);
 std::vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm);
 int color_source_manager_destroy(ColorSourceManager *csm);
 

@@ -19,17 +19,4 @@
 #include "Configuration.h"
 namespace transformation
 {
-Configuration::Configuration()
-{
-}
-Configuration::~Configuration()
-{
-}
-GtkWidget* Configuration::getWidget()
-{
-	return 0;
-}
-void Configuration::applyConfig(dynvSystem *dynv)
-{
-}
 }

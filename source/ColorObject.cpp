@@ -41,6 +41,16 @@ ColorObject::ColorObject(const char *name, const Color &color):
 	m_visible(true)
 {
 }
+ColorObject::ColorObject(const Color &color):
+	m_refcnt(0),
+	m_color(color),
+	m_position(0),
+	m_position_set(false),
+	m_selected(false),
+	m_visited(false),
+	m_visible(true)
+{
+}
 ColorObject::ColorObject(const std::string &name, const Color &color):
 	m_refcnt(0),
 	m_name(name),

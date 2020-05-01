@@ -19,7 +19,7 @@
 #include "uiImportExport.h"
 #include "uiUtilities.h"
 #include "uiListPalette.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "ImportExport.h"
 #include "StringUtils.h"
 #include "ColorList.h"
@@ -68,7 +68,7 @@ struct ImportExportDialogOptions
 		GtkTreeIter iter;
 		GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_converters));
 		bool converter_found = false;
-		string converter_name = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.converter", "");
+		string converter_name = m_gs->settings().getString("gpick.import.converter", "");
 		for (auto &converter: m_gs->converters().all()){
 			gtk_list_store_append(GTK_LIST_STORE(model), &iter);
 			gtk_list_store_set(GTK_LIST_STORE(model), &iter, 0, converter->label().c_str(), 1, converter, -1);
@@ -86,7 +86,7 @@ struct ImportExportDialogOptions
 			{"big", _("Big")},
 			{"controllable", _("User controllable")},
 		};
-		m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.item_size", "medium"));
+		m_item_sizes = newOptionList(item_size_options, sizeof(item_size_options) / sizeof(ListOption), m_gs->settings().getString("gpick.import.item_size", "medium"));
 
 		const ListOption background_options[] = {
 			{"none", _("None")},
@@ -97,9 +97,9 @@ struct ImportExportDialogOptions
 			{"last_color", _("Last color")},
 			{"controllable", _("User controllable")},
 		};
-		m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), dynv_get_string_wd(m_gs->getSettings(), "gpick.import.background", "none"));
+		m_backgrounds = newOptionList(background_options, sizeof(background_options) / sizeof(ListOption), m_gs->settings().getString("gpick.import.background", "none"));
 
-		m_include_color_names = newCheckbox(_("Include color names"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import.include_color_names", true));
+		m_include_color_names = newCheckbox(_("Include color names"), m_gs->settings().getBool("gpick.import.include_color_names", true));
 
 		afterFilterChanged();
 		int y = 0;
@@ -116,17 +116,17 @@ struct ImportExportDialogOptions
 		m_options = Options::import_text_file;
 		int y = 0;
 		GtkWidget *table = gtk_table_new(2, 3, false);
-		addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_c_comments", true)), 0, y, table);
-		addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.multi_line_c_comments", true)), 0, y, table);
-		addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.single_line_hash_comments", true)), 0, y, table);
+		addOption(m_single_line_c_comments = newCheckbox(string(_("C style single-line comments")) + " (//abc)", m_gs->settings().getBool("gpick.import_text_file.single_line_c_comments", true)), 0, y, table);
+		addOption(m_multi_line_c_comments = newCheckbox(string(_("C style multi-line comments")) + " (/*abc*/)", m_gs->settings().getBool("gpick.import_text_file.multi_line_c_comments", true)), 0, y, table);
+		addOption(m_single_line_hash_comments = newCheckbox(string(_("Hash single-line comments")) + " (#abc)", m_gs->settings().getBool("gpick.import_text_file.single_line_hash_comments", true)), 0, y, table);
 		y = 0;
-		addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgb", true)), 1, y, table);
-		addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.css_rgba", true)), 1, y, table);
-		addOption(m_full_hex = newCheckbox(_("Full hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.full_hex", true)), 1, y, table);
+		addOption(m_css_rgb = newCheckbox("CSS rgb()", m_gs->settings().getBool("gpick.import_text_file.css_rgb", true)), 1, y, table);
+		addOption(m_css_rgba = newCheckbox("CSS rgba()", m_gs->settings().getBool("gpick.import_text_file.css_rgba", true)), 1, y, table);
+		addOption(m_full_hex = newCheckbox(_("Full hex"), m_gs->settings().getBool("gpick.import_text_file.full_hex", true)), 1, y, table);
 		y = 0;
-		addOption(m_short_hex = newCheckbox(_("Short hex"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.short_hex", true)), 2, y, table);
-		addOption(m_int_values = newCheckbox(_("Integer values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.int_values", true)), 2, y, table);
-		addOption(m_float_values = newCheckbox(_("Real values"), dynv_get_bool_wd(m_gs->getSettings(), "gpick.import_text_file.float_values", true)), 2, y, table);
+		addOption(m_short_hex = newCheckbox(_("Short hex"), m_gs->settings().getBool("gpick.import_text_file.short_hex", true)), 2, y, table);
+		addOption(m_int_values = newCheckbox(_("Integer values"), m_gs->settings().getBool("gpick.import_text_file.int_values", true)), 2, y, table);
+		addOption(m_float_values = newCheckbox(_("Real values"), m_gs->settings().getBool("gpick.import_text_file.float_values", true)), 2, y, table);
 		gtk_widget_show_all(table);
 		gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
 	}
@@ -217,26 +217,26 @@ struct ImportExportDialogOptions
 	}
 	void saveState()
 	{
-		auto settings = m_gs->getSettings();
+		auto &settings = m_gs->settings();
 		if (m_options == Options::import){
 			Converter *converter = getSelectedConverter();
 			if (converter)
-				dynv_set_string(settings, "gpick.import.converter", converter->name().c_str());
+				settings.set("gpick.import.converter", converter->name().c_str());
 			string item_size = getSelectedItemSize();
-			dynv_set_string(settings, "gpick.import.item_size", item_size.c_str());
+			settings.set("gpick.import.item_size", item_size.c_str());
 			string background = getSelectedBackground();
-			dynv_set_string(settings, "gpick.import.background", background.c_str());
-			dynv_set_bool(settings, "gpick.import.include_color_names", isIncludeColorNamesEnabled());
+			settings.set("gpick.import.background", background.c_str());
+			settings.set("gpick.import.include_color_names", isIncludeColorNamesEnabled());
 		}else if (m_options == Options::import_text_file){
-			dynv_set_bool(settings, "gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.css_rgb", isCssRgbEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.css_rgba", isCssRgbaEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.full_hex", isFullHexEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.short_hex", isShortHexEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.int_values", isIntValuesEnabled());
-			dynv_set_bool(settings, "gpick.import_text_file.float_values", isFloatValuesEnabled());
+			settings.set("gpick.import_text_file.single_line_c_comments", isSingleLineCCommentsEnabled());
+			settings.set("gpick.import_text_file.multi_line_c_comments", isMultiLineCCommentsEnabled());
+			settings.set("gpick.import_text_file.single_line_hash_comments", isSingleLineHashCommentsEnabled());
+			settings.set("gpick.import_text_file.css_rgb", isCssRgbEnabled());
+			settings.set("gpick.import_text_file.css_rgba", isCssRgbaEnabled());
+			settings.set("gpick.import_text_file.full_hex", isFullHexEnabled());
+			settings.set("gpick.import_text_file.short_hex", isShortHexEnabled());
+			settings.set("gpick.import_text_file.int_values", isIntValuesEnabled());
+			settings.set("gpick.import_text_file.float_values", isFloatValuesEnabled());
 		}
 	}
 	GtkWidget* newConverterList()
@@ -323,15 +323,15 @@ bool ImportExportDialog::showImport()
 		{_("rgb.txt File (rgb.txt)"), "rgb.txt", FileType::rgbtxt},
 	};
 	const size_t n_formats = sizeof(formats) / sizeof(ImportExportFormat);
-	const char* default_path = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.path", "");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	const char* selected_filter = dynv_get_string_wd(m_gs->getSettings(), "gpick.import.filter", "all_supported");
+	auto default_path = m_gs->settings().getString("gpick.import.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
+	auto selected_filter = m_gs->settings().getString("gpick.import.filter", "all_supported");
 	GtkFileFilter *filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, _("All files"));
 	g_object_set_data(G_OBJECT(filter), "identification", (gpointer)"all");
 	gtk_file_filter_add_pattern(filter, "*");
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-	if (g_strcmp0(selected_filter, "all") == 0){
+	if (selected_filter == "all") {
 		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
 	filter = gtk_file_filter_new();
@@ -341,7 +341,7 @@ bool ImportExportDialog::showImport()
 		gtk_file_filter_add_pattern(filter, formats[i].pattern);
 	}
 	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-	if (g_strcmp0(selected_filter, "all_supported") == 0){
+	if (selected_filter == "all_supported"){
 		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 	}
 	for (size_t i = 0; i != n_formats; ++i){
@@ -350,7 +350,7 @@ bool ImportExportDialog::showImport()
 		g_object_set_data(G_OBJECT(filter), "identification", (gpointer)formats[i].pattern);
 		gtk_file_filter_add_pattern(filter, formats[i].pattern);
 		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(dialog), filter);
-		if (g_strcmp0(formats[i].pattern, selected_filter) == 0){
+		if (formats[i].pattern == selected_filter) {
 			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 		}
 	}
@@ -359,7 +359,7 @@ bool ImportExportDialog::showImport()
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			dynv_set_string(m_gs->getSettings(), "gpick.import.path", path);
+			m_gs->settings().set("gpick.import.path", path);
 			g_free(path);
 			FileType type = ImportExport::getFileType(filename);
 			if (type == FileType::unknown){
@@ -393,7 +393,7 @@ bool ImportExportDialog::showImport()
 							gtk_widget_destroy(message);
 						}
 						const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
-						dynv_set_string(m_gs->getSettings(), "gpick.import.filter", identification);
+						m_gs->settings().set("gpick.import.filter", identification);
 						color_list_destroy(color_list);
 						break;
 					}
@@ -413,15 +413,15 @@ bool ImportExportDialog::showImportTextFile()
 		GTK_STOCK_OPEN, GTK_RESPONSE_OK,
 		nullptr);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	const char* default_path = dynv_get_string_wd(m_gs->getSettings(), "gpick.import_text_file.path", "");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
+	auto default_path = m_gs->settings().getString("gpick.import_text_file.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
 	ImportExportDialogOptions import_export_dialog_options(dialog, m_gs);
 	import_export_dialog_options.createImportTextFileOptions();
 	bool finished = false;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			dynv_set_string(m_gs->getSettings(), "gpick.import_text_file.path", path);
+			m_gs->settings().set("gpick.import_text_file.path", path);
 			g_free(path);
 			import_export_dialog_options.saveState();
 			GtkWidget* message;
@@ -474,9 +474,9 @@ bool ImportExportDialog::showExport()
 		{_("Text file (*.txt)"), "*.txt", FileType::txt},
 	};
 	const size_t n_formats = sizeof(formats) / sizeof(ImportExportFormat);
-	const char* default_path = dynv_get_string_wd(m_gs->getSettings(), "gpick.export.path", "");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	string selected_filter = dynv_get_string_wd(m_gs->getSettings(), "gpick.export.filter", "*.gpl");
+	auto default_path = m_gs->settings().getString("gpick.export.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
+	string selected_filter = m_gs->settings().getString("gpick.export.filter", "*.gpl");
 	for (size_t i = 0; i != n_formats; ++i){
 		GtkFileFilter *filter = gtk_file_filter_new();
 		g_object_set_data(G_OBJECT(filter), "format", (gpointer)&formats[i]);
@@ -496,7 +496,7 @@ bool ImportExportDialog::showExport()
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			dynv_set_string(m_gs->getSettings(), "gpick.import.path", path);
+			m_gs->settings().set("gpick.import.path", path);
 			g_free(path);
 			import_export_dialog_options.saveState();
 			string format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
@@ -518,7 +518,7 @@ bool ImportExportDialog::showExport()
 						gtk_dialog_run(GTK_DIALOG(message));
 						gtk_widget_destroy(message);
 					}
-					dynv_set_string(m_gs->getSettings(), "gpick.export.filter", formats[i].pattern);
+					m_gs->settings().set("gpick.export.filter", formats[i].pattern);
 				}
 			}
 			g_free(filename);

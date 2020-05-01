@@ -22,7 +22,7 @@
 #include "ColorList.h"
 #include "ColorObject.h"
 #include "MathUtil.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ColorRYB.h"
 #include "Noise.h"
@@ -33,6 +33,7 @@
 #include <math.h>
 #include <sstream>
 #include <iostream>
+#include <map>
 using namespace std;
 
 typedef struct DialogSortArgs{
@@ -47,7 +48,7 @@ typedef struct DialogSortArgs{
 	ColorList *selected_color_list;
 	ColorList *preview_color_list;
 
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }DialogSortArgs;
 
@@ -427,19 +428,19 @@ static void node_update(Node *node, Range *range, double value, uint32_t max_dep
 
 static void calc(DialogSortArgs *args, bool preview, int limit){
 	int32_t group_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->group_type));
-	double group_sensitivity = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->group_sensitivity));
+	float group_sensitivity = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->group_sensitivity));
 	int max_groups = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->max_groups));
 	int32_t sort_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->sort_type));
 	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
 	bool reverse_groups = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups));
 
 	if (!preview){
-		dynv_set_int32(args->params, "group_type", group_type);
-		dynv_set_float(args->params, "group_sensitivity", group_sensitivity);
-		dynv_set_int32(args->params, "max_groups", max_groups);
-		dynv_set_int32(args->params, "sort_type", sort_type);
-		dynv_set_bool(args->params, "reverse", reverse);
-		dynv_set_bool(args->params, "reverse_groups", reverse_groups);
+		args->options->set("group_type", group_type);
+		args->options->set("group_sensitivity", group_sensitivity);
+		args->options->set("max_groups", max_groups);
+		args->options->set("sort_type", sort_type);
+		args->options->set("reverse", reverse);
+		args->options->set("reverse_groups", reverse_groups);
 	}
 
 	ColorList *color_list;
@@ -548,13 +549,13 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 {
 	DialogSortArgs *args = new DialogSortArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.group_and_sort");
+	args->options = args->gs->settings().getOrCreateMap("gpick.group_and_sort");
 	args->sorted_color_list = sorted_color_list;
 
 	GtkWidget *table;
 
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	gint table_y;
@@ -566,21 +567,21 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 	for (uint32_t i = 0; i < sizeof(group_types) / sizeof(GroupType); i++){
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->group_type), _(group_types[i].name));
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->group_type), dynv_get_int32_wd(args->params, "group_type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->group_type), args->options->getInt32("group_type", 0));
 	g_signal_connect(G_OBJECT(args->group_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->group_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Grouping sensitivity:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->group_sensitivity = gtk_spin_button_new_with_range(0, 100, 0.01);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->group_sensitivity), dynv_get_float_wd(args->params, "group_sensitivity", 50));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->group_sensitivity), args->options->getFloat("group_sensitivity", 50));
 	gtk_table_attach(GTK_TABLE(table), args->group_sensitivity,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->group_sensitivity), "value-changed", G_CALLBACK(update), args);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Maximum number of groups:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->max_groups = gtk_spin_button_new_with_range(1, 255, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->max_groups), dynv_get_int32_wd(args->params, "max_groups", 10));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->max_groups), args->options->getInt32("max_groups", 10));
 	gtk_table_attach(GTK_TABLE(table), args->max_groups,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->max_groups), "value-changed", G_CALLBACK(update), args);
 	table_y++;
@@ -590,19 +591,19 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 	for (uint32_t i = 0; i < sizeof(sort_types) / sizeof(SortType); i++){
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->sort_type), _(sort_types[i].name));
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->sort_type), dynv_get_int32_wd(args->params, "sort_type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->sort_type), args->options->getInt32("sort_type", 0));
 	g_signal_connect (G_OBJECT (args->sort_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->sort_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	args->toggle_reverse_groups = gtk_check_button_new_with_mnemonic(_("_Reverse group order"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups), dynv_get_bool_wd(args->params, "reverse_groups", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups), args->options->getBool("reverse_groups", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_reverse_groups,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect (G_OBJECT(args->toggle_reverse_groups), "toggled", G_CALLBACK(update), args);
 	table_y++;
 
 	args->toggle_reverse = gtk_check_button_new_with_mnemonic(_("_Reverse order inside groups"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse), dynv_get_bool_wd(args->params, "reverse", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse), args->options->getBool("reverse", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_reverse,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect (G_OBJECT(args->toggle_reverse), "toggled", G_CALLBACK(update), args);
 	table_y++;
@@ -610,7 +611,7 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 
 	GtkWidget* preview_expander;
 	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 
 	args->selected_color_list = selected_color_list;
@@ -629,15 +630,11 @@ bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorLi
 
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
-
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
+	args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
 	gtk_widget_destroy(dialog);
-
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	delete args;
-
 	return retval;
 }

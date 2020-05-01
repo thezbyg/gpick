@@ -17,69 +17,46 @@
  */
 
 #include "Chain.h"
-
-using namespace std;
-
 namespace transformation {
-
-Chain::Chain()
-{
-	enabled = true;
+Chain::Chain():
+	m_enabled(true) {
 }
-
-void Chain::apply(const Color *input, Color *output)
-{
-	if (!enabled) {
+void Chain::apply(const Color *input, Color *output) {
+	if (!m_enabled) {
 		color_copy(input, output);
 		return;
 	}
 	Color tmp[2];
 	Color *tmp_p[3];
-
 	color_copy(input, &tmp[0]);
-
 	tmp_p[0] = &tmp[0];
 	tmp_p[1] = &tmp[1];
-	for (TransformationList::iterator i = transformation_chain.begin(); i != transformation_chain.end(); i++){
-
-		(*i)->apply(tmp_p[0], tmp_p[1]);
-
+	for (auto &transformation: m_transformationChain) {
+		transformation->apply(tmp_p[0], tmp_p[1]);
 		tmp_p[2] = tmp_p[0];
 		tmp_p[0] = tmp_p[1];
 		tmp_p[1] = tmp_p[2];
 	}
-
 	color_copy(tmp_p[0], output);
 }
-
-void Chain::add(boost::shared_ptr<Transformation> transformation)
-{
-	transformation_chain.push_back(transformation);
+void Chain::add(std::unique_ptr<Transformation> transformation) {
+	m_transformationChain.push_back(std::move(transformation));
 }
-
-void Chain::remove(const Transformation *transformation)
-{
-	for (TransformationList::iterator i = transformation_chain.begin(); i != transformation_chain.end(); i++){
-		if ((*i).get() == transformation){
-			transformation_chain.erase(i);
+void Chain::remove(const Transformation *transformation) {
+	for (auto i = m_transformationChain.begin(), end = m_transformationChain.end(); i != end; i++) {
+		if (i->get() == transformation) {
+			m_transformationChain.erase(i);
 			return;
 		}
 	}
 }
-
-void Chain::clear()
-{
-	transformation_chain.clear();
+void Chain::clear() {
+	m_transformationChain.clear();
 }
-
-Chain::TransformationList& Chain::getAll()
-{
-	return transformation_chain;
+Chain::TransformationList &Chain::getAll() {
+	return m_transformationChain;
 }
-
-void Chain::setEnabled(bool enabled_)
-{
-	enabled = enabled_;
+void Chain::setEnabled(bool enabled) {
+	m_enabled = enabled;
 }
-
 }

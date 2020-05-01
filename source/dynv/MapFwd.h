@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVVARSTRING_H_
-#define DYNVVARSTRING_H_
-
-#include "DynvSystem.h"
-
-struct dynvHandler* dynv_var_string_new();
-
-#endif /* DYNVVARSTRING_H_ */
+#ifndef GPICK_DYNV_MAP_FWD_H_
+#define GPICK_DYNV_MAP_FWD_H_
+#include "common/Ref.h"
+namespace dynv {
+struct Map;
+using Ref = common::Ref<Map>;
+}
+#endif /* GPICK_DYNV_MAP_FWD_H_ */

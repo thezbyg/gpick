@@ -18,7 +18,7 @@
 
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "ColorObject.h"
@@ -35,7 +35,7 @@ const ToolColorNamingOption* tool_color_naming_get_options()
 {
 	return options;
 }
-ToolColorNamingType tool_color_naming_name_to_type(const char *name)
+ToolColorNamingType tool_color_naming_name_to_type(const std::string &name)
 {
 	string n = name;
 	int i = 0;
@@ -50,9 +50,9 @@ ToolColorNamingType tool_color_naming_name_to_type(const char *name)
 ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
 	m_gs(gs)
 {
-	m_color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(m_gs->getSettings(), "gpick.color_names.tool_color_naming", "automatic_name"));
+	m_color_naming_type = tool_color_naming_name_to_type(m_gs->settings().getString("gpick.color_names.tool_color_naming", "automatic_name"));
 	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
-		m_imprecision_postfix = dynv_get_bool_wd(m_gs->getSettings(), "gpick.color_names.imprecision_postfix", false);
+		m_imprecision_postfix = m_gs->settings().getBool("gpick.color_names.imprecision_postfix", false);
 	}else{
 		m_imprecision_postfix = false;
 	}

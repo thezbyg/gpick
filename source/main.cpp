@@ -22,7 +22,7 @@
 #include "uiApp.h"
 #include "I18N.h"
 #include "version/Version.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include <gtk/gtk.h>
 #include <string>
 #include <iostream>
@@ -82,7 +82,7 @@ int main(int argc, char **argv)
 		g_strfreev(argv_copy);
 		return 0;
 	}
-	AppOptions options;
+	StartupOptions options;
 	options.floating_picker_mode = pick_color;
 	options.output_picked_color = output_picked_color;
 	options.output_without_newline = output_without_newline;

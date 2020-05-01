@@ -75,6 +75,13 @@ Converter *Converters::byName(const char *name) const
 	}
 	return nullptr;
 }
+Converter *Converters::byName(const std::string &name) const {
+	auto i = m_converters.find(name);
+	if (i != m_converters.end()){
+		return i->second;
+	}
+	return nullptr;
+}
 Converter *Converters::display() const
 {
 	return m_display_converter;
@@ -99,6 +106,14 @@ void Converters::display(const char *name)
 	m_display_converter = byName(name);
 }
 void Converters::colorList(const char *name)
+{
+	m_color_list_converter = byName(name);
+}
+void Converters::display(const std::string &name)
+{
+	m_display_converter = byName(name);
+}
+void Converters::colorList(const std::string &name)
 {
 	m_color_list_converter = byName(name);
 }
@@ -206,6 +221,24 @@ void Converters::reorder(const char **names, size_t count)
 	set<Converter*> used;
 	vector<Converter*> converters;
 	for (size_t i = 0; i < count; i++){
+		auto converter = byName(names[i]);
+		if (converter){
+			used.insert(converter);
+			converters.push_back(converter);
+		}
+	}
+	for (auto converter: m_all_converters){
+		if (used.count(converter) == 0){
+			converters.push_back(converter);
+		}
+	}
+	m_all_converters.clear();
+	m_all_converters = converters;
+}
+void Converters::reorder(const std::vector<std::string> &names) {
+	set<Converter*> used;
+	vector<Converter*> converters;
+	for (size_t i = 0; i < names.size(); i++){
 		auto converter = byName(names[i]);
 		if (converter){
 			used.insert(converter);

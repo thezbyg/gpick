@@ -19,68 +19,55 @@
 #ifndef TRANSFORMATION_CHAIN_H_
 #define TRANSFORMATION_CHAIN_H_
 #include "Transformation.h"
-#include <boost/shared_ptr.hpp>
 #include <list>
+#include <memory>
 
 /** \file source/transformation/Chain.h
  * \brief Struct for transformation object list handling.
  */
-namespace transformation
-{
-
+namespace transformation {
 /** \struct Chain
  * \brief Transformation object chain management struct.
  */
-struct Chain
-{
-	public:
-		typedef std::list<boost::shared_ptr<Transformation> > TransformationList;
-	protected:
-		TransformationList transformation_chain;
-		bool enabled;
-	public:
-		/**
-		 * Chain constructor.
-		 */
-		Chain();
-
-		/**
-		 * Apply transformation chain to color.
-		 * @param[in] input Source color in RGB color space.
-		 * @param[out] output Destination color in RGB color space.
-		 */
-		void apply(const Color *input, Color *output);
-
-		/**
-		 * Add transformation object into the list.
-		 * @param[in] transformation Transformation object.
-		 */
-		void add(boost::shared_ptr<Transformation> transformation);
-
-		/**
-		 * Remove transformation object from the list.
-		 * @param[in] transformation Transformation object.
-		 */
-		void remove(const Transformation *transformation);
-
-		/**
-		 * Clear transformation object list.
-		 */
-		void clear();
-
-		/**
-		 * Enable/disable transformation chain.
-		 * @param[in] enabled Enabled.
-		 */
-		void setEnabled(bool enabled);
-
-		/**
-		 * Get the list of transformation objects.
-		 * @return Transformation object list.
-		 */
-		TransformationList& getAll();
+struct Chain {
+	using TransformationList = std::list<std::unique_ptr<Transformation>>;
+	/**
+	* Chain constructor.
+	*/
+	Chain();
+	/**
+	* Apply transformation chain to color.
+	* @param[in] input Source color in RGB color space.
+	* @param[out] output Destination color in RGB color space.
+	*/
+	void apply(const Color *input, Color *output);
+	/**
+	* Add transformation object into the list.
+	* @param[in] transformation Transformation object.
+	*/
+	void add(std::unique_ptr<Transformation> transformation);
+	/**
+	* Remove transformation object from the list.
+	* @param[in] transformation Transformation object.
+	*/
+	void remove(const Transformation *transformation);
+	/**
+	* Clear transformation object list.
+	*/
+	void clear();
+	/**
+	* Enable/disable transformation chain.
+	* @param[in] enabled Enabled.
+	*/
+	void setEnabled(bool enabled);
+	/**
+	* Get the list of transformation objects.
+	* @return Transformation object list.
+	*/
+	TransformationList &getAll();
+private:
+	TransformationList m_transformationChain;
+	bool m_enabled;
 };
-
 }
-
 #endif /* TRANSFORMATION_CHAIN_H_ */

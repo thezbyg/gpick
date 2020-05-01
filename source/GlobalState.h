@@ -18,7 +18,7 @@
 
 #ifndef GPICK_GLOBAL_STATE_H_
 #define GPICK_GLOBAL_STATE_H_
-
+#include "dynv/MapFwd.h"
 #include <memory>
 #include <boost/optional.hpp>
 #include <cstdint>
@@ -26,7 +26,6 @@ struct ColorNames;
 struct Sampler;
 struct ScreenReader;
 struct ColorList;
-struct dynvSystem;
 struct Random;
 struct Converters;
 struct ColorSource;
@@ -52,7 +51,7 @@ struct GlobalState
 	Sampler *getSampler();
 	ScreenReader *getScreenReader();
 	ColorList *getColorList();
-	dynvSystem *getSettings();
+	dynv::Map &settings();
 	lua::Script &script();
 	lua::Callbacks &callbacks();
 	Converters &converters();

@@ -18,22 +18,29 @@
 
 #ifndef TRANSFORMATION_H_
 #define TRANSFORMATION_H_
-#include "../Color.h"
-#include "Configuration.h"
-#include "../DynvHelpers.h"
+#include "Color.h"
+#include "dynv/MapFwd.h"
 #include <string>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
+typedef struct _GtkWidget GtkWidget;
 /** \file source/transformation/Transformation.h
  * \brief Color transformation struct.
  */
 namespace transformation
 {
-/** \struct Transformation
- * \brief Transformation object struct.
+/** \struct IConfiguration
+ * \brief Transformation object configuration management interface.
  */
-struct Transformation
-{
+struct IConfiguration {
+	virtual ~IConfiguration() = default;
+	virtual GtkWidget* getWidget() = 0;
+	virtual void apply(dynv::Map &options) = 0;
+};
+/** \struct Transformation
+ * \brief Transformation object structure.
+ */
+struct Transformation {
 	protected:
 		std::string name; /**< System name */
 		std::string readable_name; /**< Human readable name */
@@ -61,19 +68,19 @@ struct Transformation
 		 * Serialize settings into configuration system.
 		 * @param[in,out] dynv Configuration system.
 		 */
-		virtual void serialize(struct dynvSystem *dynv);
+		virtual void serialize(dynv::Map &options);
 
 		/**
 		 * Deserialize settings from configuration system.
 		 * @param[in] dynv Configuration system.
 		 */
-		virtual void deserialize(struct dynvSystem *dynv);
+		virtual void deserialize(const dynv::Map &options);
 
 		/**
 		 * Get configuration for transformation object.
 		 * @return Configuration for transformation object.
 		 */
-		virtual boost::shared_ptr<Configuration> getConfig();
+		virtual std::unique_ptr<IConfiguration> getConfiguration();
 
 		/**
 		 * Get transformation object system name.

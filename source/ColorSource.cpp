@@ -21,9 +21,8 @@
 #include <iostream>
 using namespace std;
 
-int color_source_init(ColorSource* source, const char *identificator, const char *name)
-{
-	source->identificator = g_strdup(identificator);
+int color_source_init(ColorSource* source, const std::string &identificator, const char *name) {
+	source->identificator = identificator;
 	source->hr_name = g_strdup(name);
 	source->set_color = 0;
 	source->get_color = 0;
@@ -94,14 +93,13 @@ int color_source_get_default_accelerator(ColorSource *source)
 int color_source_destroy(ColorSource* source)
 {
 	if (source->destroy) return source->destroy(source);
-	g_free(source->identificator);
 	g_free(source->hr_name);
 	delete source;
 	return 0;
 }
-ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace)
+ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, const dynv::Ref &options)
 {
-	return source->implement(source, gs, dynv_namespace);
+	return source->implement(source, gs, options);
 }
 GtkWidget* color_source_get_widget(ColorSource* source)
 {

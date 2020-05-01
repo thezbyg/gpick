@@ -20,7 +20,7 @@
 #include "Converters.h"
 #include "Converter.h"
 #include "uiUtilities.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
 #include "ColorObject.h"
@@ -43,7 +43,7 @@ typedef enum
 struct ConverterArgs
 {
 	GtkWidget *list;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState *gs;
 };
 
@@ -155,13 +155,13 @@ void dialog_converter_show(GtkWindow *parent, GlobalState *gs)
 {
 	ConverterArgs *args = new ConverterArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
+	args->options = args->gs->settings().getOrCreateMap("gpick");
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Converters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "converters.window.width", 640),
-		dynv_get_int32_wd(args->params, "converters.window.height", 400));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("converters.window.width", 640),
+		args->options->getInt32("converters.window.height", 400));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *vbox = gtk_vbox_new(false, 5);
 	GtkWidget *list = converter_list_new(args);
@@ -220,56 +220,50 @@ void dialog_converter_show(GtkWindow *parent, GlobalState *gs)
 		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(display), &iter2)){
 			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
 			args->gs->converters().display(converter);
-			dynv_set_string(args->params, "converters.display", converter->name().c_str());
+			args->options->set("converters.display", converter->name());
 		}
 
 		if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(color_list), &iter2)){
 			gtk_tree_model_get(GTK_TREE_MODEL(model2), &iter2, CONVERTERLIST_CONVERTER_PTR, &converter, -1);
 			args->gs->converters().colorList(converter);
-			dynv_set_string(args->params, "converters.color_list", converter->name().c_str());
+			args->options->set("converters.color_list", converter->name());
 		}
 
 		store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(list)));
 		valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
-
-		unsigned int count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), nullptr);
-		if (count > 0){
-			const char** name_array = new const char*[count];
-			bool* copy_array = new bool[count];
-			bool* paste_array = new bool[count];
-			unsigned int i = 0;
-			while (valid){
+		size_t count = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), nullptr);
+		if (count > 0) {
+			std::vector<std::string> names(count);
+			std::vector<bool> copyArray(count);
+			std::vector<bool> pasteArray(count);
+			size_t i = 0;
+			while (valid) {
 				Converter* converter;
 				gboolean copy, paste;
 				gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, CONVERTERLIST_CONVERTER_PTR, &converter, CONVERTERLIST_COPY, &copy, CONVERTERLIST_PASTE, &paste, -1);
-				name_array[i] = converter->name().c_str();
-				copy_array[i] = copy;
-				paste_array[i] = paste;
+				names[i] = converter->name();
+				copyArray[i] = copy;
+				pasteArray[i] = paste;
 				converter->copy(copy);
 				converter->paste(paste);
 				valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 				++i;
 			}
-			args->gs->converters().reorder((const char**)name_array, count);
-			dynv_set_string_array(args->params, "converters.names", (const char**)name_array, count);
-			dynv_set_bool_array(args->params, "converters.copy", copy_array, count);
-			dynv_set_bool_array(args->params, "converters.paste", paste_array, count);
-
-			delete [] name_array;
-			delete [] copy_array;
-			delete [] paste_array;
+			args->gs->converters().reorder(names);
+			args->options->set("converters.names", names);
+			args->options->set("converters.copy", copyArray);
+			args->options->set("converters.paste", pasteArray);
 		}else{
-			dynv_set_string_array(args->params, "converters.names", 0, 0);
-			dynv_set_bool_array(args->params, "converters.copy", 0, 0);
-			dynv_set_bool_array(args->params, "converters.paste", 0, 0);
+			args->options->remove("converters.names");
+			args->options->remove("converters.copy");
+			args->options->remove("converters.paste");
 		}
 		args->gs->converters().rebuildCopyPasteArrays();
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "converters.window.width", width);
-	dynv_set_int32(args->params, "converters.window.height", height);
+	args->options->set("converters.window.width", width);
+	args->options->set("converters.window.height", height);
 	gtk_widget_destroy(dialog);
-	dynv_system_release(args->params);
 	delete args;
 }

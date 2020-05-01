@@ -24,6 +24,7 @@ struct ColorObject
 {
 	ColorObject();
 	ColorObject(const char *name, const Color &color);
+	ColorObject(const Color &color);
 	ColorObject(const std::string &name, const Color &color);
 	ColorObject *reference();
 	void release();

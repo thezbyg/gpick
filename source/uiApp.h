@@ -18,16 +18,16 @@
 
 #ifndef GPICK_UI_APP_H_
 #define GPICK_UI_APP_H_
+#include "dynv/Map.h"
 #include <string>
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorObject;
 struct Converters;
 struct Color;
-int main_show_window(GtkWidget* window, struct dynvSystem *main_params);
+int main_show_window(GtkWidget* window, const dynv::Ref &options);
 struct AppArgs;
-struct AppOptions
-{
+struct StartupOptions {
 	bool floating_picker_mode;
 	std::string converter_name;
 	bool output_picked_color;
@@ -36,7 +36,7 @@ struct AppOptions
 	bool do_not_start;
 };
 void app_initialize();
-AppArgs* app_create_main(const AppOptions &options, int &return_value);
+AppArgs* app_create_main(const StartupOptions &options, int &return_value);
 int app_load_file(AppArgs *args, const std::string &filename, bool autoload = false);
 int app_run(AppArgs *args);
 int app_parse_geometry(AppArgs *args, const char *geometry);

@@ -19,7 +19,7 @@
 #include "uiColorInput.h"
 #include "Converters.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "uiUtilities.h"
 #include "GlobalState.h"
 #include "gtk/ColorWheel.h"
@@ -41,7 +41,7 @@ struct DialogInputArgs
 	GtkWidget *text_input;
 	GtkWidget *rgb_expander, *hsv_expander, *hsl_expander, *cmyk_expander, *xyz_expander, *lab_expander, *lch_expander;
 	GtkWidget *rgb_control, *hsv_control, *hsl_control, *cmyk_control, *xyz_control, *lab_control, *lch_control;
-	dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 };
 static void updateComponentText(DialogInputArgs *args, GtkColorComponent *component, const char *type)
@@ -86,7 +86,7 @@ static void onComponentChangeValue(GtkWidget *widget, Color *color, DialogInputA
 }
 static void onComponentInputClicked(GtkWidget *widget, int component_id, DialogInputArgs *args)
 {
-	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), GTK_COLOR_COMPONENT(widget), component_id, dynv_get_dynv(args->params, "component_edit"));
+	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), GTK_COLOR_COMPONENT(widget), component_id, args->options->getOrCreateMap("component_edit"));
 }
 static void setComponentHandlers(GtkWidget *widget, DialogInputArgs *args)
 {
@@ -96,7 +96,7 @@ static void setComponentHandlers(GtkWidget *widget, DialogInputArgs *args)
 static void addComponentEditor(GtkWidget *vbox, const char *label, const char *expand_option, GtkColorComponentComp type, const char **labels, DialogInputArgs *args, GtkWidget *&expander, GtkWidget *&control)
 {
 	expander = gtk_expander_new(label);
-	gtk_expander_set_expanded(GTK_EXPANDER(expander), dynv_get_bool_wd(args->params, expand_option, false));
+	gtk_expander_set_expanded(GTK_EXPANDER(expander), args->options->getBool(expand_option, false));
 	gtk_box_pack_start(GTK_BOX(vbox), expander, false, false, 0);
 	control = gtk_color_component_new(type);
 	gtk_color_component_set_label(GTK_COLOR_COMPONENT(control), labels);
@@ -117,7 +117,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 {
 	auto args = new DialogInputArgs();
 	args->gs = gs;
-	args->params = dynv_get_dynv(gs->getSettings(), "gpick.color_input");
+	args->options = gs->settings().getOrCreateMap("gpick.color_input");
 	bool new_item = false;
 	if (color_object) {
 		args->color_object = color_object->copy();
@@ -129,7 +129,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *vbox = gtk_vbox_new(false, 5);
 	GtkWidget *hbox = gtk_hbox_new(false, 5);
@@ -173,24 +173,23 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	int result = -1;
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		if (new_item) {
-			string name = color_names_get(args->gs->getColorNames(), &args->color_object->getColor(), dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false));
+			string name = color_names_get(args->gs->getColorNames(), &args->color_object->getColor(), args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
 			args->color_object->setName(name);
 		}
 		*new_color_object = args->color_object->reference();
 		result = 0;
 	}
-	dynv_set_bool(args->params, "expander.rgb", gtk_expander_get_expanded(GTK_EXPANDER(args->rgb_expander)));
-	dynv_set_bool(args->params, "expander.hsv", gtk_expander_get_expanded(GTK_EXPANDER(args->hsv_expander)));
-	dynv_set_bool(args->params, "expander.hsl", gtk_expander_get_expanded(GTK_EXPANDER(args->hsl_expander)));
-	dynv_set_bool(args->params, "expander.lab", gtk_expander_get_expanded(GTK_EXPANDER(args->lab_expander)));
-	dynv_set_bool(args->params, "expander.lch", gtk_expander_get_expanded(GTK_EXPANDER(args->lch_expander)));
-	dynv_set_bool(args->params, "expander.cmyk", gtk_expander_get_expanded(GTK_EXPANDER(args->cmyk_expander)));
+	args->options->set<bool>("expander.rgb", gtk_expander_get_expanded(GTK_EXPANDER(args->rgb_expander)));
+	args->options->set<bool>("expander.hsv", gtk_expander_get_expanded(GTK_EXPANDER(args->hsv_expander)));
+	args->options->set<bool>("expander.hsl", gtk_expander_get_expanded(GTK_EXPANDER(args->hsl_expander)));
+	args->options->set<bool>("expander.lab", gtk_expander_get_expanded(GTK_EXPANDER(args->lab_expander)));
+	args->options->set<bool>("expander.lch", gtk_expander_get_expanded(GTK_EXPANDER(args->lch_expander)));
+	args->options->set<bool>("expander.cmyk", gtk_expander_get_expanded(GTK_EXPANDER(args->cmyk_expander)));
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
 	gtk_widget_destroy(dialog);
-	dynv_system_release(args->params);
 	args->color_object->release();
 	delete args;
 	return result;
@@ -201,14 +200,14 @@ struct ColorPickerComponentEditArgs
 	GtkWidget* value[4];
 	GtkColorComponentComp component;
 	int component_id;
-	struct dynvSystem *params;
+	dynv::Ref options;
 };
 
-void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *color_component, int component_id, dynvSystem *params)
+void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *color_component, int component_id, dynv::Ref options)
 {
 	GtkColorComponentComp component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(color_component));
 	ColorPickerComponentEditArgs *args = new ColorPickerComponentEditArgs;
-	args->params = params;
+	args->options = options;
 	args->component = component;
 	args->component_id = component_id;
 	memset(args->value, 0, sizeof(args->value));
@@ -218,7 +217,7 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		nullptr);
 
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
 
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
@@ -263,11 +262,8 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-
+	options->set("window.width", width);
+	options->set("window.height", height);
 	gtk_widget_destroy(dialog);
-
-	dynv_system_release(args->params);
 	delete args;
 }

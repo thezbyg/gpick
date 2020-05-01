@@ -29,16 +29,7 @@
 #include "layout/Layouts.h"
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
-#include "dynv/DynvMemoryIO.h"
-#include "dynv/DynvVarString.h"
-#include "dynv/DynvVarInt32.h"
-#include "dynv/DynvVarColor.h"
-#include "dynv/DynvVarPtr.h"
-#include "dynv/DynvVarFloat.h"
-#include "dynv/DynvVarDynv.h"
-#include "dynv/DynvVarBool.h"
-#include "dynv/DynvXml.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "lua/Script.h"
 #include "lua/Extensions.h"
 #include "lua/Callbacks.h"
@@ -60,7 +51,7 @@ struct GlobalState::Impl
 	Sampler *m_sampler;
 	ScreenReader *m_screen_reader;
 	ColorList *m_color_list;
-	dynvSystem *m_settings;
+	dynv::Map m_settings;
 	lua::Script m_script;
 	Random *m_random;
 	Converters m_converters;
@@ -75,7 +66,6 @@ struct GlobalState::Impl
 		m_sampler(nullptr),
 		m_screen_reader(nullptr),
 		m_color_list(nullptr),
-		m_settings(nullptr),
 		m_random(nullptr),
 		m_transformation_chain(nullptr),
 		m_status_bar(nullptr),
@@ -96,8 +86,6 @@ struct GlobalState::Impl
 			sampler_destroy(m_sampler);
 		if (m_screen_reader != nullptr)
 			screen_reader_destroy(m_screen_reader);
-		if (m_settings != nullptr)
-			dynv_system_release(m_settings);
 	}
 	bool writeSettings() {
 		auto configFile = buildConfigPath("settings.xml");
@@ -105,30 +93,20 @@ struct GlobalState::Impl
 		if (!settingsFile.is_open()){
 			return false;
 		}
-		settingsFile << "<?xml version=\"1.0\" encoding='UTF-8'?><root>\n";
-		dynv_xml_serialize(m_settings, settingsFile);
-		settingsFile << "</root>\n";
+		if (!m_settings.serializeXml(settingsFile))
+			return false;
 		settingsFile.close();
-		return true;
+		return settingsFile.good();
 	}
 	bool loadSettings() {
-		if (m_settings != nullptr) return false;
-		struct dynvHandlerMap* handler_map = dynv_handler_map_create();
-		dynv_handler_map_add_handler(handler_map, dynv_var_string_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_int32_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_color_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_ptr_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_float_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_dynv_new());
-		dynv_handler_map_add_handler(handler_map, dynv_var_bool_new());
-		m_settings = dynv_system_create(handler_map);
-		dynv_handler_map_release(handler_map);
 		auto configFile = buildConfigPath("settings.xml");
 		std::ifstream settingsFile(configFile.c_str());
 		if (!settingsFile.is_open()){
 			return false;
 		}
-		dynv_xml_deserialize(m_settings, settingsFile);
+		if (!m_settings.deserializeXml(settingsFile)) {
+			return false;
+		}
 		settingsFile.close();
 		return true;
 	}
@@ -156,9 +134,8 @@ struct GlobalState::Impl
 	{
 		if (m_color_names != nullptr) return false;
 		m_color_names = color_names_new();
-		dynvSystem *params = dynv_get_dynv(m_settings, "gpick");
-		color_names_load(m_color_names, params);
-		dynv_system_release(params);
+		auto options = m_settings.getOrCreateMap("gpick");
+		color_names_load(m_color_names, *options);
 		return true;
 	}
 	bool initializeRandomGenerator()
@@ -172,9 +149,7 @@ struct GlobalState::Impl
 	{
 		if (m_color_list != nullptr) return false;
 		//create color list / callbacks must be defined elsewhere
-		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(m_settings);
-		m_color_list = color_list_new(handler_map);
-		dynv_handler_map_release(handler_map);
+		m_color_list = color_list_new();
 		return true;
 	}
 	bool initializeLua()
@@ -193,85 +168,58 @@ struct GlobalState::Impl
 	}
 	bool loadConverters()
 	{
-		char** source_array;
-		uint32_t source_array_size;
-		if ((source_array = (char**)dynv_get_string_array_wd(m_settings, "gpick.converters.names", 0, 0, &source_array_size))){
-			bool *copy_array, *paste_array;
-			uint32_t copy_array_size = 0, paste_array_size = 0;
-			copy_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.copy", 0, 0, &copy_array_size);
-			paste_array = dynv_get_bool_array_wd(m_settings, "gpick.converters.paste", 0, 0, &paste_array_size);
-			gsize source_array_i = 0;
-			Converter *converter;
-			if (copy_array_size > 0 || paste_array_size > 0){
-				while (source_array_i < source_array_size){
-					converter = m_converters.byName(source_array[source_array_i]);
-					if (converter){
-						if (source_array_i < copy_array_size)
-							converter->copy(converter->hasSerialize() && copy_array[source_array_i]);
-						if (source_array_i < paste_array_size)
-							converter->paste(converter->hasDeserialize() && paste_array[source_array_i]);
-					}
-					++source_array_i;
-				}
-			}else{
-				while (source_array_i < source_array_size){
-					converter = m_converters.byName(source_array[source_array_i]);
-					if (converter){
-						converter->copy(converter->hasSerialize());
-						converter->paste(converter->hasDeserialize());
-					}
-					++source_array_i;
-				}
-			}
-			if (copy_array) delete [] copy_array;
-			if (paste_array) delete [] paste_array;
-			m_converters.reorder((const char**)source_array, source_array_size);
-			if (source_array) delete [] source_array;
-		}else{
-			//Initialize default values
-			const char* name_array[] = {
+		auto converters = m_settings.getOrCreateMap("gpick.converters");
+		if (converters->size() == 0) {
+			const char* names[] = {
 				"color_web_hex",
 				"color_css_rgb",
 				"color_css_hsl",
 			};
-			source_array_size = sizeof(name_array) / sizeof(name_array[0]);
-			gsize source_array_i = 0;
-			Converter* converter;
-			while (source_array_i < source_array_size){
-				converter = m_converters.byName(name_array[source_array_i]);
-				if (converter){
-					converter->copy(converter->hasSerialize());
-					converter->paste(converter->hasDeserialize());
-				}
-				++source_array_i;
+			for (size_t i = 0; i != sizeof(names) / sizeof(names[0]); i++) {
+				auto converter = m_converters.byName(names[i]);
+				if (!converter)
+					continue;
+				converter->copy(converter->hasSerialize());
+				converter->paste(converter->hasDeserialize());
 			}
-			m_converters.reorder(name_array, source_array_size);
+			m_converters.reorder(names, sizeof(names) / sizeof(names[0]));
+		} else {
+			auto names = converters->getStrings("names");
+			auto copy = converters->getBools("copy");
+			auto paste = converters->getBools("paste");
+			for (size_t i = 0, end = names.size(); i != end; i++) {
+				auto converter = m_converters.byName(names[i].c_str());
+				if (!converter)
+					continue;
+				if (i < copy.size())
+					converter->copy(converter->hasSerialize() && copy[i]);
+				if (i < paste.size())
+					converter->paste(converter->hasDeserialize() && paste[i]);
+			}
+			m_converters.reorder(names);
 		}
 		m_converters.rebuildCopyPasteArrays();
-		m_converters.display(dynv_get_string_wd(m_settings, "gpick.converters.display", "color_web_hex"));
-		m_converters.colorList(dynv_get_string_wd(m_settings, "gpick.converters.color_list", "color_web_hex"));
+		m_converters.display(m_settings.getString("gpick.converters.display", "color_web_hex"));
+		m_converters.colorList(m_settings.getString("gpick.converters.color_list", "color_web_hex"));
 		return true;
 	}
 	bool loadTransformationChain()
 	{
 		if (m_transformation_chain != nullptr) return false;
 		transformation::Chain *chain = new transformation::Chain();
-		chain->setEnabled(dynv_get_bool_wd(m_settings, "gpick.transformations.enabled", false));
-		struct dynvSystem** config_array;
-		uint32_t config_size;
-		if ((config_array = (struct dynvSystem**)dynv_get_dynv_array_wd(m_settings, "gpick.transformations.items", 0, 0, &config_size))){
-			for (uint32_t i = 0; i != config_size; i++){
-				const char *name = dynv_get_string_wd(config_array[i], "name", 0);
-				if (name){
-					boost::shared_ptr<transformation::Transformation> tran = transformation::Factory::create(name);
-					if (tran){
-						tran->deserialize(config_array[i]);
-						chain->add(tran);
-					}
-				}
-				dynv_system_release(config_array[i]);
-			}
-			delete [] config_array;
+		chain->setEnabled(m_settings.getBool("gpick.transformations.enabled", false));
+		auto items = m_settings.getMaps("gpick.transformations.items");
+		for (auto values: items) {
+			if (!values)
+				continue;
+			auto name = values->getString("name", "");
+			if (name.empty())
+				continue;
+			auto transformation = transformation::Factory::create(name);
+			if (!transformation)
+				continue;
+			transformation->deserialize(*values);
+			chain->add(std::move(transformation));
 		}
 		m_transformation_chain = chain;
 		return true;
@@ -328,7 +276,7 @@ ColorList *GlobalState::getColorList()
 {
 	return m_impl->m_color_list;
 }
-dynvSystem *GlobalState::getSettings()
+dynv::Map &GlobalState::settings()
 {
 	return m_impl->m_settings;
 }

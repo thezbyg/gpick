@@ -17,48 +17,42 @@
  */
 
 #include "DynvSystem.h"
-#include "../dynv/DynvSystem.h"
-#include "../DynvHelpers.h"
 extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
 }
-namespace lua
-{
-dynvSystem* checkDynvSystem(lua_State *L, int index)
-{
+namespace lua {
+dynv::Ref checkDynvSystem(lua_State *L, int index) {
 	void *ud = luaL_checkudata(L, index, "dynvSystem");
 	luaL_argcheck(L, ud != nullptr, index, "`dynvSystem' expected");
-	return dynv_system_ref(*reinterpret_cast<dynvSystem**>(ud));
+	return *reinterpret_cast<dynv::Ref*>(ud);
 }
-int pushDynvSystem(lua_State *L, dynvSystem* params)
-{
-	dynvSystem **c = reinterpret_cast<dynvSystem**>(lua_newuserdata(L, sizeof(dynvSystem*)));
+int pushDynvSystem(lua_State *L, const dynv::Ref &system) {
+	new (lua_newuserdata(L, sizeof(dynv::Ref))) dynv::Ref(system);
 	luaL_getmetatable(L, "dynvSystem");
 	lua_setmetatable(L, -2);
-	*c = dynv_system_ref(params);
 	return 1;
 }
-int getString(lua_State *L)
-{
-	dynvSystem *params = checkDynvSystem(L, 1);
+int getString(lua_State *L) {
+	auto system = checkDynvSystem(L, 1);
+	if (!system) {
+		lua_pushnil(L);
+		return 1;
+	}
 	const char *name = luaL_checkstring(L, 2);
-	const char *default_value = luaL_checkstring(L, 3);
-	lua_pushstring(L, dynv_get_string_wd(params, name, default_value));
-	dynv_system_release(params);
+	const char *defaultValue = luaL_checkstring(L, 3);
+	lua_pushstring(L, system->getString(name, defaultValue).c_str());
 	return 1;
 }
-static const struct luaL_Reg dynv_system_members[] =
-{
+static const struct luaL_Reg dynvSystemMembers[] = {
 	{"getString", getString},
 	{nullptr, nullptr}
 };
-int registerDynvSystem(lua_State *L)
-{
+int registerDynvSystem(lua_State *L) {
 	luaL_newmetatable(L, "dynvSystem");
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
-	luaL_setfuncs(L, dynv_system_members, 0);
+	luaL_setfuncs(L, dynvSystemMembers, 0);
 	lua_pop(L, 1);
 	return 0;
 }

@@ -57,7 +57,16 @@ void color_init()
 }
 
 Color::Color():
-	ma { 0, 0, 0 ,0 } {
+	ma { 0, 0, 0, 0 } {
+}
+Color::Color(float grayValue):
+	ma { grayValue, grayValue, grayValue, 0 } {
+}
+Color::Color(float red, float green, float blue):
+	ma { red, green, blue, 0 } {
+}
+bool Color::operator==(const Color &color) const {
+	return color_equal(this, &color);
 }
 
 void color_rgb_to_hsv(const Color* a, Color* b)
@@ -754,12 +763,11 @@ const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObse
 	return &references[illuminant][observer];
 }
 
-const ReferenceIlluminant color_get_illuminant(const char *illuminant)
-{
-	const struct{
+const ReferenceIlluminant color_get_illuminant(const std::string &illuminant) {
+	const struct {
 		const char *label;
 		ReferenceIlluminant illuminant;
-	}illuminants[] = {
+	} illuminants[] = {
 		{"A", REFERENCE_ILLUMINANT_A},
 		{"C", REFERENCE_ILLUMINANT_C},
 		{"D50", REFERENCE_ILLUMINANT_D50},
@@ -771,26 +779,25 @@ const ReferenceIlluminant color_get_illuminant(const char *illuminant)
 		{"F11", REFERENCE_ILLUMINANT_F11},
 		{0, REFERENCE_ILLUMINANT_D50},
 	};
-	for (int i = 0; illuminants[i].label; i++){
-		if (string(illuminants[i].label).compare(illuminant) == 0){
+	for (int i = 0; illuminants[i].label; i++) {
+		if (illuminants[i].label == illuminant) {
 			return illuminants[i].illuminant;
 		}
 	}
 	return REFERENCE_ILLUMINANT_D50;
 };
 
-const ReferenceObserver color_get_observer(const char *observer)
-{
-	const struct{
+const ReferenceObserver color_get_observer(const std::string &observer) {
+	const struct {
 		const char *label;
 		ReferenceObserver observer;
-	}observers[] = {
+	} observers[] = {
 		{"2", REFERENCE_OBSERVER_2},
 		{"10", REFERENCE_OBSERVER_10},
 		{0, REFERENCE_OBSERVER_2},
 	};
-	for (int i = 0; observers[i].label; i++){
-		if (string(observers[i].label).compare(observer) == 0){
+	for (int i = 0; observers[i].label; i++) {
+		if (observers[i].label == observer) {
 			return observers[i].observer;
 		}
 	}

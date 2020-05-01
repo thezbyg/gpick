@@ -28,7 +28,7 @@
 #include "ColorPicker.h"
 #include "Converters.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "ToolColorNaming.h"
 #include "ScreenReader.h"
 #include "Sampler.h"
@@ -156,16 +156,15 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	args->single_pick_mode = single_pick_mode;
 	args->click_mode = true;
 	GdkCursor* cursor;
-	if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.hide_cursor", false))
+	if (args->gs->settings().getBool("gpick.picker.hide_cursor", false))
 		cursor = gdk_cursor_new(GDK_BLANK_CURSOR);
 	else
 		cursor = gdk_cursor_new(GDK_TCROSS);
-	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.zoom", 2));
 	update_display(args);
 	gtk_widget_show(args->window);
 	gdk_pointer_grab(gtk_widget_get_window(args->window), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 	gdk_keyboard_grab(gtk_widget_get_window(args->window), false, GDK_CURRENT_TIME);
-	float refresh_rate = dynv_get_float_wd(args->gs->getSettings(), "gpick.picker.refresh_rate", 30);
+	float refresh_rate = args->gs->settings().getFloat("gpick.picker.refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
 #if GTK_MAJOR_VERSION >= 3
 	g_object_unref(cursor);
@@ -186,11 +185,13 @@ void floating_picker_deactivate(FloatingPickerArgs *args)
 }
 static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, FloatingPickerArgs *args)
 {
-	double zoom = gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed));
+	float zoom = static_cast<float>(gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
 	if ((event->direction == GDK_SCROLL_UP) || (event->direction == GDK_SCROLL_RIGHT)) {
 		zoom += 1;
+		gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), zoom);
 	} else if ((event->direction == GDK_SCROLL_DOWN) || (event->direction == GDK_SCROLL_LEFT)) {
 		zoom -= 1;
+		gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), zoom);
 	} else
 		return false;
 	return true;
@@ -198,7 +199,7 @@ static gboolean scroll_event_cb(GtkWidget *widget, GdkEventScroll *event, Floati
 static void finish_picking(FloatingPickerArgs *args)
 {
 	floating_picker_deactivate(args);
-	dynv_set_float(args->gs->getSettings(), "gpick.picker.zoom", gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed)));
+	args->gs->settings().set<int32_t>("gpick.floating_picker.zoom", static_cast<int32_t>(gtk_zoomed_get_zoom(GTK_ZOOMED(args->zoomed))));
 	if (args->custom_done_action)
 		args->custom_done_action(args);
 }
@@ -216,18 +217,18 @@ static void complete_picking(FloatingPickerArgs *args)
 			if (args->single_pick_mode){
 				clipboard::set(color_object, args->gs, args->converter);
 			}else{
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.copy_on_release", true)){
+				if (args->gs->settings().getBool("gpick.picker.sampler.copy_on_release", true)){
 					clipboard::set(color_object, args->gs, args->converter);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_on_release", true)){
+				if (args->gs->settings().getBool("gpick.picker.sampler.add_on_release", true)){
 					PickerColorNameAssigner name_assigner(args->gs);
 					name_assigner.assign(color_object, &c);
 					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.add_to_swatch_on_release", true)){
+				if (args->gs->settings().getBool("gpick.picker.sampler.add_to_swatch_on_release", true)){
 					color_picker_set_current_color(args->color_source);
 				}
-				if (dynv_get_bool_wd(args->gs->getSettings(), "gpick.picker.sampler.rotate_swatch_on_release", true)){
+				if (args->gs->settings().getBool("gpick.picker.sampler.rotate_swatch_on_release", true)){
 					color_picker_rotate_swatch(args->color_source);
 				}
 			}
@@ -374,6 +375,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	gtk_container_add (GTK_CONTAINER(args->window), vbox);
 	gtk_widget_show(vbox);
 	args->zoomed = gtk_zoomed_new();
+	gtk_zoomed_set_zoom(GTK_ZOOMED(args->zoomed), gs->settings().getInt32("gpick.floating_picker.zoom", 20));
 	gtk_widget_show(args->zoomed);
 	gtk_box_pack_start(GTK_BOX(vbox), args->zoomed, false, false, 0);
 	args->color_widget = gtk_color_new();

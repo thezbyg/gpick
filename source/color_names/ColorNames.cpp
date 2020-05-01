@@ -17,14 +17,16 @@
  */
 
 #include "ColorNames.h"
-#include "../Color.h"
-#include "../Paths.h"
+#include "Color.h"
+#include "Paths.h"
+#include "dynv/Map.h"
 #include <string.h>
 #include <sstream>
 #include <fstream>
 #include <functional>
 #include <list>
 #include <algorithm>
+#include <map>
 using namespace std;
 
 struct ColorNameEntry
@@ -83,9 +85,9 @@ static void color_names_strip_spaces(string& string_x, const string& strip_chars
 }
 void color_names_normalize(const Color &color, Color &out)
 {
-	out.xyz.x = color.xyz.x / 100.0;
-	out.xyz.y = (color.xyz.y + 86.1825) / (86.1825 + 98.2346);
-	out.xyz.z = (color.xyz.z + 107.86) / (107.86 + 94.478);
+	out.xyz.x = color.xyz.x / 100.0f;
+	out.xyz.y = (color.xyz.y + 86.1825f) / (86.1825f + 98.2346f);
+	out.xyz.z = (color.xyz.z + 107.86f) / (107.86f + 94.478f);
 }
 void color_names_get_color_xyz(ColorNames* color_names, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
 {
@@ -128,7 +130,7 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 				while(++i != name.end()){
 					*i = tolower((unsigned char)*i);
 				}
-				color_multiply(&color, 1 / 255.0);
+				color_multiply(&color, 1 / 255.0f);
 				ColorNameEntry* name_entry = new ColorNameEntry;
 				name_entry->name = name;
 				color_names->names.push_back(name_entry);
@@ -201,29 +203,24 @@ string color_names_get(ColorNames* color_names, const Color* color, bool impreci
 	}
 	return string("");
 }
-void color_names_load(ColorNames *color_names, dynvSystem *params)
-{
-	uint32_t dictionary_count = 0;
-	struct dynvSystem** dictionaries = dynv_get_dynv_array_wd(params, "color_dictionaries.items", nullptr, 0, &dictionary_count);
-	if (dictionaries){
-		for (uint32_t i = 0; i < dictionary_count; i++){
-			bool enable = dynv_get_bool_wd(dictionaries[i], "enable", false);
-			if (enable){
-				bool built_in = dynv_get_bool_wd(dictionaries[i], "built_in", false);
-				string path = dynv_get_string_wd(dictionaries[i], "path", "");
-				if (built_in){
-					if (path == "built_in_0"){
-						color_names_load_from_file(color_names, buildFilename("color_dictionary_0.txt"));
-					}
-				}else{
-					color_names_load_from_file(color_names, path.c_str());
-				}
-			}
-			dynv_system_release(dictionaries[i]);
-		}
-		if (dictionaries) delete [] dictionaries;
-	}else{
+void color_names_load(ColorNames *color_names, const dynv::Map &params) {
+	if (!params.contains("color_dictionaries.items")) {
 		color_names_load_from_file(color_names, buildFilename("color_dictionary_0.txt"));
+		return;
+	}
+	const auto items = params.getMaps("color_dictionaries.items");
+	for (const auto &item: items) {
+		if (!item->getBool("enable", false))
+			continue;
+		auto builtIn = item->getBool("built_in", false);
+		auto path = item->getString("path", "");
+		if (builtIn) {
+			if (path == "built_in_0") {
+				color_names_load_from_file(color_names, buildFilename("color_dictionary_0.txt"));
+			}
+		} else {
+			color_names_load_from_file(color_names, path.c_str());
+		}
 	}
 }
 void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors)

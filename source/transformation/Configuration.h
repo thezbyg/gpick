@@ -16,24 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_CONFIGURATION_H_
-#define TRANSFORMATION_CONFIGURATION_H_
-#include "../DynvHelpers.h"
+#ifndef GPICK_TRANSFORMATION_CONFIGURATION_H_
+#define GPICK_TRANSFORMATION_CONFIGURATION_H_
+#include "dynv/MapFwd.h"
 #include <gtk/gtk.h>
-/** \file source/transformation/Configuration.h
- * \brief Struct for transformation object configuration handling.
- */
-namespace transformation
-{
-/** \struct Configuration
- * \brief Transformation object configuration management struct.
- */
-struct Configuration
-{
-	Configuration();
-	virtual ~Configuration();
-	virtual GtkWidget* getWidget();
-	virtual void applyConfig(dynvSystem *dynv);
-};
-}
-#endif /* TRANSFORMATION_CONFIGURATION_H_ */
+#endif /* GPICK_TRANSFORMATION_CONFIGURATION_H_ */

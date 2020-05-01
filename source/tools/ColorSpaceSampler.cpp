@@ -21,7 +21,7 @@
 #include "ColorObject.h"
 #include "GlobalState.h"
 #include "I18N.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ToolColorNaming.h"
@@ -53,7 +53,7 @@ struct ColorSpaceSamplerArgs
 	GtkWidget *preview_expander;
 	ColorList *color_list;
 	ColorList *preview_color_list;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 };
 
@@ -92,11 +92,11 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 	values.resize(value_count);
 	size_t value_i = 0;
 	for (int x = 0; x < args->axis[0].samples; x++){
-		float x_value = (args->axis[0].samples > 1) ? (args->axis[0].min_value + (args->axis[0].max_value - args->axis[0].min_value) * (x / (double)(args->axis[0].samples - 1))) : args->axis[0].min_value;
+		float x_value = (args->axis[0].samples > 1) ? (args->axis[0].min_value + (args->axis[0].max_value - args->axis[0].min_value) * (x / (float)(args->axis[0].samples - 1))) : args->axis[0].min_value;
 		for (int y = 0; y < args->axis[1].samples; y++){
-			float y_value = (args->axis[1].samples > 1) ? (args->axis[1].min_value + (args->axis[1].max_value - args->axis[1].min_value) * (y / (double)(args->axis[1].samples - 1))) : args->axis[1].min_value;
+			float y_value = (args->axis[1].samples > 1) ? (args->axis[1].min_value + (args->axis[1].max_value - args->axis[1].min_value) * (y / (float)(args->axis[1].samples - 1))) : args->axis[1].min_value;
 			for (int z = 0; z < args->axis[2].samples; z++){
-				float z_value = (args->axis[2].samples > 1) ? (args->axis[2].min_value + (args->axis[2].max_value - args->axis[2].min_value) * (z / (double)(args->axis[2].samples - 1))) : args->axis[2].min_value;
+				float z_value = (args->axis[2].samples > 1) ? (args->axis[2].min_value + (args->axis[2].max_value - args->axis[2].min_value) * (z / (float)(args->axis[2].samples - 1))) : args->axis[2].min_value;
 				values[value_i].ma[0] = x_value;
 				values[value_i].ma[1] = y_value;
 				values[value_i].ma[2] = z_value;
@@ -128,8 +128,8 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 			case 3:
 				color_copy(&values[i], &t);
 				t.lab.L *= 100;
-				t.lab.a = (t.lab.a - 0.5) * 290;
-				t.lab.b = (t.lab.b - 0.5) * 290;
+				t.lab.a = (t.lab.a - 0.5f) * 290;
+				t.lab.b = (t.lab.b - 0.5f) * 290;
 				color_lab_to_rgb_d50(&t, &t);
 				break;
 			case 4:
@@ -152,7 +152,6 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 static void destroy_cb(GtkWidget* widget, ColorSpaceSamplerArgs *args)
 {
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	delete args;
 }
 static void get_settings(ColorSpaceSamplerArgs *args)
@@ -165,23 +164,22 @@ static void get_settings(ColorSpaceSamplerArgs *args)
 		args->axis[i].max_value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_max_value));
 	}
 }
-static dynvSystem* get_axis_config(int axis, ColorSpaceSamplerArgs *args)
+static dynv::Ref get_axis_config(int axis, ColorSpaceSamplerArgs *args)
 {
 	stringstream config_name;
 	config_name << "axis" << axis;
 	string config_name_string = config_name.str();
-	return dynv_get_dynv(args->params, config_name_string.c_str());
+	return args->options->getOrCreateMap(config_name_string);
 }
 static void save_settings(ColorSpaceSamplerArgs *args)
 {
-	dynv_set_int32(args->params, "color_space", args->color_space);
-	dynv_set_bool(args->params, "linearization", args->linearization);
+	args->options->set("color_space", args->color_space);
+	args->options->set("linearization", args->linearization);
 	for (int i = 0; i < N_AXIS; i++){
-		dynvSystem *axis_config = get_axis_config(i, args);
-		dynv_set_int32(axis_config, "samples", args->axis[i].samples);
-		dynv_set_float(axis_config, "min_value", args->axis[i].min_value);
-		dynv_set_float(axis_config, "max_value", args->axis[i].max_value);
-		dynv_system_release(axis_config);
+		auto axis_config = get_axis_config(i, args);
+		axis_config->set("samples", args->axis[i].samples);
+		axis_config->set("min_value", args->axis[i].min_value);
+		axis_config->set("max_value", args->axis[i].max_value);
 	}
 }
 static void update(GtkWidget *widget, ColorSpaceSamplerArgs *args)
@@ -196,9 +194,9 @@ static void response_cb(GtkWidget* widget, gint response_id, ColorSpaceSamplerAr
 	save_settings(args);
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
-	dynv_set_int32(args->params, "window.width", width);
-	dynv_set_int32(args->params, "window.height", height);
-	dynv_set_bool(args->params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->preview_expander)));
+	args->options->set("window.width", width);
+	args->options->set("window.height", height);
+	args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->preview_expander)));
 	switch (response_id){
 		case GTK_RESPONSE_APPLY:
 			calc(args, false, 0);
@@ -214,12 +212,12 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 {
 	ColorSpaceSamplerArgs *args = new ColorSpaceSamplerArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.tools.color_space_sampler");
+	args->options = args->gs->settings().getOrCreateMap("gpick.tools.color_space_sampler");
 
 	int table_m_y;
 	GtkWidget *table, *table_m, *widget;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Color space sampler"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "window.width", -1), dynv_get_int32_wd(args->params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 
 	table_m = gtk_table_new(3, 1, FALSE);
@@ -238,13 +236,13 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("HSL"));
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LAB"));
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LCH"));
-	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), dynv_get_int32_wd(args->params, "color_space", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), args->options->getInt32("color_space", 0));
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(update), args);
 	table_y++;
 
 	args->toggle_linearization = gtk_check_button_new_with_mnemonic(_("_Linearization"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_linearization), dynv_get_bool_wd(args->params, "linearization", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_linearization), args->options->getBool("linearization", false));
 	gtk_table_attach(GTK_TABLE(table), args->toggle_linearization,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	g_signal_connect(G_OBJECT(args->toggle_linearization), "toggled", G_CALLBACK(update), args);
 	table_y++;
@@ -261,28 +259,27 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 	};
 	for (int i = 0; i < N_AXIS; i++){
 		string axis_name = string(axis_names[i]) + ":";
-		dynvSystem *axis_config = get_axis_config(i, args);
+		auto axis_config = get_axis_config(i, args);
 		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(axis_name.c_str()), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 		args->axis[i].range_samples = widget = gtk_spin_button_new_with_range(1, 255, 1);
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), dynv_get_int32_wd(axis_config, "samples", 12));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), axis_config->getInt32("samples", 12));
 		gtk_table_attach(GTK_TABLE(table), widget, 1, 3, table_y, table_y + 1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL, 3, 3);
 		g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(update), args);
 
 		args->axis[i].range_min_value = widget = gtk_spin_button_new_with_range(0, 1, 0.001);
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), dynv_get_float_wd(axis_config, "min_value", 0));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), axis_config->getFloat("min_value", 0));
 		gtk_table_attach(GTK_TABLE(table), widget, 3, 5, table_y, table_y + 1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL, 3, 3);
 		g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(update), args);
 
 		args->axis[i].range_max_value = widget = gtk_spin_button_new_with_range(0, 1, 0.001);
-		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), dynv_get_float_wd(axis_config, "max_value", 1));
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), axis_config->getFloat("max_value", 1));
 		gtk_table_attach(GTK_TABLE(table), widget, 5, 7, table_y, table_y + 1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL, 3, 3);
 		g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(update), args);
 
 		table_y++;
-		dynv_system_release(axis_config);
 	}
 	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, dynv_get_bool_wd(args->params, "show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
 	args->preview_color_list = preview_color_list;

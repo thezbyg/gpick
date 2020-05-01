@@ -25,7 +25,7 @@
 #include "ColorPicker.h"
 #include "FloatingPicker.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include <gdk/gdkkeysyms.h>
 using namespace math;
@@ -45,9 +45,8 @@ static void status_icon_show_parent(GtkWidget *, uiStatusIcon* si)
 {
 	floating_picker_deactivate(si->floating_picker);
 	status_icon_set_visible(si, false);
-	struct dynvSystem *params = dynv_get_dynv(si->gs->getSettings(), "gpick.main");
-	main_show_window(si->parent, params);
-	dynv_system_release(params);
+	auto options = si->gs->settings().getOrCreateMap("gpick.main");
+	main_show_window(si->parent, options);
 }
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint activate_time, gpointer user_data)
 {

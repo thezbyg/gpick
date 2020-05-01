@@ -17,37 +17,29 @@
  */
 
 #include "Transformation.h"
-namespace transformation
-{
-Transformation::Transformation(const char *name_, const char *readable_name_)
-{
+#include "dynv/Map.h"
+namespace transformation {
+Transformation::Transformation(const char *name_, const char *readable_name_) {
 	name = name_;
 	readable_name = readable_name_;
 }
-Transformation::~Transformation()
-{
+Transformation::~Transformation() {
 }
-void Transformation::apply(Color *input, Color *output)
-{
+void Transformation::apply(Color *input, Color *output) {
 	color_copy(input, output);
 }
-std::string Transformation::getName() const
-{
+std::string Transformation::getName() const {
 	return name;
 }
-std::string Transformation::getReadableName() const
-{
+std::string Transformation::getReadableName() const {
 	return readable_name;
 }
-void Transformation::serialize(struct dynvSystem *dynv)
-{
-	dynv_set_string(dynv, "name", name.c_str());
+void Transformation::serialize(dynv::Map &options) {
+	options.set("name", name);
 }
-void Transformation::deserialize(struct dynvSystem *dynv)
-{
+void Transformation::deserialize(const dynv::Map &options) {
 }
-boost::shared_ptr<Configuration> Transformation::getConfig()
-{
-	return boost::shared_ptr<Configuration>();
+std::unique_ptr<IConfiguration> Transformation::getConfiguration() {
+	return std::unique_ptr<IConfiguration>();
 }
 }

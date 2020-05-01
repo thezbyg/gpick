@@ -18,14 +18,14 @@
 
 #ifndef GPICK_COLOR_NAMES_COLOR_NAMES_H_
 #define GPICK_COLOR_NAMES_COLOR_NAMES_H_
-#include "../Color.h"
-#include "../DynvHelpers.h"
+#include "Color.h"
+#include "dynv/MapFwd.h"
 #include <string>
 #include <vector>
 struct ColorNames;
 ColorNames *color_names_new();
 void color_names_clear(ColorNames *color_names);
-void color_names_load(ColorNames *color_names, dynvSystem *params);
+void color_names_load(ColorNames *color_names, const dynv::Map &params);
 int color_names_load_from_file(ColorNames *color_names, const std::string &filename);
 void color_names_destroy(ColorNames *color_names);
 std::string color_names_get(ColorNames *color_names, const Color *color, bool imprecision_postfix);

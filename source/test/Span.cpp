@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,44 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVVARDYNV_H_
-#define DYNVVARDYNV_H_
-
-#include "DynvSystem.h"
-
-struct dynvHandler* dynv_var_dynv_new();
-
-#endif /* DYNVVARDYNV_H_ */
+#include <boost/test/unit_test.hpp>
+#include "common/Span.h"
+#include <vector>
+using namespace common;
+BOOST_AUTO_TEST_SUITE(span);
+BOOST_AUTO_TEST_CASE(iteration) {
+	size_t j = 0;
+	std::string result;
+	for (auto i: Span<const char>("test", 4)) {
+		j++;
+		result += i;
+	}
+	BOOST_CHECK_EQUAL(j, 4);
+	BOOST_CHECK_EQUAL(result, "test");
+}
+BOOST_AUTO_TEST_CASE(constIteration) {
+	size_t j = 0;
+	std::string result;
+	auto span = Span<const char>("test", 4);
+	const auto &values = span;
+	for (auto i: values) {
+		j++;
+		result += i;
+	}
+	BOOST_CHECK_EQUAL(j, 4);
+	BOOST_CHECK_EQUAL(result, "test");
+}
+BOOST_AUTO_TEST_CASE(size) {
+	BOOST_CHECK_EQUAL(Span<const char>("value", 5).size(), 5);
+}
+BOOST_AUTO_TEST_CASE(vectorInitialization) {
+	auto span = Span<const char>("value", 5);
+	std::vector<char> value(span.begin(), span.end());
+	BOOST_CHECK_EQUAL(value.size(), 5);
+}
+BOOST_AUTO_TEST_CASE(startEndInitialization) {
+	bool bools[] = { false, true, false, true, false };
+	auto span = Span<bool>(bools, bools + 5);
+	BOOST_CHECK_EQUAL(span.size(), 5);
+}
+BOOST_AUTO_TEST_SUITE_END()

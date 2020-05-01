@@ -31,7 +31,7 @@
 #include "uiColorInput.h"
 #include "Converter.h"
 #include "Clipboard.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "gtk/LayoutPreview.h"
@@ -39,7 +39,7 @@
 #include "layout/Layouts.h"
 #include "layout/Style.h"
 #include "StandardMenu.h"
-#include "Format.h"
+#include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
@@ -56,7 +56,7 @@ typedef struct BrightnessDarknessArgs{
 	GtkWidget *brightness_darkness;
 	GtkWidget *layout_view;
 	System* layout_system;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }BrightnessDarknessArgs;
 
@@ -84,15 +84,15 @@ struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
 };
 static string format(char prefix, int index)
 {
-	return prefix + as_string(index);
+	return prefix + common::as_string(index);
 }
 static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 {
-	double brightness = gtk_range_2d_get_x(GTK_RANGE_2D(args->brightness_darkness));
-	double darkness = gtk_range_2d_get_y(GTK_RANGE_2D(args->brightness_darkness));
+	float brightness = gtk_range_2d_get_x(GTK_RANGE_2D(args->brightness_darkness));
+	float darkness = gtk_range_2d_get_y(GTK_RANGE_2D(args->brightness_darkness));
 	if (save_settings){
-		dynv_set_float(args->params, "brightness", brightness);
-		dynv_set_float(args->params, "darkness", brightness);
+		args->options->set("brightness", brightness);
+		args->options->set("darkness", brightness);
 	}
 	Color color, hsl_orig, hsl, r;
 	color_copy(&args->color, &color);
@@ -103,7 +103,7 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 		return;
 	for (int i = 1; i <= 4; i++){
 		color_copy(&hsl_orig, &hsl);
-		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
+		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0f); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
 		name = format('b', i);
 		box = args->layout_system->GetNamedBox(name.c_str());
@@ -111,7 +111,7 @@ static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
 			color_copy(&r, &box->style->color);
 		}
 		color_copy(&hsl_orig, &hsl);
-		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
+		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0f); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
 		color_hsl_to_rgb(&hsl, &r);
 		name = format('c', i);
 		box = args->layout_system->GetNamedBox(name.c_str());
@@ -271,7 +271,6 @@ static int source_destroy(BrightnessDarknessArgs *args)
 {
 	if (args->layout_system) System::unref(args->layout_system);
 	args->layout_system = nullptr;
-	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -285,14 +284,14 @@ static int source_activate(BrightnessDarknessArgs *args)
 }
 static int source_deactivate(BrightnessDarknessArgs *args)
 {
-	dynv_set_color(args->params, "color", &args->color);
+	args->options->set("color", args->color);
 	calc(args, true, true);
 	return 0;
 }
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace)
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options)
 {
 	BrightnessDarknessArgs* args = new BrightnessDarknessArgs;
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->statusbar = gs->getStatusBar();
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -310,9 +309,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	dd.get_color_object = get_color_object;
 	dd.set_color_object_at = set_color_object_at;
 	dd.test_at = test_at;
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	args->brightness_darkness = widget = gtk_range_2d_new();
-	gtk_range_2d_set_values(GTK_RANGE_2D(widget), dynv_get_float_wd(dynv_namespace, "brightness", 0.5), dynv_get_float_wd(dynv_namespace, "darkness", 0.5));
+	gtk_range_2d_set_values(GTK_RANGE_2D(widget), options->getFloat("brightness", 0.5), options->getFloat("darkness", 0.5));
 	gtk_range_2d_set_axis(GTK_RANGE_2D(widget), _("Brightness"), _("Darkness"));
 	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(update), args);
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
@@ -322,7 +320,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	//setup drag&drop
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	args->gs = gs;
@@ -338,9 +335,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	}
 	Color c;
 	color_set(&c, 0.5);
-	Color *color = dynv_get_color_wdc(dynv_namespace, "color", &c);
-	color_copy(color, &args->color);
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), color, "main");
+	Color color = options->getColor("color", c);
+	color_copy(&color, &args->color);
+	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
 	calc(args, true, false);
 	gtk_widget_show_all(hbox);
 	update(0, args);
@@ -352,7 +349,7 @@ int brightness_darkness_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "brightness_darkness", _("Brightness Darkness"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
 	color_source->default_accelerator = GDK_KEY_d;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

@@ -17,75 +17,57 @@
  */
 
 #include "GammaModification.h"
+#include "dynv/Map.h"
 #include "../MathUtil.h"
 #include "../uiUtilities.h"
 #include "../I18N.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>
-
 namespace transformation {
-
-static const char * transformation_name = "gamma_modification";
-
-const char *GammaModification::getName()
-{
-	return transformation_name;
+static const char *transformationId = "gamma_modification";
+const char *GammaModification::getId() {
+	return transformationId;
 }
-
-const char *GammaModification::getReadableName()
-{
+const char *GammaModification::getName() {
 	return _("Gamma modification");
 }
-
-void GammaModification::apply(Color *input, Color *output)
-{
+void GammaModification::apply(Color *input, Color *output) {
 	Color linear_input, linear_output;
 	color_rgb_get_linear(input, &linear_input);
 	linear_output.rgb.red = pow(linear_input.rgb.red, value);
-	linear_output.rgb.green= pow(linear_input.rgb.green, value);
+	linear_output.rgb.green = pow(linear_input.rgb.green, value);
 	linear_output.rgb.blue = pow(linear_input.rgb.blue, value);
 	color_linear_get_rgb(&linear_output, output);
 	color_rgb_normalize(output);
 }
-
-GammaModification::GammaModification():Transformation(transformation_name, getReadableName())
-{
+GammaModification::GammaModification():
+	Transformation(transformationId, getName()) {
 	value = 1;
 }
-
-GammaModification::GammaModification(float value_):Transformation(transformation_name, getReadableName())
-{
+GammaModification::GammaModification(float value_):
+	Transformation(transformationId, getName()) {
 	value = value_;
 }
-
-GammaModification::~GammaModification()
-{
+GammaModification::~GammaModification() {
 }
-
-void GammaModification::serialize(struct dynvSystem *dynv)
-{
-	dynv_set_float(dynv, "value", value);
-	Transformation::serialize(dynv);
+void GammaModification::serialize(dynv::Map &system) {
+	system.set("value", value);
+	Transformation::serialize(system);
 }
-
-void GammaModification::deserialize(struct dynvSystem *dynv)
-{
-	value = dynv_get_float_wd(dynv, "value", 1);
+void GammaModification::deserialize(const dynv::Map &system) {
+	value = system.getFloat("value", 1);
 }
-
-boost::shared_ptr<Configuration> GammaModification::getConfig(){
-	boost::shared_ptr<GammaModificationConfig> config = boost::shared_ptr<GammaModificationConfig>(new GammaModificationConfig(*this));
-	return config;
+std::unique_ptr<IConfiguration> GammaModification::getConfiguration() {
+	return std::move(std::make_unique<Configuration>(*this));
 }
-
-GammaModificationConfig::GammaModificationConfig(GammaModification &transformation){
+GammaModification::Configuration::Configuration(GammaModification &transformation) {
 	GtkWidget *table = gtk_table_new(2, 2, false);
 	GtkWidget *widget;
 	int table_y = 0;
 
-	table_y=0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"),0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
+	table_y = 0;
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
 	value = widget = gtk_spin_button_new_with_range(0, 100, 0.01);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
@@ -96,17 +78,13 @@ GammaModificationConfig::GammaModificationConfig(GammaModification &transformati
 
 	g_object_ref(main);
 }
-
-GammaModificationConfig::~GammaModificationConfig(){
+GammaModification::Configuration::~Configuration() {
 	g_object_unref(main);
 }
-
-GtkWidget* GammaModificationConfig::getWidget(){
+GtkWidget *GammaModification::Configuration::getWidget() {
 	return main;
 }
-
-void GammaModificationConfig::applyConfig(dynvSystem *dynv){
-	dynv_set_float(dynv, "value", gtk_spin_button_get_value(GTK_SPIN_BUTTON(value)));
+void GammaModification::Configuration::apply(dynv::Map &system) {
+	system.set("value", static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(value))));
 }
-
 }

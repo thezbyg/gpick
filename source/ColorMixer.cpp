@@ -32,12 +32,12 @@
 #include "ColorWheelType.h"
 #include "uiColorInput.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
-#include "Format.h"
+#include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <string.h>
@@ -84,7 +84,7 @@ typedef struct ColorMixerArgs{
 		GtkWidget *input;
 		GtkWidget *output;
 	}color[MAX_COLOR_LINES];
-	struct dynvSystem *params;
+	dynv::Ref options;
 	ColorList *preview_color_list;
 	GlobalState* gs;
 }ColorMixerArgs;
@@ -116,10 +116,10 @@ static int set_rgb_color_by_widget(ColorMixerArgs *args, ColorObject* color, Gtk
 
 static void calc(ColorMixerArgs *args, bool preview, bool save_settings){
 
-	double opacity = gtk_range_get_value(GTK_RANGE(args->opacity));
+	float opacity = gtk_range_get_value(GTK_RANGE(args->opacity));
 
 	if (save_settings){
-		dynv_set_float(args->params, "opacity", opacity);
+		args->options->set("opacity", opacity);
 	}
 
 	Color color, color2, r, hsv1, hsv2;
@@ -172,7 +172,7 @@ static void calc(ColorMixerArgs *args, bool preview, bool save_settings){
 		r.rgb.green = (color.rgb.green * (100 - opacity) + r.rgb.green * opacity) / 100;
 		r.rgb.blue = (color.rgb.blue * (100 - opacity) + r.rgb.blue * opacity) / 100;
 
-		gtk_color_set_color(GTK_COLOR(args->color[i].output), &r, "");
+		gtk_color_set_color(GTK_COLOR(args->color[i].output), r);
 	}
 }
 
@@ -208,9 +208,9 @@ static string identify_color_widget(GtkWidget *widget, ColorMixerArgs *args)
 		return _("secondary");
 	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
 		if (args->color[i].input == widget){
-			return format(_("primary {}"), i + 1);
+			return common::format(_("primary {}"), i + 1);
 		}else if (args->color[i].output == widget){
-			return format(_("result {}"), i + 1);
+			return common::format(_("result {}"), i + 1);
 		}
 	}
 	return "unknown";
@@ -401,19 +401,18 @@ static int source_destroy(ColorMixerArgs *args){
 
 	Color c;
 	char tmp[32];
-	dynv_set_string(args->params, "mixer_type", args->mixer_type->unique_name);
+	args->options->set("mixer_type", args->mixer_type->unique_name);
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
 		sprintf(tmp, "color%d", i);
 		gtk_color_get_color(GTK_COLOR(args->color[i].input), &c);
-		dynv_set_color(args->params, tmp, &c);
+		args->options->set(tmp, c);
 	}
 
 	gtk_color_get_color(GTK_COLOR(args->secondary_color), &c);
-	dynv_set_color(args->params, "secondary_color", &c);
+	args->options->set("secondary_color", c);
 
 
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -456,7 +455,7 @@ static int set_rgb_color(ColorMixerArgs *args, ColorObject* color_object, uint32
 	if (color_index == (uint32_t)-1){
 		gtk_color_set_color(GTK_COLOR(args->secondary_color), &color, _(args->mixer_type->name));
 	}else{
-		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), &color, "");
+		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), color);
 	}
 	update(0, args);
 	return 0;
@@ -502,9 +501,9 @@ static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, i
 	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
 	return 0;
 }
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *dynv_namespace){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
 	ColorMixerArgs* args = new ColorMixerArgs;
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->statusbar = gs->getStatusBar();
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -539,7 +538,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 	//setup drag&drop
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
@@ -570,7 +568,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 
 				gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 				dd.userdata2 = (void*)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
@@ -578,7 +575,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 				gtk_widget_set_size_request(widget, 30, 30);
 
 				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 				dd.userdata2 = (void*)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 			}
@@ -589,9 +585,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 	color_set(&c, 0.5);
 	char tmp[32];
 
-	const char *type_name = dynv_get_string_wd(args->params, "mixer_type", "normal");
+	auto type_name = options->getString("mixer_type", "normal");
 	for (uint32_t j = 0; j < sizeof(color_mixer_types) / sizeof(ColorMixerType); j++){
-		if (g_strcmp0(color_mixer_types[j].unique_name, type_name) == 0){
+		if (color_mixer_types[j].unique_name == type_name){
 			args->mixer_type = &color_mixer_types[j];
 			break;
 		}
@@ -599,9 +595,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 
 	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
 		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->color[i].input), dynv_get_color_wdc(args->params, tmp, &c), "");
+		gtk_color_set_color(GTK_COLOR(args->color[i].input), options->getColor(tmp, c));
 	}
-	gtk_color_set_color(GTK_COLOR(args->secondary_color), dynv_get_color_wdc(args->params, "secondary_color", &c), _(args->mixer_type->name));
+	gtk_color_set_color(GTK_COLOR(args->secondary_color), options->getColor("secondary_color", c), _(args->mixer_type->name));
 
 
 	hbox2 = gtk_hbox_new(FALSE, 0);
@@ -614,16 +610,12 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvS
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Opacity:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
 	args->opacity = gtk_hscale_new_with_range(1, 100, 1);
-	gtk_range_set_value(GTK_RANGE(args->opacity), dynv_get_float_wd(args->params, "opacity", 50));
+	gtk_range_set_value(GTK_RANGE(args->opacity), options->getFloat("opacity", 50));
 	g_signal_connect(G_OBJECT(args->opacity), "value-changed", G_CALLBACK (update), args);
 	gtk_table_attach(GTK_TABLE(table), args->opacity, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL,0,0);
 	table_y++;
 
-	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	ColorList* preview_color_list = color_list_new(handler_map);
-	dynv_handler_map_release(handler_map);
-
-	args->preview_color_list = preview_color_list;
+	args->preview_color_list = color_list_new();
 	args->gs = gs;
 	gtk_widget_show_all(hbox);
 	update(0, args);
@@ -636,7 +628,7 @@ int color_mixer_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "color_mixer", _("Color mixer"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
 	color_source->default_accelerator = GDK_KEY_m;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

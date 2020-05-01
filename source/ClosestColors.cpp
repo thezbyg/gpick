@@ -27,12 +27,12 @@
 #include "ColorList.h"
 #include "gtk/ColorWidget.h"
 #include "uiColorInput.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardMenu.h"
 #include "Clipboard.h"
-#include "Format.h"
+#include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 using namespace std;
@@ -42,7 +42,7 @@ struct ClosestColorsArgs
 	ColorSource source;
 	GtkWidget *main, *status_bar, *color, *last_focused_color, *color_previews;
 	GtkWidget *closest_colors[9];
-	dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 };
 
@@ -113,7 +113,7 @@ static string identify_color_widget(GtkWidget *widget, ClosestColorsArgs *args)
 		return _("target");
 	}else for (int i = 0; i < 9; ++i){
 		if (args->closest_colors[i] == widget){
-			return format(_("match {}"), i + 1);
+			return common::format(_("match {}"), i + 1);
 		}
 	}
 	return "unknown";
@@ -239,8 +239,7 @@ static int source_destroy(ClosestColorsArgs *args)
 {
 	Color c;
 	gtk_color_get_color(GTK_COLOR(args->color), &c);
-	dynv_set_color(args->params, "color", &c);
-	dynv_system_release(args->params);
+	args->options->set("color", c);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -298,10 +297,10 @@ static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, i
 	source_set_color(args, color_object);
 	return 0;
 }
-ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *dynv_namespace)
+ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options)
 {
 	ClosestColorsArgs *args = new ClosestColorsArgs;
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->status_bar = gs->getStatusBar();
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -337,7 +336,6 @@ ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *
 	//setup drag&drop
 	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
@@ -359,7 +357,6 @@ ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *
 
 			gtk_widget_set_size_request(widget, 30, 30);
 			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-			dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 			dd.userdata2 = reinterpret_cast<void*>(i + j * 3);
 			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 		}
@@ -367,7 +364,7 @@ ColorSource* source_implement(ColorSource *source, GlobalState *gs, dynvSystem *
 
 	Color c;
 	color_set(&c, 0.5);
-	gtk_color_set_color(GTK_COLOR(args->color), dynv_get_color_wdc(args->params, "color", &c), "");
+	gtk_color_set_color(GTK_COLOR(args->color), options->getColor("color", c));
 
 	hbox2 = gtk_hbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);

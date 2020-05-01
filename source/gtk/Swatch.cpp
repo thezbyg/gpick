@@ -154,6 +154,12 @@ void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, Color* color)
 	color_copy(color, &ns->color[index]);
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
+void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, const Color &color)
+{
+	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
+	color_copy(&color, &ns->color[index]);
+	gtk_widget_queue_draw(GTK_WIDGET(swatch));
+}
 void gtk_swatch_set_main_color(GtkSwatch* swatch, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);

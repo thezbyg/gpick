@@ -19,207 +19,239 @@
 #include "FileFormat.h"
 #include "ColorObject.h"
 #include "ColorList.h"
-#include "DynvHelpers.h"
-#include "Endian.h"
-#include "dynv/DynvSystem.h"
-#include "dynv/DynvMemoryIO.h"
+#include "dynv/Map.h"
+#include "common/Scoped.h"
+#include "version/Version.h"
 #include <string.h>
-#include <iostream>
 #include <fstream>
 #include <list>
 #include <algorithm>
-using namespace std;
-
-struct ChunkHeader{
-	char type[16];
-	uint64_t size;
-};
+#include <boost/endian/conversion.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #define CHUNK_TYPE_VERSION "GPA version"
 #define CHUNK_TYPE_HANDLER_MAP "handler_map"
 #define CHUNK_TYPE_COLOR_LIST "color_list"
 #define CHUNK_TYPE_COLOR_POSITIONS "color_positions"
 #define CHUNK_TYPE_COLOR_ACTIONS "color_actions"
-
-static int prepare_chunk_header(struct ChunkHeader* header, const char* type, uint64_t size)
-{
-	size_t len = strlen(type);
-	if (len >= sizeof(header->type))
-		len = sizeof(header->type) - 1;
-	memcpy(header->type, type, len);
-	memset(header->type+len, 0, sizeof(header->type) - len);
-	header->size = UINT64_TO_LE(size);
-	return 0;
-}
-static int check_chunk_header(struct ChunkHeader* header)
-{
-	if (header->type[sizeof(header->type)-1] != 0) return -1;
-	return 0;
-}
-static bool color_object_position_sort(ColorObject* x, ColorObject* y)
-{
+const uint32_t Version = static_cast<uint32_t>(1 * 0x10000 + 0);
+struct ChunkHeader {
+	void prepareWrite(const std::string &type, uint64_t size) {
+		size_t length = type.length();
+		if (length >= sizeof(m_type))
+			length = sizeof(m_type) - 1;
+		memcpy(m_type, type.c_str(), length);
+		memset(m_type + length, 0, sizeof(m_type) - length);
+		m_size = boost::endian::native_to_little<uint64_t>(size);
+	}
+	void prepareRead() {
+		m_size = boost::endian::little_to_native<uint64_t>(m_size);
+	}
+	bool valid() const {
+		if (m_type[sizeof(m_type) - 1] != 0)
+			return false;
+		return true;
+	}
+	uint64_t size() const {
+		return m_size;
+	}
+	bool is(const std::string &type) const {
+		return m_type == type;
+	}
+	bool startsWith(const std::string &type) const {
+		return boost::starts_with(m_type, type);
+	}
+private:
+	char m_type[16];
+	uint64_t m_size;
+};
+static bool colorObjectPositionSort(ColorObject* x, ColorObject* y) {
 	return x->getPosition() < y->getPosition();
 }
-int palette_file_load(const char* filename, ColorList* color_list)
-{
-	ifstream file(filename, ios::binary);
-	if (file.is_open()){
-		struct dynvIO* mem_io = dynv_io_memory_new();
-		struct ChunkHeader header;
-		file.read((char*) &header, sizeof(header));
-		if (file.fail()){
-			file.close();
-			dynv_io_free(mem_io);
-			return -1;
-		}
-		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(color_list->params);
-		dynvHandlerMap::HandlerVec handler_vec;
-		list<ColorObject*> color_objects;
-		while (check_chunk_header(&header) == 0){
-			if (strncmp(CHUNK_TYPE_HANDLER_MAP, header.type, sizeof(header.type)) == 0){
-				dynv_io_memory_prepare_size(mem_io, header.size);
-				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
-				handler_vec.clear();
-
-				dynv_handler_map_deserialize(handler_map, mem_io, handler_vec);
-			}else if (strncmp(CHUNK_TYPE_COLOR_LIST, header.type, sizeof(header.type)) == 0){
-				dynv_io_memory_prepare_size(mem_io, header.size);
-				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
-
-				for (;;){
-					dynvSystem *params = dynv_system_create(handler_map);
-					if (dynv_system_deserialize(params, handler_vec, mem_io) == 0){
-						auto color_object = new ColorObject();
-						color_object->setName(dynv_get_string_wd(params, "name", ""));
-						Color *color = dynv_get_color_wdc(params, "color", nullptr);
-						if (color != nullptr)
-							color_object->setColor(*color);
-						color_objects.push_back(color_object);
-					}else{
-						dynv_system_release(params);
-						break;
-					}
-					dynv_system_release(params);
-				}
-
-			}else if (strncmp(CHUNK_TYPE_COLOR_POSITIONS, header.type, sizeof(header.type)) == 0){
-				dynv_io_memory_prepare_size(mem_io, header.size);
-				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
-
-				uint32_t index, read;
-				for (list<ColorObject*>::iterator i=color_objects.begin(); i != color_objects.end(); ++i){
-					if (dynv_io_read(mem_io, &index, sizeof(uint32_t), &read) == 0){
-						if (read != sizeof(uint32_t)) break;
-						(*i)->setPosition(index);
-					}
-				}
-
-				color_objects.sort(color_object_position_sort);
-
-				for (list<ColorObject*>::iterator i=color_objects.begin(); i != color_objects.end(); ++i){
-					bool visible = (*i)->getPosition() != ~(size_t)0;
-					(*i)->setVisible(visible);
-					color_list_add_color_object(color_list, *i, visible);
-					(*i)->release();
-				}
-
-			}else if (strncmp(CHUNK_TYPE_VERSION, header.type, sizeof(header.type)) == 0){
-				dynv_io_memory_prepare_size(mem_io, header.size);
-				file.read((char*) dynv_io_memory_get_buffer(mem_io), header.size);
-
-				uint32_t read;
-				uint32_t version;
-				if (dynv_io_read(mem_io, &version, sizeof(uint32_t), &read) == 0){
-					version=UINT32_FROM_LE(version);
-				}
-			}else{
-				file.seekg(header.size, ios_base::cur);
-				if (file.fail() || file.eof())
-					break;
-			}
-			file.read((char*) &header, sizeof(header));
-			if (file.fail())
-				break;
-		}
-		dynv_handler_map_release(handler_map);
-		dynv_io_free(mem_io);
-		file.close();
-		return 0;
-	}
-	return -1;
+static bool read(std::istream &stream, ChunkHeader &header) {
+	stream.read(reinterpret_cast<char *>(&header), sizeof(header));
+	header.prepareRead();
+	return stream.good();
 }
-
-int palette_file_save(const char* filename, ColorList* color_list)
-{
-	if (!filename || !color_list) return -1;
-
-	ofstream file(filename, ios::binary);
-	if (file.is_open()){
-		struct dynvIO* mem_io=dynv_io_memory_new();
-		char* data;
-		uint32_t size;
-		ofstream::pos_type end_pos;
-		struct ChunkHeader header;
-
-		prepare_chunk_header(&header, CHUNK_TYPE_VERSION, 4);
-		file.write((char*)&header, sizeof(header));
-		uint32_t version=1*0x10000+0;
-		version=UINT32_TO_LE(version);
-		file.write((char*)&version, sizeof(uint32_t));
-
-		ofstream::pos_type handler_map_pos = file.tellp();
-		file.write((char*)&header, sizeof(header));
-
-		struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(color_list->params);
-		dynv_handler_map_serialize(handler_map, mem_io);
-		dynv_io_memory_get_data(mem_io, &data, &size);
-		file.write(data, size);
-		dynv_io_reset(mem_io);
-
-		end_pos = file.tellp();
-		file.seekp(handler_map_pos);
-		prepare_chunk_header(&header, CHUNK_TYPE_HANDLER_MAP, end_pos-handler_map_pos-sizeof(struct ChunkHeader));
-		file.write((char*)&header, sizeof(header));
-		file.seekp(end_pos);
-
-		ofstream::pos_type colorlist_pos = file.tellp();
-		file.write((char*)&header, sizeof(header));
-
-		for (auto color_object: color_list->colors){
-			dynvSystem *params = dynv_system_create(handler_map);
-			dynv_set_string(params, "name", color_object->getName().c_str());
-			dynv_set_color(params, "color", &color_object->getColor());
-			dynv_system_serialize(params, mem_io);
-			dynv_system_release(params);
-			dynv_io_memory_get_data(mem_io, &data, &size);
-			file.write(data, size);
-			dynv_io_reset(mem_io);
-		}
-		dynv_handler_map_release(handler_map);
-
-		dynv_io_free(mem_io);
-
-		end_pos = file.tellp();
-		file.seekp(colorlist_pos);
-		prepare_chunk_header(&header, CHUNK_TYPE_COLOR_LIST, end_pos-colorlist_pos-sizeof(struct ChunkHeader));
-		file.write((char*)&header, sizeof(header));
-		file.seekp(end_pos);
-
-		color_list_get_positions(color_list);
-
-		uint32_t *positions=new uint32_t [color_list->colors.size()];
-		uint32_t *position=positions;
-		for (ColorList::iter i=color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			*position = UINT32_TO_LE((*i)->getPosition());
-			++position;
-		}
-
-		prepare_chunk_header(&header, CHUNK_TYPE_COLOR_POSITIONS, color_list->colors.size()*sizeof(uint32_t));
-		file.write((char*)&header, sizeof(header));
-		file.write((char*)positions, color_list->colors.size()*sizeof(uint32_t));
-		delete [] positions;
-		file.close();
-		return 0;
+static bool read(std::istream &stream, uint32_t &value) {
+	stream.read(reinterpret_cast<char *>(&value), sizeof(value));
+	value = boost::endian::little_to_native<uint32_t>(value);
+	return stream.good();
+}
+static bool read(std::istream &stream, std::string &value) {
+	uint32_t length;
+	if (!read(stream, length))
+		return false;
+	value.resize(length);
+	stream.read(reinterpret_cast<char *>(&value.front()), length);
+	return stream.good();
+}
+int palette_file_load(const char* filename, ColorList* colorList) {
+	std::ifstream file(filename, std::ios::binary);
+	if (!file.is_open())
+		return -1;
+	ChunkHeader header;
+	if (!read(file, header) || !header.valid() || !header.startsWith(CHUNK_TYPE_VERSION))
+		return -1;
+	if (header.size() < 4)
+		return -1;
+	uint32_t version;
+	if (!read(file, version))
+		return -1;
+	if (version != Version)
+		return -1;
+	file.seekg(header.size() - 4, std::ios::cur);
+	if (!file.good())
+		return -1;
+	if (!read(file, header) || !header.valid()) {
+		return file.eof() ? 0 : -1;
 	}
-	return -1;
+	std::vector<ColorObject *> colorObjects;
+	auto releaseColorObjects = common::makeScoped(std::function<void()>([&colorObjects]() {
+		for (auto colorObject: colorObjects)
+			if (colorObject)
+				colorObject->release();
+	}));
+	std::vector<uint32_t> positions;
+	std::unordered_map<uint8_t, dynv::types::ValueType> typeMap;
+	std::vector<std::string> handlers;
+	bool hasPositions = false;
+	for (;;) {
+		if (header.is(CHUNK_TYPE_HANDLER_MAP)) {
+			uint32_t handlerCount;
+			if (!read(file, handlerCount))
+				return -1;
+			if (handlerCount > 255)
+				return -1;
+			for (size_t i = 0; i < handlerCount; i++) {
+				std::string typeName;
+				if (!read(file, typeName))
+					return -1;
+				typeMap[static_cast<uint8_t>(handlers.size())] = dynv::types::stringToType(typeName);
+				handlers.push_back(typeName);
+			}
+		} else if (header.is(CHUNK_TYPE_COLOR_LIST)) {
+			std::streamoff end = file.tellg() + static_cast<std::streamoff>(header.size());
+			while (file.tellg() < end) {
+				dynv::Map options;
+				if (!options.deserialize(file, typeMap))
+					return -1;
+				auto color = options.getColor("color", Color());
+				auto name = options.getString("name", "");
+				colorObjects.push_back(new ColorObject(name, color));
+			}
+		} else if (header.is(CHUNK_TYPE_COLOR_POSITIONS)) {
+			hasPositions = true;
+			positions.resize(header.size() / sizeof(uint32_t));
+			file.read(reinterpret_cast<char *>(&positions.front()), positions.size() * sizeof(uint32_t));
+			if (!file.good())
+				return -1;
+			for (auto &position: positions) {
+				position = boost::endian::little_to_native<uint32_t>(position);
+			}
+		} else {
+			file.seekg(header.size(), std::ios::cur);
+			if (file.eof())
+				break;
+			if (!file.good())
+				return -1;
+		}
+		if (!read(file, header) || !header.valid()) {
+			if (file.eof())
+				break;
+			else
+				return -1;
+		}
+	}
+	if (hasPositions) {
+		for (size_t i = 0, end = std::min(colorObjects.size(), positions.size()); i < end; i++) {
+			colorObjects[i]->setPosition(positions[i]);
+		}
+		std::sort(colorObjects.begin(), colorObjects.end(), colorObjectPositionSort);
+	}
+	for (auto colorObject: colorObjects) {
+		bool visible = hasPositions ? colorObject->getPosition() != ~(size_t)0 : true;
+		colorObject->setVisible(visible);
+		color_list_add_color_object(colorList, colorObject, visible);
+	}
+	file.close();
+	return file.good();
+}
+static bool write(std::ostream &stream, uint32_t value) {
+	auto data = boost::endian::native_to_little<uint32_t>(value);
+	static_assert(sizeof(data) == 4);
+	stream.write(reinterpret_cast<const char *>(&data), sizeof(uint32_t));
+	return stream.good();
+}
+static bool write(std::ostream &stream, const ChunkHeader &header) {
+	static_assert(sizeof(header) == 24);
+	stream.write(reinterpret_cast<const char *>(&header), sizeof(header));
+	return stream.good();
+}
+static bool write(std::ostream &stream, const std::string &value) {
+	if (!write(stream, static_cast<uint32_t>(value.length())))
+		return false;
+	stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
+	return stream.good();
+}
+int palette_file_save(const char* filename, ColorList* colorList) {
+	if (!filename || !colorList)
+		return -1;
+	std::ofstream file(filename, std::ios::binary);
+	if (!file.is_open())
+		return -1;
+	ChunkHeader header;
+	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + gpick_build_version, 4);
+	if (!write(file, header))
+		return -1;
+	if (!write(file, Version)) // file format version
+		return -1;
+	auto handlerMapPosition = file.tellp();
+	if (!write(file, header)) // write temporary chunk header
+		return -1;
+	if (!write(file, static_cast<uint32_t>(2))) // handler count for colors
+		return -1;
+	std::unordered_map<dynv::types::ValueType, uint8_t> typeMap;
+	typeMap[dynv::types::typeHandler<Color>().type] = 0;
+	if (!write(file, dynv::types::typeHandler<Color>().name))
+		return -1;
+	typeMap[dynv::types::typeHandler<std::string>().type] = 1;
+	if (!write(file, dynv::types::typeHandler<std::string>().name))
+		return -1;
+	auto endPosition = file.tellp();
+	file.seekp(handlerMapPosition);
+	header.prepareWrite(CHUNK_TYPE_HANDLER_MAP, endPosition - handlerMapPosition - sizeof(ChunkHeader));
+	if (!write(file, header)) // write type handler chunk header
+		return -1;
+	file.seekp(endPosition);
+	auto colorListPosition = file.tellp();
+	if (!write(file, header)) // write temporary chunk header
+		return -1;
+	dynv::Map options;
+	for (auto colorObject: colorList->colors) {
+		options.set("name", colorObject->getName());
+		options.set("color", colorObject->getColor());
+		if (!options.serialize(file, typeMap))
+			return -1;
+	}
+	endPosition = file.tellp();
+	file.seekp(colorListPosition);
+	header.prepareWrite(CHUNK_TYPE_COLOR_LIST, endPosition - colorListPosition - sizeof(ChunkHeader));
+	if (!write(file, header)) // write color list chunk header
+		return -1;
+	file.seekp(endPosition);
+	color_list_get_positions(colorList);
+	std::vector<uint32_t> positions(colorList->colors.size());
+	size_t i = 0;
+	for (auto color: colorList->colors) {
+		positions[i++] = boost::endian::native_to_little<uint32_t>(color->getPosition());
+	}
+	header.prepareWrite(CHUNK_TYPE_COLOR_POSITIONS, positions.size() * sizeof(uint32_t));
+	if (!write(file, header)) // write positions chunk header
+		return -1;
+	file.write(reinterpret_cast<const char *>(&positions.front()), positions.size() * sizeof(uint32_t));
+	if (!file.good())
+		return -1;
+	file.close();
+	return file.good();
 }

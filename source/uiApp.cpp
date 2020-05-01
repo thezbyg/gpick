@@ -50,7 +50,7 @@
 #include "tools/ColorSpaceSampler.h"
 #include "tools/TextParser.h"
 #include "dbus/Control.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "FileFormat.h"
 #include "MathUtil.h"
 #include "Clipboard.h"
@@ -91,8 +91,8 @@ struct AppArgs
 	GtkWidget *palette;
 	uiStatusIcon* status_icon;
 	FloatingPicker floating_picker;
-	AppOptions options;
-	struct dynvSystem *params;
+	StartupOptions startupOptions;
+	dynv::Ref options;
 	GlobalState *gs;
 	string current_filename;
 	bool current_filename_set;
@@ -124,7 +124,7 @@ static void update_recent_file_list(AppArgs *args, const char *filename, bool mo
 
 static gboolean delete_event(GtkWidget *widget, GdkEvent *event, AppArgs *args)
 {
-	if (dynv_get_bool_wd(args->params, "close_to_tray", false)){
+	if (args->options->getBool("close_to_tray", false)){
 		gtk_widget_hide(args->window);
 		status_icon_set_visible(args->status_icon, true);
 		return true;
@@ -157,7 +157,7 @@ static gboolean on_window_state_event(GtkWidget *widget, GdkEventWindowState *ev
 		if (args->secondary_color_source) color_source_activate(args->secondary_color_source);
 		if (args->current_color_source) color_source_activate(args->current_color_source);
 	}
-	if (dynv_get_bool_wd(args->params, "minimize_to_tray", false)){
+	if (args->options->getBool("minimize_to_tray", false)){
 		if (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED){
 			if (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED){
 				gtk_widget_hide(args->window);
@@ -194,10 +194,10 @@ static gboolean on_window_configure(GtkWidget *widget, GdkEventConfigure *event,
 		args->y = y;
 		args->width = event->width;
 		args->height = event->height;
-		dynv_set_int32(args->params, "window.x", args->x);
-		dynv_set_int32(args->params, "window.y", args->y);
-		dynv_set_int32(args->params, "window.width", args->width);
-		dynv_set_int32(args->params, "window.height", args->height);
+		args->options->set("window.x", args->x);
+		args->options->set("window.y", args->y);
+		args->options->set("window.width", args->width);
+		args->options->set("window.height", args->height);
 	}
 	return false;
 }
@@ -227,18 +227,18 @@ static void notebook_switch_cb(GtkNotebook *notebook, GtkWidget *page, guint pag
 static void destroy_cb(GtkWidget *widget, AppArgs *args)
 {
 	g_signal_handlers_disconnect_matched(G_OBJECT(args->notebook), G_SIGNAL_MATCH_FUNC, 0, 0, nullptr, (void*)notebook_switch_cb, 0); //disconnect notebook switch callback, because destroying child widgets triggers it
-	dynv_set_string(args->params, "color_source", args->color_source_index[gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook))]->identificator);
-	dynv_set_int32(args->params, "paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
-	dynv_set_int32(args->params, "vertical_paned_position", gtk_paned_get_position(GTK_PANED(args->vpaned)));
+	args->options->set("color_source", args->color_source_index[gtk_notebook_get_current_page(GTK_NOTEBOOK(args->notebook))]->identificator);
+	args->options->set("paned_position", gtk_paned_get_position(GTK_PANED(args->hpaned)));
+	args->options->set("vertical_paned_position", gtk_paned_get_position(GTK_PANED(args->vpaned)));
 	if (args->secondary_color_source){
-		dynv_set_string(args->params, "secondary_color_source", args->secondary_color_source->identificator);
+		args->options->set("secondary_color_source", args->secondary_color_source->identificator);
 	}else{
-		dynv_set_string(args->params, "secondary_color_source", "");
+		args->options->set("secondary_color_source", "");
 	}
-	dynv_set_int32(args->params, "window.x", args->x);
-	dynv_set_int32(args->params, "window.y", args->y);
-	dynv_set_int32(args->params, "window.width", args->width);
-	dynv_set_int32(args->params, "window.height", args->height);
+	args->options->set("window.x", args->x);
+	args->options->set("window.y", args->y);
+	args->options->set("window.width", args->width);
+	args->options->set("window.height", args->height);
 	app_release(args);
 	gtk_main_quit();
 }
@@ -497,10 +497,10 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 		GTK_STOCK_OPEN, GTK_RESPONSE_OK,
 		nullptr);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-	const gchar* default_path = dynv_get_string_wd(args->params, "open.path", "");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	const char* selected_filter = dynv_get_string_wd(args->params, "open.filter", "all_supported");
-	add_file_filters(dialog, selected_filter);
+	auto default_path = args->options->getString("open.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
+	auto selected_filter = args->options->getString("open.filter", "all_supported");
+	add_file_filters(dialog, selected_filter.c_str());
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -508,10 +508,10 @@ static void menu_file_open(GtkWidget *widget, AppArgs *args)
 			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path;
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			dynv_set_string(args->params, "open.path", path);
+			args->options->set("open.path", path);
 			g_free(path);
 			const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
-			dynv_set_string(args->params, "open.filter", identification);
+			args->options->set("open.filter", identification);
 			if (app_load_file(args, filename) == 0){
 				finished = TRUE;
 			}else{
@@ -537,10 +537,10 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 		nullptr);
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
-	const gchar* default_path = dynv_get_string_wd(args->params, "save.path", "");
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path);
-	const char* selected_filter = dynv_get_string_wd(args->params, "save.filter", "all_supported");
-	add_file_filters(dialog, selected_filter);
+	auto default_path = args->options->getString("save.path", "");
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
+	auto selected_filter = args->options->getString("save.filter", "all_supported");
+	add_file_filters(dialog, selected_filter.c_str());
 	gboolean finished = FALSE;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -548,10 +548,10 @@ static void menu_file_save_as(GtkWidget *widget, AppArgs *args)
 			filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path;
 			path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			dynv_set_string(args->params, "save.path", path);
+			args->options->set("save.path", path);
 			g_free(path);
 			const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
-			dynv_set_string(args->params, "save.filter", identification);
+			args->options->set("save.filter", identification);
 			if (app_save_file(args, filename, identification) == 0){
 				finished = TRUE;
 			}else{
@@ -608,9 +608,7 @@ static void menu_file_import_text_file(GtkWidget *widget, AppArgs *args)
 static void menu_file_export(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->getSettings());
-	ColorList *color_list = color_list_new(handler_map);
-	dynv_handler_map_release(handler_map);
+	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), color_list, args->gs);
 	import_export_dialog.showExport();
@@ -668,10 +666,10 @@ static void show_about_box_cb(GtkWidget *widget, AppArgs* args)
 
 static void repositionViews(AppArgs* args)
 {
-	bool palette = dynv_get_bool_wd(args->params, "view.palette", true);
-	bool primary_view = dynv_get_bool_wd(args->params, "view.primary_view", true);
+	bool palette = args->options->getBool("view.palette", true);
+	bool primary_view = args->options->getBool("view.primary_view", true);
 	bool secondary_view = gtk_widget_get_visible(args->secondary_source_container);
-	string layout = dynv_get_string_wd(args->params, "view.layout", "primary+secondary_palette");
+	string layout = args->options->getString("view.layout", "primary+secondary_palette");
 	GtkWidget *widgets[4] = { args->palette, args->vpaned, args->secondary_source_container, args->notebook };
 	for (size_t i = 0; i < sizeof(widgets) / sizeof(GtkWidget*); i++){
 		g_object_ref(widgets[i]);
@@ -796,19 +794,19 @@ static void repositionViews(AppArgs* args)
 static void view_palette_cb(GtkWidget *widget, AppArgs* args)
 {
 	bool view = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
-	dynv_set_bool(args->params, "view.palette", view);
+	args->options->set("view.palette", view);
 	repositionViews(args);
 }
 static void view_primary_view_cb(GtkWidget *widget, AppArgs* args)
 {
 	bool view = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget));
-	dynv_set_bool(args->params, "view.primary_view", view);
+	args->options->set("view.primary_view", view);
 	repositionViews(args);
 }
 static void view_layout_cb(GtkWidget *widget, AppArgs* args)
 {
 	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
-		dynv_set_string(args->params, "view.layout", static_cast<const char*>(g_object_get_data(G_OBJECT(widget), "source")));
+		args->options->set("view.layout", static_cast<const char*>(g_object_get_data(G_OBJECT(widget), "source")));
 		repositionViews(args);
 	}
 }
@@ -846,10 +844,9 @@ static void activate_secondary_source(AppArgs *args, ColorSource *source)
 	if (source){
 		string namespace_str = "gpick.secondary_view.";
 		namespace_str += source->identificator;
-		struct dynvSystem *dynv_namespace = dynv_get_dynv(args->gs->getSettings(), namespace_str.c_str());
-		source = color_source_implement(source, args->gs, dynv_namespace);
+		auto options = args->gs->settings().getOrCreateMap(namespace_str);
+		source = color_source_implement(source, args->gs, options);
 		GtkWidget *new_widget = color_source_get_widget(source);
-		dynv_system_release(dynv_namespace);
 		args->secondary_color_source = source;
 		args->secondary_source_widget = new_widget;
 		if (source->needs_viewport){
@@ -919,7 +916,7 @@ static void addLayoutMenuItem(const string &layout, GtkMenu *menu, GSList *&grou
 	g_object_set_data_full(G_OBJECT(item), "source", const_cast<char*>(layout.c_str()), (GDestroyNotify)nullptr);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_layout_cb), args);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	string current_layout = dynv_get_string_wd(args->params, "view.layout", "primary+secondary_palette");
+	string current_layout = args->options->getString("view.layout", "primary+secondary_palette");
 	if (current_layout == layout)
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 }
@@ -1039,7 +1036,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 
 	menu2 = GTK_MENU(gtk_menu_new());
 	group = nullptr;
-	ColorSource *source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
+	ColorSource *source = color_source_manager_get(args->csm, args->options->getString("secondary_color_source", ""));
 	item = gtk_radio_menu_item_new_with_label(group, _("None"));
 	group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
 	if (source == nullptr)
@@ -1069,11 +1066,11 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = gtk_check_menu_item_new_with_mnemonic(_("_Primary View"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.primary_view", true));
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), args->options->getBool("view.primary_view", true));
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_primary_view_cb), args);
 	item = gtk_check_menu_item_new_with_mnemonic(_("Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), dynv_get_bool_wd(args->params, "view.palette", true));
+	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), args->options->getBool("view.palette", true));
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
 
@@ -1155,7 +1152,7 @@ static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args)
 {
 	AutonameState state;
 	state.color_names = args->gs->getColorNames();
-	state.imprecision_postfix = dynv_get_bool_wd(args->gs->getSettings(), "gpick.color_names.imprecision_postfix", false);
+	state.imprecision_postfix = args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false);
 	palette_list_foreach_selected(args->color_list, color_list_autoname, &state);
 }
 
@@ -1195,22 +1192,19 @@ static PaletteListCallbackReturn color_list_set_color(ColorObject* color_object,
 	return PALETTE_LIST_CALLBACK_UPDATE_ROW;
 }
 
-static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args)
-{
+static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 	AutonumberState state;
 	int response;
 	uint32_t selected_count = palette_list_get_selected_count(args->color_list);
 	response = dialog_autonumber_show(GTK_WINDOW(args->window), selected_count, args->gs);
 	if (response == GTK_RESPONSE_OK){
-		struct dynvSystem *params;
-		params = dynv_get_dynv(args->gs->getSettings(), "gpick.autonumber");
-		state.name = dynv_get_string_wd(params, "name", "autonum");
-		state.nplaces = dynv_get_int32_wd(params, "nplaces", 1);
-		state.index = dynv_get_int32_wd(params, "startindex", 1);
-		state.decreasing = dynv_get_bool_wd(params, "decreasing", true);
-		state.append = dynv_get_bool_wd(params, "append", true);
+		auto autonumberOptions = args->gs->settings().getOrCreateMap("gpick.autonumber");
+		state.name = autonumberOptions->getString("name", "autonum");
+		state.nplaces = autonumberOptions->getInt32("nplaces", 1);
+		state.index = autonumberOptions->getInt32("startindex", 1);
+		state.decreasing = autonumberOptions->getBool("decreasing", true);
+		state.append = autonumberOptions->getBool("append", true);
 		palette_list_foreach_selected(args->color_list, color_list_autonumber, &state);
-		dynv_system_release(params);
 	}
 }
 
@@ -1279,12 +1273,10 @@ static void palette_popup_menu_mix(GtkWidget *widget, AppArgs* args)
 
 static void palette_popup_menu_variations(GtkWidget *widget, AppArgs* args)
 {
-	struct dynvHandlerMap* handler_map = dynv_system_get_handler_map(args->gs->getSettings());
-	ColorList *color_list = color_list_new(handler_map);
+	ColorList *color_list = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, color_list);
 	dialog_variations_show(GTK_WINDOW(args->window), color_list, args->gs);
 	color_list_destroy(color_list);
-	dynv_handler_map_release(handler_map);
 }
 
 static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args)
@@ -1568,18 +1560,17 @@ static int color_list_on_get_positions(ColorList* color_list)
 	return 0;
 }
 
-int main_show_window(GtkWidget* window, struct dynvSystem *main_params)
-{
+int main_show_window(GtkWidget* window, const dynv::Ref &options) {
 	if (gtk_widget_get_visible(window)){
 		gtk_window_deiconify(GTK_WINDOW(window));
 		return -1; //already visible
 	}
 	gint x, y;
 	gint width, height;
-	x = dynv_get_int32_wd(main_params, "window.x", -1);
-	y = dynv_get_int32_wd(main_params, "window.y", -1);
-	width = dynv_get_int32_wd(main_params, "window.width", 640);
-	height = dynv_get_int32_wd(main_params, "window.height", 400);
+	x = options->getInt32("window.x", -1);
+	y = options->getInt32("window.y", -1);
+	width = options->getInt32("window.width", 640);
+	height = options->getInt32("window.height", 400);
 	if (x < 0 || y < 0 || x > gdk_screen_width() || y > gdk_screen_height()){
 		gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 	}else{
@@ -1631,7 +1622,7 @@ static void set_main_window_icon()
 
 bool app_is_autoload_enabled(AppArgs *args)
 {
-	return dynv_get_bool_wd(args->params, "main.save_restore_palette", true);
+	return args->options->getBool("main.save_restore_palette", true);
 }
 
 static void app_initialize_variables(AppArgs *args)
@@ -1644,8 +1635,8 @@ static void app_initialize_variables(AppArgs *args)
 	args->secondary_source_widget = 0;
 	args->secondary_source_scrolled_viewpoint = 0;
 	args->gs->loadAll();
-	dialog_options_update(args->gs->script(), args->gs->getSettings(), args->gs);
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick.main");
+	dialog_options_update(args->gs);
+	args->options = args->gs->settings().getOrCreateMap("gpick.main");
 	args->csm = color_source_manager_create();
 	register_sources(args->csm);
 }
@@ -1667,12 +1658,9 @@ static void app_initialize_floating_picker(AppArgs *args)
 
 static void app_initialize_picker(AppArgs *args, GtkWidget *notebook)
 {
-	ColorSource *source;
-	struct dynvSystem *dynv_namespace;
-	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.picker");
-	source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, dynv_namespace);
+	auto colorPickerOptions = args->gs->settings().getOrCreateMap("gpick.picker");
+	auto source = color_source_implement(color_source_manager_get(args->csm, "color_picker"), args->gs, colorPickerOptions);
 	GtkWidget *widget = color_source_get_widget(source);
-	dynv_system_release(dynv_namespace);
 	args->color_source[source->identificator] = source;
 	args->color_source_index.push_back(source);
 	floating_picker_set_picker_source(args->floating_picker, source);
@@ -1686,15 +1674,14 @@ void app_initialize()
 	auto dataPath = buildFilename();
 	gtk_icon_theme_append_search_path(icon_theme, dataPath.c_str());
 }
-AppArgs* app_create_main(const AppOptions &options, int &return_value)
-{
+AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value) {
 	AppArgs* args = new AppArgs;
 	args->initialization = true;
-	args->options = options;
+	args->startupOptions = startupOptions;
 	color_init();
 	args->gs = new GlobalState();
 	args->gs->loadSettings();
-	if (args->options.single_color_pick_mode){
+	if (args->startupOptions.single_color_pick_mode){
 		app_initialize_variables(args);
 		app_initialize_floating_picker(args);
 		args->initialization = false;
@@ -1710,26 +1697,26 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 		};
 		args->dbus_control.onSingleInstanceActivate = [args]{
 			status_icon_set_visible(args->status_icon, false);
-			main_show_window(args->window, args->params);
+			main_show_window(args->window, args->options);
 			return true;
 		};
 		args->dbus_control.ownName();
 		bool cancel_startup = false;
-		if (!cancel_startup && args->options.floating_picker_mode){
-			if (args->dbus_control.activateFloatingPicker(args->options.converter_name)){
+		if (!cancel_startup && startupOptions.floating_picker_mode){
+			if (args->dbus_control.activateFloatingPicker(startupOptions.converter_name)){
 				cancel_startup = true;
-			}else if (args->options.do_not_start){
+			}else if (startupOptions.do_not_start){
 				return_value = 1;
 				cancel_startup = true;
 			}
 		}
-		if (args->options.do_not_start){
+		if (startupOptions.do_not_start){
 			if (args->dbus_control.checkIfRunning()){
 				return_value = 1;
 				cancel_startup = true;
 			}
 		}
-		if (!cancel_startup && dynv_get_bool_wd(args->gs->getSettings(), "gpick.main.single_instance", false)){
+		if (!cancel_startup && args->gs->settings().getBool("gpick.main.single_instance", false)){
 			if (args->dbus_control.singleInstanceActivate()){
 				cancel_startup = true;
 			}
@@ -1782,13 +1769,11 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	gtk_box_pack_start(GTK_BOX(vbox_main), hpaned, true, true, 5);
 	gtk_widget_show_all(vbox_main);
 	ColorSource *source;
-	struct dynvSystem *dynv_namespace;
 	app_initialize_floating_picker(args);
 	app_initialize_picker(args, notebook);
-	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.generate_scheme");
-	source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, dynv_namespace);
+	auto generateSchemeOptions = args->gs->settings().getOrCreateMap("gpick.generate_scheme");
+	source = color_source_implement(color_source_manager_get(args->csm, "generate_scheme"), args->gs, generateSchemeOptions);
 	widget = color_source_get_widget(source);
-	dynv_system_release(dynv_namespace);
 	args->color_source[source->identificator] = source;
 	args->color_source_index.push_back(source);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Scheme _generation")));
@@ -1796,13 +1781,12 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	{
 		widget = gtk_vbox_new(false, 0);
 		args->secondary_source_container = widget;
-		source = color_source_manager_get(args->csm, dynv_get_string_wd(args->params, "secondary_color_source", ""));
+		source = color_source_manager_get(args->csm, args->options->getString("secondary_color_source", ""));
 		if (source) activate_secondary_source(args, source);
 	}
-	dynv_namespace = dynv_get_dynv(args->gs->getSettings(), "gpick.layout_preview");
-	source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, dynv_namespace);
+	auto layoutPreviewOptions = args->gs->settings().getOrCreateMap("gpick.layout_preview");
+	source = color_source_implement(color_source_manager_get(args->csm, "layout_preview"), args->gs, layoutPreviewOptions);
 	widget = color_source_get_widget(source);
-	dynv_system_release(dynv_namespace);
 	args->color_source[source->identificator] = source;
 	args->color_source_index.push_back(source);
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Lay_out preview")));
@@ -1825,7 +1809,7 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	args->notebook = notebook;
 	repositionViews(args);
 	{
-		const char *tab = dynv_get_string_wd(args->params, "color_source", "");
+		auto tab = args->options->getString("color_source", "");
 		std::map<std::string, ColorSource*>::iterator i = args->color_source.find(tab);
 		if (i != args->color_source.end()) {
 			size_t tabIndex = 0;
@@ -1865,14 +1849,8 @@ AppArgs* app_create_main(const AppOptions &options, int &return_value)
 	gtk_widget_show(statusbar);
 	{
 		//Load recent file list
-		char** recent_array;
-		uint32_t recent_array_size;
-		if ((recent_array = (char**)dynv_get_string_array_wd(args->gs->getSettings(), "gpick.recent.files", 0, 0, &recent_array_size))){
-			for (uint32_t i = 0; i < recent_array_size; i++){
-				args->recent_files.push_back(string(recent_array[i]));
-			}
-			delete [] recent_array;
-		}
+		auto recentFiles = args->gs->settings().getStrings("gpick.recent.files");
+		args->recent_files = std::list<std::string>(recentFiles.begin(), recentFiles.end());
 	}
 	create_menu(GTK_MENU_BAR(menu_bar), args, accel_group);
 	gtk_widget_show_all(menu_bar);
@@ -1899,7 +1877,7 @@ static void app_release(AppArgs *args)
 	args->color_source.clear();
 	args->color_source_index.clear();
 	floating_picker_free(args->floating_picker);
-	if (!args->options.single_color_pick_mode){
+	if (!args->startupOptions.single_color_pick_mode){
 		if (app_is_autoload_enabled(args)){
 			using namespace boost::interprocess;
 			using namespace boost::filesystem;
@@ -1922,19 +1900,9 @@ static void app_release(AppArgs *args)
 	color_list_remove_all(args->gs->getColorList());
 }
 
-static void app_save_recent_file_list(AppArgs *args)
-{
-	const char** recent_array;
-	uint32_t recent_array_size;
-	recent_array_size = args->recent_files.size();
-	recent_array = new const char* [recent_array_size];
-	uint32_t j = 0;
-	for (list<string>::iterator i = args->recent_files.begin(); i != args->recent_files.end(); i++){
-		recent_array[j] = (*i).c_str();
-		j++;
-	}
-	dynv_set_string_array(args->gs->getSettings(), "gpick.recent.files", recent_array, recent_array_size);
-	delete [] recent_array;
+static void app_save_recent_file_list(AppArgs *args) {
+	std::vector<std::string> recentFiles(args->recent_files.begin(), args->recent_files.end());
+	args->gs->settings().set("gpick.recent.files", recentFiles);
 }
 
 struct FloatingPickerAction
@@ -1950,8 +1918,8 @@ struct FloatingPickerAction
 		void colorPicked(FloatingPicker fp, const Color &color)
 		{
 			string text;
-			if (args->options.converter_name.length() > 0){
-				auto converter = args->gs->converters().byName(args->options.converter_name.c_str());
+			if (args->startupOptions.converter_name.length() > 0){
+				auto converter = args->gs->converters().byName(args->startupOptions.converter_name);
 				if (converter != nullptr){
 					auto color_object = color_list_new_color_object(args->gs->getColorList(), &color);
 					text = converter->serialize(color_object);
@@ -1963,9 +1931,9 @@ struct FloatingPickerAction
 					text = converter->serialize(color);
 				}
 			}
-			if (text.length() > 0){
-				if (args->options.output_picked_color){
-					if (args->options.output_without_newline){
+			if (text.length() > 0) {
+				if (args->startupOptions.output_picked_color) {
+					if (args->startupOptions.output_without_newline) {
 						cout << text;
 					}else{
 						cout << text << endl;
@@ -1992,7 +1960,7 @@ struct FloatingPickerAction
 
 int app_run(AppArgs *args)
 {
-	if (args->options.single_color_pick_mode){
+	if (args->startupOptions.single_color_pick_mode) {
 		FloatingPickerAction pick_action(args);
 		floating_picker_set_custom_pick_action(args->floating_picker, [&pick_action](FloatingPicker fp, const Color &color){
 			pick_action.colorPicked(fp, color);
@@ -2001,27 +1969,26 @@ int app_run(AppArgs *args)
 			pick_action.done(fp);
 		});
 		floating_picker_enable_custom_pick_action(args->floating_picker);
-		floating_picker_activate(args->floating_picker, false, true, args->options.converter_name.c_str());
+		floating_picker_activate(args->floating_picker, false, true, args->startupOptions.converter_name.c_str());
 		gtk_main();
 		app_release(args);
 	}else{
 		gtk_widget_realize(args->window);
-		if (args->options.floating_picker_mode || dynv_get_bool_wd(args->params, "start_in_tray", false)){
+		if (args->startupOptions.floating_picker_mode || args->options->getBool("start_in_tray", false)){
 			status_icon_set_visible(args->status_icon, true);
 		}else{
-			gtk_paned_set_position(GTK_PANED(args->hpaned), dynv_get_int32_wd(args->params, "paned_position", 0));
-			gtk_paned_set_position(GTK_PANED(args->vpaned), dynv_get_int32_wd(args->params, "vertical_paned_position", 0));
-			main_show_window(args->window, args->params);
+			gtk_paned_set_position(GTK_PANED(args->hpaned), args->options->getInt32("paned_position", 0));
+			gtk_paned_set_position(GTK_PANED(args->vpaned), args->options->getInt32("vertical_paned_position", 0));
+			main_show_window(args->window, args->options);
 		}
-		if (args->options.floating_picker_mode)
-			floating_picker_activate(args->floating_picker, false, false, args->options.converter_name.c_str());
+		if (args->startupOptions.floating_picker_mode)
+			floating_picker_activate(args->floating_picker, false, false, args->startupOptions.converter_name.c_str());
 		gtk_main();
 		app_save_recent_file_list(args);
 		args->dbus_control.unownName();
 		status_icon_destroy(args->status_icon);
 	}
 	args->gs->writeSettings();
-	dynv_system_release(args->params);
 	delete args->gs;
 	color_source_manager_destroy(args->csm);
 	delete args;

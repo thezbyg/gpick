@@ -33,7 +33,7 @@
 #include "uiColorInput.h"
 #include "Converters.h"
 #include "Converter.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "I18N.h"
 #include "Random.h"
 #include "color_names/ColorNames.h"
@@ -82,7 +82,7 @@ typedef struct GenerateSchemeArgs{
 
 	int colors_visible;
 
-	struct dynvSystem *params;
+	dynv::Ref options;
 
 	GlobalState* gs;
 	ColorList *preview_color_list;
@@ -136,21 +136,21 @@ static void calc(GenerateSchemeArgs *args, bool preview, bool save_settings){
 	gtk_color_wheel_set_color_wheel_type(GTK_COLOR_WHEEL(args->color_wheel), &color_wheel_types_get()[wheel_type]);
 	gtk_color_wheel_set_n_colors(GTK_COLOR_WHEEL(args->color_wheel), generate_scheme_get_scheme_type(type)->colors + 1);
 
-	double hue = gtk_range_get_value(GTK_RANGE(args->hue));
-	double saturation = gtk_range_get_value(GTK_RANGE(args->saturation));
-	double lightness = gtk_range_get_value(GTK_RANGE(args->lightness));
+	float hue = gtk_range_get_value(GTK_RANGE(args->hue));
+	float saturation = gtk_range_get_value(GTK_RANGE(args->saturation));
+	float lightness = gtk_range_get_value(GTK_RANGE(args->lightness));
 
 	if (save_settings){
-		dynv_set_int32(args->params, "type", type);
-		dynv_set_int32(args->params, "wheel_type", wheel_type);
-		dynv_set_float(args->params, "hue", hue);
-		dynv_set_float(args->params, "saturation", saturation);
-		dynv_set_float(args->params, "lightness", lightness);
+		args->options->set("type", type);
+		args->options->set("wheel_type", wheel_type);
+		args->options->set("hue", hue);
+		args->options->set("saturation", saturation);
+		args->options->set("lightness", lightness);
 	}
 
-	hue /= 360.0;
-	saturation /= 100.0;
-	lightness /= 100.0;
+	hue /= 360.0f;
+	saturation /= 100.0f;
+	lightness /= 100.0f;
 
 	Color hsl, r;
 	gint step_i;
@@ -521,7 +521,6 @@ static gchar* format_lightness_value_cb (GtkScale *scale, gdouble value){
 
 static int source_destroy(GenerateSchemeArgs *args){
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -608,14 +607,14 @@ static int source_deactivate(GenerateSchemeArgs *args)
 {
 	color_list_remove_all(args->preview_color_list);
 	calc(args, true, true);
-	dynv_set_bool(args->params, "wheel_locked", args->wheel_locked);
+	args->options->set("wheel_locked", args->wheel_locked);
 	float hsv_shift_array[MAX_COLOR_WIDGETS * 3];
 	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
 		hsv_shift_array[i * 3 + 0] = args->mod[i].hue;
 		hsv_shift_array[i * 3 + 1] = args->mod[i].saturation;
 		hsv_shift_array[i * 3 + 2] = args->mod[i].value;
 	}
-	dynv_set_float_array(args->params, "hsv_shift", hsv_shift_array, MAX_COLOR_WIDGETS * 3);
+	args->options->set("hsv_shift", common::Span<float>(hsv_shift_array, MAX_COLOR_WIDGETS * 3));
 	return 0;
 }
 
@@ -675,10 +674,10 @@ static bool test_at_color_wheel(struct DragDrop* dd, int x, int y){
 	return false;
 }
 
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace){
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
 	GenerateSchemeArgs* args = new GenerateSchemeArgs;
 
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->statusbar = gs->getStatusBar();
 
 	color_source_init(&args->source, source->identificator, source->hr_name);
@@ -689,22 +688,19 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
 	args->source.activate = (int (*)(ColorSource *source))source_activate;
 
-	uint32_t hsv_shift_array_size = 0;
-	float *hsv_shift_array = dynv_get_float_array_wd(args->params, "hsv_shift", 0, 0, &hsv_shift_array_size);
-	hsv_shift_array_size /= 3;
-
+	auto hsvShifts = args->options->getFloats("hsv_shift");
+	auto hsvShiftCount = hsvShifts.size() / 3;
 	for (uint32_t i = 0; i < MAX_COLOR_WIDGETS; ++i){
-		if (i < hsv_shift_array_size){
-			args->mod[i].hue = hsv_shift_array[i * 3 + 0];
-			args->mod[i].saturation = hsv_shift_array[i * 3 + 1];
-			args->mod[i].value = hsv_shift_array[i * 3 + 2];
+		if (i < hsvShiftCount){
+			args->mod[i].hue = hsvShifts[i * 3 + 0];
+			args->mod[i].saturation = hsvShifts[i * 3 + 1];
+			args->mod[i].value = hsvShifts[i * 3 + 2];
 		}else{
 			args->mod[i].hue = 0;
 			args->mod[i].saturation = 0;
 			args->mod[i].value = 0;
 		}
 	}
-	if (hsv_shift_array) delete [] hsv_shift_array;
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
 	hbox = gtk_hbox_new(FALSE, 5);
 	vbox = gtk_vbox_new(FALSE, 5);
@@ -735,7 +731,6 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 		//setup drag&drop
 		gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 		gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-		dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 		dd.userdata2 = (void*)i;
 		dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	}
@@ -748,11 +743,10 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	g_signal_connect(G_OBJECT(args->color_wheel), "saturation_value_changed", G_CALLBACK(saturation_value_changed_cb), args);
 	g_signal_connect(G_OBJECT(args->color_wheel), "popup-menu", G_CALLBACK(color_wheel_popup_menu_cb), args);
 	g_signal_connect(G_OBJECT(args->color_wheel), "button-press-event", G_CALLBACK(color_wheel_button_press_cb), args);
-	args->wheel_locked = dynv_get_bool_wd(args->params, "wheel_locked", true);
+	args->wheel_locked = options->getBool("wheel_locked", true);
 	gtk_color_wheel_set_block_editable(GTK_COLOR_WHEEL(args->color_wheel), !args->wheel_locked);
 
 	gtk_drag_dest_set(args->color_wheel, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata = args;
 	dd.userdata2 = 0;
 	dd.set_color_object_at = set_color_object_at_color_wheel;
@@ -766,14 +760,14 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Hue:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->hue = gtk_hscale_new_with_range(0, 360, 1);
-	gtk_range_set_value(GTK_RANGE(args->hue), dynv_get_float_wd(args->params, "hue", 180));
+	gtk_range_set_value(GTK_RANGE(args->hue), options->getFloat("hue", 180));
 	g_signal_connect (G_OBJECT (args->hue), "value-changed", G_CALLBACK (update), args);
 	gtk_table_attach(GTK_TABLE(table), args->hue,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Saturation:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->saturation = gtk_hscale_new_with_range(0, 120, 1);
-	gtk_range_set_value(GTK_RANGE(args->saturation), dynv_get_float_wd(args->params, "saturation", 100));
+	gtk_range_set_value(GTK_RANGE(args->saturation), options->getFloat("saturation", 100));
 	g_signal_connect (G_OBJECT (args->saturation), "value-changed", G_CALLBACK (update), args);
 	g_signal_connect (G_OBJECT (args->saturation), "format-value", G_CALLBACK (format_saturation_value_cb), args);
 	gtk_table_attach(GTK_TABLE(table), args->saturation,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -781,7 +775,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Lightness:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->lightness = gtk_hscale_new_with_range(-50, 80, 1);
-	gtk_range_set_value(GTK_RANGE(args->lightness), dynv_get_float_wd(args->params, "lightness", 0));
+	gtk_range_set_value(GTK_RANGE(args->lightness), options->getFloat("lightness", 0));
 	g_signal_connect (G_OBJECT (args->lightness), "value-changed", G_CALLBACK (update), args);
 	g_signal_connect (G_OBJECT (args->lightness), "format-value", G_CALLBACK (format_lightness_value_cb), args);
 	gtk_table_attach(GTK_TABLE(table), args->lightness,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
@@ -793,7 +787,7 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	for (size_t i = 0; i < generate_scheme_get_n_scheme_types(); i++){
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->gen_type), _(generate_scheme_get_scheme_type(i)->name));
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), dynv_get_int32_wd(args->params, "type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->gen_type), options->getInt32("type", 0));
 	g_signal_connect (G_OBJECT (args->gen_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->gen_type,1,2,table_y,table_y+1, GTK_FILL, GTK_SHRINK,5,0);
 	table_y++;
@@ -804,17 +798,13 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	for (size_t i = 0; i < color_wheel_types_get_n(); i++){
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->wheel_type), _(color_wheel_types_get()[i].name));
 	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), dynv_get_int32_wd(args->params, "wheel_type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(args->wheel_type), options->getInt32("wheel_type", 0));
 	g_signal_connect (G_OBJECT (args->wheel_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), args->wheel_type,1,2,table_y,table_y+1, GTK_FILL, GTK_SHRINK,5,0);
 
 	table_y++;
 
-	struct dynvHandlerMap* handler_map=dynv_system_get_handler_map(gs->getColorList()->params);
-	ColorList* preview_color_list = color_list_new(handler_map);
-	dynv_handler_map_release(handler_map);
-
-	args->preview_color_list = preview_color_list;
+	args->preview_color_list = color_list_new();
 	args->colors_visible = MAX_COLOR_WIDGETS;
 	args->gs = gs;
 	gtk_widget_show_all(hbox);
@@ -828,7 +818,7 @@ int generate_scheme_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "generate_scheme", _("Scheme generation"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
 	color_source->default_accelerator = GDK_KEY_g;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

@@ -43,7 +43,7 @@ static guint signals[LAST_SIGNAL] = {};
 struct GtkColorPrivate
 {
 	Color color, text_color, split_color;
-	gchar* text;
+	std::string text;
 	bool rounded_rectangle, h_center, split;
 	bool secondary_color;
 	double roundness;
@@ -73,10 +73,10 @@ GtkWidget* gtk_color_new()
 {
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR, nullptr);
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
+	new (ns) GtkColorPrivate();
 	color_set(&ns->color, 0);
 	color_set(&ns->text_color, 0);
 	color_set(&ns->split_color, 0);
-	ns->text = 0;
 	ns->rounded_rectangle = false;
 	ns->h_center = false;
 	ns->secondary_color = false;
@@ -106,10 +106,7 @@ static void size_request(GtkWidget *widget, GtkRequisition *requisition)
 static void finalize(GObject *color_obj)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(color_obj);
-	if (ns->text){
-		g_free(ns->text);
-		ns->text = 0;
-	}
+	ns->~GtkColorPrivate();
 	gpointer parent_class = g_type_class_peek_parent(G_OBJECT_CLASS(GTK_COLOR_GET_CLASS(color_obj)));
 	G_OBJECT_CLASS(parent_class)->finalize(color_obj);
 }
@@ -141,6 +138,27 @@ void gtk_color_set_roundness(GtkColor* widget, double roundness)
 	gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
+void gtk_color_set_color(GtkColor* widget, const Color &color) {
+	GtkColorPrivate *ns = GET_PRIVATE(widget);
+	color_copy(&color, &ns->color);
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text) {
+	GtkColorPrivate *ns = GET_PRIVATE(widget);
+	color_copy(&color, &ns->color);
+	if (ns->secondary_color){
+	}else{
+		if (ns->transformation_chain){
+			Color c;
+			ns->transformation_chain->apply(&ns->color, &c);
+			color_get_contrasting(&c, &ns->text_color);
+		}else{
+			color_get_contrasting(&ns->color, &ns->text_color);
+		}
+	}
+	ns->text = text;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
 void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
@@ -155,11 +173,7 @@ void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text)
 			color_get_contrasting(&ns->color, &ns->text_color);
 		}
 	}
-	if (ns->text)
-		g_free(ns->text);
-	ns->text = 0;
-	if (text)
-		ns->text = g_strdup(text);
+	ns->text = text;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle)
@@ -270,7 +284,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			cairo_paint(cr);
 		}
 	}
-	if (sensitive && ns->text){
+	if (sensitive && !ns->text.empty()){
 		PangoLayout *layout;
 		PangoFontDescription *font_description;
 		font_description = pango_font_description_new();
@@ -290,7 +304,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			color_copy(&ns->text_color, &color);
 		}
 		cairo_set_color(cr, color);
-		pango_layout_set_markup(layout, ns->text, -1);
+		pango_layout_set_markup(layout, ns->text.c_str(), -1);
 		pango_layout_set_width(layout, width * PANGO_SCALE);
 		pango_layout_set_height(layout, height * PANGO_SCALE);
 		int layout_width, layout_height;

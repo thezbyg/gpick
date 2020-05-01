@@ -18,7 +18,7 @@
 
 #include "uiColorDictionaries.h"
 #include "uiUtilities.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "color_names/ColorNames.h"
 #include "I18N.h"
@@ -71,7 +71,7 @@ struct ColorDictionariesArgs
 {
 	GtkWidget *dictionary_list, *file_browser;
 	list<ColorDictionary> color_dictionaries;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState *gs;
 };
 static void color_dictionaries_update_row(GtkTreeModel *model, GtkTreeIter *iter1, ColorDictionary *color_dictionary, ColorDictionariesArgs *args)
@@ -140,7 +140,7 @@ static void add_file(GtkWidget *widget, ColorDictionariesArgs *args)
 	}
 	gchar *current_folder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(args->file_browser));
 	if (current_folder){
-		dynv_set_string(args->params, "current_folder", current_folder);
+		args->options->set("current_folder", current_folder);
 		g_free(current_folder);
 	}
 }
@@ -216,13 +216,13 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 {
 	ColorDictionariesArgs *args = new ColorDictionariesArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
+	args->options = args->gs->settings().getOrCreateMap("gpick");
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Color dictionaries"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 			GTK_STOCK_OK, GTK_RESPONSE_OK,
 			nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "color_dictionaries.window.width", -1),
-		dynv_get_int32_wd(args->params, "color_dictionaries.window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("color_dictionaries.window.width", -1),
+		args->options->getInt32("color_dictionaries.window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
 	GtkWidget* vbox = gtk_vbox_new(false, 5);
@@ -244,37 +244,30 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 	gtk_table_attach(GTK_TABLE(table), frame, 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 
 	GtkWidget *widget = args->file_browser = gtk_file_chooser_button_new(_("Color dictionary file"), GTK_FILE_CHOOSER_ACTION_OPEN);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), dynv_get_string_wd(args->params, "current_folder", ""));
+	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), args->options->getString("current_folder", "").c_str());
 	gtk_container_add(GTK_CONTAINER(frame), widget);
 	g_signal_connect(G_OBJECT(args->file_browser), "file-set", G_CALLBACK(add_file), args);
 	table_y++;
 
 	bool built_in_found = false;
-	uint32_t dictionary_count = 0;
-	struct dynvSystem** dictionaries = dynv_get_dynv_array_wd(args->params, "color_dictionaries.items", nullptr, 0, &dictionary_count);
-	if (dictionaries){
-		for (uint32_t i = 0; i < dictionary_count; i++){
-			ColorDictionary dictionary;
-			dictionary.path = dynv_get_string_wd(dictionaries[i], "path", "");
-			dictionary.enable = dynv_get_bool_wd(dictionaries[i], "enable", false);
-			dictionary.built_in = dynv_get_bool_wd(dictionaries[i], "built_in", false);
-			if (dictionary.built_in){
-				if (dictionary.path == "built_in_0"){
-					built_in_found = true;
-					dictionary.path = _("Built in");
-				}else{
-					dynv_system_release(dictionaries[i]);
-					continue;
-				}
+	auto items = args->options->getMaps("color_dictionaries.items");
+	for (auto item: items) {
+		ColorDictionary dictionary;
+		dictionary.path = item->getString("path", "");
+		dictionary.enable = item->getBool("enable", false);
+		dictionary.built_in = item->getBool("built_in", false);
+		if (dictionary.built_in) {
+			if (dictionary.path == "built_in_0"){
+				built_in_found = true;
+				dictionary.path = _("Built in");
+			}else{
+				continue;
 			}
-			args->color_dictionaries.push_back(dictionary);
-			dynv_system_release(dictionaries[i]);
 		}
-		if (dictionaries) delete [] dictionaries;
+		args->color_dictionaries.push_back(dictionary);
 	}
-	if (!built_in_found){
+	if (!built_in_found)
 		args->color_dictionaries.push_back(ColorDictionary(_("Built in"), true, true));
-	}
 
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(list));
 	for (auto &dictionary: args->color_dictionaries){
@@ -283,39 +276,28 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 		color_dictionaries_update_row(model, &iter1, &dictionary, args);
 	}
 	setDialogContent(dialog, vbox);
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
-		size_t item_count = args->color_dictionaries.size();
-		if (item_count){
-			reorder(args);
-			vector<dynvSystem*> serialized;
-			serialized.resize(item_count);
-			size_t i = 0;
-			for (auto &dictionary: args->color_dictionaries){
-				serialized[i] = dynv_system_create(args->params);
-				if (dictionary.built_in){
-					dynv_set_string(serialized[i], "path", "built_in_0");
-				}else{
-					dynv_set_string(serialized[i], "path", dictionary.path.c_str());
-				}
-				dynv_set_bool(serialized[i], "enable", dictionary.enable);
-				dynv_set_bool(serialized[i], "built_in", dictionary.built_in);
-				i++;
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		std::vector<dynv::Ref> items;
+		reorder(args);
+		for (auto &dictionary: args->color_dictionaries) {
+			auto item = dynv::Map::create();
+			if (dictionary.built_in) {
+				item->set("path", "built_in_0");
+			} else {
+				item->set("path", dictionary.path);
 			}
-			dynv_set_dynv_array(args->params, "color_dictionaries.items", const_cast<const dynvSystem**>(serialized.data()), serialized.size());
-			for (auto i: serialized){
-				dynv_system_release(i);
-			}
-		}else{
-			dynv_set_dynv_array(args->params, "color_dictionaries.items", nullptr, 0);
+			item->set("enable", dictionary.enable);
+			item->set("built_in", dictionary.built_in);
+			items.push_back(item);
 		}
+		args->options->set("color_dictionaries.items", items);
 		color_names_clear(args->gs->getColorNames());
-		color_names_load(args->gs->getColorNames(), args->params);
+		color_names_load(args->gs->getColorNames(), *args->options);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "color_dictionaries.window.width", width);
-	dynv_set_int32(args->params, "color_dictionaries.window.height", height);
+	args->options->set("color_dictionaries.window.width", width);
+	args->options->set("color_dictionaries.window.height", height);
 	gtk_widget_destroy(dialog);
-	dynv_system_release(args->params);
 	delete args;
 }

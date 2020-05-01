@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVVARFLOAT_H_
-#define DYNVVARFLOAT_H_
-
-#include "DynvSystem.h"
-
-struct dynvHandler* dynv_var_float_new();
-
-#endif /* DYNVVARFLOAT_H_ */
+#include "Format.h"
+namespace common {
+template<> std::string as_string<const std::string &>(const std::string &value) {
+	return value;
+}
+template<> std::string as_string<const char *>(const char *value) {
+	return value;
+}
+template<> std::string as_string<int>(int value) {
+	return std::to_string(value);
+}
+}

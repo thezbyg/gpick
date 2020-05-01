@@ -18,12 +18,11 @@
 
 #ifndef GPICK_LUA_DYNV_SYSTEM_H_
 #define GPICK_LUA_DYNV_SYSTEM_H_
+#include "dynv/Map.h"
 struct lua_State;
-struct dynvSystem;
-namespace lua
-{
+namespace lua {
 int registerDynvSystem(lua_State *L);
-int pushDynvSystem(lua_State *L, dynvSystem *params);
-dynvSystem *checkDynvSystem(lua_State *L, int index);
+int pushDynvSystem(lua_State *L, const dynv::Ref &options);
+dynv::Ref checkDynvSystem(lua_State *L, int index);
 }
 #endif /* GPICK_LUA_DYNV_SYSTEM_H_ */

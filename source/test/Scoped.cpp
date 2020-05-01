@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,46 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DYNVXML_H_
-#define DYNVXML_H_
-
-struct dynvSystem;
-#include <ostream>
-int dynv_xml_serialize(dynvSystem* dynv_system, std::ostream& out);
-int dynv_xml_deserialize(dynvSystem* dynv_system, std::istream& in);
-int dynv_xml_escape(const char* data, std::ostream& out);
-
-#endif /* DYNVXML_H_ */
+#include <boost/test/unit_test.hpp>
+#include "common/Scoped.h"
+#include <functional>
+using namespace common;
+BOOST_AUTO_TEST_SUITE(scoped);
+BOOST_AUTO_TEST_CASE(test10) {
+	bool result = false;
+	std::function<void()> callable = [&result]() {
+		result = true;
+	};
+	{
+		Scoped<std::function<void()>> callOnScopeEnd(callable);
+	}
+	BOOST_CHECK_EQUAL(result, true);
+}
+BOOST_AUTO_TEST_CASE(test11) {
+	bool result = false;
+	std::function<void()> callable = [&result]() {
+		result = true;
+	};
+	{
+		makeScoped(callable);
+	}
+	BOOST_CHECK_EQUAL(result, true);
+}
+static void makeTrue(bool *value) {
+	*value = true;
+}
+BOOST_AUTO_TEST_CASE(test20) {
+	bool result = false;
+	{
+		Scoped<void (*)(bool *)> callOnScopeEnd(makeTrue, &result);
+	}
+	BOOST_CHECK_EQUAL(result, true);
+}
+BOOST_AUTO_TEST_CASE(test21) {
+	bool result = false;
+	{
+		makeScoped(&makeTrue, &result);
+	}
+	BOOST_CHECK_EQUAL(result, true);
+}
+BOOST_AUTO_TEST_SUITE_END()

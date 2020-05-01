@@ -18,38 +18,34 @@
 
 #ifndef TRANSFORMATION_FACTORY_H_
 #define TRANSFORMATION_FACTORY_H_
-#include "Transformation.h"
-#include <boost/shared_ptr.hpp>
 #include <vector>
+#include <string>
+#include <memory>
 /** \file source/transformation/Factory.h
  * \brief Struct for transformation object creation.
  */
-namespace transformation
-{
+namespace transformation {
+struct Transformation;
 /** \struct Factory
  * \brief Transformation object creation management struct.
  */
-struct Factory
-{
-	public:
-		struct TypeInfo{
-			const char *name;
-			const char *human_name;
-			TypeInfo(const char *name, const char *human_name);
-		};
-
-		/**
+struct Factory {
+	struct TypeInfo {
+		const char *id;
+		const char *name;
+		TypeInfo(const char *id, const char *name);
+	};
+	/**
 		 * Create new transformation object.
 		 * @param[in] type Name of transformation object type.
 		 * @return New transformation object.
 		 */
-		static boost::shared_ptr<Transformation> create(const char *type);
-
-		/**
+	static std::unique_ptr<Transformation> create(const std::string &type);
+	/**
 		 * Get all transformation object types.
 		 * @return Vector of transformation object type information structures.
 		 */
-		static std::vector<TypeInfo> getAllTypes();
+	static std::vector<TypeInfo> getAllTypes();
 };
 }
 #endif /* TRANSFORMATION_FACTORY_H_ */

@@ -21,7 +21,7 @@
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
 #include "I18N.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "lua/Script.h"
 #include "lua/DynvSystem.h"
 #include "lua/Callbacks.h"
@@ -71,22 +71,18 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *lab_observer;
 	GtkWidget *add_to_swatch_on_release;
 	GtkWidget *rotate_swatch_on_release;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }DialogOptionsArgs;
 
-bool dialog_options_update(lua::Script &script, dynvSystem *settings, GlobalState *gs)
-{
-	if (settings == nullptr)
-		return false;
+bool dialog_options_update(GlobalState *gs) {
 	if (!gs->callbacks().optionChange().valid())
 		return false;
-	lua_State* L = script;
+	lua_State* L = gs->script();
 	int stack_top = lua_gettop(L);
 	gs->callbacks().optionChange().get();
-	lua::pushDynvSystem(L, settings);
+	lua::pushDynvSystem(L, &gs->settings());
 	int status = lua_pcall(L, 1, 0, 0);
-	dynv_system_release(settings);
 	if (status == 0){
 		lua_settop(L, stack_top);
 		return true;
@@ -100,56 +96,57 @@ bool dialog_options_update(lua::Script &script, dynvSystem *settings, GlobalStat
 static void calc( DialogOptionsArgs *args, bool preview, int limit)
 {
 	if (preview) return;
-	dynv_set_bool(args->params, "main.minimize_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->minimize_to_tray)));
-	dynv_set_bool(args->params, "main.close_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->close_to_tray)));
-	dynv_set_bool(args->params, "main.start_in_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray)));
-	dynv_set_bool(args->params, "main.single_instance", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance)));
-	dynv_set_bool(args->params, "main.save_restore_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->save_restore_palette)));
+	auto &options = args->options;
+	options->set<bool>("main.minimize_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->minimize_to_tray)));
+	options->set<bool>("main.close_to_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->close_to_tray)));
+	options->set<bool>("main.start_in_tray", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->start_in_tray)));
+	options->set<bool>("main.single_instance", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->single_instance)));
+	options->set<bool>("main.save_restore_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->save_restore_palette)));
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->default_drag_action[0])))
-		dynv_set_bool(args->params, "main.dragging_moves", true);
+		options->set("main.dragging_moves", true);
 	else
-		dynv_set_bool(args->params, "main.dragging_moves", false);
+		options->set("main.dragging_moves", false);
 	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hex_case[0])))
-		dynv_set_string(args->params, "options.hex_case", "lower");
+		options->set("options.hex_case", "lower");
 	else
-		dynv_set_string(args->params, "options.hex_case", "upper");
-	dynv_set_float(args->params, "picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
-	dynv_set_int32(args->params, "picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
-	dynv_set_bool(args->params, "picker.always_use_floating_picker", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->always_use_floating_picker)));
-	dynv_set_bool(args->params, "picker.hide_cursor", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hide_cursor)));
-	dynv_set_bool(args->params, "picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));
-	dynv_set_bool(args->params, "picker.sampler.copy_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_on_release)));
-	dynv_set_bool(args->params, "picker.sampler.add_to_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_swatch_on_release)));
-	dynv_set_bool(args->params, "picker.sampler.rotate_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch_on_release)));
-	dynv_set_bool(args->params, "picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
-	dynv_set_bool(args->params, "picker.sampler.copy_to_clipboard", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_to_clipboard)));
-	dynv_set_bool(args->params, "picker.sampler.rotate_swatch_after_sample", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch)));
-	dynv_set_bool(args->params, "picker.out_of_gamut_mask", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->out_of_gamut_mask)));
-	dynv_set_bool(args->params, "color_names.imprecision_postfix", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->imprecision_postfix)));
+		options->set("options.hex_case", "upper");
+	options->set<int32_t>("picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
+	options->set<int32_t>("picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
+	options->set<bool>("picker.always_use_floating_picker", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->always_use_floating_picker)));
+	options->set<bool>("picker.hide_cursor", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hide_cursor)));
+	options->set<bool>("picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));
+	options->set<bool>("picker.sampler.copy_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_on_release)));
+	options->set<bool>("picker.sampler.add_to_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_swatch_on_release)));
+	options->set<bool>("picker.sampler.rotate_swatch_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch_on_release)));
+	options->set<bool>("picker.sampler.add_to_palette", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_to_palette)));
+	options->set<bool>("picker.sampler.copy_to_clipboard", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->copy_to_clipboard)));
+	options->set<bool>("picker.sampler.rotate_swatch_after_sample", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->rotate_swatch)));
+	options->set<bool>("picker.out_of_gamut_mask", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->out_of_gamut_mask)));
+	options->set<bool>("color_names.imprecision_postfix", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->imprecision_postfix)));
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
 	int i = 0;
 	while (color_naming_options[i].name){
 		if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->tool_color_naming[i]))){
-			dynv_set_string(args->params, "color_names.tool_color_naming", color_naming_options[i].name);
+			options->set("color_names.tool_color_naming", color_naming_options[i].name);
 			break;
 		}
 		i++;
 	}
 	for (int i = 0; available_color_spaces[i].label; i++){
-		dynv_set_bool(args->params, available_color_spaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->color_spaces[i])));
+		options->set<bool>(available_color_spaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->color_spaces[i])));
 	}
-	dynv_set_string(args->params, "picker.lab.illuminant", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_illuminant)));
-	dynv_set_string(args->params, "picker.lab.observer", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_observer)));
+	options->set("picker.lab.illuminant", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_illuminant)));
+	options->set("picker.lab.observer", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_observer)));
 }
 
 void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 {
 	DialogOptionsArgs *args = new DialogOptionsArgs;
 	args->gs = gs;
-	args->params = dynv_get_dynv(args->gs->getSettings(), "gpick");
+	args->options = args->gs->settings().getOrCreateMap("gpick");
 	GtkWidget *table, *table_m, *widget;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Options"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(args->params, "options.window.width", -1), dynv_get_int32_wd(args->params, "options.window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("options.window.width", -1), args->options->getInt32("options.window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *frame;
 	GtkWidget* notebook = gtk_notebook_new();
@@ -164,11 +161,11 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->single_instance = widget = gtk_check_button_new_with_mnemonic (_("_Single instance"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.single_instance", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("main.single_instance", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->save_restore_palette = widget = gtk_check_button_new_with_mnemonic (_("Save/_Restore palette"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.save_restore_palette", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("main.save_restore_palette", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	frame = gtk_frame_new(_("System tray"));
@@ -179,15 +176,15 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->minimize_to_tray = widget = gtk_check_button_new_with_mnemonic (_("_Minimize to system tray"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.minimize_to_tray", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("main.minimize_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->close_to_tray = widget = gtk_check_button_new_with_mnemonic (_("_Close to system tray"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.close_to_tray", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("main.close_to_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->start_in_tray = widget = gtk_check_button_new_with_mnemonic (_("_Start in system tray"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "main.start_in_tray", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("main.start_in_tray", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	frame = gtk_frame_new(_("Default drag action"));
@@ -198,7 +195,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	GSList *group = nullptr;
-	bool dragging_moves = dynv_get_bool_wd(args->params, "main.dragging_moves", true);
+	bool dragging_moves = args->options->getBool("main.dragging_moves", true);
 	args->default_drag_action[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("M_ove"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
 	if (dragging_moves)
@@ -220,7 +217,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	group = nullptr;
-	string hex_format = dynv_get_string_wd(args->params, "options.hex_case", "upper");
+	string hex_format = args->options->getString("options.hex_case", "upper");
 	args->hex_case[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("Lower case"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
 	if (hex_format == "lower")
@@ -245,13 +242,13 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Refresh rate:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	args->refresh_rate = widget = gtk_spin_button_new_with_range(1, 60, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->refresh_rate), dynv_get_float_wd(args->params, "picker.refresh_rate", 30));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->refresh_rate), args->options->getInt32("picker.refresh_rate", 30));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new("Hz",0,0.5,0,0),2,3,table_y,table_y+1,GTK_FILL,GTK_FILL,5,5);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Magnified area size:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	args->zoom_size = widget = gtk_spin_button_new_with_range(75, 300, 15);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->zoom_size), dynv_get_int32_wd(args->params, "picker.zoom_size", 150));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->zoom_size), args->options->getInt32("picker.zoom_size", 150));
 	gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 	table_y++;
 
@@ -263,11 +260,11 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->always_use_floating_picker = widget = gtk_check_button_new_with_mnemonic(_("_Always use floating picker"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.always_use_floating_picker", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.always_use_floating_picker", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->hide_cursor = widget = gtk_check_button_new_with_mnemonic(_("_Hide cursor"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.hide_cursor", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.hide_cursor", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 
@@ -279,19 +276,19 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->add_on_release = widget = gtk_check_button_new_with_mnemonic(_("_Add to palette"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_on_release", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.add_on_release", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->copy_on_release = widget = gtk_check_button_new_with_mnemonic(_("_Copy to clipboard"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.copy_on_release", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.copy_on_release", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->add_to_swatch_on_release = widget = gtk_check_button_new_with_mnemonic(_("A_dd to swatch"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_to_swatch_on_release", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.add_to_swatch_on_release", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->rotate_swatch_on_release = widget = gtk_check_button_new_with_mnemonic(_("R_otate swatch"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.rotate_swatch_on_release", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.rotate_swatch_on_release", true));
 	gtk_table_attach(GTK_TABLE(table), widget,0,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	frame = gtk_frame_new(_("'Spacebar' button behaviour"));
@@ -302,15 +299,15 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->add_to_palette = widget = gtk_check_button_new_with_mnemonic(_("_Add to palette"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.add_to_palette", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.add_to_palette", true));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->copy_to_clipboard = widget = gtk_check_button_new_with_mnemonic(_("_Copy to clipboard"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.copy_to_clipboard", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.copy_to_clipboard", true));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->rotate_swatch = widget = gtk_check_button_new_with_mnemonic(_("_Rotate swatch"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.sampler.rotate_swatch_after_sample", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.sampler.rotate_swatch_after_sample", true));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	table_m_y = 0;
@@ -323,7 +320,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	for (int i = 0; available_color_spaces[i].label; i++){
 		args->color_spaces[i] = widget = gtk_check_button_new_with_label(available_color_spaces[i].label);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, available_color_spaces[i].setting, true));
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool(available_color_spaces[i].setting, true));
 		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
 		table_y++;
 	}
@@ -336,7 +333,6 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	{
 		int selected;
-		const char *option;
 		gtk_table_attach(GTK_TABLE(table), gtk_label_mnemonic_aligned_new(_("_Illuminant:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 		args->lab_illuminant = widget = gtk_combo_box_text_new();
 		const char *illuminants[] = {
@@ -352,9 +348,9 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 			0,
 		};
 		selected = 0;
-		option = dynv_get_string_wd(args->params, "picker.lab.illuminant", "D50");
+		auto option = args->options->getString("picker.lab.illuminant", "D50");
 		for (int i = 0; illuminants[i]; i++){
-			if (string(illuminants[i]).compare(option) == 0) selected = i;
+			if (illuminants[i] == option) selected = i;
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), illuminants[i]);
 		}
 		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), selected);
@@ -368,9 +364,9 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 			0,
 		};
 		selected = 0;
-		option = dynv_get_string_wd(args->params, "picker.lab.observer", "2");
+		option = args->options->getString("picker.lab.observer", "2");
 		for (int i = 0; observers[i]; i++){
-			if (string(observers[i]).compare(option) == 0) selected = i;
+			if (observers[i] == option) selected = i;
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), observers[i]);
 		}
 		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), selected);
@@ -385,7 +381,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->out_of_gamut_mask = widget = gtk_check_button_new_with_mnemonic(_("_Mask out of gamut colors"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "picker.out_of_gamut_mask", true));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.out_of_gamut_mask", true));
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
 	table_y++;
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Picker")));
@@ -399,7 +395,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	args->imprecision_postfix = widget = gtk_check_button_new_with_mnemonic(_("_Imprecision postfix"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), dynv_get_bool_wd(args->params, "color_names.imprecision_postfix", false));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("color_names.imprecision_postfix", false));
 	gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	frame = gtk_frame_new(_("Tool color naming"));
@@ -410,7 +406,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	group = nullptr;
-	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(dynv_get_string_wd(args->params, "color_names.tool_color_naming", "automatic_name"));
+	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(args->options->getString("color_names.tool_color_naming", "automatic_name"));
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
 	int i = 0;
 	while (color_naming_options[i].name){
@@ -427,13 +423,12 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	setDialogContent(dialog, notebook);
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		calc(args, false, 0);
-		dialog_options_update(args->gs->script(), args->gs->getSettings(), args->gs);
+		dialog_options_update(args->gs);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	dynv_set_int32(args->params, "options.window.width", width);
-	dynv_set_int32(args->params, "options.window.height", height);
-	dynv_system_release(args->params);
+	args->options->set("options.window.width", width);
+	args->options->set("options.window.height", height);
 	gtk_widget_destroy(dialog);
 	delete args;
 }

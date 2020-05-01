@@ -40,4 +40,4 @@ private:
 	bool m_canceled;
 };
 }
-#endif /* HEADER_COMMON_SET_ON_SCOPE_END_H_ */
+#endif /* GPICK_COMMON_SET_ON_SCOPE_END_H_ */

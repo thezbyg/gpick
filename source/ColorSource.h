@@ -18,7 +18,9 @@
 
 #ifndef GPICK_COLOR_SOURCE_H_
 #define GPICK_COLOR_SOURCE_H_
+#include "dynv/MapFwd.h"
 #include <gtk/gtk.h>
+#include <string>
 struct GlobalState;
 struct ColorObject;
 struct ColorSourceSlot{
@@ -31,7 +33,7 @@ struct ColorSourceSlot{
 	}supports;
 };
 struct ColorSource{
-	char *identificator;
+	std::string identificator;
 	char *hr_name;
 	int (*set_color)(ColorSource *source, ColorObject *color);
 	int (*get_color)(ColorSource *source, ColorObject **color);
@@ -41,7 +43,7 @@ struct ColorSource{
 	int (*deactivate)(ColorSource *source);
 	int (*query_slots)(ColorSource *source, ColorSourceSlot *slot);
 	int (*set_slot_color)(ColorSource *source, size_t slot_id, ColorObject *color);
-	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace);
+	ColorSource* (*implement)(ColorSource *source, GlobalState *gs, const dynv::Ref &options);
 	int (*destroy)(ColorSource *source);
 	bool single_instance_only;
 	bool needs_viewport;
@@ -49,7 +51,7 @@ struct ColorSource{
 	GtkWidget *widget;
 	void* userdata;
 };
-int color_source_init(ColorSource* source, const char *identificator, const char *name);
+int color_source_init(ColorSource* source, const std::string &identificator, const char *name);
 int color_source_activate(ColorSource *source);
 int color_source_deactivate(ColorSource *source);
 int color_source_set_color(ColorSource *source, ColorObject *color);
@@ -57,7 +59,7 @@ int color_source_set_nth_color(ColorSource *source, size_t color_n, ColorObject 
 int color_source_get_color(ColorSource *source, ColorObject *color);
 int color_source_get_nth_color(ColorSource *source, size_t color_n, ColorObject **color);
 int color_source_get_default_accelerator(ColorSource *source);
-ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, struct dynvSystem *dynv_namespace);
+ColorSource* color_source_implement(ColorSource* source, GlobalState *gs, const dynv::Ref &options);
 GtkWidget* color_source_get_widget(ColorSource* source);
 int color_source_destroy(ColorSource* source);
 #endif /* GPICK_COLOR_SOURCE_H_ */

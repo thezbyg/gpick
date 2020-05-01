@@ -24,8 +24,7 @@
 #include "Color.h"
 #include "uiListPalette.h"
 #include "ColorList.h"
-#include "DynvHelpers.h"
-#include "dynv/DynvXml.h"
+#include "dynv/Map.h"
 #include <gtk/gtk.h>
 #include <sstream>
 namespace clipboard {
@@ -95,28 +94,20 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color", false), 16, reinterpret_cast<guchar *>(dataColor), 8);
 	} break;
 	case Target::serializedColorObjectList: {
-		auto handlerMap = dynv_system_get_handler_map(args->gs->getSettings());
-		auto params = dynv_system_create(handlerMap);
-		std::vector<dynvSystem *> colors;
+		std::vector<dynv::Ref> colors;
 		colors.reserve(args->colors->colors.size());
 		for (auto &colorObject: args->colors->colors) {
-			auto color = dynv_system_create(handlerMap);
-			dynv_set_string(color, "name", colorObject->getName().c_str());
-			dynv_set_color(color, "color", &colorObject->getColor());
+			auto color = dynv::Map::create();
+			color->set("name", colorObject->getName());
+			color->set("color", colorObject->getColor());
 			colors.push_back(color);
 		}
-		dynv_handler_map_release(handlerMap);
-		dynv_set_dynv_array(params, "colors", const_cast<const dynvSystem **>(&colors.front()), colors.size());
+		dynv::Map values;
+		values.set("colors", colors);
 		std::stringstream str;
-		str << "<?xml version=\"1.0\" encoding='UTF-8'?><root>";
-		dynv_xml_serialize(params, str);
-		str << "</root>";
+		values.serializeXml(str);
 		auto data = str.str();
-		for (auto &color: colors) {
-			dynv_system_release(color);
-		}
-		dynv_system_release(params);
-		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 16, reinterpret_cast<guchar *>(&data.front()), data.length());
+		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, reinterpret_cast<guchar *>(&data.front()), data.length());
 	} break;
 	}
 }
@@ -307,21 +298,14 @@ ColorObject *getFirst(GlobalState *gs) {
 			auto data = gtk_selection_data_get_data(selectionData);
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
 			std::stringstream textStream(text);
-			auto handlerMap = dynv_system_get_handler_map(gs->getSettings());
-			auto params = dynv_system_create(handlerMap);
-			dynv_handler_map_release(handlerMap);
-			dynv_xml_deserialize(params, textStream);
-			uint32_t colorCount = 0;
-			auto colors = reinterpret_cast<dynvSystem **>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
-			if (!colors || colorCount == 0) {
-				dynv_system_release(params);
-				if (colors) {
-					delete[] colors;
-				}
+			dynv::Map values;
+			if (!values.deserializeXml(textStream))
 				return VisitResult::advance;
-			}
+			auto colors = values.getMaps("colors");
+			if (colors.size() == 0)
+				return VisitResult::advance;
 			static Color defaultColor = {};
-			result = new ColorObject(dynv_get_string_wd(colors[0], "name", ""), *dynv_get_color_wdc(colors[0], "color", &defaultColor));
+			result = new ColorObject(colors[0]->getString("name", ""), colors[0]->getColor("color", defaultColor));
 			return VisitResult::stop;
 		} break;
 		}
@@ -368,7 +352,9 @@ ColorList *getColors(GlobalState *gs) {
 			color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
 			color.ma[3] = 0;
-			color_list_add_color_object(colorList, new ColorObject("", color), false);
+			ColorObject *reference;
+			color_list_add_color_object(colorList, (reference = new ColorObject("", color)), false);
+			reference->release();
 			success = true;
 			return VisitResult::stop;
 		} break;
@@ -376,22 +362,17 @@ ColorList *getColors(GlobalState *gs) {
 			auto data = gtk_selection_data_get_data(selectionData);
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
 			std::stringstream textStream(text);
-			auto handlerMap = dynv_system_get_handler_map(gs->getSettings());
-			auto params = dynv_system_create(handlerMap);
-			dynv_handler_map_release(handlerMap);
-			dynv_xml_deserialize(params, textStream);
-			uint32_t colorCount = 0;
-			auto colors = reinterpret_cast<dynvSystem **>(dynv_get_dynv_array_wd(params, "colors", nullptr, 0, &colorCount));
-			if (!colors || colorCount == 0) {
-				dynv_system_release(params);
-				if (colors) {
-					delete[] colors;
-				}
+			dynv::Map values;
+			if (!values.deserializeXml(textStream))
 				return VisitResult::advance;
-			}
+			auto colors = values.getMaps("colors");
+			if (colors.size() == 0)
+				return VisitResult::advance;
 			static Color defaultColor = {};
-			for (size_t i = 0; i < colorCount; i++) {
-				color_list_add_color_object(colorList, new ColorObject(dynv_get_string_wd(colors[i], "name", ""), *dynv_get_color_wdc(colors[i], "color", &defaultColor)), false);
+			for (auto &color: colors) {
+				ColorObject *reference;
+				color_list_add_color_object(colorList, (reference = new ColorObject(color->getString("name", ""), color->getColor("color", defaultColor))), false);
+				reference->release();
 			}
 			success = true;
 			return VisitResult::stop;

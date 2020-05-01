@@ -17,41 +17,29 @@
  */
 
 #include "Factory.h"
-
 #include "ColorVisionDeficiency.h"
 #include "GammaModification.h"
 #include "Quantization.h"
-
 #include <string.h>
-
 namespace transformation {
-
-boost::shared_ptr<Transformation> Factory::create(const char *type)
-{
-	if (strcmp(ColorVisionDeficiency::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new ColorVisionDeficiency());
-	}
-	if (strcmp(GammaModification::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new GammaModification());
-	}
-	if (strcmp(Quantization::getName(), type) == 0){
-		return boost::shared_ptr<Transformation>(new Quantization());
-	}
-	return boost::shared_ptr<Transformation>();
+std::unique_ptr<Transformation> Factory::create(const std::string &type) {
+	if (type == ColorVisionDeficiency::getId())
+		return std::make_unique<ColorVisionDeficiency>();
+	if (type == GammaModification::getId())
+		return std::make_unique<GammaModification>();
+	if (type == Quantization::getId())
+		return std::make_unique<Quantization>();
+	return std::unique_ptr<Transformation>();
 }
-
-std::vector<Factory::TypeInfo> Factory::getAllTypes()
-{
+std::vector<Factory::TypeInfo> Factory::getAllTypes() {
 	std::vector<TypeInfo> result;
-	result.push_back(TypeInfo(ColorVisionDeficiency::getName(), ColorVisionDeficiency::getReadableName()));
-	result.push_back(TypeInfo(GammaModification::getName(), GammaModification::getReadableName()));
-	result.push_back(TypeInfo(Quantization::getName(), Quantization::getReadableName()));
+	result.emplace_back(ColorVisionDeficiency::getId(), ColorVisionDeficiency::getName());
+	result.emplace_back(GammaModification::getId(), GammaModification::getName());
+	result.emplace_back(Quantization::getId(), Quantization::getName());
 	return result;
 }
-
-Factory::TypeInfo::TypeInfo(const char *name_, const char *human_name_):
-	name(name_), human_name(human_name_)
-{
+Factory::TypeInfo::TypeInfo(const char *id, const char *name):
+	id(id),
+	name(name) {
 }
-
 }

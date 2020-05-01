@@ -23,7 +23,7 @@
 #include "ColorUtils.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "DragDrop.h"
@@ -56,7 +56,7 @@ typedef struct BlendColorsArgs{
 	GtkWidget *middle_color;
 	GtkWidget *end_color;
 	ColorList *preview_color_list;
-	struct dynvSystem *params;
+	dynv::Ref options;
 	GlobalState* gs;
 }BlendColorsArgs;
 
@@ -323,29 +323,28 @@ static int source_deactivate(BlendColorsArgs *args)
 }
 static int source_destroy(BlendColorsArgs *args)
 {
-	gint steps1 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->steps1));
-	gint steps2 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->steps2));
-	gint type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
-	dynv_set_int32(args->params, "type", type);
-	dynv_set_int32(args->params, "steps1", steps1);
-	dynv_set_int32(args->params, "steps2", steps2);
+	int steps1 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->steps1));
+	int steps2 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->steps2));
+	int type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->mix_type));
+	args->options->set("type", type);
+	args->options->set("steps1", steps1);
+	args->options->set("steps2", steps2);
 	Color c;
 	gtk_color_get_color(GTK_COLOR(args->start_color), &c);
-	dynv_set_color(args->params, "start_color", &c);
+	args->options->set("start_color", c);
 	gtk_color_get_color(GTK_COLOR(args->middle_color), &c);
-	dynv_set_color(args->params, "middle_color", &c);
+	args->options->set("middle_color", c);
 	gtk_color_get_color(GTK_COLOR(args->end_color), &c);
-	dynv_set_color(args->params, "end_color", &c);
+	args->options->set("end_color", c);
 	color_list_destroy(args->preview_color_list);
-	dynv_system_release(args->params);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace)
+static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options)
 {
 	BlendColorsArgs *args = new BlendColorsArgs;
-	args->params = dynv_system_ref(dynv_namespace);
+	args->options = options;
 	args->gs = gs;
 	color_source_init(&args->source, source->identificator, source->hr_name);
 	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
@@ -368,41 +367,38 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	color_set(&c, 0.5);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->start_color = widget = gtk_color_new();
-	gtk_color_set_color(GTK_COLOR(args->start_color), dynv_get_color_wdc(args->params, "start_color", &c), "");
+	gtk_color_set_color(GTK_COLOR(args->start_color), args->options->getColor("start_color", c));
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Middle:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->middle_color = widget = gtk_color_new();
 	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(color_button_press_cb), args);
-	gtk_color_set_color(GTK_COLOR(args->middle_color), dynv_get_color_wdc(args->params, "middle_color", &c), "");
+	gtk_color_set_color(GTK_COLOR(args->middle_color), args->options->getColor("middle_color", c));
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)2;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End:"),0,0,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	args->end_color = widget = gtk_color_new();
-	gtk_color_set_color(GTK_COLOR(args->end_color), dynv_get_color_wdc(args->params, "end_color", &c), "");
+	gtk_color_set_color(GTK_COLOR(args->end_color), args->options->getColor("end_color", c));
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
 	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.handler_map = dynv_system_get_handler_map(gs->getColorList()->params);
 	dd.userdata2 = (void*)3;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	table_y = 0;
@@ -413,21 +409,21 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, struc
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("HSV"));
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("LAB"));
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mix_type), _("LCH"));
-	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), dynv_get_int32_wd(args->params, "type", 0));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(mix_type), args->options->getInt32("type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), mix_type, false, false, 0);
 	g_signal_connect(G_OBJECT(mix_type), "changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), vbox, 4, 5, table_y, table_y+3, GtkAttachOptions(GTK_FILL),GtkAttachOptions(GTK_FILL),5,0);
 	table_y = 0;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start steps:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range(1,255,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps1", 3));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), args->options->getInt32("steps1", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	args->steps1 = mix_steps;
 	g_signal_connect(G_OBJECT(mix_steps), "value-changed", G_CALLBACK(update), args);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End steps:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 	mix_steps = gtk_spin_button_new_with_range(1,255,1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), dynv_get_int32_wd(args->params, "steps2", 3));
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(mix_steps), args->options->getInt32("steps2", 3));
 	gtk_table_attach(GTK_TABLE(table), mix_steps,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 	table_y++;
 	args->steps2 = mix_steps;
@@ -447,7 +443,7 @@ int blend_colors_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "blend_colors", _("Blend colors"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, struct dynvSystem *dynv_namespace))source_implement;
+	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
 	color_source->default_accelerator = GDK_KEY_b;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

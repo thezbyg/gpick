@@ -18,265 +18,195 @@
 
 #include "DragDrop.h"
 #include "ColorObject.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "GlobalState.h"
 #include "gtk/ColorWidget.h"
 #include "Converters.h"
 #include "Converter.h"
-#include "dynv/DynvXml.h"
+#include "common/Scoped.h"
 #include <string.h>
 #include <iostream>
 #include <sstream>
-
-using namespace std;
-
-enum {
-	TARGET_STRING = 1,
-	TARGET_ROOTWIN,
-	TARGET_COLOR,
-	TARGET_COLOR_OBJECT_LIST,
-	TARGET_COLOR_OBJECT_LIST_SERIALIZED,
+enum class Target : guint {
+	string = 1,
+	color,
+	colorObjectList,
+	serializedColorObjectList,
 };
-
 static GtkTargetEntry targets[] = {
-	{ (char*)"color_object-list", GTK_TARGET_SAME_APP, TARGET_COLOR_OBJECT_LIST },
-	{ (char*)"application/x-color_object-list", GTK_TARGET_OTHER_APP, TARGET_COLOR_OBJECT_LIST_SERIALIZED },
-	{ (char*)"application/x-color", 0, TARGET_COLOR },
-	{ (char*)"text/plain", 0, TARGET_STRING },
-	{ (char*)"UTF8_STRING", 0, TARGET_STRING },
-	{ (char*)"STRING", 0, TARGET_STRING },
-	{ (char*)"application/x-rootwin-drop", 0, TARGET_ROOTWIN }
+	{ const_cast<gchar *>("color-object-list"), GTK_TARGET_SAME_APP, static_cast<guint>(Target::colorObjectList) },
+	{ const_cast<gchar *>("application/x-color_object-list"), GTK_TARGET_OTHER_APP, static_cast<guint>(Target::serializedColorObjectList) },
+	{ const_cast<gchar *>("application/x-color-object-list"), GTK_TARGET_OTHER_APP, static_cast<guint>(Target::serializedColorObjectList) },
+	{ const_cast<gchar *>("application/x-color"), 0, static_cast<guint>(Target::color) },
+	{ const_cast<gchar *>("text/plain"), 0, static_cast<guint>(Target::string) },
+	{ const_cast<gchar *>("UTF8_STRING"), 0, static_cast<guint>(Target::string) },
+	{ const_cast<gchar *>("STRING"), 0, static_cast<guint>(Target::string) },
 };
-
-static guint n_targets = G_N_ELEMENTS (targets);
-
+static const size_t targetCount = sizeof(targets) / sizeof(GtkTargetEntry);
 struct ColorObjectList {
 	uintptr_t sourceWidgetId;
-	uint64_t color_object_n;
-	ColorObject *color_object[1];
+	uint64_t colorObjectCount;
+	ColorObject *colorObject[1];
 };
-
-static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time, gpointer data);
-static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint t, gpointer user_data);
-static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, gpointer user_data);
-static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data);
-
-static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
-static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data);
+static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selectionData, Target targetType, guint time, DragDrop *dd);
+static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint t, DragDrop *dd);
+static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, DragDrop *dd);
+static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, DragDrop *dd);
+static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, DragDrop *dd);
+static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selectionData, Target targetType, guint time, DragDrop *dd);
 static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd);
-static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
-
-static void drag_destroy(GtkWidget *widget, gpointer user_data);
-
-int dragdrop_init(DragDrop* dd, GlobalState *gs){
+static void drag_end(GtkWidget *widget, GdkDragContext *context, DragDrop *dd);
+static void drag_destroy(GtkWidget *widget, DragDrop *dd);
+int dragdrop_init(DragDrop *dd, GlobalState *gs) {
 	dd->get_color_object = 0;
 	dd->set_color_object_at = 0;
 	dd->test_at = 0;
-	dd->data_received = 0;
-	dd->data_get = 0;
 	dd->data_delete = 0;
 	dd->drag_end = 0;
 	dd->get_color_object_list = 0;
 	dd->set_color_object_list_at = 0;
-
-	dd->handler_map = 0;
 	dd->data_type = DragDrop::DATA_TYPE_NONE;
 	memset(&dd->data, 0, sizeof(dd->data));
 	dd->widget = 0;
 	dd->gs = gs;
 	dd->dragwidget = 0;
-
 	return 0;
 }
-
-int dragdrop_widget_attach(GtkWidget* widget, DragDropFlags flags, DragDrop *user_dd){
-
-	DragDrop* dd=new DragDrop;
+int dragdrop_widget_attach(GtkWidget *widget, DragDropFlags flags, DragDrop *user_dd) {
+	DragDrop *dd = new DragDrop;
 	memcpy(dd, user_dd, sizeof(DragDrop));
 	dd->widget = widget;
-
-	if (flags & DRAGDROP_SOURCE){
+	if (flags & DRAGDROP_SOURCE) {
 		GtkTargetList *target_list = gtk_drag_source_get_target_list(widget);
-		if (target_list){
-			gtk_target_list_add_table(target_list, targets, n_targets);
-		}else{
-			target_list = gtk_target_list_new(targets, n_targets);
+		if (target_list) {
+			gtk_target_list_add_table(target_list, targets, targetCount);
+		} else {
+			target_list = gtk_target_list_new(targets, targetCount);
 			gtk_drag_source_set_target_list(widget, target_list);
 		}
-		g_signal_connect (widget, "drag-data-get", G_CALLBACK (drag_data_get), dd);
-		g_signal_connect (widget, "drag-data-delete", G_CALLBACK (drag_data_delete), dd);
-		g_signal_connect (widget, "drag-begin", G_CALLBACK (drag_begin), dd);
-		g_signal_connect (widget, "drag-end", G_CALLBACK (drag_end), dd);
+		g_signal_connect(widget, "drag-data-get", G_CALLBACK(drag_data_get), dd);
+		g_signal_connect(widget, "drag-data-delete", G_CALLBACK(drag_data_delete), dd);
+		g_signal_connect(widget, "drag-begin", G_CALLBACK(drag_begin), dd);
+		g_signal_connect(widget, "drag-end", G_CALLBACK(drag_end), dd);
 	}
-
-	if (flags & DRAGDROP_DESTINATION){
+	if (flags & DRAGDROP_DESTINATION) {
 		GtkTargetList *target_list = gtk_drag_dest_get_target_list(widget);
-		if (target_list){
-			gtk_target_list_add_table(target_list, targets, n_targets);
-		}else{
-			target_list = gtk_target_list_new(targets, n_targets);
+		if (target_list) {
+			gtk_target_list_add_table(target_list, targets, targetCount);
+		} else {
+			target_list = gtk_target_list_new(targets, targetCount);
 			gtk_drag_dest_set_target_list(widget, target_list);
 		}
-		g_signal_connect (widget, "drag-data-received", G_CALLBACK(drag_data_received), dd);
-		g_signal_connect (widget, "drag-leave", G_CALLBACK (drag_leave), dd);
-		g_signal_connect (widget, "drag-motion", G_CALLBACK (drag_motion), dd);
-		g_signal_connect (widget, "drag-drop", G_CALLBACK (drag_drop), dd);
+		g_signal_connect(widget, "drag-data-received", G_CALLBACK(drag_data_received), dd);
+		g_signal_connect(widget, "drag-leave", G_CALLBACK(drag_leave), dd);
+		g_signal_connect(widget, "drag-motion", G_CALLBACK(drag_motion), dd);
+		g_signal_connect(widget, "drag-drop", G_CALLBACK(drag_drop), dd);
 	}
-
-	g_signal_connect (widget, "destroy", G_CALLBACK (drag_destroy), dd);
-
+	g_signal_connect(widget, "destroy", G_CALLBACK(drag_destroy), dd);
 	return 0;
 }
-
-static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data){
+static void drag_data_received(GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *selectionData, Target targetType, guint time, DragDrop *dd) {
+	if ((selectionData == nullptr) || (gtk_selection_data_get_length(selectionData) == 0)) {
+		gtk_drag_finish(context, false, gdk_drag_context_get_actions(context) == GDK_ACTION_MOVE, time);
+		return;
+	}
 	bool success = false;
-
-	if ((selection_data != nullptr) && (gtk_selection_data_get_length(selection_data) >= 0)){
-		DragDrop *dd = (DragDrop*)user_data;
-		if (dd->data_received){
-			success = dd->data_received(dd, widget, context, x, y, selection_data, target_type, time);
+	switch (targetType) {
+	case Target::colorObjectList: {
+		ColorObjectList data;
+		memcpy(&data, gtk_selection_data_get_data(selectionData), offsetof(ColorObjectList, colorObject));
+		bool sameWidget = data.sourceWidgetId == reinterpret_cast<uintptr_t>(dd->widget);
+		if (data.colorObjectCount > 1) {
+			std::vector<ColorObject *> colorObjects(data.colorObjectCount);
+			memcpy(&colorObjects.front(), gtk_selection_data_get_data(selectionData) + offsetof(ColorObjectList, colorObject), sizeof(ColorObject *) * data.colorObjectCount);
+			if (dd->set_color_object_list_at)
+				dd->set_color_object_list_at(dd, &colorObjects.front(), data.colorObjectCount, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
+			else if (dd->set_color_object_at) {
+				memcpy(&data, gtk_selection_data_get_data(selectionData), sizeof(ColorObjectList));
+				dd->set_color_object_at(dd, data.colorObject[0], x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
+			}
+		} else {
+			if (dd->set_color_object_at) {
+				memcpy(&data, gtk_selection_data_get_data(selectionData), sizeof(ColorObjectList));
+				dd->set_color_object_at(dd, data.colorObject[0], x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
+			}
 		}
-		if (!success)
-		switch (target_type){
-		case TARGET_COLOR_OBJECT_LIST:
-			{
-				ColorObjectList data;
-				memcpy(&data, gtk_selection_data_get_data(selection_data), offsetof(ColorObjectList, color_object));
-				bool sameWidget = data.sourceWidgetId == reinterpret_cast<uintptr_t>(dd->widget);
-				if (data.color_object_n > 1){
-					ColorObject **color_objects = new ColorObject*[data.color_object_n];
-					memcpy(color_objects, gtk_selection_data_get_data(selection_data) + offsetof(ColorObjectList, color_object), sizeof(ColorObject*) * data.color_object_n);
-
-					if (dd->set_color_object_list_at)
-						dd->set_color_object_list_at(dd, color_objects, data.color_object_n, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
-					else if (dd->set_color_object_at) {
-						memcpy(&data, gtk_selection_data_get_data(selection_data), sizeof(ColorObjectList));
-						dd->set_color_object_at(dd, data.color_object[0], x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
-					}
-				}else{
-					if (dd->set_color_object_at) {
-						memcpy(&data, gtk_selection_data_get_data(selection_data), sizeof(ColorObjectList));
-						dd->set_color_object_at(dd, data.color_object[0], x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, sameWidget);
-					}
-				}
-			}
-			success = true;
+	} break;
+	case Target::serializedColorObjectList: {
+		auto data = gtk_selection_data_get_data(selectionData);
+		auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
+		std::stringstream textStream(text);
+		dynv::Map values;
+		if (!values.deserializeXml(textStream))
 			break;
-
-		case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
-			{
-				size_t length = gtk_selection_data_get_length(selection_data);
-				char *buffer = new char [length + 1];
-				buffer[length] = 0;
-				memcpy(buffer, gtk_selection_data_get_data(selection_data), length);
-				stringstream str(buffer);
-				delete [] buffer;
-				dynvSystem *params = dynv_system_create(dd->handler_map);
-				dynv_xml_deserialize(params, str);
-
-				uint32_t color_n = 0;
-				dynvSystem **colors = (dynvSystem**)dynv_get_dynv_array_wd(params, "colors", 0, 0, &color_n);
-				if (color_n > 0 && colors){
-					if (color_n > 1){
-						if (dd->set_color_object_list_at){
-							ColorObject **color_objects = new ColorObject*[color_n];
-							for (uint32_t i = 0; i < color_n; i++){
-								color_objects[i] = new ColorObject();
-								color_objects[i]->setName(dynv_get_string_wd(colors[i], "name", ""));
-								Color *color = dynv_get_color_wdc(colors[i], "color", nullptr);
-								if (color != nullptr)
-									color_objects[i]->setColor(*color);
-							}
-							dd->set_color_object_list_at(dd, color_objects, color_n, x, y, false, false);
-							for (uint32_t i = 0; i < color_n; i++){
-								color_objects[i]->release();
-							}
-							delete [] color_objects;
-						}else if (dd->set_color_object_at){
-							ColorObject* color_object = new ColorObject();
-							color_object->setName(dynv_get_string_wd(colors[0], "name", ""));
-							Color *color = dynv_get_color_wdc(colors[0], "color", nullptr);
-							if (color != nullptr)
-								color_object->setColor(*color);
-							dd->set_color_object_at(dd, color_object, x, y, false, false);
-							color_object->release();
-						}
-					}else{
-						if (dd->set_color_object_at){
-							ColorObject* color_object = new ColorObject();
-							color_object->setName(dynv_get_string_wd(colors[0], "name", ""));
-							Color *color = dynv_get_color_wdc(colors[0], "color", nullptr);
-							if (color != nullptr)
-								color_object->setColor(*color);
-							dd->set_color_object_at(dd, color_object, x, y, false, false);
-							color_object->release();
-						}
-					}
-				}
-				if (colors){
-					for (uint32_t i = 0; i < color_n; i++){
-						dynv_system_release(colors[i]);
-					}
-					delete [] colors;
-				}
-			}
-			success = true;
+		auto colors = values.getMaps("colors");
+		if (colors.size() == 0)
 			break;
-
-		case TARGET_STRING:
-			{
-				gchar* data = (gchar*)gtk_selection_data_get_data(selection_data);
-				if (data[gtk_selection_data_get_length(selection_data)] != 0) break; //not null terminated
-				ColorObject* color_object = nullptr;
-				if (!dd->gs->converters().deserialize(data, &color_object)){
-					gtk_drag_finish (context, false, false, time);
-					return;
-				}
-				dd->set_color_object_at(dd, color_object, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, false);
-				color_object->release();
+		static Color defaultColor = {};
+		if (colors.size() == 1) {
+			if (dd->set_color_object_at) {
+				auto *colorObject = new ColorObject();
+				colorObject->setName(colors[0]->getString("name", ""));
+				colorObject->setColor(colors[0]->getColor("color", defaultColor));
+				dd->set_color_object_at(dd, colorObject, x, y, false, false);
+				colorObject->release();
+				success = true;
+				break;
 			}
-			success = true;
-			break;
-
-		case TARGET_COLOR:
-			{
-				guint16* data = (guint16*)gtk_selection_data_get_data(selection_data);
-				Color color;
-				color.rgb.red = data[0] / (double)0xFFFF;
-				color.rgb.green = data[1] / (double)0xFFFF;
-				color.rgb.blue = data[2] / (double)0xFFFF;
-
-				ColorObject* color_object = new ColorObject("", color);
-				dd->set_color_object_at(dd, color_object, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, false);
-				color_object->release();
-			}
-			success = true;
-			break;
-
-		default:
-			g_assert_not_reached ();
 		}
+		if (dd->set_color_object_list_at) {
+			size_t colorCount = colors.size();
+			std::vector<ColorObject *> colorObjects(colorCount);
+			auto releaseColorObjects = common::makeScoped(std::function<void()>([&colorObjects]() {
+				for (auto colorObject: colorObjects)
+					if (colorObject)
+						colorObject->release();
+			}));
+			for (size_t i = 0; i < colorCount; i++)
+				colorObjects[i] = new ColorObject(colors[i]->getString("name", ""), colors[i]->getColor("color", defaultColor));
+			dd->set_color_object_list_at(dd, &colorObjects.front(), colorCount, x, y, false, false);
+			success = true;
+		}
+	} break;
+	case Target::string: {
+		gchar *data = (gchar *)gtk_selection_data_get_data(selectionData);
+		if (data[gtk_selection_data_get_length(selectionData)] != 0) break; //not null terminated
+		ColorObject *colorObject = nullptr;
+		if (!dd->gs->converters().deserialize(data, &colorObject)) {
+			gtk_drag_finish(context, false, false, time);
+			return;
+		}
+		dd->set_color_object_at(dd, colorObject, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, false);
+		colorObject->release();
+		success = true;
+	} break;
+	case Target::color: {
+		guint16 *data = (guint16 *)gtk_selection_data_get_data(selectionData);
+		Color color;
+		color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
+		color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
+		color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
+		color.ma[3] = 0;
+		auto *colorObject = new ColorObject("", color);
+		dd->set_color_object_at(dd, colorObject, x, y, gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE, false);
+		colorObject->release();
+		success = true;
+	} break;
 	}
 	gtk_drag_finish(context, success, gdk_drag_context_get_actions(context) == GDK_ACTION_MOVE, time);
 }
-
-
-static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data){
-
-	DragDrop *dd = (DragDrop*)user_data;
-
+static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, DragDrop *dd) {
 	GdkDragAction suggested_action;
 	bool suggested_action_set = true;
-
-	bool dragging_moves = dynv_get_bool_wd(dd->gs->getSettings(), "gpick.main.dragging_moves", true);
-	if (dragging_moves){
+	bool dragging_moves = dd->gs->settings().getBool("gpick.main.dragging_moves", true);
+	if (dragging_moves) {
 		if ((gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE) == GDK_ACTION_MOVE)
 			suggested_action = GDK_ACTION_MOVE;
 		else if ((gdk_drag_context_get_actions(context) & GDK_ACTION_COPY) == GDK_ACTION_COPY)
 			suggested_action = GDK_ACTION_COPY;
 		else
 			suggested_action_set = false;
-	}else{
+	} else {
 		if ((gdk_drag_context_get_actions(context) & GDK_ACTION_COPY) == GDK_ACTION_COPY)
 			suggested_action = GDK_ACTION_COPY;
 		else if ((gdk_drag_context_get_actions(context) & GDK_ACTION_MOVE) == GDK_ACTION_MOVE)
@@ -284,213 +214,142 @@ static gboolean drag_motion(GtkWidget *widget, GdkDragContext *context, gint x, 
 		else
 			suggested_action_set = false;
 	}
-
-	if (!dd->test_at){
+	if (!dd->test_at) {
 		GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
-		if (target){
+		if (target) {
 			gdk_drag_status(context, suggested_action_set ? suggested_action : gdk_drag_context_get_selected_action(context), time);
-		}else{
+		} else {
 			gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 		}
-		return TRUE;
+		return true;
 	}
-
-	if (dd->test_at(dd, x, y)){
+	if (dd->test_at(dd, x, y)) {
 		GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
-		if (target){
+		if (target) {
 			gdk_drag_status(context, suggested_action_set ? suggested_action : gdk_drag_context_get_selected_action(context), time);
-		}else{
+		} else {
 			gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 		}
-	}else{
+	} else {
 		gdk_drag_status(context, suggested_action_set ? suggested_action : GdkDragAction(0), time);
 	}
-	return TRUE;
+	return true;
 }
 
-
-static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, gpointer user_data){
+static void drag_leave(GtkWidget *widget, GdkDragContext *context, guint time, DragDrop *dd) {
 }
-
-
-static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, gpointer user_data){
-	DragDrop *dd = (DragDrop*)user_data;
-
+static gboolean drag_drop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, DragDrop *dd) {
 	GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
-
-	if (target != GDK_NONE){
+	if (target != GDK_NONE) {
 		gtk_drag_get_data(widget, context, target, time);
 		if (dd->drag_end)
 			dd->drag_end(dd, widget, context);
-		return TRUE;
+		return true;
 	}
 	if (dd->drag_end)
 		dd->drag_end(dd, widget, context);
-	return FALSE;
+	return false;
 }
-
-
-
-
-static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, gpointer user_data)
-{
-	DragDrop *dd = (DragDrop*)user_data;
-	if (dd->data_delete){
+static void drag_data_delete(GtkWidget *widget, GdkDragContext *context, DragDrop *dd) {
+	if (dd->data_delete) {
 		dd->data_delete(dd, widget, context);
 	}
 }
-
-static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selection_data, guint target_type, guint time, gpointer user_data)
-{
-	g_assert (selection_data != nullptr);
-	DragDrop *dd = (DragDrop*)user_data;
-	bool success = false;
-	if (dd->data_get){
-		success = dd->data_get(dd, widget, context, selection_data, target_type, time);
-	}
-	if (!success){
-		if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECT){
-			ColorObject* color_object = dd->data.color_object.color_object;
-			if (!color_object) return;
-			Color color;
-			switch (target_type){
-			case TARGET_COLOR_OBJECT_LIST:
-				{
-					ColorObjectList data;
-					data.sourceWidgetId = reinterpret_cast<uintptr_t>(dd->widget);
-					data.color_object_n = 1;
-					data.color_object[0] = color_object;
-					gtk_selection_data_set(selection_data, gdk_atom_intern("color_object", TRUE), 8, (guchar *)&data, sizeof(data));
-				}
-				break;
-
-			case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
-				{
-					dynvSystem *params = dynv_system_create(dd->handler_map);
-					dynvSystem **colors = new dynvSystem*[1];
-					colors[0] = dynv_system_create(dd->handler_map);
-					dynv_set_string(colors[0], "name", color_object->getName().c_str());
-					dynv_set_color(colors[0], "color", &color_object->getColor());
-					dynv_set_dynv_array(params, "colors", (const dynvSystem**)colors, 1);
-					delete [] colors;
-
-					stringstream str;
-					str << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
-					dynv_xml_serialize(params, str);
-					str << "</root>" << endl;
-					string xml_data = str.str();
-
-					gtk_selection_data_set(selection_data, gdk_atom_intern("application/x-color_object-list", TRUE), 8, (guchar *)xml_data.c_str(), xml_data.length());
-				}
-				break;
-
-			case TARGET_STRING:
-				{
-					string text = dd->gs->converters().serialize(color_object, Converters::Type::copy);
-					gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
-				}
-				break;
-
-			case TARGET_COLOR:
-				{
-					color = color_object->getColor();
-					guint16 data_color[4];
-					data_color[0] = int(color.rgb.red * 0xFFFF);
-					data_color[1] = int(color.rgb.green * 0xFFFF);
-					data_color[2] = int(color.rgb.blue * 0xFFFF);
-					data_color[3] = 0xffff;
-					gtk_selection_data_set (selection_data, gdk_atom_intern ("application/x-color", TRUE), 16, (guchar *)data_color, 8);
-				}
-				break;
-
-			case TARGET_ROOTWIN:
-				g_print ("Dropped on the root window!\n");
-				break;
-
-			default:
-				g_assert_not_reached ();
-			}
-		}else if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECTS){
-			ColorObject** color_objects = dd->data.color_objects.color_objects;
-			uint32_t color_object_n = dd->data.color_objects.color_object_n;
-			if (!color_objects) return;
-			Color color;
-
-			switch (target_type){
-			case TARGET_COLOR_OBJECT_LIST:
-				{
-					size_t dataLength = offsetof(ColorObjectList, color_object) + sizeof(ColorObject*) * color_object_n;
-					std::vector<uint8_t> dataBytes(dataLength);
-					auto data = reinterpret_cast<ColorObjectList *>(&dataBytes.front());
-					data->sourceWidgetId = reinterpret_cast<uintptr_t>(dd->widget);
-					data->color_object_n = color_object_n;
-					memcpy(&data->color_object[0], color_objects, sizeof(ColorObject*) * color_object_n);
-					gtk_selection_data_set(selection_data, gdk_atom_intern("color_object", TRUE), 8, reinterpret_cast<const guchar *>(&dataBytes.front()), dataLength);
-				}
-				break;
-
-			case TARGET_COLOR_OBJECT_LIST_SERIALIZED:
-				{
-					dynvSystem *params = dynv_system_create(dd->handler_map);
-					if (color_object_n > 0){
-						dynvSystem **colors = new dynvSystem*[color_object_n];
-						for (uint32_t i = 0; i < color_object_n; i++){
-							colors[i] = dynv_system_create(dd->handler_map);
-							dynv_set_string(colors[i], "name", color_objects[i]->getName().c_str());
-							dynv_set_color(colors[i], "color", &color_objects[i]->getColor());
-						}
-						dynv_set_dynv_array(params, "colors", (const dynvSystem**)colors, color_object_n);
-						delete [] colors;
-					}
-					stringstream str;
-					str << "<?xml version=\"1.0\" encoding='UTF-8'?><root>" << endl;
-					dynv_xml_serialize(params, str);
-					str << "</root>" << endl;
-					string xml_data = str.str();
-
-					gtk_selection_data_set(selection_data, gdk_atom_intern("application/x-color_object-list", TRUE), 8, (guchar *)xml_data.c_str(), xml_data.length());
-				}
-				break;
-
-			case TARGET_STRING:
-				{
-					stringstream ss;
-					auto converter = dd->gs->converters().firstCopy();
-					if (converter){
-						for (uint32_t i = 0; i != color_object_n; i++){
-							ss << converter->serialize(color_objects[i]) << endl;
-						}
-					}
-					string text = ss.str();
-					gtk_selection_data_set_text(selection_data, text.c_str(), text.length() + 1);
-				}
-				break;
-
-			case TARGET_COLOR:
-				{
-					ColorObject *color_object = color_objects[0];
-					color = color_object->getColor();
-					guint16 data_color[4];
-					data_color[0] = int(color.rgb.red * 0xFFFF);
-					data_color[1] = int(color.rgb.green * 0xFFFF);
-					data_color[2] = int(color.rgb.blue * 0xFFFF);
-					data_color[3] = 0xffff;
-					gtk_selection_data_set (selection_data, gdk_atom_intern ("application/x-color", TRUE), 16, (guchar *)data_color, 8);
-				}
-				break;
-
-			case TARGET_ROOTWIN:
-				g_print ("Dropped on the root window!\n");
-				break;
-
-			default:
-				g_assert_not_reached ();
-			}
-
-
-
+static void drag_data_get(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selectionData, Target targetType, guint time, DragDrop *dd) {
+	if (!selectionData)
+		return;
+	if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECT) {
+		ColorObject *colorObject = dd->data.colorObject.colorObject;
+		if (!colorObject) return;
+		Color color;
+		switch (targetType) {
+		case Target::colorObjectList: {
+			ColorObjectList data;
+			data.sourceWidgetId = reinterpret_cast<uintptr_t>(dd->widget);
+			data.colorObjectCount = 1;
+			data.colorObject[0] = colorObject;
+			gtk_selection_data_set(selectionData, gdk_atom_intern("colorObject", false), 8, (guchar *)&data, sizeof(data));
+		} break;
+		case Target::serializedColorObjectList: {
+			std::vector<dynv::Ref> colors;
+			auto color = dynv::Map::create();
+			color->set("name", colorObject->getName());
+			color->set("color", colorObject->getColor());
+			colors.push_back(color);
+			dynv::Map values;
+			values.set("colors", colors);
+			std::stringstream str;
+			values.serializeXml(str);
+			auto data = str.str();
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, reinterpret_cast<guchar *>(&data.front()), data.length());
+		} break;
+		case Target::string: {
+			auto text = dd->gs->converters().serialize(colorObject, Converters::Type::copy);
+			gtk_selection_data_set_text(selectionData, text.c_str(), text.length() + 1);
+		} break;
+		case Target::color: {
+			color = colorObject->getColor();
+			guint16 data_color[4];
+			data_color[0] = int(color.rgb.red * 0xFFFF);
+			data_color[1] = int(color.rgb.green * 0xFFFF);
+			data_color[2] = int(color.rgb.blue * 0xFFFF);
+			data_color[3] = 0xffff;
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color", false), 16, (guchar *)data_color, 8);
+		} break;
 		}
-
+	} else if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECTS) {
+		ColorObject **colorObjects = dd->data.colorObjects.colorObjects;
+		uint32_t colorObjectCount = dd->data.colorObjects.colorObjectCount;
+		if (!colorObjects) return;
+		Color color;
+		switch (targetType) {
+		case Target::colorObjectList: {
+			size_t dataLength = offsetof(ColorObjectList, colorObject) + sizeof(ColorObject *) * colorObjectCount;
+			std::vector<uint8_t> dataBytes(dataLength);
+			auto data = reinterpret_cast<ColorObjectList *>(&dataBytes.front());
+			data->sourceWidgetId = reinterpret_cast<uintptr_t>(dd->widget);
+			data->colorObjectCount = colorObjectCount;
+			memcpy(&data->colorObject[0], colorObjects, sizeof(ColorObject *) * colorObjectCount);
+			gtk_selection_data_set(selectionData, gdk_atom_intern("color-object", false), 8, reinterpret_cast<const guchar *>(&dataBytes.front()), dataLength);
+		} break;
+		case Target::serializedColorObjectList: {
+			std::vector<dynv::Ref> colors;
+			colors.reserve(colorObjectCount);
+			for (uint32_t i = 0; i < colorObjectCount; i++) {
+				auto color = dynv::Map::create();
+				color->set("name", colorObjects[i]->getName());
+				color->set("color", colorObjects[i]->getColor());
+				colors.push_back(color);
+			}
+			dynv::Map values;
+			values.set("colors", colors);
+			std::stringstream str;
+			values.serializeXml(str);
+			auto data = str.str();
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, (guchar *)&data.front(), data.length());
+		} break;
+		case Target::string: {
+			std::stringstream ss;
+			auto converter = dd->gs->converters().firstCopy();
+			if (converter) {
+				for (uint32_t i = 0; i != colorObjectCount; i++) {
+					ss << converter->serialize(colorObjects[i]) << "\n";
+				}
+			}
+			std::string text = ss.str();
+			gtk_selection_data_set_text(selectionData, text.c_str(), text.length() + 1);
+		} break;
+		case Target::color: {
+			ColorObject *colorObject = colorObjects[0];
+			color = colorObject->getColor();
+			guint16 data_color[4];
+			data_color[0] = int(color.rgb.red * 0xFFFF);
+			data_color[1] = int(color.rgb.green * 0xFFFF);
+			data_color[2] = int(color.rgb.blue * 0xFFFF);
+			data_color[3] = 0xffff;
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color", false), 16, (guchar *)data_color, 8);
+		} break;
+		}
 	}
 }
 
@@ -500,8 +359,8 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd)
 		auto colorObjects = dd->get_color_object_list(dd, &colorObjectCount);
 		if (colorObjects) {
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECTS;
-			dd->data.color_objects.color_objects = colorObjects;
-			dd->data.color_objects.color_object_n = colorObjectCount;
+			dd->data.colorObjects.colorObjects = colorObjects;
+			dd->data.colorObjects.colorObjectCount = colorObjectCount;
 			auto dragWindow = gtk_window_new(GTK_WINDOW_POPUP);
 			auto hbox = gtk_vbox_new(true, 0);
 			gtk_container_add(GTK_CONTAINER(dragWindow), hbox);
@@ -524,10 +383,10 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd)
 		}
 	}
 	if (dd->get_color_object) {
-		ColorObject* colorObject = dd->get_color_object(dd);
+		ColorObject *colorObject = dd->get_color_object(dd);
 		if (colorObject) {
 			dd->data_type = DragDrop::DATA_TYPE_COLOR_OBJECT;
-			dd->data.color_object.color_object = colorObject;
+			dd->data.colorObject.colorObject = colorObject;
 			auto dragWindow = gtk_window_new(GTK_WINDOW_POPUP);
 			auto colorWidget = gtk_color_new();
 			gtk_container_add(GTK_CONTAINER(dragWindow), colorWidget);
@@ -542,40 +401,31 @@ static void drag_begin(GtkWidget *widget, GdkDragContext *context, DragDrop *dd)
 		}
 	}
 }
-
-static void drag_end(GtkWidget *widget, GdkDragContext *context, gpointer user_data){
-	DragDrop *dd = (DragDrop*)user_data;
-
-	if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECT){
-		if (dd->data.color_object.color_object){
-			dd->data.color_object.color_object->release();
+static void drag_end(GtkWidget *widget, GdkDragContext *context, DragDrop *dd) {
+	if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECT) {
+		if (dd->data.colorObject.colorObject) {
+			dd->data.colorObject.colorObject->release();
 			memset(&dd->data, 0, sizeof(dd->data));
 		}
 		dd->data_type = DragDrop::DATA_TYPE_NONE;
 	}
-	if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECTS){
-		if (dd->data.color_objects.color_objects){
-			for (uint32_t i = 0; i < dd->data.color_objects.color_object_n; i++){
-				dd->data.color_objects.color_objects[i]->release();
+	if (dd->data_type == DragDrop::DATA_TYPE_COLOR_OBJECTS) {
+		if (dd->data.colorObjects.colorObjects) {
+			for (uint32_t i = 0; i < dd->data.colorObjects.colorObjectCount; i++) {
+				dd->data.colorObjects.colorObjects[i]->release();
 			}
-			delete [] dd->data.color_objects.color_objects;
+			delete[] dd->data.colorObjects.colorObjects;
 			memset(&dd->data, 0, sizeof(dd->data));
 		}
 		dd->data_type = DragDrop::DATA_TYPE_NONE;
 	}
-
-	if (dd->dragwidget){
+	if (dd->dragwidget) {
 		gtk_widget_destroy(dd->dragwidget);
 		dd->dragwidget = 0;
 	}
-
 	if (dd->drag_end)
 		dd->drag_end(dd, widget, context);
-
 }
-
-static void drag_destroy(GtkWidget *widget, gpointer user_data){
-	DragDrop *dd = (DragDrop*)user_data;
-	dynv_handler_map_release(dd->handler_map);
+static void drag_destroy(GtkWidget *widget, DragDrop *dd) {
 	delete dd;
 }

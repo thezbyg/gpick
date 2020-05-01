@@ -22,7 +22,7 @@
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "I18N.h"
-#include "DynvHelpers.h"
+#include "dynv/Map.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "parser/TextFile.h"
@@ -81,7 +81,7 @@ private:
 	ColorList *m_preview_color_list;
 	GlobalState *m_gs;
 	size_t m_index;
-	struct dynvSystem *m_params;
+	dynv::Ref m_options;
 	bool isSingleLineCCommentsEnabled();
 	bool isMultiLineCCommentsEnabled();
 	bool isSingleLineHashCommentsEnabled();
@@ -103,31 +103,31 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	ToolColorNameAssigner(gs),
 	m_parent(parent),
 	m_gs(gs) {
-	m_params = dynv_get_dynv(m_gs->getSettings(), "gpick.tools.text_parser");
+	m_options = m_gs->settings().getOrCreateMap("gpick.tools.text_parser");
 	GtkWidget *dialog = m_dialog = gtk_dialog_new_with_buttons(_("Text parser"), m_parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), dynv_get_int32_wd(m_params, "window.width", -1), dynv_get_int32_wd(m_params, "window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), m_options->getInt32("window.width", -1), m_options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 	GtkWidget *table = gtk_table_new(5, 9, false);
 	GtkWidget *scrolled_window = gtk_scrolled_window_new(0, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), m_textView = newTextView(dynv_get_string_wd(m_params, "text", "")));
+	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), m_textView = newTextView(m_options->getString("text", "").c_str()));
 	g_signal_connect(G_OBJECT(gtk_text_view_get_buffer(GTK_TEXT_VIEW(m_textView))), "changed", G_CALLBACK(onChange), this);
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), newLabel(_("Text") + ":"s), false, false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, true, true, 0);
 	gtk_table_attach(GTK_TABLE(table), vbox, 0, 8, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	int y = 1;
-	addOption(m_single_line_c_comments = newCheckbox(_("C style single-line comments") + " (//abc)"s, dynv_get_bool_wd(m_params, "single_line_c_comments", true)), 0, y, table);
-	addOption(m_multi_line_c_comments = newCheckbox(_("C style multi-line comments") + " (/*abc*/)"s, dynv_get_bool_wd(m_params, "multi_line_c_comments", true)), 0, y, table);
-	addOption(m_single_line_hash_comments = newCheckbox(_("Hash single-line comments") + " (#abc)"s, dynv_get_bool_wd(m_params, "single_line_hash_comments", true)), 0, y, table);
+	addOption(m_single_line_c_comments = newCheckbox(_("C style single-line comments") + " (//abc)"s, m_options->getBool("single_line_c_comments", true)), 0, y, table);
+	addOption(m_multi_line_c_comments = newCheckbox(_("C style multi-line comments") + " (/*abc*/)"s, m_options->getBool("multi_line_c_comments", true)), 0, y, table);
+	addOption(m_single_line_hash_comments = newCheckbox(_("Hash single-line comments") + " (#abc)"s, m_options->getBool("single_line_hash_comments", true)), 0, y, table);
 	y = 1;
-	addOption(m_css_rgb = newCheckbox("CSS rgb()", dynv_get_bool_wd(m_params, "css_rgb", true)), 1, y, table);
-	addOption(m_css_rgba = newCheckbox("CSS rgba()", dynv_get_bool_wd(m_params, "css_rgba", true)), 1, y, table);
-	addOption(m_full_hex = newCheckbox(_("Full hex"), dynv_get_bool_wd(m_params, "full_hex", true)), 1, y, table);
+	addOption(m_css_rgb = newCheckbox("CSS rgb()", m_options->getBool("css_rgb", true)), 1, y, table);
+	addOption(m_css_rgba = newCheckbox("CSS rgba()", m_options->getBool("css_rgba", true)), 1, y, table);
+	addOption(m_full_hex = newCheckbox(_("Full hex"), m_options->getBool("full_hex", true)), 1, y, table);
 	y = 1;
-	addOption(m_short_hex = newCheckbox(_("Short hex"), dynv_get_bool_wd(m_params, "short_hex", true)), 2, y, table);
-	addOption(m_int_values = newCheckbox(_("Integer values"), dynv_get_bool_wd(m_params, "int_values", true)), 2, y, table);
-	addOption(m_float_values = newCheckbox(_("Real values"), dynv_get_bool_wd(m_params, "float_values", true)), 2, y, table);
+	addOption(m_short_hex = newCheckbox(_("Short hex"), m_options->getBool("short_hex", true)), 2, y, table);
+	addOption(m_int_values = newCheckbox(_("Integer values"), m_options->getBool("int_values", true)), 2, y, table);
+	addOption(m_float_values = newCheckbox(_("Real values"), m_options->getBool("float_values", true)), 2, y, table);
 	g_signal_connect(G_OBJECT(m_single_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_multi_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_single_line_hash_comments), "toggled", G_CALLBACK(onChange), this);
@@ -138,7 +138,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	g_signal_connect(G_OBJECT(m_int_values), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_float_values), "toggled", G_CALLBACK(onChange), this);
 	gtk_widget_show_all(table);
-	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, dynv_get_bool_wd(m_params, "show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 8, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, m_options->getBool("show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 8, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	preview();
 	gtk_widget_show_all(table);
 	setDialogContent(dialog, table);
@@ -147,7 +147,6 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 }
 TextParserDialog::~TextParserDialog() {
 	color_list_destroy(m_preview_color_list);
-	dynv_system_release(m_params);
 }
 bool TextParserDialog::show() {
 	gtk_widget_show(m_dialog);
@@ -216,21 +215,21 @@ void TextParserDialog::onResponse(GtkWidget *widget, gint response_id, TextParse
 }
 void TextParserDialog::saveSettings() {
 	auto text = getTextViewText(m_textView);
-	dynv_set_string(m_params, "text", text.c_str());
-	dynv_set_bool(m_params, "single_line_c_comments", isSingleLineCCommentsEnabled());
-	dynv_set_bool(m_params, "multi_line_c_comments", isMultiLineCCommentsEnabled());
-	dynv_set_bool(m_params, "single_line_hash_comments", isSingleLineHashCommentsEnabled());
-	dynv_set_bool(m_params, "css_rgb", isCssRgbEnabled());
-	dynv_set_bool(m_params, "css_rgba", isCssRgbaEnabled());
-	dynv_set_bool(m_params, "full_hex", isFullHexEnabled());
-	dynv_set_bool(m_params, "short_hex", isShortHexEnabled());
-	dynv_set_bool(m_params, "int_values", isIntValuesEnabled());
-	dynv_set_bool(m_params, "float_values", isFloatValuesEnabled());
+	m_options->set("text", text.c_str());
+	m_options->set("single_line_c_comments", isSingleLineCCommentsEnabled());
+	m_options->set("multi_line_c_comments", isMultiLineCCommentsEnabled());
+	m_options->set("single_line_hash_comments", isSingleLineHashCommentsEnabled());
+	m_options->set("css_rgb", isCssRgbEnabled());
+	m_options->set("css_rgba", isCssRgbaEnabled());
+	m_options->set("full_hex", isFullHexEnabled());
+	m_options->set("short_hex", isShortHexEnabled());
+	m_options->set("int_values", isIntValuesEnabled());
+	m_options->set("float_values", isFloatValuesEnabled());
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(m_dialog), &width, &height);
-	dynv_set_int32(m_params, "window.width", width);
-	dynv_set_int32(m_params, "window.height", height);
-	dynv_set_bool(m_params, "show_preview", gtk_expander_get_expanded(GTK_EXPANDER(m_preview_expander)));
+	m_options->set("window.width", width);
+	m_options->set("window.height", height);
+	m_options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(m_preview_expander)));
 }
 bool TextParserDialog::isSingleLineCCommentsEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_single_line_c_comments));

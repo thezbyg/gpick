@@ -18,10 +18,11 @@
 
 #ifndef GPICK_UI_COLOR_INPUT_H_
 #define GPICK_UI_COLOR_INPUT_H_
+#include "dynv/Map.h"
 struct GlobalState;
 struct ColorObject;
 struct GtkColorComponent;
 #include <gtk/gtk.h>
 int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *color_object, ColorObject **new_color_object);
-void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *color_component, int component_id, struct dynvSystem *params);
+void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *color_component, int component_id, dynv::Ref options);
 #endif /* GPICK_UI_COLOR_INPUT_H_ */
