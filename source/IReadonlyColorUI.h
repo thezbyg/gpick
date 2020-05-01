@@ -25,7 +25,7 @@ struct IReadonlyColorUI {
 	virtual void addToPalette(const ColorObject &colorObject) = 0;
 	virtual const ColorObject &getColor() = 0;
 };
-struct IReadonlyColorsUI: public IReadonlyColorUI {
+struct IReadonlyColorsUI: virtual IReadonlyColorUI {
 	virtual void addAllToPalette() = 0;
 	virtual std::vector<ColorObject> getColors(bool selected) = 0;
 	virtual bool hasColor() = 0;

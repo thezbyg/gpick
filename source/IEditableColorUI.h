@@ -19,12 +19,9 @@
 #ifndef GPICK_IEDITABLE_COLOR_UI_H_
 #define GPICK_IEDITABLE_COLOR_UI_H_
 #include "IReadonlyColorUI.h"
-struct IEditableColorUI: public IReadonlyColorUI {
+struct IEditableColorUI: virtual IReadonlyColorUI {
 	virtual void setColor(const ColorObject &colorObject) = 0;
 };
-struct IEditableColorsUI: public IEditableColorUI {
-	virtual void addAllToPalette() = 0;
-	virtual std::vector<ColorObject> getColors(bool selected) = 0;
-	virtual bool hasColor() = 0;
+struct IEditableColorsUI: IEditableColorUI, IReadonlyColorsUI {
 };
 #endif /* GPICK_IEDITABLE_COLOR_UI_H_ */
