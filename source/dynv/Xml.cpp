@@ -22,6 +22,7 @@
 #include "Types.h"
 #include "common/Scoped.h"
 #include <expat.h>
+#include <sstream>
 using namespace std::string_literals;
 namespace dynv {
 namespace xml {
