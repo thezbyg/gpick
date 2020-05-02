@@ -164,7 +164,7 @@ void floating_picker_activate(FloatingPickerArgs *args, bool hide_on_mouse_relea
 	gtk_widget_show(args->window);
 	gdk_pointer_grab(gtk_widget_get_window(args->window), false, GdkEventMask(GDK_POINTER_MOTION_MASK | GDK_BUTTON_RELEASE_MASK | GDK_BUTTON_PRESS_MASK | GDK_SCROLL_MASK), nullptr, cursor, GDK_CURRENT_TIME);
 	gdk_keyboard_grab(gtk_widget_get_window(args->window), false, GDK_CURRENT_TIME);
-	float refresh_rate = args->gs->settings().getFloat("gpick.picker.refresh_rate", 30);
+	auto refresh_rate = args->gs->settings().getInt32("gpick.picker.refresh_rate", 30);
 	args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)update_display, args, (GDestroyNotify)nullptr);
 #if GTK_MAJOR_VERSION >= 3
 	g_object_unref(cursor);

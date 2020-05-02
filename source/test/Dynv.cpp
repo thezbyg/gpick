@@ -223,12 +223,14 @@ BOOST_AUTO_TEST_CASE(stringTypes) {
 	auto charPointer = const_cast<char *>(constCharPointer);
 	using CustomString = char *;
 	auto customString = reinterpret_cast<CustomString>(charPointer);
-	map.set("a", constCharPointer);
-	map.set("b", charPointer);
-	map.set("c", customString);
-	BOOST_CHECK_EQUAL(map.getString("a", ""), "value");
-	BOOST_CHECK_EQUAL(map.getString("b", ""), "value");
-	BOOST_CHECK_EQUAL(map.getString("c", ""), "value");
+	for (int i = 0; i < 2; i++) {
+		map.set("a", constCharPointer);
+		map.set("b", charPointer);
+		map.set("c", customString);
+		BOOST_CHECK_EQUAL(map.getString("a", ""), "value");
+		BOOST_CHECK_EQUAL(map.getString("b", ""), "value");
+		BOOST_CHECK_EQUAL(map.getString("c", ""), "value");
+	}
 }
 BOOST_AUTO_TEST_CASE(spans) {
 	Map map;

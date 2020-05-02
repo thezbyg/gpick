@@ -91,7 +91,7 @@ void Variable::assign(const std::string &value) {
 	m_data = value;
 }
 void Variable::assign(const char *value) {
-	m_data = value;
+	m_data = std::string(value);
 }
 void Variable::assign(const Ref &value) {
 	m_data = value;

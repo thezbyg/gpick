@@ -755,7 +755,7 @@ static int source_activate(ColorPickerArgs *args)
 	gtk_color_set_transformation_chain(GTK_COLOR(args->contrastCheck), chain);
 
 	if (args->options->getBool("zoomed_enabled", true)){
-		float refresh_rate = args->mainOptions->getFloat("refresh_rate", 30);
+		auto refresh_rate = args->mainOptions->getInt32("refresh_rate", 30);
 		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 
@@ -841,7 +841,7 @@ static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 			g_source_remove(args->timeout_source_id);
 			args->timeout_source_id = 0;
 		}
-		float refresh_rate = args->mainOptions->getFloat("refresh_rate", 30);
+		auto refresh_rate = args->mainOptions->getInt32("refresh_rate", 30);
 		args->timeout_source_id = g_timeout_add_full(G_PRIORITY_DEFAULT_IDLE, static_cast<int>(1000 / refresh_rate), (GSourceFunc)updateMainColorTimer, args, (GDestroyNotify)nullptr);
 	}
 	return;
