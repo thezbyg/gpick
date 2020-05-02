@@ -26,361 +26,249 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "gtk/ColorWidget.h"
-#include "uiColorInput.h"
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
-#include "StandardMenu.h"
-#include "Clipboard.h"
+#include "StandardEventHandler.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
-using namespace std;
 
-struct ClosestColorsArgs
-{
+struct ClosestColorsArgs;
+struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner {
+	ClosestColorsColorNameAssigner(GlobalState *gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject *colorObject, const Color *color, const char *ident) {
+		m_ident = ident;
+		ToolColorNameAssigner::assign(colorObject, color);
+	}
+	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+		m_stream.str("");
+		m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("closest color") << " " << m_ident;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	const char *m_ident;
+};
+struct ClosestColorsArgs {
 	ColorSource source;
-	GtkWidget *main, *status_bar, *color, *last_focused_color, *color_previews;
-	GtkWidget *closest_colors[9];
+	GtkWidget *main, *statusBar, *targetColor, *lastFocusedColor, *colorPreviews, *closestColors[9];
 	dynv::Ref options;
-	GlobalState* gs;
-};
-
-struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		const char *m_ident;
-	public:
-		ClosestColorsColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *ident)
-		{
-			m_ident = ident;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("closest color") << " " << m_ident;
-			return m_stream.str();
-		}
-};
-static int source_set_color(ClosestColorsArgs *args, ColorObject *color_object);
-static void calc(ClosestColorsArgs *args, bool preview, bool save_settings)
-{
-	Color color;
-	gtk_color_get_color(GTK_COLOR(args->color), &color);
-	vector<pair<const char*, Color>> colors;
-	color_names_find_nearest(args->gs->getColorNames(), color, 9, colors);
-	for (size_t i = 0; i < 9; ++i){
-		if (i < colors.size()){
-			gtk_color_set_color(GTK_COLOR(args->closest_colors[i]), &colors[i].second, colors[i].first);
-			gtk_widget_set_sensitive(args->closest_colors[i], true);
-		}else{
-			gtk_widget_set_sensitive(args->closest_colors[i], false);
+	GlobalState *gs;
+	void addToPalette() {
+		color_list_add_color_object(gs->getColorList(), getColor(), true);
+	}
+	void addAllToPalette() {
+		ClosestColorsColorNameAssigner nameAssigner(gs);
+		Color color;
+		gtk_color_get_color(GTK_COLOR(targetColor), &color);
+		colorObject.setColor(color);
+		auto widgetName = identifyColorWidget(targetColor);
+		nameAssigner.assign(&colorObject, &color, widgetName.c_str());
+		color_list_add_color_object(gs->getColorList(), colorObject, true);
+		for (int i = 0; i < 9; ++i) {
+			gtk_color_get_color(GTK_COLOR(closestColors[i]), &color);
+			colorObject.setColor(color);
+			widgetName = identifyColorWidget(closestColors[i]);
+			nameAssigner.assign(&colorObject, &color, widgetName.c_str());
+			color_list_add_color_object(gs->getColorList(), colorObject, true);
 		}
 	}
-}
-static void update(GtkWidget *widget, ClosestColorsArgs *args) {
-	calc(args, true, false);
-}
-static void on_color_paste(GtkWidget *, ClosestColorsArgs *args) {
-	auto colorObject = clipboard::getFirst(args->gs);
-	if (colorObject) {
-		source_set_color(args, colorObject);
-		colorObject->release();
+	void setColor(const ColorObject &colorObject) {
+		gtk_color_set_color(GTK_COLOR(targetColor), colorObject.getColor());
+		update();
 	}
-}
-static void on_color_edit(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	Color c;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	ColorObject* new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object) == 0){
-		source_set_color(args, new_color_object);
-		new_color_object->release();
+	ColorObject colorObject;
+	const ColorObject &getColor() {
+		Color color;
+		gtk_color_get_color(GTK_COLOR(lastFocusedColor), &color);
+		auto widgetName = identifyColorWidget(lastFocusedColor);
+		colorObject.setColor(color);
+		ClosestColorsColorNameAssigner nameAssigner(gs);
+		nameAssigner.assign(&colorObject, &color, widgetName.c_str());
+		return colorObject;
 	}
-	color_object->release();
-}
-static string identify_color_widget(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	if (args->color == widget){
-		return _("target");
-	}else for (int i = 0; i < 9; ++i){
-		if (args->closest_colors[i] == widget){
-			return common::format(_("match {}"), i + 1);
-		}
-	}
-	return "unknown";
-}
-static void add_color_to_palette(GtkWidget *color_widget, ClosestColorsColorNameAssigner &name_assigner, ClosestColorsArgs *args)
-{
-	Color c;
-	ColorObject *color_object;
-	string widget_ident;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	widget_ident = identify_color_widget(color_widget, args);
-	name_assigner.assign(color_object, &c, widget_ident.c_str());
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object->release();
-}
-static void on_color_add_to_palette(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	GtkWidget *color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	ClosestColorsColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(color_widget, name_assigner, args);
-}
-static void on_color_add_all_to_palette(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	ClosestColorsColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(args->color, name_assigner, args);
-	for (int i = 0; i < 9; ++i){
-		add_color_to_palette(args->closest_colors[i], name_assigner, args);
-	}
-}
-static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, ClosestColorsArgs *args)
-{
-	args->last_focused_color = widget;
-	return false;
-}
-static void on_color_activate(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	ClosestColorsColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(widget, name_assigner, args);
-}
-static void color_show_menu(GtkWidget *widget, ClosestColorsArgs *args, GdkEventButton *event)
-{
-	GtkWidget *menu;
-	GtkWidget* item;
-	menu = gtk_menu_new();
-	item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_color_add_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_color_add_all_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	Color c;
-	gtk_color_get_color(GTK_COLOR(widget), &c);
-	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	StandardMenu::appendMenu(menu, *color_object, args->gs);
-	color_object->release();
-
-	if (args->color == widget){
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_color_edit), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(on_color_paste), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
-	}
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gint32 button, event_time;
-	if (event){
-		button = event->button;
-		event_time = event->time;
-	}else{
-		button = 0;
-		event_time = gtk_get_current_event_time();
-	}
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
-}
-static gboolean on_color_button_press(GtkWidget *widget, GdkEventButton *event, ClosestColorsArgs *args)
-{
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		color_show_menu(widget, args, event);
-	}
-	return false;
-}
-static void on_color_popup_menu(GtkWidget *widget, ClosestColorsArgs *args)
-{
-	color_show_menu(widget, args, nullptr);
-}
-static gboolean on_color_key_press(GtkWidget *widget, GdkEventKey *event, ClosestColorsArgs *args) {
-	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-	case GDK_KEY_c:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-			Color color;
-			gtk_color_get_color(GTK_COLOR(widget), &color);
-			clipboard::set(color, args->gs, Converters::Type::copy);
-			return true;
-		}
-		return false;
-	case GDK_KEY_v:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK){
-			auto colorObject = clipboard::getFirst(args->gs);
-			if (colorObject) {
-				source_set_color(args, colorObject);
-				colorObject->release();
+	std::string identifyColorWidget(GtkWidget *widget) {
+		if (targetColor == widget)
+			return _("target");
+		for (int i = 0; i < 9; ++i) {
+			if (closestColors[i] == widget) {
+				return common::format(_("match {}"), i + 1);
 			}
-			return true;
 		}
-		return false;
-	default:
+		return "unknown";
+	}
+	void update() {
+		Color color;
+		gtk_color_get_color(GTK_COLOR(targetColor), &color);
+		std::vector<std::pair<const char *, Color>> colors;
+		color_names_find_nearest(gs->getColorNames(), color, 9, colors);
+		for (size_t i = 0; i < 9; ++i) {
+			if (i < colors.size()) {
+				gtk_color_set_color(GTK_COLOR(closestColors[i]), &colors[i].second, colors[i].first);
+				gtk_widget_set_sensitive(closestColors[i], true);
+			} else {
+				gtk_widget_set_sensitive(closestColors[i], false);
+			}
+		}
+	}
+	bool isEditable() {
+		return lastFocusedColor == targetColor;
+	}
+	static gboolean onFocusEvent(GtkWidget *widget, GdkEventFocus *, ClosestColorsArgs *args) {
+		args->lastFocusedColor = widget;
 		return false;
 	}
-}
-static int source_destroy(ClosestColorsArgs *args)
-{
-	Color c;
-	gtk_color_get_color(GTK_COLOR(args->color), &c);
-	args->options->set("color", c);
+	static void onColorActivate(GtkWidget *, ClosestColorsArgs *args) {
+		args->addToPalette();
+	}
+	struct Editable: public IEditableColorsUI {
+		Editable(ClosestColorsArgs *args):
+			args(args) {
+		}
+		virtual ~Editable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			args->addToPalette();
+		}
+		virtual void addAllToPalette() override {
+			args->addAllToPalette();
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			args->setColor(colorObject.getColor());
+		}
+		virtual const ColorObject &getColor() override {
+			return args->getColor();
+		}
+		virtual std::vector<ColorObject> getColors(bool selected) override {
+			std::vector<ColorObject> colors;
+			colors.push_back(getColor());
+			return colors;
+		}
+		virtual bool isEditable() override {
+			return args->isEditable();
+		}
+		virtual bool hasColor() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+	private:
+		ClosestColorsArgs *args;
+	};
+	boost::optional<Editable> editable;
+};
+static int destroy(ClosestColorsArgs *args) {
+	Color color;
+	gtk_color_get_color(GTK_COLOR(args->targetColor), &color);
+	args->options->set("color", color);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
-static int source_get_color(ClosestColorsArgs *args, ColorObject **color)
-{
-	ClosestColorsColorNameAssigner name_assigner(args->gs);
-	Color c;
-	string widget_ident;
-	if (args->last_focused_color){
-		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
-		widget_ident = identify_color_widget(args->last_focused_color, args);
-	}else{
-		gtk_color_get_color(GTK_COLOR(args->closest_colors[0]), &c);
-		widget_ident = identify_color_widget(args->closest_colors[0], args);
-	}
-	*color = color_list_new_color_object(args->gs->getColorList(), &c);
-	name_assigner.assign(*color, &c, widget_ident.c_str());
+static int getColor(ClosestColorsArgs *args, ColorObject **color) {
+	auto colorObject = args->getColor();
+	*color = colorObject.copy();
 	return 0;
 }
-static int source_set_color(ClosestColorsArgs *args, ColorObject *color_object)
-{
-	Color color = color_object->getColor();
-	gtk_color_set_color(GTK_COLOR(args->color), &color, "");
-	update(0, args);
+static int setColor(ClosestColorsArgs *args, ColorObject *colorObject) {
+	args->setColor(*colorObject);
 	return 0;
 }
-static int source_activate(ClosestColorsArgs *args)
-{
+static int activate(ClosestColorsArgs *args) {
 	auto chain = args->gs->getTransformationChain();
-	gtk_color_set_transformation_chain(GTK_COLOR(args->color), chain);
-	for (int i = 0; i < 9; ++i){
-		gtk_color_set_transformation_chain(GTK_COLOR(args->closest_colors[i]), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->targetColor), chain);
+	for (int i = 0; i < 9; ++i) {
+		gtk_color_set_transformation_chain(GTK_COLOR(args->closestColors[i]), chain);
 	}
-	gtk_statusbar_push(GTK_STATUSBAR(args->status_bar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->status_bar), "empty"), "");
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusBar), "empty"), "");
 	return 0;
 }
-static int source_deactivate(ClosestColorsArgs *args)
-{
-	calc(args, true, true);
+static int deactivate(ClosestColorsArgs *args) {
 	return 0;
 }
-static ColorObject* get_color_object(DragDrop* dd)
-{
-	ClosestColorsArgs *args = static_cast<ClosestColorsArgs*>(dd->userdata);
-	ColorObject* color_object;
-	if (source_get_color(args, &color_object) == 0){
-		return color_object;
-	}
+static ColorObject *getColorObject(DragDrop *dd) {
+	auto *args = static_cast<ClosestColorsArgs *>(dd->userdata);
+	return args->getColor().copy();
+}
+static int setColorObjectAt(DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
+	auto *args = static_cast<ClosestColorsArgs *>(dd->userdata);
+	setColor(args, colorObject);
 	return 0;
 }
-static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
-{
-	ClosestColorsArgs *args = static_cast<ClosestColorsArgs*>(dd->userdata);
-	source_set_color(args, color_object);
-	return 0;
-}
-ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options)
-{
-	ClosestColorsArgs *args = new ClosestColorsArgs;
+ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
+	auto *args = new ClosestColorsArgs;
+	args->editable = ClosestColorsArgs::Editable(args);
 	args->options = options;
-	args->status_bar = gs->getStatusBar();
+	args->statusBar = gs->getStatusBar();
+	args->gs = gs;
 	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
-	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
-	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
-	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
-	args->source.activate = (int (*)(ColorSource *source))source_activate;
-	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
+	args->source.destroy = (int (*)(ColorSource * source)) destroy;
+	args->source.get_color = (int (*)(ColorSource * source, ColorObject * *color)) getColor;
+	args->source.set_color = (int (*)(ColorSource * source, ColorObject * color)) setColor;
+	args->source.deactivate = (int (*)(ColorSource * source)) deactivate;
+	args->source.activate = (int (*)(ColorSource * source)) activate;
+	GtkWidget *vbox, *hbox, *widget;
 	hbox = gtk_hbox_new(false, 0);
 	vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
-	args->color_previews = gtk_table_new(3, 3, false);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
+	args->colorPreviews = gtk_table_new(3, 3, false);
+	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
 	DragDrop dd;
 	dragdrop_init(&dd, gs);
 	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
-	dd.get_color_object = get_color_object;
-	dd.set_color_object_at = set_color_object_at;
+	dd.get_color_object = getColorObject;
+	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
-	gtk_table_attach(GTK_TABLE(args->color_previews), widget, 0, 3, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
-	args->color = widget;
-	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
+	gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, 0, 3, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+	args->targetColor = widget;
+	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ClosestColorsArgs::onColorActivate), args);
+	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ClosestColorsArgs::onFocusEvent), args);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 	gtk_widget_set_size_request(widget, 30, 30);
 
 	//setup drag&drop
 	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void*)-1;
+	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+	dd.userdata2 = (void *)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
-	for (int i = 0; i < 3; ++i){
-		for (int j = 0; j < 3; ++j){
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
 			widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
 
-			gtk_table_attach(GTK_TABLE(args->color_previews), widget, i, i + 1, j + 1, j + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
-			args->closest_colors[i + j * 3] = widget;
+			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, i, i + 1, j + 1, j + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+			args->closestColors[i + j * 3] = widget;
 
-			g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-			g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-			g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
+			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ClosestColorsArgs::onColorActivate), args);
+			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ClosestColorsArgs::onFocusEvent), args);
 
 			gtk_widget_set_size_request(widget, 30, 30);
 			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-			dd.userdata2 = reinterpret_cast<void*>(i + j * 3);
+			dd.userdata2 = reinterpret_cast<void *>(i + j * 3);
 			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 		}
 	}
-
-	Color c;
-	color_set(&c, 0.5);
-	gtk_color_set_color(GTK_COLOR(args->color), options->getColor("color", c));
-
-	hbox2 = gtk_hbox_new(false, 0);
+	gtk_color_set_color(GTK_COLOR(args->targetColor), options->getColor("color", Color(0.5f)));
+	auto hbox2 = gtk_hbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
-
-	table = gtk_table_new(5, 2, false);
-	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
-
-	args->gs = gs;
 	gtk_widget_show_all(hbox);
-	update(0, args);
+	args->update();
 	args->main = hbox;
 	args->source.widget = hbox;
-	return (ColorSource*)args;
+	return (ColorSource *)args;
 }
-int closest_colors_source_register(ColorSourceManager *csm)
-{
+int closest_colors_source_register(ColorSourceManager *csm) {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "closest_colors", _("Closest colors"));
 	color_source->implement = source_implement;

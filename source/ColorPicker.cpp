@@ -145,6 +145,7 @@ struct ColorPickerArgs {
 		SwatchEditable(ColorPickerArgs *args):
 			args(args) {
 		}
+		virtual ~SwatchEditable() = default;
 		virtual void addToPalette(const ColorObject &) override {
 			args->addToPalette();
 		}
@@ -167,6 +168,9 @@ struct ColorPickerArgs {
 				//TODO: get all six colors
 				return result;
 			}
+		}
+		virtual bool isEditable() override {
+			return true;
 		}
 		virtual bool hasColor() override {
 			return true;

@@ -21,6 +21,7 @@
 #include "IReadonlyColorUI.h"
 struct IEditableColorUI: virtual IReadonlyColorUI {
 	virtual void setColor(const ColorObject &colorObject) = 0;
+	virtual bool isEditable() = 0;
 };
 struct IEditableColorsUI: IEditableColorUI, IReadonlyColorsUI {
 };

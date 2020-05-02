@@ -25,331 +25,295 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
-#include "ColorRYB.h"
-#include "gtk/ColorWidget.h"
 #include "gtk/Range2D.h"
-#include "uiColorInput.h"
-#include "Converter.h"
-#include "Clipboard.h"
+#include "gtk/LayoutPreview.h"
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
-#include "gtk/LayoutPreview.h"
 #include "layout/Layout.h"
 #include "layout/Layouts.h"
 #include "layout/Style.h"
-#include "StandardMenu.h"
+#include "StandardEventHandler.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
-#include <string.h>
 #include <sstream>
-#include <iostream>
-using namespace std;
+#include <boost/optional.hpp>
 using namespace layout;
 
-typedef struct BrightnessDarknessArgs{
-	ColorSource source;
-	GtkWidget* main;
-	GtkWidget* statusbar;
-	Color color;
-	GtkWidget *brightness_darkness;
-	GtkWidget *layout_view;
-	System* layout_system;
-	dynv::Ref options;
-	GlobalState* gs;
-}BrightnessDarknessArgs;
-
-struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		const char *m_ident;
-	public:
-		BrightnessDarknessColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, Color *color, const char *ident)
-		{
-			m_ident = ident;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("brightness darkness") << " " << m_ident;
-			return m_stream.str();
-		}
+struct BrightnessDarknessArgs;
+struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner {
+	BrightnessDarknessColorNameAssigner(GlobalState *gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject *colorObject, Color *color, const char *ident) {
+		m_ident = ident;
+		ToolColorNameAssigner::assign(colorObject, color);
+	}
+	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+		m_stream.str("");
+		m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("brightness darkness") << " " << m_ident;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	const char *m_ident;
 };
-static string format(char prefix, int index)
-{
-	return prefix + common::as_string(index);
-}
-static void calc(BrightnessDarknessArgs *args, bool preview, bool save_settings)
-{
-	float brightness = gtk_range_2d_get_x(GTK_RANGE_2D(args->brightness_darkness));
-	float darkness = gtk_range_2d_get_y(GTK_RANGE_2D(args->brightness_darkness));
-	if (save_settings){
-		args->options->set("brightness", brightness);
-		args->options->set("darkness", brightness);
+struct BrightnessDarknessArgs {
+	ColorSource source;
+	Color color;
+	GtkWidget *main, *statusBar, *brightnessDarkness, *layoutView;
+	System *layoutSystem;
+	dynv::Ref options;
+	GlobalState *gs;
+	void addToPalette() {
+		if (!isSelected())
+			return;
+		color_list_add_color_object(gs->getColorList(), getColor(), true);
 	}
-	Color color, hsl_orig, hsl, r;
-	color_copy(&args->color, &color);
-	color_rgb_to_hsl(&color, &hsl_orig);
-	Box* box;
-	string name;
-	if (args->layout_system == nullptr)
-		return;
-	for (int i = 1; i <= 4; i++){
-		color_copy(&hsl_orig, &hsl);
-		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0f); //clamp_float(hsl.hsl.lightness + brightness / 8.0 * i, 0, 1);
-		color_hsl_to_rgb(&hsl, &r);
-		name = format('b', i);
-		box = args->layout_system->GetNamedBox(name.c_str());
-		if (box && box->style){
-			color_copy(&r, &box->style->color);
-		}
-		color_copy(&hsl_orig, &hsl);
-		hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0f); //clamp_float(hsl.hsl.lightness - darkness / 8.0 * i, 0, 1);
-		color_hsl_to_rgb(&hsl, &r);
-		name = format('c', i);
-		box = args->layout_system->GetNamedBox(name.c_str());
-		if (box && box->style){
-			color_copy(&r, &box->style->color);
+	void addAllToPalette() {
+		if (layoutSystem == nullptr)
+			return;
+		BrightnessDarknessColorNameAssigner nameAssigner(gs);
+		for (auto &style: layoutSystem->styles) {
+			ColorObject colorObject(style->color);
+			nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
+			color_list_add_color_object(gs->getColorList(), colorObject, true);
 		}
 	}
-	gtk_widget_queue_draw(GTK_WIDGET(args->layout_view));
-}
-static void update(GtkWidget *widget, BrightnessDarknessArgs *args)
-{
-	calc(args, true, false);
-}
-static int source_get_color(BrightnessDarknessArgs *args, ColorObject** color)
-{
-	Style* style = 0;
-	Color c;
-	if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(args->layout_view), &c) == 0){
-		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(args->layout_view), &style) != 0){
-			return -1;
-		}
-		*color = color_list_new_color_object(args->gs->getColorList(), &c);
-		BrightnessDarknessColorNameAssigner name_assigner(args->gs);
-		name_assigner.assign(*color, &c, style->label.c_str());
-		return 0;
+	void setColor(const ColorObject &colorObject) {
+		color = colorObject.getColor();
+		gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(layoutView), &color, "main");
+		update(false);
 	}
-	return -1;
-}
-static int source_set_color(BrightnessDarknessArgs *args, ColorObject* color_object)
-{
-	Color color = color_object->getColor();
-	color_copy(&color, &args->color);
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
-	calc(args, true, false);
+	ColorObject colorObject;
+	const ColorObject &getColor() {
+		Color color;
+		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color) != 0)
+			return colorObject;
+		Style *style = 0;
+		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(layoutView), &style) != 0)
+			return colorObject;
+		colorObject.setColor(color);
+		BrightnessDarknessColorNameAssigner nameAssigner(gs);
+		nameAssigner.assign(&colorObject, &color, style->label.c_str());
+		return colorObject;
+	}
+	std::vector<ColorObject> getColors(bool selected) {
+		if (layoutSystem == nullptr)
+			return std::vector<ColorObject>();
+		BrightnessDarknessColorNameAssigner nameAssigner(gs);
+		std::vector<ColorObject> colors;
+		if (selected) {
+			auto colorObject = getColor();
+			colors.push_back(colorObject);
+		} else {
+			for (auto &style: layoutSystem->styles) {
+				ColorObject colorObject(style->color);
+				nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
+				colors.push_back(colorObject);
+			}
+		}
+		return colors;
+	}
+	bool selectMain() {
+		gtk_layout_preview_set_focus_named(GTK_LAYOUT_PREVIEW(layoutView), "main");
+		return gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(layoutView));
+	}
+	bool isSelected() {
+		return gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(layoutView));
+	}
+	bool isEditable() {
+		if (!gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(layoutView)))
+			return false;
+		return gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(layoutView));
+	}
+	static std::string format(char prefix, int index) {
+		return prefix + common::as_string(index);
+	}
+	void update(bool saveSettings) {
+		float brightness = static_cast<float>(gtk_range_2d_get_x(GTK_RANGE_2D(brightnessDarkness)));
+		float darkness = static_cast<float>(gtk_range_2d_get_y(GTK_RANGE_2D(brightnessDarkness)));
+		if (saveSettings) {
+			options->set("brightness", brightness);
+			options->set("darkness", brightness);
+		}
+		Color hslOriginal, hsl, r;
+		color_rgb_to_hsl(&color, &hslOriginal);
+		Box *box;
+		std::string name;
+		if (layoutSystem == nullptr)
+			return;
+		for (int i = 1; i <= 4; i++) {
+			color_copy(&hslOriginal, &hsl);
+			hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0f);
+			color_hsl_to_rgb(&hsl, &r);
+			name = format('b', i);
+			box = layoutSystem->GetNamedBox(name.c_str());
+			if (box && box->style) {
+				color_copy(&r, &box->style->color);
+			}
+			color_copy(&hslOriginal, &hsl);
+			hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0f);
+			color_hsl_to_rgb(&hsl, &r);
+			name = format('c', i);
+			box = layoutSystem->GetNamedBox(name.c_str());
+			if (box && box->style) {
+				color_copy(&r, &box->style->color);
+			}
+		}
+		gtk_widget_queue_draw(GTK_WIDGET(layoutView));
+	}
+	static void onChange(GtkWidget *, BrightnessDarknessArgs *args) {
+		args->update(false);
+	}
+	struct Editable: public IEditableColorsUI {
+		Editable(BrightnessDarknessArgs *args):
+			args(args) {
+		}
+		virtual ~Editable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			args->addToPalette();
+		}
+		virtual void addAllToPalette() override {
+			args->addAllToPalette();
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			args->setColor(colorObject.getColor());
+		}
+		virtual const ColorObject &getColor() override {
+			return args->getColor();
+		}
+		virtual std::vector<ColorObject> getColors(bool selected) override {
+			return args->getColors(selected);
+		}
+		virtual bool isEditable() override {
+			return args->isEditable();
+		}
+		virtual bool hasColor() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return args->isSelected();
+		}
+	private:
+		BrightnessDarknessArgs *args;
+	};
+	boost::optional<Editable> editable;
+};
+static int getColor(BrightnessDarknessArgs *args, ColorObject **color) {
+	if (!args->isSelected())
+		return -1;
+	auto colorObject = args->getColor();
+	*color = colorObject.copy();
 	return 0;
 }
-static ColorObject* get_color_object(struct DragDrop* dd)
-{
-	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
-	ColorObject* colorobject;
-	if (source_get_color(args, &colorobject) == 0){
-		return colorobject;
-	}
+static int setColor(BrightnessDarknessArgs *args, ColorObject *colorObject) {
+	args->setColor(*colorObject);
 	return 0;
 }
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
-{
-	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
-	Color color = color_object->getColor();
-	color_copy(&color, &args->color);
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
-	calc(args, true, false);
+static ColorObject *getColorObject(struct DragDrop *dd) {
+	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
+	if (!args->isSelected())
+		return nullptr;
+	return args->getColor().copy();
+}
+static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
+	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
+	args->setColor(*colorObject);
 	return 0;
 }
-static bool test_at(struct DragDrop* dd, int x, int y)
-{
-	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)dd->userdata;
-	gtk_layout_preview_set_focus_named(GTK_LAYOUT_PREVIEW(args->layout_view), "main");
-	return gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
+static bool testAt(struct DragDrop *dd, int x, int y) {
+	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
+	return args->selectMain();
 }
-static void edit_cb(GtkWidget *widget, gpointer item)
-{
-	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)item;
-	ColorObject *color_object;
-	ColorObject* new_color_object = nullptr;
-	if (source_get_color(args, &color_object) == 0){
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
-			source_set_color(args, new_color_object);
-			new_color_object->release();
-		}
-		color_object->release();
-	}
-}
-static void paste_cb(GtkWidget *widget, BrightnessDarknessArgs* args) {
-	auto colorObject = clipboard::getFirst(args->gs);
-	if (colorObject) {
-		source_set_color(args, colorObject);
-		colorObject->release();
-	}
-}
-static void add_to_palette_cb(GtkWidget *widget, gpointer item)
-{
-	BrightnessDarknessArgs* args = (BrightnessDarknessArgs*)item;
-	ColorObject *color_object;
-	if (source_get_color(args, &color_object) == 0){
-		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-		color_object->release();
-	}
-}
-static void add_all_to_palette_cb(GtkWidget *widget, BrightnessDarknessArgs *args)
-{
-	if (args->layout_system == nullptr)
-		return;
-	ColorObject *color_object;
-	BrightnessDarknessColorNameAssigner name_assigner(args->gs);
-	for (list<Style*>::iterator i = args->layout_system->styles.begin(); i != args->layout_system->styles.end(); i++){
-		color_object = color_list_new_color_object(args->gs->getColorList(), &(*i)->color);
-		name_assigner.assign(color_object, &(*i)->color, (*i)->label.c_str());
-		color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-		color_object->release();
-	}
-}
-static gboolean button_press_cb(GtkWidget *widget, GdkEventButton *event, BrightnessDarknessArgs* args)
-{
-	GtkWidget *menu;
-	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS){
-		ColorObject *color_object;
-		if (source_get_color(args, &color_object) == 0){
-			color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-			color_object->release();
+static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, BrightnessDarknessArgs *args) {
+	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS) {
+		ColorObject *colorObject;
+		if (getColor(args, &colorObject) == 0) {
+			color_list_add_color_object(args->gs->getColorList(), colorObject, 1);
+			colorObject->release();
 		}
 		return true;
-	}else if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		GtkWidget* item ;
-		gint32 button, event_time;
-		menu = gtk_menu_new();
-		bool selectionAvailable = gtk_layout_preview_is_selected(GTK_LAYOUT_PREVIEW(args->layout_view));
-		bool edit_avail = gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(args->layout_view));
-		item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_to_palette_cb), args);
-		if (!selectionAvailable) gtk_widget_set_sensitive(item, false);
-		item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(add_all_to_palette_cb), args);
-		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-		if (selectionAvailable){
-			ColorObject* color_object;
-			source_get_color(args, &color_object);
-			StandardMenu::appendMenu(menu, *color_object, args->gs);
-			color_object->release();
-		}else{
-			StandardMenu::appendMenu(menu);
-		}
-		if (edit_avail){
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-			item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(edit_cb), args);
-			if (!selectionAvailable) gtk_widget_set_sensitive(item, false);
-			item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(paste_cb), args);
-			gtk_widget_set_sensitive(item, selectionAvailable && clipboard::colorObjectAvailable());
-		}
-		gtk_widget_show_all(GTK_WIDGET(menu));
-		button = event->button;
-		event_time = event->time;
-		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-		g_object_ref_sink(menu);
-		g_object_unref(menu);
-		return TRUE;
 	}
-	return FALSE;
+	return false;
 }
-static int source_destroy(BrightnessDarknessArgs *args)
-{
-	if (args->layout_system) System::unref(args->layout_system);
-	args->layout_system = nullptr;
+static int destroy(BrightnessDarknessArgs *args) {
+	if (args->layoutSystem) System::unref(args->layoutSystem);
+	args->layoutSystem = nullptr;
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
-static int source_activate(BrightnessDarknessArgs *args)
-{
+static int activate(BrightnessDarknessArgs *args) {
 	auto chain = args->gs->getTransformationChain();
-	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layout_view), chain);
-	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layoutView), chain);
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusBar), "empty"), "");
 	return 0;
 }
-static int source_deactivate(BrightnessDarknessArgs *args)
-{
+static int deactivate(BrightnessDarknessArgs *args) {
 	args->options->set("color", args->color);
-	calc(args, true, true);
+	args->update(true);
 	return 0;
 }
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options)
-{
-	BrightnessDarknessArgs* args = new BrightnessDarknessArgs;
+static ColorSource *implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
+	auto *args = new BrightnessDarknessArgs;
+	args->editable = BrightnessDarknessArgs::Editable(args);
 	args->options = options;
-	args->statusbar = gs->getStatusBar();
+	args->statusBar = gs->getStatusBar();
+	args->gs = gs;
 	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
-	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
-	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
-	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
-	args->source.activate = (int (*)(ColorSource *source))source_activate;
-	args->layout_system = nullptr;
+	args->source.destroy = (int (*)(ColorSource *source)) destroy;
+	args->source.get_color = (int (*)(ColorSource *source, ColorObject **color)) getColor;
+	args->source.set_color = (int (*)(ColorSource *source, ColorObject *color)) setColor;
+	args->source.deactivate = (int (*)(ColorSource *source)) deactivate;
+	args->source.activate = (int (*)(ColorSource *source)) activate;
+	args->layoutSystem = nullptr;
 	GtkWidget *hbox, *widget;
-	hbox = gtk_hbox_new(FALSE, 0);
+	hbox = gtk_hbox_new(false, 0);
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
 	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
-	dd.get_color_object = get_color_object;
-	dd.set_color_object_at = set_color_object_at;
-	dd.test_at = test_at;
-	args->brightness_darkness = widget = gtk_range_2d_new();
-	gtk_range_2d_set_values(GTK_RANGE_2D(widget), options->getFloat("brightness", 0.5), options->getFloat("darkness", 0.5));
+	dd.get_color_object = getColorObject;
+	dd.set_color_object_at = setColorObjectAt;
+	dd.test_at = testAt;
+	args->brightnessDarkness = widget = gtk_range_2d_new();
+	gtk_range_2d_set_values(GTK_RANGE_2D(widget), options->getFloat("brightness", 0.5f), options->getFloat("darkness", 0.5f));
 	gtk_range_2d_set_axis(GTK_RANGE_2D(widget), _("Brightness"), _("Darkness"));
-	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(update), args);
+	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(BrightnessDarknessArgs::onChange), args);
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
-	args->layout_view = widget = gtk_layout_preview_new();
-	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(button_press_cb), args);
+	args->layoutView = widget = gtk_layout_preview_new();
+	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), args);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
 	//setup drag&drop
-	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void*)-1;
+	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+	dd.userdata2 = (void *)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-	args->gs = gs;
 	auto layout = gs->layouts().byName("std_layout_brightness_darkness");
-	if (layout != nullptr){
-		System* layout_system = layout->build();
-		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layout_view), layout_system);
-		if (args->layout_system) System::unref(args->layout_system);
-		args->layout_system = layout_system;
-	}else{
-		if (args->layout_system) System::unref(args->layout_system);
-		args->layout_system = nullptr;
+	if (layout != nullptr) {
+		System *layoutSystem = layout->build();
+		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), layoutSystem);
+		if (args->layoutSystem) System::unref(args->layoutSystem);
+		args->layoutSystem = layoutSystem;
+	} else {
+		if (args->layoutSystem) System::unref(args->layoutSystem);
+		args->layoutSystem = nullptr;
 	}
-	Color c;
-	color_set(&c, 0.5);
-	Color color = options->getColor("color", c);
-	color_copy(&color, &args->color);
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layout_view), &color, "main");
-	calc(args, true, false);
+	args->color = options->getColor("color", Color(0.5f));
+	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layoutView), &args->color, "main");
+	args->update(false);
 	gtk_widget_show_all(hbox);
-	update(0, args);
 	args->main = hbox;
 	args->source.widget = hbox;
-	return (ColorSource*)args;
+	return (ColorSource *)args;
 }
-int brightness_darkness_source_register(ColorSourceManager *csm)
-{
+int brightness_darkness_source_register(ColorSourceManager *csm) {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "brightness_darkness", _("Brightness Darkness"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
+	color_source->implement = implement;
 	color_source->default_accelerator = GDK_KEY_d;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

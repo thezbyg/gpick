@@ -78,6 +78,14 @@ int color_list_add_color_object(ColorList *color_list, ColorObject *color_object
 		color_list->on_insert(color_list, color_object);
 	return 0;
 }
+int color_list_add_color_object(ColorList *color_list, const ColorObject &colorObject, bool add_to_palette)
+{
+	ColorObject *reference;
+	color_list->colors.push_back((reference = colorObject.copy()));
+	if (add_to_palette && color_list->on_insert)
+		color_list->on_insert(color_list, reference);
+	return 0;
+}
 int color_list_add(ColorList *color_list, ColorList *items, bool add_to_palette)
 {
 	for (auto color_object: items->colors){

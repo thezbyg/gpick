@@ -132,6 +132,7 @@ static gboolean button_release(GtkWidget *layout_preview, GdkEventButton *event)
 }
 static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 {
+	gtk_widget_grab_focus(widget);
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system){
 		Vec2<float> point = Vec2<float>((event->x-ns->area.getX()) / ns->area.getWidth(), (event->y-ns->area.getY()) / ns->area.getHeight());

@@ -443,7 +443,7 @@ int blend_colors_source_register(ColorSourceManager *csm)
 {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "blend_colors", _("Blend colors"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
+	color_source->implement = source_implement;
 	color_source->default_accelerator = GDK_KEY_b;
 	color_source_manager_add_source(csm, color_source);
 	return 0;
