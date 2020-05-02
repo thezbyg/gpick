@@ -54,7 +54,7 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 	case GDK_KEY_v:
 		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
 			auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
-			if (!editableColorUI)
+			if (!editableColorUI || !editableColorUI->isEditable())
 				return false;
 			auto colorObject = clipboard::getFirst(gs);
 			if (colorObject) {
@@ -77,7 +77,7 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 		return true;
 	case GDK_KEY_e: {
 		auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
-		if (!editableColorUI)
+		if (!editableColorUI || !editableColorUI->isEditable())
 			return false;
 		auto *colorObject = readonlyColorUI->getColor().copy();
 		ColorObject *newColorObject;
