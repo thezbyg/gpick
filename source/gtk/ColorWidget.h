@@ -44,6 +44,7 @@ GtkWidget* gtk_color_new();
 void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text);
 void gtk_color_set_color(GtkColor* widget, const Color &color);
 void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text);
+void gtk_color_set_text(GtkColor* widget, const std::string &text);
 void gtk_color_set_text_color(GtkColor* widget, Color* color);
 void gtk_color_get_color(GtkColor* widget, Color* color);
 void gtk_color_set_rounded(GtkColor* widget, bool rounded_rectangle);

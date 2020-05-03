@@ -27,6 +27,7 @@
 #include "uiColorInput.h"
 #include "I18N.h"
 #include "common/CastToVariant.h"
+#include "IMenuExtension.h"
 #include <gdk/gdkkeysyms.h>
 #include <map>
 
@@ -298,6 +299,9 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 	if (multiple) {
 		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
 	}
+	auto *menuExtension = dynamic_cast<IMenuExtension *>(baseInterface);
+	if (menuExtension)
+		menuExtension->extendMenu(menu, IMenuExtension::Position::middle);
 	appender.appendSeparator();
 	StandardMenu::appendMenu(menu, baseInterface, gs);
 	if (editable) {
@@ -305,21 +309,12 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
 		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && currentlyEditable && clipboard::colorObjectAvailable());
 	}
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gint32 button, eventTime;
-	if (event) {
-		button = event->button;
-		eventTime = event->time;
-	} else {
-		button = 0;
-		eventTime = gtk_get_current_event_time();
-	}
+	if (menuExtension)
+		menuExtension->extendMenu(menu, IMenuExtension::Position::end);
 	g_object_set_data_full(G_OBJECT(menu), "color", colorObject->reference(), (GDestroyNotify)releaseColorObject);
 	if (editable)
 		g_object_set_data(G_OBJECT(menu), "gs", gs);
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
+	showContextMenu(menu, event);
 }
 void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interface interface) {
 	auto menu = gtk_menu_new();
@@ -332,6 +327,9 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 	if (multiple) {
 		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
 	}
+	auto *menuExtension = dynamic_cast<IMenuExtension *>(baseInterface);
+	if (menuExtension)
+		menuExtension->extendMenu(menu, IMenuExtension::Position::middle);
 	appender.appendSeparator();
 	StandardMenu::appendMenu(menu, baseInterface, gs);
 	if (editable) {
@@ -339,18 +337,9 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
 		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && currentlyEditable && clipboard::colorObjectAvailable());
 	}
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gint32 button, eventTime;
-	if (event) {
-		button = event->button;
-		eventTime = event->time;
-	} else {
-		button = 0;
-		eventTime = gtk_get_current_event_time();
-	}
+	if (menuExtension)
+		menuExtension->extendMenu(menu, IMenuExtension::Position::end);
 	if (editable)
 		g_object_set_data(G_OBJECT(menu), "gs", gs);
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
+	showContextMenu(menu, event);
 }

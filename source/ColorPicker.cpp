@@ -541,53 +541,26 @@ static void destroy_comp_item(struct ColorCompItem *comp_item){
 }
 
 static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *event, ColorPickerArgs* args){
-
 	if ((event->type == GDK_BUTTON_RELEASE) && (event->button == 3)){
-
-		GtkWidget *menu;
-		GtkWidget* item;
-		gint32 button, event_time;
-
-		menu = gtk_menu_new ();
-
+		auto menu = gtk_menu_new();
 		struct ColorCompItem *comp_item = new struct ColorCompItem;
 		comp_item->widget = widget;
 		comp_item->component_id = gtk_color_component_get_component_id_at(GTK_COLOR_COMPONENT(widget), static_cast<int>(event->x), static_cast<int>(event->y));
 		comp_item->component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(widget));
-
 		g_object_set_data_full(G_OBJECT(menu), "comp_item", comp_item, (GDestroyNotify)destroy_comp_item);
-
-		item = newMenuItem(_("Copy"), GTK_STOCK_COPY);
+		auto item = newMenuItem(_("Copy"), GTK_STOCK_COPY);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_copy), args);
-
 		item = newMenuItem(_("Paste"), GTK_STOCK_PASTE);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_paste), args);
-
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-
 		item = newMenuItem(_("Edit"), GTK_STOCK_EDIT);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(color_component_edit), args);
-
-		gtk_widget_show_all(GTK_WIDGET(menu));
-
-		if (event){
-			button = event->button;
-			event_time = event->time;
-		}else{
-			button = 0;
-			event_time = gtk_get_current_event_time ();
-		}
-
-		gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-
-		g_object_ref_sink(menu);
-		g_object_unref(menu);
+		showContextMenu(menu, event);
 		return true;
 	}
-
 	return false;
 }
 

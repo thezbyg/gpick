@@ -1315,10 +1315,7 @@ static void palette_popup_menu_group_and_sort(GtkWidget *widget, AppArgs* args)
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, AppArgs *args)
 {
-	GtkWidget *menu;
-	GtkWidget* item ;
-	gint32 button, event_time;
-	menu = gtk_menu_new();
+	auto menu = gtk_menu_new();
 	GtkAccelGroup *accel_group = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), accel_group);
 	gint32 selected_count = palette_list_get_selected_count(args->color_list);
@@ -1330,7 +1327,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	item = newMenuItem(_("A_dd..."), GTK_STOCK_NEW);
+	auto item = newMenuItem(_("A_dd..."), GTK_STOCK_NEW);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_add), args);
 
@@ -1395,19 +1392,9 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_all), args);
 	gtk_widget_set_sensitive(item, (total_count >= 1));
-	gtk_widget_show_all (GTK_WIDGET(menu));
-	if (event){
-		button = event->button;
-		event_time = event->time;
-	}else{
-		button = 0;
-		event_time = gtk_get_current_event_time ();
-	}
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
+	showContextMenu(menu, event);
 	g_object_ref_sink(G_OBJECT(accel_group));
 	g_object_unref(G_OBJECT(accel_group));
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
 	return TRUE;
 }
 

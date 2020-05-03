@@ -141,6 +141,13 @@ void gtk_color_set_roundness(GtkColor* widget, double roundness)
 void gtk_color_set_color(GtkColor* widget, const Color &color) {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	color_copy(&color, &ns->color);
+	if (ns->transformation_chain){
+		Color c;
+		ns->transformation_chain->apply(&ns->color, &c);
+		color_get_contrasting(&c, &ns->text_color);
+	}else{
+		color_get_contrasting(&ns->color, &ns->text_color);
+	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text) {
@@ -156,6 +163,11 @@ void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string
 			color_get_contrasting(&ns->color, &ns->text_color);
 		}
 	}
+	ns->text = text;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+void gtk_color_set_text(GtkColor* widget, const std::string &text) {
+	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	ns->text = text;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }

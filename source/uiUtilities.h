@@ -40,4 +40,5 @@ enum class IconSize {
 GtkWidget *newIcon(const char *name, IconSize size);
 GtkWidget *newIcon(const char *name, int size);
 GtkWidget *newMenuItem(const char *label, const char *iconName);
+void showContextMenu(GtkWidget *menu, GdkEventButton *event);
 #endif /* GPICK_UI_UTILITIES_H_ */

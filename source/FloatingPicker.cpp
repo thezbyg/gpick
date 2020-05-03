@@ -238,16 +238,10 @@ static void complete_picking(FloatingPickerArgs *args)
 }
 static void show_copy_menu(int button, int event_time, FloatingPickerArgs *args)
 {
-	Color c;
-	get_color_sample(args, false, &c);
-	GtkWidget *menu;
-	ColorList *color_list = color_list_new_with_one_color(args->gs->getColorList(), &c);
-	menu = StandardMenu::newMenu(**color_list->colors.begin(), args->gs);
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
-	color_list_destroy(color_list);
+	Color color;
+	get_color_sample(args, false, &color);
+	auto menu = StandardMenu::newMenu(color, args->gs);
+	showContextMenu(menu, nullptr);
 }
 static gboolean button_release_cb(GtkWidget *widget, GdkEventButton *event, FloatingPickerArgs *args)
 {

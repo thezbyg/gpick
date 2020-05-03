@@ -229,11 +229,7 @@ static bool testAt(struct DragDrop *dd, int x, int y) {
 }
 static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, BrightnessDarknessArgs *args) {
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS) {
-		ColorObject *colorObject;
-		if (getColor(args, &colorObject) == 0) {
-			color_list_add_color_object(args->gs->getColorList(), colorObject, 1);
-			colorObject->release();
-		}
+		args->addToPalette();
 		return true;
 	}
 	return false;

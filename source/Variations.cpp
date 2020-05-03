@@ -25,646 +25,447 @@
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
-#include "MathUtil.h"
-#include "ColorRYB.h"
 #include "gtk/ColorWidget.h"
-#include "gtk/ColorWheel.h"
-#include "ColorWheelType.h"
-#include "uiColorInput.h"
 #include "Converter.h"
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
-#include "StandardMenu.h"
-#include "Clipboard.h"
+#include "StandardEventHandler.h"
+#include "IMenuExtension.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <math.h>
-#include <string.h>
 #include <sstream>
-#include <iostream>
-using namespace std;
 
-#define VAR_COLOR_WIDGETS 8
-#define MAX_COLOR_LINES 3
-
-#define COMPONENT_ID_HSL_HUE 1
-#define COMPONENT_ID_HSL_SATURATION 2
-#define COMPONENT_ID_HSL_LIGHTNESS 3
-#define COMPONENT_ID_LAB_LIGHTNESS 4
-
-typedef struct VariationType{
+const int Rows = 5;
+const int VariantWidgets = 8;
+enum class Component {
+	hslHue = 1,
+	hslSaturation,
+	hslLightness,
+	labLightness,
+	rgbRed,
+	rgbGreen,
+	rgbBlue,
+};
+struct Type {
+	const char *id;
 	const char *name;
 	const char *symbol;
-	const char *unique_name;
-	int component_id;
-	double strength_mult;
-}VariationType;
-
-const VariationType variation_types[] = {
-	{N_("Hue"), "H<span font='8' rise='8000'>HSL</span>", "hsl_hue", COMPONENT_ID_HSL_HUE, 1},
-	{N_("Saturation"), "S<span font='8' rise='8000'>HSL</span>", "hsl_saturation", COMPONENT_ID_HSL_SATURATION, 1},
-	{N_("Lightness"), "L<span font='8' rise='8000'>HSL</span>", "hsl_lightness", COMPONENT_ID_HSL_LIGHTNESS, 1},
-	{N_("Lightness (Lab)"), "L<span font='8' rise='8000'>Lab</span>", "lab_lightness", COMPONENT_ID_LAB_LIGHTNESS, 1},
+	Component component;
+	float strengthMultiplier;
 };
-
-typedef struct VariationsArgs{
+const Type types[] = {
+	{ "rgb_red", N_("Red"), "R<span font='8' rise='8000'>RGB</span>", Component::rgbRed, 1 },
+	{ "rgb_green", N_("Green"), "G<span font='8' rise='8000'>RGB</span>", Component::rgbGreen, 1 },
+	{ "rgb_blue", N_("Blue"), "B<span font='8' rise='8000'>RGB</span>", Component::rgbBlue, 1 },
+	{ "hsl_hue", N_("Hue"), "H<span font='8' rise='8000'>HSL</span>", Component::hslHue, 1 },
+	{ "hsl_saturation", N_("Saturation"), "S<span font='8' rise='8000'>HSL</span>", Component::hslSaturation, 1 },
+	{ "hsl_lightness", N_("Lightness"), "L<span font='8' rise='8000'>HSL</span>", Component::hslLightness, 1 },
+	{ "lab_lightness", N_("Lightness (Lab)"), "L<span font='8' rise='8000'>Lab</span>", Component::labLightness, 1 },
+};
+struct VariationsColorNameAssigner: public ToolColorNameAssigner {
+	VariationsColorNameAssigner(GlobalState *gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject *colorObject, const Color *color, const std::string &ident) {
+		m_ident = ident.c_str();
+		ToolColorNameAssigner::assign(colorObject, color);
+	}
+	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+		m_stream.str("");
+		m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("variations") << " " << m_ident;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	const char *m_ident;
+};
+struct VariationsArgs {
 	ColorSource source;
-	GtkWidget* main;
-	GtkWidget* statusbar;
-	GtkWidget *strength;
-	GtkWidget *last_focused_color;
-	GtkWidget *color_previews;
-	GtkWidget *all_colors;
-	struct{
-		GtkWidget *color;
-		GtkWidget *var_colors[VAR_COLOR_WIDGETS + 1];
-		const VariationType *type;
-	}color[MAX_COLOR_LINES];
+	GtkWidget *main, *statusBar, *strengthRange, *lastFocusedColor, *colorPreviews, *allColors;
+	struct {
+		GtkWidget *primary;
+		GtkWidget *variants[VariantWidgets];
+		const Type *type;
+	} rows[Rows];
 	dynv::Ref options;
-	ColorList *preview_color_list;
-	GlobalState* gs;
-}VariationsArgs;
-
-struct VariationsColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		const char *m_ident;
-	public:
-		VariationsColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *ident)
-		{
-			m_ident = ident;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("variations") << " " << m_ident;
-			return m_stream.str();
-		}
-};
-
-static int set_rgb_color(VariationsArgs *args, ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color, GtkWidget* color_widget);
-
-static void calc(VariationsArgs *args, bool preview, bool save_settings){
-
-	float strength = gtk_range_get_value(GTK_RANGE(args->strength));
-
-	if (save_settings){
-		args->options->set("strength", strength);
+	GlobalState *gs;
+	void addToPalette() {
+		color_list_add_color_object(gs->getColorList(), getColor(), true);
 	}
-
-	Color color, hsl, lab, r, hsl_mod, lab_mod;
-
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		gtk_color_get_color(GTK_COLOR(args->color[i].color), &color);
-
-		switch (args->color[i].type->component_id){
-		case COMPONENT_ID_HSL_HUE:
-		case COMPONENT_ID_HSL_SATURATION:
-		case COMPONENT_ID_HSL_LIGHTNESS:
-			color_rgb_to_hsl(&color, &hsl);
-			break;
-		case COMPONENT_ID_LAB_LIGHTNESS:
-			{
-				color_rgb_to_lab_d50(&color, &lab);
-			}
-			break;
-		}
-
-		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
-			if (j == VAR_COLOR_WIDGETS / 2) continue;
-
-			switch (args->color[i].type->component_id){
-			case COMPONENT_ID_HSL_HUE:
-				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.hue = wrap_float(hsl.hsl.hue + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f);
-				color_hsl_to_rgb(&hsl_mod, &r);
-				break;
-			case COMPONENT_ID_HSL_SATURATION:
-				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.saturation = clamp_float(hsl.hsl.saturation + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f, 0, 1);
-				color_hsl_to_rgb(&hsl_mod, &r);
-				break;
-			case COMPONENT_ID_HSL_LIGHTNESS:
-				color_copy(&hsl, &hsl_mod);
-				hsl_mod.hsl.lightness = clamp_float(hsl.hsl.lightness + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 400.0f, 0, 1);
-				color_hsl_to_rgb(&hsl_mod, &r);
-				break;
-			case COMPONENT_ID_LAB_LIGHTNESS:
-				color_copy(&lab, &lab_mod);
-				lab_mod.lab.L = clamp_float(lab.lab.L + (args->color[i].type->strength_mult * strength * (j - VAR_COLOR_WIDGETS / 2)) / 4.0f, 0, 100);
-				color_lab_to_rgb_d50(&lab_mod, &r);
-				color_rgb_normalize(&r);
-				break;
-			}
-
-			gtk_color_set_color(GTK_COLOR(args->color[i].var_colors[j]), r);
-		}
+	void addToPalette(VariationsColorNameAssigner &nameAssigner, Color &color, GtkWidget *widget) {
+		gtk_color_get_color(GTK_COLOR(widget), &color);
+		colorObject.setColor(color);
+		nameAssigner.assign(&colorObject, &color, identifyColorWidget(widget));
+		color_list_add_color_object(gs->getColorList(), colorObject, true);
 	}
-}
-
-static void update(GtkWidget *widget, VariationsArgs *args ){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, false);
-}
-
-static void on_color_paste(GtkWidget *widget, VariationsArgs *args) {
-	auto colorWidget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	auto colorObject = clipboard::getFirst(args->gs);
-	if (colorObject) {
-		set_rgb_color_by_widget(args, colorObject, colorWidget);
-		colorObject->release();
-	}
-}
-
-static void on_color_edit(GtkWidget *widget, gpointer item) {
-	VariationsArgs* args=(VariationsArgs*)item;
-
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-
-	Color c;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	ColorObject* new_color_object = 0;
-
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
-
-		set_rgb_color_by_widget(args, new_color_object, color_widget);
-
-		new_color_object->release();
-	}
-
-	color_object->release();
-}
-
-static string identify_color_widget(GtkWidget *widget, VariationsArgs *args)
-{
-	if (args->all_colors == widget){
-		return _("all colors");
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].color == widget){
-			return common::format(_("primary {}"), i + 1);
-		}
-		for (int j = 0; j <= VAR_COLOR_WIDGETS; ++j){
-			if (args->color[i].var_colors[j] == widget){
-				if (j > VAR_COLOR_WIDGETS / 2)
-					j--;
-				return common::format(_("result {} line {}"), j + 1, i + 1);
+	void addAllToPalette() {
+		VariationsColorNameAssigner nameAssigner(gs);
+		Color color;
+		addToPalette(nameAssigner, color, allColors);
+		for (int i = 0; i < Rows; ++i) {
+			for (int j = 0; j < VariantWidgets; ++j) {
+				if (j == VariantWidgets / 2)
+					addToPalette(nameAssigner, color, rows[i].primary);
+				addToPalette(nameAssigner, color, rows[i].variants[j]);
 			}
 		}
 	}
-	return "unknown";
-}
-
-static void add_color_to_palette(GtkWidget *color_widget, VariationsColorNameAssigner &name_assigner, VariationsArgs *args)
-{
-	Color c;
-	ColorObject *color_object;
-	string widget_ident;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	widget_ident = identify_color_widget(color_widget, args);
-	name_assigner.assign(color_object, &c, widget_ident.c_str());
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object->release();
-}
-
-static void on_color_add_to_palette(GtkWidget *widget, gpointer item) {
-	VariationsArgs* args = (VariationsArgs*)item;
-	GtkWidget *color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	VariationsColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(color_widget, name_assigner, args);
-}
-
-static void on_color_add_all_to_palette(GtkWidget *widget, gpointer item) {
-	VariationsArgs* args = (VariationsArgs*)item;
-	VariationsColorNameAssigner name_assigner(args->gs);
-
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
-			add_color_to_palette(args->color[i].var_colors[j], name_assigner, args);
-		}
-	}
-}
-
-static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, VariationsArgs *args){
-	args->last_focused_color = widget;
-	return false;
-}
-
-static void on_color_activate(GtkWidget *widget, VariationsArgs* args)
-{
-	Color color;
-	gtk_color_get_color(GTK_COLOR(widget), &color);
-	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-	string name = color_names_get(args->gs->getColorNames(), &color, args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
-	color_object->setName(name);
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object->release();
-}
-
-static void type_toggled_cb(GtkWidget *widget, VariationsArgs *args) {
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	const VariationType *var_type = static_cast<const VariationType*>(g_object_get_data(G_OBJECT(widget), "variation_type"));
-
-	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
-
-		int line_id = -1;
-		for (int i = 0; i < MAX_COLOR_LINES; ++i){
-			if (args->color[i].color == color_widget){
-				line_id = i;
-				break;
+	void setColor(const ColorObject &colorObject) {
+		gtk_color_set_color(GTK_COLOR(lastFocusedColor), colorObject.getColor());
+		if (lastFocusedColor == allColors) {
+			for (int i = 0; i < Rows; ++i) {
+				gtk_color_set_color(GTK_COLOR(rows[i].primary), colorObject.getColor());
 			}
 		}
-
-		args->color[line_id].type = var_type;
-
-		Color c;
-		gtk_color_get_color(GTK_COLOR(color_widget), &c);
-
-		ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-		set_rgb_color(args, color_object, line_id);
-		color_object->release();
-
+		update();
 	}
-}
-
-static void color_show_menu(GtkWidget* widget, VariationsArgs* args, GdkEventButton *event ){
-	GtkWidget *menu;
-	GtkWidget* item;
-
-	menu = gtk_menu_new ();
-
-	item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	Color c;
-	gtk_color_get_color(GTK_COLOR(widget), &c);
-	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	StandardMenu::appendMenu(menu, *color_object, args->gs);
-	color_object->release();
-
-	int line_id = -1;
-	bool all_colors = false;
-	if (args->all_colors == widget){
-		all_colors = true;
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].color == widget){
-			line_id = i;
-		}
+	ColorObject colorObject;
+	const ColorObject &getColor() {
+		Color color;
+		gtk_color_get_color(GTK_COLOR(lastFocusedColor), &color);
+		colorObject.setColor(color);
+		VariationsColorNameAssigner nameAssigner(gs);
+		nameAssigner.assign(&colorObject, &color, identifyColorWidget(lastFocusedColor));
+		return colorObject;
 	}
-
-	if (line_id >= 0 || all_colors){
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
-		if (!all_colors){
-			GSList *group = 0;
-			for (uint32_t i = 0; i < sizeof(variation_types) / sizeof(VariationType); i++){
-				item = gtk_radio_menu_item_new_with_label(group, _(variation_types[i].name));
-				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-				if (args->color[line_id].type == &variation_types[i]){
-					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+	std::string identifyColorWidget(GtkWidget *widget) {
+		if (allColors == widget) {
+			return _("all colors");
+		} else
+			for (int i = 0; i < Rows; ++i) {
+				if (rows[i].primary == widget) {
+					return common::format(_("primary {}"), i + 1);
 				}
-				g_object_set_data(G_OBJECT(item), "color_widget", widget);
-				g_object_set_data(G_OBJECT(item), "variation_type", (void*)&variation_types[i]);
-				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(type_toggled_cb), args);
+				for (int j = 0; j < VariantWidgets; ++j) {
+					if (rows[i].variants[j] == widget) {
+						return common::format(_("result {} line {}"), j + 1, i + 1);
+					}
+				}
+			}
+		return "unknown";
+	}
+	bool isEditable() {
+		if (lastFocusedColor == allColors)
+			return true;
+		for (int i = 0; i < Rows; ++i)
+			if (lastFocusedColor == rows[i].primary)
+				return true;
+		return false;
+	}
+	bool isPrimary() {
+		for (int i = 0; i < Rows; ++i) {
+			if (rows[i].primary == lastFocusedColor)
+				return true;
+		}
+		return false;
+	}
+	static gboolean onFocusEvent(GtkWidget *widget, GdkEventFocus *, VariationsArgs *args) {
+		args->setActiveWidget(widget);
+		return false;
+	}
+	void setActiveWidget(GtkWidget *widget) {
+		lastFocusedColor = widget;
+	}
+	int getActiveRow() {
+		for (int i = 0; i < Rows; ++i) {
+			if (rows[i].primary == lastFocusedColor)
+				return i;
+			for (int j = 0; j < VariantWidgets; ++j) {
+				if (rows[i].variants[j] == lastFocusedColor)
+					return i;
+			}
+		}
+		return 0;
+	}
+	static void onModeChange(GtkWidget *widget, VariationsArgs *args) {
+		if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)))
+			return;
+		auto type = static_cast<const Type *>(g_object_get_data(G_OBJECT(widget), "variation_type"));
+		args->rows[args->getActiveRow()].type = type;
+		gtk_color_set_text(GTK_COLOR(args->rows[args->getActiveRow()].primary), type->symbol);
+		args->update();
+	}
+	static void onColorActivate(GtkWidget *, VariationsArgs *args) {
+		args->addToPalette();
+	}
+	static void onChange(GtkWidget *, VariationsArgs *args) {
+		args->update();
+	}
+	void update(bool saveSettings = false) {
+		float strength = static_cast<float>(gtk_range_get_value(GTK_RANGE(strengthRange)));
+		if (saveSettings) {
+			options->set("strength", strength);
+		}
+		Color color, rgb, hsl, lab, r, rgbModified, hslModified, labModified;
+		for (int i = 0; i < Rows; ++i) {
+			gtk_color_get_color(GTK_COLOR(rows[i].primary), &color);
+			switch (rows[i].type->component) {
+			case Component::rgbRed:
+			case Component::rgbGreen:
+			case Component::rgbBlue:
+				color_rgb_get_linear(&color, &rgb);
+				break;
+			case Component::hslHue:
+			case Component::hslSaturation:
+			case Component::hslLightness:
+				color_rgb_to_hsl(&color, &hsl);
+				break;
+			case Component::labLightness:
+				color_rgb_to_lab_d50(&color, &lab);
+				break;
+			}
+			for (int j = 0; j < VariantWidgets; ++j) {
+				float position = rows[i].type->strengthMultiplier * strength * (j / static_cast<float>(VariantWidgets - 1) - 0.5f);
+				switch (rows[i].type->component) {
+				case Component::rgbRed:
+					rgbModified = rgb;
+					rgbModified.rgb.red = clamp_float(rgbModified.rgb.red + position / 100.0f, 0, 1);
+					color_linear_get_rgb(&rgbModified, &r);
+					break;
+				case Component::rgbGreen:
+					rgbModified = rgb;
+					rgbModified.rgb.green = clamp_float(rgbModified.rgb.green + position / 100.0f, 0, 1);
+					color_linear_get_rgb(&rgbModified, &r);
+					break;
+				case Component::rgbBlue:
+					rgbModified = rgb;
+					rgbModified.rgb.blue = clamp_float(rgbModified.rgb.blue + position / 100.0f, 0, 1);
+					color_linear_get_rgb(&rgbModified, &r);
+					break;
+				case Component::hslHue:
+					color_copy(&hsl, &hslModified);
+					hslModified.hsl.hue = wrap_float(hsl.hsl.hue + position / 100.0f);
+					color_hsl_to_rgb(&hslModified, &r);
+					break;
+				case Component::hslSaturation:
+					color_copy(&hsl, &hslModified);
+					hslModified.hsl.saturation = clamp_float(hsl.hsl.saturation + position / 100.0f, 0, 1);
+					color_hsl_to_rgb(&hslModified, &r);
+					break;
+				case Component::hslLightness:
+					color_copy(&hsl, &hslModified);
+					hslModified.hsl.lightness = clamp_float(hsl.hsl.lightness + position / 100.0f, 0, 1);
+					color_hsl_to_rgb(&hslModified, &r);
+					break;
+				case Component::labLightness:
+					color_copy(&lab, &labModified);
+					labModified.lab.L = clamp_float(lab.lab.L + position, 0, 100);
+					color_lab_to_rgb_d50(&labModified, &r);
+					color_rgb_normalize(&r);
+					break;
+				}
+				gtk_color_set_color(GTK_COLOR(rows[i].variants[j]), r);
+			}
+		}
+	}
+	struct Editable: IEditableColorsUI, IMenuExtension {
+		Editable(VariationsArgs *args):
+			args(args) {
+		}
+		virtual ~Editable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			args->addToPalette();
+		}
+		virtual void addAllToPalette() override {
+			args->addAllToPalette();
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			args->setColor(colorObject.getColor());
+		}
+		virtual const ColorObject &getColor() override {
+			return args->getColor();
+		}
+		virtual std::vector<ColorObject> getColors(bool selected) override {
+			std::vector<ColorObject> colors;
+			colors.push_back(getColor());
+			return colors;
+		}
+		virtual bool isEditable() override {
+			return args->isEditable();
+		}
+		virtual bool hasColor() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+		virtual void extendMenu(GtkWidget *menu, Position position) {
+			if (position != Position::end || !isEditable() || !args->isPrimary())
+				return;
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+			GSList *group = nullptr;
+			int row = args->getActiveRow();
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+			for (size_t i = 0; i < sizeof(types) / sizeof(Type); i++) {
+				auto item = gtk_radio_menu_item_new_with_label(group, _(types[i].name));
+				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+				if (args->rows[row].type == &types[i])
+					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+				g_object_set_data(G_OBJECT(item), "variation_type", const_cast<Type *>(&types[i]));
+				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(VariationsArgs::onModeChange), args);
 				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			}
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 		}
-
-		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
-	}
-
-	gtk_widget_show_all (GTK_WIDGET(menu));
-
-	gint32 button, event_time;
-	if (event){
-		button = event->button;
-		event_time = event->time;
-	}else{
-		button = 0;
-		event_time = gtk_get_current_event_time ();
-	}
-
-	gtk_menu_popup (GTK_MENU (menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
-}
-
-
-static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, VariationsArgs* args) {
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		color_show_menu(widget, args, event);
-	}
-	return false;
-}
-
-static void on_color_popup_menu(GtkWidget *widget, VariationsArgs* args){
-	color_show_menu(widget, args, 0);
-}
-
-
-static gboolean on_color_key_press(GtkWidget *widget, GdkEventKey *event, VariationsArgs *args) {
-	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-	case GDK_KEY_c:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-			Color color;
-			gtk_color_get_color(GTK_COLOR(widget), &color);
-			clipboard::set(color, args->gs, Converters::Type::copy);
-			return true;
-		}
-		return false;
-	case GDK_KEY_v:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK){
-			auto colorObject = clipboard::getFirst(args->gs);
-			if (colorObject) {
-				set_rgb_color_by_widget(args, colorObject, widget);
-				colorObject->release();
-			}
-			return true;
-		}
-		return false;
-	default:
-		return false;
-	}
-}
-
-static int source_destroy(VariationsArgs *args){
-	Color c;
+	private:
+		VariationsArgs *args;
+	};
+	boost::optional<Editable> editable;
+};
+static int destroy(VariationsArgs *args) {
+	Color color;
 	char tmp[32];
-	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+	for (int i = 0; i < Rows; ++i) {
 		sprintf(tmp, "type%d", i);
-		args->options->set(tmp, args->color[i].type->unique_name);
-
+		args->options->set(tmp, args->rows[i].type->id);
 		sprintf(tmp, "color%d", i);
-		gtk_color_get_color(GTK_COLOR(args->color[i].color), &c);
-		args->options->set(tmp, c);
+		gtk_color_get_color(GTK_COLOR(args->rows[i].primary), &color);
+		args->options->set(tmp, color);
 	}
-
-	gtk_color_get_color(GTK_COLOR(args->all_colors), &c);
-	args->options->set("all_colors", c);
-
-	color_list_destroy(args->preview_color_list);
+	gtk_color_get_color(GTK_COLOR(args->allColors), &color);
+	args->options->set("all_colors", color);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
-
-static int source_get_color(VariationsArgs *args, ColorObject** color){
-	VariationsColorNameAssigner name_assigner(args->gs);
-	Color c;
-	string widget_ident;
-	if (args->last_focused_color){
-		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
-		widget_ident = identify_color_widget(args->last_focused_color, args);
-	}else{
-		gtk_color_get_color(GTK_COLOR(args->color[0].color), &c);
-		widget_ident = identify_color_widget(args->color[0].color, args);
-	}
-	*color = color_list_new_color_object(args->gs->getColorList(), &c);
-	name_assigner.assign(*color, &c, widget_ident.c_str());
+static int getColor(VariationsArgs *args, ColorObject **color) {
+	auto colorObject = args->getColor();
+	*color = colorObject.copy();
 	return 0;
 }
-
-static int set_rgb_color_by_widget(VariationsArgs *args, ColorObject* color_object, GtkWidget* color_widget)
-{
-	if (args->all_colors){
-		set_rgb_color(args, color_object, -1);
-		return 0;
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].color == color_widget){
-			set_rgb_color(args, color_object, i);
-			return 0;
-		}
-	}
-	return -1;
-}
-
-static int set_rgb_color(VariationsArgs *args, ColorObject* color_object, uint32_t color_index)
-{
-	Color c = color_object->getColor();
-	if (color_index == (uint32_t)-1){
-		gtk_color_set_color(GTK_COLOR(args->all_colors), &c, "");
-		for (int i = 0; i < MAX_COLOR_LINES; ++i){
-			gtk_color_set_color(GTK_COLOR(args->color[i].color), &c, args->color[i].type->symbol);
-		}
-	}else{
-		gtk_color_set_color(GTK_COLOR(args->color[color_index].color), &c, args->color[color_index].type->symbol);
-	}
-	update(0, args);
+static int setColor(VariationsArgs *args, ColorObject *colorObject) {
+	args->setColor(*colorObject);
 	return 0;
 }
-
-
-static int source_set_color(VariationsArgs *args, ColorObject* color_object)
-{
-	if (args->last_focused_color){
-		return set_rgb_color_by_widget(args, color_object, args->last_focused_color);
-	}else{
-		return set_rgb_color(args, color_object, 0);
-	}
-}
-
-static int source_activate(VariationsArgs *args)
-{
+static int activate(VariationsArgs *args) {
 	auto chain = args->gs->getTransformationChain();
-	gtk_color_set_transformation_chain(GTK_COLOR(args->all_colors), chain);
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].color), chain);
-		for (int j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
-			gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].var_colors[j]), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->allColors), chain);
+	for (int i = 0; i < Rows; ++i) {
+		gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].primary), chain);
+		for (int j = 0; j < VariantWidgets; ++j) {
+			gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].variants[j]), chain);
 		}
 	}
-	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusBar), "empty"), "");
 	return 0;
 }
-
-static int source_deactivate(VariationsArgs *args){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, true);
+static int deactivate(VariationsArgs *args) {
+	args->update(true);
 	return 0;
 }
-
-static ColorObject* get_color_object(struct DragDrop* dd){
-	VariationsArgs* args = (VariationsArgs*)dd->userdata;
-	ColorObject* color_object;
-	if (source_get_color(args, &color_object) == 0){
-		return color_object;
-	}
+static ColorObject *getColorObject(struct DragDrop *dd) {
+	auto *args = static_cast<VariationsArgs *>(dd->userdata);
+	return args->getColor().copy();
+}
+static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
+	auto *args = static_cast<VariationsArgs *>(dd->userdata);
+	args->setActiveWidget(dd->widget);
+	args->setColor(*colorObject);
 	return 0;
 }
-
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool){
-	VariationsArgs* args = static_cast<VariationsArgs*>(dd->userdata);
-	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
-	return 0;
-}
-
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
-	VariationsArgs* args = new VariationsArgs;
+static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
+	auto *args = new VariationsArgs;
+	args->editable = VariationsArgs::Editable(args);
 	args->options = options;
-	args->statusbar = gs->getStatusBar();
-
+	args->statusBar = gs->getStatusBar();
+	args->gs = gs;
 	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
-	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
-	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
-	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
-	args->source.activate = (int (*)(ColorSource *source))source_activate;
-
+	args->source.destroy = (int (*)(ColorSource *))destroy;
+	args->source.get_color = (int (*)(ColorSource *, ColorObject **))getColor;
+	args->source.set_color = (int (*)(ColorSource *, ColorObject *))setColor;
+	args->source.deactivate = (int (*)(ColorSource *))deactivate;
+	args->source.activate = (int (*)(ColorSource * source)) activate;
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
-	hbox = gtk_hbox_new(FALSE, 0);
-	vbox = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
-
-	args->color_previews = gtk_table_new(MAX_COLOR_LINES, VAR_COLOR_WIDGETS + 1, false);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
-
+	hbox = gtk_hbox_new(false, 0);
+	vbox = gtk_vbox_new(false, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
+	args->colorPreviews = gtk_table_new(Rows, VariantWidgets + 1, false);
+	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
 	struct DragDrop dd;
 	dragdrop_init(&dd, gs);
 	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
-	dd.get_color_object = get_color_object;
-	dd.set_color_object_at = set_color_object_at;
-
+	dd.get_color_object = getColorObject;
+	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
-
-	gtk_table_attach(GTK_TABLE(args->color_previews), widget, VAR_COLOR_WIDGETS / 2, VAR_COLOR_WIDGETS / 2 + 1, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
-
-	args->all_colors = widget;
-
-	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
-
+	gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, VariantWidgets / 2, VariantWidgets / 2 + 1, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 0, 0);
+	args->allColors = widget;
+	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
+	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 	//setup drag&drop
-	gtk_widget_set_size_request(widget, 50, 20);
-
-	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void*)-1;
+	gtk_widget_set_size_request(widget, 60, 30);
+	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-
-
-	for (intptr_t i = 0; i < MAX_COLOR_LINES; ++i){
-		for (intptr_t j = 0; j < VAR_COLOR_WIDGETS + 1; ++j){
-
-			widget = gtk_color_new();
+	for (int i = 0; i < Rows; ++i) {
+		args->rows[i].type = &types[i];
+		args->rows[i].primary = widget = gtk_color_new();
+		gtk_color_set_rounded(GTK_COLOR(widget), true);
+		gtk_color_set_hcenter(GTK_COLOR(widget), true);
+		gtk_color_set_roundness(GTK_COLOR(widget), 5);
+		gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, VariantWidgets / 2, VariantWidgets / 2 + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+		g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
+		g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
+		StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+		gtk_widget_set_size_request(widget, 60, 30);
+		gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+		gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+		dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+		for (int j = 0; j < VariantWidgets; ++j) {
+			int x = j + (j >= VariantWidgets / 2 ? 1 : 0);
+			args->rows[i].variants[j] = widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
-
-			gtk_table_attach(GTK_TABLE(args->color_previews), widget, j, j + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
-
-			args->color[i].var_colors[j] = widget;
-			args->color[i].type = &variation_types[i];
-
-			g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-			g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-			g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
-
-			//setup drag&drop
-			if (j == VAR_COLOR_WIDGETS / 2){
-				gtk_widget_set_size_request(widget, 50, 30);
-
-				gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void*)i;
-				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-
-				args->color[i].color = args->color[i].var_colors[j];
-
-			}else{
-				gtk_widget_set_size_request(widget, 30, 25);
-
-				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void*)i;
-				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
-			}
+			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, x, x + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
+			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
+			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+			gtk_widget_set_size_request(widget, 30, 30);
+			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 		}
 	}
-
-	Color c;
-	color_set(&c, 0.5);
 	char tmp[32];
-	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+	for (int i = 0; i < Rows; ++i) {
 		sprintf(tmp, "type%d", i);
-		auto type_name = options->getString(tmp, "lab_lightness");
-
-		for (uint32_t j = 0; j < sizeof(variation_types) / sizeof(VariationType); j++){
-			if (variation_types[j].unique_name == type_name){
-				args->color[i].type = &variation_types[j];
+		auto typeName = options->getString(tmp, "lab_lightness");
+		for (uint32_t j = 0; j < sizeof(types) / sizeof(Type); j++) {
+			if (types[j].id == typeName) {
+				args->rows[i].type = &types[j];
 				break;
 			}
 		}
 		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->color[i].color), options->getColor(tmp, c), args->color[i].type->symbol);
+		gtk_color_set_color(GTK_COLOR(args->rows[i].primary), options->getColor(tmp, Color(0.5f)), args->rows[i].type->symbol);
 	}
-	gtk_color_set_color(GTK_COLOR(args->all_colors), options->getColor("all_colors", c));
-
-	hbox2 = gtk_hbox_new(FALSE, 0);
+	gtk_color_set_color(GTK_COLOR(args->allColors), options->getColor("all_colors", Color(0.5f)));
+	hbox2 = gtk_hbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
-
 	gint table_y;
 	table = gtk_table_new(5, 2, false);
 	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
 	table_y = 0;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
-	args->strength = gtk_hscale_new_with_range(1, 100, 1);
-	gtk_range_set_value(GTK_RANGE(args->strength), options->getFloat("strength", 30));
-	g_signal_connect(G_OBJECT(args->strength), "value-changed", G_CALLBACK (update), args);
-	gtk_table_attach(GTK_TABLE(table), args->strength,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,0,0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	args->strengthRange = widget = gtk_hscale_new_with_range(1, 100, 1);
+	gtk_range_set_value(GTK_RANGE(widget), options->getFloat("strength", 30));
+	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(VariationsArgs::onChange), args);
+	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	table_y++;
-
-	args->preview_color_list = color_list_new();
-	args->gs = gs;
 	gtk_widget_show_all(hbox);
-	update(0, args);
+	args->update();
 	args->main = hbox;
 	args->source.widget = hbox;
-	return (ColorSource*)args;
+	return (ColorSource *)args;
 }
-
-int variations_source_register(ColorSourceManager *csm)
-{
+int variations_source_register(ColorSourceManager *csm) {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "variations", _("Variations"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
+	color_source->implement = source_implement;
 	color_source->default_accelerator = GDK_KEY_v;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

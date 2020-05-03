@@ -26,609 +26,406 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "MathUtil.h"
-#include "ColorRYB.h"
 #include "gtk/ColorWidget.h"
-#include "gtk/ColorWheel.h"
-#include "ColorWheelType.h"
-#include "uiColorInput.h"
-#include "Converter.h"
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
-#include "StandardMenu.h"
-#include "Clipboard.h"
+#include "StandardEventHandler.h"
+#include "IMenuExtension.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
-#include <math.h>
-#include <string.h>
 #include <sstream>
-#include <iostream>
-using namespace std;
+#include <cmath>
 
-#define MAX_COLOR_LINES 3
-
-#define MODE_ID_NORMAL 1
-#define MODE_ID_MULTIPLY 2
-#define MODE_ID_DIFFERENCE 3
-#define MODE_ID_ADD 4
-#define MODE_ID_HUE 5
-#define MODE_ID_SATURATION 6
-#define MODE_ID_LIGHTNESS 7
-
-typedef struct ColorMixerType{
-	const char *name;
-	const char *unique_name;
-	int mode_id;
-}ColorMixerType;
-
-const ColorMixerType color_mixer_types[] = {
-	{N_("Normal"), "normal", MODE_ID_NORMAL},
-	{N_("Multiply"), "multiply", MODE_ID_MULTIPLY},
-	{N_("Add"), "add", MODE_ID_ADD},
-	{N_("Difference"), "difference", MODE_ID_DIFFERENCE},
-	{N_("Hue"), "hue", MODE_ID_HUE},
-	{N_("Saturation"), "saturation", MODE_ID_SATURATION},
-	{N_("Lightness"), "lightness", MODE_ID_LIGHTNESS},
+const int Rows = 5;
+enum class Mode {
+	normal = 1,
+	multiply,
+	difference,
+	add,
+	hue,
+	saturation,
+	lightness,
 };
-
-typedef struct ColorMixerArgs{
+struct Type {
+	const char *id;
+	const char *name;
+	Mode mode;
+};
+const Type types[] = {
+	{ "normal", N_("Normal"), Mode::normal },
+	{ "multiply", N_("Multiply"), Mode::multiply },
+	{ "add", N_("Add"), Mode::add },
+	{ "difference", N_("Difference"), Mode::difference },
+	{ "hue", N_("Hue"), Mode::hue },
+	{ "saturation", N_("Saturation"), Mode::saturation },
+	{ "lightness", N_("Lightness"), Mode::lightness },
+};
+struct ColorMixerColorNameAssigner: public ToolColorNameAssigner {
+	ColorMixerColorNameAssigner(GlobalState *gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject *colorObject, const Color *color, const char *ident) {
+		m_ident = ident;
+		ToolColorNameAssigner::assign(colorObject, color);
+	}
+	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+		m_stream.str("");
+		m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("color mixer") << " " << m_ident;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	const char *m_ident;
+};
+struct ColorMixerArgs;
+struct ColorMixerArgs {
 	ColorSource source;
-	GtkWidget* main;
-	GtkWidget* statusbar;
-	GtkWidget *secondary_color;
-	GtkWidget *opacity;
-	GtkWidget *last_focused_color;
-	GtkWidget *color_previews;
-	const ColorMixerType *mixer_type;
-	struct{
+	GtkWidget *main, *statusBar, *secondaryColor, *opacityRange, *lastFocusedColor, *colorPreviews;
+	const Type *mixerType;
+	struct {
 		GtkWidget *input;
 		GtkWidget *output;
-	}color[MAX_COLOR_LINES];
+	} rows[Rows];
 	dynv::Ref options;
-	ColorList *preview_color_list;
-	GlobalState* gs;
-}ColorMixerArgs;
-
-struct ColorMixerColorNameAssigner: public ToolColorNameAssigner {
-	protected:
-		stringstream m_stream;
-		const char *m_ident;
-	public:
-		ColorMixerColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *ident)
-		{
-			m_ident = ident;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << color_names_get(m_gs->getColorNames(), color, false) << " " << _("color mixer") << " " << m_ident;
-			return m_stream.str();
-		}
-};
-
-static int set_rgb_color(ColorMixerArgs *args, ColorObject* color, uint32_t color_index);
-static int set_rgb_color_by_widget(ColorMixerArgs *args, ColorObject* color, GtkWidget* color_widget);
-
-static void calc(ColorMixerArgs *args, bool preview, bool save_settings){
-
-	float opacity = gtk_range_get_value(GTK_RANGE(args->opacity));
-
-	if (save_settings){
-		args->options->set("opacity", opacity);
+	GlobalState *gs;
+	void addToPalette() {
+		color_list_add_color_object(gs->getColorList(), getColor(), true);
 	}
-
-	Color color, color2, r, hsv1, hsv2;
-	gtk_color_get_color(GTK_COLOR(args->secondary_color), &color2);
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		gtk_color_get_color(GTK_COLOR(args->color[i].input), &color);
-
-		switch (args->mixer_type->mode_id){
-		case MODE_ID_NORMAL:
-			r.rgb.red = color2.rgb.red;
-			r.rgb.green = color2.rgb.green;
-			r.rgb.blue = color2.rgb.blue;
-			break;
-		case MODE_ID_MULTIPLY:
-			r.rgb.red = color.rgb.red * color2.rgb.red;
-			r.rgb.green = color.rgb.green * color2.rgb.green;
-			r.rgb.blue = color.rgb.blue * color2.rgb.blue;
-			break;
-		case MODE_ID_ADD:
-			r.rgb.red = clamp_float(color.rgb.red + color2.rgb.red, 0, 1);
-			r.rgb.green = clamp_float(color.rgb.green + color2.rgb.green, 0, 1);
-			r.rgb.blue = clamp_float(color.rgb.blue + color2.rgb.blue, 0, 1);
-			break;
-		case MODE_ID_DIFFERENCE:
-			r.rgb.red = fabs(color.rgb.red - color2.rgb.red);
-			r.rgb.green = fabs(color.rgb.green - color2.rgb.green);
-			r.rgb.blue = fabs(color.rgb.blue - color2.rgb.blue);
-			break;
-		case MODE_ID_HUE:
-			color_rgb_to_hsv(&color, &hsv1);
-			color_rgb_to_hsv(&color2, &hsv2);
-			hsv1.hsv.hue = hsv2.hsv.hue;
-			color_hsv_to_rgb(&hsv1, &r);
-			break;
-		case MODE_ID_SATURATION:
-			color_rgb_to_hsv(&color, &hsv1);
-			color_rgb_to_hsv(&color2, &hsv2);
-			hsv1.hsv.saturation = hsv2.hsv.saturation;
-			color_hsv_to_rgb(&hsv1, &r);
-			break;
-		case MODE_ID_LIGHTNESS:
-			color_rgb_to_hsl(&color, &hsv1);
-			color_rgb_to_hsl(&color2, &hsv2);
-			hsv1.hsl.lightness = hsv2.hsl.lightness;
-			color_hsl_to_rgb(&hsv1, &r);
-			break;
-		}
-
-		r.rgb.red = (color.rgb.red * (100 - opacity) + r.rgb.red * opacity) / 100;
-		r.rgb.green = (color.rgb.green * (100 - opacity) + r.rgb.green * opacity) / 100;
-		r.rgb.blue = (color.rgb.blue * (100 - opacity) + r.rgb.blue * opacity) / 100;
-
-		gtk_color_set_color(GTK_COLOR(args->color[i].output), r);
+	void addToPalette(ColorMixerColorNameAssigner &nameAssigner, Color &color, GtkWidget *widget) {
+		gtk_color_get_color(GTK_COLOR(widget), &color);
+		colorObject.setColor(color);
+		auto widgetName = identifyColorWidget(widget);
+		nameAssigner.assign(&colorObject, &color, widgetName.c_str());
+		color_list_add_color_object(gs->getColorList(), colorObject, true);
 	}
-}
-
-static void update(GtkWidget *widget, ColorMixerArgs *args ){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, false);
-}
-static void on_color_paste(GtkWidget *widget, ColorMixerArgs *args) {
-	auto colorWidget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	auto colorObject = clipboard::getFirst(args->gs);
-	if (colorObject) {
-		set_rgb_color_by_widget(args, colorObject, colorWidget);
-		colorObject->release();
+	void addAllToPalette() {
+		ColorMixerColorNameAssigner nameAssigner(gs);
+		Color color;
+		for (int i = 0; i < Rows; ++i)
+			addToPalette(nameAssigner, color, rows[i].input);
+		addToPalette(nameAssigner, color, secondaryColor);
+		for (int i = 0; i < Rows; ++i)
+			addToPalette(nameAssigner, color, rows[i].output);
 	}
-}
-static void on_color_edit(GtkWidget *widget, ColorMixerArgs *args)
-{
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	Color c;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	ColorObject* new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs, color_object, &new_color_object ) == 0){
-		set_rgb_color_by_widget(args, new_color_object, color_widget);
-		new_color_object->release();
+	void setColor(const ColorObject &colorObject) {
+		gtk_color_set_color(GTK_COLOR(lastFocusedColor), colorObject.getColor());
+		update();
 	}
-	color_object->release();
-}
-
-static string identify_color_widget(GtkWidget *widget, ColorMixerArgs *args)
-{
-	if (args->secondary_color == widget){
-		return _("secondary");
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].input == widget){
-			return common::format(_("primary {}"), i + 1);
-		}else if (args->color[i].output == widget){
-			return common::format(_("result {}"), i + 1);
-		}
+	ColorObject colorObject;
+	const ColorObject &getColor() {
+		Color color;
+		gtk_color_get_color(GTK_COLOR(lastFocusedColor), &color);
+		auto widgetName = identifyColorWidget(lastFocusedColor);
+		colorObject.setColor(color);
+		ColorMixerColorNameAssigner nameAssigner(gs);
+		nameAssigner.assign(&colorObject, &color, widgetName.c_str());
+		return colorObject;
 	}
-	return "unknown";
-}
-
-static void add_color_to_palette(GtkWidget *color_widget, ColorMixerColorNameAssigner &name_assigner, ColorMixerArgs *args)
-{
-	Color c;
-	ColorObject *color_object;
-	string widget_ident;
-	gtk_color_get_color(GTK_COLOR(color_widget), &c);
-	color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	widget_ident = identify_color_widget(color_widget, args);
-	name_assigner.assign(color_object, &c, widget_ident.c_str());
-	color_list_add_color_object(args->gs->getColorList(), color_object, 1);
-	color_object->release();
-}
-
-static void on_color_add_to_palette(GtkWidget *widget, gpointer item) {
-	ColorMixerArgs* args = (ColorMixerArgs*)item;
-	GtkWidget *color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	ColorMixerColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(color_widget, name_assigner, args);
-}
-
-static void on_color_add_all_to_palette(GtkWidget *widget, gpointer item) {
-	ColorMixerArgs* args = (ColorMixerArgs*)item;
-	ColorMixerColorNameAssigner name_assigner(args->gs);
-
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		add_color_to_palette(args->color[i].input, name_assigner, args);
-	}
-
-	add_color_to_palette(args->secondary_color, name_assigner, args);
-
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		add_color_to_palette(args->color[i].output, name_assigner, args);
-	}
-}
-
-static gboolean color_focus_in_cb(GtkWidget *widget, GdkEventFocus *event, ColorMixerArgs *args){
-	args->last_focused_color = widget;
-	return false;
-}
-
-
-static void on_color_activate(GtkWidget *widget, gpointer item) {
-	ColorMixerArgs* args=(ColorMixerArgs*)item;
-	ColorMixerColorNameAssigner name_assigner(args->gs);
-	add_color_to_palette(widget, name_assigner, args);
-}
-
-static void type_toggled_cb(GtkWidget *widget, ColorMixerArgs *args) {
-	GtkWidget* color_widget = GTK_WIDGET(g_object_get_data(G_OBJECT(widget), "color_widget"));
-	const ColorMixerType *mixer_type = static_cast<const ColorMixerType*>(g_object_get_data(G_OBJECT(widget), "color_mixer_type"));
-
-	if (gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget))){
-
-		args->mixer_type = mixer_type;
-
-		Color c;
-		gtk_color_get_color(GTK_COLOR(color_widget), &c);
-		gtk_color_set_color(GTK_COLOR(args->secondary_color), &c, _(args->mixer_type->name));
-		update(0, args);
-	}
-}
-
-static void color_show_menu(GtkWidget* widget, ColorMixerArgs* args, GdkEventButton *event ){
-	GtkWidget *menu;
-	GtkWidget* item;
-
-	menu = gtk_menu_new ();
-
-	item = newMenuItem(_("_Add to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-	item = newMenuItem(_("A_dd all to palette"), GTK_STOCK_ADD);
-	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-	g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_add_all_to_palette), args);
-	g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	Color c;
-	gtk_color_get_color(GTK_COLOR(widget), &c);
-	ColorObject* color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	StandardMenu::appendMenu(menu, *color_object, args->gs);
-	color_object->release();
-
-	int line_id = -1;
-	bool secondary_color = false;
-	if (args->secondary_color == widget){
-		secondary_color = true;
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].input == widget){
-			line_id = i;
-		}
-	}
-
-	if (line_id >= 0 || secondary_color){
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
-
-		if (secondary_color){
-			GSList *group = 0;
-			for (uint32_t i = 0; i < sizeof(color_mixer_types) / sizeof(ColorMixerType); i++){
-				item = gtk_radio_menu_item_new_with_label(group, _(color_mixer_types[i].name));
-				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
-				if (args->mixer_type == &color_mixer_types[i]){
-					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+	std::string identifyColorWidget(GtkWidget *widget) {
+		if (secondaryColor == widget) {
+			return _("secondary");
+		} else
+			for (int i = 0; i < Rows; ++i) {
+				if (rows[i].input == widget) {
+					return common::format(_("primary {}"), i + 1);
+				} else if (rows[i].output == widget) {
+					return common::format(_("result {}"), i + 1);
 				}
-				g_object_set_data(G_OBJECT(item), "color_widget", widget);
-				g_object_set_data(G_OBJECT(item), "color_mixer_type", (void*)&color_mixer_types[i]);
-				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(type_toggled_cb), args);
+			}
+		return "unknown";
+	}
+	static gboolean onFocusEvent(GtkWidget *widget, GdkEventFocus *, ColorMixerArgs *args) {
+		args->lastFocusedColor = widget;
+		return false;
+	}
+	void setActiveWidget(GtkWidget *widget) {
+		lastFocusedColor = widget;
+	}
+	void setMode(const Type *type) {
+		mixerType = type;
+		gtk_color_set_text(GTK_COLOR(secondaryColor), _(mixerType->name));
+		update();
+	}
+	static void onModeChange(GtkWidget *widget, ColorMixerArgs *args) {
+		if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)))
+			return;
+		return args->setMode(static_cast<const Type *>(g_object_get_data(G_OBJECT(widget), "color_mixer_type")));
+	}
+	static void onColorActivate(GtkWidget *, ColorMixerArgs *args) {
+		args->addToPalette();
+	}
+	static void onChange(GtkWidget *, ColorMixerArgs *args) {
+		args->update();
+	}
+	bool isEditable() {
+		if (lastFocusedColor == secondaryColor)
+			return true;
+		for (int i = 0; i < Rows; ++i)
+			if (lastFocusedColor == rows[i].input)
+				return true;
+		return false;
+	}
+	void update(bool saveSettings = false) {
+		float opacity = static_cast<float>(gtk_range_get_value(GTK_RANGE(opacityRange)));
+		if (saveSettings) {
+			options->set("opacity", opacity);
+		}
+		Color color, color2, r, hsv1, hsv2;
+		gtk_color_get_color(GTK_COLOR(secondaryColor), &color2);
+		for (int i = 0; i < Rows; ++i) {
+			gtk_color_get_color(GTK_COLOR(rows[i].input), &color);
+			switch (mixerType->mode) {
+			case Mode::normal:
+				r.rgb.red = color2.rgb.red;
+				r.rgb.green = color2.rgb.green;
+				r.rgb.blue = color2.rgb.blue;
+				break;
+			case Mode::multiply:
+				r.rgb.red = color.rgb.red * color2.rgb.red;
+				r.rgb.green = color.rgb.green * color2.rgb.green;
+				r.rgb.blue = color.rgb.blue * color2.rgb.blue;
+				break;
+			case Mode::add:
+				r.rgb.red = clamp_float(color.rgb.red + color2.rgb.red, 0, 1);
+				r.rgb.green = clamp_float(color.rgb.green + color2.rgb.green, 0, 1);
+				r.rgb.blue = clamp_float(color.rgb.blue + color2.rgb.blue, 0, 1);
+				break;
+			case Mode::difference:
+				r.rgb.red = std::fabs(color.rgb.red - color2.rgb.red);
+				r.rgb.green = std::fabs(color.rgb.green - color2.rgb.green);
+				r.rgb.blue = std::fabs(color.rgb.blue - color2.rgb.blue);
+				break;
+			case Mode::hue:
+				color_rgb_to_hsv(&color, &hsv1);
+				color_rgb_to_hsv(&color2, &hsv2);
+				hsv1.hsv.hue = hsv2.hsv.hue;
+				color_hsv_to_rgb(&hsv1, &r);
+				break;
+			case Mode::saturation:
+				color_rgb_to_hsv(&color, &hsv1);
+				color_rgb_to_hsv(&color2, &hsv2);
+				hsv1.hsv.saturation = hsv2.hsv.saturation;
+				color_hsv_to_rgb(&hsv1, &r);
+				break;
+			case Mode::lightness:
+				color_rgb_to_hsl(&color, &hsv1);
+				color_rgb_to_hsl(&color2, &hsv2);
+				hsv1.hsl.lightness = hsv2.hsl.lightness;
+				color_hsl_to_rgb(&hsv1, &r);
+				break;
+			}
+			r.rgb.red = (color.rgb.red * (100 - opacity) + r.rgb.red * opacity) / 100;
+			r.rgb.green = (color.rgb.green * (100 - opacity) + r.rgb.green * opacity) / 100;
+			r.rgb.blue = (color.rgb.blue * (100 - opacity) + r.rgb.blue * opacity) / 100;
+			gtk_color_set_color(GTK_COLOR(rows[i].output), r);
+		}
+	}
+	struct Editable: IEditableColorsUI, IMenuExtension {
+		Editable(ColorMixerArgs *args):
+			args(args) {
+		}
+		virtual ~Editable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			args->addToPalette();
+		}
+		virtual void addAllToPalette() override {
+			args->addAllToPalette();
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			args->setColor(colorObject.getColor());
+		}
+		virtual const ColorObject &getColor() override {
+			return args->getColor();
+		}
+		virtual std::vector<ColorObject> getColors(bool selected) override {
+			std::vector<ColorObject> colors;
+			colors.push_back(getColor());
+			return colors;
+		}
+		virtual bool isEditable() override {
+			return args->isEditable();
+		}
+		virtual bool hasColor() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+		virtual void extendMenu(GtkWidget *menu, Position position) {
+			if (position != Position::end || !isEditable())
+				return;
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+			GSList *group = nullptr;
+			for (size_t i = 0; i < sizeof(types) / sizeof(Type); i++) {
+				auto item = gtk_radio_menu_item_new_with_label(group, _(types[i].name));
+				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+				if (args->mixerType == &types[i])
+					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+				g_object_set_data(G_OBJECT(item), "color_mixer_type", const_cast<Type *>(&types[i]));
+				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(ColorMixerArgs::onModeChange), args);
 				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 			}
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 		}
-
-		item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_edit), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-
-		item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK (on_color_paste), args);
-		g_object_set_data(G_OBJECT(item), "color_widget", widget);
-		gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
-	}
-
-	gtk_widget_show_all (GTK_WIDGET(menu));
-
-	gint32 button, event_time;
-	if (event){
-		button = event->button;
-		event_time = event->time;
-	}else{
-		button = 0;
-		event_time = gtk_get_current_event_time ();
-	}
-
-	gtk_menu_popup (GTK_MENU (menu), nullptr, nullptr, nullptr, nullptr, button, event_time);
-
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
-}
-
-
-static gboolean on_color_button_press (GtkWidget *widget, GdkEventButton *event, ColorMixerArgs* args) {
-	if (event->button == 3 && event->type == GDK_BUTTON_PRESS){
-		color_show_menu(widget, args, event);
-	}
-	return false;
-}
-
-static void on_color_popup_menu(GtkWidget *widget, ColorMixerArgs* args){
-	color_show_menu(widget, args, 0);
-}
-
-static gboolean on_color_key_press(GtkWidget *widget, GdkEventKey *event, ColorMixerArgs* args) {
-	guint modifiers = gtk_accelerator_get_default_mod_mask();
-	switch (getKeyval(*event, args->gs->latinKeysGroup)) {
-	case GDK_KEY_c:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-			Color color;
-			gtk_color_get_color(GTK_COLOR(widget), &color);
-			clipboard::set(color, args->gs, Converters::Type::copy);
-			return true;
-		}
-		return false;
-	case GDK_KEY_v:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-			auto colorObject = clipboard::getFirst(args->gs);
-			if (colorObject) {
-				set_rgb_color_by_widget(args, colorObject, widget);
-				colorObject->release();
-			}
-			return true;
-		}
-		return false;
-	default:
-		return false;
-	}
-}
-
-static int source_destroy(ColorMixerArgs *args){
-
+	private:
+		ColorMixerArgs *args;
+	};
+	boost::optional<Editable> editable;
+};
+static int destroy(ColorMixerArgs *args) {
 	Color c;
 	char tmp[32];
-	args->options->set("mixer_type", args->mixer_type->unique_name);
-	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+	args->options->set("mixer_type", args->mixerType->id);
+	for (int i = 0; i < Rows; ++i) {
 		sprintf(tmp, "color%d", i);
-		gtk_color_get_color(GTK_COLOR(args->color[i].input), &c);
+		gtk_color_get_color(GTK_COLOR(args->rows[i].input), &c);
 		args->options->set(tmp, c);
 	}
-
-	gtk_color_get_color(GTK_COLOR(args->secondary_color), &c);
+	gtk_color_get_color(GTK_COLOR(args->secondaryColor), &c);
 	args->options->set("secondary_color", c);
-
-
-	color_list_destroy(args->preview_color_list);
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
 }
-
-static int source_get_color(ColorMixerArgs *args, ColorObject** color){
-	ColorMixerColorNameAssigner name_assigner(args->gs);
-	Color c;
-	string widget_ident;
-	if (args->last_focused_color){
-		gtk_color_get_color(GTK_COLOR(args->last_focused_color), &c);
-		widget_ident = identify_color_widget(args->last_focused_color, args);
-	}else{
-		gtk_color_get_color(GTK_COLOR(args->color[0].input), &c);
-		widget_ident = identify_color_widget(args->color[0].input, args);
-	}
-	*color = color_list_new_color_object(args->gs->getColorList(), &c);
-	name_assigner.assign(*color, &c, widget_ident.c_str());
+static int getColor(ColorMixerArgs *args, ColorObject **color) {
+	auto colorObject = args->getColor();
+	*color = colorObject.copy();
 	return 0;
 }
-static int set_rgb_color_by_widget(ColorMixerArgs *args, ColorObject* color_object, GtkWidget* color_widget)
-{
-	if (args->secondary_color == color_widget){
-		set_rgb_color(args, color_object, -1);
-		return 0;
-	}else for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		if (args->color[i].input == color_widget){
-			set_rgb_color(args, color_object, i);
-			return 0;
-		}else if (args->color[i].output == color_widget){
-			set_rgb_color(args, color_object, i);
-			return 0;
-		}
-	}
-	return -1;
-}
-static int set_rgb_color(ColorMixerArgs *args, ColorObject* color_object, uint32_t color_index)
-{
-	Color color = color_object->getColor();
-	if (color_index == (uint32_t)-1){
-		gtk_color_set_color(GTK_COLOR(args->secondary_color), &color, _(args->mixer_type->name));
-	}else{
-		gtk_color_set_color(GTK_COLOR(args->color[color_index].input), color);
-	}
-	update(0, args);
+static int setColor(ColorMixerArgs *args, ColorObject *colorObject) {
+	args->setColor(*colorObject);
 	return 0;
 }
-static int source_set_color(ColorMixerArgs *args, ColorObject* color_object)
-{
-	if (args->last_focused_color){
-		return set_rgb_color_by_widget(args, color_object, args->last_focused_color);
-	}else{
-		return set_rgb_color(args, color_object, 0);
-	}
-}
-
-static int source_activate(ColorMixerArgs *args)
-{
+static int activate(ColorMixerArgs *args) {
 	auto chain = args->gs->getTransformationChain();
-	gtk_color_set_transformation_chain(GTK_COLOR(args->secondary_color), chain);
-	for (int i = 0; i < MAX_COLOR_LINES; ++i){
-		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].input), chain);
-		gtk_color_set_transformation_chain(GTK_COLOR(args->color[i].output), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->secondaryColor), chain);
+	for (int i = 0; i < Rows; ++i) {
+		gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].input), chain);
+		gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].output), chain);
 	}
-	gtk_statusbar_push(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "empty"), "");
+	gtk_statusbar_push(GTK_STATUSBAR(args->statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusBar), "empty"), "");
 	return 0;
 }
-
-static int source_deactivate(ColorMixerArgs *args){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, true);
+static int deactivate(ColorMixerArgs *args) {
+	args->update(true);
 	return 0;
 }
-
-static ColorObject* get_color_object(DragDrop* dd)
-{
-	ColorMixerArgs* args = (ColorMixerArgs*)dd->userdata;
-	ColorObject* color_object;
-	if (source_get_color(args, &color_object) == 0){
-		return color_object;
-	}
+static ColorObject *getColorObject(DragDrop *dd) {
+	auto *args = static_cast<ColorMixerArgs *>(dd->userdata);
+	return args->getColor().copy();
+}
+static int setColorObjectAt(DragDrop *dd, ColorObject *colorObject, int, int, bool, bool) {
+	auto *args = static_cast<ColorMixerArgs *>(dd->userdata);
+	args->setActiveWidget(dd->widget);
+	args->setColor(*colorObject);
 	return 0;
 }
-static int set_color_object_at(DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool) {
-	ColorMixerArgs* args = static_cast<ColorMixerArgs*>(dd->userdata);
-	set_rgb_color(args, color_object, (uintptr_t)dd->userdata2);
-	return 0;
-}
-static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
-	ColorMixerArgs* args = new ColorMixerArgs;
+static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
+	auto *args = new ColorMixerArgs;
+	args->editable = ColorMixerArgs::Editable(args);
 	args->options = options;
-	args->statusbar = gs->getStatusBar();
+	args->statusBar = gs->getStatusBar();
+	args->gs = gs;
 	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *source))source_destroy;
-	args->source.get_color = (int (*)(ColorSource *source, ColorObject** color))source_get_color;
-	args->source.set_color = (int (*)(ColorSource *source, ColorObject* color))source_set_color;
-	args->source.deactivate = (int (*)(ColorSource *source))source_deactivate;
-	args->source.activate = (int (*)(ColorSource *source))source_activate;
+	args->source.destroy = (int (*)(ColorSource *))destroy;
+	args->source.get_color = (int (*)(ColorSource *, ColorObject **))getColor;
+	args->source.set_color = (int (*)(ColorSource *, ColorObject *))setColor;
+	args->source.deactivate = (int (*)(ColorSource *))deactivate;
+	args->source.activate = (int (*)(ColorSource *))activate;
 	GtkWidget *table, *vbox, *hbox, *widget, *hbox2;
-	hbox = gtk_hbox_new(FALSE, 0);
-	vbox = gtk_vbox_new(FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), vbox, TRUE, TRUE, 5);
-	args->color_previews = gtk_table_new(MAX_COLOR_LINES, 3, false);
-	gtk_box_pack_start(GTK_BOX(vbox), args->color_previews, true, true, 0);
+	hbox = gtk_hbox_new(false, 0);
+	vbox = gtk_vbox_new(false, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
+	args->colorPreviews = gtk_table_new(Rows, 3, false);
+	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
 	DragDrop dd;
 	dragdrop_init(&dd, gs);
 	dd.converterType = Converters::Type::display;
 	dd.userdata = args;
-	dd.get_color_object = get_color_object;
-	dd.set_color_object_at = set_color_object_at;
+	dd.get_color_object = getColorObject;
+	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
-	gtk_table_attach(GTK_TABLE(args->color_previews), widget, 1, 2, 0, 3, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 0, 0);
-	args->secondary_color = widget;
-	g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
+	gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, 1, 2, 0, Rows, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+	args->secondaryColor = widget;
+	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ColorMixerArgs::onColorActivate), args);
+	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ColorMixerArgs::onFocusEvent), args);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 	gtk_widget_set_size_request(widget, 50, 50);
 	//setup drag&drop
-	gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void*)-1;
+	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+	dd.userdata2 = (void *)-1;
 	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-
-	for (intptr_t i = 0; i < MAX_COLOR_LINES; ++i){
-		for (intptr_t j = 0; j < 2; ++j){
+	for (intptr_t i = 0; i < Rows; ++i) {
+		for (intptr_t j = 0; j < 2; ++j) {
 			widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
-
-			gtk_table_attach(GTK_TABLE(args->color_previews), widget, j * 2, j * 2 + 1, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(0), 0, 0);
-
-			if (j){
-				args->color[i].output = widget;
-			}else{
-				args->color[i].input = widget;
+			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, j * 2, j * 2 + 1, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+			if (j) {
+				args->rows[i].output = widget;
+			} else {
+				args->rows[i].input = widget;
 			}
-
-			g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(on_color_button_press), args);
-			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(on_color_activate), args);
-			g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_color_key_press), args);
-			g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_color_popup_menu), args);
-			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(color_focus_in_cb), args);
-
-			if (j == 0){
+			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ColorMixerArgs::onColorActivate), args);
+			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ColorMixerArgs::onFocusEvent), args);
+			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+			if (j == 0) {
 				//setup drag&drop
 				gtk_widget_set_size_request(widget, 30, 30);
-
-				gtk_drag_dest_set( widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void*)i;
+				gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
+				gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+				dd.userdata2 = (void *)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
-
-			}else{
+			} else {
 				gtk_widget_set_size_request(widget, 30, 30);
-
-				gtk_drag_source_set( widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void*)i;
+				gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+				dd.userdata2 = (void *)i;
 				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 			}
 		}
 	}
-
 	Color c;
 	color_set(&c, 0.5);
 	char tmp[32];
-
 	auto type_name = options->getString("mixer_type", "normal");
-	for (uint32_t j = 0; j < sizeof(color_mixer_types) / sizeof(ColorMixerType); j++){
-		if (color_mixer_types[j].unique_name == type_name){
-			args->mixer_type = &color_mixer_types[j];
+	for (uint32_t j = 0; j < sizeof(types) / sizeof(Type); j++) {
+		if (types[j].id == type_name) {
+			args->mixerType = &types[j];
 			break;
 		}
 	}
-
-	for (gint i = 0; i < MAX_COLOR_LINES; ++i){
+	for (gint i = 0; i < Rows; ++i) {
 		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->color[i].input), options->getColor(tmp, c));
+		gtk_color_set_color(GTK_COLOR(args->rows[i].input), options->getColor(tmp, c));
 	}
-	gtk_color_set_color(GTK_COLOR(args->secondary_color), options->getColor("secondary_color", c), _(args->mixer_type->name));
-
-
-	hbox2 = gtk_hbox_new(FALSE, 0);
+	gtk_color_set_color(GTK_COLOR(args->secondaryColor), options->getColor("secondary_color", c), _(args->mixerType->name));
+	hbox2 = gtk_hbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
-
 	gint table_y;
 	table = gtk_table_new(5, 2, false);
 	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);
 	table_y = 0;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Opacity:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,0,0);
-	args->opacity = gtk_hscale_new_with_range(1, 100, 1);
-	gtk_range_set_value(GTK_RANGE(args->opacity), options->getFloat("opacity", 50));
-	g_signal_connect(G_OBJECT(args->opacity), "value-changed", G_CALLBACK (update), args);
-	gtk_table_attach(GTK_TABLE(table), args->opacity, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL,0,0);
+	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Opacity:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 0, 0);
+	args->opacityRange = gtk_hscale_new_with_range(1, 100, 1);
+	gtk_range_set_value(GTK_RANGE(args->opacityRange), options->getFloat("opacity", 50));
+	g_signal_connect(G_OBJECT(args->opacityRange), "value-changed", G_CALLBACK(ColorMixerArgs::onChange), args);
+	gtk_table_attach(GTK_TABLE(table), args->opacityRange, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	table_y++;
-
-	args->preview_color_list = color_list_new();
-	args->gs = gs;
 	gtk_widget_show_all(hbox);
-	update(0, args);
+	args->update();
 	args->main = hbox;
 	args->source.widget = hbox;
-	return (ColorSource*)args;
+	return (ColorSource *)args;
 }
-
-int color_mixer_source_register(ColorSourceManager *csm)
-{
+int color_mixer_source_register(ColorSourceManager *csm) {
 	ColorSource *color_source = new ColorSource;
 	color_source_init(color_source, "color_mixer", _("Color mixer"));
-	color_source->implement = (ColorSource* (*)(ColorSource *source, GlobalState *gs, const dynv::Ref &options))source_implement;
+	color_source->implement = source_implement;
 	color_source->default_accelerator = GDK_KEY_m;
 	color_source_manager_add_source(csm, color_source);
 	return 0;

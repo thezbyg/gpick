@@ -51,18 +51,15 @@ static void status_icon_show_parent(GtkWidget *, uiStatusIcon* si)
 static void status_icon_popup(GtkStatusIcon *status_icon, guint button, guint activate_time, gpointer user_data)
 {
 	struct uiStatusIcon* si = (struct uiStatusIcon*)user_data;
-	GtkMenu *menu = GTK_MENU(gtk_menu_new());
-	GtkWidget* item = newMenuItem(_("_Show Main Window"), "gpick");
+	auto menu = gtk_menu_new();
+	auto item = newMenuItem(_("_Show Main Window"), "gpick");
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(status_icon_show_parent), si);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = newMenuItem(_("_Quit"), GTK_STOCK_QUIT);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(status_icon_destroy_parent), si);
-	gtk_widget_show_all(GTK_WIDGET(menu));
-	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, 0, 0, button, activate_time);
-	g_object_ref_sink(menu);
-	g_object_unref(menu);
+	showContextMenu(menu, nullptr);
 }
 static void status_icon_activate(GtkWidget *widget, gpointer user_data)
 {

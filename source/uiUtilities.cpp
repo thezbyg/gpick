@@ -105,3 +105,17 @@ GtkWidget *newMenuItem(const char *label, const char *iconName) {
 	gtk_image_menu_item_set_image(GTK_IMAGE_MENU_ITEM(menuItem), newIcon(iconName, IconSize::menu));
 	return menuItem;
 }
+void showContextMenu(GtkWidget *menu, GdkEventButton *event) {
+	gtk_widget_show_all(GTK_WIDGET(menu));
+	gint32 button, eventTime;
+	if (event) {
+		button = event->button;
+		eventTime = event->time;
+	} else {
+		button = 0;
+		eventTime = gtk_get_current_event_time();
+	}
+	gtk_menu_popup(GTK_MENU(menu), nullptr, nullptr, nullptr, nullptr, button, eventTime);
+	g_object_ref_sink(menu);
+	g_object_unref(menu);
+}
