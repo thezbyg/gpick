@@ -132,18 +132,18 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	GtkWidget *vbox = gtk_vbox_new(false, 5);
-	GtkWidget *hbox = gtk_hbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, true, true, 0);
-
 	GtkWidget *widget = args->color_widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
+	gtk_widget_set_size_request(widget, 30, 30);
 	if (!new_item) {
 		gtk_color_enable_split(GTK_COLOR(widget), true);
 		gtk_color_set_split_color(GTK_COLOR(widget), &color_object->getColor());
 	}
-	gtk_box_pack_start(GTK_BOX(hbox), widget, true, true, 0);
+	gtk_box_pack_start(GTK_BOX(vbox), widget, true, true, 0);
+	GtkWidget *hbox = gtk_hbox_new(false, 5);
+	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0), false, false, 0);
 
 	GtkWidget* entry = args->text_input = gtk_entry_new();
@@ -165,7 +165,12 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", nullptr};
 	addComponentEditor(vbox, "LCH", "expander.lch", GtkColorComponentComp::lch, lch_labels, args, args->lch_expander, args->lch_control);
 
-	update(args, new_item ? args->text_input : nullptr);
+	if (new_item) {
+		auto text = args->options->getString("text", "");
+		gtk_entry_set_text(GTK_ENTRY(args->text_input), text.c_str());
+	} else {
+		update(args, nullptr);
+	}
 
 	gtk_widget_show_all(vbox);
 	setDialogContent(dialog, vbox);
@@ -179,6 +184,8 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 		*new_color_object = args->color_object->reference();
 		result = 0;
 	}
+	if (new_item)
+		args->options->set("text", gtk_entry_get_text(GTK_ENTRY(entry)));
 	args->options->set<bool>("expander.rgb", gtk_expander_get_expanded(GTK_EXPANDER(args->rgb_expander)));
 	args->options->set<bool>("expander.hsv", gtk_expander_get_expanded(GTK_EXPANDER(args->hsv_expander)));
 	args->options->set<bool>("expander.hsl", gtk_expander_get_expanded(GTK_EXPANDER(args->hsl_expander)));
