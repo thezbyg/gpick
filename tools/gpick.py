@@ -173,7 +173,7 @@ class GpickEnvironment(SConsEnvironment):
 				rev_date = time.strftime("%Y-%m-%d", commit_date)
 				rev_time = time.strftime("%H:%M:%S", commit_date)
 		self.Replace(
-			GPICK_BUILD_REVISION = rev_hash,
+			GPICK_BUILD_REVISION = rev_hash[0:10],
 			GPICK_BUILD_DATE = rev_date,
 			GPICK_BUILD_TIME = rev_time,
 		);
