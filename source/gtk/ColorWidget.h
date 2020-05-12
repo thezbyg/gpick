@@ -41,6 +41,10 @@ struct GtkColorClass
 	void (*activated)(GtkWidget* widget, gpointer userdata);
 };
 GtkWidget* gtk_color_new();
+enum class ColorWidgetConfiguration {
+	standard,
+};
+GtkWidget* gtk_color_new(const Color &color, ColorWidgetConfiguration configuration);
 void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text);
 void gtk_color_set_color(GtkColor* widget, const Color &color);
 void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text);

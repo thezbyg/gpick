@@ -89,6 +89,25 @@ GtkWidget* gtk_color_new()
 #endif
 	return widget;
 }
+GtkWidget* gtk_color_new(const Color &color, ColorWidgetConfiguration configuration) {
+	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR, nullptr);
+	GtkColorPrivate *ns = GET_PRIVATE(widget);
+	new (ns) GtkColorPrivate();
+	color_set(&ns->text_color, 0);
+	color_set(&ns->split_color, 0);
+	ns->color = color;
+	ns->rounded_rectangle = true;
+	ns->h_center = true;
+	ns->secondary_color = false;
+	ns->split = false;
+	ns->roundness = 5;
+	ns->transformation_chain = 0;
+	gtk_widget_set_can_focus(widget, true);
+#if GTK_MAJOR_VERSION >= 3
+	gtk_widget_set_size_request(GTK_WIDGET(widget), 32, 16);
+#endif
+	return widget;
+}
 #if GTK_MAJOR_VERSION < 3
 static void size_request(GtkWidget *widget, GtkRequisition *requisition)
 {
