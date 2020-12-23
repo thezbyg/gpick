@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,11 +16,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_FILE_FORMAT_H_
-#define GPICK_FILE_FORMAT_H_
-#include "common/Result.h"
 #include "ErrorCode.h"
-struct ColorList;
-common::ResultVoid<ErrorCode> paletteFileSave(const char *filename, ColorList *color_list);
-common::ResultVoid<ErrorCode> paletteFileLoad(const char *filename, ColorList *color_list);
-#endif /* GPICK_FILE_FORMAT_H_ */
+#include <ostream>
+#define E(a, b) case ErrorCode::a: stream << b; break;
+std::ostream &operator<<(std::ostream &stream, const ErrorCode &errorCode) {
+	switch (errorCode) {
+	E(invalidArguments, "invalid arguments")
+	E(fileCouldNotBeOpened, "file could not be opened")
+	E(writeFailed, "write failed")
+	E(readFailed, "read failed")
+	E(badHeader, "bad header")
+	E(badVersion, "bad version")
+	E(badFile, "bad file")
+	}
+	return stream;
+}

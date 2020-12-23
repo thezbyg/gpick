@@ -1873,7 +1873,7 @@ static void app_release(AppArgs *args)
 				scoped_lock<named_mutex> lock(mutex);
 				auto autosaveFile = buildConfigPath("autosave.gpa");
 				auto autosaveFileTmp = buildConfigPath("autosave.gpa.tmp");
-				palette_file_save(autosaveFileTmp.c_str(), args->gs->getColorList());
+				paletteFileSave(autosaveFileTmp.c_str(), args->gs->getColorList());
 				boost::system::error_code error;
 				rename(path(autosaveFileTmp), path(autosaveFile), error);
 				if (error){

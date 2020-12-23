@@ -238,13 +238,11 @@ bool ImportExport::importGPL()
 	f.close();
 	return true;
 }
-bool ImportExport::importGPA()
-{
-	return palette_file_load(m_filename.c_str(), m_color_list) == 0;
+bool ImportExport::importGPA() {
+	return paletteFileLoad(m_filename.c_str(), m_color_list);
 }
-bool ImportExport::exportGPA()
-{
-	return palette_file_save(m_filename.c_str(), m_color_list) == 0;
+bool ImportExport::exportGPA() {
+	return paletteFileSave(m_filename.c_str(), m_color_list);
 }
 bool ImportExport::exportTXT()
 {

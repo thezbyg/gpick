@@ -19,8 +19,10 @@
 #include "FileFormat.h"
 #include "ColorObject.h"
 #include "ColorList.h"
+#include "ErrorCode.h"
 #include "dynv/Map.h"
 #include "common/Scoped.h"
+#include "common/Result.h"
 #include "version/Version.h"
 #include <string.h>
 #include <fstream>
@@ -86,25 +88,26 @@ static bool read(std::istream &stream, std::string &value) {
 	stream.read(reinterpret_cast<char *>(&value.front()), length);
 	return stream.good();
 }
-int palette_file_load(const char* filename, ColorList* colorList) {
+common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* colorList) {
+	using Result = common::ResultVoid<ErrorCode>;
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open())
-		return -1;
+		return Result(ErrorCode::fileCouldNotBeOpened);
 	ChunkHeader header;
 	if (!read(file, header) || !header.valid() || !header.startsWith(CHUNK_TYPE_VERSION))
-		return -1;
+		return Result(ErrorCode::readFailed);
 	if (header.size() < 4)
-		return -1;
+		return Result(ErrorCode::badHeader);
 	uint32_t version;
 	if (!read(file, version))
-		return -1;
+		return Result(ErrorCode::readFailed);
 	if (version != Version)
-		return -1;
+		return Result(ErrorCode::badVersion);
 	file.seekg(header.size() - 4, std::ios::cur);
 	if (!file.good())
-		return -1;
+		return Result(ErrorCode::readFailed);
 	if (!read(file, header) || !header.valid()) {
-		return file.eof() ? 0 : -1;
+		return file.eof() ? Result() : Result(ErrorCode::readFailed);
 	}
 	std::vector<ColorObject *> colorObjects;
 	auto releaseColorObjects = common::makeScoped(std::function<void()>([&colorObjects]() {
@@ -120,13 +123,13 @@ int palette_file_load(const char* filename, ColorList* colorList) {
 		if (header.is(CHUNK_TYPE_HANDLER_MAP)) {
 			uint32_t handlerCount;
 			if (!read(file, handlerCount))
-				return -1;
+				return Result(ErrorCode::readFailed);
 			if (handlerCount > 255)
-				return -1;
+				return Result(ErrorCode::badFile);
 			for (size_t i = 0; i < handlerCount; i++) {
 				std::string typeName;
 				if (!read(file, typeName))
-					return -1;
+					return Result(ErrorCode::readFailed);
 				typeMap[static_cast<uint8_t>(handlers.size())] = dynv::types::stringToType(typeName);
 				handlers.push_back(typeName);
 			}
@@ -135,7 +138,7 @@ int palette_file_load(const char* filename, ColorList* colorList) {
 			while (file.tellg() < end) {
 				dynv::Map options;
 				if (!options.deserialize(file, typeMap))
-					return -1;
+					return file.good() ? Result(ErrorCode::badFile) : Result(ErrorCode::readFailed);
 				auto color = options.getColor("color", Color());
 				auto name = options.getString("name", "");
 				colorObjects.push_back(new ColorObject(name, color));
@@ -145,7 +148,7 @@ int palette_file_load(const char* filename, ColorList* colorList) {
 			positions.resize(header.size() / sizeof(uint32_t));
 			file.read(reinterpret_cast<char *>(&positions.front()), positions.size() * sizeof(uint32_t));
 			if (!file.good())
-				return -1;
+				return Result(ErrorCode::readFailed);
 			for (auto &position: positions) {
 				position = boost::endian::little_to_native<uint32_t>(position);
 			}
@@ -154,13 +157,13 @@ int palette_file_load(const char* filename, ColorList* colorList) {
 			if (file.eof())
 				break;
 			if (!file.good())
-				return -1;
+				return Result(ErrorCode::readFailed);
 		}
 		if (!read(file, header) || !header.valid()) {
 			if (file.eof())
 				break;
 			else
-				return -1;
+				return Result(ErrorCode::readFailed);
 		}
 	}
 	if (hasPositions) {
@@ -175,7 +178,7 @@ int palette_file_load(const char* filename, ColorList* colorList) {
 		color_list_add_color_object(colorList, colorObject, visible);
 	}
 	file.close();
-	return file.good();
+	return (file.good() || file.eof()) ? Result() : Result(ErrorCode::readFailed);
 }
 static bool write(std::ostream &stream, uint32_t value) {
 	auto data = boost::endian::native_to_little<uint32_t>(value);
@@ -194,51 +197,52 @@ static bool write(std::ostream &stream, const std::string &value) {
 	stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
 	return stream.good();
 }
-int palette_file_save(const char* filename, ColorList* colorList) {
+common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* colorList) {
+	using Result = common::ResultVoid<ErrorCode>;
 	if (!filename || !colorList)
-		return -1;
+		return Result(ErrorCode::invalidArguments);
 	std::ofstream file(filename, std::ios::binary);
 	if (!file.is_open())
-		return -1;
+		return Result(ErrorCode::fileCouldNotBeOpened);
 	ChunkHeader header;
 	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + gpick_build_version, 4);
 	if (!write(file, header))
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	if (!write(file, Version)) // file format version
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	auto handlerMapPosition = file.tellp();
 	if (!write(file, header)) // write temporary chunk header
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	if (!write(file, static_cast<uint32_t>(2))) // handler count for colors
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	std::unordered_map<dynv::types::ValueType, uint8_t> typeMap;
 	typeMap[dynv::types::typeHandler<Color>().type] = 0;
 	if (!write(file, dynv::types::typeHandler<Color>().name))
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	typeMap[dynv::types::typeHandler<std::string>().type] = 1;
 	if (!write(file, dynv::types::typeHandler<std::string>().name))
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	auto endPosition = file.tellp();
 	file.seekp(handlerMapPosition);
 	header.prepareWrite(CHUNK_TYPE_HANDLER_MAP, endPosition - handlerMapPosition - sizeof(ChunkHeader));
 	if (!write(file, header)) // write type handler chunk header
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	file.seekp(endPosition);
 	auto colorListPosition = file.tellp();
 	if (!write(file, header)) // write temporary chunk header
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	dynv::Map options;
 	for (auto colorObject: colorList->colors) {
 		options.set("name", colorObject->getName());
 		options.set("color", colorObject->getColor());
 		if (!options.serialize(file, typeMap))
-			return -1;
+			return Result(ErrorCode::writeFailed);
 	}
 	endPosition = file.tellp();
 	file.seekp(colorListPosition);
 	header.prepareWrite(CHUNK_TYPE_COLOR_LIST, endPosition - colorListPosition - sizeof(ChunkHeader));
 	if (!write(file, header)) // write color list chunk header
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	file.seekp(endPosition);
 	color_list_get_positions(colorList);
 	std::vector<uint32_t> positions(colorList->colors.size());
@@ -248,10 +252,10 @@ int palette_file_save(const char* filename, ColorList* colorList) {
 	}
 	header.prepareWrite(CHUNK_TYPE_COLOR_POSITIONS, positions.size() * sizeof(uint32_t));
 	if (!write(file, header)) // write positions chunk header
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	file.write(reinterpret_cast<const char *>(&positions.front()), positions.size() * sizeof(uint32_t));
 	if (!file.good())
-		return -1;
+		return Result(ErrorCode::writeFailed);
 	file.close();
-	return file.good();
+	return file.good() ? Result() : Result(ErrorCode::writeFailed);
 }

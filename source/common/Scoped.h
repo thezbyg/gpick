@@ -89,7 +89,7 @@ private:
 	std::tuple<Args...> m_arguments;
 	bool m_canceled;
 };
-template<typename Callable, typename... Args>
+template<typename Callable, typename... Args, std::enable_if_t<!std::is_function<std::remove_pointer_t<Callable>>::value, int> = 0>
 auto makeScoped(Callable callable, Args... args) {
 	return Scoped<Callable, Args...>(callable, args...);
 }
