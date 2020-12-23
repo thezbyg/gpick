@@ -35,7 +35,7 @@ GTK+ 3.0 ([http://www.gtk.org](http://www.gtk.org)).
 
 Either GTK+ 2.x or GTK+ 3.x can be used.
 
-Lua 5.3 or 5.2 ([http://www.lua.org](http://www.lua.org)).
+Lua 5.4, 5.3 or 5.2 ([http://www.lua.org](http://www.lua.org)).
 
 Expat ([http://expat.sourceforge.net](http://expat.sourceforge.net)).
 
