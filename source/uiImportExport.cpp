@@ -291,7 +291,7 @@ struct ImportExportDialogOptions
 		gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
 		gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
 		gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
-		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html);
+		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html | format->type == FileType::txt);
 	}
 	static void filterChanged(GtkFileChooserDialog*, GParamSpec*, ImportExportDialogOptions *import_export_dialog)
 	{
@@ -496,7 +496,7 @@ bool ImportExportDialog::showExport()
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
-			m_gs->settings().set("gpick.import.path", path);
+			m_gs->settings().set("gpick.export.path", path);
 			g_free(path);
 			import_export_dialog_options.saveState();
 			string format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));

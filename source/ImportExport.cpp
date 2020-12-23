@@ -256,7 +256,11 @@ bool ImportExport::exportTXT()
 	ConverterSerializePosition position(ordered.size());
 	for (auto color: ordered){
 		string line = m_converter->serialize(color, position);
-		f << line << endl;
+		if (m_include_color_names) {
+			f << line << " " << color->getName() << endl;
+		} else {
+			f << line << endl;
+		}
 		position.incrementIndex();
 		if (position.index() + 1 == position.count()){
 			position.last(true);
