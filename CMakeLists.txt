@@ -74,18 +74,27 @@ endfunction()
 file(GLOB MATH_SOURCES source/MathUtil.cpp source/MathUtil.h)
 add_library(gpick-math ${MATH_SOURCES})
 set_compile_options(gpick-math)
-target_include_directories(gpick-math PRIVATE source)
+target_include_directories(gpick-math PRIVATE
+	source
+	${Boost_INCLUDE_DIRS}
+)
 
 file(GLOB COLOR_SOURCES source/Color.cpp source/Color.h)
 add_library(gpick-color ${COLOR_SOURCES})
 set_compile_options(gpick-color)
 target_link_libraries(gpick-color PRIVATE gpick-math)
-target_include_directories(gpick-color PRIVATE source)
+target_include_directories(gpick-color PRIVATE
+	source
+	${Boost_INCLUDE_DIRS}
+)
 
 file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h)
 add_library(gpick-common ${COMMON_SOURCES})
 set_compile_options(gpick-common)
-target_include_directories(gpick-common PRIVATE source)
+target_include_directories(gpick-common PRIVATE
+	source
+	${Boost_INCLUDE_DIRS}
+)
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
 add_library(gpick-dynv ${DYNV_SOURCES})
@@ -94,6 +103,7 @@ target_link_libraries(gpick-dynv PRIVATE gpick-color)
 target_include_directories(gpick-dynv PRIVATE
 	source
 	${Expat_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 )
 
 file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
@@ -105,6 +115,7 @@ target_link_libraries(gpick-lua PRIVATE
 target_include_directories(gpick-lua PRIVATE
 	source
 	${Lua_INCLUDE_DIRS}
+	${Boost_INCLUDE_DIRS}
 )
 
 file(GLOB PARSER_SOURCES source/parser/*.cpp source/parser/*.h)
@@ -112,7 +123,10 @@ ragel_target(text_file_parser source/parser/TextFileParser.rl ${CMAKE_CURRENT_BI
 list(APPEND PARSER_SOURCES ${RAGEL_text_file_parser_OUTPUTS})
 add_library(gpick-parser ${PARSER_SOURCES})
 set_compile_options(gpick-parser)
-target_include_directories(gpick-parser PRIVATE source)
+target_include_directories(gpick-parser PRIVATE
+	source
+	${Boost_INCLUDE_DIRS}
+)
 
 if (ENABLE_NLS)
 	find_package(Gettext REQUIRED)

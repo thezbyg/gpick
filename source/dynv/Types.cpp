@@ -116,9 +116,14 @@ template<> bool write(std::ostream &stream, bool value) {
 }
 template<> bool write(std::ostream &stream, float value) {
 	static_assert(sizeof(float) == 4);
+#if BOOST_VERSION >= 107100
 	uint8_t buffer[sizeof(float)];
 	boost::endian::endian_store<float, sizeof(float), boost::endian::order::little>(buffer, value);
 	stream.write(reinterpret_cast<const char *>(buffer), sizeof(float));
+#else
+	value = boost::endian::native_to_little(value);
+	stream.write(reinterpret_cast<const char *>(&value), sizeof(float));
+#endif
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, int32_t value) {
@@ -181,9 +186,15 @@ template<> std::string read(std::istream &stream) {
 }
 template<> float read(std::istream &stream) {
 	static_assert(sizeof(float) == 4);
+#if BOOST_VERSION >= 107100
 	uint8_t buffer[sizeof(float)];
 	stream.read(reinterpret_cast<char *>(buffer), sizeof(float));
 	return boost::endian::endian_load<float, sizeof(float), boost::endian::order::little>(buffer);
+#else
+	float value;
+	stream.read(reinterpret_cast<char *>(&value), sizeof(float));
+	return boost::endian::little_to_native(value);
+#endif
 }
 template<> Color read(std::istream &stream) {
 	static_assert(sizeof(float) * 4 == 16);
@@ -196,7 +207,13 @@ template<> Color read(std::istream &stream) {
 		stream.seekg(storeLength - length, std::ios::cur);
 	Color result;
 	for (int i = 0; i < 4; i++) {
+#if BOOST_VERSION >= 107100
 		result.ma[i] = boost::endian::endian_load<float, sizeof(float), boost::endian::order::little>(buffer + i * sizeof(float));
+#else
+		float value;
+		stream.read(reinterpret_cast<char *>(&value), sizeof(float));
+		result.ma[i] = boost::endian::little_to_native(value);
+#endif
 	}
 	return result;
 }
