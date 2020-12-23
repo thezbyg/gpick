@@ -121,7 +121,7 @@ struct GlobalState::Impl
 	void checkUserInitFile() {
 		namespace fs = boost::filesystem;
 		auto userInitFilePath = fs::path(buildConfigPath("user_init.lua"));
-		if (!fs::exists(fs::status(userInitFilePath)))
+		if (fs::exists(fs::status(userInitFilePath)))
 			return;
 		auto pathString = userInitFilePath.string();
 		std::ofstream newFile(pathString.c_str());
