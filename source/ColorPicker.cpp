@@ -70,6 +70,7 @@ struct ColorPickerArgs {
 	GtkWidget* expanderLAB;
 	GtkWidget* expanderLCH;
 	GtkWidget* expanderInfo;
+	GtkWidget* expanderInput;
 	GtkWidget* expanderMain;
 	GtkWidget* expanderSettings;
 	GtkWidget *swatch_display;
@@ -86,6 +87,8 @@ struct ColorPickerArgs {
 	GtkWidget *contrastCheck;
 	GtkWidget *contrastCheckMsg;
 	GtkWidget *pick_button;
+	GtkWidget *colorWidget;
+	GtkWidget *colorInput;
 	guint timeout_source_id;
 	FloatingPicker floating_picker;
 	dynv::Ref options;
@@ -183,6 +186,30 @@ struct ColorPickerArgs {
 		ColorObject colorObject;
 	};
 	boost::optional<SwatchEditable> swatchEditable;
+	struct ColorInputReadonly: public IReadonlyColorUI {
+		ColorInputReadonly(ColorPickerArgs *args):
+			args(args) {
+		}
+		virtual ~ColorInputReadonly() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			Color color;
+			gtk_color_get_color(GTK_COLOR(args->colorWidget), &color);
+			args->addToPalette(color);
+		}
+		virtual const ColorObject &getColor() override {
+			Color color;
+			gtk_color_get_color(GTK_COLOR(args->colorWidget), &color);
+			colorObject.setColor(color);
+			return colorObject;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+	private:
+		ColorPickerArgs *args;
+		ColorObject colorObject;
+	};
+	boost::optional<ColorInputReadonly> colorInputEditable;
 };
 
 struct ColorCompItem{
@@ -352,6 +379,18 @@ static gboolean on_swatch_focus_change(GtkWidget *widget, GdkEventFocus *event, 
 		gtk_swatch_set_active(GTK_SWATCH(args->swatch_display), false);
 	}
 	return FALSE;
+}
+static void onColorInputChanged(GtkWidget *entry, ColorPickerArgs *args) {
+	ColorObject *colorObject;
+	if (args->gs->converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(entry)), &colorObject)) {
+		auto color = colorObject->getColor();
+		auto text = args->gs->converters().serialize(colorObject, Converters::Type::display);
+		gtk_color_set_color(GTK_COLOR(args->colorWidget), color, text);
+		colorObject->release();
+		gtk_widget_set_sensitive(GTK_WIDGET(args->colorWidget), true);
+	} else {
+		gtk_widget_set_sensitive(GTK_WIDGET(args->colorWidget), false);
+	}
 }
 static void pick(ColorPickerArgs *args) {
 	updateMainColor(args);
@@ -644,10 +683,10 @@ static int source_destroy(ColorPickerArgs *args)
 	args->options->set<bool>("expander.lch", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderLCH)));
 	args->options->set<bool>("expander.cmyk", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderCMYK)));
 	args->options->set<bool>("expander.info", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderInfo)));
-
+	args->options->set<bool>("expander.input", gtk_expander_get_expanded(GTK_EXPANDER(args->expanderInput)));
 	gtk_color_get_color(GTK_COLOR(args->contrastCheck), &c);
 	args->options->set("contrast.color", c);
-
+	args->options->set("color_input_text", gtk_entry_get_text(GTK_ENTRY(args->colorInput)));
 	gtk_widget_destroy(args->main);
 	delete args;
 	return 0;
@@ -779,6 +818,13 @@ void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker 
 	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	args->floating_picker = floating_picker;
 }
+static ColorObject* getColorObjectForColorInput(struct DragDrop* dd) {
+	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
+	Color color;
+	gtk_color_get_color(GTK_COLOR(args->colorWidget), &color);
+	string name = color_names_get(args->gs->getColorNames(), &color, args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
+	return new ColorObject(name, color);
+}
 static ColorObject* get_color_object_contrast(struct DragDrop* dd)
 {
 	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
@@ -827,6 +873,7 @@ static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
 	ColorPickerArgs* args = new ColorPickerArgs;
 	args->swatchEditable = ColorPickerArgs::SwatchEditable(args);
+	args->colorInputEditable = ColorPickerArgs::ColorInputReadonly(args);
 
 	args->options = options;
 	args->mainOptions = gs->settings().getOrCreateMap("gpick.picker");
@@ -1082,6 +1129,41 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const
 					gtk_table_attach(GTK_TABLE(table), args->contrastCheckMsg = gtk_label_new(""),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 
 					table_y++;
+
+			expander=gtk_expander_new(_("Input"));
+			gtk_expander_set_expanded(GTK_EXPANDER(expander), options->getBool("expander.input", false));
+			args->expanderInput=expander;
+			gtk_box_pack_start(GTK_BOX(vbox), expander, false, false, 0);
+
+				table = gtk_table_new(3, 2, FALSE);
+				table_y=0;
+				gtk_container_add(GTK_CONTAINER(expander), table);
+
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
+					args->colorInput = widget = gtk_entry_new();
+					gtk_entry_set_text(GTK_ENTRY(widget), options->getString("color_input_text", "").c_str());
+					gtk_table_attach(GTK_TABLE(table), widget, 1, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+					g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(onColorInputChanged), args);
+					table_y++;
+
+					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
+					args->colorWidget = widget = gtk_color_new();
+					gtk_color_set_rounded(GTK_COLOR(widget), true);
+					gtk_color_set_hcenter(GTK_COLOR(widget), true);
+					gtk_color_set_roundness(GTK_COLOR(widget), 5);
+					gtk_widget_set_size_request(widget, 30, 30);
+					gtk_table_attach(GTK_TABLE(table), widget, 1, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+					StandardEventHandler::forWidget(widget, args->gs, &*args->colorInputEditable);
+					dragdrop_init(&dd, gs);
+					dd.converterType = Converters::Type::display;
+					dd.userdata = args;
+					dd.get_color_object = getColorObjectForColorInput;
+					gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
+					dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+					table_y++;
+
+
+	onColorInputChanged(args->colorInput, args);
 	updateDisplays(args, 0);
 	args->main = main_hbox;
 	gtk_widget_show_all(main_hbox);

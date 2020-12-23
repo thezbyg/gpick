@@ -296,7 +296,11 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 #endif
 			cairo_set_line_width(cr, 3);
 		}else{
-			cairo_set_source_rgb(cr, 0, 0, 0);
+			if (sensitive) {
+				cairo_set_source_rgb(cr, 0, 0, 0);
+			} else {
+				cairo_set_source_rgba(cr, 0, 0, 0, 0.33f);
+			}
 			cairo_set_line_width(cr, 1);
 		}
 		cairo_stroke(cr);
@@ -336,11 +340,11 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		}
 		cairo_set_color(cr, color);
 		pango_layout_set_markup(layout, ns->text.c_str(), -1);
-		pango_layout_set_width(layout, width * PANGO_SCALE);
+		pango_layout_set_width(layout, (width - 10) * PANGO_SCALE);
 		pango_layout_set_height(layout, height * PANGO_SCALE);
 		int layout_width, layout_height;
 		pango_layout_get_pixel_size(layout, &layout_width, &layout_height);
-		cairo_move_to(cr, 0, (height - layout_height) / 2);
+		cairo_move_to(cr, 5, (height - layout_height) / 2);
 		if (ns->h_center)
 			pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
 		else
