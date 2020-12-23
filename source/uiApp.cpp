@@ -1868,19 +1868,23 @@ static void app_release(AppArgs *args)
 		if (app_is_autoload_enabled(args)){
 			using namespace boost::interprocess;
 			using namespace boost::filesystem;
-			try{
+			try {
 				named_mutex mutex(open_or_create, "gpick.autosave");
 				scoped_lock<named_mutex> lock(mutex);
-				auto autosaveFile = buildConfigPath("autosave.gpa");
-				auto autosaveFileTmp = buildConfigPath("autosave.gpa.tmp");
-				paletteFileSave(autosaveFileTmp.c_str(), args->gs->getColorList());
-				boost::system::error_code error;
-				rename(path(autosaveFileTmp), path(autosaveFile), error);
-				if (error){
-					cerr << "failed to save autosave: " << error << endl;
+				auto autoSaveFile = buildConfigPath("autosave.gpa");
+				auto autoSaveFileTmp = buildConfigPath("autosave.gpa.tmp");
+				auto result = paletteFileSave(autoSaveFileTmp.c_str(), args->gs->getColorList());
+				if (!result) {
+					std::cerr << "failed to save palette to \"" << autoSaveFileTmp << "\": " << result.error() << std::endl;
+				} else {
+					boost::system::error_code error;
+					rename(path(autoSaveFileTmp), path(autoSaveFile), error);
+					if (error) {
+						std::cerr << "failed to move palette file \"" << autoSaveFileTmp << "\" to \"" << autoSaveFile << "\": " << error << std::endl;
+					}
 				}
-			}catch(const interprocess_exception &e){
-				cerr << "failed to save autosave: " << e.what() << endl;
+			} catch (const interprocess_exception &e) {
+				std::cerr << "failed acquire interprocess lock: " << e.what() << std::endl;
 			}
 		}
 	}
