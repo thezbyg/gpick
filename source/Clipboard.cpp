@@ -81,7 +81,7 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		}
 		textLine = text.str();
 		if (textLine.length() > 0)
-			gtk_selection_data_set_text(selectionData, textLine.c_str(), -1);
+			gtk_selection_data_set_text(selectionData, textLine.c_str(), textLine.length());
 	} break;
 	case Target::color: {
 		auto &colorObject = args->colors->colors.front();

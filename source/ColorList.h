@@ -48,7 +48,9 @@ int color_list_add_color_object(ColorList *color_list, const ColorObject &colorO
 int color_list_add(ColorList *color_list, ColorList *items, bool add_to_palette);
 int color_list_remove_color_object(ColorList *color_list, ColorObject *color_object);
 int color_list_remove_selected(ColorList *color_list);
-int color_list_set_selected(ColorList *color_list, bool selected);
+int color_list_remove_visited(ColorList *color_list);
+int color_list_reset_selected(ColorList *color_list);
+int color_list_reset_all(ColorList *color_list);
 int color_list_remove_all(ColorList *color_list);
 size_t color_list_get_count(ColorList *color_list);
 int color_list_get_positions(ColorList *color_list);

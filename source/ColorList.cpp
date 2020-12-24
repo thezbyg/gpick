@@ -117,9 +117,27 @@ int color_list_remove_selected(ColorList *color_list)
 	color_list->on_delete_selected(color_list);
 	return 0;
 }
-int color_list_set_selected(ColorList *color_list, bool selected) {
+int color_list_remove_visited(ColorList *color_list)
+{
+	ColorList::iter i=color_list->colors.begin();
+	while (i != color_list->colors.end()){
+		if ((*i)->isVisited()){
+			(*i)->release();
+			i = color_list->colors.erase(i);
+		}else ++i;
+	}
+	return 0;
+}
+int color_list_reset_selected(ColorList *color_list) {
 	for (auto &color : color_list->colors)
 		color->setSelected(false);
+	return 0;
+}
+int color_list_reset_all(ColorList *color_list) {
+	for (auto &color : color_list->colors) {
+		color->setSelected(false);
+		color->setVisited(false);
+	}
 	return 0;
 }
 int color_list_remove_all(ColorList *color_list)

@@ -19,7 +19,6 @@
 #include "LayoutPreview.h"
 #include "ColorSourceManager.h"
 #include "ColorSource.h"
-#include "DragDrop.h"
 #include "Converters.h"
 #include "Converter.h"
 #include "dynv/Map.h"
@@ -34,6 +33,8 @@
 #include "layout/Layouts.h"
 #include "layout/Style.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
+#include "IDroppableColorUI.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <fstream>
@@ -124,7 +125,7 @@ struct LayoutPreviewArgs {
 			return false;
 		return gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(layoutView));
 	}
-	struct Editable: IEditableColorsUI {
+	struct Editable: IEditableColorsUI, IDroppableColorUI {
 		Editable(LayoutPreviewArgs *args):
 			args(args) {
 		}
@@ -137,6 +138,13 @@ struct LayoutPreviewArgs {
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
 			args->setColor(colorObject.getColor());
+		}
+		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
+			args->select(x, y);
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
 			return args->getColor();
@@ -152,6 +160,11 @@ struct LayoutPreviewArgs {
 		}
 		virtual bool hasSelectedColor() override {
 			return args->isSelected();
+		}
+		virtual bool testDropAt(int x, int y) override {
+			return args->select(x, y);
+		}
+		virtual void dropEnd(bool move) override {
 		}
 	private:
 		LayoutPreviewArgs *args;
@@ -278,22 +291,6 @@ static int setColor(LayoutPreviewArgs *args, ColorObject *colorObject) {
 }
 static int deactivate(LayoutPreviewArgs *args) {
 	return 0;
-}
-static ColorObject *getColorObject(DragDrop *dd) {
-	auto *args = static_cast<LayoutPreviewArgs *>(dd->userdata);
-	if (!args->isSelected())
-		return nullptr;
-	return args->getColor().copy();
-}
-static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
-	auto *args = static_cast<LayoutPreviewArgs *>(dd->userdata);
-	args->select(x, y);
-	args->setColor(*colorObject);
-	return 0;
-}
-static bool testAt(struct DragDrop *dd, int x, int y) {
-	auto *args = static_cast<LayoutPreviewArgs *>(dd->userdata);
-	return args->select(x, y);
 }
 static GtkWidget *newLayoutDropdown() {
 	auto store = gtk_list_store_new(LAYOUTLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_POINTER);
@@ -464,17 +461,8 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), args->layoutView = gtk_layout_preview_new());
 	g_signal_connect_after(G_OBJECT(args->layoutView), "button-press-event", G_CALLBACK(onButtonPress), args);
 	StandardEventHandler::forWidget(args->layoutView, args->gs, &*args->editable);
+	StandardDragDropHandler::forWidget(args->layoutView, args->gs, &*args->editable);
 	table_y++;
-	struct DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
-	dd.test_at = testAt;
-	gtk_drag_dest_set(args->layoutView, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(args->layoutView, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dragdrop_widget_attach(args->layoutView, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	// Restore settings and fill list
 	auto layoutName = args->options->getString("layout_name", "std_layout_menu_1");
 	GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(layoutDropdown));

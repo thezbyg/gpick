@@ -19,7 +19,6 @@
 #include "BrightnessDarkness.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "DragDrop.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -34,6 +33,8 @@
 #include "layout/Layouts.h"
 #include "layout/Style.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
+#include "IDroppableColorUI.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
@@ -167,7 +168,7 @@ struct BrightnessDarknessArgs {
 	static void onChange(GtkWidget *, BrightnessDarknessArgs *args) {
 		args->update(false);
 	}
-	struct Editable: public IEditableColorsUI {
+	struct Editable: public IEditableColorsUI, public IDroppableColorUI {
 		Editable(BrightnessDarknessArgs *args):
 			args(args) {
 		}
@@ -179,7 +180,13 @@ struct BrightnessDarknessArgs {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setColor(colorObject);
+		}
+		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
 			return args->getColor();
@@ -196,6 +203,11 @@ struct BrightnessDarknessArgs {
 		virtual bool hasSelectedColor() override {
 			return args->isSelected();
 		}
+		virtual bool testDropAt(int, int) override {
+			return args->selectMain();
+		}
+		virtual void dropEnd(bool move) override {
+		}
 	private:
 		BrightnessDarknessArgs *args;
 	};
@@ -211,21 +223,6 @@ static int getColor(BrightnessDarknessArgs *args, ColorObject **color) {
 static int setColor(BrightnessDarknessArgs *args, ColorObject *colorObject) {
 	args->setColor(*colorObject);
 	return 0;
-}
-static ColorObject *getColorObject(struct DragDrop *dd) {
-	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
-	if (!args->isSelected())
-		return nullptr;
-	return args->getColor().copy();
-}
-static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
-	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
-	args->setColor(*colorObject);
-	return 0;
-}
-static bool testAt(struct DragDrop *dd, int x, int y) {
-	auto *args = static_cast<BrightnessDarknessArgs *>(dd->userdata);
-	return args->selectMain();
 }
 static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, BrightnessDarknessArgs *args) {
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS) {
@@ -267,13 +264,6 @@ static ColorSource *implement(ColorSource *source, GlobalState *gs, const dynv::
 	args->layoutSystem = nullptr;
 	GtkWidget *hbox, *widget;
 	hbox = gtk_hbox_new(false, 0);
-	struct DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
-	dd.test_at = testAt;
 	args->brightnessDarkness = widget = gtk_range_2d_new();
 	gtk_range_2d_set_values(GTK_RANGE_2D(widget), options->getFloat("brightness", 0.5f), options->getFloat("darkness", 0.5f));
 	gtk_range_2d_set_axis(GTK_RANGE_2D(widget), _("Brightness"), _("Darkness"));
@@ -282,12 +272,8 @@ static ColorSource *implement(ColorSource *source, GlobalState *gs, const dynv::
 	args->layoutView = widget = gtk_layout_preview_new();
 	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), args);
 	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+	StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable);
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
-	//setup drag&drop
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void *)-1;
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	auto layout = gs->layouts().byName("std_layout_brightness_darkness");
 	if (layout != nullptr) {
 		System *layoutSystem = layout->build();

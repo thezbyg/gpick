@@ -291,7 +291,7 @@ struct ImportExportDialogOptions
 		gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
 		gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
 		gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
-		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html | format->type == FileType::txt);
+		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html || format->type == FileType::txt);
 	}
 	static void filterChanged(GtkFileChooserDialog*, GParamSpec*, ImportExportDialogOptions *import_export_dialog)
 	{

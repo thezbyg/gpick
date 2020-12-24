@@ -51,8 +51,10 @@ struct Converters {
 	Converter *firstCopyOrAny() const;
 	Converter *byNameOrFirstCopy(const char *name) const;
 	std::string serialize(ColorObject *color_object, Type type);
+	std::string serialize(const ColorObject &colorObject, Type type);
 	std::string serialize(const Color &color, Type type);
 	bool deserialize(const char *value, ColorObject **color_object);
+	bool deserialize(const std::string &value, ColorObject &outputColorObject);
 	void rebuildCopyPasteArrays();
 	void reorder(const char **names, size_t count);
 	void reorder(const std::vector<std::string> &names);

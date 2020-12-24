@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,46 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_DRAG_DROP_H_
-#define GPICK_DRAG_DROP_H_
+#ifndef GPICK_STANDARD_DRAG_DROP_HANDLER_H_
+#define GPICK_STANDARD_DRAG_DROP_HANDLER_H_
+#include "IEditableColorUI.h"
+#include "IReadonlyColorUI.h"
 #include "Converters.h"
 #include <gtk/gtk.h>
-struct GlobalState;
+#include <boost/variant.hpp>
 struct ColorObject;
-enum DragDropFlags {
-	DRAGDROP_SOURCE = 1 << 1,
-	DRAGDROP_DESTINATION = 1 << 2,
-};
-struct DragDrop {
-	GtkWidget *widget;
-	void *userdata;
-	ColorObject *(*get_color_object)(DragDrop *dd);
-	int (*set_color_object_at)(DragDrop *dd, ColorObject *colorobject, int x, int y, bool move, bool sameWidget);
-	ColorObject **(*get_color_object_list)(DragDrop *dd, size_t *colorobject_n);
-	int (*set_color_object_list_at)(DragDrop *dd, ColorObject **colorobject, size_t colorobject_n, int x, int y, bool move, bool sameWidget);
-	bool (*test_at)(DragDrop *dd, int x, int y);
-	bool (*data_delete)(DragDrop *dd, GtkWidget *widget, GdkDragContext *context);
-	bool (*drag_end)(DragDrop *dd, GtkWidget *widget, GdkDragContext *context);
-	enum DataType {
-		DATA_TYPE_NONE,
-		DATA_TYPE_COLOR_OBJECT,
-		DATA_TYPE_COLOR_OBJECTS,
+struct GlobalState;
+struct StandardDragDropHandler {
+	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
+	struct Options {
+		Options();
+		Options &afterEvents(bool enable);
+		Options &supportsMove(bool enable);
+		Options &allowDrop(bool enable);
+		Options &allowDrag(bool enable);
+		Options &converterType(Converters::Type type);
+	private:
+		bool m_afterEvents, m_supportsMove, m_allowDrop, m_allowDrag;
+		Converters::Type m_converterType;
+		friend StandardDragDropHandler;
 	};
-	DataType data_type;
-	Converters::Type converterType;
-	union {
-		struct {
-			ColorObject *colorObject;
-		} colorObject;
-		struct {
-			ColorObject **colorObjects;
-			size_t colorObjectCount;
-		} colorObjects;
-	} data;
-	GtkWidget *dragwidget;
+	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options = {});
+private:
 	GlobalState *gs;
-	void *userdata2;
 };
-int dragdrop_init(DragDrop *dd, GlobalState *gs);
-int dragdrop_widget_attach(GtkWidget *widget, DragDropFlags flags, DragDrop *dd);
-#endif /* GPICK_DRAG_DROP_H_ */
+#endif /* GPICK_STANDARD_DRAG_DROP_HANDLER_H_ */

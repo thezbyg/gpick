@@ -116,14 +116,9 @@ void StandardEventHandler::forWidget(GtkWidget *widget, GlobalState *gs, Interfa
 	void *data = boost::apply_visitor([](auto *interface) -> void * {
 		return interface;
 	}, interface);
-	if (options.m_afterEvents) {
-		g_signal_connect_after(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data);
-		g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data);
-		g_signal_connect_after(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data);
-	} else {
-		g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data);
-		g_signal_connect(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data);
-		g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data);
-	}
+	auto flags = options.m_afterEvents ? G_CONNECT_AFTER : static_cast<GConnectFlags>(0);
+	g_signal_connect_data(G_OBJECT(widget), "key_press_event", G_CALLBACK(onKeyPress), data, nullptr, flags);
+	g_signal_connect_data(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), data, nullptr, flags);
+	g_signal_connect_data(G_OBJECT(widget), "popup-menu", G_CALLBACK(onPopupMenu), data, nullptr, flags);
 	g_object_set_data(G_OBJECT(widget), "gs", gs);
 }

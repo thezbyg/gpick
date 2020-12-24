@@ -20,7 +20,6 @@
 #include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "DragDrop.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -30,6 +29,7 @@
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
@@ -136,7 +136,10 @@ struct ClosestColorsArgs {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
 			return args->getColor();
@@ -189,15 +192,6 @@ static int activate(ClosestColorsArgs *args) {
 static int deactivate(ClosestColorsArgs *args) {
 	return 0;
 }
-static ColorObject *getColorObject(DragDrop *dd) {
-	auto *args = static_cast<ClosestColorsArgs *>(dd->userdata);
-	return args->getColor().copy();
-}
-static int setColorObjectAt(DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
-	auto *args = static_cast<ClosestColorsArgs *>(dd->userdata);
-	setColor(args, colorObject);
-	return 0;
-}
 ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
 	auto *args = new ClosestColorsArgs;
 	args->editable = ClosestColorsArgs::Editable(args);
@@ -216,12 +210,6 @@ ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
 	args->colorPreviews = gtk_table_new(3, 3, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
-	DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
@@ -231,13 +219,8 @@ ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::
 	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ClosestColorsArgs::onColorActivate), args);
 	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ClosestColorsArgs::onFocusEvent), args);
 	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+	StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable);
 	gtk_widget_set_size_request(widget, 30, 30);
-
-	//setup drag&drop
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void *)-1;
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < 3; ++j) {
@@ -245,18 +228,13 @@ ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
-
 			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, i, i + 1, j + 1, j + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
 			args->closestColors[i + j * 3] = widget;
-
 			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ClosestColorsArgs::onColorActivate), args);
 			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ClosestColorsArgs::onFocusEvent), args);
-
 			gtk_widget_set_size_request(widget, 30, 30);
-			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-			dd.userdata2 = reinterpret_cast<void *>(i + j * 3);
-			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
 			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+			StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable, StandardDragDropHandler::Options().allowDrop(false));
 		}
 	}
 	gtk_color_set_color(GTK_COLOR(args->targetColor), options->getColor("color", Color(0.5f)));

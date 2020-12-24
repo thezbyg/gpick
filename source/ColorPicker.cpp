@@ -22,7 +22,6 @@
 #include "ColorList.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "DragDrop.h"
 #include "Converters.h"
 #include "dynv/Map.h"
 #include "FloatingPicker.h"
@@ -38,6 +37,8 @@
 #include "uiColorInput.h"
 #include "uiConverter.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
+#include "IDroppableColorUI.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "ScreenReader.h"
@@ -134,17 +135,22 @@ struct ColorPickerArgs {
 			addToPalette(color);
 		}
 	}
-	void setColor(const Color &color) {
-		Color copy = color;
+	void setColor(const ColorObject &colorObject) {
+		Color copy = colorObject.getColor();
 		gtk_swatch_set_active_color(GTK_SWATCH(swatch_display), &copy);
 		updateDisplays(this, nullptr);
 	}
-	void setColor(ColorObject *colorObject) {
-		Color copy = colorObject->getColor();
-		gtk_swatch_set_active_color(GTK_SWATCH(swatch_display), &copy);
+	bool testDropAt(int x, int y) {
+		gint colorIndex = gtk_swatch_get_color_at(GTK_SWATCH(swatch_display), x, y);
+		return colorIndex > 0;
+	}
+	void setColorAt(const ColorObject &colorObject, int x, int y) {
+		gint colorIndex = gtk_swatch_get_color_at(GTK_SWATCH(swatch_display), x, y);
+		Color color = colorObject.getColor();
+		gtk_swatch_set_color(GTK_SWATCH(swatch_display), colorIndex, &color);
 		updateDisplays(this, nullptr);
 	}
-	struct SwatchEditable: public IEditableColorsUI {
+	struct SwatchEditable: public IEditableColorsUI, public IDroppableColorUI {
 		SwatchEditable(ColorPickerArgs *args):
 			args(args) {
 		}
@@ -156,7 +162,13 @@ struct ColorPickerArgs {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setColor(colorObject);
+		}
+		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
+			args->setColorAt(colorObject, x, y);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
 			args->getActive(colorObject);
@@ -180,6 +192,11 @@ struct ColorPickerArgs {
 		}
 		virtual bool hasSelectedColor() override {
 			return true;
+		}
+		virtual bool testDropAt(int x, int y) override {
+			return args->testDropAt(x, y);
+		}
+		virtual void dropEnd(bool move) override {
 		}
 	private:
 		ColorPickerArgs *args;
@@ -209,7 +226,38 @@ struct ColorPickerArgs {
 		ColorPickerArgs *args;
 		ColorObject colorObject;
 	};
-	boost::optional<ColorInputReadonly> colorInputEditable;
+	boost::optional<ColorInputReadonly> colorInputReadonly;
+	struct ContrastEditable: public IEditableColorUI {
+		ContrastEditable(ColorPickerArgs *args):
+			args(args) {
+		}
+		virtual ~ContrastEditable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+			Color color;
+			gtk_color_get_color(GTK_COLOR(args->contrastCheck), &color);
+			args->addToPalette(color);
+		}
+		virtual const ColorObject &getColor() override {
+			Color color;
+			gtk_color_get_color(GTK_COLOR(args->contrastCheck), &color);
+			colorObject.setColor(color);
+			return colorObject;
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+			gtk_color_set_color(GTK_COLOR(args->contrastCheck), colorObject.getColor(), _("Sample"));
+			updateDisplays(args, nullptr);
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+		virtual bool isEditable() override {
+			return true;
+		}
+	private:
+		ColorPickerArgs *args;
+		ColorObject colorObject;
+	};
+	boost::optional<ContrastEditable> contrastEditable;
 };
 
 struct ColorCompItem{
@@ -781,72 +829,22 @@ static int source_activate(ColorPickerArgs *args)
 
 	return 0;
 }
-
-static int source_deactivate(ColorPickerArgs *args){
-
+static int source_deactivate(ColorPickerArgs *args) {
 	gtk_statusbar_pop(GTK_STATUSBAR(args->statusbar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusbar), "focus_swatch"));
-
-	if (args->timeout_source_id > 0){
+	if (args->timeout_source_id > 0) {
 		g_source_remove(args->timeout_source_id);
 		args->timeout_source_id = 0;
 	}
 	return 0;
 }
-
-
-static ColorObject* get_color_object(struct DragDrop* dd){
-	ColorPickerArgs* args=(ColorPickerArgs*)dd->userdata;
-	ColorObject *color_object;
-	source_get_color(args, &color_object);
-	return color_object;
-}
-
-static int set_color_object_at(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
-{
-	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
-	Color color = color_object->getColor();
-	gtk_swatch_set_color(GTK_SWATCH(dd->widget), color_index, &color);
-	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
-	return 0;
-}
-static bool test_at(struct DragDrop* dd, int x, int y){
-	gint color_index = gtk_swatch_get_color_at(GTK_SWATCH(dd->widget), x, y);
-	if (color_index>0) return true;
-	return false;
-}
 void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker){
 	ColorPickerArgs* args = (ColorPickerArgs*)color_source;
 	args->floating_picker = floating_picker;
 }
-static ColorObject* getColorObjectForColorInput(struct DragDrop* dd) {
-	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
-	Color color;
-	gtk_color_get_color(GTK_COLOR(args->colorWidget), &color);
-	string name = color_names_get(args->gs->getColorNames(), &color, args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
-	return new ColorObject(name, color);
-}
-static ColorObject* get_color_object_contrast(struct DragDrop* dd)
-{
-	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
-	Color color;
-	gtk_color_get_color(GTK_COLOR(dd->widget), &color);
-	string name = color_names_get(args->gs->getColorNames(), &color, args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
-	return new ColorObject(name, color);
-}
-static int set_color_object_at_contrast(struct DragDrop* dd, ColorObject* color_object, int x, int y, bool, bool)
-{
-	ColorPickerArgs* args = static_cast<ColorPickerArgs*>(dd->userdata);
-	Color color = color_object->getColor();
-	gtk_color_set_color(GTK_COLOR(args->contrastCheck), &color, "Sample");
-	updateDisplays((ColorPickerArgs*)dd->userdata, 0);
-	return 0;
-}
-
 static void show_dialog_converter(GtkWidget *widget, ColorPickerArgs *args){
 	dialog_converter_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), args->gs);
 	return;
 }
-
 static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 	if (args->options->getBool("zoomed_enabled", true)){
 		gtk_zoomed_set_fade(GTK_ZOOMED(args->zoomed_display), true);
@@ -873,7 +871,8 @@ static void on_zoomed_activate(GtkWidget *widget, ColorPickerArgs *args){
 static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options){
 	ColorPickerArgs* args = new ColorPickerArgs;
 	args->swatchEditable = ColorPickerArgs::SwatchEditable(args);
-	args->colorInputEditable = ColorPickerArgs::ColorInputReadonly(args);
+	args->colorInputReadonly = ColorPickerArgs::ColorInputReadonly(args);
+	args->contrastEditable = ColorPickerArgs::ContrastEditable(args);
 
 	args->options = options;
 	args->mainOptions = gs->settings().getOrCreateMap("gpick.picker");
@@ -918,20 +917,9 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const
 			g_signal_connect(G_OBJECT(widget), "color_activated", G_CALLBACK(on_swatch_color_activated), args);
 			g_signal_connect(G_OBJECT(widget), "center_activated", G_CALLBACK(on_swatch_center_activated), args);
 			StandardEventHandler::forWidget(widget, args->gs, &*args->swatchEditable);
+			StandardDragDropHandler::forWidget(widget, args->gs, &*args->swatchEditable);
 
 			gtk_swatch_set_active_index(GTK_SWATCH(widget), options->getInt32("swatch.active_color", 1));
-
-			gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-
-			struct DragDrop dd;
-			dragdrop_init(&dd, gs);
-			dd.converterType = Converters::Type::display;
-			dd.userdata = args;
-			dd.get_color_object = get_color_object;
-			dd.set_color_object_at = set_color_object_at;
-			dd.test_at = test_at;
-			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 			{
 				char tmp[32];
@@ -1100,31 +1088,20 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const
 					widget = gtk_entry_new();
 					gtk_table_attach(GTK_TABLE(table), widget,1,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 					gtk_editable_set_editable(GTK_EDITABLE(widget), FALSE);
-					//gtk_widget_set_sensitive(GTK_WIDGET(widget), FALSE);
 					args->color_name = widget;
 					table_y++;
 
-					dragdrop_init(&dd, gs);
-					dd.converterType = Converters::Type::display;
-					dd.userdata = args;
-					dd.get_color_object = get_color_object_contrast;
-					dd.set_color_object_at = set_color_object_at_contrast;
-
 					gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Contrast:"),0,0.5,0,0),0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-					widget = gtk_color_new();
-
+					args->contrastCheck = widget = gtk_color_new();
+					StandardEventHandler::forWidget(widget, args->gs, &*args->contrastEditable);
+					StandardDragDropHandler::forWidget(widget, args->gs, &*args->contrastEditable);
 					auto color = options->getColor("contrast.color", Color(1));
 					gtk_color_set_color(GTK_COLOR(widget), color, _("Sample"));
 					gtk_color_set_rounded(GTK_COLOR(widget), true);
 					gtk_color_set_hcenter(GTK_COLOR(widget), true);
 					gtk_color_set_roundness(GTK_COLOR(widget), 5);
 					gtk_table_attach(GTK_TABLE(table), widget,1,2,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-					args->contrastCheck = widget;
 
-					gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-					gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-					dd.userdata2 = 0;
-					dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 
 					gtk_table_attach(GTK_TABLE(table), args->contrastCheckMsg = gtk_label_new(""),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,5);
 
@@ -1153,13 +1130,8 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const
 					gtk_color_set_roundness(GTK_COLOR(widget), 5);
 					gtk_widget_set_size_request(widget, 30, 30);
 					gtk_table_attach(GTK_TABLE(table), widget, 1, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-					StandardEventHandler::forWidget(widget, args->gs, &*args->colorInputEditable);
-					dragdrop_init(&dd, gs);
-					dd.converterType = Converters::Type::display;
-					dd.userdata = args;
-					dd.get_color_object = getColorObjectForColorInput;
-					gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-					dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+					StandardEventHandler::forWidget(widget, args->gs, &*args->colorInputReadonly);
+					StandardDragDropHandler::forWidget(widget, args->gs, &*args->colorInputReadonly);
 					table_y++;
 
 

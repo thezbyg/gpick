@@ -20,7 +20,6 @@
 #include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "DragDrop.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -31,6 +30,7 @@
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
@@ -222,20 +222,28 @@ struct ColorMixerArgs {
 		}
 	}
 	struct Editable: IEditableColorsUI, IMenuExtension {
-		Editable(ColorMixerArgs *args):
-			args(args) {
+		Editable(ColorMixerArgs *args, GtkWidget *widget):
+			args(args),
+			widget(widget) {
 		}
 		virtual ~Editable() = default;
 		virtual void addToPalette(const ColorObject &) override {
+			args->setActiveWidget(widget);
 			args->addToPalette();
 		}
 		virtual void addAllToPalette() override {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setActiveWidget(widget);
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setActiveWidget(widget);
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
+			args->setActiveWidget(widget);
 			return args->getColor();
 		}
 		virtual std::vector<ColorObject> getColors(bool selected) override {
@@ -244,6 +252,7 @@ struct ColorMixerArgs {
 			return colors;
 		}
 		virtual bool isEditable() override {
+			args->setActiveWidget(widget);
 			return args->isEditable();
 		}
 		virtual bool hasColor() override {
@@ -269,8 +278,9 @@ struct ColorMixerArgs {
 		}
 	private:
 		ColorMixerArgs *args;
+		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable;
+	boost::optional<Editable> editable[1 + Rows * 2];
 };
 static int destroy(ColorMixerArgs *args) {
 	Color c;
@@ -310,19 +320,8 @@ static int deactivate(ColorMixerArgs *args) {
 	args->update(true);
 	return 0;
 }
-static ColorObject *getColorObject(DragDrop *dd) {
-	auto *args = static_cast<ColorMixerArgs *>(dd->userdata);
-	return args->getColor().copy();
-}
-static int setColorObjectAt(DragDrop *dd, ColorObject *colorObject, int, int, bool, bool) {
-	auto *args = static_cast<ColorMixerArgs *>(dd->userdata);
-	args->setActiveWidget(dd->widget);
-	args->setColor(*colorObject);
-	return 0;
-}
 static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
 	auto *args = new ColorMixerArgs;
-	args->editable = ColorMixerArgs::Editable(args);
 	args->options = options;
 	args->statusBar = gs->getStatusBar();
 	args->gs = gs;
@@ -338,12 +337,6 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
 	args->colorPreviews = gtk_table_new(Rows, 3, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
-	DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
@@ -352,13 +345,10 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	args->secondaryColor = widget;
 	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ColorMixerArgs::onColorActivate), args);
 	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ColorMixerArgs::onFocusEvent), args);
-	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+	args->editable[0] = ColorMixerArgs::Editable(args, widget);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable[0]);
+	StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[0]);
 	gtk_widget_set_size_request(widget, 50, 50);
-	//setup drag&drop
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dd.userdata2 = (void *)-1;
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	for (intptr_t i = 0; i < Rows; ++i) {
 		for (intptr_t j = 0; j < 2; ++j) {
 			widget = gtk_color_new();
@@ -373,19 +363,13 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 			}
 			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ColorMixerArgs::onColorActivate), args);
 			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(ColorMixerArgs::onFocusEvent), args);
-			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
+			gtk_widget_set_size_request(widget, 30, 30);
+			args->editable[1 + i + j * Rows] = ColorMixerArgs::Editable(args, widget);
+			StandardEventHandler::forWidget(widget, args->gs, &*args->editable[1 + i + j * Rows]);
 			if (j == 0) {
-				//setup drag&drop
-				gtk_widget_set_size_request(widget, 30, 30);
-				gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-				gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void *)i;
-				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+				StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[1 + i + j * Rows]);
 			} else {
-				gtk_widget_set_size_request(widget, 30, 30);
-				gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-				dd.userdata2 = (void *)i;
-				dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+				StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[1 + i + j * Rows], StandardDragDropHandler::Options().allowDrop(false));
 			}
 		}
 	}

@@ -26,11 +26,11 @@
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
-#include "DragDrop.h"
 #include "ColorList.h"
 #include "color_names/ColorNames.h"
 #include "gtk/ColorWidget.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "I18N.h"
 #include <gdk/gdkkeysyms.h>
@@ -253,17 +253,6 @@ struct BlendColorsArgs {
 	};
 	std::vector<Editable> editables;
 };
-static ColorObject *getColorObject(struct DragDrop *dd) {
-	auto *args = static_cast<BlendColorsArgs *>(dd->userdata);
-	args->setActiveWidget(dd->widget);
-	return args->getColor().copy();
-}
-static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int, int, bool, bool) {
-	auto *args = static_cast<BlendColorsArgs *>(dd->userdata);
-	args->setActiveWidget(dd->widget);
-	args->setColor(*colorObject);
-	return 0;
-}
 static int getColor(BlendColorsArgs *args, ColorObject **color) {
 	return -1;
 }
@@ -311,35 +300,23 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	GtkWidget *table, *widget;
 	int table_y = 0;
 	table = gtk_table_new(6, 2, false);
-	struct DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->startColor = widget = gtk_color_new(args->options->getColor("start_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	StandardEventHandler::forWidget(widget, args->gs, &args->editables[0]);
+	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[0]);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Middle:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->middleColor = widget = gtk_color_new(args->options->getColor("middle_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	StandardEventHandler::forWidget(widget, args->gs, &args->editables[1]);
+	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[1]);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->endColor = widget = gtk_color_new(args->options->getColor("end_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
 	StandardEventHandler::forWidget(widget, args->gs, &args->editables[2]);
+	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[2]);
 	table_y = 0;
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"), 0, 0, 0, 0), false, false, 0);

@@ -20,7 +20,6 @@
 #include "ColorObject.h"
 #include "ColorSourceManager.h"
 #include "ColorSource.h"
-#include "DragDrop.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -35,6 +34,8 @@
 #include "I18N.h"
 #include "Random.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
+#include "IDroppableColorUI.h"
 #include "IMenuExtension.h"
 #include "color_names/ColorNames.h"
 #include <gdk/gdkkeysyms.h>
@@ -273,20 +274,28 @@ struct GenerateSchemeArgs {
 		}
 	}
 	struct Editable: IEditableColorsUI, IMenuExtension {
-		Editable(GenerateSchemeArgs *args):
-			args(args) {
+		Editable(GenerateSchemeArgs *args, GtkWidget *widget):
+			args(args),
+			widget(widget) {
 		}
 		virtual ~Editable() = default;
 		virtual void addToPalette(const ColorObject &) override {
+			args->setActiveWidget(widget);
 			args->addToPalette();
 		}
 		virtual void addAllToPalette() override {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setActiveWidget(widget);
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setActiveWidget(widget);
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
+			args->setActiveWidget(widget);
 			return args->getColor();
 		}
 		virtual std::vector<ColorObject> getColors(bool selected) override {
@@ -316,8 +325,60 @@ struct GenerateSchemeArgs {
 		}
 	private:
 		GenerateSchemeArgs *args;
+		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable;
+	boost::optional<Editable> editable[MaxColors];
+	struct ColorWheelEditable: IEditableColorUI, IDroppableColorUI {
+		ColorWheelEditable(GenerateSchemeArgs *args):
+			args(args) {
+		}
+		virtual ~ColorWheelEditable() = default;
+		virtual void addToPalette(const ColorObject &) override {
+		}
+		virtual void setColor(const ColorObject &colorObject) override {
+		}
+		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
+			int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(args->colorWheel), x, y);
+			if (!(index >= 0 && index < MaxColors))
+				return;
+			Color color, hsl;
+			float hue;
+			color = colorObject.getColor();
+			color_rgb_to_hsl(&color, &hsl);
+			int wheelType = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheelTypeCombo));
+			auto &wheel = color_wheel_types_get()[wheelType];
+			double tmp;
+			wheel.rgbhue_to_hue(hsl.hsl.hue, &tmp);
+			hue = static_cast<float>(tmp);
+			if (args->wheelLocked) {
+				float hueShift = (hue - args->items[index].originalHue) - args->items[index].hueShift;
+				hue = wrap_float(static_cast<float>(gtk_range_get_value(GTK_RANGE(args->hueRange))) / 360.0f + hueShift);
+				gtk_range_set_value(GTK_RANGE(args->hueRange), hue * 360.0f);
+			} else {
+				args->items[index].hueShift = hue - args->items[index].originalHue;
+				args->update();
+			}
+		}
+		virtual const ColorObject &getColor() override {
+			return colorObject;
+		}
+		virtual bool isEditable() override {
+			return true;
+		}
+		virtual bool hasSelectedColor() override {
+			return true;
+		}
+		virtual bool testDropAt(int x, int y) override {
+			int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(args->colorWheel), x, y);
+			return index >= 0 && index < MaxColors;
+		}
+		virtual void dropEnd(bool move) override {
+		}
+	private:
+		GenerateSchemeArgs *args;
+		ColorObject colorObject;
+	};
+	boost::optional<ColorWheelEditable> colorWheelEditable;
 };
 static void showMenu(GtkWidget *widget, GenerateSchemeArgs *args, GdkEventButton *event) {
 	auto menu = gtk_menu_new();
@@ -381,47 +442,9 @@ static int deactivate(GenerateSchemeArgs *args) {
 	args->options->set("hsv_shift", common::Span<float>(hsvShifts, MaxColors * 3));
 	return 0;
 }
-static ColorObject *getColorObject(struct DragDrop *dd) {
-	auto *args = (GenerateSchemeArgs *)dd->userdata;
-	return args->getColor().copy();
-}
-static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int, int, bool, bool) {
-	auto *args = static_cast<GenerateSchemeArgs *>(dd->userdata);
-	args->setActiveWidget(dd->widget);
-	args->setColor(*colorObject);
-	return 0;
-}
-static int setColorObjectAtColorWheel(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
-	int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(dd->widget), x, y);
-	if (!(index >= 0 && index < MaxColors))
-		return -1;
-	auto *args = static_cast<GenerateSchemeArgs *>(dd->userdata);
-	Color color, hsl;
-	float hue;
-	color = colorObject->getColor();
-	color_rgb_to_hsl(&color, &hsl);
-	int wheelType = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheelTypeCombo));
-	auto &wheel = color_wheel_types_get()[wheelType];
-	double tmp;
-	wheel.rgbhue_to_hue(hsl.hsl.hue, &tmp);
-	hue = static_cast<float>(tmp);
-	if (args->wheelLocked) {
-		float hueShift = (hue - args->items[index].originalHue) - args->items[index].hueShift;
-		hue = wrap_float(static_cast<float>(gtk_range_get_value(GTK_RANGE(args->hueRange))) / 360.0f + hueShift);
-		gtk_range_set_value(GTK_RANGE(args->hueRange), hue * 360.0f);
-	} else {
-		args->items[index].hueShift = hue - args->items[index].originalHue;
-		args->update();
-	}
-	return 0;
-}
-static bool testAtColorWheel(struct DragDrop *dd, int x, int y) {
-	int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(dd->widget), x, y);
-	return index >= 0 && index < MaxColors;
-}
 static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
 	auto *args = new GenerateSchemeArgs;
-	args->editable = GenerateSchemeArgs::Editable(args);
+	args->colorWheelEditable = GenerateSchemeArgs::ColorWheelEditable(args);
 	args->options = options;
 	args->statusBar = gs->getStatusBar();
 	args->gs = gs;
@@ -451,12 +474,6 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
 	args->colorPreviews = gtk_table_new(3, 2, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
-	struct DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
 	for (intptr_t i = 0; i < MaxColors; ++i) {
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
@@ -466,15 +483,13 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 		args->items[i].widget = widget;
 		g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(GenerateSchemeArgs::onColorActivate), args);
 		g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(GenerateSchemeArgs::onFocusEvent), args);
-		StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
-		//setup drag&drop
-		gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-		gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-		dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+		args->editable[i] = GenerateSchemeArgs::Editable(args, widget);
+		StandardEventHandler::forWidget(widget, args->gs, &*args->editable[i]);
+		StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[i]);
 	}
 	hbox2 = gtk_hbox_new(false, 5);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
-	args->colorWheel = gtk_color_wheel_new();
+	args->colorWheel = widget = gtk_color_wheel_new();
 	gtk_box_pack_start(GTK_BOX(hbox2), args->colorWheel, false, false, 0);
 	g_signal_connect(G_OBJECT(args->colorWheel), "hue_changed", G_CALLBACK(GenerateSchemeArgs::onHueChange), args);
 	g_signal_connect(G_OBJECT(args->colorWheel), "saturation_value_changed", G_CALLBACK(GenerateSchemeArgs::onSaturationChange), args);
@@ -482,11 +497,8 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	g_signal_connect(G_OBJECT(args->colorWheel), "button-press-event", G_CALLBACK(onButtonPress), args);
 	args->wheelLocked = options->getBool("wheel_locked", true);
 	gtk_color_wheel_set_block_editable(GTK_COLOR_WHEEL(args->colorWheel), !args->wheelLocked);
-	gtk_drag_dest_set(args->colorWheel, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	dd.userdata = args;
-	dd.set_color_object_at = setColorObjectAtColorWheel;
-	dd.test_at = testAtColorWheel;
-	dragdrop_widget_attach(args->colorWheel, DragDropFlags(DRAGDROP_DESTINATION), &dd);
+	StandardDragDropHandler::forWidget(widget, args->gs, &*args->colorWheelEditable, StandardDragDropHandler::Options().allowDrag(false));
+
 	gint table_y;
 	table = gtk_table_new(5, 2, false);
 	gtk_box_pack_start(GTK_BOX(hbox2), table, true, true, 0);

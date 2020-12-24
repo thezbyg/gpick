@@ -16,15 +16,19 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IEDITABLE_COLOR_UI_H_
-#define GPICK_IEDITABLE_COLOR_UI_H_
-#include "IReadonlyColorUI.h"
+#ifndef GPICK_IDROPPABLE_COLOR_UI_H_
+#define GPICK_IDROPPABLE_COLOR_UI_H_
 #include <vector>
-struct IEditableColorUI: virtual IReadonlyColorUI {
-	virtual void setColor(const ColorObject &colorObject) = 0;
-	virtual bool isEditable() = 0;
+struct ColorObject;
+struct IDraggableColorUI {
+	virtual void dragEnd(bool move) = 0;
 };
-struct IEditableColorsUI: IEditableColorUI, IReadonlyColorsUI {
-	virtual void setColors(const std::vector<ColorObject> &colorObjects) = 0;
+struct IDroppableColorUI {
+	virtual void setColorAt(const ColorObject &colorObject, int x, int y) = 0;
+	virtual bool testDropAt(int x, int y) = 0;
+	virtual void dropEnd(bool move) = 0;
 };
-#endif /* GPICK_IEDITABLE_COLOR_UI_H_ */
+struct IDroppableColorsUI: IDroppableColorUI {
+	virtual void setColorsAt(const std::vector<ColorObject> &colorObjects, int x, int y) = 0;
+};
+#endif /* GPICK_IDROPPABLE_COLOR_UI_H_ */

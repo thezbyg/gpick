@@ -149,6 +149,27 @@ Converter *Converters::byNameOrFirstCopy(const char *name) const
 	if (m_copy_converters.size() == 0) return nullptr;
 	return m_copy_converters.front();
 }
+std::string Converters::serialize(const ColorObject &colorObject, Type type) {
+	Converter *converter;
+	switch (type){
+		case Type::colorList:
+			converter = colorList();
+			break;
+		case Type::display:
+			converter = display();
+			break;
+		default:
+			converter = nullptr;
+	}
+	if (converter){
+		return converter->serialize(&colorObject);
+	}
+	converter = firstCopyOrAny();
+	if (converter){
+		return converter->serialize(&colorObject);
+	}
+	return "";
+}
 std::string Converters::serialize(ColorObject *color_object, Type type)
 {
 	Converter *converter;
@@ -211,6 +232,42 @@ bool Converters::deserialize(const char *value, ColorObject **output_color_objec
 		}
 	}
 	if (first){
+		return false;
+	}else{
+		return true;
+	}
+}
+bool Converters::deserialize(const std::string &value, ColorObject &outputColorObject) {
+	std::multimap<float, ColorObject, greater<float>> results;
+	if (m_display_converter) {
+		Converter *converter = m_display_converter;
+		if (converter->hasDeserialize()) {
+			float quality;
+			if (converter->deserialize(value.c_str(), &outputColorObject, quality)){
+				if (quality > 0){
+					results.insert(std::make_pair(quality, outputColorObject));
+				}
+			}
+		}
+	}
+	for (auto &converter: m_paste_converters) {
+		if (!converter->hasDeserialize())
+			continue;
+		float quality;
+		if (converter->deserialize(value.c_str(), &outputColorObject, quality)){
+			if (quality > 0){
+				results.insert(std::make_pair(quality, outputColorObject));
+			}
+		}
+	}
+	bool first = true;
+	for (auto result: results) {
+		if (first) {
+			first = false;
+			outputColorObject = result.second;
+		} else break;
+	}
+	if (first) {
 		return false;
 	}else{
 		return true;

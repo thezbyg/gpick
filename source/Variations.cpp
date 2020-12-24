@@ -20,7 +20,6 @@
 #include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "DragDrop.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -31,6 +30,7 @@
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
+#include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "common/Format.h"
 #include <gdk/gdkkeysyms.h>
@@ -260,20 +260,28 @@ struct VariationsArgs {
 		}
 	}
 	struct Editable: IEditableColorsUI, IMenuExtension {
-		Editable(VariationsArgs *args):
-			args(args) {
+		Editable(VariationsArgs *args, GtkWidget *widget):
+			args(args),
+			widget(widget) {
 		}
 		virtual ~Editable() = default;
 		virtual void addToPalette(const ColorObject &) override {
+			args->setActiveWidget(widget);
 			args->addToPalette();
 		}
 		virtual void addAllToPalette() override {
 			args->addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args->setActiveWidget(widget);
+			args->setColor(colorObject);
+		}
+		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
+			args->setActiveWidget(widget);
+			args->setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
+			args->setActiveWidget(widget);
 			return args->getColor();
 		}
 		virtual std::vector<ColorObject> getColors(bool selected) override {
@@ -282,6 +290,7 @@ struct VariationsArgs {
 			return colors;
 		}
 		virtual bool isEditable() override {
+			args->setActiveWidget(widget);
 			return args->isEditable();
 		}
 		virtual bool hasColor() override {
@@ -309,8 +318,9 @@ struct VariationsArgs {
 		}
 	private:
 		VariationsArgs *args;
+		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable;
+	boost::optional<Editable> editable[1 + Rows * (1 + VariantWidgets)];
 };
 static int destroy(VariationsArgs *args) {
 	Color color;
@@ -353,19 +363,8 @@ static int deactivate(VariationsArgs *args) {
 	args->update(true);
 	return 0;
 }
-static ColorObject *getColorObject(struct DragDrop *dd) {
-	auto *args = static_cast<VariationsArgs *>(dd->userdata);
-	return args->getColor().copy();
-}
-static int setColorObjectAt(struct DragDrop *dd, ColorObject *colorObject, int x, int y, bool, bool) {
-	auto *args = static_cast<VariationsArgs *>(dd->userdata);
-	args->setActiveWidget(dd->widget);
-	args->setColor(*colorObject);
-	return 0;
-}
 static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
 	auto *args = new VariationsArgs;
-	args->editable = VariationsArgs::Editable(args);
 	args->options = options;
 	args->statusBar = gs->getStatusBar();
 	args->gs = gs;
@@ -381,26 +380,18 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
 	args->colorPreviews = gtk_table_new(Rows, VariantWidgets + 1, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
-	struct DragDrop dd;
-	dragdrop_init(&dd, gs);
-	dd.converterType = Converters::Type::display;
-	dd.userdata = args;
-	dd.get_color_object = getColorObject;
-	dd.set_color_object_at = setColorObjectAt;
 	widget = gtk_color_new();
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
 	gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, VariantWidgets / 2, VariantWidgets / 2 + 1, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 0, 0);
 	args->allColors = widget;
+	gtk_widget_set_size_request(widget, 60, 30);
 	g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
 	g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
-	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
-	//setup drag&drop
-	gtk_widget_set_size_request(widget, 60, 30);
-	gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-	gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-	dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+	args->editable[0] = VariationsArgs::Editable(args, widget);
+	StandardEventHandler::forWidget(widget, args->gs, &*args->editable[0]);
+	StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[0]);
 	for (int i = 0; i < Rows; ++i) {
 		args->rows[i].type = &types[i];
 		args->rows[i].primary = widget = gtk_color_new();
@@ -408,13 +399,12 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 		gtk_color_set_hcenter(GTK_COLOR(widget), true);
 		gtk_color_set_roundness(GTK_COLOR(widget), 5);
 		gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, VariantWidgets / 2, VariantWidgets / 2 + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+		gtk_widget_set_size_request(widget, 60, 30);
 		g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
 		g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
-		StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
-		gtk_widget_set_size_request(widget, 60, 30);
-		gtk_drag_dest_set(widget, GtkDestDefaults(GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT), 0, 0, GDK_ACTION_COPY);
-		gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-		dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE | DRAGDROP_DESTINATION), &dd);
+	args->editable[1 + i] = VariationsArgs::Editable(args, widget);
+		StandardEventHandler::forWidget(widget, args->gs, &*args->editable[1 + i]);
+		StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[1 + i]);
 		for (int j = 0; j < VariantWidgets; ++j) {
 			int x = j + (j >= VariantWidgets / 2 ? 1 : 0);
 			args->rows[i].variants[j] = widget = gtk_color_new();
@@ -422,12 +412,13 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
 			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, x, x + 1, i + 1, i + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
+			gtk_widget_set_size_request(widget, 30, 30);
 			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(VariationsArgs::onColorActivate), args);
 			g_signal_connect(G_OBJECT(widget), "focus-in-event", G_CALLBACK(VariationsArgs::onFocusEvent), args);
-			StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
-			gtk_widget_set_size_request(widget, 30, 30);
-			gtk_drag_source_set(widget, GDK_BUTTON1_MASK, 0, 0, GDK_ACTION_COPY);
-			dragdrop_widget_attach(widget, DragDropFlags(DRAGDROP_SOURCE), &dd);
+			size_t index = 1 + Rows + j + i * VariantWidgets;
+			args->editable[index] = VariationsArgs::Editable(args, widget);
+			StandardEventHandler::forWidget(widget, args->gs, &*args->editable[index]);
+			StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable[index]);
 		}
 	}
 	char tmp[32];
