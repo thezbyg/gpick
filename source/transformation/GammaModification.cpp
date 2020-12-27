@@ -18,12 +18,10 @@
 
 #include "GammaModification.h"
 #include "dynv/Map.h"
-#include "../MathUtil.h"
 #include "../uiUtilities.h"
 #include "../I18N.h"
 #include <gtk/gtk.h>
-#include <math.h>
-#include <string.h>
+#include <cmath>
 namespace transformation {
 static const char *transformationId = "gamma_modification";
 const char *GammaModification::getId() {
@@ -34,12 +32,11 @@ const char *GammaModification::getName() {
 }
 void GammaModification::apply(Color *input, Color *output) {
 	Color linear_input, linear_output;
-	color_rgb_get_linear(input, &linear_input);
-	linear_output.rgb.red = pow(linear_input.rgb.red, value);
-	linear_output.rgb.green = pow(linear_input.rgb.green, value);
-	linear_output.rgb.blue = pow(linear_input.rgb.blue, value);
-	color_linear_get_rgb(&linear_output, output);
-	color_rgb_normalize(output);
+	linear_input = input->linearRgb();
+	linear_output.rgb.red = std::pow(linear_input.rgb.red, value);
+	linear_output.rgb.green = std::pow(linear_input.rgb.green, value);
+	linear_output.rgb.blue = std::pow(linear_input.rgb.blue, value);
+	*output = linear_output.nonLinearRgbInplace().normalizeRgbInplace();
 }
 GammaModification::GammaModification():
 	Transformation(transformationId, getName()) {

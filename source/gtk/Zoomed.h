@@ -21,9 +21,9 @@
 
 #include <gtk/gtk.h>
 #include <stdint.h>
-#include "../Color.h"
-#include "../Rect2.h"
-#include "../Vector2.h"
+#include "Color.h"
+#include "Rect2.h"
+#include "Vector2.h"
 
 #define GTK_TYPE_ZOOMED (gtk_zoomed_get_type())
 #define GTK_ZOOMED(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_ZOOMED, GtkZoomed))

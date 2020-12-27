@@ -44,14 +44,10 @@ struct ColorNames
 {
 	std::list<ColorNameEntry*> names;
 	std::vector<ColorEntry*> colors[SpaceDivisions][SpaceDivisions][SpaceDivisions];
-	void (*color_space_convert)(const Color* a, Color* b);
-	float (*color_space_distance)(const Color* a, const Color* b);
 };
 ColorNames* color_names_new()
 {
 	ColorNames* color_names = new ColorNames;
-	color_names->color_space_convert = color_rgb_to_lab_d50;
-	color_names->color_space_distance = color_distance_lch;
 	return color_names;
 }
 void color_names_clear(ColorNames *color_names)
@@ -91,19 +87,19 @@ void color_names_normalize(const Color &color, Color &out)
 }
 void color_names_get_color_xyz(ColorNames* color_names, Color* c, int* x1, int* y1, int* z1, int* x2, int* y2, int* z2)
 {
-	*x1 = clamp_int(int(c->xyz.x / 100 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
-	*y1 = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
-	*z1 = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
-	*x2 = clamp_int(int(c->xyz.x / 100 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
-	*y2 = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
-	*z2 = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
+	*x1 = math::clamp(int(c->xyz.x / 100 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*y1 = math::clamp(int((c->xyz.y + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*z1 = math::clamp(int((c->xyz.z + 100) / 200 * SpaceDivisions - 0.5), 0, SpaceDivisions - 1);
+	*x2 = math::clamp(int(c->xyz.x / 100 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
+	*y2 = math::clamp(int((c->xyz.y + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
+	*z2 = math::clamp(int((c->xyz.z + 100) / 200 * SpaceDivisions + 0.5), 0, SpaceDivisions - 1);
 }
 static vector<ColorEntry*>* color_names_get_color_list(ColorNames* color_names, Color* c)
 {
 	int x,y,z;
-	x = clamp_int(int(c->xyz.x / 100 * SpaceDivisions), 0, SpaceDivisions - 1);
-	y = clamp_int(int((c->xyz.y + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
-	z = clamp_int(int((c->xyz.z + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
+	x = math::clamp(int(c->xyz.x / 100 * SpaceDivisions), 0, SpaceDivisions - 1);
+	y = math::clamp(int((c->xyz.y + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
+	z = math::clamp(int((c->xyz.z + 100) / 200 * SpaceDivisions), 0, SpaceDivisions - 1);
 	return &color_names->colors[x][y][z];
 }
 int color_names_load_from_file(ColorNames* color_names, const std::string &filename)
@@ -130,14 +126,14 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 				while(++i != name.end()){
 					*i = tolower((unsigned char)*i);
 				}
-				color_multiply(&color, 1 / 255.0f);
+				color *= 1 / 255.0f;
 				ColorNameEntry* name_entry = new ColorNameEntry;
 				name_entry->name = name;
 				color_names->names.push_back(name_entry);
 				ColorEntry* color_entry = new ColorEntry;
 				color_entry->name = name_entry;
-				color_names->color_space_convert(&color, &color_entry->color);
-				color_copy(&color, &color_entry->original_color);
+				color_entry->color = color.rgbToLabD50();
+				color_entry->original_color = color;
 				color_names_get_color_list(color_names, &color_entry->color)->push_back(color_entry);
 			}
 		}
@@ -153,8 +149,7 @@ void color_names_destroy(ColorNames* color_names)
 }
 static void color_names_iterate(ColorNames* color_names, const Color* color, function<bool(ColorEntry*, float)> on_color, function<bool()> on_expansion)
 {
-	Color c1;
-	color_names->color_space_convert(color, &c1);
+	Color c1 = color->rgbToLabD50();
 	int x1, y1, z1, x2, y2, z2;
 	color_names_get_color_xyz(color_names, &c1, &x1, &y1, &z1, &x2, &y2, &z2);
 	char skip_mask[SpaceDivisions][SpaceDivisions][SpaceDivisions];
@@ -173,7 +168,7 @@ static void color_names_iterate(ColorNames* color_names, const Color* color, fun
 					if (skip_mask[x_i][y_i][z_i]) continue; // skip checked items
 					skip_mask[x_i][y_i][z_i] = 1;
 					for (auto i = color_names->colors[x_i][y_i][z_i].begin(); i != color_names->colors[x_i][y_i][z_i].end(); ++i){
-						float delta = color_names->color_space_distance(&(*i)->color, &c1);
+						float delta = Color::distanceLch((*i)->color, c1);
 						if (!on_color(*i, delta)) return;
 					}
 				}

@@ -20,8 +20,8 @@
 #define GPICK_GTK_SWATCH_H_
 
 #include <gtk/gtk.h>
-#include "../Color.h"
-#include "../transformation/Chain.h"
+#include "Color.h"
+#include "transformation/Chain.h"
 #define GTK_TYPE_SWATCH (gtk_swatch_get_type())
 #define GTK_SWATCH(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_SWATCH, GtkSwatch))
 #define GTK_SWATCH_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), GTK_SWATCH, GtkSwatchClass))

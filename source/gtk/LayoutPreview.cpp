@@ -17,12 +17,11 @@
  */
 
 #include "LayoutPreview.h"
-#include "../layout/System.h"
-#include "../transformation/Chain.h"
-#include "../Rect2.h"
+#include "layout/System.h"
+#include "transformation/Chain.h"
+#include "Rect2.h"
 #include <list>
 #include <typeinfo>
-using namespace std;
 using namespace math;
 using namespace layout;
 
@@ -118,7 +117,6 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 #if GTK_MAJOR_VERSION < 3
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event)
 {
-	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
@@ -135,7 +133,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 	gtk_widget_grab_focus(widget);
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system){
-		Vec2<float> point = Vec2<float>((event->x-ns->area.getX()) / ns->area.getWidth(), (event->y-ns->area.getY()) / ns->area.getHeight());
+		Vec2<float> point = Vec2<float>(static_cast<float>((event->x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((event->y-ns->area.getY()) / ns->area.getHeight()));
 		if (set_selected_box(ns, ns->system->GetBoxAt(point))){
 			gtk_widget_queue_draw(GTK_WIDGET(widget));
 		}
@@ -151,7 +149,7 @@ int gtk_layout_preview_set_system(GtkLayoutPreview* widget, System* system)
 	if (system){
 		ns->system = static_cast<System*>(system->ref());
 		if (ns->system->box)
-			gtk_widget_set_size_request(GTK_WIDGET(widget), ns->system->box->rect.getWidth(), ns->system->box->rect.getHeight());
+			gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->system->box->rect.getWidth()), static_cast<int>(ns->system->box->rect.getHeight()));
 	}else ns->system = 0;
 	return 0;
 }
@@ -159,10 +157,10 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
-	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
+	Vec2<float> point = Vec2<float>(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
 	Box* box = ns->system->GetBoxAt(point);
 	if (box && box->style && !box->locked){
-		color_copy(color, &box->style->color);
+		box->style->color = *color;
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}
@@ -174,7 +172,7 @@ int gtk_layout_preview_set_color_named(GtkLayoutPreview* widget, Color* color, c
 	if (!ns->system) return -1;
 	Box* box = ns->system->GetNamedBox(name);
 	if (box && box->style && !box->locked){
-		color_copy(color, &box->style->color);
+		box->style->color = *color;
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}
@@ -195,7 +193,7 @@ int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
-	Vec2<float> point = Vec2<float>((x-ns->area.getX()) / ns->area.getWidth(), (y-ns->area.getY()) / ns->area.getHeight());
+	Vec2<float> point = Vec2<float>(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
 	Box* box;
 	if (set_selected_box(ns, box = ns->system->GetBoxAt(point))){
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
@@ -217,7 +215,7 @@ int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color)
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system && ns->selected_style){
 		Box* box = ns->selected_box;
-		color_copy(&box->style->color, color);
+		*color = box->style->color;
 		return 0;
 	}
 	return -1;
@@ -227,7 +225,7 @@ int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color)
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system && ns->selected_style && !ns->selected_box->locked){
 		Box* box = ns->selected_box;
-		color_copy(color, &box->style->color);
+		box->style->color = *color;
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return 0;
 	}

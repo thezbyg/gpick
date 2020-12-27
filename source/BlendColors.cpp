@@ -20,7 +20,6 @@
 #include "ColorObject.h"
 #include "ColorSource.h"
 #include "ColorSourceManager.h"
-#include "ColorUtils.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "dynv/Map.h"
@@ -122,10 +121,7 @@ struct BlendColorsArgs {
 		Color a, b;
 		gtk_color_get_color(GTK_COLOR(args->startColor), &a);
 		gtk_color_get_color(GTK_COLOR(args->endColor), &b);
-		color_multiply(&a, 0.5f);
-		color_multiply(&b, 0.5f);
-		color_add(&a, &b);
-		gtk_color_set_color(GTK_COLOR(args->middleColor), a);
+		gtk_color_set_color(GTK_COLOR(args->middleColor), ((a.linearRgb() + b.linearRgb()) / 2.0f).nonLinearRgb());
 		args->update();
 	}
 	static void onChange(GtkWidget *, BlendColorsArgs *args) {
@@ -156,18 +152,15 @@ struct BlendColorsArgs {
 			int i = stage;
 			switch (type) {
 			case 0:
-				color_rgb_get_linear(&a, &a);
-				color_rgb_get_linear(&b, &b);
+				a.linearRgbInplace();
+				b.linearRgbInplace();
 				for (; i < steps; ++i) {
-					color_utils::mix(a, b, i / static_cast<float>(steps - 1), r);
-					color_linear_get_rgb(&r, &r);
-					add(r, i, nameAssigner);
+					r = math::mix(a, b, i / static_cast<float>(steps - 1));
+					add(r.nonLinearRgb(), i, nameAssigner);
 				}
 				break;
 			case 1: {
-				Color a_hsv, b_hsv, r_hsv;
-				color_rgb_to_hsv(&a, &a_hsv);
-				color_rgb_to_hsv(&b, &b_hsv);
+				Color a_hsv = a.rgbToHsv(), b_hsv = b.rgbToHsv();
 				if (a_hsv.hsv.hue > b_hsv.hsv.hue) {
 					if (a_hsv.hsv.hue - b_hsv.hsv.hue > 0.5)
 						a_hsv.hsv.hue -= 1;
@@ -176,27 +169,20 @@ struct BlendColorsArgs {
 						b_hsv.hsv.hue -= 1;
 				}
 				for (; i < steps; ++i) {
-					color_utils::mix(a_hsv, b_hsv, i / static_cast<float>(steps - 1), r_hsv);
-					if (r_hsv.hsv.hue < 0) r_hsv.hsv.hue += 1;
-					color_hsv_to_rgb(&r_hsv, &r);
-					add(r, i, nameAssigner);
+					r = math::mix(a_hsv, b_hsv, i / static_cast<float>(steps - 1));
+					if (r.hsv.hue < 0) r.hsv.hue += 1;
+					add(r.hsvToRgb(), i, nameAssigner);
 				}
 			} break;
 			case 2: {
-				Color a_lab, b_lab, r_lab;
-				color_rgb_to_lab_d50(&a, &a_lab);
-				color_rgb_to_lab_d50(&b, &b_lab);
+				Color a_lab = a.rgbToLabD50(), b_lab = b.rgbToLabD50();
 				for (; i < steps; ++i) {
-					color_utils::mix(a_lab, b_lab, i / static_cast<float>(steps - 1), r_lab);
-					color_lab_to_rgb_d50(&r_lab, &r);
-					color_rgb_normalize(&r);
-					add(r, i, nameAssigner);
+					r = math::mix(a_lab, b_lab, i / static_cast<float>(steps - 1));
+					add(r.labToRgbD50().normalizeRgbInplace(), i, nameAssigner);
 				}
 			} break;
 			case 3: {
-				Color a_lch, b_lch, r_lch;
-				color_rgb_to_lch_d50(&a, &a_lch);
-				color_rgb_to_lch_d50(&b, &b_lch);
+				Color a_lch = a.rgbToLchD50(), b_lch = b.rgbToLchD50();
 				if (a_lch.lch.h > b_lch.lch.h) {
 					if (a_lch.lch.h - b_lch.lch.h > 180)
 						a_lch.lch.h -= 360;
@@ -205,11 +191,9 @@ struct BlendColorsArgs {
 						b_lch.lch.h -= 360;
 				}
 				for (; i < steps; ++i) {
-					color_utils::mix(a_lch, b_lch, i / static_cast<float>(steps - 1), r_lch);
-					if (r_lch.lch.h < 0) r_lch.lch.h += 360;
-					color_lch_to_rgb_d50(&r_lch, &r);
-					color_rgb_normalize(&r);
-					add(r, i, nameAssigner);
+					r = math::mix(a_lch, b_lch, i / static_cast<float>(steps - 1));
+					if (r.lch.h < 0) r.lch.h += 360;
+					add(r.lchToRgbD50().normalizeRgbInplace(), i, nameAssigner);
 				}
 			} break;
 			}

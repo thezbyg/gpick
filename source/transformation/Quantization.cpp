@@ -92,7 +92,7 @@ GtkWidget *Quantization::Configuration::getWidget() {
 	return main;
 }
 void Quantization::Configuration::apply(dynv::Map &system) {
-	system.set<float>("value", gtk_spin_button_get_value(GTK_SPIN_BUTTON(value)));
+	system.set<float>("value", static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(value))));
 	system.set<bool>("clip-top", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(clip_top)));
 }
 }

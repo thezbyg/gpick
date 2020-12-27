@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,499 +19,470 @@
 #ifndef GPICK_COLOR_H_
 #define GPICK_COLOR_H_
 
-#include "MathUtil.h"
+#include "math/Matrix.h"
+#include "math/Vector.h"
 #include <string>
+#include <stdint.h>
 
 /** \file source/Color.h
  * \brief Color structure and functions to convert colors from one color space to another.
  */
 
-/** \struct Color
- * \brief Color structure is an union of all available color spaces.
- */
-struct Color {
-	Color();
-	Color(float grayValue);
-	Color(float red, float green, float blue);
-	bool operator==(const Color &color) const;
-	union{
-		struct{
-			float red; /**< Red component */
-			float green; /**< Green component */
-			float blue; /**< Blue component */
-		}rgb;
-		struct{
-			float hue;
-			float saturation;
-			float value;
-		}hsv;
-		struct{
-			float hue;
-			float saturation;
-			float lightness;
-		}hsl;
-		struct{
-			float x;
-			float y;
-			float z;
-		}xyz;
-		struct{
-			float L;
-			float a;
-			float b;
-		}lab;
-		struct{
-			float L;
-			float C;
-			float h;
-		}lch;
-		struct{
-			float c;
-			float m;
-			float y;
-		}cmy;
-		struct{
-			float c;
-			float m;
-			float y;
-			float k;
-		}cmyk;
-		struct{
-			float m1;
-			float m2;
-			float m3;
-			float m4;
-		}m; /**< General data access structure */
-		float ma[4]; /**< General data access array */
-	};
-};
-
 /** \enum ReferenceIlluminant
  * \brief Reference illuminants.
  */
-enum ReferenceIlluminant {
-	REFERENCE_ILLUMINANT_A = 0,
-	REFERENCE_ILLUMINANT_C = 1,
-	REFERENCE_ILLUMINANT_D50 = 2,
-	REFERENCE_ILLUMINANT_D55 = 3,
-	REFERENCE_ILLUMINANT_D65 = 4,
-	REFERENCE_ILLUMINANT_D75 = 5,
-	REFERENCE_ILLUMINANT_F2 = 6,
-	REFERENCE_ILLUMINANT_F7 = 7,
-	REFERENCE_ILLUMINANT_F11 = 8,
+enum class ReferenceIlluminant : uint8_t {
+	A = 0,
+	C = 1,
+	D50 = 2,
+	D55 = 3,
+	D65 = 4,
+	D75 = 5,
+	F2 = 6,
+	F7 = 7,
+	F11 = 8,
 };
 
 /** \enum ReferenceObserver
  * \brief Reference observers.
  */
-enum ReferenceObserver {
-	REFERENCE_OBSERVER_2 = 0,
-	REFERENCE_OBSERVER_10 = 1,
+enum class ReferenceObserver : uint8_t {
+	_2 = 0,
+	_10 = 1,
 };
 
-
-/**
- * Initialize things needed for color conversion functions. Must be called before using any other functions.
+/** \struct Color
+ * \brief Color structure is an union of all available color spaces.
  */
-void color_init();
-
-/**
- * Convert RGB color space to HSL color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in HSL color space.
- */
-void color_rgb_to_hsl(const Color* a, Color* b);
-
-/**
- * Convert HSL color space to RGB color space.
- * @param[in] a Source color in HSL color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_hsl_to_rgb(const Color* a, Color* b);
-
-/**
- * Convert HSL color space to HSV color space.
- * @param[in] a Source color in HSL color space.
- * @param[out] b Destination color in HSV color space.
- */
-void color_hsl_to_hsv(const Color *a, Color *b);
-
-/**
- * Convert HSV color space to HSL color space.
- * @param[in] a Source color in HSV color space.
- * @param[out] b Destination color in HSL color space.
- */
-void color_hsv_to_hsl(const Color *a, Color *b);
-
-/**
- * Convert RGB color space to HSV color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in HSV color space.
- */
-void color_rgb_to_hsv(const Color* a, Color* b);
-
-/**
- * Convert HSV color space to RGB color space.
- * @param[in] a Source color in HSV color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_hsv_to_rgb(const Color* a, Color* b);
-
-/**
- * Convert RGB color space to XYZ color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in XYZ color space.
- * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
- */
-void color_rgb_to_xyz(const Color* a, Color* b, const matrix3x3* transformation);
-
-/**
- * Convert XYZ color space to RGB color space.
- * @param[in] a Source color in XYZ color space.
- * @param[out] b Destination color in RGB color space.
- * @param[in] transformation_inverted Transformation matrix for XYZ to RGB conversion.
- */
-void color_xyz_to_rgb(const Color* a, Color* b, const matrix3x3* transformation_inverted);
-
-/**
- * Convert XYZ color space to Lab color space.
- * @param[in] a Source color in XYZ color space.
- * @param[out] b Destination color in Lab color space.
- * @param[in] reference_white Reference white color values.
- */
-void color_xyz_to_lab(const Color* a, Color* b, const vector3* reference_white);
-
-/**
- * Convert Lab color space to XYZ color space.
- * @param[in] a Source color in Lab color space.
- * @param[out] b Destination color in XYZ color space.
- * @param[in] reference_white Reference white color values.
- */
-void color_lab_to_xyz(const Color* a, Color* b, const vector3* reference_white);
-
-/**
- * Convert RGB color space to Lab color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in Lab color space.
- * @param[in] reference_white Reference white color values.
- * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
- * @param[in] adaptation_matrix XYZ chromatic adaptation matrix.
- */
-void color_rgb_to_lab(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix);
-
-/**
- * Convert Lab color space to RGB color space.
- * @param[in] a Source color in Lab color space.
- * @param[out] b Destination color in RGB color space.
- * @param[in] reference_white Reference white color values.
- * @param[in] transformation_inverted Transformation matrix for XYZ to RGB conversion.
- * @param[in] adaptation_matrix_inverted Inverted XYZ chromatic adaptation matrix.
- */
-void color_lab_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted);
-
-/**
- * Convert RGB color space to Lab color space with illuminant D50, observer 2, sRGB transformation matrix and D65-D50 adaptation matrix.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in Lab color space.
- */
-void color_rgb_to_lab_d50(const Color* a, Color* b);
-
-/**
- * Convert Lab color space to RGB color space with illuminant D50, observer 2, inverted sRGB transformation matrix and D50-D65 adaptation matrix.
- * @param[in] a Source color in Lab color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_lab_to_rgb_d50(const Color* a, Color* b);
-
-/**
- * Convert Lab color space to LCH color space.
- * @param[in] a Source color in Lab color space.
- * @param[out] b Destination color in LCH color space.
- */
-void color_lab_to_lch(const Color* a, Color* b);
-
-/**
- * Convert Lab color space to LCH color space.
- * @param[in] a Source color in Lab color space.
- * @param[out] b Destination color in LCH color space.
- */
-void color_lch_to_lab(const Color* a, Color* b);
-
-/**
- * Convert RGB color space to LCH color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in LCH color space.
- * @param[in] reference_white Reference white color values.
- * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
- * @param[in] adaptation_matrix XYZ chromatic adaptation matrix.
- */
-void color_rgb_to_lch(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation, const matrix3x3* adaptation_matrix);
-
-/**
- * Convert LCH color space to RGB color space.
- * @param[in] a Source color in LCH color space.
- * @param[out] b Destination color in RGB color space.
- * @param[in] reference_white Reference white color values.
- * @param[in] transformation_inverted Transformation matrix for XYZ to RGB conversion.
- * @param[in] adaptation_matrix_inverted Inverted XYZ chromatic adaptation matrix.
- */
-void color_lch_to_rgb(const Color* a, Color* b, const vector3* reference_white, const matrix3x3* transformation_inverted, const matrix3x3* adaptation_matrix_inverted);
-
-/**
- * Convert RGB color space to LCH color space with illuminant D50, observer 2, sRGB transformation matrix and D65-D50 adaptation matrix.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in LCH color space.
- */
-void color_rgb_to_lch_d50(const Color* a, Color* b);
-
-/**
- * Convert LCH color space to RGB color space with illuminant D50, observer 2, inverted sRGB transformation matrix and D50-D65 adaptation matrix.
- * @param[in] a Source color in LCH color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_lch_to_rgb_d50(const Color* a, Color* b);
-
-/**
- * Convert RGB color space to CMY color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in CMY color space.
- */
-void color_rgb_to_cmy(const Color* a, Color* b);
-
-/**
- * Convert CMY color space to RGB color space.
- * @param[in] a Source color in CMY color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_cmy_to_rgb(const Color* a, Color* b);
-
-/**
- * Convert CMY color space to CMYK color space.
- * @param[in] a Source color in CMY color space.
- * @param[out] b Destination color in CMYK color space.
- */
-void color_cmy_to_cmyk(const Color* a, Color* b);
-
-/**
- * Convert CMYK color space to CMY color space.
- * @param[in] a Source color in CMYK color space.
- * @param[out] b Destination color in CMY color space.
- */
-void color_cmyk_to_cmy(const Color* a, Color* b);
-
-/**
- * Convert RGB color space to CMYK color space.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Destination color in CMYK color space.
- */
-void color_rgb_to_cmyk(const Color* a, Color* b);
-
-/**
- * Convert CMYK color space to RGB color space.
- * @param[in] a Source color in CMYK color space.
- * @param[out] b Destination color in RGB color space.
- */
-void color_cmyk_to_rgb(const Color* a, Color* b);
-
-
-/**
- * Normalize RGB color values.
- * @param[in,out] a Color in RGB color space.
- */
-void color_rgb_normalize(Color* a);
-
-/**
- * Check whenever the color contains invalid (out of RGB gamut) value.
- * @param[in] a Color in RGB color space.
- * @return True, when color is out of RGB gamut.
- */
-bool color_is_rgb_out_of_gamut(const Color* a);
-
-/**
- * Transform RGB color to linear RGB color.
- * @param[in] a Color in RGB color space.
- * @param[out] b Linear color in RGB color space.
- */
-void color_rgb_get_linear(const Color* a, Color* b);
-
-/**
- * Transform linear RGB color to RGB color.
- * @param[in] a Linear color in RGB color space.
- * @param[out] b Color in RGB color space.
- */
-void color_linear_get_rgb(const Color* a, Color* b);
-
-/**
- * Copy color.
- * @param[in] a Source color in any color space.
- * @param[out] b Destination color.
- */
-void color_copy(const Color* a, Color* b);
-
-/**
- * Add color values.
- * @param[in,out] a Source color in any color space.
- * @param[in] b Color values.
- */
-void color_add(Color* a, const Color* b);
-
-/**
- * Multiply color values by specified amount.
- * @param[in,out] a Source color in any color space.
- * @param[in] b Multiplier.
- */
-void color_multiply(Color* a, float b);
-
-/**
- * Set all color values to zero.
- * @param[in,out] a Color to be set.
- */
-void color_zero(Color* a);
-
-/**
- * Create new Color structure.
- * @return Color structure with unspecified values.
- */
-Color* color_new();
-
-/**
- * Free memory associated with Color structure.
- * @param[in] a Color to be freed.
- */
-void color_destroy(Color* a);
-
-/**
- * Set all color values to specified value.
- * @param[in,out] a Color to be set.
- * @param[in] value Value which is used.
- */
-void color_set(Color* a, float value);
-
-/**
- * Set color values to specified values.
- * @param[in,out] a Color to be set.
- * @param[in] red Red value which is used.
- * @param[in] green Green value which is used.
- * @param[in] blue Blue value which is used.
- */
-void color_set(Color* a, float red, float green, float blue);
-
-/**
- * Set color values to specified values.
- * @param[in,out] a Color to be set.
- * @param[in] red Red value which is used.
- * @param[in] green Green value which is used.
- * @param[in] blue Blue value which is used.
- */
-void color_set(Color* a, int red, int green, int blue);
-
-/**
- * Get either black or white color depending on which has more contrast with specified color.
- * @param[in] a Source color in RGB color space.
- * @param[out] b Color with most contrast in RGB color space.
- */
-void color_get_contrasting(const Color* a, Color* b);
-
-/**
- * Calculate working space matrix.
- * @param[in] xr Red primary in x channel.
- * @param[in] yr Red primary in y channel.
- * @param[in] xg Green primary in x channel.
- * @param[in] yg Green primary in y channel.
- * @param[in] xb Blue primary in x channel.
- * @param[in] yb Blue primary in y channel.
- * @param[in] reference_white Reference white vector.
- * @param[out] result Calculated working space matrix.
- */
-void color_get_working_space_matrix(float xr, float yr, float xg, float yg, float xb, float yb, const vector3* reference_white, matrix3x3* result);
-
-/**
- * Calculate chromatic adaptation matrix from source and destination reference white vectors.
- * @param[in] source_reference_white Source reference white vector.
- * @param[in] destination_reference_white Destination reference white vector.
- * @param[out] result Calculated chromatic adaptation matrix.
- */
-void color_get_chromatic_adaptation_matrix(const vector3* source_reference_white, const vector3* destination_reference_white, matrix3x3* result);
-
-/**
- * Apply chromatic adaptation matrix to the XYZ color.
- * @param[in] a Source color in XYZ color space.
- * @param[out] result Pointer to a Color structure where the result is stored in XYZ color space.
- * @param[in] adaptation Chromatic adaptation matrix.
- * @see color_get_chromatic_adaptation_matrix.
- */
-void color_xyz_chromatic_adaptation(const Color* a, Color* result, const matrix3x3* adaptation);
-
-/**
- * Get working space matrix for sRGB.
- * @return Constant reference to sRGB working space matrix.
- */
-const matrix3x3* color_get_sRGB_transformation_matrix();
-
-/**
- * Get inverted working space matrix for sRGB.
- * @return Constant reference to inverted sRGB working space matrix.
- */
-const matrix3x3* color_get_inverted_sRGB_transformation_matrix();
-
-/**
- * Get D65 to D50 chromatic adaptation matrix.
- * @return Constant reference to chromatic adaptation matrix.
- */
-const matrix3x3* color_get_d65_d50_adaptation_matrix();
-
-/**
- * Get D50 to D65 chromatic adaptation matrix.
- * @return Constant reference to chromatic adaptation matrix.
- */
-const matrix3x3* color_get_d50_d65_adaptation_matrix();
-
-/**
- * Get reference white vector for specified illuminant and observer.
- * @param[in] illuminant Illuminant.
- * @param[in] observer Observer.
- * @return Reference white vector.
- */
-const vector3* color_get_reference(ReferenceIlluminant illuminant, ReferenceObserver observer);
-
-/**
- * Get illuminant by name.
- * @param[in] illuminant Illuminant name.
- * @return Reference illuminant.
- */
-const ReferenceIlluminant color_get_illuminant(const char *illuminant);
-const ReferenceIlluminant color_get_illuminant(const std::string &illuminant);
-
-/**
- * Get observer by name.
- * @param[in] observer Observer name.
- * @return Reference observer.
- */
-const ReferenceObserver color_get_observer(const char *observer);
-const ReferenceObserver color_get_observer(const std::string &observer);
-
-/**
- * Get distance between two colors.
- * @param[in] a First color.
- * @param[in] b Second color.
- * @return Distance.
- */
-float color_distance(const Color* a, const Color* b);
-
-/**
- * Get distance between two colors using CIE94 color difference calculation.
- * @param[in] a First color.
- * @param[in] b Second color.
- * @return Distance.
- */
-float color_distance_lch(const Color* a, const Color* b);
-
-/**
- * Check if colors are equal.
- * @param[in] a First color.
- * @param[in] b Second color.
- * @return Equality.
- */
-bool color_equal(const Color* a, const Color* b);
-
+struct Color {
+	using Matrix3d = math::Matrix3d;
+	using Vector3f = math::Vector3f;
+	using Vector3d = math::Vector3d;
+	static const int MemberCount = 4;
+	static const int ChannelCount = MemberCount;
+	static const Color white;
+	static const Color black;
+	/**
+	 * Working space matrix for sRGB.
+	 */
+	static const Matrix3d &sRGBMatrix;
+	/**
+	 * Inverted working space matrix for sRGB.
+	 */
+	static const Matrix3d &sRGBInvertedMatrix;
+	/**
+	 * D65 to D50 chromatic adaptation matrix.
+	 */
+	static const Matrix3d &d65d50AdaptationMatrix;
+	/**
+	 * D50 to D65 chromatic adaptation matrix.
+	 */
+	static const Matrix3d &d50d65AdaptationMatrix;
+	/**
+	 * Initialize things needed for color conversion functions. Must be called before using any other functions.
+	 */
+	static void initialize();
+	Color();
+	Color(const Color &color);
+	Color(float value);
+	Color(int value);
+	Color(float red, float green, float blue);
+	Color(int red, int green, int blue);
+	Color(float value1, float value2, float value3, float value4);
+	Color(const Vector3f &value);
+	Color(const Vector3d &value);
+	/**
+	 * Check if colors are equal.
+	 * @param[in] color Color in the same color space as current color.
+	 * @return True if colors are equal.
+	 */
+	bool operator==(const Color &color) const;
+	/**
+	 * Check if colors are not equal.
+	 * @param[in] color Color in the same color space as current color.
+	 * @return True if colors are not equal.
+	 */
+	bool operator!=(const Color &color) const;
+	/**
+	 * Add color values.
+	 * @param[in] color Color to be added to current color.
+	 * @return Result of two colors added together.
+	 */
+	Color operator+(const Color &color) const;
+	/**
+	 * Subtract color values.
+	 * @param[in] color Color to be subtracted from current color.
+	 * @return Result of color subtracted from current color.
+	 */
+	Color operator-(const Color &color) const;
+	/**
+	 * Add color values.
+	 * @param[in] color Color to be added to current color.
+	 * @return Result of two colors added together.
+	 */
+	Color &operator+=(const Color &color);
+	/**
+	 * Multiply color values by value.
+	 * @param[in] value Multiplier.
+	 * @return Color with all values multiplied by provided value.
+	 */
+	Color operator*(float value) const;
+	/**
+	 * Multiply color values by color values.
+	 * @param[in] color Color to multiply with.
+	 * @return Color with all values multiplied by color values.
+	 */
+	Color operator*(const Color &color) const;
+	/**
+	 * Multiply color values by color values.
+	 * @param[in] color Color to multiply with.
+	 * @return Color with all values multiplied by color values.
+	 */
+	Color &operator*=(const Color &color);
+	/**
+	 * Divide color values by value.
+	 * @param[in] value Divider.
+	 * @return Color with all values divided by provided value.
+	 */
+	Color operator/(float value) const;
+	/**
+	 * Get color value.
+	 * @param[in] index Value index.
+	 * @return Color value.
+	 */
+	float &operator[](int index);
+	/**
+	 * Get color value.
+	 * @param[in] index Value index.
+	 * @return Color value.
+	 */
+	float operator[](int index) const;
+	/**
+	 * Zero all color values.
+	 * @return Color with all values set to zero.
+	 */
+	Color &zero();
+	/**
+	 * Zero all color values.
+	 * @return Color with all values set to zero.
+	 */
+	Color zero() const;
+	/**
+	 * Transform RGB color to linear RGB color.
+	 * @return Linear color in RGB color space.
+	 */
+	Color &linearRgbInplace();
+	/**
+	 * Transform RGB color to linear RGB color.
+	 * @return Linear color in RGB color space.
+	 */
+	Color linearRgb() const;
+	/**
+	 * Transform linear RGB color to RGB color.
+	 * @return Color in RGB color space.
+	 */
+	Color &nonLinearRgbInplace();
+	/**
+	 * Transform linear RGB color to RGB color.
+	 * @return Color in RGB color space.
+	 */
+	Color nonLinearRgb() const;
+	/**
+	 * Set all color values to absolute values.
+	 * @return Color with absolute values.
+	 */
+	Color absolute() const;
+	/**
+	 * Set all color values to absolute values.
+	 * @return Color with absolute values.
+	 */
+	Color &absoluteInplace();
+	/**
+	 * Convert RGB color space to HSL color space.
+	 * @return Color in HSL color space.
+	 */
+	Color rgbToHsl() const;
+	/**
+	 * Convert HSL color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color hslToRgb() const;
+	/**
+	 * Convert HSL color space to HSV color space.
+	 * @return Color in HSV color space.
+	 */
+	Color hslToHsv() const;
+	/**
+	 * Convert HSV color space to HSL color space.
+	 * @return Color in HSL color space.
+	 */
+	Color hsvToHsl() const;
+	/**
+	 * Convert RGB color space to HSV color space.
+	 * @return Color in HSV color space.
+	 */
+	Color rgbToHsv() const;
+	/**
+	 * Convert HSV color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color hsvToRgb() const;
+	/**
+	 * Convert RGB color space to XYZ color space.
+	 * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
+	 * @return Color in XYZ color space.
+	 */
+	Color rgbToXyz(const Matrix3d &transformation) const;
+	/**
+	 * Convert XYZ color space to RGB color space.
+	 * @param[in] transformationInverted Transformation matrix for XYZ to RGB conversion.
+	 * @return Color in RGB color space.
+	 */
+	Color xyzToRgb(const Matrix3d &transformationInverted) const;
+	/**
+	 * Convert XYZ color space to Lab color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @return Color in LAB color space.
+	 */
+	Color xyzToLab(const Vector3f &referenceWhite) const;
+	/**
+	 * Convert Lab color space to XYZ color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @return Color in XYZ  color space.
+	 */
+	Color labToXyz(const Vector3f &referenceWhite) const;
+	/**
+	 * Convert RGB color space to Lab color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
+	 * @param[in] adaptationMatrix XYZ chromatic adaptation matrix.
+	 * @return Color in LAB color space.
+	 */
+	Color rgbToLab(const Vector3f &referenceWhite, const Matrix3d &transformation, const Matrix3d &adaptationMatrix) const;
+	/**
+	 * Convert Lab color space to RGB color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @param[in] transformationInverted Transformation matrix for XYZ to RGB conversion.
+	 * @param[in] adaptationMatrixInverted Inverted XYZ chromatic adaptation matrix.
+	 * @return Color in RGB color space.
+	 */
+	Color labToRgb(const Vector3f &referenceWhite, const Matrix3d &transformationInverted, const Matrix3d &adaptationMatrixInverted) const;
+	/**
+	 * Convert RGB color space to Lab color space with illuminant D50, observer 2, sRGB transformation matrix and D65-D50 adaptation matrix.
+	 * @return Color in LAB color space.
+	 */
+	Color rgbToLabD50() const;
+	/**
+	 * Convert Lab color space to RGB color space with illuminant D50, observer 2, inverted sRGB transformation matrix and D50-D65 adaptation matrix.
+	 * @return Color in RGB color space.
+	 */
+	Color labToRgbD50() const;
+	/**
+	 * Convert Lab color space to LCH color space.
+	 * @return Color in LCH color space.
+	 */
+	Color labToLch() const;
+	/**
+	 * Convert Lab color space to LCH color space.
+	 * @return Color in LAB color space.
+	 */
+	Color lchToLab() const;
+	/**
+	 * Convert RGB color space to LCH color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @param[in] transformation Transformation matrix for RGB to XYZ conversion.
+	 * @param[in] adaptationMatrix XYZ chromatic adaptation matrix.
+	 * @return Color in LCH color space.
+	 */
+	Color rgbToLch(const Vector3f &referenceWhite, const Matrix3d &transformation, const Matrix3d &adaptationMatrix) const;
+	/**
+	 * Convert LCH color space to RGB color space.
+	 * @param[in] referenceWhite Reference white color values.
+	 * @param[in] transformationInverted Transformation matrix for XYZ to RGB conversion.
+	 * @param[in] adaptationMatrixInverted Inverted XYZ chromatic adaptation matrix.
+	 * @return Color in RGB color space.
+	 */
+	Color lchToRgb(const Vector3f &referenceWhite, const Matrix3d &transformationInverted, const Matrix3d &adaptationMatrixInverted) const;
+	/**
+	 * Convert RGB color space to LCH color space with illuminant D50, observer 2, sRGB transformation matrix and D65-D50 adaptation matrix.
+	 * @return Color in LCH color space.
+	 */
+	Color rgbToLchD50() const;
+	/**
+	 * Convert LCH color space to RGB color space with illuminant D50, observer 2, inverted sRGB transformation matrix and D50-D65 adaptation matrix.
+	 * @return Color in RGB color space.
+	 */
+	Color lchToRgbD50() const;
+	/**
+	 * Convert RGB color space to CMY color space.
+	 * @return Color in CMY color space.
+	 */
+	Color rgbToCmy() const;
+	/**
+	 * Convert CMY color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color cmyToRgb() const;
+	/**
+	 * Convert CMY color space to CMYK color space.
+	 * @return Color in CMYK color space.
+	 */
+	Color cmyToCmyk() const;
+	/**
+	 * Convert CMYK color space to CMY color space.
+	 * @return Color in CMY color space.
+	 */
+	Color cmykToCmy() const;
+	/**
+	 * Convert RGB color space to CMYK color space.
+	 * @return Color in CMYK color space.
+	 */
+	Color rgbToCmyk() const;
+	/**
+	 * Convert CMYK color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color cmykToRgb() const;
+	/**
+	 * Normalize RGB color values.
+	 * @return Color with normalized RGB values.
+	 */
+	Color &normalizeRgbInplace();
+	/**
+	 * Normalize RGB color values.
+	 * @return Color with normalized RGB values.
+	 */
+	Color normalizeRgb() const;
+	/**
+	 * Check whenever the color contains invalid (out of RGB gamut) value.
+	 * @return True, when color is out of RGB gamut.
+	 */
+	bool isOutOfRgbGamut() const;
+	/**
+	 * Get either black or white color depending on which has more contrast with specified color.
+	 * @return Color with most contrast in RGB color space.
+	 */
+	const Color &getContrasting() const;
+	/**
+	 * Get RGB values as vector.
+	 * @return RGB value vector.
+	 */
+	template<typename T>
+	math::Vector<T, 3> rgbVector() const;
+	/**
+	 * Get distance between two colors.
+	 * @param[in] a First color in RGB color space.
+	 * @param[in] b Second color in RGB color space.
+	 * @return Distance.
+	 */
+	static float distance(const Color &a, const Color &b);
+	/**
+	 * Get distance between two colors using CIE94 color difference calculation.
+	 * @param[in] a First color in LAB color space.
+	 * @param[in] b Second color in LAB color space.
+	 * @return Distance.
+	 */
+	static float distanceLch(const Color &a, const Color &b);
+	/**
+	 * Mix two colors together.
+	 * @param[in] a First color in linear RGB color space.
+	 * @param[in] b Second color in linear RGB color space.
+	 * @param[in] ratio The amount of second color to mix into first color.
+	 * @return Mixed color.
+	 */
+	static Color mix(const Color &a, const Color &b, float ratio = 0.5f);
+	/**
+	 * Get reference white vector for specified illuminant and observer.
+	 * @param[in] illuminant Illuminant.
+	 * @param[in] observer Observer.
+	 * @return Reference white vector.
+	 */
+	static const Vector3f &getReference(ReferenceIlluminant illuminant, ReferenceObserver observer);
+	/**
+	 * Get illuminant by name.
+	 * @param[in] illuminant Illuminant name.
+	 * @return Reference illuminant.
+	 */
+	static ReferenceIlluminant getIlluminant(const std::string &illuminant);
+	/**
+	 * Get observer by name.
+	 * @param[in] observer Observer name.
+	 * @return Reference observer.
+	 */
+	static ReferenceObserver getObserver(const std::string &observer);
+	/**
+	 * Calculate working space matrix.
+	 * @param[in] xr Red primary in x channel.
+	 * @param[in] yr Red primary in y channel.
+	 * @param[in] xg Green primary in x channel.
+	 * @param[in] yg Green primary in y channel.
+	 * @param[in] xb Blue primary in x channel.
+	 * @param[in] yb Blue primary in y channel.
+	 * @param[in] referenceWhite Reference white vector.
+	 * @return Calculated working space matrix.
+	 */
+	static Matrix3d getWorkingSpaceMatrix(float xr, float yr, float xg, float yg, float xb, float yb, const Vector3f &referenceWhite);
+	/**
+	 * Calculate chromatic adaptation matrix from source and destination reference white vectors.
+	 * @param[in] sourceReference_white Source reference white vector.
+	 * @param[in] destinationReferenceWhite Destination reference white vector.
+	 * @return Calculated chromatic adaptation matrix.
+	 */
+	static Matrix3d getChromaticAdaptationMatrix(const Vector3f &sourceReferenceWhite, const Vector3f &destinationReferenceWhite);
+	/**
+	 * Apply chromatic adaptation matrix to the XYZ color.
+	 * @param[in] adaptation Chromatic adaptation matrix.
+	 * @return Color with applied chromatic adaptation.
+	 * @see getChromaticAdaptationMatrix.
+	 */
+	Color xyzChromaticAdaptation(const Matrix3d &adaptation) const;
+	union {
+		struct {
+			union {
+				struct {
+					float red; /**< Red component */
+					float green; /**< Green component */
+					float blue; /**< Blue component */
+				} rgb;
+				struct {
+					float hue;
+					float saturation;
+					float value;
+				} hsv;
+				struct {
+					float hue;
+					float saturation;
+					float lightness;
+				} hsl;
+				struct {
+					float x;
+					float y;
+					float z;
+				} xyz;
+				struct {
+					float L;
+					float a;
+					float b;
+				} lab;
+				struct {
+					float L;
+					float C;
+					float h;
+				} lch;
+				struct {
+					float c;
+					float m;
+					float y;
+				} cmy;
+				struct {
+					float c;
+					float m;
+					float y;
+					float k;
+				} cmyk;
+			};
+		};
+		float data[MemberCount]; /**< General data access array */
+	};
+};
 #endif /* GPICK_COLOR_H_ */

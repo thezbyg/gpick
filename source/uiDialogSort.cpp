@@ -80,57 +80,39 @@ static double sort_rgb_grayscale(Color *color)
 }
 static double sort_hsl_hue(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.hue;
+	return color->rgbToHsl().hsl.hue;
 }
 static double sort_hsl_saturation(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.saturation;
+	return color->rgbToHsl().hsl.saturation;
 }
 static double sort_hsl_lightness(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.lightness;
+	return color->rgbToHsl().hsl.lightness;
 }
 static double sort_lab_lightness(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return lab.lab.L;
+	return color->rgbToLabD50().lab.L;
 }
 static double sort_lab_a(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return lab.lab.a;
+	return color->rgbToLabD50().lab.a;
 }
 static double sort_lab_b(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return lab.lab.b;
+	return color->rgbToLabD50().lab.b;
 }
 static double sort_lch_lightness(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.L;
+	return color->rgbToLchD50().lch.L;
 }
 static double sort_lch_chroma(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.C;
+	return color->rgbToLchD50().lch.C;
 }
 static double sort_lch_hue(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.h;
+	return color->rgbToLchD50().lch.h;
 }
 
 const SortType sort_types[] = {
@@ -167,57 +149,39 @@ static double group_rgb_grayscale(Color *color)
 }
 static double group_hsl_hue(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.hue;
+	return color->rgbToHsl().hsl.hue;
 }
 static double group_hsl_saturation(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.saturation;
+	return color->rgbToHsl().hsl.saturation;
 }
 static double group_hsl_lightness(Color *color)
 {
-	Color hsl;
-	color_rgb_to_hsl(color, &hsl);
-	return hsl.hsl.lightness;
+	return color->rgbToHsl().hsl.lightness;
 }
 static double group_lab_lightness(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return lab.lab.L / 100.0;
+	return color->rgbToLabD50().lab.L / 100.0;
 }
 static double group_lab_a(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return (lab.lab.a + 145) / 290.0;
+	return (color->rgbToLabD50().lab.a + 145) / 290.0;
 }
 static double group_lab_b(Color *color)
 {
-	Color lab;
-	color_rgb_to_lab_d50(color, &lab);
-	return (lab.lab.b + 145) / 290.0;
+	return (color->rgbToLabD50().lab.b + 145) / 290.0;
 }
 static double group_lch_lightness(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.L / 100.0;
+	return color->rgbToLchD50().lch.L / 100.0;
 }
 static double group_lch_chroma(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.C / 136.0;
+	return color->rgbToLchD50().lch.C / 136.0;
 }
 static double group_lch_hue(Color *color)
 {
-	Color lch;
-	color_rgb_to_lch_d50(color, &lch);
-	return lch.lch.h / 360.0;
+	return color->rgbToLchD50().lch.h / 360.0;
 }
 
 const GroupType group_types[] = {
@@ -428,8 +392,8 @@ static void node_update(Node *node, Range *range, double value, uint32_t max_dep
 
 static void calc(DialogSortArgs *args, bool preview, int limit){
 	int32_t group_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->group_type));
-	float group_sensitivity = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->group_sensitivity));
-	int max_groups = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->max_groups));
+	float group_sensitivity = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->group_sensitivity)));
+	int max_groups = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->max_groups)));
 	int32_t sort_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->sort_type));
 	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
 	bool reverse_groups = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups));

@@ -139,28 +139,27 @@ struct BrightnessDarknessArgs {
 			options->set("brightness", brightness);
 			options->set("darkness", brightness);
 		}
-		Color hslOriginal, hsl, r;
-		color_rgb_to_hsl(&color, &hslOriginal);
+		Color hslOriginal = color.rgbToHsl(), hsl, r;
 		Box *box;
 		std::string name;
 		if (layoutSystem == nullptr)
 			return;
 		for (int i = 1; i <= 4; i++) {
-			color_copy(&hslOriginal, &hsl);
-			hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 1, brightness), i / 4.0f);
-			color_hsl_to_rgb(&hsl, &r);
+			hsl = hslOriginal;
+			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 1.0f, brightness), i / 4.0f);
+			r = hsl.hslToRgb();
 			name = format('b', i);
 			box = layoutSystem->GetNamedBox(name.c_str());
 			if (box && box->style) {
-				color_copy(&r, &box->style->color);
+				box->style->color = r;
 			}
-			color_copy(&hslOriginal, &hsl);
-			hsl.hsl.lightness = mix_float(hsl.hsl.lightness, mix_float(hsl.hsl.lightness, 0, darkness), i / 4.0f);
-			color_hsl_to_rgb(&hsl, &r);
+			hsl = hslOriginal;
+			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 0.0f, darkness), i / 4.0f);
+			r = hsl.hslToRgb();
 			name = format('c', i);
 			box = layoutSystem->GetNamedBox(name.c_str());
 			if (box && box->style) {
-				color_copy(&r, &box->style->color);
+				box->style->color = r;
 			}
 		}
 		gtk_widget_queue_draw(GTK_WIDGET(layoutView));

@@ -19,7 +19,6 @@
 #include "uiDialogAutonumber.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
-#include "MathUtil.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ColorRYB.h"
@@ -57,8 +56,8 @@ static int default_nplaces(uint32_t selected_count)
 }
 static void update(GtkWidget *widget, DialogAutonumberArgs *args)
 {
-	int nplaces = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->nplaces));
-	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
+	int nplaces = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->nplaces)));
+	int startindex = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->startindex)));
 	const char *name = gtk_entry_get_text(GTK_ENTRY(args->name));
 	stringstream ss;
 	ss << name << "-";
@@ -75,7 +74,7 @@ static void update(GtkWidget *widget, DialogAutonumberArgs *args)
 }
 static void update_startindex(GtkWidget *widget, DialogAutonumberArgs *args)
 {
-	int startindex = gtk_spin_button_get_value (GTK_SPIN_BUTTON(args->startindex));
+	int startindex = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->startindex)));
 	int newindex;
 	gdouble min, max;
 	gtk_spin_button_get_range(GTK_SPIN_BUTTON(args->startindex), &min, &max);

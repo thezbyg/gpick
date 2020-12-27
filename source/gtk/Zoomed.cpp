@@ -17,14 +17,12 @@
  */
 
 #include "Zoomed.h"
-#include "../Color.h"
-#include "../MathUtil.h"
-#include <math.h>
+#include "Color.h"
+#include "MathUtil.h"
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
 #include <vector>
-using namespace std;
 
 #define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
 G_DEFINE_TYPE(GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA);
@@ -35,15 +33,13 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 #else
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
 #endif
-enum
-{
+enum {
 	COLOR_CHANGED,
 	ACTIVATED,
 	LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = { 0 };
-struct GtkZoomedPrivate
-{
+struct GtkZoomedPrivate {
 	Color color;
 	gfloat zoom;
 	cairo_surface_t *surface;
@@ -222,7 +218,7 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 	gint32 xh = (((position.x + 1) - left) * ns->width_height) / area_width;
 	gint32 yl = ((position.y - top) * ns->width_height) / area_width;
 	gint32 yh = (((position.y + 1) - top) * ns->width_height) / area_width;
-	math::Vec2<int> result((xl + xh) / 2.0, (yl + yh) / 2.0);
+	math::Vec2<int> result(static_cast<int>((xl + xh) / 2.0f), static_cast<int>((yl + yh) / 2.0f));
 	return result;
 }
 void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface)
@@ -258,8 +254,8 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<
 	gint32 xh = (((x + 1) - left) * ns->width_height) / area_width;
 	gint32 yl = ((y - top) * ns->width_height) / area_width;
 	gint32 yh = (((y + 1) - top) * ns->width_height) / area_width;
-	ns->point.x = (xl + xh) / 2.0;
-	ns->point.y = (yl + yh) / 2.0;
+	ns->point.x = (xl + xh) / 2.0f;
+	ns->point.y = (yl + yh) / 2.0f;
 	ns->point_size.x = xh - xl;
 	ns->point_size.y = yh - yl;
 	int width = right - left;
@@ -303,8 +299,8 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	gint pixbuf_y = -padding_y;
 #endif
 	if (ns->surface){
-		gint pixbuf_width = min(ns->width_height - pixbuf_x, ns->width_height);
-		gint pixbuf_height = min(ns->width_height - pixbuf_y, ns->width_height);
+		gint pixbuf_width = math::min(ns->width_height - pixbuf_x, ns->width_height);
+		gint pixbuf_height = math::min(ns->width_height - pixbuf_y, ns->width_height);
 		if (pixbuf_width > 0 && pixbuf_height > 0){
 			cairo_set_source_surface(cr, ns->surface, pixbuf_x, pixbuf_y);
 			cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
@@ -328,10 +324,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			radius = 15;
 		}
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.75);
-		cairo_arc(cr, ns->point.x, ns->point.y, radius + 0.5, -PI, PI);
+		cairo_arc(cr, ns->point.x, ns->point.y, radius + 0.5, -math::PI, math::PI);
 		cairo_stroke(cr);
 		cairo_set_source_rgba(cr, 1, 1, 1, 0.75);
-		cairo_arc(cr, ns->point.x, ns->point.y, radius, -PI, PI);
+		cairo_arc(cr, ns->point.x, ns->point.y, radius, -math::PI, math::PI);
 		cairo_stroke(cr);
 	}
 	PangoLayout *layout;
@@ -346,7 +342,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	gtk_zoomed_get_current_screen_rect(GTK_ZOOMED(widget), &area_rect);
 	cairo_rectangle(cr, 0, 0, ns->width_height - padding_x * 2, ns->width_height - padding_y * 2);
 	cairo_clip(cr);
-	vector<math::Vec2<int> > relative_positions(2);
+	std::vector<math::Vec2<int> > relative_positions(2);
 	bool draw_distance = true;
 	for (int i = 0; i < 2; i++){
 		if (ns->marks[i].valid){
@@ -372,7 +368,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		}
 		for (int i = 0; i < 2; i++){
 			if (ns->marks[i].valid){
-				cairo_arc(cr, relative_positions[i].x, relative_positions[i].y, 2, -PI, PI);
+				cairo_arc(cr, relative_positions[i].x, relative_positions[i].y, 2, -math::PI, math::PI);
 				if (layer == 0){
 					cairo_set_source_rgba(cr, 0, 0, 0, 1);
 					cairo_set_line_width(cr, 2);
@@ -381,7 +377,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 					cairo_set_source_rgba(cr, 1, 1, 1, 1);
 					cairo_fill(cr);
 				}
-				stringstream ss;
+				std::stringstream ss;
 				ss << ns->marks[i].position.x << "x" << ns->marks[i].position.y;
 				auto text = ss.str();
 				pango_layout_set_text(layout, text.c_str(), -1);
@@ -406,8 +402,8 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
 			);
 			math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
-			stringstream ss;
-			ss << fixed << setprecision(1) << distance << endl << 1 + abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + abs(ns->marks[0].position.y - ns->marks[1].position.y);
+			std::stringstream ss;
+			ss << std::fixed << std::setprecision(1) << distance << std::endl << 1 + math::abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + math::abs(ns->marks[0].position.y - ns->marks[1].position.y);
 			auto text = ss.str();
 			pango_layout_set_text(layout, text.c_str(), -1);
 			pango_cairo_update_layout(cr, layout);

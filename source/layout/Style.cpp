@@ -43,7 +43,7 @@ Style::Style(const char* _name, Color* _color, float _font_size)
 			style_type = TYPE_BACKGROUND;
 		}
 	}
-	color_copy(_color, &color);
+	color = *_color;
 	font_size = _font_size;
 	dirty = true;
 	highlight = false;

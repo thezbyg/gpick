@@ -220,9 +220,9 @@ bool ImportExport::importGPL()
 		ss >> r >> g >> b;
 		getline(ss, line);
 		if (!f.good()) line = "";
-		c.rgb.red = r / 255.0;
-		c.rgb.green = g / 255.0;
-		c.rgb.blue = b / 255.0;
+		c.rgb.red = r / 255.0f;
+		c.rgb.green = g / 255.0f;
+		c.rgb.blue = b / 255.0f;
 		color_object = color_list_new_color_object(m_color_list, &c);
 		stripLeadingTrailingChars(line, strip_chars);
 		color_object->setName(line);
@@ -336,11 +336,11 @@ static void cssColor(ColorObject* color_object, ostream &stream)
 {
 	Color color, hsl;
 	color = color_object->getColor();
-	color_rgb_to_hsl(&color, &hsl);
+	hsl = color.rgbToHsl();
 	stream << " * " << color_object->getName()
-		<< ": " << HtmlHEX{&color}
-		<< ", " << HtmlRGB{&color}
-		<< ", " << HtmlHSL{&color}
+		<< ": " << HtmlHEX{color}
+		<< ", " << HtmlRGB{color}
+		<< ", " << HtmlHSL{color}
 		<< endl;
 }
 bool ImportExport::exportCSS()
@@ -374,21 +374,25 @@ static void htmlColor(ColorObject* color_object, bool include_color_name, ostrea
 {
 	Color color, text_color;
 	color = color_object->getColor();
-	color_get_contrasting(&color, &text_color);
-	stream << "<div style=\"background-color:" << HtmlRGB{&color} << "; color:" << HtmlRGB{&text_color} << "\">";
+	text_color = color.getContrasting();
+	stream << "<div style=\"background-color:" << HtmlRGB{color} << "; color:" << HtmlRGB{text_color} << "\">";
 	if (include_color_name){
 		string name = color_object->getName();
 		escapeHtmlInplace(name);
 		if (!name.empty())
 			stream << name << ":<br/>";
 	}
-	stream << "<span>" << HtmlHEX{&color} << "</span>" << "</div>";
+	stream << "<span>" << HtmlHEX{color} << "</span>" << "</div>";
 }
-static string getHtmlColor(ColorObject* color_object)
-{
-	Color color = color_object->getColor();
-	stringstream ss;
-	ss << HtmlRGB{&color};
+static string getHtmlColor(ColorObject* colorObject) {
+	Color color = colorObject->getColor();
+	std::stringstream ss;
+	ss << HtmlRGB{color};
+	return ss.str();
+}
+static string getHtmlColor(const Color &color) {
+	std::stringstream ss;
+	ss << HtmlRGB{color};
 	return ss.str();
 }
 bool ImportExport::exportHTML()
@@ -415,26 +419,38 @@ bool ImportExport::exportHTML()
 		case ItemSize::controllable:
 			break;
 	}
-	string background = "";
+	std::string htmlBackgroundCss = "";
+	std::string htmlColorCss = "";
 	switch (m_background){
 		case Background::none:
 			break;
 		case Background::white:
-			background = "background-color:white;";
+			htmlBackgroundCss = "background-color:white;";
+			htmlColorCss = "color:black;";
 			break;
 		case Background::gray:
-			background = "background-color:gray;";
+			htmlBackgroundCss = "background-color:gray;";
+			htmlColorCss = "color:black;";
 			break;
 		case Background::black:
-			background = "background-color:black;";
+			htmlBackgroundCss = "background-color:black;";
+			htmlColorCss = "color:white;";
 			break;
 		case Background::first_color:
-			if (!ordered.empty())
-				background = "background-color:" + getHtmlColor(ordered.front()) + ";";
+			if (!ordered.empty()) {
+				htmlBackgroundCss = "background-color:" + getHtmlColor(ordered.front()) + ";";
+				auto color = ordered.front()->getColor();
+				Color textColor = color.getContrasting();
+				htmlColorCss = "color:" + getHtmlColor(textColor) + ";";
+			}
 			break;
 		case Background::last_color:
-			if (!ordered.empty())
-				background = "background-color:" + getHtmlColor(ordered.back()) + ";";
+			if (!ordered.empty()) {
+				htmlBackgroundCss = "background-color:" + getHtmlColor(ordered.back()) + ";";
+				auto color = ordered.back()->getColor();
+				Color textColor = color.getContrasting();
+				htmlColorCss = "color:" + getHtmlColor(textColor) + ";";
+			}
 			break;
 		case Background::controllable:
 			break;
@@ -446,7 +462,7 @@ bool ImportExport::exportHTML()
 		<< "div#colors div{float: left; width: " << item_size << "px; height: " << item_size << "px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}" << endl
 		<< "div#colors div span{font-weight: bold; cursor: pointer}" << endl
 		<< "div#colors div span:hover{text-decoration: underline}" << endl
-		<< "html{" << background << "}" << endl
+		<< "html{" << htmlBackgroundCss << htmlColorCss << "}" << endl
 		<< "input{margin-left: 1em;}" << endl
 		<< "</style>"
 		<< "</head>" << endl
@@ -679,7 +695,7 @@ bool ImportExport::importASE()
 					c2.cmyk.m = cmyk[1].f;
 					c2.cmyk.y = cmyk[2].f;
 					c2.cmyk.k = cmyk[3].f;
-					color_cmyk_to_rgb(&c2, &c);
+					c = c2.cmykToRgb();
 					color_supported = 1;
 				}else if (memcmp(color_space, "Gray", 4) == 0){
 					FloatInt gray;
@@ -696,13 +712,13 @@ bool ImportExport::importASE()
 					lab[0].i = boost::endian::big_to_native<uint32_t>(lab[0].i);
 					lab[1].i = boost::endian::big_to_native<uint32_t>(lab[1].i);
 					lab[2].i = boost::endian::big_to_native<uint32_t>(lab[2].i);
-					c2.lab.L = lab[0].f*100;
+					c2.lab.L = lab[0].f * 100;
 					c2.lab.a = lab[1].f;
 					c2.lab.b = lab[2].f;
-					color_lab_to_rgb_d50(&c2, &c);
-					c.rgb.red = clamp_float(c.rgb.red, 0, 1);
-					c.rgb.green = clamp_float(c.rgb.green, 0, 1);
-					c.rgb.blue = clamp_float(c.rgb.blue, 0, 1);
+					c = c2.labToRgbD50();
+					c.rgb.red = math::clamp(c.rgb.red, 0.0f, 1.0f);
+					c.rgb.green = math::clamp(c.rgb.green, 0.0f, 1.0f);
+					c.rgb.blue = math::clamp(c.rgb.blue, 0.0f, 1.0f);
 					color_supported = 1;
 				}
 				if (color_supported){
@@ -763,9 +779,9 @@ bool ImportExport::importRGBTXT()
 		if (hash_position != string::npos){
 			size_t last_non_space = rfind_first_of_not(line, hash_position, " \t");
 
-			c.rgb.red = hexPairToInt(&line.at(hash_position + 1)) / 255.0;
-			c.rgb.green = hexPairToInt(&line.at(hash_position + 3)) / 255.0;
-			c.rgb.blue = hexPairToInt(&line.at(hash_position + 5)) / 255.0;
+			c.rgb.red = hexPairToInt(&line.at(hash_position + 1)) / 255.0f;
+			c.rgb.green = hexPairToInt(&line.at(hash_position + 3)) / 255.0f;
+			c.rgb.blue = hexPairToInt(&line.at(hash_position + 5)) / 255.0f;
 
 			color_object = color_list_new_color_object(m_color_list, &c);
 			if (last_non_space != string::npos){

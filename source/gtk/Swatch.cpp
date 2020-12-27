@@ -17,8 +17,7 @@
  */
 
 #include "Swatch.h"
-#include "../Color.h"
-#include "../MathUtil.h"
+#include "Color.h"
 #include <math.h>
 #include <boost/math/special_functions/round.hpp>
 
@@ -31,8 +30,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 #else
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
 #endif
-enum
-{
+enum {
 	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, CENTER_ACTIVATED, LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = {};
@@ -48,8 +46,8 @@ struct GtkSwatchPrivate
 };
 static void finalize(GObject *obj)
 {
-	GtkSwatchPrivate *ns = GET_PRIVATE(obj);
 #if GTK_MAJOR_VERSION >= 3
+	GtkSwatchPrivate *ns = GET_PRIVATE(obj);
 	g_object_unref(ns->context);
 #endif
 	G_OBJECT_CLASS(g_type_class_peek_parent(G_OBJECT_CLASS(GTK_SWATCH_GET_CLASS(obj))))->finalize(obj);
@@ -97,7 +95,7 @@ GtkWidget* gtk_swatch_new()
 	gtk_widget_set_size_request(GTK_WIDGET(widget), 150 + widget->style->xthickness * 2, 136 + widget->style->ythickness * 2);
 #endif
 	for (gint32 i = 0; i < 7; ++i)
-		color_set(&ns->color[i], i / 7.0);
+		ns->color[i] = Color(i / 7.0f);
 	ns->current_color = 1;
 	ns->transformation_chain = 0;
 	ns->active = false;
@@ -110,7 +108,7 @@ GtkWidget* gtk_swatch_new()
 void gtk_swatch_set_color_to_main(GtkSwatch* swatch)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(&ns->color[0], &ns->color[ns->current_color]);
+	ns->color[ns->current_color] = ns->color[0];
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 void gtk_swatch_move_active(GtkSwatch* swatch, gint32 direction)
@@ -131,12 +129,12 @@ void gtk_swatch_move_active(GtkSwatch* swatch, gint32 direction)
 void gtk_swatch_get_color(GtkSwatch* swatch, guint32 index, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(&ns->color[index], color);
+	*color = ns->color[index];
 }
 void gtk_swatch_get_main_color(GtkSwatch* swatch, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(&ns->color[0], color);
+	*color = ns->color[0];
 }
 gint32 gtk_swatch_get_active_index(GtkSwatch* swatch)
 {
@@ -146,24 +144,24 @@ gint32 gtk_swatch_get_active_index(GtkSwatch* swatch)
 void gtk_swatch_get_active_color(GtkSwatch* swatch, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(&ns->color[ns->current_color], color);
+	*color = ns->color[ns->current_color];
 }
 void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(color, &ns->color[index]);
+	ns->color[index] = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 void gtk_swatch_set_color(GtkSwatch* swatch, guint32 index, const Color &color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(&color, &ns->color[index]);
+	ns->color[index] = color;
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 void gtk_swatch_set_main_color(GtkSwatch* swatch, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(color, &ns->color[0]);
+	ns->color[0] = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 void gtk_swatch_set_active_index(GtkSwatch* swatch, guint32 index)
@@ -175,36 +173,34 @@ void gtk_swatch_set_active_index(GtkSwatch* swatch, guint32 index)
 void gtk_swatch_set_active_color(GtkSwatch* swatch, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(color, &ns->color[ns->current_color]);
+	ns->color[ns->current_color] = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 void gtk_swatch_set_main_color(GtkSwatch* swatch, guint index, Color* color)
 {
 	GtkSwatchPrivate *ns = GET_PRIVATE(swatch);
-	color_copy(color, &ns->color[0]);
+	ns->color[0] = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(swatch));
 }
 static int get_color_by_position(gint x, gint y)
 {
-	vector2 a, b;
-	vector2_set(&a, 1, 0);
-	vector2_set(&b, x - 75, y - (75 - 7));
-	float distance = vector2_length(&b);
+	math::Vector2f a = { 1.0f, 0.0f }, b = { x - 75.0f, y - (75.0f - 7) };
+	float distance = static_cast<float>(b.length());
 	if (distance < 20){ //center color
 		return 0;
 	}else if (distance > 70){ //outside
 		return -1;
 	}else{
-		vector2_normalize(&b, &b);
-		float angle = acos(vector2_dot(&a, &b));
+		b.normalize();
+		float angle = static_cast<float>(std::acos(a.dotProduct(b)));
 		if (b.y < 0)
-			angle = 2 * PI - angle;
-		angle += (PI / 6) * 3;
+			angle = static_cast<float>(2 * math::PI - angle);
+		angle += static_cast<float>((math::PI / 6) * 3);
 		if (angle < 0)
-			angle += PI * 2;
-		if (angle > 2 * PI)
-			angle -= PI * 2;
-		return 1 + (int)floor(angle / ((PI * 2) / 6));
+			angle += static_cast<float>(math::PI * 2);
+		if (angle > 2 * math::PI)
+			angle -= static_cast<float>(math::PI * 2);
+		return 1 + static_cast<int>(std::floor(angle / ((math::PI * 2) / 6)));
 	}
 }
 gint gtk_swatch_get_color_at(GtkSwatch* swatch, gint x, gint y)
@@ -219,9 +215,12 @@ static void draw_hexagon(cairo_t *cr, float x, float y, float radius)
 {
 	cairo_new_sub_path(cr);
 	for (int i = 0; i < 6; ++i) {
-		cairo_line_to(cr, x + sin(i * PI / 3) * radius, y + cos(i * PI / 3) * radius);
+		cairo_line_to(cr, x + std::sin(i * math::PI / 3) * radius, y + std::cos(i * math::PI / 3) * radius);
 	}
 	cairo_close_path(cr);
+}
+static void draw_hexagon(cairo_t *cr, double x, double y, double radius) {
+	draw_hexagon(cr, static_cast<float>(x), static_cast<float>(y), static_cast<float>(radius));
 }
 static gboolean draw(GtkWidget *widget, cairo_t *cr)
 {
@@ -233,10 +232,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		gtk_paint_focus(widget->style, widget->window, GTK_STATE_ACTIVE, nullptr, widget, 0, widget->style->xthickness, widget->style->ythickness, 150, 136);
 #endif
 		cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
-		cairo_arc(cr, 150 - 11.5, 12.5, 6, 0, 2 * PI);
+		cairo_arc(cr, 150 - 11.5, 12.5, 6, 0, 2 * math::PI);
 		cairo_fill(cr);
 		cairo_set_source_rgb(cr, 1, 0, 0);
-		cairo_arc(cr, 150 - 12, 12, 6, 0, 2 * PI);
+		cairo_arc(cr, 150 - 12, 12, 6, 0, 2 * math::PI);
 		cairo_fill(cr);
 	}
 	cairo_select_font_face(cr, "monospace", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
@@ -251,21 +250,21 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	cairo_translate(cr, 75 + padding_x, 75 + padding_y - 7);
 	int edges = 6;
 	cairo_set_source_rgb(cr, 0, 0, 0);
-	float radius_multi = 50 * cos((180 / edges) / (180 / PI));
-	float rotation = -(PI/6 * 4);
+	float radius_multi = static_cast<float>(50 * std::cos((180 / edges) / (180 / math::PI)));
+	float rotation = static_cast<float>(-(math::PI/6 * 4));
 	//Draw stroke
 	cairo_set_source_rgb(cr, 0, 0, 0);
 	cairo_set_line_width(cr, 3);
 	for (int i = 1; i < 7; ++i) {
 		if (i == ns->current_color)
 			continue;
-		draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 27);
+		draw_hexagon(cr, radius_multi * std::cos(rotation + i * (2 * math::PI) / edges), radius_multi * std::sin(rotation + i * (2 * math::PI) / edges), 27);
 	}
 	cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
 	cairo_stroke(cr);
 	cairo_set_source_rgb(cr, 1, 1, 1);
-	draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2
-			* PI) / edges), 27);
+	draw_hexagon(cr, radius_multi * std::cos(rotation + (ns->current_color) * (2 * math::PI) / edges), radius_multi * std::sin(rotation + (ns->current_color) * (2
+			* math::PI) / edges), 27);
 	cairo_stroke(cr);
 	Color color;
 	//Draw fill
@@ -275,25 +274,25 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		if (ns->transformation_chain){
 			ns->transformation_chain->apply(&ns->color[i], &color);
 		}else{
-			color_copy(&ns->color[i], &color);
+			color = ns->color[i];
 		}
 		cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
-		draw_hexagon(cr, radius_multi * cos(rotation + i * (2 * PI) / edges), radius_multi * sin(rotation + i * (2 * PI) / edges), 25.5);
+		draw_hexagon(cr, radius_multi * std::cos(rotation + i * (2 * math::PI) / edges), radius_multi * std::sin(rotation + i * (2 * math::PI) / edges), 25.5);
 		cairo_fill(cr);
 	}
 	if (ns->transformation_chain){
 		ns->transformation_chain->apply(&ns->color[ns->current_color], &color);
 	}else{
-		color_copy(&ns->color[ns->current_color], &color);
+		color = ns->color[ns->current_color];
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
-	draw_hexagon(cr, radius_multi * cos(rotation + (ns->current_color) * (2 * PI) / edges), radius_multi * sin(rotation + (ns->current_color) * (2 * PI) / edges), 25.5);
+	draw_hexagon(cr, radius_multi * std::cos(rotation + (ns->current_color) * (2 * math::PI) / edges), radius_multi * std::sin(rotation + (ns->current_color) * (2 * math::PI) / edges), 25.5);
 	cairo_fill(cr);
 	//Draw center
 	if (ns->transformation_chain){
 		ns->transformation_chain->apply(&ns->color[0], &color);
 	}else{
-		color_copy(&ns->color[0], &color);
+		color = ns->color[0];
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	draw_hexagon(cr, 0, 0, 25.5);
@@ -305,15 +304,15 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		if (ns->transformation_chain){
 			Color t;
 			ns->transformation_chain->apply(&ns->color[i], &t);
-			color_get_contrasting(&t, &c);
+			c = t.getContrasting();
 		}else{
-			color_get_contrasting(&ns->color[i], &c);
+			c = ns->color[i].getContrasting();
 		}
 		cairo_text_extents_t extends;
 		numb[0] = '0' + i;
 		cairo_text_extents(cr, numb, &extends);
 		cairo_set_source_rgb(cr, boost::math::round(c.rgb.red * 255.0) / 255.0, boost::math::round(c.rgb.green * 255.0) / 255.0, boost::math::round(c.rgb.blue * 255.0) / 255.0);
-		cairo_move_to(cr, radius_multi * cos(rotation + i * (2 * PI) / edges) - extends.width / 2, radius_multi * sin(rotation + i * (2 * PI) / edges)
+		cairo_move_to(cr, radius_multi * std::cos(rotation + i * (2 * math::PI) / edges) - extends.width / 2, radius_multi * std::sin(rotation + i * (2 * math::PI) / edges)
 				+ extends.height / 2);
 		cairo_show_text(cr, numb);
 	}
@@ -341,7 +340,7 @@ static void offset_xy(GtkWidget *widget, gint &x, gint &y)
 }
 static gboolean button_press(GtkWidget *widget, GdkEventButton *event) {
 	GtkSwatchPrivate *ns = GET_PRIVATE(widget);
-	int x = event->x, y = event->y;
+	int x = static_cast<int>(event->x), y = static_cast<int>(event->y);
 	offset_xy(widget, x, y);
 	int new_color = get_color_by_position(x, y);
 	gtk_widget_grab_focus(widget);

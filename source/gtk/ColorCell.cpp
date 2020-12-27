@@ -17,7 +17,7 @@
  */
 
 #include "ColorCell.h"
-#include "../ColorObject.h"
+#include "ColorObject.h"
 #include <boost/math/special_functions/round.hpp>
 
 static void init(CustomCellRendererColor *cellcolor);

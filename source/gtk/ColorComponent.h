@@ -20,7 +20,7 @@
 #define GPICK_GTK_COLOR_COMPONENT_H_
 
 #include <gtk/gtk.h>
-#include "../Color.h"
+#include "Color.h"
 
 #define GTK_TYPE_COLOR_COMPONENT (gtk_color_component_get_type())
 #define GTK_COLOR_COMPONENT(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponent))

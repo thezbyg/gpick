@@ -58,8 +58,8 @@ struct Vec2
 		Vec2 operator*(const double &v)
 		{
 			Vec2 r;
-			r.x = x * v;
-			r.y = y * v;
+			r.x = static_cast<T>(x * v);
+			r.y = static_cast<T>(y * v);
 			return r;
 		};
 		Vec2 operator+(const Vec2 &v)

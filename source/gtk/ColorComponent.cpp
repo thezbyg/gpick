@@ -17,12 +17,11 @@
  */
 
 #include "ColorComponent.h"
-#include "../uiUtilities.h"
-#include "../Color.h"
-#include "../MathUtil.h"
-#include "../Paths.h"
-#include <math.h>
-#include <string.h>
+#include "uiUtilities.h"
+#include "Color.h"
+#include "MathUtil.h"
+#include "Paths.h"
+#include <cmath>
 #include <vector>
 using namespace std;
 
@@ -40,16 +39,14 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
 static void size_request(GtkWidget *widget, GtkRequisition *requisition);
 #endif
-enum
-{
+enum {
 	COLOR_CHANGED,
 	INPUT_CLICKED,
 	LAST_SIGNAL
 };
 static const int MaxNumberOfComponents = 4;
 static guint signals[LAST_SIGNAL] = {};
-struct GtkColorComponentPrivate
-{
+struct GtkColorComponentPrivate {
 	Color orig_color;
 	Color color;
 	GtkColorComponentComp component;
@@ -136,8 +133,8 @@ GtkWidget *gtk_color_component_new(GtkColorComponentComp component)
 	ns->component = component;
 	ns->last_event_position = -1;
 	ns->changing_color = false;
-	ns->lab_illuminant = REFERENCE_ILLUMINANT_D50;
-	ns->lab_observer= REFERENCE_OBSERVER_2;
+	ns->lab_illuminant = ReferenceIlluminant::D50;
+	ns->lab_observer = ReferenceObserver::_2;
 	ns->out_of_gamut_mask = false;
 #if GTK_MAJOR_VERSION >= 3
 	ns->pointer_grab = nullptr;
@@ -184,17 +181,17 @@ GtkWidget *gtk_color_component_new(GtkColorComponentComp component)
 void gtk_color_component_get_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(&ns->orig_color, color);
+	*color = ns->orig_color;
 }
 void gtk_color_component_get_transformed_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(&ns->color, color);
+	*color = ns->color;
 }
 void gtk_color_component_set_transformed_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(color, &ns->color);
+	*color = ns->color;
 	update_rgb_color(ns, &ns->orig_color);
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 }
@@ -235,25 +232,24 @@ void gtk_color_component_set_label(GtkColorComponent* color_component, const cha
 void gtk_color_component_set_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(color, &ns->orig_color);
+	ns->orig_color = *color;
 	switch (ns->component){
 		case GtkColorComponentComp::rgb:
-			color_copy(&ns->orig_color, &ns->color);
+			ns->color = ns->orig_color;
 			break;
 		case GtkColorComponentComp::hsl:
-			color_rgb_to_hsl(&ns->orig_color, &ns->color);
+			ns->color = ns->orig_color.rgbToHsl();
 			break;
 		case GtkColorComponentComp::hsv:
-			color_rgb_to_hsv(&ns->orig_color, &ns->color);
+			ns->color = ns->orig_color.rgbToHsv();
 			break;
 		case GtkColorComponentComp::cmyk:
-			color_rgb_to_cmyk(&ns->orig_color, &ns->color);
+			ns->color = ns->orig_color.rgbToCmyk();
 			break;
 		case GtkColorComponentComp::lab:
 			{
-				matrix3x3 adaptation_matrix;
-				color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), color_get_reference(ns->lab_illuminant, ns->lab_observer), &adaptation_matrix);
-				color_rgb_to_lab(&ns->orig_color, &ns->color, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_sRGB_transformation_matrix(), &adaptation_matrix);
+				auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2), Color::getReference(ns->lab_illuminant, ns->lab_observer));
+				ns->color = ns->orig_color.rgbToLab(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBMatrix, adaptationMatrix);
 			}
 			break;
 		case GtkColorComponentComp::xyz:
@@ -261,9 +257,8 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 			break;
 		case GtkColorComponentComp::lch:
 			{
-				matrix3x3 adaptation_matrix;
-				color_get_chromatic_adaptation_matrix(color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), color_get_reference(ns->lab_illuminant, ns->lab_observer), &adaptation_matrix);
-				color_rgb_to_lch(&ns->orig_color, &ns->color, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_sRGB_transformation_matrix(), &adaptation_matrix);
+				auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2), Color::getReference(ns->lab_illuminant, ns->lab_observer));
+				ns->color = ns->orig_color.rgbToLch(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBMatrix, adaptationMatrix);
 			}
 			break;
 	}
@@ -289,7 +284,7 @@ static void size_request(GtkWidget *widget, GtkRequisition *requisition)
 static int get_x_offset(GtkWidget *widget)
 {
 #if GTK_MAJOR_VERSION >= 3
-	return 0;
+	return gtk_widget_get_allocated_width(widget) - 240;
 #else
 	return widget->allocation.width - widget->style->xthickness * 2 - 240;
 #endif
@@ -299,10 +294,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	GtkColorComponentPrivate *ns = GET_PRIVATE(widget);
 	Color c[MaxNumberOfComponents];
 	double pointer_pos[MaxNumberOfComponents];
-	float steps;
+	int steps;
 	int i, j;
 	for (int i = 0; i < ns->n_components; ++i){
-		pointer_pos[i] = (ns->color.ma[i] - ns->offset[i]) / ns->range[i];
+		pointer_pos[i] = (ns->color[i] - ns->offset[i]) / ns->range[i];
 	}
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, ns->n_components * 16);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -311,13 +306,13 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	unsigned char *col_ptr;
 	Color *rgb_points = new Color[ns->n_components * 200];
 	double int_part;
-	matrix3x3 adaptation_matrix;
-	vector<vector<bool> > out_of_gamut(MaxNumberOfComponents, vector<bool>(false, 1));
+	math::Matrix3d adaptationMatrix;
+	std::vector<std::vector<bool>> out_of_gamut(MaxNumberOfComponents, std::vector<bool>(false, 1));
 	switch (ns->component) {
 		case GtkColorComponentComp::rgb:
 			steps = 1;
 			for (i = 0; i < 3; ++i){
-				color_copy(&ns->color, &c[i]);
+				c[i] = ns->color;
 			}
 			for (i = 0; i < surface_width; ++i){
 				c[0].rgb.red = c[1].rgb.green = c[2].rgb.blue = (float)i / (float)(surface_width - 1);
@@ -341,20 +336,20 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		case GtkColorComponentComp::hsv:
 			steps = 100;
 			for (i = 0; i < 3; ++i){
-				color_copy(&ns->color, &c[i]);
+				c[i] = ns->color;
 			}
 			for (i = 0; i <= steps; ++i){
-				c[0].hsv.hue = c[1].hsv.saturation = c[2].hsv.value = i / steps;
+				c[0].hsv.hue = c[1].hsv.saturation = c[2].hsv.value = i / static_cast<float>(steps);
 				for (j = 0; j < 3; ++j){
-					color_hsv_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+					rgb_points[j * (steps + 1) + i] = c[j].hsvToRgb();
 				}
 			}
 			for (i = 0; i < surface_width; ++i){
-				float position = modf(i * steps / surface_width, &int_part);
-				int index = i * int(steps) / surface_width;
-				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
-				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
-				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+				float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+				int index = i * steps / surface_width;
+				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -375,20 +370,20 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		case GtkColorComponentComp::hsl:
 			steps = 100;
 			for (i = 0; i < 3; ++i){
-				color_copy(&ns->color, &c[i]);
+				c[i] = ns->color;
 			}
 			for (i = 0; i <= steps; ++i){
-				c[0].hsl.hue = c[1].hsl.saturation = c[2].hsl.lightness = i / steps;
+				c[0].hsl.hue = c[1].hsl.saturation = c[2].hsl.lightness = i / static_cast<float>(steps);
 				for (j = 0; j < 3; ++j){
-					color_hsl_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+					rgb_points[j * (steps + 1) + i] = c[j].hslToRgb();
 				}
 			}
 			for (i = 0; i < surface_width; ++i){
-				float position = modf(i * steps / surface_width, &int_part);
-				int index = i * int(steps) / surface_width;
-				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
-				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
-				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+				float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+				int index = i * steps / surface_width;
+				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -409,21 +404,21 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		case GtkColorComponentComp::cmyk:
 			steps = 100;
 			for (i = 0; i < 4; ++i){
-				color_copy(&ns->color, &c[i]);
+				c[i] = ns->color;
 			}
 			for (i = 0; i <= steps; ++i){
-				c[0].cmyk.c = c[1].cmyk.m = c[2].cmyk.y = c[3].cmyk.k = i / steps;
+				c[0].cmyk.c = c[1].cmyk.m = c[2].cmyk.y = c[3].cmyk.k = i / static_cast<float>(steps);
 				for (j = 0; j < 4; ++j){
-					color_cmyk_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i]);
+					rgb_points[j * (steps + 1) + i] = c[j].cmykToRgb();
 				}
 			}
 			for (i = 0; i < surface_width; ++i){
-				float position = modf(i * steps / surface_width, &int_part);
-				int index = i * int(steps) / surface_width;
-				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
-				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
-				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
-				interpolate_colors(&rgb_points[3 * (int(steps) + 1) + index], &rgb_points[3 * (int(steps) + 1) + index + 1], position, &c[3]);
+				float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+				int index = i * steps / surface_width;
+				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+				interpolate_colors(&rgb_points[3 * (steps + 1) + index], &rgb_points[3 * (steps + 1) + index + 1], position, &c[3]);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -443,25 +438,25 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			break;
 		case GtkColorComponentComp::lab:
 			steps = 100;
-			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+			adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2));
 			for (j = 0; j < 3; ++j){
-				color_copy(&ns->color, &c[j]);
-				out_of_gamut[j] = vector<bool>(steps + 1, false);
+				c[j] = ns->color;
+				out_of_gamut[j] = std::vector<bool>(steps + 1, false);
 				for (i = 0; i <= steps; ++i){
-					c[j].ma[j] = (i / steps) * ns->range[j] + ns->offset[j];
-					color_lab_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-					if (color_is_rgb_out_of_gamut(&rgb_points[j * (int(steps) + 1) + i])){
+					c[j][j] = static_cast<float>((i / static_cast<float>(steps)) * ns->range[j] + ns->offset[j]);
+					rgb_points[j * (steps + 1) + i] = c[j].labToRgb(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBInvertedMatrix, adaptationMatrix);
+					if (rgb_points[j * (steps + 1) + i].isOutOfRgbGamut()){
 						out_of_gamut[j][i] = true;
 					}
-					color_rgb_normalize(&rgb_points[j * (int(steps) + 1) + i]);
+					rgb_points[j * (steps + 1) + i].normalizeRgbInplace();
 				}
 			}
 			for (i = 0; i < surface_width; ++i){
-				float position = modf(i * steps / surface_width, &int_part);
-				int index = i * int(steps) / surface_width;
-				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
-				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
-				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+				float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+				int index = i * steps / surface_width;
+				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -481,25 +476,25 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			break;
 		case GtkColorComponentComp::lch:
 			steps = 100;
-			color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
+			adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2));
 			for (j = 0; j < 3; ++j){
-				color_copy(&ns->color, &c[j]);
-				out_of_gamut[j] = vector<bool>(steps + 1, false);
+				c[j] = ns->color;
+				out_of_gamut[j] = std::vector<bool>(steps + 1, false);
 				for (i = 0; i <= steps; ++i){
-					c[j].ma[j] = (i / steps) * ns->range[j] + ns->offset[j];
-					color_lch_to_rgb(&c[j], &rgb_points[j * (int(steps) + 1) + i], color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-					if (color_is_rgb_out_of_gamut(&rgb_points[j * (int(steps) + 1) + i])){
+					c[j][j] = static_cast<float>((i / static_cast<float>(steps)) * ns->range[j] + ns->offset[j]);
+					rgb_points[j * (steps + 1) + i] = c[j].lchToRgb(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBInvertedMatrix, adaptationMatrix);
+					if (rgb_points[j * (steps + 1) + i].isOutOfRgbGamut()){
 						out_of_gamut[j][i] = true;
 					}
-					color_rgb_normalize(&rgb_points[j * (int(steps) + 1) + i]);
+					rgb_points[j * (steps + 1) + i].normalizeRgbInplace();
 				}
 			}
 			for (i = 0; i < surface_width; ++i){
-				float position = modf(i * steps / surface_width, &int_part);
-				int index = i * int(steps) / surface_width;
-				interpolate_colors(&rgb_points[0 * (int(steps) + 1) + index], &rgb_points[0 * (int(steps) + 1) + index + 1], position, &c[0]);
-				interpolate_colors(&rgb_points[1 * (int(steps) + 1) + index], &rgb_points[1 * (int(steps) + 1) + index + 1], position, &c[1]);
-				interpolate_colors(&rgb_points[2 * (int(steps) + 1) + index], &rgb_points[2 * (int(steps) + 1) + index + 1], position, &c[2]);
+				float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+				int index = i * steps / surface_width;
+				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -634,27 +629,21 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c)
 {
 	switch (ns->component){
 		case GtkColorComponentComp::rgb:
-			color_copy(&ns->color, c);
-			color_rgb_normalize(c);
+			*c = ns->color.normalizeRgb();
 			break;
 		case GtkColorComponentComp::hsv:
-			color_hsv_to_rgb(&ns->color, c);
-			color_rgb_normalize(c);
+			*c = ns->color.hsvToRgb().normalizeRgbInplace();
 			break;
 		case GtkColorComponentComp::hsl:
-			color_hsl_to_rgb(&ns->color, c);
-			color_rgb_normalize(c);
+			*c = ns->color.hslToRgb().normalizeRgbInplace();
 			break;
 		case GtkColorComponentComp::cmyk:
-			color_cmyk_to_rgb(&ns->color, c);
-			color_rgb_normalize(c);
+			*c = ns->color.cmykToRgb().normalizeRgbInplace();
 			break;
 		case GtkColorComponentComp::lab:
 			{
-				matrix3x3 adaptation_matrix;
-				color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
-				color_lab_to_rgb(&ns->color, c, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(c);
+				auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2));
+				*c = ns->color.labToRgb(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBInvertedMatrix, adaptationMatrix).normalizeRgbInplace();
 			}
 			break;
 		case GtkColorComponentComp::xyz:
@@ -662,10 +651,8 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c)
 			break;
 		case GtkColorComponentComp::lch:
 			{
-				matrix3x3 adaptation_matrix;
-				color_get_chromatic_adaptation_matrix(color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_reference(REFERENCE_ILLUMINANT_D65, REFERENCE_OBSERVER_2), &adaptation_matrix);
-				color_lch_to_rgb(&ns->color, c, color_get_reference(ns->lab_illuminant, ns->lab_observer), color_get_inverted_sRGB_transformation_matrix(), &adaptation_matrix);
-				color_rgb_normalize(c);
+				auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2));
+				*c = ns->color.lchToRgb(Color::getReference(ns->lab_illuminant, ns->lab_observer), Color::sRGBInvertedMatrix, adaptationMatrix).normalizeRgbInplace();
 			}
 			break;
 	}
@@ -673,15 +660,15 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c)
 void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(&ns->color, color);
+	*color = ns->color;
 }
 void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	color_copy(color, &ns->color);
+	ns->color = *color;
 	Color c;
 	update_rgb_color(ns, &c);
-	color_copy(&c, &ns->orig_color);
+	ns->orig_color = c;
 	gtk_widget_queue_draw(GTK_WIDGET(color_component));
 	g_signal_emit(GTK_WIDGET(color_component), signals[COLOR_CHANGED], 0, &c);
 }
@@ -689,7 +676,7 @@ static void emit_color_change(GtkWidget *widget, int component, double value)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(widget);
 	Color c;
-	ns->color.ma[component] = value * ns->range[component] + ns->offset[component];
+	ns->color[component] = static_cast<float>(value * ns->range[component] + ns->offset[component]);
 	update_rgb_color(ns, &c);
 	g_signal_emit(widget, signals[COLOR_CHANGED], 0, &c);
 }
@@ -711,7 +698,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(widget);
 	if ((event->type == GDK_BUTTON_PRESS) && (event->button == 1)){
-		int component = event->y / 16;
+		int component = static_cast<int>(event->y / 16);
 		if (component < 0) component = 0;
 		else if (component >= ns->n_components) component = ns->n_components - 1;
 		int offset_x = get_x_offset(widget);
@@ -720,7 +707,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 			return FALSE;
 		}
 		ns->changing_color = true;
-		ns->last_event_position = event->x;
+		ns->last_event_position = static_cast<gint>(event->x);
 		double value;
 		value = (event->x - offset_x) / 200.0;
 		if (value < 0) value = 0;
@@ -744,7 +731,7 @@ static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event)
 	if (ns->changing_color && (event->state & GDK_BUTTON1_MASK)){
 		int offset_x = get_x_offset(widget);
 		if ((event->x < offset_x && ns->last_event_position < offset_x) || ((event->x > 200 + offset_x) && (ns->last_event_position > 200 + offset_x))) return FALSE;
-		ns->last_event_position = event->x;
+		ns->last_event_position = static_cast<gint>(event->x);
 		double value;
 		value = (event->x - offset_x) / 200.0;
 		if (value < 0) value = 0;

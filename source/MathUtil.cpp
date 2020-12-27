@@ -17,81 +17,9 @@
  */
 
 #include "MathUtil.h"
+#include "math/Algorithms.h"
 #include <math.h>
 #include <string.h>
-
-float max_float_3(float a, float b, float c) {
-	if (a > b){
-		if (a > c){
-			return a;
-		}else{
-			return c;
-		}
-	}else{
-		if (b > c){
-			return b;
-		}else{
-			return c;
-		}
-	}
-}
-
-float min_float_3(float a, float b, float c) {
-	if (a < b){
-		if (a < c){
-			return a;
-		}else{
-			return c;
-		}
-	}else{
-		if (b < c){
-			return b;
-		}else{
-			return c;
-		}
-	}
-}
-
-float clamp_float(float x, float a, float b) {
-	if (x < a)
-		return a;
-	if (x > b)
-		return b;
-	return x;
-}
-
-
-int clamp_int(int x, int a, int b) {
-	if (x < a)
-		return a;
-	if (x > b)
-		return b;
-	return x;
-}
-
-int min_int(int a, int b) {
-	if (a > b)
-		return b;
-	return a;
-}
-
-int max_int(int a, int b) {
-	if (a < b)
-		return b;
-	return a;
-}
-
-int abs_int(int a) {
-	if (a < 0)
-		return -a;
-	return a;
-}
-
-float abs_float(float a) {
-	if (a < 0)
-		return -a;
-	return a;
-}
 
 void matrix3x3_identity(matrix3x3* matrix) {
 	int i,j;
@@ -246,9 +174,9 @@ void vector3_multiply_matrix3x3(const vector3* vector, const matrix3x3* matrix, 
 		vector=&vector_t;
 	}
 
-	result->x = vector->x * matrix->m[0][0] + vector->y * matrix->m[0][1] + vector->z * matrix->m[0][2];
-	result->y = vector->x * matrix->m[1][0] + vector->y * matrix->m[1][1] + vector->z * matrix->m[1][2];
-	result->z = vector->x * matrix->m[2][0] + vector->y * matrix->m[2][1] + vector->z * matrix->m[2][2];
+	result->x = static_cast<float>(vector->x * matrix->m[0][0] + vector->y * matrix->m[0][1] + vector->z * matrix->m[0][2]);
+	result->y = static_cast<float>(vector->x * matrix->m[1][0] + vector->y * matrix->m[1][1] + vector->z * matrix->m[1][2]);
+	result->z = static_cast<float>(vector->x * matrix->m[2][0] + vector->y * matrix->m[2][1] + vector->z * matrix->m[2][2]);
 }
 
 void vector3_set(vector3* vector, float x, float y, float z) {
@@ -266,7 +194,7 @@ float vector3_length(const vector3* vector) {
 }
 
 void vector3_clamp(vector3* vector, float a, float b){
-	vector->x = clamp_float(vector->x, a, b);
-	vector->y = clamp_float(vector->y, a, b);
-	vector->z = clamp_float(vector->z, a, b);
+	vector->x = math::clamp(vector->x, a, b);
+	vector->y = math::clamp(vector->y, a, b);
+	vector->z = math::clamp(vector->z, a, b);
 }

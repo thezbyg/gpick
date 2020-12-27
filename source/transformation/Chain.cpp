@@ -23,12 +23,12 @@ Chain::Chain():
 }
 void Chain::apply(const Color *input, Color *output) {
 	if (!m_enabled) {
-		color_copy(input, output);
+		*output = *input;
 		return;
 	}
 	Color tmp[2];
 	Color *tmp_p[3];
-	color_copy(input, &tmp[0]);
+	tmp[0] = *input;
 	tmp_p[0] = &tmp[0];
 	tmp_p[1] = &tmp[1];
 	for (auto &transformation: m_transformationChain) {
@@ -37,7 +37,7 @@ void Chain::apply(const Color *input, Color *output) {
 		tmp_p[0] = tmp_p[1];
 		tmp_p[1] = tmp_p[2];
 	}
-	color_copy(tmp_p[0], output);
+	*output = *tmp_p[0];
 }
 void Chain::add(std::unique_ptr<Transformation> transformation) {
 	m_transformationChain.push_back(std::move(transformation));

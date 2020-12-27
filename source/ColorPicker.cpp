@@ -44,10 +44,7 @@
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include <gdk/gdkkeysyms.h>
-#include <math.h>
-#ifdef _MSC_VER
-#define M_PI 3.14159265359
-#endif
+#include <cmath>
 #include <string.h>
 #include <sstream>
 #include <iostream>
@@ -361,19 +358,19 @@ static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget)
 	stringstream ss;
 	ss.setf(ios::fixed, ios::floatfield);
 	Color c_lab, c2_lab;
-	color_rgb_to_lab_d50(&c, &c_lab);
-	color_rgb_to_lab_d50(&c2, &c2_lab);
+	c_lab = c.rgbToLabD50();
+	c2_lab = c2.rgbToLabD50();
 	const ColorWheelType *wheel = &color_wheel_types_get()[0];
 	Color hsl1, hsl2;
 	double hue1, hue2;
-	color_rgb_to_hsl(&c, &hsl1);
-	color_rgb_to_hsl(&c2, &hsl2);
+	hsl1 = c.rgbToHsl();
+	hsl2 = c2.rgbToHsl();
 	wheel->rgbhue_to_hue(hsl1.hsl.hue, &hue1);
 	wheel->rgbhue_to_hue(hsl2.hsl.hue, &hue2);
 	double complementary = std::abs(hue1 - hue2);
 	complementary -= std::floor(complementary);
-	complementary *= std::sin(hsl1.hsl.lightness * M_PI) * std::sin(hsl2.hsl.lightness * M_PI);
-	complementary *= std::sin(hsl1.hsl.saturation * M_PI / 2) * std::sin(hsl2.hsl.saturation * M_PI / 2);
+	complementary *= std::sin(hsl1.hsl.lightness * math::PI) * std::sin(hsl2.hsl.lightness * math::PI);
+	complementary *= std::sin(hsl1.hsl.saturation * math::PI / 2) * std::sin(hsl2.hsl.saturation * math::PI / 2);
 	ss << std::setprecision(1) << std::abs(c_lab.lab.L - c2_lab.lab.L) + complementary * 50 << "%";
 	auto message = ss.str();
 	gtk_label_set_text(GTK_LABEL(args->contrastCheckMsg), message.c_str());
@@ -553,13 +550,13 @@ static void ser_decimal_get(GtkColorComponentComp component, int component_id, C
 		case GtkColorComponentComp::hsv:
 		case GtkColorComponentComp::hsl:
 			if (component_id == 0){
-				color->ma[component_id] = static_cast<float>(v / 360);
+				(*color)[component_id] = static_cast<float>(v / 360);
 			}else{
-				color->ma[component_id] = static_cast<float>(v / 100);
+				(*color)[component_id] = static_cast<float>(v / 100);
 			}
 			break;
 		default:
-			color->ma[component_id] = static_cast<float>(v / 100);
+			(*color)[component_id] = static_cast<float>(v / 100);
 	}
 }
 
@@ -569,13 +566,13 @@ static string ser_decimal_set(GtkColorComponentComp component, int component_id,
 		case GtkColorComponentComp::hsv:
 		case GtkColorComponentComp::hsl:
 			if (component_id == 0){
-				ss << setprecision(0) << fixed << color->ma[component_id] * 360;
+				ss << setprecision(0) << fixed << (*color)[component_id] * 360;
 			}else{
-				ss << setprecision(0) << fixed << color->ma[component_id] * 100;
+				ss << setprecision(0) << fixed << (*color)[component_id] * 100;
 			}
 			break;
 		default:
-			ss << setprecision(0) << fixed << color->ma[component_id] * 100;
+			ss << setprecision(0) << fixed << (*color)[component_id] * 100;
 	}
 	return ss.str();
 }
@@ -804,13 +801,13 @@ static int source_activate(ColorPickerArgs *args)
 	bool out_of_gamut_mask = args->options->getBool("out_of_gamut_mask", true);
 
 	gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(args->lab_control), out_of_gamut_mask);
-	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lab_control), color_get_illuminant(args->options->getString("lab.illuminant", "D50")));
-	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lab_control), color_get_observer(args->options->getString("lab.observer", "2")));
+	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lab_control), Color::getIlluminant(args->options->getString("lab.illuminant", "D50")));
+	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lab_control), Color::getObserver(args->options->getString("lab.observer", "2")));
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->lab_control), "lab");
 
 	gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(args->lch_control), out_of_gamut_mask);
-	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lch_control), color_get_illuminant(args->options->getString("lab.illuminant", "D50")));
-	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lch_control), color_get_observer(args->options->getString("lab.observer", "2")));
+	gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(args->lch_control), Color::getIlluminant(args->options->getString("lab.illuminant", "D50")));
+	gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(args->lch_control), Color::getObserver(args->options->getString("lab.observer", "2")));
 	updateComponentText(args, GTK_COLOR_COMPONENT(args->lch_control), "lch");
 
 	auto chain = args->gs->getTransformationChain();
@@ -923,20 +920,13 @@ static ColorSource* source_implement(ColorSource *source, GlobalState *gs, const
 
 			{
 				char tmp[32];
-				Color color;
 				for (gint i=1; i<7; ++i){
 					sprintf(tmp, "swatch.color%d", i);
-					Color color, result;
-					color.hsl.hue = (i - 1) / 15.f;
-					color.hsl.saturation = 0.8f;
-					color.hsl.lightness = 0.5f;
-					color_hsl_to_rgb(&color, &result);
+					Color color = Color((i - 1) / 15.f, 0.8f, 0.5f).hslToRgb();
 					color = options->getColor(tmp, color);
 					gtk_swatch_set_color(GTK_SWATCH(args->swatch_display), i, color);
 				}
 			}
-
-
 
 			args->color_code = gtk_color_new();
 			gtk_box_pack_start (GTK_BOX(vbox), args->color_code, false, true, 0);

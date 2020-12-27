@@ -22,7 +22,7 @@
 #include "uiUtilities.h"
 #include "I18N.h"
 #include <gtk/gtk.h>
-#include <math.h>
+#include <cmath>
 #include <string.h>
 #include <iostream>
 using namespace std;
@@ -188,11 +188,11 @@ static void load_vector(const Color *color, vector3 *vector)
 void ColorVisionDeficiency::apply(Color *input, Color *output)
 {
 	Color linear_input, linear_output;
-	color_rgb_get_linear(input, &linear_input);
+	linear_input = input->linearRgb();
 	vector3 vi, vo1, vo2;
 	load_vector(&linear_input, &vi);
 	matrix3x3 matrix1, matrix2;
-	int index = floor(strength * 10);
+	int index = static_cast<int>(std::floor(strength * 10));
 	int index_secondary = std::min(index + 1, 10);
 	float interpolation_factor = 1 - ((strength * 10) - index);
 
@@ -253,15 +253,14 @@ void ColorVisionDeficiency::apply(Color *input, Color *output)
 			interpolation_factor = strength;
 			break;
 		default:
-			color_copy(input, output);
+			*output = *input;
 			return;
 	}
 
 	linear_output.rgb.red = vo1.x * interpolation_factor + vo2.x * (1 - interpolation_factor);
 	linear_output.rgb.green = vo1.y * interpolation_factor + vo2.y * (1 - interpolation_factor);
 	linear_output.rgb.blue = vo1.z * interpolation_factor + vo2.z * (1 - interpolation_factor);
-	color_linear_get_rgb(&linear_output, output);
-	color_rgb_normalize(output);
+	*output = linear_output.nonLinearRgbInplace().normalizeRgbInplace();
 }
 
 ColorVisionDeficiency::ColorVisionDeficiency():Transformation(transformationId, getName())

@@ -156,7 +156,7 @@ static void onDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint 
 		color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
 		color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 		color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-		color.ma[3] = 0;
+		color[3] = 0;
 		ColorObject colorObject("", color);
 		success = setColor(colorObject, readonlyColorUI, x, y);
 	} break;

@@ -17,12 +17,8 @@
  */
 
 #include "ColorWidget.h"
-#include "../Color.h"
-#include "../MathUtil.h"
-#include <math.h>
-#include <boost/math/special_functions/round.hpp>
-#include <iostream>
-using namespace std;
+#include "Color.h"
+#include "Shapes.h"
 
 #define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR, GtkColorPrivate))
 G_DEFINE_TYPE(GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
@@ -35,18 +31,16 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
 static void size_request(GtkWidget *widget, GtkRequisition *requisition);
 #endif
-enum
-{
+enum {
 	ACTIVATED, LAST_SIGNAL,
 };
 static guint signals[LAST_SIGNAL] = {};
-struct GtkColorPrivate
-{
+struct GtkColorPrivate {
 	Color color, text_color, split_color;
 	std::string text;
 	bool rounded_rectangle, h_center, split;
 	bool secondary_color;
-	double roundness;
+	float roundness;
 	transformation::Chain *transformation_chain;
 };
 static void gtk_color_class_init(GtkColorClass *color_class)
@@ -74,9 +68,6 @@ GtkWidget* gtk_color_new()
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR, nullptr);
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	new (ns) GtkColorPrivate();
-	color_set(&ns->color, 0);
-	color_set(&ns->text_color, 0);
-	color_set(&ns->split_color, 0);
 	ns->rounded_rectangle = false;
 	ns->h_center = false;
 	ns->secondary_color = false;
@@ -93,8 +84,6 @@ GtkWidget* gtk_color_new(const Color &color, ColorWidgetConfiguration configurat
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_COLOR, nullptr);
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	new (ns) GtkColorPrivate();
-	color_set(&ns->text_color, 0);
-	color_set(&ns->split_color, 0);
 	ns->color = color;
 	ns->rounded_rectangle = true;
 	ns->h_center = true;
@@ -132,18 +121,18 @@ static void finalize(GObject *color_obj)
 void gtk_color_get_color(GtkColor* widget, Color* color)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(&ns->color, color);
+	*color = ns->color;
 }
 void gtk_color_set_text_color(GtkColor* widget, Color* color)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(color, &ns->text_color);
+	ns->text_color = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_set_roundness(GtkColor* widget, double roundness)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	ns->roundness = roundness;
+	ns->roundness = static_cast<float>(roundness);
 	gint width = 32;
 	gint height = 16;
 #if GTK_MAJOR_VERSION < 3
@@ -151,35 +140,35 @@ void gtk_color_set_roundness(GtkColor* widget, double roundness)
 	height += GTK_WIDGET(widget)->style->ythickness * 2;
 #endif
 	if (ns->rounded_rectangle){
-		width += ns->roundness;
-		height += ns->roundness;
+		width += static_cast<int>(ns->roundness);
+		height += static_cast<int>(ns->roundness);
 	}
 	gtk_widget_set_size_request(GTK_WIDGET(widget), width, height);
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_set_color(GtkColor* widget, const Color &color) {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(&color, &ns->color);
+	ns->color = color;
 	if (ns->transformation_chain){
 		Color c;
 		ns->transformation_chain->apply(&ns->color, &c);
-		color_get_contrasting(&c, &ns->text_color);
+		ns->text_color = c.getContrasting();
 	}else{
-		color_get_contrasting(&ns->color, &ns->text_color);
+		ns->text_color = ns->color.getContrasting();
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string &text) {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(&color, &ns->color);
+	ns->color = color;
 	if (ns->secondary_color){
 	}else{
 		if (ns->transformation_chain){
 			Color c;
 			ns->transformation_chain->apply(&ns->color, &c);
-			color_get_contrasting(&c, &ns->text_color);
+			ns->text_color = c.getContrasting();
 		}else{
-			color_get_contrasting(&ns->color, &ns->text_color);
+			ns->text_color = ns->color.getContrasting();
 		}
 	}
 	ns->text = text;
@@ -193,15 +182,15 @@ void gtk_color_set_text(GtkColor* widget, const std::string &text) {
 void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(color, &ns->color);
+	ns->color = *color;
 	if (ns->secondary_color){
 	}else{
 		if (ns->transformation_chain){
 			Color c;
 			ns->transformation_chain->apply(&ns->color, &c);
-			color_get_contrasting(&c, &ns->text_color);
+			ns->text_color = c.getContrasting();
 		}else{
-			color_get_contrasting(&ns->color, &ns->text_color);
+			ns->text_color = ns->color.getContrasting();
 		}
 	}
 	ns->text = text;
@@ -218,36 +207,6 @@ void gtk_color_set_hcenter(GtkColor* widget, bool hcenter)
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	ns->h_center = hcenter;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
-}
-static void cairo_rounded_rectangle(cairo_t *cr, double x, double y, double width, double height, double roundness)
-{
-	double strength = 0.3;
-	cairo_new_path(cr);
-	cairo_move_to(cr, x+roundness, y);
-	cairo_line_to(cr, x+width-roundness, y);
-	cairo_curve_to(cr, x+width-roundness*strength, y, x+width, y+roundness*strength, x+width, y+roundness);
-	cairo_line_to(cr, x+width, y+height-roundness);
-	cairo_curve_to(cr, x+width, y+height-roundness*strength, x+width-roundness*strength, y+height, x+width-roundness, y+height);
-	cairo_line_to(cr, x+roundness, y+height);
-	cairo_curve_to(cr, x+roundness*strength, y+height, x, y+height-roundness*strength, x, y+height-roundness);
-	cairo_line_to(cr, x, y+roundness);
-	cairo_curve_to(cr, x, y+roundness*strength, x+roundness*strength, y, x+roundness, y);
-	cairo_close_path(cr);
-}
-static void cairo_split_rectangle(cairo_t *cr, double x, double y, double width, double height, double tilt)
-{
-	cairo_new_path(cr);
-	cairo_move_to(cr, x, y + height / 2);
-	cairo_line_to(cr, x + width, y + height / 2 + tilt);
-	cairo_line_to(cr, x + width, y + height);
-	cairo_line_to(cr, x, y + height);
-	cairo_line_to(cr, x, y + height / 2);
-	cairo_close_path(cr);
-}
-static void cairo_set_color(cairo_t *cr, Color &color)
-{
-	using namespace boost::math;
-	cairo_set_source_rgb(cr, round(color.rgb.red * 255.0) / 255.0, round(color.rgb.green * 255.0) / 255.0, round(color.rgb.blue * 255.0) / 255.0);
 }
 static gboolean draw(GtkWidget *widget, cairo_t *cr)
 {
@@ -267,27 +226,27 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			ns->transformation_chain->apply(&ns->split_color, &split_color);
 		}
 	}else{
-		color_copy(&ns->color, &color);
+		color = ns->color;
 		if (ns->split){
-			color_copy(&ns->split_color, &split_color);
+			split_color = ns->split_color;
 		}
 	}
 	if (ns->rounded_rectangle){
 		if (sensitive){
-			cairo_rounded_rectangle(cr, 0, 0, width, height, ns->roundness);
-			cairo_set_color(cr, color);
+			gtk::roundedRectangle(cr, 0, 0, width, height, ns->roundness);
+			gtk::setColor(cr, color);
 			cairo_fill(cr);
 		}
 		if (ns->split && sensitive){
 			cairo_save(cr);
-			cairo_split_rectangle(cr, 0, 0, width, height, height / 6);
+			gtk::splitRectangle(cr, 0, 0, width, height, 0.2f);
 			cairo_clip_preserve(cr);
-			cairo_rounded_rectangle(cr, 0, 0, width, height, ns->roundness);
-			cairo_set_color(cr, split_color);
+			gtk::roundedRectangle(cr, 0, 0, width, height, ns->roundness);
+			gtk::setColor(cr, split_color);
 			cairo_fill(cr);
 			cairo_restore(cr);
 		}
-		cairo_rounded_rectangle(cr, 0, 0, width, height, ns->roundness);
+		gtk::roundedRectangle(cr, 0, 0, width, height, ns->roundness);
 		if (gtk_widget_has_focus(widget)){
 #if GTK_MAJOR_VERSION >= 3
 			//TODO: GTK3 get border color
@@ -307,15 +266,15 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	}else{
 		if (ns->split && sensitive){
 			cairo_save(cr);
-			cairo_split_rectangle(cr, 0, 0, width, height, height / 6);
+			gtk::splitRectangle(cr, 0, 0, width, height, 0.2f);
 			cairo_clip_preserve(cr);
-			cairo_rounded_rectangle(cr, 0, 0, width, height, ns->roundness);
-			cairo_set_color(cr, split_color);
+			gtk::roundedRectangle(cr, 0, 0, width, height, ns->roundness);
+			gtk::setColor(cr, split_color);
 			cairo_fill(cr);
 			cairo_restore(cr);
 		}
 		if (sensitive){
-			cairo_set_color(cr, color);
+			gtk::setColor(cr, color);
 			cairo_paint(cr);
 		}
 	}
@@ -333,12 +292,12 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			if (ns->secondary_color){
 				ns->transformation_chain->apply(&ns->text_color, &color);
 			}else{
-				color_copy(&ns->text_color, &color);
+				color = ns->text_color;
 			}
 		}else{
-			color_copy(&ns->text_color, &color);
+			color = ns->text_color;
 		}
-		cairo_set_color(cr, color);
+		gtk::setColor(cr, color);
 		pango_layout_set_markup(layout, ns->text.c_str(), -1);
 		pango_layout_set_width(layout, (width - 10) * PANGO_SCALE);
 		pango_layout_set_height(layout, height * PANGO_SCALE);
@@ -389,9 +348,9 @@ void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain 
 		if (ns->transformation_chain){
 			Color c;
 			ns->transformation_chain->apply(&ns->color, &c);
-			color_get_contrasting(&c, &ns->text_color);
+			ns->text_color = c.getContrasting();
 		}else{
-			color_get_contrasting(&ns->color, &ns->text_color);
+			ns->text_color = ns->color.getContrasting();
 		}
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
@@ -399,13 +358,13 @@ void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain 
 void gtk_color_set_split_color(GtkColor* widget, const Color* color)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(color, &ns->split_color);
+	ns->split_color = *color;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
 void gtk_color_get_split_color(GtkColor* widget, Color* color)
 {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
-	color_copy(&ns->split_color, color);
+	*color = ns->split_color;
 }
 void gtk_color_enable_split(GtkColor* widget, bool enable)
 {

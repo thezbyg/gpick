@@ -21,81 +21,82 @@
 #include <algorithm>
 #include <iterator>
 #include <boost/math/special_functions/round.hpp>
-using namespace std;
 
 template<typename InputIterator, typename OutputIterator>
-OutputIterator copy_zero_terminated_string(InputIterator begin, OutputIterator out)
-{
+OutputIterator copy_zero_terminated_string(InputIterator begin, OutputIterator out) {
 	while (*begin != '\0'){
 		*out++ = *begin++;
 	}
 	return out;
 }
 template<typename InputIterator, typename OutputIterator>
-OutputIterator escape(InputIterator begin, InputIterator end, OutputIterator out)
-{
-	const char escape_chars[] = {'&', '"', '\'', '<', '>'};
+OutputIterator escape(InputIterator begin, InputIterator end, OutputIterator out) {
+	const char escapeChars[] = {'&', '"', '\'', '<', '>'};
 	const char *replacements[] = {"&amp;", "&quot;", "&apos;", "&lt;", "&gt;"};
-	const size_t n_escape_chars = sizeof(escape_chars) / sizeof(const char);
+	const size_t escapeCharCount = sizeof(escapeChars) / sizeof(const char);
 	for (; begin != end; ++begin){
-		size_t escape_char_index = distance(escape_chars, find(escape_chars, escape_chars + n_escape_chars, *begin));
-		if (escape_char_index != n_escape_chars){
-			out = copy_zero_terminated_string(replacements[escape_char_index], out);
+		size_t escapeCharIndex = std::distance(escapeChars, std::find(escapeChars, escapeChars + escapeCharCount, *begin));
+		if (escapeCharIndex != escapeCharCount){
+			out = copy_zero_terminated_string(replacements[escapeCharIndex], out);
 		}else{
 			*out++ = *begin;
 		}
 	}
 	return out;
 }
-string &escapeHtmlInplace(string &str)
-{
-	string result;
+HtmlRGB::HtmlRGB(const Color &color):
+	color(color) {
+}
+HtmlHEX::HtmlHEX(const Color &color):
+	color(color) {
+}
+HtmlHSL::HtmlHSL(const Color &color):
+	color(color) {
+}
+std::string &escapeHtmlInplace(std::string &str) {
+	std::string result;
 	result.reserve(str.size());
-	escape(str.begin(), str.end(), back_inserter(result));
+	escape(str.begin(), str.end(), std::back_inserter(result));
 	str.swap(result);
 	return str;
 }
-string escapeHtml(const string &str)
-{
-	string result;
+std::string escapeHtml(const std::string &str) {
+	std::string result;
 	result.reserve(str.size());
-	escape(str.begin(), str.end(), back_inserter(result));
+	escape(str.begin(), str.end(), std::back_inserter(result));
 	return result;
 }
-std::ostream& operator<<(std::ostream& os, const HtmlRGB color)
-{
+std::ostream& operator<<(std::ostream& os, const HtmlRGB color) {
 	using boost::math::iround;
 	int r, g, b;
-	r = iround(color.color->rgb.red * 255);
-	g = iround(color.color->rgb.green * 255);
-	b = iround(color.color->rgb.blue * 255);
+	r = iround(color.color.rgb.red * 255);
+	g = iround(color.color.rgb.green * 255);
+	b = iround(color.color.rgb.blue * 255);
 	auto flags = os.flags();
-	os << "rgb(" << dec << r << ", " << g << ", " << b << ")";
+	os << "rgb(" << std::dec << r << ", " << g << ", " << b << ")";
 	os.setf(flags);
 	return os;
 }
-std::ostream& operator<<(std::ostream& os, const HtmlHEX color)
-{
+std::ostream& operator<<(std::ostream& os, const HtmlHEX color) {
 	using boost::math::iround;
 	int r, g, b;
-	r = iround(color.color->rgb.red * 255);
-	g = iround(color.color->rgb.green * 255);
-	b = iround(color.color->rgb.blue * 255);
+	r = iround(color.color.rgb.red * 255);
+	g = iround(color.color.rgb.green * 255);
+	b = iround(color.color.rgb.blue * 255);
 	char fill = os.fill();
 	auto flags = os.flags();
-	os << "#" << hex << setfill('0') << setw(2) << r << setw(2) << g << setw(2) << b << setfill(fill);
+	os << "#" << std::hex << std::setfill('0') << std::setw(2) << r << std::setw(2) << g << std::setw(2) << b << std::setfill(fill);
 	os.setf(flags);
 	return os;
 }
-std::ostream& operator<<(std::ostream& os, const HtmlHSL color)
-{
+std::ostream& operator<<(std::ostream& os, const HtmlHSL color) {
 	using boost::math::iround;
 	int h, s, l;
-	h = iround(color.color->hsl.hue * 360);
-	s = iround(color.color->hsl.saturation * 100);
-	l = iround(color.color->hsl.lightness * 100);
+	h = iround(color.color.hsl.hue * 360);
+	s = iround(color.color.hsl.saturation * 100);
+	l = iround(color.color.hsl.lightness * 100);
 	auto flags = os.flags();
-	os << "hsl(" << dec << h << ", " << s << "%, " << l << "%)";
+	os << "hsl(" << std::dec << h << ", " << s << "%, " << l << "%)";
 	os.setf(flags);
 	return os;
 }

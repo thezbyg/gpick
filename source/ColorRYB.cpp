@@ -123,11 +123,10 @@ int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue){
 
 	Color color, color2;
 	for (int limit=100; limit>0; --limit){
-		color.rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
-		color.rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
-		color.rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
-
-		color_rgb_to_hsv(&color, &color2);
+		color.rgb.red = static_cast<float>(bezier_eval_at_x(red, hue*36, 0.01));
+		color.rgb.green = static_cast<float>(bezier_eval_at_x(green, hue*36, 0.01));
+		color.rgb.blue = static_cast<float>(bezier_eval_at_x(blue, hue*36, 0.01));
+		color2 = color.rgbToHsv();
 
 		d = rgb_hue - color2.hsv.hue;
 		if (fabs(d)<delta){
@@ -185,9 +184,9 @@ void color_rybhue_to_rgb(double hue, Color* color){
 	list<bezier*> red, green, blue;
 	color_get_ryb_curves(red, green, blue);
 
-	color->rgb.red = bezier_eval_at_x(red, hue*36, 0.01),
-	color->rgb.green = bezier_eval_at_x(green, hue*36, 0.01),
-	color->rgb.blue = bezier_eval_at_x(blue, hue*36, 0.01);
+	color->rgb.red = static_cast<float>(bezier_eval_at_x(red, hue*36, 0.01));
+	color->rgb.green = static_cast<float>(bezier_eval_at_x(green, hue*36, 0.01));
+	color->rgb.blue = static_cast<float>(bezier_eval_at_x(blue, hue*36, 0.01));
 }
 
 double color_ryb_transform_lightness(double hue1, double hue2){
@@ -210,8 +209,8 @@ double color_ryb_transform_lightness(double hue1, double hue2){
 	};
 	int32_t samples=sizeof(values)/sizeof(double)-1;
 	double n;
-	return 	mix_double(values[int(floor(hue2*samples))], values[int(floor(hue2*samples))+1], modf(hue2*samples,&n))/
-			mix_double(values[int(floor(hue2*samples))], values[int(floor(hue1*samples))+1], modf(hue1*samples,&n));
+	return math::mix(values[int(floor(hue2*samples))], values[int(floor(hue2*samples))+1], modf(hue2*samples,&n))/
+		math::mix(values[int(floor(hue2*samples))], values[int(floor(hue1*samples))+1], modf(hue1*samples,&n));
 }
 
 double color_ryb_transform_hue(double hue, bool forward){
@@ -248,7 +247,7 @@ double color_ryb_transform_hue(double hue, bool forward){
 
 				mix = (hue-values[index1])/(values[index2]-values[index1]);
 
-				new_hue= mix_double(value1, value2, mix);
+				new_hue = math::mix(value1, value2, mix);
 
 				return new_hue;
 			}
@@ -261,7 +260,7 @@ double color_ryb_transform_hue(double hue, bool forward){
 		double n;
 		double mix = modf(hue*samples, &n);
 
-		new_hue = mix_double(value1, value2, mix);
+		new_hue = math::mix(value1, value2, mix);
 
 		return new_hue;
 	}

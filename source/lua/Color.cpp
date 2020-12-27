@@ -30,11 +30,11 @@ static int newColor(lua_State *L)
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);
 	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER ){
-		c->rgb.red = luaL_checknumber(L, 2);
-		c->rgb.green = luaL_checknumber(L, 3);
-		c->rgb.blue = luaL_checknumber(L, 4);
+		c->rgb.red = static_cast<float>(luaL_checknumber(L, 2));
+		c->rgb.green = static_cast<float>(luaL_checknumber(L, 3));
+		c->rgb.blue = static_cast<float>(luaL_checknumber(L, 4));
 	}else{
-		color_zero(c);
+		*c = { 0.0f };
 	}
 	return 1;
 }
@@ -49,7 +49,7 @@ int pushColor(lua_State *L, const Color &color)
 	Color *c = reinterpret_cast<Color*>(lua_newuserdata(L, sizeof(Color)));
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);
-	color_copy(&color, c);
+	*c = color;
 	return 1;
 }
 static int toString(lua_State *L)
@@ -62,9 +62,9 @@ static int colorRgb(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER){
-		c.rgb.red = luaL_checknumber(L, 2);
-		c.rgb.green = luaL_checknumber(L, 3);
-		c.rgb.blue = luaL_checknumber(L, 4);
+		c.rgb.red = static_cast<float>(luaL_checknumber(L, 2));
+		c.rgb.green = static_cast<float>(luaL_checknumber(L, 3));
+		c.rgb.blue = static_cast<float>(luaL_checknumber(L, 4));
 	}
 	lua_pushnumber(L, c.rgb.red);
 	lua_pushnumber(L, c.rgb.green);
@@ -75,7 +75,7 @@ static int colorRed(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.red = luaL_checknumber(L, 2);
+		c.rgb.red = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.rgb.red);
 	return 1;
@@ -84,7 +84,7 @@ static int colorGreen(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.green = luaL_checknumber(L, 2);
+		c.rgb.green = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.rgb.green);
 	return 1;
@@ -93,7 +93,7 @@ static int colorBlue(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.blue = luaL_checknumber(L, 2);
+		c.rgb.blue = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.rgb.blue);
 	return 1;
@@ -102,9 +102,9 @@ static int colorHsl(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER){
-		c.hsl.hue = luaL_checknumber(L, 2);
-		c.hsl.saturation = luaL_checknumber(L, 3);
-		c.hsl.lightness = luaL_checknumber(L, 4);
+		c.hsl.hue = static_cast<float>(luaL_checknumber(L, 2));
+		c.hsl.saturation = static_cast<float>(luaL_checknumber(L, 3));
+		c.hsl.lightness = static_cast<float>(luaL_checknumber(L, 4));
 	}
 	lua_pushnumber(L, c.hsl.hue);
 	lua_pushnumber(L, c.hsl.saturation);
@@ -115,7 +115,7 @@ static int colorHue(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.hsl.hue = luaL_checknumber(L, 2);
+		c.hsl.hue = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.hsl.hue);
 	return 1;
@@ -124,7 +124,7 @@ static int colorSaturation(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.hsl.saturation = luaL_checknumber(L, 2);
+		c.hsl.saturation = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.hsl.saturation);
 	return 1;
@@ -133,7 +133,7 @@ static int colorLightness(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.hsl.lightness = luaL_checknumber(L, 2);
+		c.hsl.lightness = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.hsl.lightness);
 	return 1;
@@ -142,10 +142,10 @@ static int colorCmyk(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER && lua_type(L, 5) == LUA_TNUMBER){
-		c.cmyk.c = luaL_checknumber(L, 2);
-		c.cmyk.m = luaL_checknumber(L, 3);
-		c.cmyk.y = luaL_checknumber(L, 4);
-		c.cmyk.k = luaL_checknumber(L, 5);
+		c.cmyk.c = static_cast<float>(luaL_checknumber(L, 2));
+		c.cmyk.m = static_cast<float>(luaL_checknumber(L, 3));
+		c.cmyk.y = static_cast<float>(luaL_checknumber(L, 4));
+		c.cmyk.k = static_cast<float>(luaL_checknumber(L, 5));
 	}
 	lua_pushnumber(L, c.cmyk.c);
 	lua_pushnumber(L, c.cmyk.m);
@@ -157,7 +157,7 @@ static int colorCyan(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.cmyk.c = luaL_checknumber(L, 2);
+		c.cmyk.c = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.cmyk.c);
 	return 1;
@@ -166,7 +166,7 @@ static int colorMagenta(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.cmyk.m = luaL_checknumber(L, 2);
+		c.cmyk.m = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.cmyk.m);
 	return 1;
@@ -175,7 +175,7 @@ static int colorYellow(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.cmyk.y = luaL_checknumber(L, 2);
+		c.cmyk.y = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.cmyk.y);
 	return 1;
@@ -184,7 +184,7 @@ static int colorKeyBlack(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.cmyk.k = luaL_checknumber(L, 2);
+		c.cmyk.k = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.cmyk.k);
 	return 1;
@@ -193,7 +193,7 @@ static int colorLabLightness(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lab.L = luaL_checknumber(L, 2);
+		c.lab.L = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lab.L);
 	return 1;
@@ -202,7 +202,7 @@ static int colorLabA(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lab.a = luaL_checknumber(L, 2);
+		c.lab.a = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lab.a);
 	return 1;
@@ -211,41 +211,31 @@ static int colorLabB(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lab.b = luaL_checknumber(L, 2);
+		c.lab.b = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lab.b);
 	return 1;
 }
 static int colorRgbToHsl(lua_State *L)
 {
-	Color &c = checkColor(L, 1);
-	Color c2;
-	color_rgb_to_hsl(&c, &c2);
-	pushColor(L, c2);
+	pushColor(L, checkColor(L, 1).rgbToHsl());
 	return 1;
 }
 static int colorHslToRgb(lua_State *L)
 {
-	Color &c = checkColor(L, 1);
-	Color c2;
-	color_hsl_to_rgb(&c, &c2);
-	pushColor(L, c2);
+	pushColor(L, checkColor(L, 1).hslToRgb());
 	return 1;
 }
 static int colorRgbToCmyk(lua_State *L)
 {
-	Color &c = checkColor(L, 1);
-	Color c2, c3;
-	color_rgb_to_cmy(&c, &c3);
-	color_cmy_to_cmyk(&c3, &c2);
-	pushColor(L, c2);
+	pushColor(L, checkColor(L, 1).rgbToCmyk());
 	return 1;
 }
 static int colorLchLightness(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lch.L = luaL_checknumber(L, 2);
+		c.lch.L = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lch.L);
 	return 1;
@@ -254,7 +244,7 @@ static int colorLchChroma(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lch.C = luaL_checknumber(L, 2);
+		c.lch.C = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lch.C);
 	return 1;
@@ -263,7 +253,7 @@ static int colorLchHue(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.lch.h = luaL_checknumber(L, 2);
+		c.lch.h = static_cast<float>(luaL_checknumber(L, 2));
 	}
 	lua_pushnumber(L, c.lch.h);
 	return 1;

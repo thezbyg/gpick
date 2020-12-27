@@ -23,7 +23,6 @@
 #include "Types.h"
 #include <vector>
 #include <queue>
-#include <iostream>
 #include <type_traits>
 namespace dynv {
 template<typename T, typename std::enable_if_t<!std::is_reference<T>::value, int> = 0>

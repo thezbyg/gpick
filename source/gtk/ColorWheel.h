@@ -20,8 +20,8 @@
 #define GPICK_GTK_COLOR_WHEEL_H_
 
 #include <gtk/gtk.h>
-#include "../Color.h"
-#include "../ColorWheelType.h"
+#include "Color.h"
+#include "ColorWheelType.h"
 
 #define GTK_TYPE_COLOR_WHEEL (gtk_color_wheel_get_type())
 #define GTK_COLOR_WHEEL(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheel))

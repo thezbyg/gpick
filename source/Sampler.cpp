@@ -19,7 +19,7 @@
 #include "Sampler.h"
 #include "ScreenReader.h"
 #include "MathUtil.h"
-#include <math.h>
+#include <cmath>
 #include <gdk/gdk.h>
 using namespace math;
 
@@ -93,27 +93,26 @@ static void get_pixel(unsigned char *data, int stride, int x, int y, Color* colo
 {
 	unsigned char *p;
 	p = data + y * stride + x * 4;
-	color->rgb.red = p[2] * (1 / 255.0);
-	color->rgb.green = p[1] * (1 / 255.0);
-	color->rgb.blue = p[0] * (1 / 255.0);
+	color->rgb.red = p[2] * (1 / 255.0f);
+	color->rgb.green = p[1] * (1 / 255.0f);
+	color->rgb.blue = p[0] * (1 / 255.0f);
 }
 int sampler_get_color_sample(Sampler *sampler, Vec2<int>& pointer, Rect2<int>& screen_rect, Vec2<int>& offset, Color* color)
 {
-	Color sample, result;
+	Color sample, result = { 0.0f };
 	float divider = 0;
-	color_zero(&result);
 	cairo_surface_t *surface = screen_reader_get_surface(sampler->screen_reader);
 	int x = pointer.x, y = pointer.y;
 	int left, right, top, bottom;
-	left = max_int(screen_rect.getLeft(), x - sampler->oversample);
-	right = min_int(screen_rect.getRight(), x + sampler->oversample + 1);
-	top = max_int(screen_rect.getTop(), y - sampler->oversample);
-	bottom = min_int(screen_rect.getBottom(), y + sampler->oversample + 1);
+	left = math::max(screen_rect.getLeft(), x - sampler->oversample);
+	right = math::min(screen_rect.getRight(), x + sampler->oversample + 1);
+	top = math::max(screen_rect.getTop(), y - sampler->oversample);
+	bottom = math::min(screen_rect.getBottom(), y + sampler->oversample + 1);
 	int width = right - left;
 	int height = bottom - top;
 	int center_x = x - left;
 	int center_y = y - top;
-	float max_distance = 1 / sqrt(2 * pow((double)sampler->oversample, 2));
+	float max_distance = static_cast<float>(1 / std::sqrt(2 * std::pow((double)sampler->oversample, 2)));
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_image_surface_get_stride(surface);
 	for (int x=-sampler->oversample; x <= sampler->oversample; ++x){
@@ -123,18 +122,17 @@ int sampler_get_color_sample(Sampler *sampler, Vec2<int>& pointer, Rect2<int>& s
 			get_pixel(data, stride, offset.x + center_x + x, offset.y + center_y + y, &sample);
 			float f;
 			if (sampler->oversample){
-				f = sampler->falloff_fnc(sqrt((double)(x * x + y * y)) * max_distance);
+				f = sampler->falloff_fnc(static_cast<float>(std::sqrt((double)(x * x + y * y)) * max_distance));
 			}else{
 				f = 1;
 			}
-			color_multiply(&sample, f);
-			color_add(&result, &sample);
+			result += sample * f;
 			divider += f;
 		}
 	}
 	if (divider > 0)
-		color_multiply(&result, 1 / divider);
-	color_copy(&result, color);
+		result *= 1 / divider;
+	*color = result;
 	return 0;
 }
 SamplerFalloff sampler_get_falloff(Sampler *sampler)
@@ -148,9 +146,9 @@ int sampler_get_oversample(Sampler *sampler)
 void sampler_get_screen_rect(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
 {
 	int left, right, top, bottom;
-	left = max_int(screen_rect.getLeft(), pointer.x - sampler->oversample);
-	right = min_int(screen_rect.getRight(), pointer.x + sampler->oversample + 1);
-	top = max_int(screen_rect.getTop(), pointer.y - sampler->oversample);
-	bottom = min_int(screen_rect.getBottom(), pointer.y + sampler->oversample + 1);
+	left = math::max(screen_rect.getLeft(), pointer.x - sampler->oversample);
+	right = math::min(screen_rect.getRight(), pointer.x + sampler->oversample + 1);
+	top = math::max(screen_rect.getTop(), pointer.y - sampler->oversample);
+	bottom = math::min(screen_rect.getBottom(), pointer.y + sampler->oversample + 1);
 	*rect = math::Rect2<int>(left, top, right, bottom);
 }

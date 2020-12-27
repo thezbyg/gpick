@@ -37,7 +37,7 @@ struct Parser: public TextFile {
 	virtual void outOfMemory() {
 		m_failed = true;
 	}
-	virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn) {
+	virtual void syntaxError(size_t startLine, size_t startColumn, size_t endLine, size_t endEolunn) {
 		m_failed = true;
 	}
 	virtual size_t read(char *buffer, size_t length) {
@@ -57,7 +57,7 @@ struct Parser: public TextFile {
 		return m_colors.size();
 	}
 	bool checkColor(size_t index, const Color &color) {
-		return color_equal(&m_colors[index], &color);
+		return m_colors[index] == color;
 	}
 	void parse() {
 		Configuration configuration;
@@ -70,8 +70,7 @@ BOOST_AUTO_TEST_CASE(full_hex) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -81,8 +80,7 @@ BOOST_AUTO_TEST_CASE(short_hex) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -92,8 +90,7 @@ BOOST_AUTO_TEST_CASE(css_rgb) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -103,9 +100,8 @@ BOOST_AUTO_TEST_CASE(css_rgba) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
-	color.ma[3] = 0.5;
+	Color color = { 0xaa, 0xbb, 0xcc };
+	color[3] = 0.5f;
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -115,8 +111,7 @@ BOOST_AUTO_TEST_CASE(int_values) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -126,8 +121,7 @@ BOOST_AUTO_TEST_CASE(float_values_separated_by_comma) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -137,8 +131,7 @@ BOOST_AUTO_TEST_CASE(float_values_separated_by_space) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -148,8 +141,7 @@ BOOST_AUTO_TEST_CASE(single_line_c_comments) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -159,8 +151,7 @@ BOOST_AUTO_TEST_CASE(multi_line_c_comments) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -170,8 +161,7 @@ BOOST_AUTO_TEST_CASE(single_line_hash_comments) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0xcc);
+	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
@@ -181,8 +171,7 @@ BOOST_AUTO_TEST_CASE(out_of_range_float_value) {
 	Parser parser(&file);
 	parser.parse();
 	BOOST_CHECK(parser.count() == 1);
-	Color color;
-	color_set(&color, 0xaa, 0xbb, 0);
+	Color color = { 0xaa, 0xbb, 0 };
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }

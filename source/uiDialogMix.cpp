@@ -21,8 +21,6 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
-#include "ColorUtils.h"
-#include "MathUtil.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
@@ -154,7 +152,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 	for (ColorList::iter i=args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		a = (*i)->getColor();
 		if (type == 0)
-			color_rgb_get_linear(&a, &a);
+			a.linearRgbInplace();
 		name_assigner.setStartName((*i)->getName().c_str());
 		j = i;
 		++j;
@@ -165,15 +163,15 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 			}
 			b = (*j)->getColor();
 			if (type == 0)
-				color_rgb_get_linear(&b, &b);
+				b.linearRgbInplace();
 			name_assigner.setEndName((*j)->getName().c_str());
 			name_assigner.setStepsAndStage(steps, 0);
 
 			switch (type){
 			case 0:
 				for (step_i = start_step; step_i < max_step; ++step_i) {
-					color_utils::mix(a, b, step_i / (float)(steps - 1), r);
-					color_linear_get_rgb(&r, &r);
+					r = math::mix(a, b, step_i / (float)(steps - 1));
+					r.nonLinearRgbInplace();
 					store(color_list, &r, step_i, name_assigner);
 				}
 				break;
@@ -181,20 +179,19 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 			case 1:
 				{
 					Color a_hsv, b_hsv, r_hsv;
-					color_rgb_to_hsv(&a, &a_hsv);
-					color_rgb_to_hsv(&b, &b_hsv);
-
+					a_hsv = a.rgbToHsv();
+					b_hsv = b.rgbToHsv();
 					if (a_hsv.hsv.hue>b_hsv.hsv.hue){
-						if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5)
+						if (a_hsv.hsv.hue-b_hsv.hsv.hue>0.5f)
 							a_hsv.hsv.hue-=1;
 					}else{
-						if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5)
+						if (b_hsv.hsv.hue-a_hsv.hsv.hue>0.5f)
 							b_hsv.hsv.hue-=1;
 					}
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						color_utils::mix(a_hsv, b_hsv, step_i / (float)(steps - 1), r_hsv);
+						r_hsv = math::mix(a_hsv, b_hsv, step_i / (float)(steps - 1));
 						if (r_hsv.hsv.hue < 0) r_hsv.hsv.hue += 1;
-						color_hsv_to_rgb(&r_hsv, &r);
+						r = r_hsv.hsvToRgb();
 						store(color_list, &r, step_i, name_assigner);
 					}
 				}
@@ -203,13 +200,11 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 			case 2:
 				{
 					Color a_lab, b_lab, r_lab;
-					color_rgb_to_lab_d50(&a, &a_lab);
-					color_rgb_to_lab_d50(&b, &b_lab);
-
+					a_lab = a.rgbToLabD50();
+					b_lab = b.rgbToLabD50();
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						color_utils::mix(a_lab, b_lab, step_i / (float)(steps - 1), r_lab);
-						color_lab_to_rgb_d50(&r_lab, &r);
-						color_rgb_normalize(&r);
+						r_lab = math::mix(a_lab, b_lab, step_i / (float)(steps - 1));
+						r = r_lab.labToRgbD50().normalizeRgbInplace();
 						store(color_list, &r, step_i, name_assigner);
 					}
 				}
@@ -218,9 +213,8 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 			case 3:
 				{
 					Color a_lch, b_lch, r_lch;
-					color_rgb_to_lch_d50(&a, &a_lch);
-					color_rgb_to_lch_d50(&b, &b_lch);
-
+					a_lch = a.rgbToLchD50();
+					b_lch = b.rgbToLchD50();
 					if (a_lch.lch.h>b_lch.lch.h){
 						if (a_lch.lch.h-b_lch.lch.h>180)
 							a_lch.lch.h-=360;
@@ -229,10 +223,9 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 							b_lch.lch.h-=360;
 					}
 					for (step_i = start_step; step_i < max_step; ++step_i) {
-						color_utils::mix(a_lch, b_lch, step_i / (float)(steps - 1), r_lch);
+						r_lch = math::mix(a_lch, b_lch, step_i / (float)(steps - 1));
 						if (r_lch.lch.h < 0) r_lch.lch.h += 360;
-						color_lch_to_rgb_d50(&r_lch, &r);
-						color_rgb_normalize(&r);
+						r = r_lch.lchToRgbD50().normalizeRgbInplace();
 						store(color_list, &r, step_i, name_assigner);
 					}
 				}

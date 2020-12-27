@@ -21,7 +21,6 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
-#include "MathUtil.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
@@ -67,10 +66,10 @@ struct VariationsColorNameAssigner: public ToolColorNameAssigner
 static void calc(DialogVariationsArgs *args, bool preview, int limit)
 {
 	gint steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->range_steps));
-	float lightness_from = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from));
-	float lightness_to = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_to));
-	float saturation_from = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_from));
-	float saturation_to = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_to));
+	float lightness_from = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_from)));
+	float lightness_to = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_lightness_to)));
+	float saturation_from = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_from)));
+	float saturation_to = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_saturation_to)));
 	bool multiplication = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_multiplication));
 	bool linearization = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_linearization));
 	if (!preview){
@@ -94,35 +93,35 @@ static void calc(DialogVariationsArgs *args, bool preview, int limit)
 		Color in = (*i)->getColor();
 		const char* name = (*i)->getName().c_str();
 		if (linearization)
-			color_rgb_get_linear(&in, &in);
+			in.linearRgbInplace();
 		for (step_i = 0; step_i < steps; ++step_i) {
 			if (preview){
 				if (limit <= 0) return;
 				limit--;
 			}
-			color_rgb_to_hsl(&in, &hsl);
+			hsl = in.rgbToHsl();
 			if (steps == 1){
 				if (multiplication){
-					hsl.hsl.saturation *= mix_float(saturation_from, saturation_to, 0);
-					hsl.hsl.lightness *= mix_float(lightness_from, lightness_to, 0);
+					hsl.hsl.saturation *= math::mix(saturation_from, saturation_to, 0);
+					hsl.hsl.lightness *= math::mix(lightness_from, lightness_to, 0);
 				}else{
-					hsl.hsl.saturation += mix_float(saturation_from, saturation_to, 0);
-					hsl.hsl.lightness += mix_float(lightness_from, lightness_to, 0);
+					hsl.hsl.saturation += math::mix(saturation_from, saturation_to, 0);
+					hsl.hsl.lightness += math::mix(lightness_from, lightness_to, 0);
 				}
 			}else{
 				if (multiplication){
-					hsl.hsl.saturation *= mix_float(saturation_from, saturation_to, (step_i / (float) (steps - 1)));
-					hsl.hsl.lightness *= mix_float(lightness_from, lightness_to, (step_i / (float) (steps - 1)));
+					hsl.hsl.saturation *= math::mix(saturation_from, saturation_to, (step_i / (float) (steps - 1)));
+					hsl.hsl.lightness *= math::mix(lightness_from, lightness_to, (step_i / (float) (steps - 1)));
 				}else{
-					hsl.hsl.saturation += mix_float(saturation_from, saturation_to, (step_i / (float) (steps - 1)));
-					hsl.hsl.lightness += mix_float(lightness_from, lightness_to, (step_i / (float) (steps - 1)));
+					hsl.hsl.saturation += math::mix(saturation_from, saturation_to, (step_i / (float) (steps - 1)));
+					hsl.hsl.lightness += math::mix(lightness_from, lightness_to, (step_i / (float) (steps - 1)));
 				}
 			}
-			hsl.hsl.saturation = clamp_float(hsl.hsl.saturation, 0, 1);
-			hsl.hsl.lightness = clamp_float(hsl.hsl.lightness, 0, 1);
-			color_hsl_to_rgb(&hsl, &r);
+			hsl.hsl.saturation = math::clamp(hsl.hsl.saturation, 0.0f, 1.0f);
+			hsl.hsl.lightness = math::clamp(hsl.hsl.lightness, 0.0f, 1.0f);
+			r = hsl.hslToRgb();
 			if (linearization)
-				color_linear_get_rgb(&r, &r);
+				r.nonLinearRgbInplace();
 			ColorObject *color_object = color_list_new_color_object(color_list, &r);
 			name_assigner.assign(color_object, &r, name, step_i);
 			color_list_add_color_object(color_list, color_object, 1);

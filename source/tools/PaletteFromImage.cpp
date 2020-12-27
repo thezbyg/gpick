@@ -396,7 +396,7 @@ static void get_settings(PaletteFromImageArgs *args){
 		args->filename.clear();
 	}
 
-	args->n_colors = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors));
+	args->n_colors = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors)));
 }
 
 static void save_settings(PaletteFromImageArgs *args){
@@ -450,10 +450,6 @@ static void update(GtkWidget *widget, PaletteFromImageArgs *args ){
 	color_list_remove_all(args->preview_color_list);
 	get_settings(args);
 	calc(args, true, 100);
-}
-
-static gchar* format_threshold_value_cb(GtkScale *scale, gdouble value){
-	return g_strdup_printf("%0.01f%%", value);
 }
 
 static void destroy_cb(GtkWidget* widget, PaletteFromImageArgs *args){

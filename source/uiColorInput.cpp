@@ -246,7 +246,7 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(color_space_type->items[i].name,0,0,0,0),0,1,i,i+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
 			args->value[i] = gtk_spin_button_new_with_range(color_space_type->items[i].min_value, color_space_type->items[i].max_value, color_space_type->items[i].step);
 			gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
-			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), raw_color.ma[i] * color_space_type->items[i].raw_scale);
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), raw_color[i] * color_space_type->items[i].raw_scale);
 			gtk_table_attach(GTK_TABLE(table), args->value[i],1,2,i,i+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
 			if (i == component_id)
 				gtk_widget_grab_focus(args->value[i]);
@@ -261,7 +261,7 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 		if (color_space_type){
 			for (int i = 0; i < color_space_type->n_items; i++){
-				raw_color.ma[i] = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / color_space_type->items[i].raw_scale;
+				raw_color[i] = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / color_space_type->items[i].raw_scale);
 			}
 			gtk_color_component_set_raw_color(color_component, &raw_color);
 		}

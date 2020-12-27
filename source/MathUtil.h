@@ -19,33 +19,6 @@
 #ifndef GPICK_MATH_UTIL_H_
 #define GPICK_MATH_UTIL_H_
 
-#define PI 3.14159265
-
-float min_float_3(float a, float b, float c);
-
-float max_float_3(float a, float b, float c);
-
-int min_int(int a, int b);
-
-int max_int(int a, int b);
-
-int wrap_int(int x, int a, int b);
-
-float clamp_float(float x, float a, float b);
-
-float wrap_float(float x);
-
-float mix_float(float a, float b, float mix);
-
-int clamp_int(int x, int a, int b);
-
-int abs_int(int a);
-
-float abs_float(float a);
-
-double mix_double(double a, double b, double mix);
-
-
 typedef struct matrix3x3{
 	double m[3][3];
 }matrix3x3;

@@ -132,10 +132,10 @@ GtkWidget *StandardMenu::newMenu(const ColorObject &colorObject, IReadonlyColorU
 GtkWidget *StandardMenu::newNearestColorsMenu(const ColorObject &colorObject, GlobalState *gs) {
 	GtkWidget *menu = gtk_menu_new();
 	std::multimap<float, ColorObject *> colorDistances;
-	Color sourceColor = colorObject.getColor();
+	Color sourceColor = colorObject.getColor().rgbToLabD50();
 	for (auto &colorObject: gs->getColorList()->colors) {
-		Color targetColor = colorObject->getColor();
-		colorDistances.insert(std::pair<float, ColorObject *>(color_distance_lch(&sourceColor, &targetColor), colorObject));
+		Color targetColor = colorObject->getColor().rgbToLabD50();
+		colorDistances.insert(std::pair<float, ColorObject *>(Color::distanceLch(sourceColor, targetColor), colorObject));
 	}
 	int count = 0;
 	for (auto item: colorDistances) {

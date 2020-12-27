@@ -294,7 +294,7 @@ ColorObject *getFirst(GlobalState *gs) {
 			color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
 			color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-			color.ma[3] = 0;
+			color[3] = 0;
 			result = new ColorObject("", color);
 			return VisitResult::stop;
 		} break;
@@ -355,7 +355,7 @@ ColorList *getColors(GlobalState *gs) {
 			color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
 			color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-			color.ma[3] = 0;
+			color[3] = 0;
 			ColorObject *reference;
 			color_list_add_color_object(colorList, (reference = new ColorObject("", color)), false);
 			reference->release();

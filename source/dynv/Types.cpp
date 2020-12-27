@@ -97,7 +97,7 @@ template<> bool write(std::ostream &stream, const std::string &value) {
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, const Color &value) {
-	stream << value.ma[0] << " " << value.ma[1] << " " << value.ma[2] << " " << value.ma[3];
+	stream << value[0] << " " << value[1] << " " << value[2] << " " << value[3];
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, const Ref &value) {
@@ -145,15 +145,15 @@ template<> bool write(std::ostream &stream, const std::string &value) {
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, const Color &value) {
-	if (!write(stream, static_cast<uint32_t>(sizeof(value.ma))))
+	if (!write(stream, static_cast<uint32_t>(sizeof(float) * 4)))
 		return false;
-	if (!write(stream, static_cast<float>(value.ma[0])))
+	if (!write(stream, static_cast<float>(value[0])))
 		return false;
-	if (!write(stream, static_cast<float>(value.ma[1])))
+	if (!write(stream, static_cast<float>(value[1])))
 		return false;
-	if (!write(stream, static_cast<float>(value.ma[2])))
+	if (!write(stream, static_cast<float>(value[2])))
 		return false;
-	if (!write(stream, static_cast<float>(value.ma[3])))
+	if (!write(stream, static_cast<float>(value[3])))
 		return false;
 	return true;
 }
@@ -208,11 +208,11 @@ template<> Color read(std::istream &stream) {
 	Color result;
 	for (int i = 0; i < 4; i++) {
 #if BOOST_VERSION >= 107100
-		result.ma[i] = boost::endian::endian_load<float, sizeof(float), boost::endian::order::little>(buffer + i * sizeof(float));
+		result[i] = boost::endian::endian_load<float, sizeof(float), boost::endian::order::little>(buffer + i * sizeof(float));
 #else
 		float value;
 		stream.read(reinterpret_cast<char *>(&value), sizeof(float));
-		result.ma[i] = boost::endian::little_to_native(value);
+		result[i] = boost::endian::little_to_native(value);
 #endif
 	}
 	return result;

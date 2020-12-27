@@ -41,7 +41,7 @@ static int newLayoutStyle(lua_State *L)
 	Style **c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
 	luaL_getmetatable(L, "layoutStyle");
 	lua_setmetatable(L, -2);
-	*c = new Style(name, &color, font_size);
+	*c = new Style(name, &color, static_cast<float>(font_size));
 	return 1;
 }
 Style *checkLayoutStyle(lua_State *L, int index)
@@ -86,7 +86,7 @@ static int newLayoutBox(lua_State *L)
 	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	*c = new Box(name, x, y, w, h);
+	*c = new Box(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
 	return 1;
 }
 static int newLayoutFill(lua_State *L)
@@ -100,7 +100,7 @@ static int newLayoutFill(lua_State *L)
 	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	Fill *e = new Fill(name, x, y, w, h);
+	Fill *e = new Fill(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
 	e->SetStyle(style);
 	*c = e;
 	return 1;
@@ -120,7 +120,7 @@ static int newLayoutText(lua_State *L)
 	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	Text *e = new Text(name, x, y, w, h);
+	Text *e = new Text(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
 	if (style) e->SetStyle(style);
 	e->text = text;
 	*c = e;

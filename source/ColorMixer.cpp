@@ -171,53 +171,42 @@ struct ColorMixerArgs {
 		if (saveSettings) {
 			options->set("opacity", opacity);
 		}
-		Color color, color2, r, hsv1, hsv2;
+		Color color, color2, r, hsv1, hsv2, hsl1, hsl2;
 		gtk_color_get_color(GTK_COLOR(secondaryColor), &color2);
 		for (int i = 0; i < Rows; ++i) {
 			gtk_color_get_color(GTK_COLOR(rows[i].input), &color);
 			switch (mixerType->mode) {
 			case Mode::normal:
-				r.rgb.red = color2.rgb.red;
-				r.rgb.green = color2.rgb.green;
-				r.rgb.blue = color2.rgb.blue;
+				r = math::mix(color.linearRgb(), color2.linearRgb(), opacity / 100.0f).nonLinearRgbInplace();
 				break;
 			case Mode::multiply:
-				r.rgb.red = color.rgb.red * color2.rgb.red;
-				r.rgb.green = color.rgb.green * color2.rgb.green;
-				r.rgb.blue = color.rgb.blue * color2.rgb.blue;
+				r = math::mix(color.linearRgb(), color.linearRgb() * color2.linearRgb(), opacity / 100.0f).nonLinearRgbInplace();
 				break;
 			case Mode::add:
-				r.rgb.red = clamp_float(color.rgb.red + color2.rgb.red, 0, 1);
-				r.rgb.green = clamp_float(color.rgb.green + color2.rgb.green, 0, 1);
-				r.rgb.blue = clamp_float(color.rgb.blue + color2.rgb.blue, 0, 1);
+				r = math::mix(color.linearRgb(), color.linearRgb() + color2.linearRgb(), opacity / 100.0f).nonLinearRgbInplace();
 				break;
 			case Mode::difference:
-				r.rgb.red = std::fabs(color.rgb.red - color2.rgb.red);
-				r.rgb.green = std::fabs(color.rgb.green - color2.rgb.green);
-				r.rgb.blue = std::fabs(color.rgb.blue - color2.rgb.blue);
+				r = math::mix(color.linearRgb(), (color.linearRgb() - color2.linearRgb()).absoluteInplace(), opacity / 100.0f).nonLinearRgbInplace();
 				break;
 			case Mode::hue:
-				color_rgb_to_hsv(&color, &hsv1);
-				color_rgb_to_hsv(&color2, &hsv2);
-				hsv1.hsv.hue = hsv2.hsv.hue;
-				color_hsv_to_rgb(&hsv1, &r);
+				hsv1 = color.rgbToHsv();
+				hsv2 = color2.rgbToHsv();
+				hsv1.hsv.hue = math::mix(hsv1.hsv.hue, hsv2.hsv.hue, opacity / 100.0f);
+				r = hsv1.hsvToRgb();
 				break;
 			case Mode::saturation:
-				color_rgb_to_hsv(&color, &hsv1);
-				color_rgb_to_hsv(&color2, &hsv2);
-				hsv1.hsv.saturation = hsv2.hsv.saturation;
-				color_hsv_to_rgb(&hsv1, &r);
+				hsv1 = color.rgbToHsv();
+				hsv2 = color2.rgbToHsv();
+				hsv1.hsv.saturation = math::mix(hsv1.hsv.saturation, hsv2.hsv.saturation, opacity / 100.0f);
+				r = hsv1.hsvToRgb();
 				break;
 			case Mode::lightness:
-				color_rgb_to_hsl(&color, &hsv1);
-				color_rgb_to_hsl(&color2, &hsv2);
-				hsv1.hsl.lightness = hsv2.hsl.lightness;
-				color_hsl_to_rgb(&hsv1, &r);
+				hsl1 = color.rgbToHsl();
+				hsl2 = color2.rgbToHsl();
+				hsl1.hsl.lightness = math::mix(hsl1.hsl.lightness, hsl2.hsl.lightness, opacity / 100.0f);
+				r = hsl1.hslToRgb();
 				break;
 			}
-			r.rgb.red = (color.rgb.red * (100 - opacity) + r.rgb.red * opacity) / 100;
-			r.rgb.green = (color.rgb.green * (100 - opacity) + r.rgb.green * opacity) / 100;
-			r.rgb.blue = (color.rgb.blue * (100 - opacity) + r.rgb.blue * opacity) / 100;
 			gtk_color_set_color(GTK_COLOR(rows[i].output), r);
 		}
 	}
@@ -373,8 +362,7 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 			}
 		}
 	}
-	Color c;
-	color_set(&c, 0.5);
+	Color c = { 0.5f };
 	char tmp[32];
 	auto type_name = options->getString("mixer_type", "normal");
 	for (uint32_t j = 0; j < sizeof(types) / sizeof(Type); j++) {

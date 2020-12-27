@@ -204,15 +204,15 @@ struct VariationsArgs {
 			case Component::rgbRed:
 			case Component::rgbGreen:
 			case Component::rgbBlue:
-				color_rgb_get_linear(&color, &rgb);
+				rgb = color.linearRgb();
 				break;
 			case Component::hslHue:
 			case Component::hslSaturation:
 			case Component::hslLightness:
-				color_rgb_to_hsl(&color, &hsl);
+				hsl = color.rgbToHsl();
 				break;
 			case Component::labLightness:
-				color_rgb_to_lab_d50(&color, &lab);
+				lab = color.rgbToLabD50();
 				break;
 			}
 			for (int j = 0; j < VariantWidgets; ++j) {
@@ -220,39 +220,38 @@ struct VariationsArgs {
 				switch (rows[i].type->component) {
 				case Component::rgbRed:
 					rgbModified = rgb;
-					rgbModified.rgb.red = clamp_float(rgbModified.rgb.red + position / 100.0f, 0, 1);
-					color_linear_get_rgb(&rgbModified, &r);
+					rgbModified.rgb.red = math::clamp(rgbModified.rgb.red + position / 100.0f, 0.0f, 1.0f);
+					r = rgbModified.nonLinearRgb();
 					break;
 				case Component::rgbGreen:
 					rgbModified = rgb;
-					rgbModified.rgb.green = clamp_float(rgbModified.rgb.green + position / 100.0f, 0, 1);
-					color_linear_get_rgb(&rgbModified, &r);
+					rgbModified.rgb.green = math::clamp(rgbModified.rgb.green + position / 100.0f, 0.0f, 1.0f);
+					r = rgbModified.nonLinearRgb();
 					break;
 				case Component::rgbBlue:
 					rgbModified = rgb;
-					rgbModified.rgb.blue = clamp_float(rgbModified.rgb.blue + position / 100.0f, 0, 1);
-					color_linear_get_rgb(&rgbModified, &r);
+					rgbModified.rgb.blue = math::clamp(rgbModified.rgb.blue + position / 100.0f, 0.0f, 1.0f);
+					r = rgbModified.nonLinearRgb();
 					break;
 				case Component::hslHue:
-					color_copy(&hsl, &hslModified);
-					hslModified.hsl.hue = wrap_float(hsl.hsl.hue + position / 100.0f);
-					color_hsl_to_rgb(&hslModified, &r);
+					hslModified = hsl;
+					hslModified.hsl.hue = math::wrap(hsl.hsl.hue + position / 100.0f);
+					r = hslModified.hslToRgb();
 					break;
 				case Component::hslSaturation:
-					color_copy(&hsl, &hslModified);
-					hslModified.hsl.saturation = clamp_float(hsl.hsl.saturation + position / 100.0f, 0, 1);
-					color_hsl_to_rgb(&hslModified, &r);
+					hslModified = hsl;
+					hslModified.hsl.saturation = math::clamp(hsl.hsl.saturation + position / 100.0f, 0.0f, 1.0f);
+					r = hslModified.hslToRgb();
 					break;
 				case Component::hslLightness:
-					color_copy(&hsl, &hslModified);
-					hslModified.hsl.lightness = clamp_float(hsl.hsl.lightness + position / 100.0f, 0, 1);
-					color_hsl_to_rgb(&hslModified, &r);
+					hslModified = hsl;
+					hslModified.hsl.lightness = math::clamp(hsl.hsl.lightness + position / 100.0f, 0.0f, 1.0f);
+					r = hslModified.hslToRgb();
 					break;
 				case Component::labLightness:
-					color_copy(&lab, &labModified);
-					labModified.lab.L = clamp_float(lab.lab.L + position, 0, 100);
-					color_lab_to_rgb_d50(&labModified, &r);
-					color_rgb_normalize(&r);
+					labModified = lab;
+					labModified.lab.L = math::clamp(lab.lab.L + position, 0.0f, 100.0f);
+					r = labModified.labToRgbD50().normalizeRgbInplace();
 					break;
 				}
 				gtk_color_set_color(GTK_COLOR(rows[i].variants[j]), r);

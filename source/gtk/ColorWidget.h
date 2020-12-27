@@ -21,8 +21,8 @@
 
 #include <gtk/gtk.h>
 #include <string>
-#include "../Color.h"
-#include "../transformation/Chain.h"
+#include "Color.h"
+#include "transformation/Chain.h"
 
 #define GTK_TYPE_COLOR (gtk_color_get_type())
 #define GTK_COLOR(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_COLOR, GtkColor))

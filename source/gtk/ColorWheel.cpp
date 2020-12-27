@@ -17,18 +17,11 @@
  */
 
 #include "ColorWheel.h"
-#include "../Color.h"
-#include "../ColorWheelType.h"
-#include "../MathUtil.h"
-#include <math.h>
-#ifdef _MSC_VER
-#define M_PI 3.14159265359
-#endif
-#include <stdlib.h>
+#include "Color.h"
+#include "ColorWheelType.h"
+#include "MathUtil.h"
 #include <list>
 #include <iostream>
-using namespace std;
-
 #define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
 
 G_DEFINE_TYPE (GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA);
@@ -64,9 +57,9 @@ struct GtkColorWheelPrivate
 	bool grab_block;
 	ColorPoint *selected;
 	int active_color;
-	double radius;
-	double circle_width;
-	double block_size;
+	float radius;
+	float circle_width;
+	float block_size;
 	bool block_editable;
 	const ColorWheelType *color_wheel_type;
 	cairo_surface_t *cache_color_wheel;
@@ -112,11 +105,11 @@ GtkWidget* gtk_color_wheel_new()
 	ns->active_color = 1;
 	ns->radius = 80;
 	ns->circle_width = 14;
-	ns->block_size = 2 * (ns->radius - ns->circle_width) * sin(M_PI / 4) - 8;
+	ns->block_size = static_cast<float>(2 * (ns->radius - ns->circle_width) * std::sin(math::PI / 4) - 8);
 #if GTK_MAJOR_VERSION >= 3
-	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->radius * 2, ns->radius * 2);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(std::ceil(ns->radius * 2)), static_cast<int>(std::ceil(ns->radius * 2)));
 #else
-	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->radius * 2 + widget->style->xthickness * 2, ns->radius * 2 + widget->style->ythickness * 2);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(std::ceil(ns->radius * 2 + widget->style->xthickness * 2)), static_cast<int>(std::ceil(ns->radius * 2 + widget->style->ythickness * 2)));
 #endif
 	ns->n_cpoint = 0;
 	ns->grab_active = 0;
@@ -229,34 +222,34 @@ double gtk_color_wheel_get_value(GtkColorWheel* color_wheel, guint32 index)
 }
 static void draw_dot(cairo_t *cr, double x, double y, double size)
 {
-	cairo_arc(cr, x, y, size - 1, 0, 2 * M_PI);
+	cairo_arc(cr, x, y, size - 1, 0, 2 * math::PI);
 	cairo_set_source_rgba(cr, 1, 1, 1, 0.5);
 	cairo_set_line_width(cr, 2);
 	cairo_stroke(cr);
-	cairo_arc(cr, x, y, size, 0, 2 * M_PI);
+	cairo_arc(cr, x, y, size, 0, 2 * math::PI);
 	cairo_set_source_rgba(cr, 0, 0, 0, 1);
 	cairo_set_line_width(cr, 1);
 	cairo_stroke(cr);
 }
 static void draw_sat_val_block(cairo_t *cr, double pos_x, double pos_y, double size, double hue)
 {
-	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(size), ceil(size));
+	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, static_cast<int>(std::ceil(size)), static_cast<int>(std::ceil(size)));
 	unsigned char *data = cairo_image_surface_get_data(surface);
 	int stride = cairo_image_surface_get_stride(surface);
 	int surface_width = cairo_image_surface_get_width(surface);
 	int surface_height = cairo_image_surface_get_height(surface);
 	Color c;
-	unsigned char *line_data;
+	uint8_t *line_data;
 	for (int y = 0; y < surface_height; ++y){
 		line_data = data + stride * y;
 		for (int x = 0; x < surface_width; ++x){
-			c.hsv.hue = hue;
-			c.hsv.saturation = x / size;
-			c.hsv.value = y / size;
-			color_hsv_to_rgb(&c, &c);
-			line_data[2] = c.rgb.red * 255;
-			line_data[1] = c.rgb.green * 255;
-			line_data[0] = c.rgb.blue * 255;
+			c.hsv.hue = static_cast<float>(hue);
+			c.hsv.saturation = static_cast<float>(x / size);
+			c.hsv.value = static_cast<float>(y / size);
+			c = c.hsvToRgb();
+			line_data[2] = static_cast<uint8_t>(c.rgb.red * 255);
+			line_data[1] = static_cast<uint8_t>(c.rgb.green * 255);
+			line_data[0] = static_cast<uint8_t>(c.rgb.blue * 255);
 			line_data[3] = 0xFF;
 			line_data += 4;
 		}
@@ -276,9 +269,9 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 	if (ns->cache_color_wheel){
 		surface = ns->cache_color_wheel;
 	}else{
-		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(radius * 2), ceil(radius * 2));
+		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, static_cast<int>(std::ceil(radius * 2)), static_cast<int>(std::ceil(radius * 2)));
 		if (cairo_surface_status(surface) != CAIRO_STATUS_SUCCESS){
-			cerr << "ColorWheel image surface allocation failed" << endl;
+			std::cerr << "ColorWheel image surface allocation failed" << std::endl;
 			return;
 		}
 		unsigned char *data = cairo_image_surface_get_data(surface);
@@ -288,7 +281,7 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 		double radius_sq = radius * radius + 2 * radius + 1;
 		double inner_radius_sq = inner_radius * inner_radius - 2 * inner_radius + 1;
 		Color c;
-		unsigned char *line_data;
+		uint8_t *line_data;
 		for (int y = 0; y < surface_height; ++y){
 			line_data = data + stride * y;
 			for (int x = 0; x < surface_width; ++x){
@@ -296,12 +289,12 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 				int dy = y - surface_height / 2;
 				int dist = dx * dx + dy * dy;
 				if ((dist >= inner_radius_sq) && (dist <= radius_sq)){
-					double angle = atan2((double)dx, (double)dy) + M_PI;
-					wheel->hue_to_hsl(angle / (M_PI * 2), &c);
-					color_hsl_to_rgb(&c, &c);
-					line_data[2] = c.rgb.red * 255;
-					line_data[1] = c.rgb.green * 255;
-					line_data[0] = c.rgb.blue * 255;
+					double angle = atan2((double)dx, (double)dy) + math::PI;
+					wheel->hue_to_hsl(angle / (math::PI * 2), &c);
+					c = c.hslToRgb();
+					line_data[2] = static_cast<uint8_t>(c.rgb.red * 255);
+					line_data[1] = static_cast<uint8_t>(c.rgb.green * 255);
+					line_data[0] = static_cast<uint8_t>(c.rgb.blue * 255);
 					line_data[3] = 0xFF;
 				}
 				line_data += 4;
@@ -314,7 +307,7 @@ static void draw_wheel(GtkColorWheelPrivate *ns, cairo_t *cr, double radius, dou
 	cairo_set_source_surface(cr, surface, 0, 0);
 	cairo_set_line_width(cr, width);
 	cairo_new_path(cr);
-	cairo_arc(cr, radius, radius, (inner_radius + radius) / 2, 0, M_PI * 2);
+	cairo_arc(cr, radius, radius, (inner_radius + radius) / 2, 0, math::PI * 2);
 	cairo_stroke(cr);
 	cairo_restore(cr);
 }
@@ -332,8 +325,8 @@ static ColorPoint* get_cpoint_at(GtkColorWheelPrivate *ns, gint x, gint y)
 {
 	double dx, dy;
 	for (uint32_t i = 0; i != ns->n_cpoint; i++){
-		dx = ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * M_PI * 2) - x;
-		dy = ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * M_PI * 2) - y;
+		dx = ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * math::PI * 2) - x;
+		dy = ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * math::PI * 2) - y;
 		if (sqrt(dx * dx + dy * dy) < 16){
 			return &ns->cpoint[i];
 		}
@@ -364,21 +357,21 @@ static void offset_xy(GtkWidget *widget, gint &x, gint &y)
 static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event)
 {
 	GtkColorWheelPrivate *ns = GET_PRIVATE(widget);
-	int x = event->x, y = event->y;
+	int x = static_cast<int>(event->x), y = static_cast<int>(event->y);
 	offset_xy(widget, x, y);
 	if (ns->grab_active){
 		double dx = -(x - ns->radius);
 		double dy = y - ns->radius;
-		double angle = atan2(dx, dy) + M_PI;
-		ns->grab_active->hue = angle / (M_PI * 2);
+		double angle = atan2(dx, dy) + math::PI;
+		ns->grab_active->hue = angle / (math::PI * 2);
 		g_signal_emit(widget, signals[HUE_CHANGED], 0, get_color_index(ns, ns->grab_active));
 		gtk_widget_queue_draw(widget);
 		return true;
 	}else if (ns->grab_block){
 		double dx = event->x - ns->radius + ns->block_size / 2;
 		double dy = event->y - ns->radius + ns->block_size / 2;
-		ns->selected->saturation = clamp_float(dx / ns->block_size, 0, 1);
-		ns->selected->lightness = clamp_float(dy / ns->block_size, 0, 1);
+		ns->selected->saturation = math::clamp(static_cast<float>(dx / ns->block_size), 0.0f, 1.0f);
+		ns->selected->lightness = math::clamp(static_cast<float>(dy / ns->block_size), 0.0f, 1.0f);
 		g_signal_emit(widget, signals[SATURATION_VALUE_CHANGED], 0, get_color_index(ns, ns->selected));
 		gtk_widget_queue_draw(widget);
 		return true;
@@ -390,14 +383,14 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	GtkColorWheelPrivate *ns = GET_PRIVATE(widget);
 	draw_wheel(ns, cr, ns->radius, ns->circle_width, ns->color_wheel_type);
 	if (ns->selected){
-		double block_size = 2 * (ns->radius - ns->circle_width) * sin(M_PI / 4) - 6;
+		double block_size = 2 * (ns->radius - ns->circle_width) * sin(math::PI / 4) - 6;
 		Color hsl;
 		ns->color_wheel_type->hue_to_hsl(ns->selected->hue, &hsl);
 		draw_sat_val_block(cr, ns->radius, ns->radius, block_size, hsl.hsl.hue);
 		draw_dot(cr, ns->radius - block_size / 2 + block_size * ns->selected->saturation, ns->radius - block_size / 2 + block_size * ns->selected->lightness, 4);
 	}
 	for (uint32_t i = 0; i != ns->n_cpoint; i++){
-		draw_dot(cr, ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * M_PI * 2), ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * M_PI * 2), (&ns->cpoint[i] == ns->selected) ? 7 : 4);
+		draw_dot(cr, ns->radius + (ns->radius - ns->circle_width / 2) * sin(ns->cpoint[i].hue * math::PI * 2), ns->radius - (ns->radius - ns->circle_width / 2) * cos(ns->cpoint[i].hue * math::PI * 2), (&ns->cpoint[i] == ns->selected) ? 7 : 4);
 	}
 	return FALSE;
 }
@@ -418,7 +411,7 @@ static gboolean expose(GtkWidget *widget, GdkEventExpose *event)
 static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 {
 	GtkColorWheelPrivate *ns = GET_PRIVATE(widget);
-	int x = event->x, y = event->y;
+	int x = static_cast<int>(event->x), y = static_cast<int>(event->y);
 	offset_xy(widget, x, y);
 	gtk_widget_grab_focus(widget);
 	ColorPoint *p;

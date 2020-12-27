@@ -85,9 +85,9 @@ struct GenerateColorNameAssigner: public ToolColorNameAssigner
 };
 static void rgb_hue2hue(double hue, Color* hsl)
 {
-	hsl->hsl.hue = hue;
+	hsl->hsl.hue = static_cast<float>(hue);
 	hsl->hsl.saturation = 1;
-	hsl->hsl.lightness = 0.5;
+	hsl->hsl.lightness = 0.5f;
 }
 static void rgb_rgbhue2hue(double rgbhue, double *hue)
 {
@@ -97,7 +97,7 @@ static void ryb1_hue2hue(double hue, Color* hsl)
 {
 	Color c;
 	color_rybhue_to_rgb(hue, &c);
-	color_rgb_to_hsl(&c, hsl);
+	*hsl = c.rgbToHsl();
 }
 static void ryb1_rgbhue2hue(double rgbhue, double *hue)
 {
@@ -105,9 +105,9 @@ static void ryb1_rgbhue2hue(double rgbhue, double *hue)
 }
 static void ryb2_hue2hue(double hue, Color* hsl)
 {
-	hsl->hsl.hue = color_rybhue_to_rgbhue_f(hue);
+	hsl->hsl.hue = static_cast<float>(color_rybhue_to_rgbhue_f(hue));
 	hsl->hsl.saturation = 1;
-	hsl->hsl.lightness = 0.5;
+	hsl->hsl.lightness = 0.5f;
 }
 static void ryb2_rgbhue2hue(double rgbhue, double *hue)
 {
@@ -123,10 +123,10 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 	int32_t type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->gen_type));
 	int32_t wheel_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheel_type));
 	int32_t color_count = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_colors)));
-	float chaos = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos));
+	float chaos = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos)));
 	int32_t chaos_seed = static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_chaos_seed)));
 	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
-	float additional_rotation = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_additional_rotation));
+	float additional_rotation = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->range_additional_rotation)));
 	if (!preview){
 		args->options->set("type", type);
 		args->options->set("wheel_type", wheel_type);
@@ -149,14 +149,14 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 	struct Random* random = random_new("SHR3", chaos_seed);
 	const SchemeType *scheme_type;
 	SchemeType static_scheme_type = {_("Static"), 1, 1, {0}};
-	if (type >= generate_scheme_get_n_scheme_types()){
+	if (static_cast<size_t>(type) >= generate_scheme_get_n_scheme_types()){
 		scheme_type = &static_scheme_type;
 	}else{
 		scheme_type = generate_scheme_get_scheme_type(type);
 	}
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		Color in = (*i)->getColor();
-		color_rgb_to_hsl(&in, &hsl);
+		hsl = in.rgbToHsl();
 		wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);
 		wheel->hue_to_hsl(hue, &hsl_results);
 		double saturation = hsl.hsl.saturation * 1 / hsl_results.hsl.saturation;
@@ -170,19 +170,19 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 				limit--;
 			}
 			wheel->hue_to_hsl(hue, &hsl);
-			hsl.hsl.lightness = clamp_float(hsl.hsl.lightness + lightness, 0, 1);
-			hsl.hsl.saturation = clamp_float(hsl.hsl.saturation * saturation, 0, 1);
-			color_hsl_to_rgb(&hsl, &r);
+			hsl.hsl.lightness = math::clamp(static_cast<float>(hsl.hsl.lightness + lightness), 0.0f, 1.0f);
+			hsl.hsl.saturation = math::clamp(static_cast<float>(hsl.hsl.saturation * saturation), 0.0f, 1.0f);
+			r = hsl.hslToRgb();
 			ColorObject *color_object = color_list_new_color_object(color_list, &r);
 			name_assigner.assign(color_object, &r, i, scheme_type->name);
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object->release();
-			hue_step = (scheme_type->turn[i % scheme_type->turn_types]) / (360.0)
-				+ chaos * (random_get_double(random) - 0.5) + additional_rotation / 360.0;
+			hue_step = (scheme_type->turn[i % scheme_type->turn_types]) / (360.0f)
+				+ chaos * (random_get_double(random) - 0.5f) + additional_rotation / 360.0f;
 			if (reverse){
-				hue = wrap_float(hue - hue_step);
+				hue = math::wrap(static_cast<float>(hue - hue_step));
 			}else{
-				hue = wrap_float(hue + hue_step);
+				hue = math::wrap(static_cast<float>(hue + hue_step));
 			}
 		}
 	}

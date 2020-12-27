@@ -52,39 +52,39 @@ struct FSM
 		{
 			Color color;
 			int start_index = with_hash_symbol ? 1 : 0;
-			color.rgb.red = hexPairToInt(ts + start_index) / 255.0;
-			color.rgb.green = hexPairToInt(ts + start_index + 2) / 255.0;
-			color.rgb.blue = hexPairToInt(ts + start_index + 4) / 255.0;
-			color.ma[3] = 0;
+			color.rgb.red = hexPairToInt(ts + start_index) / 255.0f;
+			color.rgb.green = hexPairToInt(ts + start_index + 2) / 255.0f;
+			color.rgb.blue = hexPairToInt(ts + start_index + 4) / 255.0f;
+			color[3] = 0;
 			addColor(color);
 		}
 		void colorHexShort(bool with_hash_symbol)
 		{
 			Color color;
 			int start_index = with_hash_symbol ? 1 : 0;
-			color.rgb.red = hexToInt(ts[start_index + 0]) / 15.0;
-			color.rgb.green = hexToInt(ts[start_index + 1]) / 15.0;
-			color.rgb.blue = hexToInt(ts[start_index + 2]) / 15.0;
-			color.ma[3] = 0;
+			color.rgb.red = hexToInt(ts[start_index + 0]) / 15.0f;
+			color.rgb.green = hexToInt(ts[start_index + 1]) / 15.0f;
+			color.rgb.blue = hexToInt(ts[start_index + 2]) / 15.0f;
+			color[3] = 0;
 			addColor(color);
 		}
 		void colorRgb()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0;
-			color.rgb.green = numbers_i64[1] / 255.0;
-			color.rgb.blue = numbers_i64[2] / 255.0;
-			color.ma[3] = 0;
+			color.rgb.red = numbers_i64[0] / 255.0f;
+			color.rgb.green = numbers_i64[1] / 255.0f;
+			color.rgb.blue = numbers_i64[2] / 255.0f;
+			color[3] = 0;
 			numbers_i64.clear();
 			addColor(color);
 		}
 		void colorRgba()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0;
-			color.rgb.green = numbers_i64[1] / 255.0;
-			color.rgb.blue = numbers_i64[2] / 255.0;
-			color.ma[3] = numbers_double[0];
+			color.rgb.red = numbers_i64[0] / 255.0f;
+			color.rgb.green = numbers_i64[1] / 255.0f;
+			color.rgb.blue = numbers_i64[2] / 255.0f;
+			color[3] = static_cast<float>(numbers_double[0]);
 			numbers_i64.clear();
 			numbers_double.clear();
 			addColor(color);
@@ -92,20 +92,20 @@ struct FSM
 		void colorValues()
 		{
 			Color color;
-			color.rgb.red = numbers_double[0];
-			color.rgb.green = numbers_double[1];
-			color.rgb.blue = numbers_double[2];
-			color.ma[3] = 0;
+			color.rgb.red = static_cast<float>(numbers_double[0]);
+			color.rgb.green = static_cast<float>(numbers_double[1]);
+			color.rgb.blue = static_cast<float>(numbers_double[2]);
+			color[3] = 0;
 			numbers_double.clear();
 			addColor(color);
 		}
 		void colorValueIntegers()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0;
-			color.rgb.green = numbers_i64[1] / 255.0;
-			color.rgb.blue = numbers_i64[2] / 255.0;
-			color.ma[3] = 0;
+			color.rgb.red = numbers_i64[0] / 255.0f;
+			color.rgb.green = numbers_i64[1] / 255.0f;
+			color.rgb.blue = numbers_i64[2] / 255.0f;
+			color[3] = 0;
 			numbers_i64.clear();
 			addColor(color);
 		}
@@ -175,9 +175,7 @@ bool scanner(TextFile &text_file, const Configuration &configuration)
 	fsm->buffer_offset = 0;
 	bool parse_error = false;
 	fsm->addColor = [&text_file](const Color &color){
-		Color c = color;
-		color_rgb_normalize(&c);
-		text_file.addColor(c);
+		text_file.addColor(color.normalizeRgb());
 	};
 	%% write init;
 	int have = 0;

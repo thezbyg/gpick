@@ -26,7 +26,7 @@ Transformation::Transformation(const char *name_, const char *readable_name_) {
 Transformation::~Transformation() {
 }
 void Transformation::apply(Color *input, Color *output) {
-	color_copy(input, output);
+	*output = *input;
 }
 std::string Transformation::getName() const {
 	return name;

@@ -97,9 +97,9 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 			float y_value = (args->axis[1].samples > 1) ? (args->axis[1].min_value + (args->axis[1].max_value - args->axis[1].min_value) * (y / (float)(args->axis[1].samples - 1))) : args->axis[1].min_value;
 			for (int z = 0; z < args->axis[2].samples; z++){
 				float z_value = (args->axis[2].samples > 1) ? (args->axis[2].min_value + (args->axis[2].max_value - args->axis[2].min_value) * (z / (float)(args->axis[2].samples - 1))) : args->axis[2].min_value;
-				values[value_i].ma[0] = x_value;
-				values[value_i].ma[1] = y_value;
-				values[value_i].ma[2] = z_value;
+				values[value_i][0] = x_value;
+				values[value_i][1] = y_value;
+				values[value_i][2] = z_value;
 				value_i++;
 				if (preview && value_i >= limit){
 					x = args->axis[0].samples;
@@ -117,32 +117,32 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		}
 		switch (args->color_space){
 			case 0:
-				color_copy(&values[i], &t);
+				t = values[i];
 				break;
 			case 1:
-				color_hsv_to_rgb(&values[i], &t);
+				t = values[i].hsvToRgb();
 				break;
 			case 2:
-				color_hsl_to_rgb(&values[i], &t);
+				t = values[i].hslToRgb();
 				break;
 			case 3:
-				color_copy(&values[i], &t);
+				t = values[i];
 				t.lab.L *= 100;
 				t.lab.a = (t.lab.a - 0.5f) * 290;
 				t.lab.b = (t.lab.b - 0.5f) * 290;
-				color_lab_to_rgb_d50(&t, &t);
+				t = t.labToRgbD50();
 				break;
 			case 4:
-				color_copy(&values[i], &t);
+				t = values[i];
 				t.lch.L *= 100;
 				t.lch.C *= 136;
 				t.lch.h *= 360;
-				color_lch_to_rgb_d50(&t, &t);
+				t = t.lchToRgbD50();
 				break;
 		}
 		if (args->linearization)
-			color_linear_get_rgb(&t, &t);
-		color_rgb_normalize(&t);
+			t.nonLinearRgbInplace();
+		t.normalizeRgbInplace();
 		ColorObject *color_object = color_list_new_color_object(color_list, &t);
 		name_assigner.assign(color_object, &t);
 		color_list_add_color_object(color_list, color_object, 1);
@@ -159,9 +159,9 @@ static void get_settings(ColorSpaceSamplerArgs *args)
 	args->color_space = gtk_combo_box_get_active(GTK_COMBO_BOX(args->combo_color_space));
 	args->linearization = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_linearization));
 	for (int i = 0; i < N_AXIS; i++){
-		args->axis[i].samples = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_samples));
-		args->axis[i].min_value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_min_value));
-		args->axis[i].max_value = gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_max_value));
+		args->axis[i].samples = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_samples)));
+		args->axis[i].min_value = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_min_value)));
+		args->axis[i].max_value = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_max_value)));
 	}
 }
 static dynv::Ref get_axis_config(int axis, ColorSpaceSamplerArgs *args)

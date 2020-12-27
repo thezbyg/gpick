@@ -24,12 +24,12 @@
 #include "Color.h"
 using Map = dynv::Map;
 using Ref = dynv::Ref;
-std::ostream &operator<<(std::ostream &stream, const Color &color) {
-	stream << color.ma[0] << "," << color.ma[1] << "," << color.ma[2] << "," << color.ma[3];
+static std::ostream &operator<<(std::ostream &stream, const Color &color) {
+	stream << color[0] << "," << color[1] << "," << color[2] << "," << color[3];
 	return stream;
 }
 namespace dynv {
-std::ostream &operator<<(std::ostream &stream, const Ref &map) {
+static std::ostream &operator<<(std::ostream &stream, const Ref &map) {
 	if (map)
 		stream << &*map;
 	else

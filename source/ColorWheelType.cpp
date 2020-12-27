@@ -23,7 +23,7 @@
 
 
 static void rgb_hue2hue(double hue, Color* hsl){
-	hsl->hsl.hue = hue;
+	hsl->hsl.hue = static_cast<float>(hue);
 	hsl->hsl.saturation = 1;
 	hsl->hsl.lightness = 0.5;
 }
@@ -35,7 +35,7 @@ static void rgb_rgbhue2hue(double rgbhue, double *hue){
 static void ryb1_hue2hue(double hue, Color* hsl){
 	Color c;
 	color_rybhue_to_rgb(hue, &c);
-	color_rgb_to_hsl(&c, hsl);
+	*hsl = c.rgbToHsl();
 }
 
 static void ryb1_rgbhue2hue(double rgbhue, double *hue){
@@ -43,7 +43,7 @@ static void ryb1_rgbhue2hue(double rgbhue, double *hue){
 }
 
 static void ryb2_hue2hue(double hue, Color* hsl){
-	hsl->hsl.hue = color_rybhue_to_rgbhue_f(hue);
+	hsl->hsl.hue = static_cast<float>(color_rybhue_to_rgbhue_f(hue));
 	hsl->hsl.saturation = 1;
 	hsl->hsl.lightness = 0.5;
 }

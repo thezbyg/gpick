@@ -17,13 +17,7 @@
  */
 
 #include "Range2D.h"
-#include "../Color.h"
-#include "../MathUtil.h"
-#include <math.h>
-#ifdef _MSC_VER
-#define M_PI 3.14159265359
-#endif
-#include <stdlib.h>
+#include "Color.h"
 using namespace std;
 
 #define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_RANGE_2D, GtkRange2DPrivate))
@@ -36,18 +30,16 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 #else
 static gboolean expose(GtkWidget *range_2d, GdkEventExpose *event);
 #endif
-enum
-{
+enum {
 	VALUES_CHANGED, LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = {};
-struct GtkRange2DPrivate
-{
-	double x;
-	double y;
+struct GtkRange2DPrivate {
+	float x;
+	float y;
 	char *xname;
 	char *yname;
-	double block_size;
+	float block_size;
 	bool grab_block;
 	cairo_surface_t *cache_range_2d;
 #if GTK_MAJOR_VERSION >= 3
@@ -95,9 +87,9 @@ GtkWidget* gtk_range_2d_new()
 	ns->xname = 0;
 	ns->yname = 0;
 #if GTK_MAJOR_VERSION >= 3
-	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->block_size, ns->block_size);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->block_size), static_cast<int>(ns->block_size));
 #else
-	gtk_widget_set_size_request(GTK_WIDGET(widget), ns->block_size + widget->style->xthickness * 2, ns->block_size + widget->style->ythickness * 2);
+	gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->block_size + widget->style->xthickness * 2), static_cast<int>(ns->block_size + widget->style->ythickness * 2));
 #endif
 	ns->cache_range_2d = 0;
 #if GTK_MAJOR_VERSION >= 3
@@ -109,8 +101,8 @@ GtkWidget* gtk_range_2d_new()
 void gtk_range_2d_set_values(GtkRange2D* range_2d, double x, double y)
 {
 	GtkRange2DPrivate *ns = GET_PRIVATE(range_2d);
-	ns->x = x;
-	ns->y = 1 - y;
+	ns->x = static_cast<float>(x);
+	ns->y = static_cast<float>(1 - y);
 	gtk_widget_queue_draw(GTK_WIDGET(range_2d));
 }
 double gtk_range_2d_get_x(GtkRange2D* range_2d)
@@ -125,11 +117,11 @@ double gtk_range_2d_get_y(GtkRange2D* range_2d)
 }
 static void draw_dot(cairo_t *cr, double x, double y, double size)
 {
-	cairo_arc(cr, x, y, size - 1, 0, 2 * M_PI);
+	cairo_arc(cr, x, y, size - 1, 0, 2 * math::PI);
 	cairo_set_source_rgba(cr, 1, 1, 1, 0.5);
 	cairo_set_line_width(cr, 2);
 	cairo_stroke(cr);
-	cairo_arc(cr, x, y, size, 0, 2 * M_PI);
+	cairo_arc(cr, x, y, size, 0, 2 * math::PI);
 	cairo_set_source_rgba(cr, 0, 0, 0, 1);
 	cairo_set_line_width(cr, 1);
 	cairo_stroke(cr);
@@ -140,24 +132,24 @@ static void draw_sat_val_block(GtkRange2DPrivate *ns, cairo_t *cr, double pos_x,
 	if (ns->cache_range_2d){
 		surface = ns->cache_range_2d;
 	}else{
-		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceil(size), ceil(size));
+		surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, static_cast<int>(std::ceil(size)), static_cast<int>(std::ceil(size)));
 		unsigned char *data = cairo_image_surface_get_data(surface);
 		int stride = cairo_image_surface_get_stride(surface);
 		int surface_width = cairo_image_surface_get_width(surface);
 		int surface_height = cairo_image_surface_get_height(surface);
 		float v;
-		unsigned char *line_data;
+		uint8_t *line_data;
 		for (int y = 0; y < surface_height; ++y){
 			line_data = data + stride * y;
 			for (int x = 0; x < surface_width; ++x){
 				if ((x % 16 < 8) ^ (y % 16 < 8) ){
-					v = mix_float(0.5, 1.0, pow(x / size, 2));
+					v = math::mix(0.5f, 1.0f, static_cast<float>(std::pow(x / size, 2)));
 				}else{
-					v = mix_float(0.5, 0.0, pow(1 - (y / size), 2));
+					v = math::mix(0.5f, 0.0f, static_cast<float>(std::pow(1 - (y / size), 2)));
 				}
-				line_data[2] = v * 255;
-				line_data[1] = v / 2 * 255;
-				line_data[0] = v / 4 * 255;
+				line_data[2] = static_cast<uint8_t>(v * 255);
+				line_data[1] = static_cast<uint8_t>(v / 2 * 255);
+				line_data[0] = static_cast<uint8_t>(v / 4 * 255);
 				line_data[3] = 0xFF;
 				line_data += 4;
 			}
@@ -182,8 +174,8 @@ static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event)
 		double dx = (event->x - widget->style->xthickness);
 		double dy = (event->y - widget->style->ythickness);
 #endif
-		ns->x = clamp_float(dx / ns->block_size, 0, 1);
-		ns->y = clamp_float(dy / ns->block_size, 0, 1);
+		ns->x = math::clamp(static_cast<float>(dx / static_cast<float>(ns->block_size)));
+		ns->y = math::clamp(static_cast<float>(dy / static_cast<float>(ns->block_size)));
 		g_signal_emit(widget, signals[VALUES_CHANGED], 0);
 		gtk_widget_queue_draw(widget);
 		return true;
@@ -229,7 +221,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		pango_layout_set_text(layout, ns->yname, -1);
 		pango_layout_get_pixel_size(layout, &layout_width, &layout_height);
 		cairo_move_to(cr, layout_height + 1, 0);
-		cairo_rotate(cr, 90 / (180.0 / M_PI));
+		cairo_rotate(cr, 90 / (180.0 / math::PI));
 		pango_cairo_update_layout(cr, layout);
 		pango_cairo_show_layout(cr, layout);
 		g_object_unref(layout);
@@ -271,8 +263,8 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 		double dx = (event->x - widget->style->xthickness);
 		double dy = (event->y - widget->style->ythickness);
 #endif
-		ns->x = clamp_float(dx / ns->block_size, 0, 1);
-		ns->y = clamp_float(dy / ns->block_size, 0, 1);
+		ns->x = math::clamp(static_cast<int>(dx / static_cast<float>(ns->block_size)));
+		ns->y = math::clamp(static_cast<int>(dy / static_cast<float>(ns->block_size)));
 		g_signal_emit(widget, signals[VALUES_CHANGED], 0);
 		gtk_widget_queue_draw(widget);
 		return true;

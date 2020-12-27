@@ -20,9 +20,9 @@
 #define GPICK_GTK_LAYOUT_PREVIEW_H_
 
 #include <gtk/gtk.h>
-#include "../ColorObject.h"
-#include "../layout/System.h"
-#include "../transformation/Chain.h"
+#include "ColorObject.h"
+#include "layout/System.h"
+#include "transformation/Chain.h"
 
 #define GTK_TYPE_LAYOUT_PREVIEW (gtk_layout_preview_get_type())
 #define GTK_LAYOUT_PREVIEW(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_LAYOUT_PREVIEW, GtkLayoutPreview))

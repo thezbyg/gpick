@@ -110,8 +110,8 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit)
 		options->set("options.hex_case", "lower");
 	else
 		options->set("options.hex_case", "upper");
-	options->set<int32_t>("picker.refresh_rate", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate)));
-	options->set<int32_t>("picker.zoom_size", gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size)));
+	options->set<int32_t>("picker.refresh_rate", static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate))));
+	options->set<int32_t>("picker.zoom_size", static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size))));
 	options->set<bool>("picker.always_use_floating_picker", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->always_use_floating_picker)));
 	options->set<bool>("picker.hide_cursor", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->hide_cursor)));
 	options->set<bool>("picker.sampler.add_on_release", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->add_on_release)));

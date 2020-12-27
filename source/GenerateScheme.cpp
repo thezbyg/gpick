@@ -111,14 +111,14 @@ struct GenerateSchemeArgs {
 		Color color = colorObject.getColor();
 		float hue, saturation, lightness, shiftedHue;
 		Color hsl, hsv, hslResult;
-		color_rgb_to_hsv(&color, &hsv);
-		color_hsv_to_hsl(&hsv, &hsl);
+		hsv = color.rgbToHsv();
+		hsl = hsv.hsvToHsl();
 		int wheelType = gtk_combo_box_get_active(GTK_COMBO_BOX(wheelTypeCombo));
 		auto &wheel = color_wheel_types_get()[wheelType];
 		double tmp;
 		wheel.rgbhue_to_hue(hsl.hsl.hue, &tmp);
 		hue = static_cast<float>(tmp);
-		shiftedHue = wrap_float(hue - items[index].colorHue - items[index].hueShift);
+		shiftedHue = math::wrap(hue - items[index].colorHue - items[index].hueShift);
 		wheel.hue_to_hsl(hue, &hslResult);
 		saturation = hsl.hsl.saturation * 1 / hslResult.hsl.saturation;
 		lightness = hsl.hsl.lightness - hslResult.hsl.lightness;
@@ -199,7 +199,7 @@ struct GenerateSchemeArgs {
 	static void onHueChange(GtkWidget *widget, gint colorId, GenerateSchemeArgs *args) {
 		if (args->wheelLocked) {
 			float hue = static_cast<float>(gtk_range_get_value(GTK_RANGE(args->hueRange)) / 360.0f);
-			hue = wrap_float(hue - args->items[colorId].hueShift + static_cast<float>(gtk_color_wheel_get_hue(GTK_COLOR_WHEEL(widget), colorId)) - args->items[colorId].originalHue);
+			hue = math::wrap(hue - args->items[colorId].hueShift + static_cast<float>(gtk_color_wheel_get_hue(GTK_COLOR_WHEEL(widget), colorId)) - args->items[colorId].originalHue);
 			gtk_range_set_value(GTK_RANGE(args->hueRange), hue * 360.0f);
 		} else {
 			args->items[colorId].hueShift = static_cast<float>(gtk_color_wheel_get_hue(GTK_COLOR_WHEEL(widget), colorId)) - args->items[colorId].originalHue;
@@ -252,25 +252,25 @@ struct GenerateSchemeArgs {
 		float hueStep;
 		Color hsv;
 		for (int i = 0; i < colorCount; ++i) {
-			wheel.hue_to_hsl(wrap_float(hue + items[i].hueShift), &hsl);
-			hsl.hsl.lightness = clamp_float(hsl.hsl.lightness + lightness, 0, 1);
-			hsl.hsl.saturation = clamp_float(hsl.hsl.saturation * saturation, 0, 1);
-			color_hsl_to_hsv(&hsl, &hsv);
+			wheel.hue_to_hsl(math::wrap(hue + items[i].hueShift), &hsl);
+			hsl.hsl.lightness = math::clamp(hsl.hsl.lightness + lightness, 0.0f, 1.0f);
+			hsl.hsl.saturation = math::clamp(hsl.hsl.saturation * saturation, 0.0f, 1.0f);
+			hsv = hsl.hslToHsv();
 			items[i].originalHue = hue;
 			items[i].originalSaturation = hsv.hsv.saturation;
 			items[i].originalValue = hsv.hsv.value;
-			hsv.hsv.saturation = clamp_float(hsv.hsv.saturation + items[i].saturationShift, 0, 1);
-			hsv.hsv.value = clamp_float(hsv.hsv.value + items[i].valueShift, 0, 1);
-			color_hsv_to_rgb(&hsv, &r);
+			hsv.hsv.saturation = math::clamp(hsv.hsv.saturation + items[i].saturationShift, 0.0f, 1.0f);
+			hsv.hsv.value = math::clamp(hsv.hsv.value + items[i].valueShift, 0.0f, 1.0f);
+			r = hsv.hsvToRgb();
 			auto text = gs->converters().serialize(r, Converters::Type::display);
 			gtk_color_set_color(GTK_COLOR(items[i].widget), r, text);
 			items[i].colorHue = hueOffset;
-			gtk_color_wheel_set_hue(GTK_COLOR_WHEEL(colorWheel), i, wrap_float(hue + items[i].hueShift));
+			gtk_color_wheel_set_hue(GTK_COLOR_WHEEL(colorWheel), i, math::wrap(hue + items[i].hueShift));
 			gtk_color_wheel_set_saturation(GTK_COLOR_WHEEL(colorWheel), i, hsv.hsv.saturation);
 			gtk_color_wheel_set_value(GTK_COLOR_WHEEL(colorWheel), i, hsv.hsv.value);
 			hueStep = (generate_scheme_get_scheme_type(type)->turn[i % generate_scheme_get_scheme_type(type)->turn_types]) / (360.0f) + chaos * static_cast<float>(random_get_double(gs->getRandom()) - 0.5);
-			hue = wrap_float(hue + hueStep);
-			hueOffset = wrap_float(hueOffset + hueStep);
+			hue = math::wrap(hue + hueStep);
+			hueOffset = math::wrap(hueOffset + hueStep);
 		}
 	}
 	struct Editable: IEditableColorsUI, IMenuExtension {
@@ -344,7 +344,7 @@ struct GenerateSchemeArgs {
 			Color color, hsl;
 			float hue;
 			color = colorObject.getColor();
-			color_rgb_to_hsl(&color, &hsl);
+			hsl = color.rgbToHsl();
 			int wheelType = gtk_combo_box_get_active(GTK_COMBO_BOX(args->wheelTypeCombo));
 			auto &wheel = color_wheel_types_get()[wheelType];
 			double tmp;
@@ -352,7 +352,7 @@ struct GenerateSchemeArgs {
 			hue = static_cast<float>(tmp);
 			if (args->wheelLocked) {
 				float hueShift = (hue - args->items[index].originalHue) - args->items[index].hueShift;
-				hue = wrap_float(static_cast<float>(gtk_range_get_value(GTK_RANGE(args->hueRange))) / 360.0f + hueShift);
+				hue = math::wrap(static_cast<float>(gtk_range_get_value(GTK_RANGE(args->hueRange))) / 360.0f + hueShift);
 				gtk_range_set_value(GTK_RANGE(args->hueRange), hue * 360.0f);
 			} else {
 				args->items[index].hueShift = hue - args->items[index].originalHue;

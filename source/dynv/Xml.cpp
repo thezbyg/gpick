@@ -338,7 +338,7 @@ static void onEndElement(Context *context, const XML_Char *name) {
 		case ValueType::color: {
 			std::stringstream in(entity.data());
 			Color color;
-			in >> color.ma[0] >> color.ma[1] >> color.ma[2] >> color.ma[3];
+			in >> color[0] >> color[1] >> color[2] >> color[3];
 			boost::get<std::vector<Color> &>(data).push_back(color);
 		} break;
 		case ValueType::map:
@@ -367,7 +367,7 @@ static void onEndElement(Context *context, const XML_Char *name) {
 		case ValueType::color: {
 			std::stringstream in(entity.data());
 			Color color;
-			in >> color.ma[0] >> color.ma[1] >> color.ma[2] >> color.ma[3];
+			in >> color[0] >> color[1] >> color[2] >> color[3];
 			map.set(name, color);
 		} break;
 		case ValueType::map:

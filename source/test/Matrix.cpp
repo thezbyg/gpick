@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,26 +16,34 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_HTML_UTILS_H_
-#define GPICK_HTML_UTILS_H_
-#include <string>
-#include <iosfwd>
-std::string &escapeHtmlInplace(std::string &str);
-std::string escapeHtml(const std::string &str);
-struct Color;
-struct HtmlRGB {
-	HtmlRGB(const Color &color);
-	const Color &color;
-};
-struct HtmlHEX {
-	HtmlHEX(const Color &color);
-	const Color &color;
-};
-struct HtmlHSL {
-	HtmlHSL(const Color &color);
-	const Color &color;
-};
-std::ostream& operator<<(std::ostream& os, const HtmlRGB color);
-std::ostream& operator<<(std::ostream& os, const HtmlHEX color);
-std::ostream& operator<<(std::ostream& os, const HtmlHSL color);
-#endif /* GPICK_HTML_UTILS_H_ */
+#include <boost/test/unit_test.hpp>
+#include "math/Matrix.h"
+#include <iostream>
+namespace math {
+static std::ostream &operator<<(std::ostream &stream, const math::Matrix3d &matrix) {
+	for (size_t i = 0; i < math::Matrix3d::Size * math::Matrix3d::Size; i++) {
+		if (i != 0)
+			stream << ", ";
+		stream << matrix.flatData[i];
+	}
+	return stream;
+}
+}
+BOOST_AUTO_TEST_SUITE(matrix)
+const static math::Matrix3d zero = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+const static math::Matrix3d identity = { 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 };
+BOOST_AUTO_TEST_CASE(determinant) {
+	BOOST_CHECK_EQUAL(zero.determinant(), 0.0);
+	BOOST_CHECK_EQUAL(identity.determinant(), 1.0);
+	BOOST_CHECK_EQUAL(math::Matrix3d(1.0, 2.0, 3.0, 0.0, 1.0, 4.0, 5.0, 6.0, 0.0).determinant(), 1.0);
+}
+BOOST_AUTO_TEST_CASE(multiplication) {
+	BOOST_CHECK_EQUAL(identity * zero, zero);
+	BOOST_CHECK_EQUAL(zero * identity, zero);
+	BOOST_CHECK_EQUAL(identity * identity, identity);
+}
+BOOST_AUTO_TEST_CASE(inverse) {
+	BOOST_CHECK_EQUAL(*identity.inverse(), identity);
+	BOOST_CHECK_EQUAL(*math::Matrix3d(1.0, 2.0, 3.0, 0.0, 1.0, 4.0, 5.0, 6.0, 0.0).inverse(), math::Matrix3d(-24.0, 18.0, 5.0, 20.0, -15.0, -4.0, -5.0, 4.0, 1.0));
+}
+BOOST_AUTO_TEST_SUITE_END()

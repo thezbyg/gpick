@@ -1665,7 +1665,7 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value
 	AppArgs* args = new AppArgs;
 	args->initialization = true;
 	args->startupOptions = startupOptions;
-	color_init();
+	Color::initialize();
 	args->gs = new GlobalState();
 	args->gs->loadSettings();
 	if (args->startupOptions.single_color_pick_mode){

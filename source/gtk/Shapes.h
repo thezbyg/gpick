@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2020, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,19 +16,13 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_UTILS_H_
-#define GPICK_COLOR_UTILS_H_
-
+#ifndef GPICK_GTK_SHAPES_H_
+#define GPICK_GTK_SHAPES_H_
 #include "Color.h"
-namespace color_utils
-{
-	template<typename T>
-	void mix(const Color &a, const Color &b, T ratio, Color &result)
-	{
-		for (int i = 0; i < 4; i++){
-			result.ma[i] = a.ma[i] * (1 - ratio) + b.ma[i] * ratio;
-		}
-	};
+#include <cairo.h>
+namespace gtk {
+void roundedRectangle(cairo_t *cr, float x, float y, float width, float height, float roundness);
+void splitRectangle(cairo_t *cr, float x, float y, float width, float height, float tilt);
+void setColor(cairo_t *cr, const Color &color);
 }
-
-#endif /* GPICK_COLOR_UTILS_H_ */
+#endif /* GPICK_GTK_SHAPES_H_ */
