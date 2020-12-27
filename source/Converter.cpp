@@ -53,7 +53,8 @@ std::string Converter::serialize(const ColorObject &colorObject, const Converter
 	lua_State *L = m_serialize.script();
 	int stack_top = lua_gettop(L);
 	m_serialize.get();
-	lua::pushColorObject(L, colorObject.copy());
+	ColorObject tmp = colorObject;
+	lua::pushColorObject(L, &tmp);
 	lua_newtable(L);
 	lua_pushboolean(L, position.first());
 	lua_setfield(L, -2, "first");

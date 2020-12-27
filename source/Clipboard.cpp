@@ -116,7 +116,9 @@ static void deleteState(GtkClipboard *, CopyPasteArgs *args) {
 }
 static bool setupClipboard(const ColorObject &colorObject, Converter *converter, GlobalState *gs) {
 	auto colorList = color_list_new();
-	color_list_add_color_object(colorList, colorObject.copy(), false);
+	auto *tmp = colorObject.copy();
+	color_list_add_color_object(colorList, tmp, false);
+	tmp->release();
 	auto args = new CopyPasteArgs(colorList, converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
@@ -141,7 +143,9 @@ static bool setupClipboard(ColorList *colorList, Converter *converter, GlobalSta
 static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Converter *converter, GlobalState *gs) {
 	auto colorList = color_list_new();
 	for (auto &colorObject: colorObjects) {
-		color_list_add_color_object(colorList, colorObject.copy(), false);
+		auto *tmp = colorObject.copy();
+		color_list_add_color_object(colorList, tmp, false);
+		tmp->release();
 	}
 	auto args = new CopyPasteArgs(colorList, converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
