@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(gpick)
 option(ENABLE_NLS "compile with gettext support" true)
 option(USE_GTK3 "use GTK3 instead of GTK2" true)
+option(DEV_BUILD "use development flags" false)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 file(GLOB SOURCES
 	source/*.cpp source/*.h
@@ -48,6 +49,9 @@ function(set_compile_options target)
 		if (ENABLE_NLS)
 			target_compile_definitions(${target} PRIVATE ENABLE_NLS "LOCALEDIR=${CMAKE_INSTALL_PREFIX}/share/locale")
 		endif()
+		if (DEV_BUILD)
+			target_compile_options(${target} PRIVATE -Werror)
+		endif()
 	endif()
 endfunction()
 
@@ -72,7 +76,7 @@ function(add_gtk_options target)
 endfunction()
 
 file(GLOB MATH_SOURCES source/MathUtil.cpp source/MathUtil.h)
-add_library(gpick-math ${MATH_SOURCES})
+add_library(gpick-math STATIC ${MATH_SOURCES})
 set_compile_options(gpick-math)
 target_include_directories(gpick-math PRIVATE
 	source
@@ -80,7 +84,7 @@ target_include_directories(gpick-math PRIVATE
 )
 
 file(GLOB COLOR_SOURCES source/Color.cpp source/Color.h)
-add_library(gpick-color ${COLOR_SOURCES})
+add_library(gpick-color STATIC ${COLOR_SOURCES})
 set_compile_options(gpick-color)
 target_link_libraries(gpick-color PRIVATE gpick-math)
 target_include_directories(gpick-color PRIVATE
@@ -89,7 +93,7 @@ target_include_directories(gpick-color PRIVATE
 )
 
 file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h)
-add_library(gpick-common ${COMMON_SOURCES})
+add_library(gpick-common STATIC ${COMMON_SOURCES})
 set_compile_options(gpick-common)
 target_include_directories(gpick-common PRIVATE
 	source
@@ -97,7 +101,7 @@ target_include_directories(gpick-common PRIVATE
 )
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
-add_library(gpick-dynv ${DYNV_SOURCES})
+add_library(gpick-dynv STATIC ${DYNV_SOURCES})
 set_compile_options(gpick-dynv)
 target_link_libraries(gpick-dynv PRIVATE gpick-color)
 target_include_directories(gpick-dynv PRIVATE
@@ -107,7 +111,7 @@ target_include_directories(gpick-dynv PRIVATE
 )
 
 file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
-add_library(gpick-lua ${LUA_SOURCES})
+add_library(gpick-lua STATIC ${LUA_SOURCES})
 set_compile_options(gpick-lua)
 target_link_libraries(gpick-lua PRIVATE
 	${Lua_LIBRARIES}
@@ -121,7 +125,7 @@ target_include_directories(gpick-lua PRIVATE
 file(GLOB PARSER_SOURCES source/parser/*.cpp source/parser/*.h)
 ragel_target(text_file_parser source/parser/TextFileParser.rl ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TextFileParser.cpp)
 list(APPEND PARSER_SOURCES ${RAGEL_text_file_parser_OUTPUTS})
-add_library(gpick-parser ${PARSER_SOURCES})
+add_library(gpick-parser STATIC ${PARSER_SOURCES})
 set_compile_options(gpick-parser)
 target_include_directories(gpick-parser PRIVATE
 	source

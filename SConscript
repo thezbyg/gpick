@@ -15,7 +15,8 @@ vars.Add('BUILD_TARGET', 'Build target', '')
 vars.Add('TOOLCHAIN', 'Toolchain', 'gcc')
 vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
-vars.Add(BoolVariable('USE_GTK3', 'Use GTK3 instead of GTK2', False))
+vars.Add(BoolVariable('USE_GTK3', 'Use GTK3 instead of GTK2', True))
+vars.Add(BoolVariable('DEV_BUILD', 'Use development flags', False))
 vars.Update(env)
 
 if env['LOCALEDIR'] == '':
@@ -116,6 +117,11 @@ if not env['TOOLCHAIN'] == 'msvc':
 			env.Append(
 				CXXFLAGS = ['-std=c++14'],
 			)
+	if env['DEV_BUILD']:
+		env.Append(
+			CXXFLAGS = ['-Werror'],
+			CFLAGS = ['-Werror'],
+		)
 
 	if env['BUILD_TARGET'] == 'win32':
 		env.Append(
