@@ -19,18 +19,6 @@
 #include "ColorWidget.h"
 #include "Color.h"
 #include "Shapes.h"
-
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR, GtkColorPrivate))
-G_DEFINE_TYPE(GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA);
-static gboolean button_release(GtkWidget *widget, GdkEventButton *event);
-static gboolean button_press(GtkWidget *widget, GdkEventButton *event);
-static void finalize(GObject *color_obj);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
-static void size_request(GtkWidget *widget, GtkRequisition *requisition);
-#endif
 enum {
 	ACTIVATED, LAST_SIGNAL,
 };
@@ -43,11 +31,21 @@ struct GtkColorPrivate {
 	float roundness;
 	transformation::Chain *transformation_chain;
 };
+#define GET_PRIVATE(obj) reinterpret_cast<GtkColorPrivate *>(gtk_color_get_instance_private(GTK_COLOR(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkColor, gtk_color, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkColor));
+static gboolean button_release(GtkWidget *widget, GdkEventButton *event);
+static gboolean button_press(GtkWidget *widget, GdkEventButton *event);
+static void finalize(GObject *color_obj);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
+static void size_request(GtkWidget *widget, GtkRequisition *requisition);
+#endif
 static void gtk_color_class_init(GtkColorClass *color_class)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS(color_class);
 	obj_class->finalize = finalize;
-	g_type_class_add_private(obj_class, sizeof(GtkColorPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(color_class);
 	widget_class->button_release_event = button_release;
 	widget_class->button_press_event = button_press;

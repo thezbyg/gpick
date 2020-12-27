@@ -23,16 +23,6 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
-
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_ZOOMED, GtkZoomedPrivate))
-G_DEFINE_TYPE(GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA);
-static void finalize(GObject *zoomed_obj);
-static gboolean button_press(GtkWidget *node_system, GdkEventButton *event);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
-#endif
 enum {
 	COLOR_CHANGED,
 	ACTIVATED,
@@ -57,11 +47,19 @@ struct GtkZoomedPrivate {
 	GtkStyleContext *context;
 #endif
 };
+#define GET_PRIVATE(obj) reinterpret_cast<GtkZoomedPrivate *>(gtk_zoomed_get_instance_private(GTK_ZOOMED(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkZoomed, gtk_zoomed, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkZoomed));
+static void finalize(GObject *zoomed_obj);
+static gboolean button_press(GtkWidget *node_system, GdkEventButton *event);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
+#endif
 static void gtk_zoomed_class_init(GtkZoomedClass *zoomed_class)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS(zoomed_class);
 	obj_class->finalize = finalize;
-	g_type_class_add_private(obj_class, sizeof(GtkZoomedPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(zoomed_class);
 	widget_class->button_press_event = button_press;
 #if GTK_MAJOR_VERSION >= 3

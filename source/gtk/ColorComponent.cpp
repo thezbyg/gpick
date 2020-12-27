@@ -25,20 +25,6 @@
 #include <vector>
 using namespace std;
 
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR_COMPONENT, GtkColorComponentPrivate))
-G_DEFINE_TYPE(GtkColorComponent, gtk_color_component, GTK_TYPE_DRAWING_AREA);
-struct GtkColorComponentPrivate;
-static gboolean button_release(GtkWidget *widget, GdkEventButton *event);
-static gboolean button_press(GtkWidget *node_system, GdkEventButton *event);
-static gboolean motion_notify(GtkWidget *node_system, GdkEventMotion *event);
-static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c);
-static void finalize(GObject *color_obj);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
-static void size_request(GtkWidget *widget, GtkRequisition *requisition);
-#endif
 enum {
 	COLOR_CHANGED,
 	INPUT_CLICKED,
@@ -67,12 +53,24 @@ struct GtkColorComponentPrivate {
 	GdkDevice *pointer_grab;
 #endif
 };
-
+#define GET_PRIVATE(obj) reinterpret_cast<GtkColorComponentPrivate *>(gtk_color_component_get_instance_private(GTK_COLOR_COMPONENT(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkColorComponent, gtk_color_component, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkColorComponent));
+struct GtkColorComponentPrivate;
+static gboolean button_release(GtkWidget *widget, GdkEventButton *event);
+static gboolean button_press(GtkWidget *node_system, GdkEventButton *event);
+static gboolean motion_notify(GtkWidget *node_system, GdkEventMotion *event);
+static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c);
+static void finalize(GObject *color_obj);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
+static void size_request(GtkWidget *widget, GtkRequisition *requisition);
+#endif
 static void gtk_color_component_class_init(GtkColorComponentClass *color_component_class)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS (color_component_class);
 	obj_class->finalize = finalize;
-	g_type_class_add_private(obj_class, sizeof(GtkColorComponentPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (color_component_class);
 	widget_class->button_release_event = button_release;
 	widget_class->button_press_event = button_press;

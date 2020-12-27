@@ -20,16 +20,6 @@
 #include "Color.h"
 using namespace std;
 
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE ((obj), GTK_TYPE_RANGE_2D, GtkRange2DPrivate))
-G_DEFINE_TYPE (GtkRange2D, gtk_range_2d, GTK_TYPE_DRAWING_AREA);
-static gboolean button_release(GtkWidget *range_2d, GdkEventButton *event);
-static gboolean button_press(GtkWidget *range_2d, GdkEventButton *event);
-static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *range_2d, GdkEventExpose *event);
-#endif
 enum {
 	VALUES_CHANGED, LAST_SIGNAL
 };
@@ -46,6 +36,16 @@ struct GtkRange2DPrivate {
 	GdkDevice *pointer_grab;
 #endif
 };
+#define GET_PRIVATE(obj) reinterpret_cast<GtkRange2DPrivate *>(gtk_range_2d_get_instance_private(GTK_RANGE_2D(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkRange2D, gtk_range_2d, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkRange2D));
+static gboolean button_release(GtkWidget *range_2d, GdkEventButton *event);
+static gboolean button_press(GtkWidget *range_2d, GdkEventButton *event);
+static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *range_2d, GdkEventExpose *event);
+#endif
 static void finalize(GObject *range_2d_obj)
 {
 	GtkRange2DPrivate *ns = GET_PRIVATE(range_2d_obj);
@@ -62,7 +62,6 @@ static void gtk_range_2d_class_init(GtkRange2DClass *range_2d_class)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS(range_2d_class);
 	obj_class->finalize = finalize;
-	g_type_class_add_private(obj_class, sizeof(GtkRange2DPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(range_2d_class);
 	widget_class->button_release_event = button_release;
 	widget_class->button_press_event = button_press;

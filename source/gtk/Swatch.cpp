@@ -21,15 +21,6 @@
 #include <math.h>
 #include <boost/math/special_functions/round.hpp>
 
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_SWATCH, GtkSwatchPrivate))
-G_DEFINE_TYPE (GtkSwatch, gtk_swatch, GTK_TYPE_DRAWING_AREA);
-static gboolean button_release(GtkWidget *swatch, GdkEventButton *event);
-static gboolean button_press(GtkWidget *swatch, GdkEventButton *event);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
-#endif
 enum {
 	ACTIVE_COLOR_CHANGED, COLOR_CHANGED, COLOR_ACTIVATED, CENTER_ACTIVATED, LAST_SIGNAL
 };
@@ -44,6 +35,15 @@ struct GtkSwatchPrivate
 	GtkStyleContext *context;
 #endif
 };
+#define GET_PRIVATE(obj) reinterpret_cast<GtkSwatchPrivate *>(gtk_swatch_get_instance_private(GTK_SWATCH(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkSwatch, gtk_swatch, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkSwatch));
+static gboolean button_release(GtkWidget *swatch, GdkEventButton *event);
+static gboolean button_press(GtkWidget *swatch, GdkEventButton *event);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *widget, GdkEventExpose *event);
+#endif
 static void finalize(GObject *obj)
 {
 #if GTK_MAJOR_VERSION >= 3
@@ -56,7 +56,6 @@ static void gtk_swatch_class_init(GtkSwatchClass *swatch_class)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS(swatch_class);
 	obj_class->finalize = finalize;
-	g_type_class_add_private(obj_class, sizeof(GtkSwatchPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(swatch_class);
 	widget_class->button_release_event = button_release;
 	widget_class->button_press_event = button_press;

@@ -22,35 +22,16 @@
 #include "MathUtil.h"
 #include <list>
 #include <iostream>
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_COLOR_WHEEL, GtkColorWheelPrivate))
-
-G_DEFINE_TYPE (GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA);
-struct GtkColorWheelPrivate;
-struct ColorPoint;
-static GtkWindowClass *parent_class = nullptr;
-static gboolean button_release(GtkWidget *color_wheel, GdkEventButton *event);
-static gboolean button_press(GtkWidget *color_wheel, GdkEventButton *event);
-static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event);
-static uint32_t get_color_index(GtkColorWheelPrivate *ns, ColorPoint *cp);
-#if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
-#else
-static gboolean expose(GtkWidget *color_wheel, GdkEventExpose *event);
-#endif
-enum
-{
+enum {
 	HUE_CHANGED, SATURATION_VALUE_CHANGED, LAST_SIGNAL
 };
 static guint signals[LAST_SIGNAL] = {0};
-
-struct ColorPoint
-{
+struct ColorPoint {
 	double hue;
 	double lightness;
 	double saturation;
 };
-struct GtkColorWheelPrivate
-{
+struct GtkColorWheelPrivate {
 	ColorPoint cpoint[10];
 	uint32_t n_cpoint;
 	ColorPoint *grab_active;
@@ -67,6 +48,18 @@ struct GtkColorWheelPrivate
 	GdkDevice *pointer_grab;
 #endif
 };
+#define GET_PRIVATE(obj) reinterpret_cast<GtkColorWheelPrivate *>(gtk_color_wheel_get_instance_private(GTK_COLOR_WHEEL(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkColorWheel, gtk_color_wheel, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkColorWheel));
+static GtkWindowClass *parent_class = nullptr;
+static gboolean button_release(GtkWidget *color_wheel, GdkEventButton *event);
+static gboolean button_press(GtkWidget *color_wheel, GdkEventButton *event);
+static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event);
+static uint32_t get_color_index(GtkColorWheelPrivate *ns, ColorPoint *cp);
+#if GTK_MAJOR_VERSION >= 3
+static gboolean draw(GtkWidget *widget, cairo_t *cr);
+#else
+static gboolean expose(GtkWidget *color_wheel, GdkEventExpose *event);
+#endif
 static void finalize(GObject *color_wheel_obj)
 {
 	GtkColorWheelPrivate *ns = GET_PRIVATE(color_wheel_obj);
@@ -90,7 +83,6 @@ static void gtk_color_wheel_class_init(GtkColorWheelClass *color_wheel_class)
 	widget_class->expose_event = expose;
 #endif
 	parent_class = (GtkWindowClass*)g_type_class_peek_parent(G_OBJECT_CLASS(color_wheel_class));
-	g_type_class_add_private(obj_class, sizeof(GtkColorWheelPrivate));
 	signals[HUE_CHANGED] = g_signal_new("hue_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, hue_changed), nullptr, nullptr, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 	signals[SATURATION_VALUE_CHANGED] = g_signal_new("saturation_value_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkColorWheelClass, saturation_value_changed), nullptr, nullptr, g_cclosure_marshal_VOID__INT, G_TYPE_NONE, 1, G_TYPE_INT);
 }

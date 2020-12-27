@@ -24,9 +24,21 @@
 #include <typeinfo>
 using namespace math;
 using namespace layout;
-
-#define GET_PRIVATE(obj) (G_TYPE_INSTANCE_GET_PRIVATE((obj), GTK_TYPE_LAYOUT_PREVIEW, GtkLayoutPreviewPrivate))
-G_DEFINE_TYPE(GtkLayoutPreview, gtk_layout_preview, GTK_TYPE_DRAWING_AREA);
+enum {
+	COLOR_CHANGED,
+	EMPTY,
+	LAST_SIGNAL
+};
+static guint signals[LAST_SIGNAL] = {};
+struct GtkLayoutPreviewPrivate {
+	System *system;
+	Rect2<float> area;
+	Style* selected_style;
+	Box* selected_box;
+	transformation::Chain *transformation_chain;
+};
+#define GET_PRIVATE(obj) reinterpret_cast<GtkLayoutPreviewPrivate *>(gtk_layout_preview_get_instance_private(GTK_LAYOUT_PREVIEW(obj)))
+G_DEFINE_TYPE_WITH_CODE(GtkLayoutPreview, gtk_layout_preview, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkLayoutPreview));
 static gboolean button_release(GtkWidget *layout_preview, GdkEventButton *event);
 static gboolean button_press(GtkWidget *layout_preview, GdkEventButton *event);
 #if GTK_MAJOR_VERSION >= 3
@@ -34,25 +46,9 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr);
 #else
 static gboolean expose(GtkWidget *layout_preview, GdkEventExpose *event);
 #endif
-enum
-{
-	COLOR_CHANGED,
-	EMPTY,
-	LAST_SIGNAL
-};
-static guint signals[LAST_SIGNAL] = {};
-struct GtkLayoutPreviewPrivate
-{
-	System *system;
-	Rect2<float> area;
-	Style* selected_style;
-	Box* selected_box;
-	transformation::Chain *transformation_chain;
-};
 static void gtk_layout_preview_class_init(GtkLayoutPreviewClass *klass)
 {
 	GObjectClass *obj_class = G_OBJECT_CLASS(klass);
-	g_type_class_add_private(obj_class, sizeof(GtkLayoutPreviewPrivate));
 	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
 	widget_class->button_release_event = button_release;
 	widget_class->button_press_event = button_press;
