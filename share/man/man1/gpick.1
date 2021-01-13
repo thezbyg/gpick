@@ -1,10 +1,60 @@
-.TH gpick
+.TH "GPICK" "1" "" "" ""
+
 .SH NAME
 gpick \- advanced color picker
+
 .SH SYNOPSIS
 .B gpick
 [\fIFILE\fR]
+
 .SH DESCRIPTION
 \fBgpick\fR starts an application and opens FILE if it is specified
+.SH OPTIONS
+.TP
+.B \-v
+Print version information
+.RS
+.RE
+.TP
+.B \-g
+Window geometry.
+.RS
+.RE
+.TP
+.B \-p
+Pick a color. You can insert the color at point to the clipboard by pressing \fBCTRL-C\fR. To hide the floating instance, press \fBESC\fR.
+
+When this option is used, gpick is left run in the background, so that all other floating instances don't start a new process. If cloosing the process is needed, then use the \fB-s\fR flag. 
+.RS
+.RE
+.TP
+.B \-s
+Pick one color and exit.
+.RS
+.RE
+.TP
+.B \-o
+Output picked color.
+.RS
+.RE
+.TP
+.B \-c
+Converter name used for floating picker mode.
+Available converters are "color_web_hex", "color_css_rgb" and "color_css_hsl".
+.RS
+.RE
+
+.SH "EXAMPLES"
+.PP
+Here are some gpick usage examples
+.PP
+\fBgpick \-o \-s\fR
+.PP
+Opens a floating instance (i.e. it is not left run in the background) and send the selected color to STDOUT.
+.PP
+\fBgpick \-o \-s \-c color_css_hsl | xclip -sel c\fR
+.PP
+Inserts the selected color into the CLIPBOARD using the CSS HSL notation.
+
 .SH AUTHOR
 Written by Albertas Vyšniauskas
