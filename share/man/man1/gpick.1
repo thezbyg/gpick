@@ -43,5 +43,22 @@ Converter name used for floating picker mode.
 Available converters are "color_web_hex", "color_css_rgb" and "color_css_hsl".
 .RS
 .RE
+
+.SH "EXAMPLES"
+.PP
+Here are some gpick usage examples
+.PP
+\fBgpick \-p\fR
+.PP
+Executes gpick in a floating windows so that a color can be picked. The process is not closed so that all new floating instances don't start a new process. When \fB-p\fR is used, the selected color can be inser
+.PP
+\fBgpick \-o \-s\fR
+.PP
+Opens a floating instance (i.e. it is not left run in the background) and send the selected color to STDOUT.
+.PP
+\fBgpick \-o \-s \-c color_css_hsl | xclip -sel c\fR
+.PP
+Inserts the selected color into the CLIPBOARD using the CSS HSL notation.
+
 .SH AUTHOR
 Written by Albertas Vyšniauskas
