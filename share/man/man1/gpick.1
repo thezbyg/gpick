@@ -22,9 +22,9 @@ Window geometry.
 .RE
 .TP
 .B \-p
-Pick a color. You can insert the color at point by pressing \fBCTRL-C\fR. To hide the floating instance, press \fBESC\fR.
+Pick a color. You can insert the color at point to the clipboard by pressing \fBCTRL-C\fR. To hide the floating instance, press \fBESC\fR.
 
-When this option is used, gpick is run in the background, so that all other floating instances don't start a new process. If cloosing the process is needed, then see the \fB-s\fR flag. 
+When this option is used, gpick is left run in the background, so that all other floating instances don't start a new process. If cloosing the process is needed, then use the \fB-s\fR flag. 
 .RS
 .RE
 .TP
@@ -47,10 +47,6 @@ Available converters are "color_web_hex", "color_css_rgb" and "color_css_hsl".
 .SH "EXAMPLES"
 .PP
 Here are some gpick usage examples
-.PP
-\fBgpick \-p\fR
-.PP
-Executes gpick in a floating windows so that a color can be picked. The process is not closed so that all new floating instances don't start a new process. When \fB-p\fR is used, the selected color can be inser
 .PP
 \fBgpick \-o \-s\fR
 .PP
