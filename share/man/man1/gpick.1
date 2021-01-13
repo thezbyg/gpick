@@ -1,4 +1,4 @@
-.TH gpick
+.TH "GPICK" "1" "" "" ""
 .SH NAME
 gpick \- advanced color picker
 .SH SYNOPSIS
@@ -6,5 +6,37 @@ gpick \- advanced color picker
 [\fIFILE\fR]
 .SH DESCRIPTION
 \fBgpick\fR starts an application and opens FILE if it is specified
+.SH OPTIONS
+.TP
+.B \-v
+Print version information
+.RS
+.RE
+.TP
+.B \-g
+Window geometry.
+.RS
+.RE
+.TP
+.B \-p
+Pick a color.
+.RS
+.RE
+.TP
+.B \-s
+Pick one color and exit.
+.RS
+.RE
+.TP
+.B \-o
+Output picked color.
+.RS
+.RE
+.TP
+.B \-c
+Converter name used for floating picker mode.
+Available converters are "color_web_hex", "color_css_rgb", "color_css_hsl".
+.RS
+.RE
 .SH AUTHOR
 Written by Albertas Vyšniauskas
