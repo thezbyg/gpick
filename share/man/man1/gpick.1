@@ -1,9 +1,12 @@
 .TH "GPICK" "1" "" "" ""
+
 .SH NAME
 gpick \- advanced color picker
+
 .SH SYNOPSIS
 .B gpick
 [\fIFILE\fR]
+
 .SH DESCRIPTION
 \fBgpick\fR starts an application and opens FILE if it is specified
 .SH OPTIONS
@@ -19,7 +22,9 @@ Window geometry.
 .RE
 .TP
 .B \-p
-Pick a color.
+Pick a color. You can insert the color at point by pressing \fBCTRL-C\fR. To hide the floating instance, press \fBESC\fR.
+
+When this option is used, gpick is run in the background, so that all other floating instances don't start a new process. If cloosing the process is needed, then see the \fB-s\fR flag. 
 .RS
 .RE
 .TP
