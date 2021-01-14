@@ -1,4 +1,4 @@
-.TH "GPICK" "1" "" "" ""
+.TH "GPICK" "1" "" "" "Gpick manual"
 
 .SH NAME
 gpick \- advanced color picker
@@ -11,36 +11,46 @@ gpick \- advanced color picker
 \fBgpick\fR starts an application and opens FILE if it is specified
 .SH OPTIONS
 .TP
-.B \-v
-Print version information
+.B \-v, \-\-version
+Print version information.
 .RS
 .RE
 .TP
-.B \-g
+.B \-g, \-\-geometry
 Window geometry.
 .RS
 .RE
 .TP
-.B \-p
+.B \-p, \-\-pick
 Pick a color. You can insert the color at point to the clipboard by pressing \fBCTRL-C\fR. To hide the floating instance, press \fBESC\fR.
 
-When this option is used, gpick is left run in the background, so that all other floating instances don't start a new process. If cloosing the process is needed, then use the \fB-s\fR flag. 
+When this option is used, gpick is left running in the background, so that all other floating instances don't start a new process. If closing the process is needed, then use the \fB-s\fR flag.
 .RS
 .RE
 .TP
-.B \-s
+.B \-s, \-\-single
 Pick one color and exit.
 .RS
 .RE
 .TP
-.B \-o
+.B \-o, \-\-output
 Output picked color.
 .RS
 .RE
 .TP
-.B \-c
+.B \-c, \-\-converter\-name
 Converter name used for floating picker mode.
 Available converters are "color_web_hex", "color_css_rgb" and "color_css_hsl".
+.RS
+.RE
+.TP
+.B \-\-no-newline
+Output picked color without newline.
+.RS
+.RE
+.TP
+.B \-\-no-start
+Do not start if not running already.
 .RS
 .RE
 
