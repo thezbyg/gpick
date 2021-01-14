@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -44,7 +44,6 @@
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include <gdk/gdkkeysyms.h>
-#include <cmath>
 #include <string.h>
 #include <sstream>
 #include <iostream>
@@ -52,7 +51,6 @@
 #include <cmath>
 #include <boost/optional.hpp>
 using namespace std;
-using namespace math;
 
 struct ColorPickerArgs;
 static void updateDisplays(ColorPickerArgs *args, GtkWidget *except_widget);
@@ -287,11 +285,11 @@ static gboolean updateMainColor( gpointer data ){
 	int monitor = gdk_screen_get_monitor_at_point(screen, x, y);
 	GdkRectangle monitor_geometry;
 	gdk_screen_get_monitor_geometry(screen, monitor, &monitor_geometry);
-	Vec2<int> pointer(x,y);
-	Rect2<int> screen_rect(monitor_geometry.x, monitor_geometry.y, monitor_geometry.x + monitor_geometry.width, monitor_geometry.y + monitor_geometry.height);
+	math::Vector2i pointer(x,y);
+	math::Rectangle<int> screen_rect(monitor_geometry.x, monitor_geometry.y, monitor_geometry.x + monitor_geometry.width, monitor_geometry.y + monitor_geometry.height);
 	auto screen_reader = args->gs->getScreenReader();
 	screen_reader_reset_rect(screen_reader);
-	Rect2<int> sampler_rect, zoomed_rect, final_rect;
+	math::Rectangle<int> sampler_rect, zoomed_rect, final_rect;
 	sampler_get_screen_rect(args->gs->getSampler(), pointer, screen_rect, &sampler_rect);
 	screen_reader_add_rect(screen_reader, screen, sampler_rect);
 	bool zoomed_enabled = args->options->getBool("zoomed_enabled", true);
@@ -300,7 +298,7 @@ static gboolean updateMainColor( gpointer data ){
 		screen_reader_add_rect(screen_reader, screen, zoomed_rect);
 	}
 	screen_reader_update_surface(screen_reader, &final_rect);
-	Vec2<int> offset;
+	math::Vector2i offset;
 	offset = sampler_rect.position() - final_rect.position();
 	Color c;
 	sampler_get_color_sample(args->gs->getSampler(), pointer, screen_rect, offset, &c);
@@ -466,7 +464,7 @@ static gboolean onSwatchKeyPress(GtkWidget *widget, GdkEventKey *event, ColorPic
 	case GDK_KEY_m: {
 		int x, y;
 		gdk_display_get_pointer(gdk_display_get_default(), nullptr, &x, &y, nullptr);
-		math::Vec2<int> position(x, y);
+		math::Vector<int, 2> position(x, y);
 		if ((event->state & modifiers) == GDK_CONTROL_MASK){
 			gtk_zoomed_set_mark(GTK_ZOOMED(args->zoomed_display), 1, position);
 		}else{

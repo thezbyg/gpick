@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,8 +20,8 @@
 #define GPICK_SAMPLER_H_
 
 #include "Color.h"
-#include "Rect2.h"
-#include "Vector2.h"
+#include "math/Rectangle.h"
+#include "math/Vector.h"
 struct Sampler;
 struct ScreenReader;
 enum class SamplerFalloff: int
@@ -38,7 +38,7 @@ void sampler_set_oversample(Sampler *sampler, int oversample);
 SamplerFalloff sampler_get_falloff(Sampler *sampler);
 int sampler_get_oversample(Sampler *sampler);
 void sampler_destroy(Sampler *sampler);
-int sampler_get_color_sample(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, Color* color);
-void sampler_get_screen_rect(Sampler *sampler, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
+int sampler_get_color_sample(Sampler *sampler, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Vector2i &offset, Color* color);
+void sampler_get_screen_rect(Sampler *sampler, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Rectangle<int> *rect);
 
 #endif /* GPICK_SAMPLER_H_ */

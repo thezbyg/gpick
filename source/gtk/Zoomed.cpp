@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,7 +18,7 @@
 
 #include "Zoomed.h"
 #include "Color.h"
-#include "MathUtil.h"
+#include "math/Vector.h"
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
@@ -33,15 +33,15 @@ struct GtkZoomedPrivate {
 	Color color;
 	gfloat zoom;
 	cairo_surface_t *surface;
-	vector2 point;
-	vector2 point_size;
+	math::Vector2f point;
+	math::Vector2f pointSize;
 	int32_t width_height;
 	struct{
 		bool valid;
-		math::Vec2<int> position;
+		math::Vector2i position;
 	}marks[2];
-	math::Vec2<int> pointer;
-	math::Rect2<int> screen_rect;
+	math::Vector2i pointer;
+	math::Rectangle<int> screen_rect;
 	bool fade;
 #if GTK_MAJOR_VERSION >= 3
 	GtkStyleContext *context;
@@ -151,12 +151,12 @@ static double zoom_transformation(double value)
 {
 	return (1 - log(1 + value * 0.01 * 3) / log((double)(1 + 3))) / 2;
 }
-void gtk_zoomed_get_current_screen_rect(GtkZoomed* zoomed, math::Rect2<int> *rect)
+void gtk_zoomed_get_current_screen_rect(GtkZoomed* zoomed, math::Rectangle<int> *rect)
 {
 	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gtk_zoomed_get_screen_rect(zoomed, ns->pointer, ns->screen_rect, rect);
 }
-void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect)
+void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Rectangle<int> *rect)
 {
 	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gint32 x = pointer.x, y = pointer.y;
@@ -183,9 +183,9 @@ void gtk_zoomed_get_screen_rect(GtkZoomed *zoomed, math::Vec2<int>& pointer, mat
 		top -= bottom - screen_rect.getBottom();
 		bottom = screen_rect.getBottom();
 	}
-	*rect = math::Rect2<int>(left, top, right, bottom);
+	*rect = math::Rectangle<int>(left, top, right, bottom);
 }
-math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Vec2<int>& position)
+math::Vector2i gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Vector2i &position)
 {
 	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	gint32 x = ns->pointer.x, y = ns->pointer.y;
@@ -216,10 +216,10 @@ math::Vec2<int> gtk_zoomed_get_screen_position(GtkZoomed *zoomed, const math::Ve
 	gint32 xh = (((position.x + 1) - left) * ns->width_height) / area_width;
 	gint32 yl = ((position.y - top) * ns->width_height) / area_width;
 	gint32 yh = (((position.y + 1) - top) * ns->width_height) / area_width;
-	math::Vec2<int> result(static_cast<int>((xl + xh) / 2.0f), static_cast<int>((yl + yh) / 2.0f));
+	math::Vector2i result(static_cast<int>((xl + xh) / 2.0f), static_cast<int>((yl + yh) / 2.0f));
 	return result;
 }
-void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface)
+void gtk_zoomed_update(GtkZoomed *zoomed, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Vector2i &offset, cairo_surface_t *surface)
 {
 	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->pointer = pointer;
@@ -254,8 +254,8 @@ void gtk_zoomed_update(GtkZoomed *zoomed, math::Vec2<int>& pointer, math::Rect2<
 	gint32 yh = (((y + 1) - top) * ns->width_height) / area_width;
 	ns->point.x = (xl + xh) / 2.0f;
 	ns->point.y = (yl + yh) / 2.0f;
-	ns->point_size.x = xh - xl;
-	ns->point_size.y = yh - yl;
+	ns->pointSize.x = xh - xl;
+	ns->pointSize.y = yh - yl;
 	int width = right - left;
 	int height = bottom - top;
 	cairo_t *cr = cairo_create(ns->surface);
@@ -311,7 +311,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	}
 	if (!ns->fade){
 		float radius;
-		float size = vector2_length(&ns->point_size);
+		float size = ns->pointSize.length<float>();
 		if (size < 5){
 			radius = 5;
 		}else if (size < 25){
@@ -335,12 +335,12 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	pango_font_description_set_family(font_description, "sans");
 	pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
 	pango_layout_set_font_description(layout, font_description);
-	math::Rect2<int> area_rect;
-	math::Rect2<int> widget_rect = math::Rect2<int>(5, 5, ns->width_height - 5, ns->width_height - 5);
+	math::Rectangle<int> area_rect;
+	math::Rectangle<int> widget_rect = math::Rectangle<int>(5, 5, ns->width_height - 5, ns->width_height - 5);
 	gtk_zoomed_get_current_screen_rect(GTK_ZOOMED(widget), &area_rect);
 	cairo_rectangle(cr, 0, 0, ns->width_height - padding_x * 2, ns->width_height - padding_y * 2);
 	cairo_clip(cr);
-	std::vector<math::Vec2<int> > relative_positions(2);
+	std::vector<math::Vector2i> relative_positions(2);
 	bool draw_distance = true;
 	for (int i = 0; i < 2; i++){
 		if (ns->marks[i].valid){
@@ -395,22 +395,19 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	}
 	for (int layer = 0; layer != 2; layer++){
 		if (draw_distance){
-			double distance = math::Vec2<double>::distance(
-				math::Vec2<double>(ns->marks[0].position.x, ns->marks[0].position.y),
-				math::Vec2<double>(ns->marks[1].position.x, ns->marks[1].position.y)
-			);
-			math::Vec2<int> center = (ns->marks[0].position + ns->marks[1].position) * 0.5;
+			double distance = (math::Vector2d(ns->marks[0].position.x, ns->marks[0].position.y) - math::Vector2d(ns->marks[1].position.x, ns->marks[1].position.y)).length();
+			math::Vector2i center = (ns->marks[0].position + ns->marks[1].position) / 2;
 			std::stringstream ss;
 			ss << std::fixed << std::setprecision(1) << distance << std::endl << 1 + math::abs(ns->marks[0].position.x - ns->marks[1].position.x) << "x" << 1 + math::abs(ns->marks[0].position.y - ns->marks[1].position.y);
 			auto text = ss.str();
 			pango_layout_set_text(layout, text.c_str(), -1);
 			pango_cairo_update_layout(cr, layout);
-			math::Vec2<int> relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
+			math::Vector2i relative_position = gtk_zoomed_get_screen_position(GTK_ZOOMED(widget), center);
 			PangoRectangle rect;
 			pango_layout_get_pixel_extents(layout, nullptr, &rect);
 			int text_width = rect.width;
 			int text_height = rect.height;
-			math::Rect2<int> text_rect(relative_position.x + 10, relative_position.y, relative_position.x + 10 + text_width, relative_position.y + text_height);
+			math::Rectangle<int> text_rect(relative_position.x + 10, relative_position.y, relative_position.x + 10 + text_width, relative_position.y + text_height);
 			if (!text_rect.isInside(widget_rect))
 				text_rect = widget_rect.positionInside(text_rect);
 			cairo_move_to(cr, text_rect.getX(), text_rect.getY());
@@ -454,7 +451,7 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 	}
 	return FALSE;
 }
-void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vec2<int>& position)
+void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vector2i &position)
 {
 	GtkZoomedPrivate *ns = GET_PRIVATE(zoomed);
 	ns->marks[index].position = position;

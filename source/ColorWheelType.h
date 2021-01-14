@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLOR_WHEEL_TYPE_H_
-#define COLOR_WHEEL_TYPE_H_
+#ifndef GPICK_COLOR_WHEEL_TYPE_H_
+#define GPICK_COLOR_WHEEL_TYPE_H_
 
 #include "Color.h"
 #include <stdint.h>
@@ -58,4 +58,4 @@ const ColorWheelType* color_wheel_types_get();
  */
 const uint32_t color_wheel_types_get_n();
 
-#endif /* COLOR_WHEEL_TYPE_H_ */
+#endif /* GPICK_COLOR_WHEEL_TYPE_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,50 +17,53 @@
  */
 
 #include "System.h"
-using namespace std;
-namespace layout
-{
-System::System()
-{
-	box = 0;
+namespace layout {
+System::System() {
+	m_box = nullptr;
 }
-System::~System()
-{
-	for (list<Style*>::iterator i=styles.begin(); i != styles.end(); i++){
+System::~System() {
+	for (auto i = m_styles.begin(); i != m_styles.end(); i++) {
 		Style::unref(*i);
 	}
-	styles.clear();
-	Box::unref(box);
+	m_styles.clear();
+	Box::unref(m_box);
 }
-void System::Draw(Context *context, const math::Rect2<float>& parent_rect)
-{
-	if (!box) return;
-	box->Draw(context, parent_rect);
+void System::draw(Context *context, const math::Rectangle<float> &parentRect) {
+	if (!m_box) return;
+	m_box->draw(context, parentRect);
 }
-void System::AddStyle(Style *_style)
-{
-	styles.push_back(static_cast<Style*>(_style->ref()));
+void System::addStyle(Style *style) {
+	m_styles.push_back(static_cast<Style *>(style->ref()));
 }
-void System::SetBox(Box *_box)
-{
-	if (box){
-		Box::unref(box);
-		box = 0;
+const std::vector<Style *> &System::styles() const {
+	return m_styles;
+}
+Box *System::box() {
+	return m_box;
+}
+void System::setBox(Box *box) {
+	if (m_box) {
+		Box::unref(m_box);
+		m_box = nullptr;
 	}
-	box = static_cast<Box*>(_box->ref());
+	m_box = static_cast<Box *>(box->ref());
 }
-Box* System::GetBoxAt(const math::Vec2<float>& point)
-{
-	if (box)
-		return box->GetBoxAt(point);
+Box *System::getBoxAt(const math::Vector2f &point) {
+	if (m_box)
+		return m_box->getBoxAt(point);
 	else
-		return 0;
+		return nullptr;
 }
-Box* System::GetNamedBox(const char *name)
-{
-	if (box)
-		return box->GetNamedBox(name);
+Box *System::getNamedBox(const char *name) {
+	if (m_box)
+		return m_box->getNamedBox(name);
 	else
-		return 0;
+		return nullptr;
+}
+Box *System::getNamedBox(const std::string &name) {
+	if (m_box)
+		return m_box->getNamedBox(name.c_str());
+	else
+		return nullptr;
 }
 }

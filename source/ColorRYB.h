@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,23 +16,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef COLORRYB_H_
-#define COLORRYB_H_
-
+#ifndef GPICK_COLOR_RYB_H_
+#define GPICK_COLOR_RYB_H_
 #include "Color.h"
-
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
 #include <stdint.h>
-
 double color_ryb_transform_lightness(double hue1, double hue2);
 double color_ryb_transform_hue(double hue, bool forward);
-
-void color_rybhue_to_rgb(double hue, Color* color);
-int color_rgbhue_to_rybhue(double rgb_hue, double* ryb_hue);
-
+void color_rybhue_to_rgb(double hue, Color *color);
+int color_rgbhue_to_rybhue(double rgb_hue, double *ryb_hue);
 double color_rybhue_to_rgbhue_f(double hue);
-int color_rgbhue_to_rybhue_f(double rgb_hue, double* ryb_hue);
-
-#endif /* COLORRYB_H_ */
+int color_rgbhue_to_rybhue_f(double rgb_hue, double *ryb_hue);
+#endif /* GPICK_COLOR_RYB_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -52,7 +52,6 @@
 #include "dbus/Control.h"
 #include "dynv/Map.h"
 #include "FileFormat.h"
-#include "MathUtil.h"
 #include "Clipboard.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"

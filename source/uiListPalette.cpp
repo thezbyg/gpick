@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,6 @@
 #include "Converter.h"
 #include "GlobalState.h"
 #include "dynv/Map.h"
-#include "Vector2.h"
 #include "I18N.h"
 #include "common/Format.h"
 #include "StandardMenu.h"
@@ -48,7 +47,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 	ColorSource source;
 	GtkWidget *treeview;
 	gint scrollTimeout;
-	Vec2<int> last_click_position;
+	math::Vector2i last_click_position;
 	bool disable_selection;
 	GtkWidget* countLabel;
 	GlobalState* gs;
@@ -489,8 +488,8 @@ static gboolean onPreviewButtonPress(GtkTreeView *treeView, GdkEventButton *even
 	return false;
 }
 static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (args->last_click_position != Vec2<int>(-1, -1)) {
-		Vec2<int> clickPosition = args->last_click_position;
+	if (args->last_click_position != math::Vector2i(-1, -1)) {
+		math::Vector2i clickPosition = args->last_click_position;
 		disablePaletteSelection(treeView, true, -1, -1, args);
 		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
 			GtkTreePath *path = nullptr;
@@ -582,8 +581,8 @@ static gboolean on_palette_button_press(GtkTreeView *treeView, GdkEventButton *e
 }
 
 static gboolean on_palette_button_release(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (args->last_click_position != Vec2<int>(-1, -1)) {
-		Vec2<int> clickPosition = args->last_click_position;
+	if (args->last_click_position != math::Vector2i(-1, -1)) {
+		math::Vector2i clickPosition = args->last_click_position;
 		disablePaletteSelection(treeView, true, -1, -1, args);
 		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
 			GtkTreePath *path = nullptr;

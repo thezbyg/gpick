@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -101,7 +101,7 @@ static int newLayoutFill(lua_State *L)
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
 	Fill *e = new Fill(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
-	e->SetStyle(style);
+	e->setStyle(style);
 	*c = e;
 	return 1;
 }
@@ -121,7 +121,7 @@ static int newLayoutText(lua_State *L)
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
 	Text *e = new Text(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
-	if (style) e->SetStyle(style);
+	if (style) e->setStyle(style);
 	e->text = text;
 	*c = e;
 	return 1;
@@ -144,7 +144,7 @@ int boxAdd(lua_State *L)
 {
 	Box *box = checkLayoutBox(L, 1);
 	Box *box2 = checkLayoutBox(L, 2);
-	box->AddChild(static_cast<Box*>(box2->ref()));
+	box->addChild(static_cast<Box*>(box2->ref()));
 	pushLayoutBox(L, box);
 	return 1;
 }
@@ -203,14 +203,14 @@ int systemAddStyle(lua_State *L)
 {
 	System *system = checkLayoutSystem(L, 1);
 	Style *style = checkLayoutStyle(L, 2);
-	system->AddStyle(style);
+	system->addStyle(style);
 	return 0;
 }
 int systemSetBox(lua_State *L)
 {
 	System *system = checkLayoutSystem(L, 1);
 	Box *box = checkLayoutBox(L, 2);
-	system->SetBox(box);
+	system->setBox(box);
 	return 0;
 }
 static const struct luaL_Reg system_members[] =

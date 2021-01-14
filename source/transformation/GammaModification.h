@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_GAMMA_MODIFICATION_H_
-#define TRANSFORMATION_GAMMA_MODIFICATION_H_
+#ifndef GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_
+#define GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_
 #include "Transformation.h"
 namespace transformation {
 struct GammaModification;
@@ -45,4 +45,4 @@ private:
 	friend struct Configuration;
 };
 }
-#endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */
+#endif /* GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_ */

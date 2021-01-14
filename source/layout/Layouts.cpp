@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,31 +19,24 @@
 #include "Layouts.h"
 #include "Layout.h"
 #include "System.h"
-using namespace std;
-namespace layout
-{
-Layouts::Layouts()
-{
+namespace layout {
+Layouts::Layouts() {
 }
-Layouts::~Layouts()
-{
-	for (auto layout: m_all_layouts){
+Layouts::~Layouts() {
+	for (auto layout: m_allLayouts) {
 		delete layout;
 	}
 }
-void Layouts::add(Layout *layout)
-{
-	m_all_layouts.push_back(layout);
+void Layouts::add(Layout *layout) {
+	m_allLayouts.push_back(layout);
 	m_layouts[layout->name()] = layout;
 }
-const std::vector<Layout*> &Layouts::all() const
-{
-	return m_all_layouts;
+const std::vector<Layout *> &Layouts::all() const {
+	return m_allLayouts;
 }
-Layout* Layouts::byName(const char *name) const
-{
+Layout *Layouts::byName(const char *name) const {
 	auto i = m_layouts.find(name);
-	if (i != m_layouts.end()){
+	if (i != m_layouts.end()) {
 		return i->second;
 	}
 	return nullptr;

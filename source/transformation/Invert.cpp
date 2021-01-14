@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,19 +17,15 @@
  */
 
 #include "Invert.h"
-namespace transformation
-{
-void Invert::apply(Color *input, Color *output)
-{
+namespace transformation {
+void Invert::apply(Color *input, Color *output) {
 	output->rgb.red = 1 - input->rgb.red;
-	output->rgb.green= 1 - input->rgb.green;
+	output->rgb.green = 1 - input->rgb.green;
 	output->rgb.blue = 1 - input->rgb.blue;
 }
 Invert::Invert():
-	Transformation("invert", "Invert")
-{
+	Transformation("invert", "Invert") {
 }
-Invert::~Invert()
-{
+Invert::~Invert() {
 }
 }

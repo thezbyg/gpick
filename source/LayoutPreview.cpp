@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -73,7 +73,7 @@ struct LayoutPreviewArgs {
 		if (layoutSystem == nullptr)
 			return;
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
-		for (auto &style: layoutSystem->styles) {
+		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color);
 			nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
 			color_list_add_color_object(gs->getColorList(), colorObject, true);
@@ -105,7 +105,7 @@ struct LayoutPreviewArgs {
 			auto colorObject = getColor();
 			colors.push_back(colorObject);
 		} else {
-			for (auto &style: layoutSystem->styles) {
+			for (auto &style: layoutSystem->styles()) {
 				ColorObject colorObject(style->color);
 				nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
 				colors.push_back(colorObject);
@@ -191,14 +191,14 @@ static void loadColors(LayoutPreviewArgs *args) {
 	if (args->layoutSystem == nullptr)
 		return;
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles)
+	for (auto style: args->layoutSystem->styles())
 		style->color = assignments->getColor(style->ident_name + ".color", style->color);
 }
 static void saveColors(LayoutPreviewArgs *args) {
 	if (args->layoutSystem == nullptr)
 		return;
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles)
+	for (auto style: args->layoutSystem->styles())
 		assignments->set(style->ident_name + ".color", style->color);
 }
 static GtkWidget *newSelectorList(LayoutPreviewArgs *args) {
@@ -242,7 +242,7 @@ static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
 	GtkTreeIter iter1;
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(selectorList));
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles) {
+	for (auto style: args->layoutSystem->styles()) {
 		auto css_selector = assignments->getString(style->ident_name + ".selector", style->ident_name);
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,
@@ -325,18 +325,18 @@ static int saveCssFile(const char *filename, LayoutPreviewArgs *args) {
 		return -1;
 	auto converter = args->gs->converters().firstCopy();
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles) {
+	for (auto style: args->layoutSystem->styles()) {
 		auto cssSelector = assignments->getString(style->ident_name + ".selector", style->ident_name);
 		if (cssSelector.empty())
 			continue;
 		ColorObject colorObject(style->color);
 		std::string text = converter->serialize(colorObject);
 		file << cssSelector << " {\n";
-		if (style->style_type == Style::TYPE_BACKGROUND) {
+		if (style->styleType == Style::Type::background) {
 			file << "\tbackground-color: " << text << ";\n";
-		} else if (style->style_type == Style::TYPE_COLOR) {
+		} else if (style->styleType == Style::Type::color) {
 			file << "\tcolor: " << text << ";\n";
-		} else if (style->style_type == Style::TYPE_BORDER) {
+		} else if (style->styleType == Style::Type::border) {
 			file << "\tborder-color: " << text << ";\n";
 		}
 		file << "}\n\n";

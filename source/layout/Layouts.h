@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,19 +21,17 @@
 #include <string>
 #include <map>
 #include <vector>
-namespace layout
-{
+namespace layout {
 struct Layout;
-struct Layouts
-{
+struct Layouts {
 	Layouts();
 	~Layouts();
 	void add(Layout *layout);
-	const std::vector<Layout*> &all() const;
-	Layout* byName(const char *name) const;
-	private:
-	std::map<std::string, Layout*> m_layouts;
-	std::vector<Layout*> m_all_layouts;
+	const std::vector<Layout *> &all() const;
+	Layout *byName(const char *name) const;
+private:
+	std::map<std::string, Layout *> m_layouts;
+	std::vector<Layout *> m_allLayouts;
 };
 }
 #endif /* GPICK_LAYOUT_LAYOUTS_H_ */

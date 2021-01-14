@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
-#define TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
+#ifndef GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
+#define GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
 #include "Transformation.h"
 #include <gtk/gtk.h>
 namespace transformation {
@@ -29,40 +29,39 @@ struct ColorVisionDeficiency: public Transformation {
 		virtual GtkWidget *getWidget() override;
 		virtual void apply(dynv::Map &options) override;
 	private:
-		GtkWidget *main;
-		GtkWidget *info_bar;
-		GtkWidget *info_label;
-		GtkWidget *type;
-		GtkWidget *strength;
-		static void type_combobox_change_cb(GtkWidget *widget, Configuration *this_);
-		static void info_label_size_allocate_cb(GtkWidget *widget, GtkAllocation *allocation, Configuration *this_);
+		GtkWidget *m_main;
+		GtkWidget *m_infoBar;
+		GtkWidget *m_infoLabel;
+		GtkWidget *m_type;
+		GtkWidget *m_strength;
+		static void onTypeComboBoxChange(GtkWidget *widget, Configuration *configuration);
+		static void onInfoLabelSizeAllocate(GtkWidget *widget, GtkAllocation *allocation, Configuration *configuration);
 	};
-	enum DeficiencyType {
-		PROTANOMALY,
-		DEUTERANOMALY,
-		TRITANOMALY,
-		PROTANOPIA,
-		DEUTERANOPIA,
-		TRITANOPIA,
-		DEFICIENCY_TYPE_COUNT,
+	enum class Type {
+		protanomaly,
+		deuteranomaly,
+		tritanomaly,
+		protanopia,
+		deuteranopia,
+		tritanopia,
 	};
-	static const char *deficiency_type_string[];
 	static const char *getId();
 	static const char *getName();
 	ColorVisionDeficiency();
-	ColorVisionDeficiency(DeficiencyType type, float strength);
+	ColorVisionDeficiency(Type type, float strength);
 	virtual ~ColorVisionDeficiency() override;
 	virtual void serialize(dynv::Map &system) override;
 	virtual void deserialize(const dynv::Map &system) override;
 	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
-	DeficiencyType typeFromString(const std::string &type_string);
+	Type typeFromString(const std::string &typeString);
 private:
-	float strength;
-	DeficiencyType type;
+	Type m_type;
+	float m_strength;
+	static const char *m_deficiencyTypeStrings[];
+	static const size_t m_typeCount;
 	virtual void apply(Color *input, Color *output);
+	static GtkWidget *createTypeList();
 	friend struct Configuration;
 };
-
 }
-
-#endif /* TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_ */
+#endif /* GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_ */

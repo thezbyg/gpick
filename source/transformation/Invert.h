@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,17 +16,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_INVERT_H_
-#define TRANSFORMATION_INVERT_H_
+#ifndef GPICK_TRANSFORMATION_INVERT_H_
+#define GPICK_TRANSFORMATION_INVERT_H_
 #include "Transformation.h"
-namespace transformation
-{
-struct Invert: public Transformation
-{
+namespace transformation {
+struct Invert: public Transformation {
 	Invert();
 	virtual ~Invert();
-	protected:
+protected:
 	virtual void apply(Color *input, Color *output);
 };
 }
-#endif /* TRANSFORMATION_INVERT_H_ */
+#endif /* GPICK_TRANSFORMATION_INVERT_H_ */

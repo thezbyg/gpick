@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,17 +22,15 @@
 #include <string>
 #include <map>
 #include <vector>
-namespace layout
-{
+namespace layout {
 struct System;
-struct Layout
-{
+struct Layout {
 	Layout(const char *name, const char *label, int mask, lua::Ref &&callback);
 	const std::string &name() const;
 	const std::string &label() const;
 	const int mask() const;
 	System *build();
-	private:
+private:
 	std::string m_name;
 	std::string m_label;
 	int m_mask;

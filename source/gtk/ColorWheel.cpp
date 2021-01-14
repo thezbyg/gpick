@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,7 +19,6 @@
 #include "ColorWheel.h"
 #include "Color.h"
 #include "ColorWheelType.h"
-#include "MathUtil.h"
 #include <list>
 #include <iostream>
 enum {

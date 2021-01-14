@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,32 +18,34 @@
 
 #ifndef GPICK_LAYOUT_SYSTEM_H_
 #define GPICK_LAYOUT_SYSTEM_H_
-#include "../Rect2.h"
-#include "../Vector2.h"
 #include "Box.h"
 #include "Style.h"
 #include "Context.h"
 #include "ReferenceCounter.h"
+#include "math/Rectangle.h"
+#include "math/Vector.h"
 #include <gtk/gtk.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
 #include <stdint.h>
-#include <list>
+#include <vector>
 #include <string>
-namespace layout
-{
-struct System: public ReferenceCounter
-{
+namespace layout {
+struct System: public ReferenceCounter {
 	System();
 	virtual ~System();
-	void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	Box* GetBoxAt(const math::Vec2<float>& point);
-	Box* GetNamedBox(const char *name);
-	void AddStyle(Style *style);
-	void SetBox(Box *box);
-	std::list<Style*> styles;
-	Box* box;
+	void draw(Context *context, const math::Rectangle<float> &parentRect);
+	Box *getBoxAt(const math::Vector2f &point);
+	Box *getNamedBox(const char *name);
+	Box *getNamedBox(const std::string &name);
+	void addStyle(Style *style);
+	void setBox(Box *box);
+	const std::vector<Style *> &styles() const;
+	Box *box();
+private:
+	std::vector<Style *> m_styles;
+	Box *m_box;
 };
 }
 #endif /* GPICK_LAYOUT_SYSTEM_H_ */

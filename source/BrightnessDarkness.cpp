@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,7 +23,6 @@
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
-#include "MathUtil.h"
 #include "gtk/Range2D.h"
 #include "gtk/LayoutPreview.h"
 #include "dynv/Map.h"
@@ -76,7 +75,7 @@ struct BrightnessDarknessArgs {
 		if (layoutSystem == nullptr)
 			return;
 		BrightnessDarknessColorNameAssigner nameAssigner(gs);
-		for (auto &style: layoutSystem->styles) {
+		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color);
 			nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
 			color_list_add_color_object(gs->getColorList(), colorObject, true);
@@ -109,7 +108,7 @@ struct BrightnessDarknessArgs {
 			auto colorObject = getColor();
 			colors.push_back(colorObject);
 		} else {
-			for (auto &style: layoutSystem->styles) {
+			for (auto &style: layoutSystem->styles()) {
 				ColorObject colorObject(style->color);
 				nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
 				colors.push_back(colorObject);
@@ -149,7 +148,7 @@ struct BrightnessDarknessArgs {
 			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 1.0f, brightness), i / 4.0f);
 			r = hsl.hslToRgb();
 			name = format('b', i);
-			box = layoutSystem->GetNamedBox(name.c_str());
+			box = layoutSystem->getNamedBox(name);
 			if (box && box->style) {
 				box->style->color = r;
 			}
@@ -157,7 +156,7 @@ struct BrightnessDarknessArgs {
 			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 0.0f, darkness), i / 4.0f);
 			r = hsl.hslToRgb();
 			name = format('c', i);
-			box = layoutSystem->GetNamedBox(name.c_str());
+			box = layoutSystem->getNamedBox(name);
 			if (box && box->style) {
 				box->style->color = r;
 			}

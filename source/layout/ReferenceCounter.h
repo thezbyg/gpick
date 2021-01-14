@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,22 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LAYOUT_REFERENCECOUNTER_H_
-#define LAYOUT_REFERENCECOUNTER_H_
+#ifndef GPICK_LAYOUT_REFERENCE_COUNTER_H_
+#define GPICK_LAYOUT_REFERENCE_COUNTER_H_
 #include <stdint.h>
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
-namespace layout
-{
-struct ReferenceCounter
-{
+namespace layout {
+struct ReferenceCounter {
 	ReferenceCounter();
 	virtual ~ReferenceCounter();
-	ReferenceCounter* ref();
-	static bool unref(ReferenceCounter* rc);
-	private:
+	ReferenceCounter *ref();
+	static bool unref(ReferenceCounter *rc);
+private:
 	uint32_t refcnt;
 };
 }
-#endif /* LAYOUT_REFERENCECOUNTER_H_ */
+#endif /* GPICK_LAYOUT_REFERENCE_COUNTER_H_ */

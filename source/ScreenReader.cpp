@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2018, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,78 +17,67 @@
  */
 
 #include "ScreenReader.h"
-#include "Rect2.h"
 #include <gtk/gtk.h>
 #include <algorithm>
 #include <iostream>
-using namespace math;
-using namespace std;
-
-struct ScreenReader
-{
+struct ScreenReader {
 	cairo_surface_t *surface;
-	int max_size;
+	int maxSize;
 	GdkScreen *screen;
-	Rect2<int> read_area;
+	math::Rectangle<int> readArea;
 };
-struct ScreenReader* screen_reader_new()
-{
-	ScreenReader* screen = new ScreenReader;
-	screen->max_size = 0;
+struct ScreenReader *screen_reader_new() {
+	ScreenReader *screen = new ScreenReader;
+	screen->maxSize = 0;
 	screen->surface = 0;
 	screen->screen = 0;
 	return screen;
 }
-void screen_reader_destroy(ScreenReader *screen)
-{
+void screen_reader_destroy(ScreenReader *screen) {
 	if (screen->surface) cairo_surface_destroy(screen->surface);
 	delete screen;
 }
-void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdk_screen, Rect2<int>& rect)
-{
-	if (screen->screen && (screen->screen == gdk_screen)){
-		screen->read_area += rect;
-	}else{
-		screen->read_area += rect;
-		screen->screen = gdk_screen;
+void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdkScreen, math::Rectangle<int> &rect) {
+	if (screen->screen && (screen->screen == gdkScreen)) {
+		screen->readArea += rect;
+	} else {
+		screen->readArea += rect;
+		screen->screen = gdkScreen;
 	}
 }
-void screen_reader_reset_rect(ScreenReader *screen)
-{
-	screen->read_area = Rect2<int>();
+void screen_reader_reset_rect(ScreenReader *screen) {
+	screen->readArea = math::Rectangle<int>();
 	screen->screen = NULL;
 }
-void screen_reader_update_surface(ScreenReader *screen, Rect2<int>* update_rect)
-{
+void screen_reader_update_surface(ScreenReader *screen, math::Rectangle<int> *updateRect) {
 	if (!screen->screen) return;
-	int left = screen->read_area.getX();
-	int top = screen->read_area.getY();
-	int width = screen->read_area.getWidth();
-	int height = screen->read_area.getHeight();
-	if (width > screen->max_size || height > screen->max_size){
+	int left = screen->readArea.getX();
+	int top = screen->readArea.getY();
+	int width = screen->readArea.getWidth();
+	int height = screen->readArea.getHeight();
+	if (width > screen->maxSize || height > screen->maxSize) {
 		if (screen->surface) cairo_surface_destroy(screen->surface);
-		screen->max_size = (std::max(width, height) / 150 + 1) * 150;
-		screen->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, screen->max_size, screen->max_size);
+		screen->maxSize = (std::max(width, height) / 150 + 1) * 150;
+		screen->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, screen->maxSize, screen->maxSize);
 	}
-	GdkWindow* root_window = gdk_screen_get_root_window(screen->screen);
-	cairo_t *root_cr = gdk_cairo_create(root_window);
-	cairo_surface_t *root_surface = cairo_get_target(root_cr);
-	if (cairo_surface_status(root_surface) != CAIRO_STATUS_SUCCESS){
-		cerr << "can not get root window surface" << endl;
+	GdkWindow *rootWindow = gdk_screen_get_root_window(screen->screen);
+	cairo_t *rootCairo = gdk_cairo_create(rootWindow);
+	cairo_surface_t *rootSurface = cairo_get_target(rootCairo);
+	if (cairo_surface_status(rootSurface) != CAIRO_STATUS_SUCCESS) {
+		std::cerr << "can not get root window surface" << std::endl;
 		return;
 	}
-	cairo_surface_mark_dirty_rectangle(root_surface, left, top, width, height);
+	cairo_surface_mark_dirty_rectangle(rootSurface, left, top, width, height);
 	cairo_t *cr = cairo_create(screen->surface);
 	cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(cr, root_surface, -left, -top);
+	cairo_set_source_surface(cr, rootSurface, -left, -top);
 	cairo_pattern_set_filter(cairo_get_source(cr), CAIRO_FILTER_NEAREST);
 	cairo_rectangle(cr, 0, 0, width, height);
 	cairo_fill(cr);
 	cairo_destroy(cr);
-	cairo_destroy(root_cr);
-	*update_rect = screen->read_area;
+	cairo_destroy(rootCairo);
+	*updateRect = screen->readArea;
 }
-cairo_surface_t* screen_reader_get_surface(ScreenReader *screen)
-{
+cairo_surface_t *screen_reader_get_surface(ScreenReader *screen) {
 	return screen->surface;
 }

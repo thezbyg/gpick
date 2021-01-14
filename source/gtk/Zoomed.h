@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -22,8 +22,8 @@
 #include <gtk/gtk.h>
 #include <stdint.h>
 #include "Color.h"
-#include "Rect2.h"
-#include "Vector2.h"
+#include "math/Rectangle.h"
+#include "math/Vector.h"
 
 #define GTK_TYPE_ZOOMED (gtk_zoomed_get_type())
 #define GTK_ZOOMED(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_ZOOMED, GtkZoomed))
@@ -47,10 +47,10 @@ gfloat gtk_zoomed_get_zoom(GtkZoomed* zoomed);
 void gtk_zoomed_set_fade(GtkZoomed* zoomed, bool fade);
 int32_t gtk_zoomed_get_size(GtkZoomed *zoomed);
 void gtk_zoomed_set_size(GtkZoomed *zoomed, int32_t width_height);
-void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vec2<int>& position);
+void gtk_zoomed_set_mark(GtkZoomed *zoomed, int index, math::Vector2i &position);
 void gtk_zoomed_clear_mark(GtkZoomed *zoomed, int index);
-void gtk_zoomed_update(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Vec2<int>& offset, cairo_surface_t *surface);
-void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vec2<int>& pointer, math::Rect2<int>& screen_rect, math::Rect2<int> *rect);
+void gtk_zoomed_update(GtkZoomed* zoomed, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Vector2i &offset, cairo_surface_t *surface);
+void gtk_zoomed_get_screen_rect(GtkZoomed* zoomed, math::Vector2i &pointer, math::Rectangle<int>& screen_rect, math::Rectangle<int> *rect);
 GType gtk_zoomed_get_type();
 
 #endif /* GPICK_GTK_ZOOMED_H_ */

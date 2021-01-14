@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -36,24 +36,20 @@ struct CommonMatrix {
 	};
 	CommonMatrix(Initialize initialize) {
 		if (initialize == Initialize::identity) {
-			for (unsigned int i = 0; i < N; ++i) {
-				for (unsigned int j = 0; j < N; ++j) {
-					data[j][i] = i == j ? 1 : 0;
+			for (unsigned int row = 0; row < N; ++row) {
+				for (unsigned int column = 0; column < N; ++column) {
+					data[row][column] = column == row ? 1 : 0;
 				}
 			}
 		} else if (initialize == Initialize::zero) {
-			for (unsigned int i = 0; i < N; ++i) {
-				for (unsigned int j = 0; j < N; ++j) {
-					data[j][i] = 0;
-				}
+			for (unsigned int i = 0; i < N * N; ++i) {
+				flatData[i] = 0;
 			}
 		}
 	}
 	CommonMatrix(const CommonMatrix &matrix) {
-		for (unsigned int i = 0; i < N; ++i) {
-			for (unsigned int j = 0; j < N; ++j) {
-				data[j][i] = matrix.data[j][i];
-			}
+		for (unsigned int i = 0; i < N * N; ++i) {
+			flatData[i] = matrix.flatData[i];
 		}
 	}
 	CommonMatrix &operator=(const CommonMatrix &matrix) {
@@ -62,10 +58,10 @@ struct CommonMatrix {
 		}
 		return *this;
 	}
-	CommonMatrix(const CommonMatrix<T, N + 1, Matrix> &matrix, unsigned int skipI, unsigned int skipJ) {
-		for (unsigned int i = 0; i < N; ++i) {
-			for (unsigned int j = 0; j < N; ++j) {
-				data[j][i] = matrix.data[j >= skipJ ? j + 1 : j][i >= skipI ? i + 1 : i];
+	CommonMatrix(const CommonMatrix<T, N + 1, Matrix> &matrix, unsigned int skipColumn, unsigned int skipRow) {
+		for (unsigned int column = 0; column < N; ++column) {
+			for (unsigned int row = 0; row < N; ++row) {
+				data[row][column] = matrix.data[row >= skipRow ? row + 1 : row][column >= skipColumn ? column + 1 : column];
 			}
 		}
 	}
@@ -87,17 +83,17 @@ struct CommonMatrix {
 	template<unsigned int X = N, std::enable_if_t<(X >= 3), int> = 0>
 	auto determinant() const {
 		double result = 0;
-		for (unsigned int i = 0; i < N; ++i) {
+		for (unsigned int column = 0; column < N; ++column) {
 			double t = 1;
-			for (unsigned int j = 0; j < N; ++j) {
-				t *= data[j][(i + j) % N];
+			for (unsigned int row = 0; row < N; ++row) {
+				t *= data[row][(column + row) % N];
 			}
 			result += t;
 		}
-		for (unsigned int i = 0; i < N; ++i) {
+		for (unsigned int column = 0; column < N; ++column) {
 			double t = 1;
-			for (unsigned int j = 0; j < N; ++j) {
-				t *= data[j][(i + N - j - 1) % N];
+			for (unsigned int row = 0; row < N; ++row) {
+				t *= data[row][(column + N - row - 1) % N];
 			}
 			result -= t;
 		}
@@ -109,45 +105,75 @@ struct CommonMatrix {
 			return boost::optional<Matrix>();
 		double determinantInverse = 1.0 / determinant;
 		Matrix result;
-		for (unsigned int i = 0; i < N; ++i) {
-			for (unsigned int j = 0; j < N; ++j) {
-				if (((i + j) & 1) == 0)
-					result.data[i][j] = CommonMatrix<T, N - 1, Matrix>(*this, i, j).determinant() * determinantInverse;
+		for (unsigned int column = 0; column < N; ++column) {
+			for (unsigned int row = 0; row < N; ++row) {
+				if (((column + row) & 1) == 0)
+					result.data[column][row] = CommonMatrix<T, N - 1, Matrix>(*this, column, row).determinant() * determinantInverse;
 				else
-					result.data[i][j] = -CommonMatrix<T, N - 1, Matrix>(*this, i, j).determinant() * determinantInverse;
+					result.data[column][row] = -CommonMatrix<T, N - 1, Matrix>(*this, column, row).determinant() * determinantInverse;
 			}
 		}
 		return result;
 	};
 	Matrix transpose() const {
 		Matrix result(Initialize::none);
-		for (unsigned int i = 0; i < N; ++i) {
-			for (unsigned int j = 0; j < N; ++j) {
-				result.data[j][i] = data[i][j];
+		for (unsigned int column = 0; column < N; ++column) {
+			for (unsigned int row = 0; row < N; ++row) {
+				result.data[row][column] = data[column][row];
 			}
 		}
 		return result;
 	};
 	Matrix operator*(const Matrix &matrix) const {
 		Matrix result(Initialize::zero);
-		for (unsigned int i = 0; i < N; ++i) {
-			for (unsigned int j = 0; j < N; ++j) {
+		for (unsigned int column = 0; column < N; ++column) {
+			for (unsigned int row = 0; row < N; ++row) {
 				for (unsigned int k = 0; k < N; ++k) {
-					result.data[j][i] += data[k][i] * matrix.data[j][k];
+					result.data[row][column] += data[k][column] * matrix.data[row][k];
 				}
 			}
+		}
+		return result;
+	};
+	Matrix operator+(const Matrix &matrix) const {
+		Matrix result(Initialize::zero);
+		for (unsigned int i = 0; i < N * N; ++i) {
+			result.flatData[i] = flatData[i] +  matrix.flatData[i];
+		}
+		return result;
+	};
+	Matrix operator-(const Matrix &matrix) const {
+		Matrix result(Initialize::zero);
+		for (unsigned int i = 0; i < N * N; ++i) {
+			result.flatData[i] = flatData[i] - matrix.flatData[i];
+		}
+		return result;
+	};
+	template<typename Value>
+	Matrix operator*(const Value value) const {
+		Matrix result(Initialize::zero);
+		for (unsigned int i = 0; i < N * N; ++i) {
+			result.flatData[i] = flatData[i] * value;
+		}
+		return result;
+	};
+	template<typename Value>
+	Matrix operator/(const Value value) const {
+		Matrix result(Initialize::zero);
+		for (unsigned int i = 0; i < N * N; ++i) {
+			result.flatData[i] = flatData[i] / value;
 		}
 		return result;
 	};
 	const T operator[](size_t index) const {
 		if (index >= N * N)
 			throw std::invalid_argument("index");
-		return data[index / N][index % N];
+		return flatData[index];
 	};
 	T &operator[](size_t index) {
 		if (index >= N * N)
 			throw std::invalid_argument("index");
-		return data[index / N][index % N];
+		return flatData[index];
 	};
 	union {
 		T data[N][N];
@@ -189,12 +215,24 @@ using Matrix3d = Matrix<double, 3>;
 template<typename T, unsigned int N>
 Vector<T, N> operator*(const Vector<T, N> &vector, const Matrix<T, N> &matrix) {
 	Vector<T, N> result;
-	for (unsigned int j = 0; j < N; ++j) {
+	for (unsigned int column = 0; column < N; ++column) {
 		T value = 0;
-		for (unsigned int i = 0; i < N; ++i) {
-			value += vector.data[i] * matrix.data[j][i];
+		for (unsigned int row = 0; row < N; ++row) {
+			value += vector.data[row] * matrix.data[row][column];
 		}
-		result.data[j] = value;
+		result.data[column] = value;
+	}
+	return result;
+};
+template<typename T, unsigned int N>
+Vector<T, N> operator*(const Matrix<T, N> &matrix, const Vector<T, N> &vector) {
+	Vector<T, N> result;
+	for (unsigned int row = 0; row < N; ++row) {
+		T value = 0;
+		for (unsigned int column = 0; column < N; ++column) {
+			value += vector.data[column] * matrix.data[row][column];
+		}
+		result.data[row] = value;
 	}
 	return result;
 };

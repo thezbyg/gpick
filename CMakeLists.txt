@@ -15,7 +15,7 @@ file(GLOB SOURCES
 	source/tools/*.cpp source/tools/*.h
 	source/transformation/*.cpp source/transformation/*.h
 )
-list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/MathUtil.cpp source/MathUtil.h source/lua/Script.cpp source/lua/Script.h)
+list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/lua/Script.cpp source/lua/Script.h)
 include(Version)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/source/version/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp" @ONLY)
 list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp")
@@ -75,7 +75,7 @@ function(add_gtk_options target)
 	endif()
 endfunction()
 
-file(GLOB MATH_SOURCES source/MathUtil.cpp source/MathUtil.h)
+file(GLOB MATH_SOURCES source/math/Empty.cpp)
 add_library(gpick-math STATIC ${MATH_SOURCES})
 set_compile_options(gpick-math)
 target_include_directories(gpick-math PRIVATE

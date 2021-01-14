@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,19 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SCREENREADER_H_
-#define SCREENREADER_H_
-
+#ifndef GPICK_SCREEN_READER_H_
+#define GPICK_SCREEN_READER_H_
 #include <gdk/gdk.h>
 #include <cairo/cairo.h>
-#include "Rect2.h"
-
+#include "math/Rectangle.h"
 struct ScreenReader;
-ScreenReader* screen_reader_new();
+ScreenReader *screen_reader_new();
 void screen_reader_reset_rect(ScreenReader *screen);
-void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdk_screen, math::Rect2<int>& rect);
-void screen_reader_update_surface(ScreenReader *screen, math::Rect2<int>* update_rect);
-cairo_surface_t* screen_reader_get_surface(ScreenReader *screen);
+void screen_reader_add_rect(ScreenReader *screen, GdkScreen *gdkScreen, math::Rectangle<int> &rect);
+void screen_reader_update_surface(ScreenReader *screen, math::Rectangle<int> *updateRect);
+cairo_surface_t *screen_reader_get_surface(ScreenReader *screen);
 void screen_reader_destroy(ScreenReader *screen);
-
-#endif /* SCREENREADER_H_ */
+#endif /* GPICK_SCREEN_READER_H_ */

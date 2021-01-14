@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,8 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef TRANSFORMATION_CHAIN_H_
-#define TRANSFORMATION_CHAIN_H_
+#ifndef GPICK_TRANSFORMATION_CHAIN_H_
+#define GPICK_TRANSFORMATION_CHAIN_H_
 #include "Transformation.h"
 #include <list>
 #include <memory>
@@ -70,4 +70,4 @@ private:
 	bool m_enabled;
 };
 }
-#endif /* TRANSFORMATION_CHAIN_H_ */
+#endif /* GPICK_TRANSFORMATION_CHAIN_H_ */

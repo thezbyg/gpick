@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,7 +19,6 @@
 #include "LayoutPreview.h"
 #include "layout/System.h"
 #include "transformation/Chain.h"
-#include "Rect2.h"
 #include <list>
 #include <typeinfo>
 using namespace math;
@@ -32,7 +31,7 @@ enum {
 static guint signals[LAST_SIGNAL] = {};
 struct GtkLayoutPreviewPrivate {
 	System *system;
-	Rect2<float> area;
+	Rectangle<float> area;
 	Style* selected_style;
 	Box* selected_box;
 	transformation::Chain *transformation_chain;
@@ -72,7 +71,7 @@ GtkWidget* gtk_layout_preview_new()
 {
 	GtkWidget* widget = (GtkWidget*)g_object_new(GTK_TYPE_LAYOUT_PREVIEW, nullptr);
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
-	ns->area = Rect2<float>(0, 0, 1, 1);
+	ns->area = Rectangle<float>(0, 0, 1, 1);
 	ns->selected_style = nullptr;
 	ns->selected_box = nullptr;
 	ns->system = nullptr;
@@ -85,14 +84,14 @@ static bool set_selected_box(GtkLayoutPreviewPrivate *ns, Box* box)
 {
 	bool changed = false;
 	if (box && box->style){
-		if (ns->selected_style) ns->selected_style->SetState(false, 0);
+		if (ns->selected_style) ns->selected_style->setState(false, 0);
 		ns->selected_style = box->style;
-		ns->selected_style->SetState(true, box);
+		ns->selected_style->setState(true, box);
 		if (ns->selected_box != box) changed=true;
 		ns->selected_box = box;
 	}else{
 		if (ns->selected_style){
-			ns->selected_style->SetState(false, 0);
+			ns->selected_style->setState(false, 0);
 			changed = true;
 		}
 		ns->selected_style = 0;
@@ -103,10 +102,10 @@ static bool set_selected_box(GtkLayoutPreviewPrivate *ns, Box* box)
 static gboolean draw(GtkWidget *widget, cairo_t *cr)
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
-	if (ns->system && ns->system->box){
-		ns->area = Rect2<float>(0, 0, 1, 1);
+	if (ns->system && ns->system->box()){
+		ns->area = Rectangle<float>(0, 0, 1, 1);
 		layout::Context context(cr, ns->transformation_chain);
-		ns->system->box->Draw(&context, ns->area);
+		ns->system->box()->draw(&context, ns->area);
 	}
 	return true;
 }
@@ -129,8 +128,8 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 	gtk_widget_grab_focus(widget);
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system){
-		Vec2<float> point = Vec2<float>(static_cast<float>((event->x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((event->y-ns->area.getY()) / ns->area.getHeight()));
-		if (set_selected_box(ns, ns->system->GetBoxAt(point))){
+		Vector2f point = Vector2f(static_cast<float>((event->x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((event->y-ns->area.getY()) / ns->area.getHeight()));
+		if (set_selected_box(ns, ns->system->getBoxAt(point))){
 			gtk_widget_queue_draw(GTK_WIDGET(widget));
 		}
 	}
@@ -144,8 +143,8 @@ int gtk_layout_preview_set_system(GtkLayoutPreview* widget, System* system)
 	}
 	if (system){
 		ns->system = static_cast<System*>(system->ref());
-		if (ns->system->box)
-			gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->system->box->rect.getWidth()), static_cast<int>(ns->system->box->rect.getHeight()));
+		if (ns->system->box())
+			gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->system->box()->rect.getWidth()), static_cast<int>(ns->system->box()->rect.getHeight()));
 	}else ns->system = 0;
 	return 0;
 }
@@ -153,8 +152,8 @@ int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdou
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
-	Vec2<float> point = Vec2<float>(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
-	Box* box = ns->system->GetBoxAt(point);
+	Vector2f point = Vector2f(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
+	Box* box = ns->system->getBoxAt(point);
 	if (box && box->style && !box->locked){
 		box->style->color = *color;
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
@@ -166,7 +165,7 @@ int gtk_layout_preview_set_color_named(GtkLayoutPreview* widget, Color* color, c
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
-	Box* box = ns->system->GetNamedBox(name);
+	Box* box = ns->system->getNamedBox(name);
 	if (box && box->style && !box->locked){
 		box->style->color = *color;
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
@@ -179,7 +178,7 @@ int gtk_layout_preview_set_focus_named(GtkLayoutPreview* widget, const char *nam
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
 	Box* box;
-	if (set_selected_box(ns, box = ns->system->GetNamedBox(name))){
+	if (set_selected_box(ns, box = ns->system->getNamedBox(name))){
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return (box)?(0):(-1);
 	}
@@ -189,9 +188,9 @@ int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (!ns->system) return -1;
-	Vec2<float> point = Vec2<float>(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
+	Vector2f point = Vector2f(static_cast<float>((x-ns->area.getX()) / ns->area.getWidth()), static_cast<float>((y-ns->area.getY()) / ns->area.getHeight()));
 	Box* box;
-	if (set_selected_box(ns, box = ns->system->GetBoxAt(point))){
+	if (set_selected_box(ns, box = ns->system->getBoxAt(point))){
 		gtk_widget_queue_draw(GTK_WIDGET(widget));
 		return (box)?(0):(-1);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,50 +18,42 @@
 
 #ifndef GPICK_LAYOUT_BOX_H_
 #define GPICK_LAYOUT_BOX_H_
-#include "../Color.h"
-#include "../Rect2.h"
-#include "../Vector2.h"
+#include "Color.h"
 #include "ReferenceCounter.h"
 #include "Style.h"
 #include "Context.h"
+#include "math/Rectangle.h"
+#include "math/Vector.h"
 #include <gtk/gtk.h>
 #include <string>
 #include <list>
-namespace layout
-{
-struct Box: public ReferenceCounter
-{
-	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect);
-	void DrawChildren(Context *context, const math::Rect2<float>& parent_rect);
-	void AddChild(Box* box);
-	void SetStyle(Style *style);
-	Box* GetBoxAt(const math::Vec2<float>& point);
-	Box* GetNamedBox(const char *name);
-	Box(const char* name, float x, float y, float width, float height);
+namespace layout {
+struct Box: public ReferenceCounter {
+	Box(const char *name, float x, float y, float width, float height);
 	virtual ~Box();
+	virtual void draw(Context *context, const math::Rectangle<float> &parentRect);
+	void drawChildren(Context *context, const math::Rectangle<float> &parentRect);
+	void addChild(Box *box);
+	void setStyle(Style *style);
+	Box *getBoxAt(const math::Vector2f &point);
+	Box *getNamedBox(const char *name);
 	std::string name;
 	Style *style;
 	bool helper_only;
 	bool locked;
-	math::Rect2<float> rect;
-	std::list<Box*> child;
+	math::Rectangle<float> rect;
+	std::list<Box *> child;
 };
-struct Text: public Box
-{
-	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	Text(const char* name, float x, float y, float width, float height):
-		Box(name,x,y,width,height)
-	{
-	};
+struct Text: public Box {
+	Text(const char *name, float x, float y, float width, float height);
+	virtual ~Text();
+	virtual void draw(Context *context, const math::Rectangle<float> &parentRect) override;
 	std::string text;
 };
-struct Fill: public Box
-{
-	virtual void Draw(Context *context, const math::Rect2<float>& parent_rect );
-	Fill(const char* name, float x, float y, float width, float height):
-		Box(name,x,y,width,height)
-	{
-	};
+struct Fill: public Box {
+	Fill(const char *name, float x, float y, float width, float height);
+	virtual ~Fill();
+	virtual void draw(Context *context, const math::Rectangle<float> &parentRect) override;
 };
 }
 #endif /* GPICK_LAYOUT_BOX_H_ */

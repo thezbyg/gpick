@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -23,30 +23,29 @@
 #include "Box.h"
 #include <string>
 #include <list>
-namespace layout
-{
+namespace layout {
 struct Box;
-struct Style: public ReferenceCounter
-{
+struct Style: public ReferenceCounter {
 	std::string ident_name;
 	std::string label;
 	Color color;
 	float font_size;
-	enum{
-		TYPE_UNKNOWN = 0,
-		TYPE_COLOR,
-		TYPE_BACKGROUND,
-		TYPE_BORDER,
-	}style_type;
+	enum class Type {
+		unknown = 0,
+		color,
+		background,
+		border,
+	};
+	Type styleType;
 	bool dirty;
 	bool highlight;
-	Box* selected_box;
-	bool IsDirty();
-	void SetDirty(bool dirty);
-	bool GetHighlight();
-	Box* GetBox();
-	void SetState(bool highlight, Box *box);
-	Style(const char* name, Color* color, float font_size);
+	Box *selected_box;
+	bool isDirty();
+	void setDirty(bool dirty);
+	bool getHighlight();
+	Box *getBox();
+	void setState(bool highlight, Box *box);
+	Style(const char *name, Color *color, float font_size);
 	virtual ~Style();
 };
 }

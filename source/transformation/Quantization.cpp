@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  * Copyright (c) 2012, David Gowers (Portions regarding adaptation of GammaModification.(cpp|h) to quantise colors instead.)
  *
@@ -19,9 +19,8 @@
 
 #include "Quantization.h"
 #include "dynv/Map.h"
-#include "../MathUtil.h"
-#include "../uiUtilities.h"
-#include "../I18N.h"
+#include "uiUtilities.h"
+#include "I18N.h"
 #include <gtk/gtk.h>
 #include <math.h>
 #include <string.h>

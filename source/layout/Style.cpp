@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,28 +19,24 @@
 #include "Box.h"
 #include <string>
 #include <iostream>
-using namespace std;
-using namespace math;
-namespace layout
-{
-Style::Style(const char* _name, Color* _color, float _font_size)
-{
-	string name = string(_name);
+namespace layout {
+Style::Style(const char *_name, Color *_color, float _font_size) {
+	std::string name = std::string(_name);
 	size_t pos = name.find(":");
-	if (pos != string::npos){
+	if (pos != std::string::npos) {
 		ident_name = name.substr(0, pos);
-		label = name.substr(pos+1);
-	}else{
+		label = name.substr(pos + 1);
+	} else {
 		ident_name = name;
 		label = name;
 	}
-	style_type = TYPE_UNKNOWN;
-	if ((pos = ident_name.rfind("_")) != string::npos){
-		string flags = ident_name.substr(pos);
-		if (flags.find("t") != string::npos){
-			style_type = TYPE_COLOR;
-		}else if (flags.find("b") != string::npos){
-			style_type = TYPE_BACKGROUND;
+	styleType = Type::unknown;
+	if ((pos = ident_name.rfind("_")) != std::string::npos) {
+		std::string flags = ident_name.substr(pos);
+		if (flags.find("t") != std::string::npos) {
+			styleType = Type::color;
+		} else if (flags.find("b") != std::string::npos) {
+			styleType = Type::background;
 		}
 	}
 	color = *_color;
@@ -49,27 +45,21 @@ Style::Style(const char* _name, Color* _color, float _font_size)
 	highlight = false;
 	selected_box = 0;
 }
-Style::~Style()
-{
+Style::~Style() {
 }
-bool Style::IsDirty()
-{
+bool Style::isDirty() {
 	return dirty;
 }
-void Style::SetDirty(bool _dirty)
-{
+void Style::setDirty(bool _dirty) {
 	dirty = _dirty;
 }
-bool Style::GetHighlight()
-{
+bool Style::getHighlight() {
 	return highlight;
 }
-Box* Style::GetBox()
-{
+Box *Style::getBox() {
 	return selected_box;
 }
-void Style::SetState(bool _highlight, Box *box)
-{
+void Style::setState(bool _highlight, Box *box) {
 	selected_box = box;
 	highlight = _highlight;
 }

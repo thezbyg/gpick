@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,7 @@ template<typename T, unsigned int N>
 struct VectorBase;
 template<typename T>
 struct VectorBase<T, 2> {
+	static const unsigned int Size = 2;
 	union {
 #pragma pack(push, 1)
 		struct {
@@ -47,6 +48,7 @@ struct VectorBase<T, 2> {
 };
 template<typename T>
 struct VectorBase<T, 3> {
+	static const unsigned int Size = 3;
 	union {
 #pragma pack(push, 1)
 		struct {
@@ -202,6 +204,20 @@ struct CommonVector: public VectorBase<T, N> {
 			throw std::invalid_argument("index");
 		return this->data[index];
 	};
+	bool operator==(const Vector &vector) const {
+		for (unsigned int i = 0; i < N; i++) {
+			if (this->data[i] != vector.data[i])
+				return false;
+		}
+		return true;
+	};
+	bool operator!=(const Vector &vector) const {
+		for (unsigned int i = 0; i < N; i++) {
+			if (this->data[i] != vector.data[i])
+				return true;
+		}
+		return false;
+	};
 	auto squaredLength() const {
 		double result = 0;
 		for (unsigned int i = 0; i < N; i++) {
@@ -212,6 +228,10 @@ struct CommonVector: public VectorBase<T, N> {
 	auto length() const {
 		return std::sqrt(squaredLength());
 	};
+	template<typename Length>
+	Length length() const {
+		return static_cast<Length>(std::sqrt(squaredLength()));
+	}
 	Vector &normalize() {
 		auto vectorLength = length();
 		for (unsigned int i = 0; i < N; i++) {

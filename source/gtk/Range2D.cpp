@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -173,8 +173,8 @@ static gboolean motion_notify(GtkWidget *widget, GdkEventMotion *event)
 		double dx = (event->x - widget->style->xthickness);
 		double dy = (event->y - widget->style->ythickness);
 #endif
-		ns->x = math::clamp(static_cast<float>(dx / static_cast<float>(ns->block_size)));
-		ns->y = math::clamp(static_cast<float>(dy / static_cast<float>(ns->block_size)));
+		ns->x = math::clamp(static_cast<float>(dx / ns->block_size));
+		ns->y = math::clamp(static_cast<float>(dy / ns->block_size));
 		g_signal_emit(widget, signals[VALUES_CHANGED], 0);
 		gtk_widget_queue_draw(widget);
 		return true;
@@ -262,8 +262,8 @@ static gboolean button_press(GtkWidget *widget, GdkEventButton *event)
 		double dx = (event->x - widget->style->xthickness);
 		double dy = (event->y - widget->style->ythickness);
 #endif
-		ns->x = math::clamp(static_cast<int>(dx / static_cast<float>(ns->block_size)));
-		ns->y = math::clamp(static_cast<int>(dy / static_cast<float>(ns->block_size)));
+		ns->x = math::clamp(static_cast<float>(dx / ns->block_size));
+		ns->y = math::clamp(static_cast<float>(dy / ns->block_size));
 		g_signal_emit(widget, signals[VALUES_CHANGED], 0);
 		gtk_widget_queue_draw(widget);
 		return true;
