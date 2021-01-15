@@ -55,5 +55,6 @@ bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
 bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget);
 int gtk_layout_preview_get_current_style(GtkLayoutPreview* widget, layout::Style** style);
 void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, transformation::Chain *chain);
+void gtk_layout_preview_set_fill(GtkLayoutPreview* widget, bool fill);
 
 #endif /* GPICK_GTK_LAYOUT_PREVIEW_H_ */

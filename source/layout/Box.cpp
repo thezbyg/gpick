@@ -143,7 +143,11 @@ void Fill::draw(Context *context, const math::Rectangle<float> &parent_rect) {
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
-	cairo_fill(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_fill_preserve(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	cairo_set_line_width(cr, 1);
+	cairo_stroke(cr);
 	if (style->getBox() == this) {
 		cairo_rectangle(cr, draw_rect.getX() + 1, draw_rect.getY() + 1, draw_rect.getWidth() - 2, draw_rect.getHeight() - 2);
 		cairo_set_source_rgb(cr, 1, 1, 1);

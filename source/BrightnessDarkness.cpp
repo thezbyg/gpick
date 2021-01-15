@@ -268,10 +268,11 @@ static ColorSource *implement(ColorSource *source, GlobalState *gs, const dynv::
 	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(BrightnessDarknessArgs::onChange), args);
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
 	args->layoutView = widget = gtk_layout_preview_new();
+	gtk_layout_preview_set_fill(GTK_LAYOUT_PREVIEW(widget), true);
 	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), args);
 	StandardEventHandler::forWidget(widget, args->gs, &*args->editable);
 	StandardDragDropHandler::forWidget(widget, args->gs, &*args->editable);
-	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
+	gtk_box_pack_start(GTK_BOX(hbox), widget, true, true, 0);
 	auto layout = gs->layouts().byName("std_layout_brightness_darkness");
 	if (layout != nullptr) {
 		System *layoutSystem = layout->build();

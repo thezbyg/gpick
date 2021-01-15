@@ -34,6 +34,7 @@ struct GtkLayoutPreviewPrivate {
 	Rectangle<float> area;
 	Style* selected_style;
 	Box* selected_box;
+	bool fill;
 	transformation::Chain *transformation_chain;
 };
 #define GET_PRIVATE(obj) reinterpret_cast<GtkLayoutPreviewPrivate *>(gtk_layout_preview_get_instance_private(GTK_LAYOUT_PREVIEW(obj)))
@@ -75,6 +76,7 @@ GtkWidget* gtk_layout_preview_new()
 	ns->selected_style = nullptr;
 	ns->selected_box = nullptr;
 	ns->system = nullptr;
+	ns->fill = false;
 	ns->transformation_chain = nullptr;
 	g_signal_connect(G_OBJECT(widget), "destroy", G_CALLBACK(destroy), nullptr);
 	gtk_widget_set_can_focus(widget, true);
@@ -99,11 +101,25 @@ static bool set_selected_box(GtkLayoutPreviewPrivate *ns, Box* box)
 	}
 	return changed;
 }
+static Vector2i getSize(GtkWidget *widget) {
+#if GTK_MAJOR_VERSION >= 3
+	return Vector2i(gtk_widget_get_allocated_width(widget), gtk_widget_get_allocated_height(widget));
+#else
+	GtkAllocation rectangle;
+	gtk_widget_get_allocation(widget, &rectangle);
+	return Vector2i(rectangle.width - widget->style->xthickness * 2 - 1, rectangle.height - widget->style->ythickness * 2 - 1);
+#endif
+}
 static gboolean draw(GtkWidget *widget, cairo_t *cr)
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system && ns->system->box()){
 		ns->area = Rectangle<float>(0, 0, 1, 1);
+		if (ns->fill) {
+			auto widgetSize = getSize(widget);
+			auto layoutSize = ns->system->box()->rect.size();
+			ns->area = Rectangle<float>(0, 0, widgetSize.x / layoutSize.x, widgetSize.y / layoutSize.y);
+		}
 		layout::Context context(cr, ns->transformation_chain);
 		ns->system->box()->draw(&context, ns->area);
 	}
@@ -246,5 +262,10 @@ void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, trans
 {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	ns->transformation_chain = chain;
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
+}
+void gtk_layout_preview_set_fill(GtkLayoutPreview* widget, bool fill) {
+	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
+	ns->fill = fill;
 	gtk_widget_queue_draw(GTK_WIDGET(widget));
 }
