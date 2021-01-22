@@ -41,4 +41,5 @@ GtkWidget *newIcon(const char *name, IconSize size);
 GtkWidget *newIcon(const char *name, int size);
 GtkWidget *newMenuItem(const char *label, const char *iconName);
 void showContextMenu(GtkWidget *menu, GdkEventButton *event);
+void setWidgetData(GtkWidget *widget, const char *name, const std::string &value);
 #endif /* GPICK_UI_UTILITIES_H_ */

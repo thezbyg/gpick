@@ -119,3 +119,6 @@ void showContextMenu(GtkWidget *menu, GdkEventButton *event) {
 	g_object_ref_sink(menu);
 	g_object_unref(menu);
 }
+void setWidgetData(GtkWidget *widget, const char *name, const std::string &value) {
+	g_object_set_data_full(G_OBJECT(widget), name, g_strdup(value.c_str()), (GDestroyNotify)g_free);
+}
