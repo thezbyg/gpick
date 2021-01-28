@@ -182,12 +182,12 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 }
 static bool write(std::ostream &stream, uint32_t value) {
 	auto data = boost::endian::native_to_little<uint32_t>(value);
-	static_assert(sizeof(data) == 4);
+	static_assert(sizeof(data) == 4, "sizeof(data) != 4");
 	stream.write(reinterpret_cast<const char *>(&data), sizeof(uint32_t));
 	return stream.good();
 }
 static bool write(std::ostream &stream, const ChunkHeader &header) {
-	static_assert(sizeof(header) == 24);
+	static_assert(sizeof(header) == 24, "sizeof(header) != 24");
 	stream.write(reinterpret_cast<const char *>(&header), sizeof(header));
 	return stream.good();
 }

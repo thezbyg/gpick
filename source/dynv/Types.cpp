@@ -115,7 +115,7 @@ template<> bool write(std::ostream &stream, bool value) {
 	return write(stream, static_cast<uint8_t>(value ? 1 : 0));
 }
 template<> bool write(std::ostream &stream, float value) {
-	static_assert(sizeof(float) == 4);
+	static_assert(sizeof(float) == 4, "sizeof(float) != 4");
 #if BOOST_VERSION >= 107100
 	uint8_t buffer[sizeof(float)];
 	boost::endian::endian_store<float, sizeof(float), boost::endian::order::little>(buffer, value);
@@ -127,13 +127,13 @@ template<> bool write(std::ostream &stream, float value) {
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, int32_t value) {
-	static_assert(sizeof(int32_t) == 4);
+	static_assert(sizeof(int32_t) == 4, "sizeof(int32_t) != 4");
 	value = boost::endian::native_to_little(value);
 	stream.write(reinterpret_cast<const char *>(&value), sizeof(int32_t));
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, uint32_t value) {
-	static_assert(sizeof(uint32_t) == 4);
+	static_assert(sizeof(uint32_t) == 4, "sizeof(uint32_t) != 4");
 	value = boost::endian::native_to_little(value);
 	stream.write(reinterpret_cast<const char *>(&value), sizeof(uint32_t));
 	return stream.good();
@@ -158,19 +158,19 @@ template<> bool write(std::ostream &stream, const Color &value) {
 	return true;
 }
 template<> uint8_t read(std::istream &stream) {
-	static_assert(sizeof(uint8_t) == 1);
+	static_assert(sizeof(uint8_t) == 1, "sizeof(uint8_t) != 1");
 	uint8_t value;
 	stream.read(reinterpret_cast<char *>(&value), sizeof(uint8_t));
 	return value;
 }
 template<> uint32_t read(std::istream &stream) {
-	static_assert(sizeof(uint32_t) == 4);
+	static_assert(sizeof(uint32_t) == 4, "sizeof(uint32_t) != 4");
 	uint32_t value;
 	stream.read(reinterpret_cast<char *>(&value), sizeof(uint32_t));
 	return boost::endian::little_to_native(value);
 }
 template<> int32_t read(std::istream &stream) {
-	static_assert(sizeof(int32_t) == 4);
+	static_assert(sizeof(int32_t) == 4, "sizeof(int32_t) != 4");
 	int32_t value;
 	stream.read(reinterpret_cast<char *>(&value), sizeof(int32_t));
 	return boost::endian::little_to_native(value);
@@ -185,7 +185,7 @@ template<> std::string read(std::istream &stream) {
 	return result;
 }
 template<> float read(std::istream &stream) {
-	static_assert(sizeof(float) == 4);
+	static_assert(sizeof(float) == 4, "sizeof(float) != 4");
 #if BOOST_VERSION >= 107100
 	uint8_t buffer[sizeof(float)];
 	stream.read(reinterpret_cast<char *>(buffer), sizeof(float));
@@ -197,7 +197,7 @@ template<> float read(std::istream &stream) {
 #endif
 }
 template<> Color read(std::istream &stream) {
-	static_assert(sizeof(float) * 4 == 16);
+	static_assert(sizeof(float) * 4 == 16, "sizeof(float) * 4 != 16");
 	uint8_t buffer[sizeof(float) * 4];
 	auto storeLength = read<uint32_t>(stream);
 	auto length = std::min<uint32_t>(storeLength, sizeof(float) * 4);
