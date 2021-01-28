@@ -59,7 +59,7 @@ private:
 	float m_strength;
 	static const char *m_deficiencyTypeStrings[];
 	static const size_t m_typeCount;
-	virtual void apply(Color *input, Color *output);
+	virtual void apply(Color *input, Color *output) override;
 	static GtkWidget *createTypeList();
 	friend struct Configuration;
 };

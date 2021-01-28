@@ -298,7 +298,7 @@ struct VariationsArgs {
 		virtual bool hasSelectedColor() override {
 			return true;
 		}
-		virtual void extendMenu(GtkWidget *menu, Position position) {
+		virtual void extendMenu(GtkWidget *menu, Position position) override {
 			if (position != Position::end || !isEditable() || !args->isPrimary())
 				return;
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());

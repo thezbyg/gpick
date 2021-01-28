@@ -143,7 +143,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			colorObject->release();
 		}
 	}
-	virtual std::vector<ColorObject> getColors(bool selected) {
+	virtual std::vector<ColorObject> getColors(bool selected) override {
 		std::vector<ColorObject> result;
 		color_list_reset_all(gs->getColorList());
 		if (selected)
