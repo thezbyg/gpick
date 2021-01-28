@@ -241,7 +241,7 @@ GtkWidget *ColorVisionDeficiency::createTypeList() {
 	return widget;
 }
 std::unique_ptr<IConfiguration> ColorVisionDeficiency::getConfiguration() {
-	return std::move(std::make_unique<Configuration>(*this));
+	return std::make_unique<Configuration>(*this);
 }
 ColorVisionDeficiency::Configuration::Configuration(ColorVisionDeficiency &transformation) {
 	GtkWidget *table = gtk_table_new(2, 2, false);

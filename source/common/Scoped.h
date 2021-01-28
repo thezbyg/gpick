@@ -33,7 +33,7 @@ auto apply(Function f, Tuple t) {
 	return apply(f, t, std::make_index_sequence<size> {});
 }
 }
-template<typename>
+template<typename... Args>
 struct Scoped;
 template<typename... Args>
 struct Scoped<void (*)(Args...)> {

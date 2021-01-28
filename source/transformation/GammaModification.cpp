@@ -56,7 +56,7 @@ void GammaModification::deserialize(const dynv::Map &system) {
 	value = system.getFloat("value", 1);
 }
 std::unique_ptr<IConfiguration> GammaModification::getConfiguration() {
-	return std::move(std::make_unique<Configuration>(*this));
+	return std::make_unique<Configuration>(*this);
 }
 GammaModification::Configuration::Configuration(GammaModification &transformation) {
 	GtkWidget *table = gtk_table_new(2, 2, false);

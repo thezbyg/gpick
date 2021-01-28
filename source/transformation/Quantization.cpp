@@ -66,7 +66,7 @@ void Quantization::deserialize(const dynv::Map &system) {
 	clip_top = system.getBool("clip-top", false);
 }
 std::unique_ptr<IConfiguration> Quantization::getConfiguration() {
-	return std::move(std::make_unique<Configuration>(*this));
+	return std::make_unique<Configuration>(*this);
 }
 Quantization::Configuration::Configuration(Quantization &transformation) {
 	GtkWidget *table = gtk_table_new(2, 3, false);

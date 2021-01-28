@@ -224,7 +224,7 @@ static void configure_transformation(TransformationsArgs *args, transformation::
 	}
 	if (transformation){
 		gtk_label_set_text(GTK_LABEL(args->configuration_label), transformation->getReadableName().c_str());
-		args->configuration = std::move(transformation->getConfiguration());
+		args->configuration = transformation->getConfiguration();
 		args->transformation = transformation;
 		gtk_box_pack_start(GTK_BOX(args->config_vbox), args->configuration->getWidget(), true, true, 0);
 	}else{

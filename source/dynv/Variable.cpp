@@ -114,11 +114,11 @@ void Variable::assign(const std::vector<Color> &value) {
 }
 template<>
 void Variable::assign(const std::vector<const char *> &value) {
-	m_data = std::move(std::vector<std::string>(value.begin(), value.end()));
+	m_data = std::vector<std::string>(value.begin(), value.end());
 }
 template<>
 void Variable::assign(const std::vector<std::string> &value) {
-	m_data = std::move(value);
+	m_data = value;
 }
 template<>
 void Variable::assign(const std::vector<Ref> &value) {
