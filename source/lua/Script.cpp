@@ -47,16 +47,42 @@ Script::operator lua_State*()
 {
 	return m_state;
 }
+static void trimSemicolon(std::string &value) {
+	if (value.length() > 0 && value.back() == ';')
+		value.resize(value.length() - 1);
+}
+static void removeCurrentDirectory(std::string &value) {
+	auto i = value.rfind("./?");
+	if (i == std::string::npos)
+		return;
+	value.resize(i);
+	trimSemicolon(value);
+}
 void Script::setPaths(const std::vector<std::string> &include_paths)
 {
-	string paths = ";./?.lua;";
+	string paths, cPaths;
 	for (vector<string>::const_iterator i = include_paths.begin(); i != include_paths.end(); i++){
+		if (i->empty())
+			continue;
 		paths += *i;
 		paths += "/?.lua;";
+		cPaths += *i;
+		cPaths += "/?.so;";
 	}
+	trimSemicolon(paths);
+	trimSemicolon(cPaths);
 	lua_getglobal(m_state, "package");
 	lua_pushstring(m_state, "path");
 	lua_pushstring(m_state, paths.c_str());
+	lua_settable(m_state, -3);
+	lua_pushstring(m_state, "cpath");
+	lua_gettable(m_state, -2);
+	string currentCPaths = lua_tostring(m_state, -1);
+	lua_pop(m_state, 1);
+	currentCPaths = cPaths + ";" + currentCPaths;
+	removeCurrentDirectory(currentCPaths);
+	lua_pushstring(m_state, "cpath");
+	lua_pushstring(m_state, currentCPaths.c_str());
 	lua_settable(m_state, -3);
 	lua_pop(m_state, 1);
 }
