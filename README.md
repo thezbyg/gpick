@@ -15,25 +15,28 @@ Gpick is an application that allows you to sample any color from anywhere on the
 
 ### Compiler
 
-Some of C++14 features are required. Compilation is currently only tested on gcc version 5.3.1.
+Some of C++14 features are required. Compilation is currently only tested on following compilers:
+
+ * GCC 7.5 and 10.2.
+ * Clang 10.0.
 
 ### Build dependencies
 
-SCons 2.4 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
-
 CMake 3.1 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
 
-Either SCons or CMake can be used.
+SCons 2.4 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
+
+Either CMake or SCons can be used. Package maintainers should use CMake, because SCons support is deprecated and will be removed at some point in the future.
 
 Ragel 6.8 or newer: state machine compiler ([http://www.colm.net/open-source/ragel](http://www.colm.net/open-source/ragel)).
 
 ### Dependencies
 
-GTK+ 2.24 ([http://www.gtk.org](http://www.gtk.org)).
-
 GTK+ 3.0 ([http://www.gtk.org](http://www.gtk.org)).
 
-Either GTK+ 2.x or GTK+ 3.x can be used.
+GTK+ 2.24 ([http://www.gtk.org](http://www.gtk.org)).
+
+Either GTK+ 3.x or GTK+ 2.x can be used.
 
 Lua 5.4, 5.3 or 5.2 ([http://www.lua.org](http://www.lua.org)).
 
@@ -53,12 +56,6 @@ gettext ([http://www.gnu.org/s/gettext](http://www.gnu.org/s/gettext)). Required
 
 ### Building
 
-Using SCons:
-
-`scons` to compile all files and place executable file in `build/source/`.
-
-`scons install` to install executable and resources to `DESTDIR`. By default `DESTDIR` is `/usr/local`.
-
 Using CMake:
 
 `mkdir build && cd build` to create out-of-source build directory.
@@ -68,6 +65,12 @@ Using CMake:
 `make` to compile all files.
 
 `make install` to install executable and resources to `DESTDIR`. Default `DESTDIR` value is set by `CMAKE_INSTALL_PREFIX` variable.
+
+Using SCons:
+
+`scons` to compile all files and place executable file in `build/source/`.
+
+`scons install` to install executable and resources to `DESTDIR`. By default `DESTDIR` is `/usr/local`.
 
 ### Build options
 
