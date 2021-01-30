@@ -23,6 +23,7 @@
 #include "ColorSourceManager.h"
 #include "ColorSource.h"
 #include "Paths.h"
+#include "AutoSave.h"
 #include "Converter.h"
 #include "Converters.h"
 #include "StandardMenu.h"
@@ -66,8 +67,6 @@
 #include <functional>
 #include <iostream>
 #include <boost/filesystem.hpp>
-#include <boost/interprocess/sync/named_mutex.hpp>
-#include <boost/interprocess/sync/scoped_lock.hpp>
 using namespace std;
 
 struct AppArgs
@@ -1865,26 +1864,7 @@ static void app_release(AppArgs *args)
 	floating_picker_free(args->floating_picker);
 	if (!args->startupOptions.single_color_pick_mode){
 		if (app_is_autoload_enabled(args)){
-			using namespace boost::interprocess;
-			using namespace boost::filesystem;
-			try {
-				named_mutex mutex(open_or_create, "gpick.autosave");
-				scoped_lock<named_mutex> lock(mutex);
-				auto autoSaveFile = buildConfigPath("autosave.gpa");
-				auto autoSaveFileTmp = buildConfigPath("autosave.gpa.tmp");
-				auto result = paletteFileSave(autoSaveFileTmp.c_str(), args->gs->getColorList());
-				if (!result) {
-					std::cerr << "failed to save palette to \"" << autoSaveFileTmp << "\": " << result.error() << std::endl;
-				} else {
-					boost::system::error_code error;
-					rename(path(autoSaveFileTmp), path(autoSaveFile), error);
-					if (error) {
-						std::cerr << "failed to move palette file \"" << autoSaveFileTmp << "\" to \"" << autoSaveFile << "\": " << error << std::endl;
-					}
-				}
-			} catch (const interprocess_exception &e) {
-				std::cerr << "failed acquire interprocess lock: " << e.what() << std::endl;
-			}
+			autoSave(args->gs->getColorList());
 		}
 	}
 	color_list_remove_all(args->gs->getColorList());
