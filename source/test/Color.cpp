@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -56,10 +56,86 @@ BOOST_AUTO_TEST_CASE(basic) {
 BOOST_AUTO_TEST_CASE(hsv) {
 	Color result = testColor.rgbToHsv().hsvToRgb();
 	BOOST_CHECK_EQUAL(result, testColor);
+	Color inputs[] = {
+		{ 0.0f, 0.5f, 0.5f },
+		{ 1 / 3.0f, 0.5f, 0.5f },
+		{ 2 / 3.0f, 0.5f, 0.5f },
+		{ 1.0f, 0.5f, 0.5f },
+		{ 0.5f, 0.0f, 0.5f },
+		{ 0.5f, 0.25f, 0.5f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.5f, 0.75f, 0.5f },
+		{ 0.5f, 1.0f, 0.5f },
+		{ 0.5f, 0.5f, 0.0f },
+		{ 0.5f, 0.5f, 0.25f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.5f, 0.5f, 0.75f },
+		{ 0.5f, 0.5f, 1.0f },
+	};
+	Color outputs[] = {
+		{ 0.5f, 0.25f, 0.25f },
+		{ 0.25f, 0.5f, 0.25f },
+		{ 0.25f, 0.25f, 0.5f },
+		{ 0.5f, 0.25f, 0.25f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.375f, 0.5f, 0.5f },
+		{ 0.25f, 0.5f, 0.5f },
+		{ 0.125f, 0.5f, 0.5f },
+		{ 0.0f, 0.5f, 0.5f },
+		{ 0.0f, 0.0f, 0.0f },
+		{ 0.125f, 0.25f, 0.25f },
+		{ 0.25f, 0.5f, 0.5f },
+		{ 0.375f, 0.75f, 0.75f },
+		{ 0.5f, 1.0f, 1.0f },
+	};
+	static_assert(sizeof(inputs) == sizeof(outputs));
+	for (size_t i = 0; i < sizeof(inputs) / sizeof(Color); i++) {
+		BOOST_CHECK_EQUAL(inputs[i].hsvToRgb(), outputs[i]);
+		if (inputs[i].hsv.hue < 1.0f && inputs[i].hsv.saturation > 0 && inputs[i].hsv.value > 0)
+			BOOST_CHECK_EQUAL(outputs[i].rgbToHsv(), inputs[i]);
+	}
 }
 BOOST_AUTO_TEST_CASE(hsl) {
 	Color result = testColor.rgbToHsl().hslToRgb();
 	BOOST_CHECK_EQUAL(result, testColor);
+	Color inputs[] = {
+		{ 0.0f, 0.5f, 0.5f },
+		{ 1 / 3.0f, 0.5f, 0.5f },
+		{ 2 / 3.0f, 0.5f, 0.5f },
+		{ 1.0f, 0.5f, 0.5f },
+		{ 0.5f, 0.0f, 0.5f },
+		{ 0.5f, 0.25f, 0.5f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.5f, 0.75f, 0.5f },
+		{ 0.5f, 1.0f, 0.5f },
+		{ 0.5f, 0.5f, 0.0f },
+		{ 0.5f, 0.5f, 0.25f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.5f, 0.5f, 0.75f },
+		{ 0.5f, 0.5f, 1.0f },
+	};
+	Color outputs[] = {
+		{ 0.75f, 0.25f, 0.25f },
+		{ 0.25f, 0.75f, 0.25f },
+		{ 0.25f, 0.25f, 0.75f },
+		{ 0.75f, 0.25f, 0.25f },
+		{ 0.5f, 0.5f, 0.5f },
+		{ 0.375f, 0.625f, 0.625f },
+		{ 0.25f, 0.75f, 0.75f },
+		{ 0.125f, 0.875f, 0.875f },
+		{ 0.0f, 1.0f, 1.0f },
+		{ 0.0f, 0.0f, 0.0f },
+		{ 0.125f, 0.375f, 0.375f },
+		{ 0.25f, 0.75f, 0.75f },
+		{ 0.625f, 0.875f, 0.875f },
+		{ 1.0f, 1.0f, 1.0f },
+	};
+	static_assert(sizeof(inputs) == sizeof(outputs));
+	for (size_t i = 0; i < sizeof(inputs) / sizeof(Color); i++) {
+		BOOST_CHECK_EQUAL(inputs[i].hslToRgb(), outputs[i]);
+		if (inputs[i].hsv.hue < 1.0f && inputs[i].hsl.saturation > 0 && inputs[i].hsl.lightness > 0 && inputs[i].hsl.lightness < 1.0f)
+			BOOST_CHECK_EQUAL(outputs[i].rgbToHsl(), inputs[i]);
+	}
 }
 BOOST_AUTO_TEST_CASE(cmy) {
 	Color result = testColor.rgbToCmy().cmyToRgb();
@@ -82,7 +158,7 @@ BOOST_AUTO_TEST_CASE(lch) {
 	BOOST_CHECK_EQUAL(result, testColor);
 }
 BOOST_AUTO_TEST_CASE(sRGBMatrix) {
-	auto result = Color(testColor.rgbVector<double>() * Color::sRGBMatrix * Color::sRGBInvertedMatrix);
+	auto result = Color(Color::sRGBInvertedMatrix * (Color::sRGBMatrix * testColor.rgbVector<double>()));
 	BOOST_CHECK_EQUAL(result, testColor);
 }
 BOOST_AUTO_TEST_SUITE_END()

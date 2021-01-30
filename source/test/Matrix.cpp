@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -28,6 +28,14 @@ static std::ostream &operator<<(std::ostream &stream, const math::Matrix3d &matr
 	}
 	return stream;
 }
+static std::ostream &operator<<(std::ostream &stream, const math::Vector3d &vector) {
+	for (size_t i = 0; i < math::Vector3d::Size; i++) {
+		if (i != 0)
+			stream << ", ";
+		stream << vector.data[i];
+	}
+	return stream;
+}
 }
 BOOST_AUTO_TEST_SUITE(matrix)
 const static math::Matrix3d zero = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
@@ -45,5 +53,11 @@ BOOST_AUTO_TEST_CASE(multiplication) {
 BOOST_AUTO_TEST_CASE(inverse) {
 	BOOST_CHECK_EQUAL(*identity.inverse(), identity);
 	BOOST_CHECK_EQUAL(*math::Matrix3d(1.0, 2.0, 3.0, 0.0, 1.0, 4.0, 5.0, 6.0, 0.0).inverse(), math::Matrix3d(-24.0, 18.0, 5.0, 20.0, -15.0, -4.0, -5.0, 4.0, 1.0));
+}
+BOOST_AUTO_TEST_CASE(vectorMultiplication) {
+	math::Vector3d unit = { 1.0, 1.0, 1.0 };
+	math::Matrix3d translate = { 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0 };
+	BOOST_CHECK_EQUAL(translate * unit, math::Vector3d(2.0, 2.0, 1.0));
+	BOOST_CHECK_EQUAL(unit * translate, math::Vector3d(1.0, 1.0, 3.0));
 }
 BOOST_AUTO_TEST_SUITE_END()
