@@ -19,13 +19,12 @@
 #ifndef GPICK_DYNV_BINARY_H_
 #define GPICK_DYNV_BINARY_H_
 #include "Types.h"
-#include <istream>
-#include <ostream>
+#include <iosfwd>
 #include <unordered_map>
 namespace dynv {
 struct Map;
 namespace binary {
-bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<types::ValueType, uint8_t> &typeMap, bool firstLevel = true);
+bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<types::ValueType, uint8_t> &typeMap);
 bool deserialize(std::istream &stream, Map &map, const std::unordered_map<uint8_t, types::ValueType> &typeMap);
 }
 }

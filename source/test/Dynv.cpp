@@ -244,4 +244,45 @@ BOOST_AUTO_TEST_CASE(spans) {
 	BOOST_CHECK_EQUAL(map.getInt32s("ints").size(), 3);
 	BOOST_CHECK_EQUAL(map.getStrings("strings").size(), 3);
 }
+static void fillTestData(Map &map) {
+	map.set("bool", true);
+	map.set("float", 0.5f);
+	map.set("int32", 5);
+	map.set("string", "a");
+	map.set("boolArray", std::vector<bool>{ true, false, true });
+	map.set("floatArray", std::vector<float>{ 1.0f, 2.0f, 3.0f });
+	map.set("int32Array", std::vector<int32_t>{ 1, 2, 3 });
+	map.set("stringArray", std::vector<std::string>{ "a", "b", "c" });
+}
+static void fillTypeMap(std::unordered_map<types::ValueType, uint8_t> &typeMap) {
+	typeMap.emplace(types::ValueType::map, 1);
+	typeMap.emplace(types::ValueType::basicBool, 2);
+	typeMap.emplace(types::ValueType::basicFloat, 3);
+	typeMap.emplace(types::ValueType::basicInt32, 4);
+	typeMap.emplace(types::ValueType::color, 5);
+	typeMap.emplace(types::ValueType::string, 6);
+}
+BOOST_AUTO_TEST_CASE(binarySerialize) {
+	Map map;
+	fillTestData(map);
+	std::stringstream output(std::ios::out | std::ios::binary);
+	std::unordered_map<types::ValueType, uint8_t> typeMap;
+	fillTypeMap(typeMap);
+	BOOST_REQUIRE(map.serialize(output, typeMap));
+}
+BOOST_AUTO_TEST_CASE(binaryDeserialize) {
+	Map map;
+	fillTestData(map);
+	std::stringstream output(std::ios::out | std::ios::in | std::ios::binary);
+	std::unordered_map<types::ValueType, uint8_t> typeMap;
+	fillTypeMap(typeMap);
+	BOOST_REQUIRE(map.serialize(output, typeMap));
+	std::unordered_map<uint8_t, types::ValueType> valueTypeMap;
+	for (auto i: typeMap) {
+		valueTypeMap[i.second] = i.first;
+	}
+	Map resultMap;
+	BOOST_REQUIRE(resultMap.deserialize(output, valueTypeMap));
+	BOOST_CHECK_EQUAL(resultMap.size(), 4);
+}
 BOOST_AUTO_TEST_SUITE_END()

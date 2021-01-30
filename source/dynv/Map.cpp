@@ -456,6 +456,7 @@ bool Map::serialize(std::ostream &stream, const std::unordered_map<types::ValueT
 	return binary::serialize(stream, *this, typeMap);
 }
 bool Map::deserialize(std::istream &stream, const std::unordered_map<uint8_t, types::ValueType> &typeMap) {
+	removeAll();
 	return binary::deserialize(stream, *this, typeMap);
 }
 bool Map::serializeXml(std::ostream &stream) const {

@@ -23,6 +23,25 @@
 namespace dynv {
 namespace binary {
 using ValueType = types::ValueType;
+struct CountVisitor: public boost::static_visitor<int> {
+	CountVisitor(const std::unordered_map<types::ValueType, uint8_t> &typeMap):
+		typeMap(typeMap) {
+	}
+	template<typename T>
+	int operator()(const T &value) const {
+		using namespace types::binary;
+		auto i = typeMap.find(dynv::types::typeHandler<T>().type);
+		return i != typeMap.end() ? 1 : 0;
+	}
+	int operator()(const Ref &value) const {
+		return 0;
+	}
+	template<typename T>
+	int operator()(const std::vector<T> &values) const {
+		return 0;
+	}
+	const std::unordered_map<types::ValueType, uint8_t> &typeMap;
+};
 struct SerializeVisitor: public boost::static_visitor<bool> {
 	SerializeVisitor(std::ostream &stream, const std::string &name, const std::unordered_map<types::ValueType, uint8_t> &typeMap):
 		stream(stream),
@@ -54,9 +73,16 @@ struct SerializeVisitor: public boost::static_visitor<bool> {
 	const std::string &name;
 	const std::unordered_map<types::ValueType, uint8_t> &typeMap;
 };
-bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<types::ValueType, uint8_t> &typeMap, bool firstLevel) {
+bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<types::ValueType, uint8_t> &typeMap) {
 	using namespace types::binary;
-	if (!write(stream, static_cast<uint32_t>(map.size())))
+	uint32_t count = 0;
+	auto countVisitor = [&typeMap, &count](const Variable &value) -> bool {
+		count += boost::apply_visitor(CountVisitor(typeMap), value.data());
+		return true;
+	};
+	if (!map.visit(countVisitor))
+		return false;
+	if (!write(stream, count))
 		return false;
 	auto visitor = [&stream, &typeMap](const Variable &value) -> bool {
 		if (!boost::apply_visitor(SerializeVisitor(stream, value.name(), typeMap), value.data()))

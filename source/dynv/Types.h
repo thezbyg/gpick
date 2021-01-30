@@ -19,7 +19,7 @@
 #ifndef GPICK_DYNV_TYPES_H_
 #define GPICK_DYNV_TYPES_H_
 #include "common/Ref.h"
-#include <ostream>
+#include <iosfwd>
 #include <type_traits>
 namespace dynv {
 struct Map;

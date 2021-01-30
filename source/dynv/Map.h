@@ -26,8 +26,7 @@
 #include <set>
 #include <vector>
 #include <memory>
-#include <ostream>
-#include <istream>
+#include <iosfwd>
 #include <functional>
 #include <unordered_map>
 #include <cstdint>
