@@ -24,7 +24,7 @@
 #include <exception>
 namespace fs = boost::filesystem;
 using path = fs::path;
-struct PathException : std::runtime_error {
+struct PathException: std::runtime_error {
 	PathException(const char *message):
 		std::runtime_error(message) {
 	}
@@ -54,23 +54,55 @@ static path &getUserConfigPath() {
 	configPath = path(g_get_user_config_dir());
 	return *configPath;
 }
+static bool validateDataPath(const path &path) {
+	try {
+		if (!fs::is_directory(fs::status(path)))
+			return false;
+		if (!fs::is_regular_file(fs::status(path / ".gpick-data-directory")))
+			return false;
+		return true;
+	} catch (const fs::filesystem_error &) {
+		return false;
+	}
+}
+static bool getRelativeDataPath(boost::optional<path> &dataPath) {
+	try {
+		path testPath;
+		if (validateDataPath(testPath = (path(getExecutablePath()).remove_filename() / "share" / "gpick"))) {
+			dataPath = testPath;
+			return true;
+		}
+		if (validateDataPath(testPath = (path(getExecutablePath()).remove_filename().remove_filename() / "share" / "gpick"))) {
+			dataPath = testPath;
+			return true;
+		}
+		return false;
+	} catch (const PathException &) {
+		return false;
+	} catch (const fs::filesystem_error &) {
+		return false;
+	}
+}
 static path &getDataPath() {
 	static boost::optional<path> dataPath;
 	if (dataPath)
 		return *dataPath;
 	path testPath;
-	try {
-		if (fs::is_directory(fs::status(testPath = (path(getExecutablePath()).remove_filename() / "share" / "gpick"))))
-			return *(dataPath = testPath);
-	} catch (const PathException &) {
-	}
-	if (fs::is_directory(fs::status(testPath = (path(g_get_user_data_dir()) / "gpick"))))
+#ifdef GPICK_DEV_BUILD
+	if (getRelativeDataPath(dataPath))
+		return *dataPath;
+#endif
+	if (validateDataPath(testPath = (path(g_get_user_data_dir()) / "gpick")))
 		return *(dataPath = testPath);
 	auto dataPaths = g_get_system_data_dirs();
 	for (size_t i = 0; dataPaths[i]; ++i) {
-		if (fs::is_directory(fs::status(testPath = (path(dataPaths[i]) / "gpick"))))
+		if (validateDataPath(testPath = (path(dataPaths[i]) / "gpick")))
 			return *(dataPath = testPath);
 	}
+#ifndef GPICK_DEV_BUILD
+	if (getRelativeDataPath(dataPath))
+		return *dataPath;
+#endif
 	dataPath = path();
 	return *dataPath;
 }

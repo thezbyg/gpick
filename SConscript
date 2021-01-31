@@ -143,6 +143,9 @@ else:
 				LINKFLAGS = ['/MANIFEST', '/LTCG'],
 			)
 
+if env['DEV_BUILD']:
+	env.Append(CPPDEFINES = ['GPICK_DEV_BUILD'])
+
 env.Append(CPPPATH = ['#source'])
 
 def buildVersion(env):
@@ -369,7 +372,7 @@ env.Alias(target = "install", source = [
 	env.InstallData(dir = env['DESTDIR'] +'/share/applications', source = ['share/applications/gpick.desktop']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/mime/packages', source = ['share/mime/packages/gpick.xml']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/doc/gpick', source = ['share/doc/gpick/copyright']),
-	env.InstallData(dir = env['DESTDIR'] +'/share/gpick', source = [env.Glob('share/gpick/*.png'), env.Glob('share/gpick/*.lua'), env.Glob('share/gpick/*.txt')]),
+	env.InstallData(dir = env['DESTDIR'] +'/share/gpick', source = [env.Glob('share/gpick/*.png'), env.Glob('share/gpick/*.lua'), env.Glob('share/gpick/*.txt'), env.Glob('share/gpick/.gpick-data-directory')]),
 	env.InstallData(dir = env['DESTDIR'] +'/share/man/man1', source = ['share/man/man1/gpick.1']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/icons/hicolor/48x48/apps/', source = [env.Glob('share/icons/hicolor/48x48/apps/*.png')]),
 	env.InstallData(dir = env['DESTDIR'] +'/share/icons/hicolor/scalable/apps/', source = [env.Glob('share/icons/hicolor/scalable/apps/*.svg')]),
