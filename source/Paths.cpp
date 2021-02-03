@@ -29,7 +29,7 @@ struct PathException : std::runtime_error {
 		std::runtime_error(message) {
 	}
 };
-#ifdef BOOST_OS_LINUX
+#if BOOST_OS_LINUX
 static std::string getExecutablePath() {
 	std::vector<char> buffer;
 	buffer.resize(4096);
