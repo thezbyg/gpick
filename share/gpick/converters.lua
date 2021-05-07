@@ -3,6 +3,9 @@ local color = require('gpick/color')
 local helpers = require('helpers')
 local _ = gpick._
 local round = helpers.round
+local clamp = helpers.clamp
+local format = helpers.format
+local split = helpers.split
 local options = require('options')
 local serializeWebHex = function(colorObject)
 	if not colorObject then return nil end
@@ -144,12 +147,33 @@ end
 local serializeCssBorderLeftHex = function(colorObject)
 	return 'border-left-color: ' .. serializeWebHex(colorObject)
 end
-local serializeColorCsv = function(colorObject)
+local serializeCsvRgb = function(colorObject)
 	local c = colorObject:getColor()
-	os.setlocale("C", "numeric")
-	local r = string.format('%f\t%f\t%f', c:red(), c:green(), c:blue())
-	os.setlocale("", "numeric")
-	return r
+	return format('%f,%f,%f', c:red(), c:green(), c:blue())
+end
+local serializeCsvRgbTab = function(colorObject)
+	local c = colorObject:getColor()
+	return format('%f\t%f\t%f', c:red(), c:green(), c:blue())
+end
+local serializeCsvRgbSemicolon = function(colorObject)
+	local c = colorObject:getColor()
+	return format('%f;%f;%f', c:red(), c:green(), c:blue())
+end
+local serializeValueRgb = function(colorObject)
+	local c = colorObject:getColor()
+	return format('%f, %f, %f', c:red(), c:green(), c:blue())
+end
+local deserializeValueRgb = function(text, colorObject)
+	local findStart, findEnd, values = split(text, '%.?%d+%.?%d*', '[,;\t]+', 3)
+	if findStart ~= nil then
+		clamp(values, 0, 1)
+		local c = color:new()
+		c:rgb(table.unpack(values))
+		colorObject:setColor(c)
+		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
+	else
+		return -1
+	end
 end
 gpick:addConverter('color_web_hex', _("Web: hex code"), serializeWebHex, deserializeWebHex)
 gpick:addConverter('color_web_hex_3_digit', _("Web: hex code (3 digits)"), serializeWebHex3Digit, deserializeWebHex3Digit)
@@ -163,6 +187,9 @@ gpick:addConverter('css_border_top_color_hex', 'CSS(border-top-color)', serializ
 gpick:addConverter('css_border_right_color_hex', 'CSS(border-right-color)', serializeCssBorderRightColorHex)
 gpick:addConverter('css_border_bottom_color_hex', 'CSS(border-bottom-color)', serializeCssBorderBottomColorHex)
 gpick:addConverter('css_border_left_hex', 'CSS(border-left-color)', serializeCssBorderLeftHex)
-gpick:addConverter('color_csv', 'CSV', serializeColorCsv)
+gpick:addConverter('csv_rgb', 'CSV RGB', serializeCsvRgb, deserializeValueRgb)
+gpick:addConverter('csv_rgb_tab', 'CSV RGB ' .. _'(tab separator)', serializeCsvRgbTab, deserializeValueRgb)
+gpick:addConverter('csv_rgb_semicolon', 'CSV RGB ' .. _'(semicolon separator)', serializeCsvRgbSemicolon, deserializeValueRgb)
 gpick:addConverter('color_css_block', 'CSS block', serializeColorCssBlock)
+gpick:addConverter('value_rgb', _('RGB values'), serializeValueRgb, deserializeValueRgb)
 return {}
