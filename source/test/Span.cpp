@@ -56,4 +56,27 @@ BOOST_AUTO_TEST_CASE(startEndInitialization) {
 	auto span = Span<bool>(bools, bools + 5);
 	BOOST_CHECK_EQUAL(span.size(), 5);
 }
+BOOST_AUTO_TEST_CASE(conversionToConst) {
+	int values[] = { 1, 2, 3 };
+	auto span1 = Span<const int>(values, values + 5);
+	auto span2 = Span<int>(values, values + 5);
+	span1 = span2;
+	BOOST_CHECK(span1 == span2);
+	BOOST_CHECK(span2 == span1);
+	BOOST_CHECK(!(span1 != span2));
+	BOOST_CHECK(!(span2 != span1));
+}
+BOOST_AUTO_TEST_CASE(castToConst) {
+	int values[] = { 1, 2, 3 };
+	auto span1 = Span<int>(values, values + 5);
+	Span<const int> span2(span1);
+	BOOST_CHECK(span1 == span2);
+}
+BOOST_AUTO_TEST_CASE(assignmentToConst) {
+	int values[] = { 1, 2, 3 };
+	auto span1 = Span<int>(values, values + 5);
+	Span<const int> span2;
+	span2 = span1;
+	BOOST_CHECK(span1 == span2);
+}
 BOOST_AUTO_TEST_SUITE_END()

@@ -18,17 +18,18 @@
 
 #ifndef GPICK_COMMON_SPAN_H_
 #define GPICK_COMMON_SPAN_H_
+#include <type_traits>
 #include <iterator>
 namespace common {
-template<typename T, typename Size = size_t>
+template<typename T, typename SizeT = size_t>
 struct Span {
 	struct Iterator {
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = T;
-		using difference_type = Size;
-		using pointer = T*;
-		using reference = T&;
-		Iterator(Span &span, Size position):
+		using difference_type = SizeT;
+		using pointer = T *;
+		using reference = T &;
+		Iterator(Span &span, SizeT position):
 			m_span(span),
 			m_position(position) {
 		}
@@ -38,7 +39,7 @@ struct Span {
 		bool operator==(const Iterator &iterator) const {
 			return m_span == iterator.m_span && m_position == iterator.m_position;
 		}
-		Size operator-(const Iterator &iterator) const {
+		SizeT operator-(const Iterator &iterator) const {
 			return m_position - iterator.m_position;
 		}
 		Iterator &operator++() {
@@ -53,15 +54,15 @@ struct Span {
 		}
 	private:
 		Span &m_span;
-		Size m_position;
+		SizeT m_position;
 	};
 	struct ConstIterator {
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = T;
-		using difference_type = Size;
-		using pointer = T*;
-		using reference = T&;
-		ConstIterator(const Span &span, Size position):
+		using difference_type = SizeT;
+		using pointer = T *;
+		using reference = T &;
+		ConstIterator(const Span &span, SizeT position):
 			m_span(span),
 			m_position(position) {
 		}
@@ -71,7 +72,7 @@ struct Span {
 		bool operator==(const ConstIterator &iterator) const {
 			return m_span == iterator.m_span && m_position == iterator.m_position;
 		}
-		Size operator-(const ConstIterator &iterator) const {
+		SizeT operator-(const ConstIterator &iterator) const {
 			return m_position - iterator.m_position;
 		}
 		ConstIterator &operator++() {
@@ -86,12 +87,13 @@ struct Span {
 		}
 	private:
 		const Span &m_span;
-		Size m_position;
+		SizeT m_position;
 	};
 	Span():
-		m_data(nullptr) {
+		m_data(nullptr),
+		m_size(0) {
 	}
-	Span(T *data, Size size):
+	Span(T *data, SizeT size):
 		m_data(data),
 		m_size(size) {
 	}
@@ -99,23 +101,27 @@ struct Span {
 		m_data(start),
 		m_size(static_cast<uintptr_t>(end - start) / sizeof(T)) {
 	}
-	Span(const Span &span):
-		m_data(span.m_data),
-		m_size(span.m_size) {
+	template<typename OtherT, std::enable_if_t<std::is_same<std::remove_const_t<T>, OtherT>::value, int> = 0>
+	Span(const Span<OtherT, SizeT> &span):
+		m_data(span.data()),
+		m_size(span.size()) {
 	}
-	Span &operator=(const Span &span) {
-		m_data = span.m_data;
-		m_size = span.m_size;
+	template<typename OtherT, std::enable_if_t<std::is_same<std::remove_const_t<T>, OtherT>::value, int> = 0>
+	Span &operator=(const Span<OtherT, SizeT> &span) {
+		m_data = span.data();
+		m_size = span.size();
 		return *this;
 	}
 	explicit operator bool() const {
 		return m_data != nullptr && m_size > 0;
 	}
-	bool operator==(const Span &span) const {
-		return m_data == span.m_data && m_size == span.m_size;
+	template<typename OtherT, std::enable_if_t<std::is_same<std::remove_const_t<T>, std::remove_const_t<OtherT>>::value, int> = 0>
+	bool operator==(const Span<OtherT, SizeT> &span) const {
+		return m_data == span.data() && m_size == span.size();
 	}
-	bool operator!=(const Span &span) const {
-		return m_data != span.m_data || m_size != span.m_size;
+	template<typename OtherT, std::enable_if_t<std::is_same<std::remove_const_t<T>, std::remove_const_t<OtherT>>::value, int> = 0>
+	bool operator!=(const Span<OtherT, SizeT> &span) const {
+		return m_data != span.data() || m_size != span.size();
 	}
 	Iterator begin() {
 		return Iterator(*this, 0);
@@ -129,12 +135,18 @@ struct Span {
 	ConstIterator end() const {
 		return ConstIterator(*this, m_size);
 	}
-	Size size() const {
+	T *data() {
+		return m_data;
+	}
+	const T *data() const {
+		return m_data;
+	}
+	SizeT size() const {
 		return m_size;
 	}
 private:
 	T *m_data;
-	Size m_size;
+	SizeT m_size;
 	friend Iterator;
 	friend ConstIterator;
 };
