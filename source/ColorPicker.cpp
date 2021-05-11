@@ -49,7 +49,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <boost/optional.hpp>
+#include <optional>
 using namespace std;
 
 struct ColorPickerArgs;
@@ -197,7 +197,7 @@ struct ColorPickerArgs {
 		ColorPickerArgs *args;
 		ColorObject colorObject;
 	};
-	boost::optional<SwatchEditable> swatchEditable;
+	std::optional<SwatchEditable> swatchEditable;
 	struct ColorInputReadonly: public IReadonlyColorUI {
 		ColorInputReadonly(ColorPickerArgs *args):
 			args(args) {
@@ -221,7 +221,7 @@ struct ColorPickerArgs {
 		ColorPickerArgs *args;
 		ColorObject colorObject;
 	};
-	boost::optional<ColorInputReadonly> colorInputReadonly;
+	std::optional<ColorInputReadonly> colorInputReadonly;
 	struct ContrastEditable: public IEditableColorUI {
 		ContrastEditable(ColorPickerArgs *args):
 			args(args) {
@@ -252,7 +252,7 @@ struct ColorPickerArgs {
 		ColorPickerArgs *args;
 		ColorObject colorObject;
 	};
-	boost::optional<ContrastEditable> contrastEditable;
+	std::optional<ContrastEditable> contrastEditable;
 };
 
 struct ColorCompItem{

@@ -268,7 +268,7 @@ struct ColorMixerArgs {
 		ColorMixerArgs *args;
 		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable[1 + Rows * 2];
+	std::optional<Editable> editable[1 + Rows * 2];
 };
 static int destroy(ColorMixerArgs *args) {
 	Color c;

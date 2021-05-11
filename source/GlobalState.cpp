@@ -33,7 +33,7 @@
 #include "lua/Script.h"
 #include "lua/Extensions.h"
 #include "lua/Callbacks.h"
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <stdlib.h>
 #include <glib/gstdio.h>
 extern "C"{
@@ -112,14 +112,14 @@ struct GlobalState::Impl
 	}
 	// Creates configuration directory if it doesn't exist
 	void checkConfigurationDirectory() {
-		namespace fs = boost::filesystem;
+		namespace fs = std::filesystem;
 		auto configPath = fs::path(buildConfigPath());
-		boost::system::error_code ec;
+		std::error_code ec;
 		fs::create_directory(configPath, ec);
 	}
 	// Check if user has user_init.lua file, if not, then create empty file
 	void checkUserInitFile() {
-		namespace fs = boost::filesystem;
+		namespace fs = std::filesystem;
 		auto userInitFilePath = fs::path(buildConfigPath("user_init.lua"));
 		if (fs::exists(fs::status(userInitFilePath)))
 			return;

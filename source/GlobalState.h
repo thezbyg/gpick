@@ -20,7 +20,7 @@
 #define GPICK_GLOBAL_STATE_H_
 #include "dynv/MapFwd.h"
 #include <memory>
-#include <boost/optional.hpp>
+#include <optional>
 #include <cstdint>
 struct ColorNames;
 struct Sampler;
@@ -62,7 +62,7 @@ struct GlobalState
 	void setStatusBar(GtkWidget *status_bar);
 	ColorSource *getCurrentColorSource();
 	void setCurrentColorSource(ColorSource *color_source);
-	boost::optional<uint32_t> latinKeysGroup;
+	std::optional<uint32_t> latinKeysGroup;
 	private:
 	struct Impl;
 	std::unique_ptr<Impl> m_impl;

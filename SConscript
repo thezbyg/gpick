@@ -79,7 +79,7 @@ if not env.GetOption('clean'):
 			libs['GTK_PC'] = {'checks':{'gtk+-3.0': '>= 3.0.0'}}
 		libs['LUA_PC'] = {'checks':{'lua5.4': '>= 5.4', 'lua5.3': '>= 5.3', 'lua': '>= 5.2', 'lua5.2': '>= 5.2'}}
 	env.ConfirmLibs(conf, libs)
-	env.ConfirmBoost(conf, '1.58')
+	env.ConfirmBoost(conf, '1.71')
 	env = conf.Finish()
 
 Decider('MD5-timestamp')
@@ -101,7 +101,7 @@ if not env['TOOLCHAIN'] == 'msvc':
 				LINKFLAGS = ['-Wl,-as-needed', '-s'],
 				)
 		env.Append(
-			CXXFLAGS = ['-std=c++14'],
+			CXXFLAGS = ['-std=c++17'],
 		)
 	else:
 		stdMissing = True
@@ -111,7 +111,7 @@ if not env['TOOLCHAIN'] == 'msvc':
 				break
 		if stdMissing:
 			env.Append(
-				CXXFLAGS = ['-std=c++14'],
+				CXXFLAGS = ['-std=c++17'],
 			)
 	if env['DEV_BUILD']:
 		env.Append(

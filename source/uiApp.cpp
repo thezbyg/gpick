@@ -66,7 +66,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 using namespace std;
 
 struct AppArgs
@@ -299,7 +299,7 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args)
 
 int app_save_file(AppArgs *args, const char *filename, const char *filter)
 {
-	using namespace boost::filesystem;
+	using namespace std::filesystem;
 	string current_filename;
 	if (filename != nullptr){
 		current_filename = filename;

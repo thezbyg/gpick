@@ -326,7 +326,7 @@ struct GenerateSchemeArgs {
 		GenerateSchemeArgs *args;
 		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable[MaxColors];
+	std::optional<Editable> editable[MaxColors];
 	struct ColorWheelEditable: IEditableColorUI, IDroppableColorUI {
 		ColorWheelEditable(GenerateSchemeArgs *args):
 			args(args) {
@@ -377,7 +377,7 @@ struct GenerateSchemeArgs {
 		GenerateSchemeArgs *args;
 		ColorObject colorObject;
 	};
-	boost::optional<ColorWheelEditable> colorWheelEditable;
+	std::optional<ColorWheelEditable> colorWheelEditable;
 };
 static void showMenu(GtkWidget *widget, GenerateSchemeArgs *args, GdkEventButton *event) {
 	auto menu = gtk_menu_new();

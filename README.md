@@ -15,20 +15,20 @@ Gpick is an application that allows you to sample any color from anywhere on the
 
 ### Compiler
 
-Some of C++14 features are required. Compilation is currently only tested on following compilers:
+C++17 support is required. Compilation is currently only tested on following compilers:
 
- * GCC 7.5 and 10.2.
- * Clang 10.0.
+ * GCC 9.3 and 10.2.
+ * Clang 11.0.
 
 ### Build dependencies
 
-CMake 3.1 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
+CMake 3.10 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
 
-SCons 2.4 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
+SCons 3.0 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
 
 Either CMake or SCons can be used. Package maintainers should use CMake, because SCons support is deprecated and will be removed at some point in the future.
 
-Ragel 6.8 or newer: state machine compiler ([http://www.colm.net/open-source/ragel](http://www.colm.net/open-source/ragel)).
+Ragel 6.9 or newer: state machine compiler ([http://www.colm.net/open-source/ragel](http://www.colm.net/open-source/ragel)).
 
 ### Dependencies
 
@@ -42,7 +42,7 @@ Lua 5.4, 5.3 or 5.2 ([http://www.lua.org](http://www.lua.org)).
 
 Expat ([http://expat.sourceforge.net](http://expat.sourceforge.net)).
 
-Boost 1.58 or newer ([http://www.boost.org](http://www.boost.org)).
+Boost 1.71 or newer ([http://www.boost.org](http://www.boost.org)).
 Used libraries:
 
  * Filesystem.

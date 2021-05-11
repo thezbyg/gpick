@@ -38,7 +38,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <math.h>
 #include <sstream>
-#include <boost/optional.hpp>
+#include <optional>
 using namespace layout;
 
 struct BrightnessDarknessArgs;
@@ -209,7 +209,7 @@ struct BrightnessDarknessArgs {
 	private:
 		BrightnessDarknessArgs *args;
 	};
-	boost::optional<Editable> editable;
+	std::optional<Editable> editable;
 };
 static int getColor(BrightnessDarknessArgs *args, ColorObject **color) {
 	if (!args->isSelected())

@@ -19,13 +19,13 @@
 #include "AutoSave.h"
 #include "Paths.h"
 #include "FileFormat.h"
-#include <boost/filesystem.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
+#include <filesystem>
 #include <iostream>
 void autoSave(ColorList *colorList) {
 	using namespace boost::interprocess;
-	using namespace boost::filesystem;
+	using namespace std::filesystem;
 	try {
 		named_mutex mutex(open_or_create, "gpick.autosave");
 		scoped_lock<named_mutex> lock(mutex);
@@ -35,10 +35,10 @@ void autoSave(ColorList *colorList) {
 		if (!result) {
 			std::cerr << "failed to save palette to \"" << fileNameTmp << "\": " << result.error() << std::endl;
 		} else {
-			boost::system::error_code error;
-			rename(path(fileNameTmp), path(fileName), error);
-			if (error) {
-				std::cerr << "failed to move palette file \"" << fileNameTmp << "\" to \"" << fileName << "\": " << error << std::endl;
+			std::error_code ec;
+			rename(path(fileNameTmp), path(fileName), ec);
+			if (ec) {
+				std::cerr << "failed to move palette file \"" << fileNameTmp << "\" to \"" << fileName << "\": " << ec << std::endl;
 			}
 		}
 	} catch (const interprocess_exception &e) {

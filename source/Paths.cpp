@@ -18,18 +18,25 @@
 
 #include "Paths.h"
 #include <glib.h>
-#include <boost/filesystem.hpp>
-#include <boost/optional.hpp>
+#include <filesystem>
+#include <optional>
+#include <vector>
 #include <boost/predef.h>
-#include <exception>
-namespace fs = boost::filesystem;
+#include <stdexcept>
+#include <iostream>
+#if BOOST_OS_WINDOWS != 0
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+namespace fs = std::filesystem;
 using path = fs::path;
 struct PathException: std::runtime_error {
 	PathException(const char *message):
 		std::runtime_error(message) {
 	}
 };
-#ifdef BOOST_OS_LINUX
+#if BOOST_OS_LINUX != 0
 static std::string getExecutablePath() {
 	std::vector<char> buffer;
 	buffer.resize(4096);
@@ -37,18 +44,30 @@ static std::string getExecutablePath() {
 		int count = ::readlink("/proc/self/exe", &buffer.front(), buffer.size());
 		if (count < 0)
 			throw PathException("could not read executable path");
-		if ((size_t)count < buffer.size())
+		if (static_cast<size_t>(count) < buffer.size())
 			return std::string(buffer.begin(), buffer.begin() + count);
 		buffer.resize(buffer.size() * 2);
 	}
 }
-#else
+#elif BOOST_OS_WINDOWS != 0
 static std::string getExecutablePath() {
-	return "";
+	std::vector<TCHAR> buffer;
+	buffer.resize(4096);
+	size_t length;
+	while (1) {
+		length = GetModuleFileName(nullptr, &buffer.front(), buffer.size());
+		if (length == 0 && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+			throw PathException("could not read executable path");
+		if (length < buffer.size())
+			return std::string(buffer.begin(), buffer.begin() + length);
+		buffer.resize(buffer.size() * 2);
+	}
 }
+#else
+#error getExecutablePath not implemented for current OS
 #endif
 static path &getUserConfigPath() {
-	static boost::optional<path> configPath;
+	static std::optional<path> configPath;
 	if (configPath)
 		return *configPath;
 	configPath = path(g_get_user_config_dir());
@@ -56,23 +75,24 @@ static path &getUserConfigPath() {
 }
 static bool validateDataPath(const path &path) {
 	try {
-		if (!fs::is_directory(fs::status(path)))
+		std::error_code ec;
+		if (!fs::is_directory(fs::status(path, ec)))
 			return false;
-		if (!fs::is_regular_file(fs::status(path / ".gpick-data-directory")))
+		if (!fs::is_regular_file(fs::status(path / ".gpick-data-directory", ec)))
 			return false;
 		return true;
 	} catch (const fs::filesystem_error &) {
 		return false;
 	}
 }
-static bool getRelativeDataPath(boost::optional<path> &dataPath) {
+static bool getRelativeDataPath(std::optional<path> &dataPath) {
 	try {
 		path testPath;
-		if (validateDataPath(testPath = (path(getExecutablePath()).remove_filename() / "share" / "gpick"))) {
+		if (validateDataPath(testPath = (path(getExecutablePath()).parent_path() / "share" / "gpick"))) {
 			dataPath = testPath;
 			return true;
 		}
-		if (validateDataPath(testPath = (path(getExecutablePath()).remove_filename().remove_filename() / "share" / "gpick"))) {
+		if (validateDataPath(testPath = (path(getExecutablePath()).parent_path().parent_path() / "share" / "gpick"))) {
 			dataPath = testPath;
 			return true;
 		}
@@ -84,7 +104,7 @@ static bool getRelativeDataPath(boost::optional<path> &dataPath) {
 	}
 }
 static path &getDataPath() {
-	static boost::optional<path> dataPath;
+	static std::optional<path> dataPath;
 	if (dataPath)
 		return *dataPath;
 	path testPath;

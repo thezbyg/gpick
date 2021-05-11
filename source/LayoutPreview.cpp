@@ -169,7 +169,7 @@ struct LayoutPreviewArgs {
 	private:
 		LayoutPreviewArgs *args;
 	};
-	boost::optional<Editable> editable;
+	std::optional<Editable> editable;
 };
 enum LayoutListColumns {
 	LAYOUTLIST_LABEL = 0,

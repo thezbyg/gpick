@@ -161,7 +161,7 @@ struct ClosestColorsArgs {
 	private:
 		ClosestColorsArgs *args;
 	};
-	boost::optional<Editable> editable;
+	std::optional<Editable> editable;
 };
 static int destroy(ClosestColorsArgs *args) {
 	Color color;

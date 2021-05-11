@@ -319,7 +319,7 @@ struct VariationsArgs {
 		VariationsArgs *args;
 		GtkWidget *widget;
 	};
-	boost::optional<Editable> editable[1 + Rows * (1 + VariantWidgets)];
+	std::optional<Editable> editable[1 + Rows * (1 + VariantWidgets)];
 };
 static int destroy(VariationsArgs *args) {
 	Color color;

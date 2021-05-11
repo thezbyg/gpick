@@ -109,7 +109,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		color_list_reset_selected(gs->getColorList());
 		removeScrollTimeout();
 		auto model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
-		boost::optional<GtkTreeIter> insertIterator;
+		std::optional<GtkTreeIter> insertIterator;
 		GtkTreePath* path;
 		GtkTreeViewDropPosition pos;
 		if (getPathAt(GTK_TREE_VIEW(treeview), x, y, path, pos)) {

@@ -33,8 +33,8 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <filesystem>
 #include <boost/math/special_functions/round.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/endian/conversion.hpp>
 using namespace std;
@@ -80,7 +80,7 @@ ImportExport::ImportExport(ColorList *color_list, const char* filename, GlobalSt
 }
 void ImportExport::fixFileExtension(const char *selected_filter)
 {
-	using namespace boost::filesystem;
+	using namespace std::filesystem;
 	if (selected_filter && selected_filter[0] == '*'){
 		string extension = path(m_filename).extension().string();
 		bool append = false;
@@ -170,7 +170,7 @@ bool ImportExport::exportGPL()
 		m_last_error = Error::could_not_open_file;
 		return false;
 	}
-	boost::filesystem::path path(m_filename);
+	std::filesystem::path path(m_filename);
 	f << "GIMP Palette" << endl;
 	f << "Name: " << path.filename().string() << endl;
 	f << "Columns: 1" << endl;
@@ -402,7 +402,7 @@ bool ImportExport::exportHTML()
 		m_last_error = Error::could_not_open_file;
 		return false;
 	}
-	boost::filesystem::path path(m_filename);
+	std::filesystem::path path(m_filename);
 	vector<ColorObject*> ordered;
 	getOrderedColors(m_color_list, ordered);
 	int item_size = 64;
@@ -847,7 +847,7 @@ static struct{
 };
 FileType ImportExport::getFileType(const char *filename)
 {
-	boost::filesystem::path path(filename);
+	std::filesystem::path path(filename);
 	string name = path.filename().string();
 	boost::algorithm::to_lower(name);
 	for (size_t i = 0; extensions[i].type != FileType::unknown; ++i){

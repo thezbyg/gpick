@@ -23,7 +23,7 @@
 #include <initializer_list>
 #include <type_traits>
 #include <stdexcept>
-#include <boost/optional.hpp>
+#include <optional>
 namespace math {
 namespace impl {
 template<typename T, unsigned int N, typename Matrix>
@@ -99,10 +99,10 @@ struct CommonMatrix {
 		}
 		return result;
 	};
-	boost::optional<Matrix> inverse() const {
+	std::optional<Matrix> inverse() const {
 		auto determinant = this->determinant();
 		if (determinant == 0)
-			return boost::optional<Matrix>();
+			return std::optional<Matrix>();
 		double determinantInverse = 1.0 / determinant;
 		Matrix result;
 		for (unsigned int column = 0; column < N; ++column) {
