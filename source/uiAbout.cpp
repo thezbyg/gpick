@@ -92,7 +92,8 @@ void show_about_box(GtkWidget *widget)
 	gtk_box_pack_start(GTK_BOX(hbox), image, false, false, 0);
 	GtkWidget *vbox2 = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(hbox), vbox2, false, false, 0);
-	gchar *tmp_string = g_markup_printf_escaped("<span size=\"xx-large\" weight=\"bold\">%s %s</span>\n<span size=\"small\">%s: %s</span>", program_name, gpick_build_version, _("Revision"), gpick_build_revision);
+	auto version = std::string(version::version) + (version::revision > 0 ? "-" + std::to_string(version::revision) : std::string());
+	gchar *tmp_string = g_markup_printf_escaped("<span size=\"xx-large\" weight=\"bold\">%s %s</span>\n<span size=\"small\">%s: %s</span>", program_name, version.c_str(), _("Hash"), version::hash);
 	GtkWidget *name = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(name), true);
 	gtk_label_set_justify(GTK_LABEL(name), GTK_JUSTIFY_CENTER);

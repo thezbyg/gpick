@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 #ifdef WIN32
 	argv_copy = g_win32_get_command_line();
 #else
-	argv_copy  = g_strdupv(argv);
+	argv_copy = g_strdupv(argv);
 #endif
 	if (!g_option_context_parse_strv(context, &argv_copy, &error)){
 		g_print("option parsing failed: %s\n", error->message);
@@ -74,10 +74,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	if (version_information){
-		string version = string(program_name) + " version " + string(gpick_build_version);
-		string revision = "Revision " + string(gpick_build_revision);
-		string build_date = "Date " + string(gpick_build_date);
-		g_print("%s\n%s\n%s\n", version.c_str(), revision.c_str(), build_date.c_str());
+		std::cout << program_name << ' ' << version::version << (version::revision > 0 ? "-" + std::to_string(version::revision) : std::string()) + "-g" + std::string(version::hash) << "\nDate " << version::date << '\n';
 		g_option_context_free(context);
 		g_strfreev(argv_copy);
 		return 0;

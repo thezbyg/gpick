@@ -20,7 +20,7 @@ DEPFILES= files/Gpick.exe
 .SUFFIXES: .wxs .wixobj .xstl
 
 all: $(MSI).msi
-  
+
 $(MSI).msi: $(OBJS) $(DEPFILES) $(HEAT_SRCS)
 	$(LIGHT) -nologo $(LIGHT_FLAGS) -out $@ $(OBJS)
 

@@ -17,7 +17,9 @@
  */
 
 #include "version/Version.h"
-const char* gpick_build_version = "@GPICK_VERSION@";
-const char* gpick_build_revision = "@GPICK_REVISION@";
-const char* gpick_build_date = "@GPICK_BUILD_DATE@";
-const char* gpick_build_platform = "@GPICK_BUILD_PLATFORM@";
+namespace version {
+const char* version = "@GPICK_BUILD_VERSION@";
+const unsigned long revision = @GPICK_BUILD_REVISION@;
+const char* hash = "@GPICK_BUILD_HASH@";
+const char* date = "@GPICK_BUILD_DATE@";
+}

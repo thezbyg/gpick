@@ -1,8 +1,7 @@
 1 ICON "gpick-icon.ico"
-
 1 VERSIONINFO
-FILEVERSION     %VERSION_COMMA%
-PRODUCTVERSION  %VERSION_COMMA%
+FILEVERSION     @GPICK_BUILD_VERSION_FULL_COMMA@
+PRODUCTVERSION  @GPICK_BUILD_VERSION_FULL_COMMA@
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
@@ -10,16 +9,15 @@ BEGIN
     BEGIN
       VALUE "CompanyName", "Gpick developers"
       VALUE "FileDescription", "Gpick - Advanced color picker"
-      VALUE "FileVersion", "%VERSION%"
+      VALUE "FileVersion", "@GPICK_BUILD_VERSION_FULL@-g@GPICK_BUILD_HASH@"
       VALUE "InternalName", "gpick"
       VALUE "LegalCopyright", "New BSD License"
       VALUE "OriginalFilename", "gpick.exe"
       VALUE "ProductName", "Gpick"
-      VALUE "ProductVersion", "%VERSION%"
-      VALUE "Comments", "Revision %REVISION%, built at %BUILD_DATE%"
+      VALUE "ProductVersion", "@GPICK_BUILD_VERSION_FULL@-g@GPICK_BUILD_HASH@"
+      VALUE "Comments", "Hash @GPICK_BUILD_HASH@, commit @GPICK_BUILD_DATE@"
     END
   END
-
   BLOCK "VarFileInfo"
   BEGIN
     VALUE "Translation", 0x409, 1252

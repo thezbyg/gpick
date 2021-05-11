@@ -1,1 +1,1 @@
-from .gpick import GpickEnvironment, WriteNsisVersion, RegexEscape, Glob
+from .gpick import GpickEnvironment, RegexEscape, Glob

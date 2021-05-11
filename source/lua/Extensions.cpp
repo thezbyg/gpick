@@ -30,7 +30,7 @@
 #include "../layout/Layout.h"
 #include "../Converters.h"
 #include "../Converter.h"
-#include "../version/Version.h"
+#include "version/Version.h"
 extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
@@ -91,10 +91,14 @@ void registerAll(lua_State *L, GlobalState &global_state)
 	script.registerExtension("layout", registerLayout);
 	script.registerExtension(nullptr, [](lua_State *L){
 		luaL_newlib(L, functions);
-		lua_pushstring(L, gpick_build_version);
+		lua_pushstring(L, version::version);
 		lua_setfield(L, -2, "version");
-		lua_pushstring(L, gpick_build_revision);
+		lua_pushinteger(L, version::revision);
 		lua_setfield(L, -2, "revision");
+		lua_pushstring(L, version::hash);
+		lua_setfield(L, -2, "hash");
+		lua_pushstring(L, version::date);
+		lua_setfield(L, -2, "date");
 		lua_pushcclosure(L, getText, 0);
 		lua_setfield(L, -2, "_");
 		return 1;

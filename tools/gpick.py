@@ -1,8 +1,8 @@
 import os, time, re, string, glob, subprocess
 from .gettext import *
-from .resource_template import *
 from .ragel import *
 from .template import *
+from .version import *
 from SCons.Script import Chmod, Flatten
 from SCons.Util import NodeList
 from SCons.Script.SConscript import SConsEnvironment
@@ -65,7 +65,6 @@ class GpickEnvironment(SConsEnvironment):
 	extern_libs = {}
 	def AddCustomBuilders(self):
 		addGettextBuilder(self)
-		addResourceTemplateBuilder(self)
 		addTemplateBuilder(self)
 		addRagelBuilder(self)
 		
@@ -154,40 +153,25 @@ class GpickEnvironment(SConsEnvironment):
 
 	def GetVersionInfo(self):
 		try:
-			revision = subprocess.Popen(['git', 'show', '--no-patch', '--format="%H %ct"'], shell=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).communicate()[0]
-			match = re.search('([\d\w]+) (\d+)', str(revision))
-			rev_hash = match.group(1)
-			commit_date = time.gmtime(int(match.group(2)))
-			rev_date = time.strftime("%Y-%m-%d", commit_date)
-			rev_time = time.strftime("%H:%M:%S", commit_date)
+			(version, revision, hash, date) = getVersionInfo()
 		except:
 			try:
-				with open("../version.txt", "r") as version_file:
-					lines = version_file.read().splitlines()
-					rev_hash = lines[0]
-					rev_date = lines[1]
-					rev_time = lines[2]
+				with open("../.version", "r", encoding = 'utf-8') as version_file:
+					(version, revision, hash, date) = version_file.read().splitlines()
 			except:
-				rev_hash = 'unknown'
-				commit_date = time.gmtime(int(os.environ.get('SOURCE_DATE_EPOCH', time.time())))
-				rev_date = time.strftime("%Y-%m-%d", commit_date)
-				rev_time = time.strftime("%H:%M:%S", commit_date)
+				print("Version file \".version\" is required when GIT can not be used to get version information.")
+				self.Exit(1)
 		self.Replace(
-			GPICK_BUILD_REVISION = rev_hash[0:10],
-			GPICK_BUILD_DATE = rev_date,
-			GPICK_BUILD_TIME = rev_time,
+			GPICK_BUILD_VERSION = version,
+			GPICK_BUILD_REVISION = revision,
+			GPICK_BUILD_HASH = hash[0:10],
+			GPICK_BUILD_DATE = date,
+			GPICK_BUILD_VERSION_FULL = version + '-' + revision,
+			GPICK_BUILD_VERSION_FULL_COMMA = re.sub(r'(\d+)[^\.]*', '\\1', version).replace('.', ',') + ',' + revision,
 		);
 
 def RegexEscape(str):
 	return str.replace('\\', '\\\\')
-
-def WriteNsisVersion(target, source, env):
-	for t in target:
-		for s in source:
-			file = open(str(t),"w")
-			file.writelines('!define VERSION "' + str(env['GPICK_BUILD_VERSION']) + '"')
-			file.close()
-	return 0
 
 def Glob(path):
 	files = []

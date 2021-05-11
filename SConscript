@@ -3,7 +3,7 @@
 import os, string, sys, shutil, math
 from tools import *
 
-env = GpickEnvironment(ENV = os.environ, BUILDERS = {'WriteNsisVersion': Builder(action = WriteNsisVersion, suffix = ".nsi")})
+env = GpickEnvironment(ENV = os.environ)
 
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
@@ -21,10 +21,6 @@ vars.Update(env)
 
 if env['LOCALEDIR'] == '':
 	env['LOCALEDIR'] = env['DESTDIR'] + '/share/locale'
-
-v = Variables(os.path.join(env.GetLaunchDir(), 'version.py'))
-v.Add('GPICK_BUILD_VERSION', '', '0.0')
-v.Update(env)
 
 if not env['BUILD_TARGET']:
 	env['BUILD_TARGET'] = sys.platform
@@ -150,13 +146,8 @@ env.Append(CPPPATH = ['#source'])
 
 def buildVersion(env):
 	version_env = env.Clone()
-	version_env.Append(CPPDEFINES = {
-		'BUILD_DATE': env['GPICK_BUILD_DATE'],
-		'BUILD_REVISION': env['GPICK_BUILD_REVISION'],
-		'BUILD_PLATFORM': sys.platform,
-		'BUILD_VERSION': env['GPICK_BUILD_VERSION'],
-	})
-	return version_env.StaticObject(version_env.Glob('source/version/*.cpp'))
+	sources = version_env.Template(version_env.Glob('source/version/*.in'), TEMPLATE_ENV_FILTER = ['GPICK_*'])
+	return version_env.StaticObject(version_env.Glob('#source/version/*.cpp') + sources)
 
 def buildLayout(env):
 	layout_env = env.Clone()
@@ -213,13 +204,7 @@ def buildColorNames(env):
 
 def buildWindowsResources(env):
 	resources_env = env.Clone()
-	resources_env.Append(RESOURCE_TEMPLATE_VARS = {
-		'VERSION': env['GPICK_BUILD_VERSION'],
-		'VERSION_COMMA': env['GPICK_BUILD_VERSION'].replace('.', ','),
-		'REVISION': env['GPICK_BUILD_REVISION'],
-		'BUILD_DATE': env['GPICK_BUILD_DATE'],
-	})
-	resources = resources_env.AlwaysBuild(resources_env.ResourceTemplate(resources_env.Glob('source/winres/*.rct')))
+	resources = resources_env.Template(resources_env.Glob('source/winres/*.rc.in'), TEMPLATE_ENV_FILTER = ['GPICK_*'])
 	objects = resources_env.RES(resources)
 	Command("source/winres/gpick-icon.ico", File("source/winres/gpick-icon.ico").srcnode(), Copy("$TARGET", "${SOURCE}"))
 	if not (env['TOOLCHAIN'] == 'msvc'):
@@ -379,12 +364,8 @@ env.Alias(target = "install", source = [
 	env.InstallDataAutoDir(dir = env['DESTDIR'] + '/share/locale/', relative_dir = 'share/locale/', source = [env.Glob('share/locale/*/LC_MESSAGES/gpick.mo')]),
 ])
 
-env.Alias(target = "nsis", source = [
-	env.WriteNsisVersion("version.py")
-])
-
 env.Alias(target = "version", source = [
-	env.Template(target = "#version.txt", source = "version.template"),
+	env.AlwaysBuild(env.Template(target = "#.version", source = None, TEMPLATE_ENV_FILTER = ['GPICK_*'], TEMPLATE_SOURCE = '@GPICK_BUILD_VERSION@\n@GPICK_BUILD_REVISION@\n@GPICK_BUILD_HASH@\n@GPICK_BUILD_DATE@\n'))
 ])
 
 tarFiles = env.GetSourceFiles("(" + RegexEscape(os.sep) + r"\.)|(" + RegexEscape(os.sep) + r"\.svn$)|(^" + RegexEscape(os.sep) + r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
@@ -397,5 +378,5 @@ if 'TAR' in env:
 		env.Tar('gpick_' + str(env['GPICK_BUILD_VERSION']) + '.tar.gz', tarFiles)
 	])
 
-env.Default(executable, env.Install('source', executable))
+env.Default(executable, executable)
 

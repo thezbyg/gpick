@@ -68,7 +68,7 @@ Using CMake:
 
 Using SCons:
 
-`scons` to compile all files and place executable file in `build/source/`.
+`scons` to compile all files and place executable file in `build/`.
 
 `scons install` to install executable and resources to `DESTDIR`. By default `DESTDIR` is `/usr/local`.
 

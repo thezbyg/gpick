@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.10)
 find_program(MSGMERGE_EXECUTABLE NAMES msgmerge)
 find_program(MSGFMT_EXECUTABLE NAMES msgfmt)
 find_program(MSGCAT_EXECUTABLE NAMES msgcat)

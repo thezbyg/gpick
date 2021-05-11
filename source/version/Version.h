@@ -16,8 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-extern const char* gpick_build_version;
-extern const char* gpick_build_revision;
-extern const char* gpick_build_date;
-extern const char* gpick_build_time;
-extern const char* gpick_build_platform;
+namespace version {
+extern const char* version;
+extern const unsigned long revision;
+extern const char* hash;
+extern const char* date;
+}

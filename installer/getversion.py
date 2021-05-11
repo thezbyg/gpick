@@ -1,14 +1,12 @@
-import os,sys,re
+import os, re
 parentdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0,parentdir) 
-import version
 
 def getversion(style):
+	with open(os.path.join(parentdir, ".version"), "r") as file:
+		lines = file.read().splitlines()
+		version = lines[0]
+		revision = lines[1]
 	if style == "full":
-		print version.GPICK_BUILD_VERSION
+		print(version + '-' + revision)
 	else:
-		result = re.match(r"^(\d+\.\d+\.\d+)(.*)$", version.GPICK_BUILD_VERSION)
-		if result:
-			print result.group(1) 
-		else:
-			print "invalid_version"
+		print(re.sub(r'(\d+)[^\.]*', '\\1', version) + '.' + revision)

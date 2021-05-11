@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 project(gpick)
 option(ENABLE_NLS "compile with gettext support" true)
 option(USE_GTK3 "use GTK3 instead of GTK2" true)
@@ -14,6 +14,7 @@ file(GLOB SOURCES
 	source/lua/*.cpp source/lua/*.h
 	source/tools/*.cpp source/tools/*.h
 	source/transformation/*.cpp source/transformation/*.h
+	source/version/*.cpp source/version/*.h
 )
 list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/lua/Script.cpp source/lua/Script.h)
 include(Version)
@@ -30,7 +31,7 @@ if (PkgConfig_FOUND)
 	endif()
 	pkg_search_module(Lua lua5.4>=5.4 lua5>=5.4 lua5.3>=5.3 lua5>=5.3 lua>=5.3 lua5.2>=5.2 lua>=5.2)
 	pkg_check_modules(Expat expat>=1.0)
-endif (PkgConfig_FOUND)
+endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(Ragel 6.9 REQUIRED)
