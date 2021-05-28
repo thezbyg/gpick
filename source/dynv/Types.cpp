@@ -141,7 +141,8 @@ template<> bool write(std::ostream &stream, uint32_t value) {
 template<> bool write(std::ostream &stream, const std::string &value) {
 	if (!write(stream, static_cast<uint32_t>(value.length())))
 		return false;
-	stream.write(value.c_str(), value.length());
+	if (!value.empty())
+		stream.write(value.c_str(), value.length());
 	return stream.good();
 }
 template<> bool write(std::ostream &stream, const Color &value) {
@@ -156,6 +157,12 @@ template<> bool write(std::ostream &stream, const Color &value) {
 	if (!write(stream, static_cast<float>(value[3])))
 		return false;
 	return true;
+}
+template<> bool read(std::istream &stream) {
+	static_assert(sizeof(uint8_t) == 1, "sizeof(uint8_t) != 1");
+	uint8_t value;
+	stream.read(reinterpret_cast<char *>(&value), sizeof(uint8_t));
+	return value == 1u;
 }
 template<> uint8_t read(std::istream &stream) {
 	static_assert(sizeof(uint8_t) == 1, "sizeof(uint8_t) != 1");
@@ -177,7 +184,7 @@ template<> int32_t read(std::istream &stream) {
 }
 template<> std::string read(std::istream &stream) {
 	uint32_t length = read<uint32_t>(stream);
-	if (!stream.good())
+	if (!stream.good() || length == 0)
 		return std::string();
 	std::string result;
 	result.resize(length);

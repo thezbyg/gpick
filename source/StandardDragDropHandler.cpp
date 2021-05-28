@@ -249,7 +249,10 @@ static void onDragDataGet(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 		std::stringstream str;
 		values.serializeXml(str);
 		auto data = str.str();
-		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, (guchar *)&data.front(), data.length());
+		if (!data.empty())
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, (const guchar *)&data.front(), data.length());
+		else
+			gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color-object-list", false), 8, (const guchar *)"", 0);
 	} break;
 	case Target::string: {
 		std::stringstream ss;

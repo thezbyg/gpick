@@ -85,6 +85,8 @@ static bool read(std::istream &stream, std::string &value) {
 	if (!read(stream, length))
 		return false;
 	value.resize(length);
+	if (length == 0)
+		return true;
 	stream.read(reinterpret_cast<char *>(&value.front()), length);
 	return stream.good();
 }
@@ -146,7 +148,8 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 		} else if (header.is(CHUNK_TYPE_COLOR_POSITIONS)) {
 			hasPositions = true;
 			positions.resize(header.size() / sizeof(uint32_t));
-			file.read(reinterpret_cast<char *>(&positions.front()), positions.size() * sizeof(uint32_t));
+			if (!positions.empty())
+				file.read(reinterpret_cast<char *>(&positions.front()), positions.size() * sizeof(uint32_t));
 			if (!file.good())
 				return Result(ErrorCode::readFailed);
 			for (auto &position: positions) {
@@ -194,7 +197,8 @@ static bool write(std::ostream &stream, const ChunkHeader &header) {
 static bool write(std::ostream &stream, const std::string &value) {
 	if (!write(stream, static_cast<uint32_t>(value.length())))
 		return false;
-	stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
+	if (!value.empty())
+		stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
 	return stream.good();
 }
 common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* colorList) {
@@ -253,7 +257,8 @@ common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* c
 	header.prepareWrite(CHUNK_TYPE_COLOR_POSITIONS, positions.size() * sizeof(uint32_t));
 	if (!write(file, header)) // write positions chunk header
 		return Result(ErrorCode::writeFailed);
-	file.write(reinterpret_cast<const char *>(&positions.front()), positions.size() * sizeof(uint32_t));
+	if (!positions.empty())
+		file.write(reinterpret_cast<const char *>(&positions.front()), positions.size() * sizeof(uint32_t));
 	if (!file.good())
 		return Result(ErrorCode::writeFailed);
 	file.close();
