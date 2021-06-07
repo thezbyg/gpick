@@ -39,6 +39,10 @@ Variable::Variable(const std::string &name, const std::string &value):
 	m_name(name),
 	m_data(value) {
 }
+Variable::Variable(const std::string &name, std::string_view value):
+	m_name(name),
+	m_data(std::string(value)) {
+}
 Variable::Variable(const std::string &name, const char *value):
 	m_name(name),
 	m_data(std::string(value)) {
@@ -89,6 +93,9 @@ void Variable::assign(const Color &value) {
 }
 void Variable::assign(const std::string &value) {
 	m_data = value;
+}
+void Variable::assign(std::string_view value) {
+	m_data = std::string(value);
 }
 void Variable::assign(const char *value) {
 	m_data = std::string(value);

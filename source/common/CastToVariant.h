@@ -18,7 +18,7 @@
 
 #ifndef GPICK_COMMON_CAST_TO_VARIANT_H_
 #define GPICK_COMMON_CAST_TO_VARIANT_H_
-#include <boost/variant.hpp>
+#include <variant>
 namespace common {
 template<typename TResult, typename TValue>
 TResult castToVariantInternal(TValue value) {
@@ -32,9 +32,9 @@ TResult castToVariantInternal(TValue value) {
 	else
 		return castToVariantInternal<TResult, TValue, CastN...>(value);
 }
-template<typename TValue, typename Cast1, typename... CastN>
-boost::variant<TValue, Cast1, CastN...> castToVariant(TValue value) {
-	return castToVariantInternal<boost::variant<TValue, Cast1, CastN...>, TValue, Cast1, CastN...>(value);
+template<typename TResult, typename TValue, typename Cast1, typename... CastN>
+TResult castToVariant(TValue value) {
+	return castToVariantInternal<TResult, TValue, Cast1, CastN...>(value);
 }
 }
 #endif /* GPICK_COMMON_CAST_TO_VARIANT_H_ */

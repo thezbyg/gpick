@@ -59,7 +59,7 @@ struct GlobalState::Impl
 	lua::Callbacks m_callbacks;
 	transformation::Chain *m_transformation_chain;
 	GtkWidget *m_status_bar;
-	ColorSource *m_color_source;
+	IColorSource *m_color_source;
 	Impl(GlobalState *decl):
 		m_decl(decl),
 		m_color_names(nullptr),
@@ -312,11 +312,11 @@ void GlobalState::setStatusBar(GtkWidget *status_bar)
 {
 	m_impl->m_status_bar = status_bar;
 }
-ColorSource *GlobalState::getCurrentColorSource()
+IColorSource *GlobalState::getCurrentColorSource()
 {
 	return m_impl->m_color_source;
 }
-void GlobalState::setCurrentColorSource(ColorSource *color_source)
+void GlobalState::setCurrentColorSource(IColorSource *color_source)
 {
 	m_impl->m_color_source = color_source;
 }

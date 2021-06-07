@@ -375,7 +375,7 @@ StandardDragDropHandler::Options &StandardDragDropHandler::Options::converterTyp
 	return *this;
 }
 void StandardDragDropHandler::forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options) {
-	void *data = boost::apply_visitor([](auto *interface) -> void * {
+	void *data = std::visit([](auto *interface) -> void * {
 		return interface;
 	}, interface);
 	auto flags = options.m_afterEvents ? G_CONNECT_AFTER : static_cast<GConnectFlags>(0);

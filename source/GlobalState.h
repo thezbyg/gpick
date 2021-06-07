@@ -28,7 +28,7 @@ struct ScreenReader;
 struct ColorList;
 struct Random;
 struct Converters;
-struct ColorSource;
+struct IColorSource;
 typedef struct _GtkWidget GtkWidget;
 namespace layout {
 	struct Layouts;
@@ -60,8 +60,8 @@ struct GlobalState
 	transformation::Chain *getTransformationChain();
 	GtkWidget *getStatusBar();
 	void setStatusBar(GtkWidget *status_bar);
-	ColorSource *getCurrentColorSource();
-	void setCurrentColorSource(ColorSource *color_source);
+	IColorSource *getCurrentColorSource();
+	void setCurrentColorSource(IColorSource *color_source);
 	std::optional<uint32_t> latinKeysGroup;
 	private:
 	struct Impl;

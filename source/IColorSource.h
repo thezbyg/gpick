@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,5 +17,17 @@
  */
 
 #pragma once
-struct ColorSourceManager;
-void registerBlendColors(ColorSourceManager &csm);
+#include <string_view>
+#include <gtk/gtk.h>
+struct ColorObject;
+struct IColorSource {
+	virtual ~IColorSource() = default;
+	virtual std::string_view name() const = 0;
+	virtual void activate() = 0;
+	virtual void deactivate() = 0;
+	virtual void setColor(const ColorObject &colorObject) = 0;
+	virtual void setNthColor(size_t index, const ColorObject &colorObject) = 0;
+	virtual const ColorObject &getColor() = 0;
+	virtual const ColorObject &getNthColor(size_t index) = 0;
+	virtual GtkWidget *getWidget() = 0;
+};

@@ -23,7 +23,6 @@
 #include "GlobalState.h"
 #include "uiUtilities.h"
 #include "ColorObject.h"
-#include "common/CastToVariant.h"
 #include <gdk/gdkkeysyms.h>
 
 static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColorUI *readonlyColorUI) {
@@ -94,16 +93,14 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, IReadonlyColorUI *readonlyColorUI) {
 	if (event->button == 3) {
 		auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
-		auto interface = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(readonlyColorUI);
-		StandardMenu::forInterface(gs, event, interface);
+		StandardMenu::forInterface(gs, event, StandardMenu::toInterface(readonlyColorUI));
 		return true;
 	}
 	return false;
 }
 static void onPopupMenu(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
-	auto interface = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(readonlyColorUI);
-	StandardMenu::forInterface(gs, nullptr, interface);
+	StandardMenu::forInterface(gs, nullptr, StandardMenu::toInterface(readonlyColorUI));
 }
 StandardEventHandler::Options::Options():
 	m_afterEvents(true) {
@@ -113,7 +110,7 @@ StandardEventHandler::Options &StandardEventHandler::Options::afterEvents(bool e
 	return *this;
 }
 void StandardEventHandler::forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options) {
-	void *data = boost::apply_visitor([](auto *interface) -> void * {
+	void *data = std::visit([](auto *interface) -> void * {
 		return interface;
 	}, interface);
 	auto flags = options.m_afterEvents ? G_CONNECT_AFTER : static_cast<GConnectFlags>(0);

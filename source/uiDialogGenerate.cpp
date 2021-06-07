@@ -58,29 +58,24 @@ typedef struct ColorWheelType
 	void (*rgbhue_to_hue)(double rgbhue, double *hue);
 }ColorWheelType;
 
-struct GenerateColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		string m_scheme_name;
-		int32_t m_ident;
-	public:
-		GenerateColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color, const int32_t ident, const char *scheme_name)
-		{
-			m_ident = ident;
-			m_scheme_name = scheme_name;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << _("scheme") << " " << m_scheme_name << " #" << m_ident << "[" << color_names_get(m_gs->getColorNames(), color, false) << "]";
-			return m_stream.str();
-		}
+struct GenerateColorNameAssigner: public ToolColorNameAssigner {
+	GenerateColorNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject &colorObject, const int32_t ident, std::string_view schemeName) {
+		m_ident = ident;
+		m_schemeName = schemeName;
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
+		m_stream.str("");
+		m_stream << _("scheme") << " " << m_schemeName << " #" << m_ident << "[" << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << "]";
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	std::string_view m_schemeName;
+	int32_t m_ident;
 };
 static void rgb_hue2hue(double hue, Color* hsl)
 {
@@ -135,7 +130,7 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 		args->options->set("reverse", reverse);
 		args->options->set("additional_rotation", additional_rotation);
 	}
-	GenerateColorNameAssigner name_assigner(args->gs);
+	GenerateColorNameAssigner name_assigner(*args->gs);
 	Color r, hsl, hsl_results;
 	double hue;
 	double hue_step;
@@ -173,7 +168,7 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 			hsl.hsl.saturation = math::clamp(static_cast<float>(hsl.hsl.saturation * saturation), 0.0f, 1.0f);
 			r = hsl.hslToRgb();
 			ColorObject *color_object = color_list_new_color_object(color_list, &r);
-			name_assigner.assign(color_object, &r, i, scheme_type->name);
+			name_assigner.assign(*color_object, i, scheme_type->name);
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object->release();
 			hue_step = (scheme_type->turn[i % scheme_type->turn_types]) / (360.0f)

@@ -47,12 +47,12 @@ ToolColorNamingType tool_color_naming_name_to_type(const std::string &name)
 	}
 	return TOOL_COLOR_NAMING_UNKNOWN;
 }
-ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
+ToolColorNameAssigner::ToolColorNameAssigner(GlobalState &gs):
 	m_gs(gs)
 {
-	m_color_naming_type = tool_color_naming_name_to_type(m_gs->settings().getString("gpick.color_names.tool_color_naming", "automatic_name"));
+	m_color_naming_type = tool_color_naming_name_to_type(m_gs.settings().getString("gpick.color_names.tool_color_naming", "automatic_name"));
 	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
-		m_imprecision_postfix = m_gs->settings().getBool("gpick.color_names.imprecision_postfix", false);
+		m_imprecision_postfix = m_gs.settings().getBool("gpick.color_names.imprecision_postfix", false);
 	}else{
 		m_imprecision_postfix = false;
 	}
@@ -60,21 +60,20 @@ ToolColorNameAssigner::ToolColorNameAssigner(GlobalState *gs):
 ToolColorNameAssigner::~ToolColorNameAssigner()
 {
 }
-void ToolColorNameAssigner::assign(ColorObject *color_object, const Color *color)
-{
+void ToolColorNameAssigner::assign(ColorObject &colorObject) {
 	string name;
 	switch (m_color_naming_type){
 		case TOOL_COLOR_NAMING_UNKNOWN:
 		case TOOL_COLOR_NAMING_EMPTY:
-			color_object->setName("");
+			colorObject.setName("");
 			break;
 		case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
-			name = color_names_get(m_gs->getColorNames(), color, m_imprecision_postfix);
-			color_object->setName(name);
+			name = color_names_get(m_gs.getColorNames(), &colorObject.getColor(), m_imprecision_postfix);
+			colorObject.setName(name);
 			break;
 		case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
-			name = getToolSpecificName(color_object, color);
-			color_object->setName(name);
+			name = getToolSpecificName(colorObject);
+			colorObject.setName(name);
 			break;
 	}
 }

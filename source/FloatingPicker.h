@@ -16,22 +16,17 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_FLOATING_PICKER_H_
-#define GPICK_FLOATING_PICKER_H_
-
-struct Color;
+#pragma once
 #include <functional>
-
+struct Color;
 struct GlobalState;
-struct ColorSource;
+struct IColorPicker;
 typedef struct FloatingPickerArgs* FloatingPicker;
 FloatingPicker floating_picker_new(GlobalState *gs);
-void floating_picker_set_picker_source(FloatingPicker fp, ColorSource* color_source);
+void floating_picker_set_picker_source(FloatingPicker fp, IColorPicker *colorPicker);
 void floating_picker_free(FloatingPicker fp);
 void floating_picker_activate(FloatingPicker fp, bool hide_on_mouse_release, bool single_pick_mode, const char *converter_name);
 void floating_picker_deactivate(FloatingPicker fp);
 void floating_picker_set_custom_pick_action(FloatingPicker fp, std::function<void(FloatingPicker, const Color&)> action);
 void floating_picker_set_custom_done_action(FloatingPicker fp, std::function<void(FloatingPicker)> action);
 void floating_picker_enable_custom_pick_action(FloatingPicker fp);
-
-#endif /* GPICK_FLOATING_PICKER_H_ */

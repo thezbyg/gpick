@@ -39,29 +39,24 @@ typedef struct DialogVariationsArgs
 	GlobalState* gs;
 }DialogVariationsArgs;
 
-struct VariationsColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		const char *m_name;
-		uint32_t m_step_i;
-	public:
-		VariationsColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *name, uint32_t step_i)
-		{
-			m_name = name;
-			m_step_i = step_i;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << m_name << " " << _("variation") << " " << m_step_i;
-			return m_stream.str();
-		}
+struct VariationsColorNameAssigner: public ToolColorNameAssigner {
+	VariationsColorNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject &colorObject, std::string_view name, uint32_t step_i) {
+		m_name = name;
+		m_step_i = step_i;
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) {
+		m_stream.str("");
+		m_stream << m_name << " " << _("variation") << " " << m_step_i;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	std::string_view m_name;
+	uint32_t m_step_i;
 };
 static void calc(DialogVariationsArgs *args, bool preview, int limit)
 {
@@ -88,7 +83,7 @@ static void calc(DialogVariationsArgs *args, bool preview, int limit)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->gs->getColorList();
-	VariationsColorNameAssigner name_assigner(args->gs);
+	VariationsColorNameAssigner name_assigner(*args->gs);
 	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		Color in = (*i)->getColor();
 		const char* name = (*i)->getName().c_str();
@@ -123,7 +118,7 @@ static void calc(DialogVariationsArgs *args, bool preview, int limit)
 			if (linearization)
 				r.nonLinearRgbInplace();
 			ColorObject *color_object = color_list_new_color_object(color_list, &r);
-			name_assigner.assign(color_object, &r, name, step_i);
+			name_assigner.assign(*color_object, name, step_i);
 			color_list_add_color_object(color_list, color_object, 1);
 			color_object->release();
 		}

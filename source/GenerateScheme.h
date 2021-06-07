@@ -16,9 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_GENERATE_SCHEME_H_
-#define GPICK_GENERATE_SCHEME_H_
-
+#pragma once
 #include <cstddef>
 struct ColorSourceManager;
 struct SchemeType {
@@ -27,8 +25,6 @@ struct SchemeType {
 	int turn_types;
 	float turn[4];
 };
-int generate_scheme_source_register(ColorSourceManager *csm);
+void registerGenerateScheme(ColorSourceManager &csm);
 const SchemeType* generate_scheme_get_scheme_type(size_t index);
 size_t generate_scheme_get_n_scheme_types();
-
-#endif /* GPICK_GENERATE_SCHEME_H_ */

@@ -22,18 +22,20 @@
 #include "Color.h"
 #include "common/Ref.h"
 #include <string>
+#include <string_view>
 #include <vector>
 #include <cstdint>
-#include <boost/variant.hpp>
+#include <variant>
 namespace dynv {
 struct Map;
 struct Variable {
-	using Data = boost::variant<bool, float, int32_t, Color, std::string, Ref, std::vector<bool>, std::vector<float>, std::vector<int32_t>, std::vector<Color>, std::vector<std::string>, std::vector<Ref>>;
+	using Data = std::variant<bool, float, int32_t, Color, std::string, Ref, std::vector<bool>, std::vector<float>, std::vector<int32_t>, std::vector<Color>, std::vector<std::string>, std::vector<Ref>>;
 	Variable(const std::string &name, bool value);
 	Variable(const std::string &name, float value);
 	Variable(const std::string &name, int32_t value);
 	Variable(const std::string &name, const Color &value);
 	Variable(const std::string &name, const std::string &value);
+	Variable(const std::string &name, std::string_view value);
 	Variable(const std::string &name, const char *value);
 	Variable(const std::string &name, const Ref &value);
 	Variable(const std::string &name, const std::vector<bool> &value);
@@ -41,6 +43,7 @@ struct Variable {
 	Variable(const std::string &name, const std::vector<int32_t> &value);
 	Variable(const std::string &name, const std::vector<Color> &value);
 	Variable(const std::string &name, const std::vector<std::string> &value);
+	Variable(const std::string &name, const std::vector<std::string_view> &value);
 	Variable(const std::string &name, const std::vector<const char *> &value);
 	Variable(const std::string &name, const std::vector<Ref> &value);
 	void assign(bool value);
@@ -48,6 +51,7 @@ struct Variable {
 	void assign(int32_t value);
 	void assign(const Color &value);
 	void assign(const std::string &value);
+	void assign(std::string_view value);
 	void assign(const char *value);
 	void assign(const Ref &value);
 	template<typename T>

@@ -39,13 +39,12 @@
 #include <sstream>
 using namespace std;
 
-typedef struct FloatingPickerArgs
-{
+struct FloatingPickerArgs {
 	GtkWidget* window;
 	GtkWidget* zoomed;
 	GtkWidget* color_widget;
 	guint timeout_source_id;
-	ColorSource *color_source;
+	IColorPicker *colorPicker;
 	Converter *converter;
 	GlobalState* gs;
 	bool release_mode;
@@ -55,27 +54,22 @@ typedef struct FloatingPickerArgs
 	bool menu_button_pressed;
 	function<void(FloatingPicker, const Color&)> custom_pick_action;
 	function<void(FloatingPicker)> custom_done_action;
-}FloatingPickerArgs;
+};
 
-struct PickerColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-	public:
-		PickerColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color)
-		{
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << color_names_get(m_gs->getColorNames(), color, false);
-			return m_stream.str();
-		}
+struct PickerColorNameAssigner: public ToolColorNameAssigner {
+	PickerColorNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject &colorObject) {
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
+		m_stream.str("");
+		m_stream << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false);
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
 };
 static void get_color_sample(FloatingPickerArgs *args, bool update_widgets, Color* c)
 {
@@ -220,15 +214,15 @@ static void complete_picking(FloatingPickerArgs *args)
 					clipboard::set(color_object, args->gs, args->converter);
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_on_release", true)){
-					PickerColorNameAssigner name_assigner(args->gs);
-					name_assigner.assign(color_object, &c);
+					PickerColorNameAssigner name_assigner(*args->gs);
+					name_assigner.assign(*color_object);
 					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_to_swatch_on_release", true)){
-					color_picker_set_current_color(args->color_source);
+					args->colorPicker->setCurrentColor();
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.rotate_swatch_on_release", true)){
-					color_picker_rotate_swatch(args->color_source);
+					args->colorPicker->rotateSwatch();
 				}
 			}
 			color_object->release();
@@ -308,18 +302,18 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 			add_y++;
 		break;
 	}
-	if (args->color_source) {
+	if (args->colorPicker) {
 		common::SetOnScopeEnd<bool> disableReleaseMode(args->release_mode, false);
 		switch (key) {
 		case GDK_KEY_space:
-			color_picker_pick(args->color_source);
+			args->colorPicker->pick();
 			return true;
 		case GDK_KEY_a:
-			color_picker_add_to_palette(args->color_source);
+			args->colorPicker->addToPalette();
 			return true;
 		case GDK_KEY_c:
 			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
-				color_picker_copy(args->color_source);
+				args->colorPicker->copy();
 				return true;
 			} break;
 		case GDK_KEY_1:
@@ -328,7 +322,15 @@ static gboolean key_up_cb(GtkWidget *widget, GdkEventKey *event, FloatingPickerA
 		case GDK_KEY_4:
 		case GDK_KEY_5:
 		case GDK_KEY_6:
-			color_picker_set(args->color_source, key - GDK_KEY_1);
+			args->colorPicker->set(key - GDK_KEY_1);
+			return true;
+		case GDK_KEY_KP_1:
+		case GDK_KEY_KP_2:
+		case GDK_KEY_KP_3:
+		case GDK_KEY_KP_4:
+		case GDK_KEY_KP_5:
+		case GDK_KEY_KP_6:
+			args->colorPicker->set(key - GDK_KEY_KP_1);
 			return true;
 		default:
 			disableReleaseMode.cancel(); // pick/copy/add/set key was not pressed, keep release mode value
@@ -357,7 +359,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	args->timeout_source_id = 0;
 	args->gs = gs;
 	args->window = gtk_window_new(GTK_WINDOW_POPUP);
-	args->color_source = nullptr;
+	args->colorPicker = nullptr;
 	args->perform_custom_pick_action = false;
 	args->menu_button_pressed = false;
 	gtk_window_set_skip_pager_hint(GTK_WINDOW(args->window), true);
@@ -381,9 +383,9 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	g_signal_connect(G_OBJECT(args->window), "destroy", G_CALLBACK(destroy_cb), args);
 	return args;
 }
-void floating_picker_set_picker_source(FloatingPickerArgs *args, ColorSource* color_source)
+void floating_picker_set_picker_source(FloatingPickerArgs *args, IColorPicker *colorPicker)
 {
-	args->color_source = color_source;
+	args->colorPicker = colorPicker;
 }
 void floating_picker_free(FloatingPickerArgs *args)
 {

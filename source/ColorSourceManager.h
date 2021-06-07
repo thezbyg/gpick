@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,21 +16,57 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_SOURCE_MANAGER_H_
-#define GPICK_COLOR_SOURCE_MANAGER_H_
-
-#include <vector>
-#include <map>
+#pragma once
+#include "dynv/MapFwd.h"
+#include "common/Bitmask.h"
+#include <unordered_set>
 #include <string>
-struct ColorSource;
-struct ColorSourceManager{
-	std::map<std::string, ColorSource*> colorsource;
+#include <string_view>
+#include <memory>
+#include <boost/unordered_set.hpp>
+struct GlobalState;
+struct IColorSource;
+enum struct RegistrationFlags: uint32_t {
+	none = 0,
+	singleInstanceOnly = 1,
+	needsViewport = 2,
 };
-ColorSourceManager* color_source_manager_create();
-int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source);
-ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name);
-ColorSource* color_source_manager_get(ColorSourceManager *csm, const std::string &name);
-std::vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm);
-int color_source_manager_destroy(ColorSourceManager *csm);
-
-#endif /* GPICK_COLOR_SOURCE_MANAGER_H_ */
+ENABLE_BITMASK_OPERATORS(RegistrationFlags);
+const RegistrationFlags test = ~RegistrationFlags::singleInstanceOnly;
+struct ColorSourceManager {
+	using Build = std::unique_ptr<IColorSource> (*)(GlobalState &gs, const dynv::Ref &options);
+	struct Registration {
+		Registration(std::string_view name, std::string_view label, RegistrationFlags flags, int defaultAccelerator, Build build);
+		const std::string name, label;
+		const bool singleInstanceOnly, needsViewport;
+		const int defaultAccelerator;
+		operator bool() const;
+		const Build build;
+		template<typename T>
+		std::unique_ptr<T> make(GlobalState &gs, const dynv::Ref &options) const {
+			return std::unique_ptr<T>(static_cast<T *>(build(gs, options).release()));
+		}
+	private:
+		friend struct ColorSourceManager;
+	};
+	void add(Registration &&registration);
+	void add(std::string_view name, std::string_view label, RegistrationFlags flags, int defaultAccelerator, Build build);
+	bool has(std::string_view name) const;
+	const Registration &operator[](std::string_view name) const;
+	template<typename VisitorT>
+	void visit(VisitorT visitor) {
+		for (const auto &registration: m_registrations) {
+			visitor(registration);
+		}
+	}
+private:
+	struct Hash {
+		bool operator()(const Registration &lhs, const Registration &rhs) const {
+			return lhs.name == rhs.name;
+		}
+		std::size_t operator()(const Registration &registration) const {
+			return std::hash<std::string>()(registration.name);
+		}
+	};
+	boost::unordered_set<Registration, Hash, Hash> m_registrations;
+};

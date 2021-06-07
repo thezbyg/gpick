@@ -21,7 +21,7 @@
 #include "gtk/ColorCell.h"
 #include "ColorObject.h"
 #include "ColorList.h"
-#include "ColorSource.h"
+#include "IColorSource.h"
 #include "GlobalState.h"
 #include "Converters.h"
 #include "Converter.h"
@@ -44,7 +44,6 @@ static void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args);
 const int ScrollEdgeSize = 15; //SCROLL_EDGE_SIZE from gtktreeview.c
 struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, public IDraggableColorUI {
-	ColorSource source;
 	GtkWidget *treeview;
 	gint scrollTimeout;
 	math::Vector2i last_click_position;
@@ -386,11 +385,11 @@ static void palette_list_row_activated(GtkTreeView *treeView, GtkTreePath *path,
 	GtkTreeModel* model = gtk_tree_view_get_model(treeView);;
 	GtkTreeIter iter;
 	gtk_tree_model_get_iter(model, &iter, path);
-	ColorObject *color_object;
-	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
-	ColorSource *color_source = args->gs->getCurrentColorSource();
-	if (color_source != nullptr)
-		color_source_set_color(color_source, color_object);
+	ColorObject *colorObject;
+	gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+	auto *colorSource = args->gs->getCurrentColorSource();
+	if (colorSource != nullptr)
+		colorSource->setColor(*colorObject);
 	args->updateCounts();
 }
 

@@ -23,7 +23,7 @@
 namespace dynv {
 namespace binary {
 using ValueType = types::ValueType;
-struct CountVisitor: public boost::static_visitor<int> {
+struct CountVisitor {
 	CountVisitor(const std::unordered_map<types::ValueType, uint8_t> &typeMap):
 		typeMap(typeMap) {
 	}
@@ -42,7 +42,7 @@ struct CountVisitor: public boost::static_visitor<int> {
 	}
 	const std::unordered_map<types::ValueType, uint8_t> &typeMap;
 };
-struct SerializeVisitor: public boost::static_visitor<bool> {
+struct SerializeVisitor {
 	SerializeVisitor(std::ostream &stream, const std::string &name, const std::unordered_map<types::ValueType, uint8_t> &typeMap):
 		stream(stream),
 		name(name),
@@ -77,7 +77,7 @@ bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<ty
 	using namespace types::binary;
 	uint32_t count = 0;
 	auto countVisitor = [&typeMap, &count](const Variable &value) -> bool {
-		count += boost::apply_visitor(CountVisitor(typeMap), value.data());
+		count += std::visit(CountVisitor(typeMap), value.data());
 		return true;
 	};
 	if (!map.visit(countVisitor))
@@ -85,7 +85,7 @@ bool serialize(std::ostream &stream, const Map &map, const std::unordered_map<ty
 	if (!write(stream, count))
 		return false;
 	auto visitor = [&stream, &typeMap](const Variable &value) -> bool {
-		if (!boost::apply_visitor(SerializeVisitor(stream, value.name(), typeMap), value.data()))
+		if (!std::visit(SerializeVisitor(stream, value.name(), typeMap), value.data()))
 			return false;
 		return true;
 	};

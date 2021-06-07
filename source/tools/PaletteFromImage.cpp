@@ -78,28 +78,24 @@ struct PaletteFromImageArgs{
 };
 
 struct PaletteColorNameAssigner: public ToolColorNameAssigner {
-	protected:
-		stringstream m_stream;
-		const char *m_filename;
-		int m_index;
-	public:
-		PaletteColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-			m_index = 0;
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *filename, const int index)
-		{
-			m_filename = filename;
-			m_index = index;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << m_filename << " #" << m_index;
-			return m_stream.str();
-		}
+	PaletteColorNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+		m_index = 0;
+	}
+	void assign(ColorObject &colorObject, std::string_view fileName, const int index) {
+		m_fileName = fileName;
+		m_index = index;
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
+		m_stream.str("");
+		m_stream << m_fileName << " #" << m_index;
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	std::string_view m_fileName;
+	int m_index;
 };
 
 /**
@@ -418,7 +414,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	Node *root_node = 0;
 	int index = 0;
 	gchar *name = g_path_get_basename(args->filename.c_str());
-	PaletteColorNameAssigner name_assigner(args->gs);
+	PaletteColorNameAssigner name_assigner(*args->gs);
 	if (!args->filename.empty())
 		root_node = process_image(args, args->filename.c_str(), root_node);
 
@@ -439,7 +435,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
 		ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
-		name_assigner.assign(color_object, &(*i), name, index);
+		name_assigner.assign(*color_object, name, index);
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object->release();
 		index++;

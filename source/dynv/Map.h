@@ -29,6 +29,7 @@
 #include <iosfwd>
 #include <functional>
 #include <unordered_map>
+#include <string_view>
 #include <cstdint>
 namespace dynv {
 struct Variable;
@@ -65,6 +66,7 @@ struct Map: public common::Ref<Map>::Counter {
 	Map &set(const std::string &name, int32_t value);
 	Map &set(const std::string &name, const Color &value);
 	Map &set(const std::string &name, const std::string &value);
+	Map &set(const std::string &name, std::string_view value);
 	Map &set(const std::string &name, const char *value);
 	Map &set(const std::string &name, const std::vector<bool> &value);
 	Map &set(const std::string &name, const std::vector<float> &value);

@@ -16,10 +16,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_MIXER_H_
-#define GPICK_COLOR_MIXER_H_
-
+#pragma once
 struct ColorSourceManager;
-int color_mixer_source_register(ColorSourceManager *csm);
-
-#endif /* GPICK_COLOR_MIXER_H_ */
+void registerColorMixer(ColorSourceManager &csm);

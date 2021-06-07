@@ -21,11 +21,11 @@
 #include "IEditableColorUI.h"
 #include "IReadonlyColorUI.h"
 #include <gtk/gtk.h>
-#include <boost/variant.hpp>
+#include <variant>
 struct ColorObject;
 struct GlobalState;
 struct StandardEventHandler {
-	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
+	using Interface = std::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
 	struct Options {
 		Options();
 		Options &afterEvents(bool enable);

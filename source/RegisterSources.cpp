@@ -17,6 +17,7 @@
  */
 
 #include "RegisterSources.h"
+#include "ColorSourceManager.h"
 #include "GenerateScheme.h"
 #include "ColorPicker.h"
 #include "LayoutPreview.h"
@@ -25,16 +26,13 @@
 #include "ColorMixer.h"
 #include "BlendColors.h"
 #include "ClosestColors.h"
-
-int register_sources(ColorSourceManager *csm)
-{
-	generate_scheme_source_register(csm);
-	color_picker_source_register(csm);
-	layout_preview_source_register(csm);
-	variations_source_register(csm);
-	brightness_darkness_source_register(csm);
-	color_mixer_source_register(csm);
-	blend_colors_source_register(csm);
-	closest_colors_source_register(csm);
-	return 0;
+void registerSources(ColorSourceManager &csm) {
+	registerGenerateScheme(csm);
+	registerColorPicker(csm);
+	registerLayoutPreview(csm);
+	registerVariations(csm);
+	registerBrightnessDarkness(csm);
+	registerColorMixer(csm);
+	registerBlendColors(csm);
+	registerClosestColors(csm);
 }

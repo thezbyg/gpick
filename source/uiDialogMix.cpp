@@ -41,69 +41,56 @@ typedef struct DialogMixArgs{
 	GlobalState* gs;
 }DialogMixArgs;
 
-struct MixColorNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-		const char *m_color_start;
-		const char *m_color_end;
-		int m_start_percent;
-		int m_end_percent;
-		int m_steps;
-		int m_stage;
-		int m_is_node;
-	public:
-		MixColorNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-			m_is_node = false;
-		}
-		void setStartName(const char *start_color_name)
-		{
-			m_color_start = start_color_name;
-		}
-		void setEndName(const char *end_color_name)
-		{
-			m_color_end = end_color_name;
-		}
-		void setStepsAndStage(int steps, int stage)
-		{
-			m_steps = steps;
-			m_stage = stage;
-		}
-		void assign(ColorObject *color_object, const Color *color, int step)
-		{
-			m_start_percent = step * 100 / (m_steps - 1);
-			m_end_percent = 100 - (step * 100 / (m_steps - 1));
-			m_is_node = (((step == 0 || step == m_steps - 1) && m_stage == 0) || (m_stage == 1 && step == m_steps - 1));
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		void assign(ColorObject *color_object, const Color *color, const char *item_name)
-		{
-			m_color_start = item_name;
-			m_is_node = false;
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			if (m_is_node){
-				if (m_end_percent == 100){
-					m_stream << m_color_end << " " << _("mix node");
-				}else{
-					m_stream << m_color_start << " " << _("mix node");
-				}
+struct MixColorNameAssigner: public ToolColorNameAssigner {
+	MixColorNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+		m_isNode = false;
+	}
+	void setStartName(std::string_view name) {
+		m_startName = name;
+	}
+	void setEndName(std::string_view name) {
+		m_endName = name;
+	}
+	void setStepsAndStage(int steps, int stage) {
+		m_steps = steps;
+		m_stage = stage;
+	}
+	void assign(ColorObject &colorObject, int step) {
+		m_startPercent = step * 100 / (m_steps - 1);
+		m_endPercent = 100 - (step * 100 / (m_steps - 1));
+		m_isNode = (((step == 0 || step == m_steps - 1) && m_stage == 0) || (m_stage == 1 && step == m_steps - 1));
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	void assign(ColorObject &colorObject, std::string_view name) {
+		m_startName = name;
+		m_isNode = false;
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
+		m_stream.str("");
+		if (m_isNode){
+			if (m_endPercent == 100){
+				m_stream << m_endName << " " << _("mix node");
 			}else{
-				m_stream << m_color_start << " " << m_start_percent << " " << _("mix") << " " << m_end_percent << " " << m_color_end;
+				m_stream << m_startName << " " << _("mix node");
 			}
-			return m_stream.str();
+		}else{
+			m_stream << m_startName << " " << m_startPercent << " " << _("mix") << " " << m_endPercent << " " << m_endName;
 		}
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
+	std::string_view m_startName, m_endName;
+	int m_startPercent, m_endPercent, m_steps, m_stage;
+	bool m_isNode;
 };
 
 
 #define STORE_COLOR() ColorObject *color_object=color_list_new_color_object(color_list, &r); \
 	float mixfactor = step_i/(float)(steps-1); \
-	name_assigner.assign(color_object, &r, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
+	name_assigner.assign(*color_object, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
 	color_list_add_color_object(color_list, color_object, 1); \
 	color_object->release()
 
@@ -113,7 +100,7 @@ struct MixColorNameAssigner: public ToolColorNameAssigner
 static void store(ColorList *color_list, const Color *color, int step, MixColorNameAssigner &name_assigner)
 {
 	ColorObject *color_object = color_list_new_color_object(color_list, color);
-	name_assigner.assign(color_object, color, step);
+	name_assigner.assign(*color_object, step);
 	color_list_add_color_object(color_list, color_object, 1);
 	color_object->release();
 }
@@ -124,7 +111,7 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 	bool with_endpoints=gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_endpoints));
 	gint start_step = 0;
 	gint max_step = steps;
-	MixColorNameAssigner name_assigner(args->gs);
+	MixColorNameAssigner name_assigner(*args->gs);
 
 	if (!preview){
 		args->options->set("type", type);

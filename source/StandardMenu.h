@@ -21,7 +21,7 @@
 #include "IEditableColorUI.h"
 #include "IReadonlyColorUI.h"
 #include <gtk/gtk.h>
-#include <boost/variant.hpp>
+#include <variant>
 struct ColorObject;
 struct GlobalState;
 struct Color;
@@ -46,8 +46,9 @@ struct StandardMenu {
 		GtkAccelGroup *acceleratorGroup;
 		void *data;
 	};
-	using Interface = boost::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
+	using Interface = std::variant<IEditableColorUI *, IEditableColorsUI *, IReadonlyColorUI *, IReadonlyColorsUI *>;
 	static void contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface);
 	static void forInterface(GlobalState *gs, GdkEventButton *event, Interface interface);
+	static Interface toInterface(IReadonlyColorUI *readonlyColorUI);
 };
 #endif /* GPICK_STANDARD_MENU_H_ */

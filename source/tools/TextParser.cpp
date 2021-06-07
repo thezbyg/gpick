@@ -33,7 +33,7 @@ struct TextParserDialog: public ToolColorNameAssigner {
 	TextParserDialog(GtkWindow *parent, GlobalState *gs);
 	~TextParserDialog();
 	bool show();
-	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) override;
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override;
 	struct TextParser: public text_file_parser::TextFile {
 		TextParser(const std::string &text):
 			m_text(text),
@@ -100,7 +100,7 @@ private:
 	static void onChange(GtkWidget *widget, TextParserDialog *dialog);
 };
 TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
-	ToolColorNameAssigner(gs),
+	ToolColorNameAssigner(*gs),
 	m_parent(parent),
 	m_gs(gs) {
 	m_options = m_gs->settings().getOrCreateMap("gpick.tools.text_parser");
@@ -180,7 +180,7 @@ bool TextParserDialog::parse(ColorList *color_list) {
 	m_index = 0;
 	for (auto color: textParser.colors()) {
 		auto colorObject = new ColorObject("", color);
-		ToolColorNameAssigner::assign(colorObject, &color);
+		ToolColorNameAssigner::assign(*colorObject);
 		color_list_add_color_object(color_list, colorObject, true);
 		colorObject->release();
 		m_index++;
@@ -197,7 +197,7 @@ void TextParserDialog::preview() {
 void TextParserDialog::apply() {
 	parse(m_gs->getColorList());
 }
-std::string TextParserDialog::getToolSpecificName(ColorObject *colorObject, const Color *color) {
+std::string TextParserDialog::getToolSpecificName(const ColorObject &colorObject) {
 	return _("Parsed text color") + " #"s + std::to_string(m_index);
 }
 void TextParserDialog::onResponse(GtkWidget *widget, gint response_id, TextParserDialog *dialog) {

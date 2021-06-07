@@ -18,7 +18,7 @@
 
 #include "BlendColors.h"
 #include "ColorObject.h"
-#include "ColorSource.h"
+#include "IColorSource.h"
 #include "ColorSourceManager.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
@@ -36,7 +36,7 @@
 #include <sstream>
 
 struct BlendColorNameAssigner: ToolColorNameAssigner {
-	BlendColorNameAssigner(GlobalState *gs):
+	BlendColorNameAssigner(GlobalState &gs):
 		ToolColorNameAssigner(gs) {
 		m_isColorItem = false;
 	}
@@ -48,17 +48,17 @@ struct BlendColorNameAssigner: ToolColorNameAssigner {
 		m_steps = steps;
 		m_stage = stage;
 	}
-	void assign(ColorObject *colorObject, const Color *color, int step) {
+	void assign(ColorObject &colorObject, int step) {
 		m_startPercent = step * 100 / (m_steps - 1);
 		m_endPercent = 100 - (step * 100 / (m_steps - 1));
 		m_isColorItem = (((step == 0 || step == m_steps - 1) && m_stage == 0) || (m_stage == 1 && step == m_steps - 1));
-		ToolColorNameAssigner::assign(colorObject, color);
+		ToolColorNameAssigner::assign(colorObject);
 	}
-	void assign(ColorObject *colorObject, const Color *color) {
+	void assign(ColorObject &colorObject) {
 		m_isColorItem = true;
-		ToolColorNameAssigner::assign(colorObject, color);
+		ToolColorNameAssigner::assign(colorObject);
 	}
-	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
 		if (m_isColorItem) {
 			if (m_endPercent == 100) {
@@ -77,35 +77,73 @@ private:
 	int m_startPercent, m_endPercent, m_steps, m_stage;
 	bool m_isColorItem;
 };
-struct BlendColorsArgs {
-	ColorSource source;
+struct BlendColorsArgs: public IColorSource {
 	GtkWidget *main, *mixType, *stepsSpinButton1, *stepsSpinButton2, *startColor, *middleColor, *endColor, *lastFocusedColor;
 	ColorList *previewColorList;
 	dynv::Ref options;
-	GlobalState *gs;
+	GlobalState &gs;
+	BlendColorsArgs(GlobalState &gs, const dynv::Ref &options):
+		options(options),
+		gs(gs) {
+		editables.emplace_back(*this, 0);
+		editables.emplace_back(*this, 1);
+		editables.emplace_back(*this, 2);
+	}
+	virtual ~BlendColorsArgs() {
+		int steps1 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(stepsSpinButton1));
+		int steps2 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(stepsSpinButton2));
+		int type = gtk_combo_box_get_active(GTK_COMBO_BOX(mixType));
+		options->set("type", type);
+		options->set("steps1", steps1);
+		options->set("steps2", steps2);
+		Color color;
+		gtk_color_get_color(GTK_COLOR(startColor), &color);
+		options->set("start_color", color);
+		gtk_color_get_color(GTK_COLOR(middleColor), &color);
+		options->set("middle_color", color);
+		gtk_color_get_color(GTK_COLOR(endColor), &color);
+		options->set("end_color", color);
+		color_list_destroy(previewColorList);
+		gtk_widget_destroy(main);
+	}
+	virtual std::string_view name() const {
+		return "blend_colors";
+	}
+	virtual void activate() override {
+	}
+	virtual void deactivate() override {
+	}
+	virtual GtkWidget *getWidget() override {
+		return main;
+	}
 	ColorObject colorObject;
 	void add(const Color &color, int step, BlendColorNameAssigner &nameAssigner) {
 		colorObject.setColor(color);
-		nameAssigner.assign(&colorObject, &color, step);
+		nameAssigner.assign(colorObject, step);
 		color_list_add_color_object(previewColorList, colorObject, true);
 	}
 	void addToPalette() {
 		colorObject = getColor();
-		color_list_add_color_object(gs->getColorList(), colorObject, true);
+		color_list_add_color_object(gs.getColorList(), colorObject, true);
 	}
-	const ColorObject &getColor() {
+	virtual const ColorObject &getColor() override {
 		Color color;
 		gtk_color_get_color(GTK_COLOR(lastFocusedColor), &color);
 		colorObject.setColor(color);
 		BlendColorNameAssigner nameAssigner(gs);
-		auto name = color_names_get(gs->getColorNames(), &color, false);
+		auto name = color_names_get(gs.getColorNames(), &color, false);
 		nameAssigner.setNames(name, name);
-		nameAssigner.assign(&colorObject, &color);
+		nameAssigner.assign(colorObject);
 		return colorObject;
 	}
-	void setColor(const ColorObject &colorObject) {
+	virtual const ColorObject &getNthColor(size_t index) override {
+		return colorObject;
+	}
+	virtual void setColor(const ColorObject &colorObject) override {
 		gtk_color_set_color(GTK_COLOR(lastFocusedColor), colorObject.getColor());
 		update();
+	}
+	virtual void setNthColor(size_t index, const ColorObject &colorObject) override {
 	}
 	void setActiveWidget(int index) {
 		switch (index) {
@@ -145,8 +183,8 @@ struct BlendColorsArgs {
 				gtk_color_get_color(GTK_COLOR(middleColor), &a);
 				gtk_color_get_color(GTK_COLOR(endColor), &b);
 			}
-			auto startName = color_names_get(gs->getColorNames(), &a, false);
-			auto endName = color_names_get(gs->getColorNames(), &b, false);
+			auto startName = color_names_get(gs.getColorNames(), &a, false);
+			auto endName = color_names_get(gs.getColorNames(), &b, false);
 			nameAssigner.setNames(startName, endName);
 			nameAssigner.setStepsAndStage(steps, stage);
 			int i = stage;
@@ -200,22 +238,22 @@ struct BlendColorsArgs {
 		}
 	}
 	struct Editable: IEditableColorUI, IMenuExtension {
-		Editable(BlendColorsArgs *args, int index):
+		Editable(BlendColorsArgs &args, int index):
 			args(args),
 			index(index) {
 		}
 		virtual ~Editable() = default;
 		virtual void addToPalette(const ColorObject &) override {
-			args->setActiveWidget(index);
-			args->addToPalette();
+			args.setActiveWidget(index);
+			args.addToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setActiveWidget(index);
-			args->setColor(colorObject.getColor());
+			args.setActiveWidget(index);
+			args.setColor(colorObject.getColor());
 		}
 		virtual const ColorObject &getColor() override {
-			args->setActiveWidget(index);
-			return args->getColor();
+			args.setActiveWidget(index);
+			return args.getColor();
 		}
 		virtual bool isEditable() override {
 			return true;
@@ -229,78 +267,36 @@ struct BlendColorsArgs {
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 			auto item = gtk_menu_item_new_with_mnemonic(_("_Reset"));
 			gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onResetMiddleColor), args);
+			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onResetMiddleColor), &args);
 		}
 	private:
-		BlendColorsArgs *args;
+		BlendColorsArgs &args;
 		int index;
 	};
 	std::vector<Editable> editables;
 };
-static int getColor(BlendColorsArgs *args, ColorObject **color) {
-	return -1;
-}
-static int setColor(BlendColorsArgs *args, ColorObject *color) {
-	return -1;
-}
-static int activate(BlendColorsArgs *args) {
-	return 0;
-}
-static int deactivate(BlendColorsArgs *args) {
-	return 0;
-}
-static int destroy(BlendColorsArgs *args) {
-	int steps1 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->stepsSpinButton1));
-	int steps2 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(args->stepsSpinButton2));
-	int type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->mixType));
-	args->options->set("type", type);
-	args->options->set("steps1", steps1);
-	args->options->set("steps2", steps2);
-	Color color;
-	gtk_color_get_color(GTK_COLOR(args->startColor), &color);
-	args->options->set("start_color", color);
-	gtk_color_get_color(GTK_COLOR(args->middleColor), &color);
-	args->options->set("middle_color", color);
-	gtk_color_get_color(GTK_COLOR(args->endColor), &color);
-	args->options->set("end_color", color);
-	color_list_destroy(args->previewColorList);
-	gtk_widget_destroy(args->main);
-	delete args;
-	return 0;
-}
-static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
-	auto *args = new BlendColorsArgs;
-	args->editables.emplace_back(args, 0);
-	args->editables.emplace_back(args, 1);
-	args->editables.emplace_back(args, 2);
-	args->options = options;
-	args->gs = gs;
-	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *))destroy;
-	args->source.get_color = (int (*)(ColorSource *, ColorObject **))getColor;
-	args->source.set_color = (int (*)(ColorSource *, ColorObject *))setColor;
-	args->source.deactivate = (int (*)(ColorSource *))deactivate;
-	args->source.activate = (int (*)(ColorSource *))activate;
+static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
+	auto args = std::make_unique<BlendColorsArgs>(gs, options);
 	GtkWidget *table, *widget;
 	int table_y = 0;
 	table = gtk_table_new(6, 2, false);
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Start:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->startColor = widget = gtk_color_new(args->options->getColor("start_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	StandardEventHandler::forWidget(widget, args->gs, &args->editables[0]);
-	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[0]);
+	StandardEventHandler::forWidget(widget, &args->gs, &args->editables[0]);
+	StandardDragDropHandler::forWidget(widget, &args->gs, &args->editables[0]);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Middle:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->middleColor = widget = gtk_color_new(args->options->getColor("middle_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	StandardEventHandler::forWidget(widget, args->gs, &args->editables[1]);
-	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[1]);
+	StandardEventHandler::forWidget(widget, &args->gs, &args->editables[1]);
+	StandardDragDropHandler::forWidget(widget, &args->gs, &args->editables[1]);
 	table_y++;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->endColor = widget = gtk_color_new(args->options->getColor("end_color", Color(0.5f)), ColorWidgetConfiguration::standard);
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
-	StandardEventHandler::forWidget(widget, args->gs, &args->editables[2]);
-	StandardDragDropHandler::forWidget(widget, args->gs, &args->editables[2]);
+	StandardEventHandler::forWidget(widget, &args->gs, &args->editables[2]);
+	StandardDragDropHandler::forWidget(widget, &args->gs, &args->editables[2]);
 	table_y = 0;
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"), 0, 0, 0, 0), false, false, 0);
@@ -311,7 +307,7 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LCH"));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), args->options->getInt32("type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), widget, false, false, 0);
-	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(BlendColorsArgs::onChange), args);
+	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(BlendColorsArgs::onChange), args.get());
 	gtk_table_attach(GTK_TABLE(table), vbox, 4, 5, table_y, table_y + 3, GtkAttachOptions(GTK_FILL), GtkAttachOptions(GTK_FILL), 5, 0);
 	table_y = 0;
 
@@ -320,30 +316,24 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("steps1", 3));
 	gtk_table_attach(GTK_TABLE(table), widget, 3, 4, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
-	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(BlendColorsArgs::onChange), args);
+	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(BlendColorsArgs::onChange), args.get());
 
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("End steps:"), 0, 0, 0, 0), 2, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->stepsSpinButton2 = widget = gtk_spin_button_new_with_range(1, 255, 1);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("steps2", 3));
 	gtk_table_attach(GTK_TABLE(table), widget, 3, 4, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	table_y++;
-	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(BlendColorsArgs::onChange), args);
+	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(BlendColorsArgs::onChange), args.get());
 	table_y = 3;
 	ColorList *previewColorList = nullptr;
-	gtk_table_attach(GTK_TABLE(table), palette_list_preview_new(gs, false, false, gs->getColorList(), &previewColorList), 0, 5, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), palette_list_preview_new(&gs, false, false, gs.getColorList(), &previewColorList), 0, 5, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
 	args->previewColorList = previewColorList;
 	args->update();
 	gtk_widget_show_all(table);
 	args->main = table;
-	args->source.widget = table;
-	return (ColorSource *)args;
+	return args;
 }
-int blend_colors_source_register(ColorSourceManager *csm) {
-	ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "blend_colors", _("Blend colors"));
-	color_source->implement = source_implement;
-	color_source->default_accelerator = GDK_KEY_b;
-	color_source_manager_add_source(csm, color_source);
-	return 0;
+void registerBlendColors(ColorSourceManager &csm) {
+	csm.add("blend_colors", _("Blend colors"), RegistrationFlags::none, GDK_KEY_b, build);
 }

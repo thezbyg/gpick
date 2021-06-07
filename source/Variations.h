@@ -16,10 +16,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_VARIATIONS_H_
-#define GPICK_VARIATIONS_H_
-
+#pragma once
 struct ColorSourceManager;
-int variations_source_register(ColorSourceManager *csm);
-
-#endif /* GPICK_VARIATIONS_H_ */
+void registerVariations(ColorSourceManager &csm);

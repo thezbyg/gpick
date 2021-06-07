@@ -16,24 +16,21 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_PICKER_H_
-#define GPICK_COLOR_PICKER_H_
-
+#pragma once
+#include "IColorSource.h"
 #include "FloatingPicker.h"
 #include <gtk/gtk.h>
-
-struct ColorSource;
 struct ColorSourceManager;
-int color_picker_source_register(ColorSourceManager *csm);
-int color_picker_key_up(ColorSource* color_source, GdkEventKey *event);
-void color_picker_set_current_color(ColorSource* color_source);
-void color_picker_rotate_swatch(ColorSource* color_source);
-void color_picker_set_floating_picker(ColorSource *color_source, FloatingPicker floating_picker);
-void color_picker_focus_swatch(ColorSource *color_source);
-bool is_color_picker(ColorSource *color_source);
-void color_picker_pick(ColorSource *color_source);
-void color_picker_copy(ColorSource *color_source);
-void color_picker_add_to_palette(ColorSource *color_source);
-void color_picker_set(ColorSource *color_source, int index);
-
-#endif /* GPICK_COLOR_PICKER_H_ */
+void registerColorPicker(ColorSourceManager &csm);
+struct IColorPicker: public IColorSource {
+	virtual ~IColorPicker() = default;
+	virtual void setCurrentColor() = 0;
+	virtual void rotateSwatch() = 0;
+	virtual void setFloatingPicker(FloatingPicker floatingPicker) = 0;
+	virtual void focusSwatch() = 0;
+	virtual void pick() = 0;
+	virtual void copy() = 0;
+	virtual void addToPalette() = 0;
+	virtual void set(int index) = 0;
+	static bool isColorPicker(const IColorSource &colorSource);
+};

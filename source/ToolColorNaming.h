@@ -42,13 +42,13 @@ struct ToolColorNameAssigner
 {
 	protected:
 		ToolColorNamingType m_color_naming_type;
-		GlobalState* m_gs;
+		GlobalState &m_gs;
 		bool m_imprecision_postfix;
 	public:
-		ToolColorNameAssigner(GlobalState *gs);
+		ToolColorNameAssigner(GlobalState &gs);
 		virtual ~ToolColorNameAssigner();
-		void assign(ColorObject *color_object, const Color *color);
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color) = 0;
+		void assign(ColorObject &colorObject);
+		virtual std::string getToolSpecificName(const ColorObject &colorObject) = 0;
 };
 
 #endif /* GPICK_TOOL_COLOR_NAMING_H_ */

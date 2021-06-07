@@ -36,9 +36,9 @@ auto get(const Map &map, const std::string &name, T defaultValue) {
 	if (i == values.end())
 		return defaultValue;
 	auto &data = (*i)->data();
-	if (data.type() != typeid(T))
+	if (!std::holds_alternative<T>(data))
 		return defaultValue;
-	return boost::get<T>(data);
+	return std::get<T>(data);
 }
 template<typename T, typename std::enable_if_t<std::is_reference<T>::value, int> = 0>
 auto get(const Map &map, const std::string &name, const T &defaultValue) {
@@ -51,9 +51,9 @@ auto get(const Map &map, const std::string &name, const T &defaultValue) {
 	if (i == values.end())
 		return defaultValue;
 	auto &data = (*i)->data();
-	if (data.type() != typeid(T))
+	if (!std::holds_alternative<T>(data))
 		return defaultValue;
-	return boost::get<T>(data);
+	return std::get<T>(data);
 }
 template<typename T>
 auto get(const Map &map, const std::string &name) {
@@ -66,9 +66,9 @@ auto get(const Map &map, const std::string &name) {
 	if (i == values.end())
 		return T();
 	auto &data = (*i)->data();
-	if (data.type() != typeid(T))
+	if (!std::holds_alternative<T>(data))
 		return T();
-	return boost::get<T>(data);
+	return std::get<T>(data);
 }
 template<typename T>
 auto getVector(const Map &map, const std::string &name) {
@@ -81,12 +81,12 @@ auto getVector(const Map &map, const std::string &name) {
 	if (i == values.end())
 		return std::vector<T>();
 	auto &data = (*i)->data();
-	if (data.type() != typeid(std::vector<T>)) {
-		if (data.type() != typeid(T)) // try to fallback to non-vector type
+	if (!std::holds_alternative<std::vector<T>>(data)) {
+		if (!std::holds_alternative<T>(data)) // try to fallback to non-vector type
 			return std::vector<T>();
-		return std::vector<T> { boost::get<T>(data) };
+		return std::vector<T> { std::get<T>(data) };
 	}
-	return boost::get<std::vector<T>>(data);
+	return std::get<std::vector<T>>(data);
 }
 bool Map::getBool(const std::string &name, bool defaultValue) const {
 	return get(*this, name, defaultValue);
@@ -134,12 +134,12 @@ Ref Map::getOrCreateMap(const std::string &name) {
 		return result;
 	}
 	auto &data = (*i)->data();
-	if (data.type() != typeid(Ref)) {
+	if (!std::holds_alternative<Ref>(data)) {
 		Ref result;
 		(*i)->assign((result = create()));
 		return result;
 	}
-	return boost::get<Ref &>(data);
+	return std::get<Ref>(data);
 }
 const Ref Map::getMap(const std::string &name) const {
 	return get<Ref>(*this, name);
@@ -154,14 +154,14 @@ std::vector<Ref> Map::getMaps(const std::string &name) {
 	if (i == values.end())
 		return std::vector<Ref>();
 	auto &data = (*i)->data();
-	if (data.type() != typeid(std::vector<Ref>)) {
-		if (data.type() != typeid(Ref)) // try to fallback to non-vector type
+	if (!std::holds_alternative<std::vector<Ref>>(data)) {
+		if (!std::holds_alternative<Ref>(data)) // try to fallback to non-vector type
 			return std::vector<Ref>();
 		auto result = std::vector<Ref>();
-		result.emplace_back(boost::get<Ref &>(data));
+		result.emplace_back(std::get<Ref>(data));
 		return result;
 	}
-	return boost::get<std::vector<Ref>>(data);
+	return std::get<std::vector<Ref>>(data);
 }
 std::vector<Ref> Map::getMaps(const std::string &name) const {
 	bool valid;
@@ -173,16 +173,16 @@ std::vector<Ref> Map::getMaps(const std::string &name) const {
 	if (i == values.end())
 		return std::vector<Ref>();
 	auto &data = (*i)->data();
-	if (data.type() != typeid(std::vector<Ref>)) {
-		if (data.type() != typeid(Ref)) // try to fallback to non-vector type
+	if (!std::holds_alternative<std::vector<Ref>>(data)) {
+		if (!std::holds_alternative<Ref>(data)) // try to fallback to non-vector type
 			return std::vector<Ref>();
 		auto result = std::vector<Ref>();
-		result.emplace_back(boost::get<Ref &>(data));
+		result.emplace_back(std::get<Ref>(data));
 		return result;
 	}
-	return boost::get<std::vector<Ref>>(data);
+	return std::get<std::vector<Ref>>(data);
 }
-struct IsMap: public boost::static_visitor<bool> {
+struct IsMap {
 	template<typename T>
 	bool operator()(const T &) const {
 		return false;
@@ -206,11 +206,11 @@ const Map::Set &Map::valuesForPath(const std::string &path, bool &valid, std::st
 		valid = false;
 		return m_values;
 	} else {
-		if (!boost::apply_visitor(IsMap(), (*i)->data())) {
+		if (!std::visit(IsMap(), (*i)->data())) {
 			valid = false;
 			return m_values;
 		}
-		next = boost::get<Ref &>((*i)->data());
+		next = std::get<Ref>((*i)->data());
 		if (!next) {
 			valid = false;
 			return m_values;
@@ -230,11 +230,11 @@ const Map::Set &Map::valuesForPath(const std::string &path, bool &valid, std::st
 			valid = false;
 			return m_values;
 		} else {
-			if (!boost::apply_visitor(IsMap(), (*i)->data())) {
+			if (!std::visit(IsMap(), (*i)->data())) {
 				valid = false;
 				return m_values;
 			}
-			next = boost::get<Ref &>((*i)->data());
+			next = std::get<Ref>((*i)->data());
 			if (!next) {
 				valid = false;
 				return m_values;
@@ -260,11 +260,11 @@ Map::Set &Map::valuesForPath(const std::string &path, bool &valid, std::string &
 		}
 		m_values.emplace(new Variable(pathPart, (next = create())));
 	} else {
-		if (!boost::apply_visitor(IsMap(), (*i)->data())) {
+		if (!std::visit(IsMap(), (*i)->data())) {
 			valid = false;
 			return m_values;
 		}
-		next = boost::get<Ref &>((*i)->data());
+		next = std::get<Ref>((*i)->data());
 		if (!next) {
 			if (!createMissing) {
 				valid = false;
@@ -290,11 +290,11 @@ Map::Set &Map::valuesForPath(const std::string &path, bool &valid, std::string &
 			}
 			next->m_values.emplace(new Variable(pathPart, (next = create())));
 		} else {
-			if (!boost::apply_visitor(IsMap(), (*i)->data())) {
+			if (!std::visit(IsMap(), (*i)->data())) {
 				valid = false;
 				return m_values;
 			}
-			next = boost::get<Ref &>((*i)->data());
+			next = std::get<Ref>((*i)->data());
 			if (!next) {
 				if (!createMissing) {
 					valid = false;
@@ -348,6 +348,9 @@ Map &Map::set(const std::string &name, const Color &value) {
 	return setByPath(*this, name, value);
 }
 Map &Map::set(const std::string &name, const std::string &value) {
+	return setByPath(*this, name, value);
+}
+Map &Map::set(const std::string &name, std::string_view value) {
 	return setByPath(*this, name, value);
 }
 Map &Map::set(const std::string &name, const char *value) {
@@ -436,7 +439,7 @@ bool Map::contains(const std::string &name) const {
 		return false;
 	return values.find(fieldName) != values.end();
 }
-struct TypeNameVisitor: public boost::static_visitor<std::string> {
+struct TypeNameVisitor {
 	template<typename T>
 	std::string operator()(const T &) const {
 		return dynv::types::typeHandler<T>().name;
@@ -450,7 +453,7 @@ std::string Map::type(const std::string &name) const {
 	auto i = m_values.find(name);
 	if (i == m_values.end())
 		return "";
-	return boost::apply_visitor(TypeNameVisitor(), (*i)->data());
+	return std::visit(TypeNameVisitor(), (*i)->data());
 }
 bool Map::serialize(std::ostream &stream, const std::unordered_map<types::ValueType, uint8_t> &typeMap) const {
 	return binary::serialize(stream, *this, typeMap);
@@ -477,8 +480,8 @@ bool Map::visit(std::function<bool(const Variable &value)> visitor, bool recursi
 	for (const auto &value: m_values) {
 		if (!visitor(*value))
 			return false;
-		if (boost::apply_visitor(IsMap(), value->data()))
-			systems.push(&*boost::get<const Ref &>(value->data()));
+		if (std::visit(IsMap(), value->data()))
+			systems.push(&*std::get<Ref>(value->data()));
 	}
 	while (!systems.empty()) {
 		auto &map = *systems.front();
@@ -486,8 +489,8 @@ bool Map::visit(std::function<bool(const Variable &value)> visitor, bool recursi
 		for (const auto &value: map.m_values) {
 			if (!visitor(*value))
 				return false;
-			if (boost::apply_visitor(IsMap(), value->data()))
-				systems.push(&*boost::get<const Ref &>(value->data()));
+			if (std::visit(IsMap(), value->data()))
+				systems.push(&*std::get<Ref>(value->data()));
 		}
 	}
 	return true;

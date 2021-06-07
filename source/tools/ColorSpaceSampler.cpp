@@ -57,29 +57,24 @@ struct ColorSpaceSamplerArgs
 	GlobalState* gs;
 };
 
-struct ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner
-{
-	protected:
-		stringstream m_stream;
-	public:
-		ColorSpaceSamplerNameAssigner(GlobalState *gs):
-			ToolColorNameAssigner(gs)
-		{
-		}
-		void assign(ColorObject *color_object, const Color *color)
-		{
-			ToolColorNameAssigner::assign(color_object, color);
-		}
-		virtual std::string getToolSpecificName(ColorObject *color_object, const Color *color)
-		{
-			m_stream.str("");
-			m_stream << _("color space");
-			return m_stream.str();
-		}
+struct ColorSpaceSamplerNameAssigner: public ToolColorNameAssigner {
+	ColorSpaceSamplerNameAssigner(GlobalState &gs):
+		ToolColorNameAssigner(gs) {
+	}
+	void assign(ColorObject &colorObject) {
+		ToolColorNameAssigner::assign(colorObject);
+	}
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
+		m_stream.str("");
+		m_stream << _("color space");
+		return m_stream.str();
+	}
+protected:
+	std::stringstream m_stream;
 };
 static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 {
-	ColorSpaceSamplerNameAssigner name_assigner(args->gs);
+	ColorSpaceSamplerNameAssigner name_assigner(*args->gs);
 	ColorList *color_list;
 	if (preview)
 		color_list = args->preview_color_list;
@@ -144,7 +139,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 			t.nonLinearRgbInplace();
 		t.normalizeRgbInplace();
 		ColorObject *color_object = color_list_new_color_object(color_list, &t);
-		name_assigner.assign(color_object, &t);
+		name_assigner.assign(*color_object);
 		color_list_add_color_object(color_list, color_object, 1);
 		color_object->release();
 	}

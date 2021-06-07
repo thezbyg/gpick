@@ -18,7 +18,7 @@
 
 #include "LayoutPreview.h"
 #include "ColorSourceManager.h"
-#include "ColorSource.h"
+#include "IColorSource.h"
 #include "Converters.h"
 #include "Converter.h"
 #include "dynv/Map.h"
@@ -41,33 +41,59 @@
 using namespace layout;
 
 struct LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
-	LayoutPreviewColorNameAssigner(GlobalState *gs):
+	LayoutPreviewColorNameAssigner(GlobalState &gs):
 		ToolColorNameAssigner(gs) {
 	}
-	void assign(ColorObject *colorObject, const Color *color, const char *ident) {
+	void assign(ColorObject &colorObject, std::string_view ident) {
 		m_ident = ident;
-		ToolColorNameAssigner::assign(colorObject, color);
+		ToolColorNameAssigner::assign(colorObject);
 	}
-	virtual std::string getToolSpecificName(ColorObject *colorObject, const Color *color) {
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << _("layout preview") << " " << m_ident << " [" << color_names_get(m_gs->getColorNames(), color, false) << "]";
+		m_stream << _("layout preview") << " " << m_ident << " [" << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << "]";
 		return m_stream.str();
 	}
 protected:
 	std::stringstream m_stream;
-	const char *m_ident;
+	std::string_view m_ident;
 };
-struct LayoutPreviewArgs {
-	ColorSource source;
+struct LayoutPreviewArgs: IColorSource {
 	GtkWidget *main, *statusBar, *layoutView;
 	System *layoutSystem;
 	std::string lastFilename;
 	dynv::Ref options;
-	GlobalState *gs;
+	GlobalState &gs;
+	LayoutPreviewArgs(GlobalState &gs, const dynv::Ref &options):
+		layoutSystem(nullptr),
+		options(options),
+		gs(gs),
+		editable(*this) {
+		statusBar = gs.getStatusBar();
+	}
+	virtual ~LayoutPreviewArgs() {
+		saveColors();
+		if (layoutSystem)
+			System::unref(layoutSystem);
+		layoutSystem = nullptr;
+		gtk_widget_destroy(main);
+	}
+	virtual std::string_view name() const {
+		return "layout_preview";
+	}
+	virtual void activate() override {
+		auto chain = gs.getTransformationChain();
+		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
+		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
+	}
+	virtual void deactivate() override {
+	}
+	virtual GtkWidget *getWidget() override {
+		return main;
+	}
 	void addToPalette() {
 		if (!isSelected())
 			return;
-		color_list_add_color_object(gs->getColorList(), getColor(), true);
+		color_list_add_color_object(gs.getColorList(), getColor(), true);
 	}
 	void addAllToPalette() {
 		if (layoutSystem == nullptr)
@@ -75,16 +101,18 @@ struct LayoutPreviewArgs {
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
 		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color);
-			nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
-			color_list_add_color_object(gs->getColorList(), colorObject, true);
+			nameAssigner.assign(colorObject, style->label);
+			color_list_add_color_object(gs.getColorList(), colorObject, true);
 		}
 	}
-	void setColor(const ColorObject &colorObject) {
+	virtual void setColor(const ColorObject &colorObject) override {
 		Color color = colorObject.getColor();
 		gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color);
 	}
+	virtual void setNthColor(size_t index, const ColorObject &colorObject) override {
+	}
 	ColorObject colorObject;
-	const ColorObject &getColor() {
+	virtual const ColorObject &getColor() override {
 		Color color;
 		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color) != 0)
 			return colorObject;
@@ -93,7 +121,10 @@ struct LayoutPreviewArgs {
 			return colorObject;
 		colorObject.setColor(color);
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
-		nameAssigner.assign(&colorObject, &color, style->label.c_str());
+		nameAssigner.assign(colorObject, style->label);
+		return colorObject;
+	}
+	virtual const ColorObject &getNthColor(size_t index) override {
 		return colorObject;
 	}
 	std::vector<ColorObject> getColors(bool selected) {
@@ -107,7 +138,7 @@ struct LayoutPreviewArgs {
 		} else {
 			for (auto &style: layoutSystem->styles()) {
 				ColorObject colorObject(style->color);
-				nameAssigner.assign(&colorObject, &style->color, style->label.c_str());
+				nameAssigner.assign(colorObject, style->label);
 				colors.push_back(colorObject);
 			}
 		}
@@ -125,49 +156,56 @@ struct LayoutPreviewArgs {
 			return false;
 		return gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(layoutView));
 	}
+	void saveColors() {
+		if (layoutSystem == nullptr)
+			return;
+		auto assignments = options->getOrCreateMap("css_selectors.assignments");
+		for (auto style: layoutSystem->styles())
+			assignments->set(style->ident_name + ".color", style->color);
+	}
 	struct Editable: IEditableColorsUI, IDroppableColorUI {
-		Editable(LayoutPreviewArgs *args):
+		Editable(LayoutPreviewArgs &args):
 			args(args) {
 		}
 		virtual ~Editable() = default;
 		virtual void addToPalette(const ColorObject &) override {
-			args->addToPalette();
+			args.addToPalette();
 		}
 		virtual void addAllToPalette() override {
-			args->addAllToPalette();
+			args.addAllToPalette();
 		}
 		virtual void setColor(const ColorObject &colorObject) override {
-			args->setColor(colorObject.getColor());
+			args.setColor(colorObject.getColor());
 		}
 		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
-			args->select(x, y);
-			args->setColor(colorObject);
+			args.select(x, y);
+			args.setColor(colorObject);
 		}
 		virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
-			args->setColor(colorObjects[0]);
+			args.setColor(colorObjects[0]);
 		}
 		virtual const ColorObject &getColor() override {
-			return args->getColor();
+			return args.getColor();
 		}
 		virtual std::vector<ColorObject> getColors(bool selected) override {
-			return args->getColors(selected);
+			return args.getColors(selected);
 		}
 		virtual bool isEditable() override {
-			return args->isEditable();
+			return args.isEditable();
 		}
 		virtual bool hasColor() override {
 			return true;
 		}
 		virtual bool hasSelectedColor() override {
-			return args->isSelected();
+			return args.isSelected();
 		}
 		virtual bool testDropAt(int x, int y) override {
-			return args->select(x, y);
+			return args.select(x, y);
 		}
 		virtual void dropEnd(bool move) override {
 		}
 	private:
-		LayoutPreviewArgs *args;
+		LayoutPreviewArgs &args;
 	};
 	std::optional<Editable> editable;
 };
@@ -193,13 +231,6 @@ static void loadColors(LayoutPreviewArgs *args) {
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
 	for (auto style: args->layoutSystem->styles())
 		style->color = assignments->getColor(style->ident_name + ".color", style->color);
-}
-static void saveColors(LayoutPreviewArgs *args) {
-	if (args->layoutSystem == nullptr)
-		return;
-	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles())
-		assignments->set(style->ident_name + ".color", style->color);
 }
 static GtkWidget *newSelectorList(LayoutPreviewArgs *args) {
 	auto view = gtk_tree_view_new();
@@ -270,28 +301,6 @@ static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
 	args->options->set("css_selectors.window.height", height);
 	gtk_widget_destroy(dialog);
 }
-static int destroy(LayoutPreviewArgs *args) {
-	saveColors(args);
-	if (args->layoutSystem) System::unref(args->layoutSystem);
-	args->layoutSystem = nullptr;
-	gtk_widget_destroy(args->main);
-	delete args;
-	return 0;
-}
-static int getColor(LayoutPreviewArgs *args, ColorObject **color) {
-	if (!args->isSelected())
-		return -1;
-	auto colorObject = args->getColor();
-	*color = colorObject.copy();
-	return 0;
-}
-static int setColor(LayoutPreviewArgs *args, ColorObject *colorObject) {
-	args->setColor(*colorObject);
-	return 0;
-}
-static int deactivate(LayoutPreviewArgs *args) {
-	return 0;
-}
 static GtkWidget *newLayoutDropdown() {
 	auto store = gtk_list_store_new(LAYOUTLIST_N_COLUMNS, G_TYPE_STRING, G_TYPE_POINTER);
 	auto combo = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
@@ -308,7 +317,7 @@ static void onLayoutChange(GtkWidget *widget, LayoutPreviewArgs *args) {
 		GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
 		Layout *layout;
 		gtk_tree_model_get(model, &iter, LAYOUTLIST_PTR, &layout, -1);
-		saveColors(args);
+		args->saveColors();
 		System *layoutSystem = layout->build();
 		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), layoutSystem);
 		if (args->layoutSystem) System::unref(args->layoutSystem);
@@ -323,7 +332,7 @@ static int saveCssFile(const char *filename, LayoutPreviewArgs *args) {
 	std::ofstream file(filename, std::ios::out);
 	if (!file.is_open())
 		return -1;
-	auto converter = args->gs->converters().firstCopy();
+	auto converter = args->gs.converters().firstCopy();
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
 	for (auto style: args->layoutSystem->styles()) {
 		auto cssSelector = assignments->getString(style->ident_name + ".selector", style->ident_name);
@@ -405,25 +414,8 @@ static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, LayoutPr
 	}
 	return false;
 }
-static int activate(LayoutPreviewArgs *args) {
-	auto chain = args->gs->getTransformationChain();
-	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layoutView), chain);
-	gtk_statusbar_push(GTK_STATUSBAR(args->statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(args->statusBar), "empty"), "");
-	return 0;
-}
-static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const dynv::Ref &options) {
-	auto *args = new LayoutPreviewArgs;
-	args->editable = LayoutPreviewArgs::Editable(args);
-	args->options = options;
-	args->statusBar = gs->getStatusBar();
-	args->gs = gs;
-	args->layoutSystem = nullptr;
-	color_source_init(&args->source, source->identificator, source->hr_name);
-	args->source.destroy = (int (*)(ColorSource *))destroy;
-	args->source.get_color = (int (*)(ColorSource *, ColorObject **))getColor;
-	args->source.set_color = (int (*)(ColorSource *, ColorObject *))setColor;
-	args->source.deactivate = (int (*)(ColorSource *))deactivate;
-	args->source.activate = (int (*)(ColorSource *))activate;
+static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
+	auto args = std::make_unique<LayoutPreviewArgs>(gs, options);
 	GtkWidget *table, *vbox, *hbox;
 	vbox = gtk_vbox_new(false, 10);
 	hbox = gtk_hbox_new(false, 10);
@@ -440,35 +432,35 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	GtkWidget *layoutDropdown = newLayoutDropdown();
 	gtk_container_add(GTK_CONTAINER(tool), withLabel(layoutDropdown, _("Layout:")));
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
-	g_signal_connect(G_OBJECT(layoutDropdown), "changed", G_CALLBACK(onLayoutChange), args);
+	g_signal_connect(G_OBJECT(layoutDropdown), "changed", G_CALLBACK(onLayoutChange), args.get());
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), gtk_separator_tool_item_new(), -1);
 	tool = gtk_menu_tool_button_new(newIcon(GTK_STOCK_SAVE, IconSize::toolbar), _("Export CSS File"));
 	gtk_tool_item_set_tooltip_text(tool, _("Export CSS file"));
-	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(onExportCss), args);
+	g_signal_connect(G_OBJECT(tool), "clicked", G_CALLBACK(onExportCss), args.get());
 	gtk_toolbar_insert(GTK_TOOLBAR(toolbar), tool, -1);
 	auto menu = gtk_menu_new();
 	auto item = newMenuItem(_("_Export CSS File As..."), GTK_STOCK_SAVE_AS);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onExportCssAs), args);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onExportCssAs), args.get());
 	item = gtk_menu_item_new_with_mnemonic(_("_Assign CSS Selectors..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
-	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onAssignSelectors), args);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(onAssignSelectors), args.get());
 	gtk_widget_show_all(menu);
 	gtk_menu_tool_button_set_menu(GTK_MENU_TOOL_BUTTON(tool), menu);
 	GtkWidget *scrolled = gtk_scrolled_window_new(0, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_table_attach(GTK_TABLE(table), scrolled, 0, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), args->layoutView = gtk_layout_preview_new());
-	g_signal_connect_after(G_OBJECT(args->layoutView), "button-press-event", G_CALLBACK(onButtonPress), args);
-	StandardEventHandler::forWidget(args->layoutView, args->gs, &*args->editable);
-	StandardDragDropHandler::forWidget(args->layoutView, args->gs, &*args->editable);
+	g_signal_connect_after(G_OBJECT(args->layoutView), "button-press-event", G_CALLBACK(onButtonPress), args.get());
+	StandardEventHandler::forWidget(args->layoutView, &args->gs, &*args->editable);
+	StandardDragDropHandler::forWidget(args->layoutView, &args->gs, &*args->editable);
 	table_y++;
 	// Restore settings and fill list
 	auto layoutName = args->options->getString("layout_name", "std_layout_menu_1");
 	GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(layoutDropdown));
 	GtkTreeIter iter1;
 	bool layoutFound = false;
-	for (auto &layout: gs->layouts().all()) {
+	for (auto &layout: gs.layouts().all()) {
 		if (layout->mask() != 0)
 			continue;
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
@@ -486,15 +478,8 @@ static ColorSource *source_implement(ColorSource *source, GlobalState *gs, const
 	}
 	gtk_widget_show_all(vbox);
 	args->main = vbox;
-	args->source.widget = vbox;
-	return (ColorSource *)args;
+	return args;
 }
-int layout_preview_source_register(ColorSourceManager *csm) {
-	ColorSource *color_source = new ColorSource;
-	color_source_init(color_source, "layout_preview", _("Layout preview"));
-	color_source->needs_viewport = false;
-	color_source->implement = source_implement;
-	color_source->default_accelerator = GDK_KEY_l;
-	color_source_manager_add_source(csm, color_source);
-	return 0;
+void registerLayoutPreview(ColorSourceManager &csm) {
+	csm.add("layout_preview", _("Layout preview"), RegistrationFlags::none, GDK_KEY_l, build);
 }

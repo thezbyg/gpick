@@ -16,8 +16,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_CLOSEST_COLORS_H_
-#define GPICK_CLOSEST_COLORS_H_
+#pragma once
 struct ColorSourceManager;
-int closest_colors_source_register(ColorSourceManager *csm);
-#endif /* GPICK_CLOSEST_COLORS_H_ */
+void registerClosestColors(ColorSourceManager &csm);

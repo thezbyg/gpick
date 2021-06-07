@@ -31,7 +31,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <map>
 
-struct CopyMenuItemState: public boost::static_visitor<> {
+struct CopyMenuItemState {
 	CopyMenuItemState(Converter *converter, const ColorObject &colorObject, GlobalState *gs):
 		m_converter(converter),
 		m_data(colorObject),
@@ -48,7 +48,7 @@ struct CopyMenuItemState: public boost::static_visitor<> {
 		delete state;
 	}
 	static void onActivate(GtkWidget *widget, CopyMenuItemState *state) {
-		boost::apply_visitor(*state, state->m_data);
+		std::visit(*state, state->m_data);
 	}
 	void operator()(const ColorObject &colorObject) {
 		clipboard::set(colorObject, m_gs, m_converter);
@@ -61,8 +61,8 @@ struct CopyMenuItemState: public boost::static_visitor<> {
 			return;
 		}
 		m_recursion = true;
-		auto variant = common::castToVariant<IReadonlyColorUI *, IEditableColorsUI *, IReadonlyColorsUI *>(interface);
-		boost::apply_visitor(*this, variant);
+		auto variant = common::castToVariant<StandardMenu::Interface, IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(interface);
+		std::visit(*this, variant);
 		m_recursion = false;
 	}
 	void operator()(IEditableColorsUI *interface) {
@@ -75,7 +75,7 @@ struct CopyMenuItemState: public boost::static_visitor<> {
 	}
 private:
 	Converter *m_converter;
-	boost::variant<ColorObject, IReadonlyColorUI *> m_data;
+	std::variant<ColorObject, IReadonlyColorUI *> m_data;
 	GlobalState *m_gs;
 	bool m_recursion;
 };
@@ -242,7 +242,7 @@ static void onEditableColorPaste(GtkWidget *widget, IReadonlyColorUI *readonlyCo
 static void releaseColorObject(ColorObject *colorObject) {
 	colorObject->release();
 }
-struct InterfaceInspector: public boost::static_visitor<IReadonlyColorUI *> {
+struct InterfaceInspector {
 	InterfaceInspector(bool &editable, bool &currentlyEditable, bool &multiple, bool &hasSelection, bool &hasColor):
 		editable(editable),
 		currentlyEditable(currentlyEditable),
@@ -294,7 +294,7 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
 	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false;
 	IReadonlyColorUI *baseInterface;
-	Appender appender(menu, acceleratorGroup, (baseInterface = boost::apply_visitor(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
+	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
 	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
 	if (multiple) {
 		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
@@ -322,7 +322,7 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
 	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false;
 	IReadonlyColorUI *baseInterface;
-	Appender appender(menu, acceleratorGroup, (baseInterface = boost::apply_visitor(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
+	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
 	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
 	if (multiple) {
 		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
@@ -342,4 +342,7 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 	if (editable)
 		g_object_set_data(G_OBJECT(menu), "gs", gs);
 	showContextMenu(menu, event);
+}
+StandardMenu::Interface StandardMenu::toInterface(IReadonlyColorUI *readonlyColorUI) {
+	return common::castToVariant<Interface, IReadonlyColorUI *, IEditableColorsUI *, IEditableColorUI *, IReadonlyColorsUI *>(readonlyColorUI);
 }

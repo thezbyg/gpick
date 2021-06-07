@@ -43,7 +43,7 @@ bool writeListStart(std::ostream &stream, const std::string &name, const std::st
 	stream << "<" << name << " type=\"" << type << "\" list=\"true\">";
 	return stream.good();
 }
-struct SerializeVisitor: public boost::static_visitor<bool> {
+struct SerializeVisitor {
 	SerializeVisitor(std::ostream &stream, const std::string &name):
 		stream(stream),
 		name(name) {
@@ -209,7 +209,7 @@ static void onCharacterData(Context *context, const XML_Char *data, int length) 
 		return;
 	entity.write(data, length);
 }
-struct IsVector: public boost::static_visitor<bool> {
+struct IsVector {
 	IsVector(Entity &entity):
 		entity(entity) {
 	}
@@ -240,7 +240,7 @@ static void onStartElement(Context *context, const XML_Char *name, const XML_Cha
 			context->push(entity.map(), EntityType::unknown);
 			return;
 		}
-		if (!boost::apply_visitor(IsVector(entity), entity.value()->data())) {
+		if (!std::visit(IsVector(entity), entity.value()->data())) {
 			context->error();
 			context->push(entity.map(), EntityType::unknown);
 			return;
@@ -249,7 +249,7 @@ static void onStartElement(Context *context, const XML_Char *name, const XML_Cha
 			auto map = common::Ref<Map>(new Map());
 			auto &data = entity.value()->data();
 			context->push(*map, EntityType::listItem);
-			boost::get<std::vector<common::Ref<Map>> &>(data).push_back(std::move(map));
+			std::get<std::vector<common::Ref<Map>>>(data).push_back(std::move(map));
 		} else {
 			context->push(entity.map(), EntityType::listItem);
 		}
@@ -324,22 +324,22 @@ static void onEndElement(Context *context, const XML_Char *name) {
 		auto &data = listEntity.value()->data();
 		switch (listEntity.valueType()) {
 		case ValueType::string:
-			boost::get<std::vector<std::string> &>(data).push_back(entity.data());
+			std::get<std::vector<std::string>>(data).push_back(entity.data());
 			break;
 		case ValueType::basicBool:
-			boost::get<std::vector<bool> &>(data).push_back(entity.data() == "true");
+			std::get<std::vector<bool>>(data).push_back(entity.data() == "true");
 			break;
 		case ValueType::basicInt32:
-			boost::get<std::vector<int32_t> &>(data).push_back(std::stoi(entity.data()));
+			std::get<std::vector<int32_t>>(data).push_back(std::stoi(entity.data()));
 			break;
 		case ValueType::basicFloat:
-			boost::get<std::vector<float> &>(data).push_back(std::stof(entity.data()));
+			std::get<std::vector<float>>(data).push_back(std::stof(entity.data()));
 			break;
 		case ValueType::color: {
 			std::stringstream in(entity.data());
 			Color color;
 			in >> color[0] >> color[1] >> color[2] >> color[3];
-			boost::get<std::vector<Color> &>(data).push_back(color);
+			std::get<std::vector<Color>>(data).push_back(color);
 		} break;
 		case ValueType::map:
 			break;
@@ -390,7 +390,7 @@ bool serialize(std::ostream &stream, const Map &map, bool addRootElement) {
 			return false;
 	}
 	auto visitor = [&stream](const Variable &value) -> bool {
-		if (!boost::apply_visitor(SerializeVisitor(stream, value.name()), value.data()))
+		if (!std::visit(SerializeVisitor(stream, value.name()), value.data()))
 			return false;
 		return true;
 	};

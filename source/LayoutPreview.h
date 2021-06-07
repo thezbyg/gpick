@@ -16,10 +16,6 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_LAYOUT_PREVIEW_H_
-#define GPICK_LAYOUT_PREVIEW_H_
-
+#pragma once
 struct ColorSourceManager;
-int layout_preview_source_register(ColorSourceManager *csm);
-
-#endif /* GPICK_LAYOUT_PREVIEW_H_ */
+void registerLayoutPreview(ColorSourceManager &csm);

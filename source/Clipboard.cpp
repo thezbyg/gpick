@@ -158,7 +158,7 @@ static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Convert
 	return false;
 }
 static Converter *getConverter(ConverterSelection converterSelection, GlobalState *gs) {
-	struct GetConverter: public boost::static_visitor<Converter *> {
+	struct GetConverter {
 		GetConverter(GlobalState *gs):
 			gs(gs) {
 		}
@@ -182,7 +182,7 @@ static Converter *getConverter(ConverterSelection converterSelection, GlobalStat
 		}
 		GlobalState *gs;
 	};
-	return boost::apply_visitor(GetConverter(gs), converterSelection);
+	return std::visit(GetConverter(gs), converterSelection);
 }
 void set(const std::string &value) {
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), value.c_str(), -1);

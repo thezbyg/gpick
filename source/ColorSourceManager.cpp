@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,53 +17,40 @@
  */
 
 #include "ColorSourceManager.h"
-#include "ColorSource.h"
-#include <glib.h>
-#include <iostream>
-using namespace std;
-
-ColorSourceManager* color_source_manager_create(){
-	ColorSourceManager *csm = new ColorSourceManager;
-	return csm;
-}
-
-int color_source_manager_add_source(ColorSourceManager *csm, ColorSource *source){
-	pair<map<string, ColorSource*>::iterator, bool> r;
-	r = csm->colorsource.insert(pair<string, ColorSource*>(source->identificator, source));
-	return r.second;
-}
-
-ColorSource* color_source_manager_get(ColorSourceManager *csm, const char *name){
-	map<string, ColorSource*>::iterator i = csm->colorsource.find(name);
-	if (i != csm->colorsource.end()){
-		return (*i).second;
+namespace {
+struct Match {
+	bool operator()(const std::string_view &lhs, const ColorSourceManager::Registration &rhs) const {
+		return lhs == rhs.name;
 	}
-	return 0;
-}
-ColorSource* color_source_manager_get(ColorSourceManager *csm, const std::string &name){
-	map<string, ColorSource*>::iterator i = csm->colorsource.find(name);
-	if (i != csm->colorsource.end()){
-		return (*i).second;
+	std::size_t operator()(const std::string_view &name) const {
+		return std::hash<std::string_view>()(name);
 	}
-	return 0;
+};
 }
-
-vector<ColorSource*> color_source_manager_get_all(ColorSourceManager *csm){
-	vector<ColorSource*> ret;
-	ret.resize(csm->colorsource.size());
-	size_t j = 0;
-	for (map<string, ColorSource*>::iterator i = csm->colorsource.begin(); i != csm->colorsource.end(); ++i){
-		ret[j] = (*i).second;
-		j++;
-	}
-	return ret;
+ColorSourceManager::Registration::Registration(std::string_view name, std::string_view label, RegistrationFlags flags, int defaultAccelerator, Build build):
+	name(name),
+	label(label),
+	singleInstanceOnly((flags & RegistrationFlags::singleInstanceOnly) != RegistrationFlags::none),
+	needsViewport((flags & RegistrationFlags::needsViewport) != RegistrationFlags::none),
+	defaultAccelerator(defaultAccelerator),
+	build(build) {
 }
-
-int color_source_manager_destroy(ColorSourceManager *csm){
-	for (map<string, ColorSource*>::iterator i = csm->colorsource.begin(); i != csm->colorsource.end(); ++i){
-		color_source_destroy((*i).second);
-	}
-	csm->colorsource.clear();
-	delete csm;
-	return 0;
+ColorSourceManager::Registration::operator bool() const {
+	return build != nullptr;
+}
+void ColorSourceManager::add(Registration &&registration) {
+	m_registrations.emplace(std::move(registration));
+}
+void ColorSourceManager::add(std::string_view name, std::string_view label, RegistrationFlags flags, int defaultAccelerator, Build build) {
+	m_registrations.emplace(name, label, flags, defaultAccelerator, build);
+}
+bool ColorSourceManager::has(std::string_view name) const {
+	return m_registrations.find(name, Match {}, Match {}) != m_registrations.end();
+}
+const ColorSourceManager::Registration &ColorSourceManager::operator[](std::string_view name) const {
+	auto i = m_registrations.find(name, Match {}, Match {});
+	if (i != m_registrations.end())
+		return *i;
+	static Registration nullRegistration("", "", RegistrationFlags::none, 0, nullptr);
+	return nullRegistration;
 }

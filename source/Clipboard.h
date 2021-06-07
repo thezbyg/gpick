@@ -21,7 +21,7 @@
 #include "Converters.h"
 #include <string>
 #include <vector>
-#include <boost/variant.hpp>
+#include <variant>
 struct ColorObject;
 struct GlobalState;
 struct Converter;
@@ -30,7 +30,7 @@ struct ColorList;
 typedef struct _GtkWidget GtkWidget;
 namespace clipboard {
 void set(const std::string &value);
-using ConverterSelection = boost::variant<const char *, Converter *, Converters::Type>;
+using ConverterSelection = std::variant<const char *, Converter *, Converters::Type>;
 void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection converterSelection);
 void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection converterSelection);
 void set(const std::vector<ColorObject> &colorObjects, GlobalState *gs, ConverterSelection converterSelection);
