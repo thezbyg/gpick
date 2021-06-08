@@ -16,19 +16,7 @@
 			naming of colors, and a scheme generator.
 		</p>
 	</description>
-	<screenshots>
-		<screenshot type="default">
-			<image>http://static.gpick.org/image/appdata-screenshot-0.2.6.png</image>
-			<caption>The main window showing the application in action</caption>
-		</screenshot>
-	</screenshots>
-	<url type="homepage">http://www.gpick.org</url>
-	<url type="bugtracker">https://github.com/thezbyg/gpick</url>
-	<update_contact>albertas.vysniauskas@gpick.org</update_contact>
-	<developer_name>Albertas Vyšniauskas</developer_name>
-	<url type="donation">http://www.gpick.org/help/donation.html</url>
-	<url type="help">http://www.gpick.org/help.html</url>
-	<translation type="gettext">gpick</translation>
+	<launchable type="desktop-id">gpick.desktop</launchable>
 	<keywords>
 		<keyword>color</keyword>
 		<keyword>picker</keyword>
@@ -37,5 +25,31 @@
 		<keyword>palette</keyword>
 		<keyword>scheme</keyword>
 	</keywords>
+	<kudos>
+		<kudo>ModernToolkit</kudo>
+		<kudo>HiDpiIcon</kudo>
+		<kudo>HighContrast</kudo>
+	</kudos>
+	<screenshots>
+		<screenshot type="default">
+			<caption>The main window showing the application in action</caption>
+			<image>http://static.gpick.org/image/appdata-screenshot-0.2.6.png</image>
+		</screenshot>
+	</screenshots>
+	<developer_name>Albertas Vyšniauskas</developer_name>
+	<url type="bugtracker">https://github.com/thezbyg/gpick</url>
+	<url type="donation">http://www.gpick.org/help/donation.html</url>
+	<url type="help">http://www.gpick.org/help.html</url>
+	<url type="homepage">http://www.gpick.org</url>
 	<url type="translate">http://www.gpick.org/help/translation.html</url>
+	<translation type="gettext">gpick</translation>
+	<content_rating type="oars-1.0" />
+	<update_contact>albertas.vysniauskas@gpick.org</update_contact>
+	<provides>
+		<binary>gpick</binary>
+	</provides>
+	<releases>
+		<release version="0.2.6~rc" date="2017-09-07"/>
+		<release version="0.2.5" date="2013-02-28"/>
+	</releases>
 </component>
