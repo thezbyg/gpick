@@ -20,6 +20,7 @@
 #include "uiUtilities.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
+#include "EventBus.h"
 #include "color_names/ColorNames.h"
 #include "I18N.h"
 #include <list>
@@ -293,6 +294,7 @@ void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs)
 		args->options->set("color_dictionaries.items", items);
 		color_names_clear(args->gs->getColorNames());
 		color_names_load(args->gs->getColorNames(), *args->options);
+		args->gs->eventBus().trigger(EventType::colorDictionaryUpdate);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

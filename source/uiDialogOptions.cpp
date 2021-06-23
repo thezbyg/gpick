@@ -20,6 +20,7 @@
 #include "uiUtilities.h"
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
+#include "EventBus.h"
 #include "I18N.h"
 #include "dynv/Map.h"
 #include "lua/Script.h"
@@ -424,6 +425,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		calc(args, false, 0);
 		dialog_options_update(args->gs);
+		args->gs->eventBus().trigger(EventType::optionsUpdate);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

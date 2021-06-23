@@ -27,6 +27,7 @@
 #include "gtk/ColorWidget.h"
 #include "dynv/Map.h"
 #include "I18N.h"
+#include "EventBus.h"
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
@@ -77,7 +78,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
-struct ColorMixerArgs: IColorSource {
+struct ColorMixerArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *secondaryColor, *opacityRange, *lastFocusedColor, *colorPreviews;
 	const Type *mixerType;
 	struct {
@@ -90,6 +91,7 @@ struct ColorMixerArgs: IColorSource {
 		options(options),
 		gs(gs) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~ColorMixerArgs() {
 		Color c;
@@ -103,17 +105,12 @@ struct ColorMixerArgs: IColorSource {
 		gtk_color_get_color(GTK_COLOR(secondaryColor), &c);
 		options->set("secondary_color", c);
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "color_mixer";
 	}
 	virtual void activate() override {
-		auto chain = gs.getTransformationChain();
-		gtk_color_set_transformation_chain(GTK_COLOR(secondaryColor), chain);
-		for (int i = 0; i < Rows; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].input), chain);
-			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].output), chain);
-		}
 		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
 	virtual void deactivate() override {
@@ -121,6 +118,25 @@ struct ColorMixerArgs: IColorSource {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	void setTransformationChain() {
+		auto chain = gs.getTransformationChain();
+		gtk_color_set_transformation_chain(GTK_COLOR(secondaryColor), chain);
+		for (int i = 0; i < Rows; ++i) {
+			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].input), chain);
+			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].output), chain);
+		}
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::colorDictionaryUpdate:
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
@@ -382,6 +398,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerColorMixer(ColorSourceManager &csm) {

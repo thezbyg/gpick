@@ -35,8 +35,7 @@
 #include <iostream>
 using namespace std;
 
-typedef struct DialogGenerateArgs
-{
+struct DialogGenerateArgs {
 	GtkWidget *gen_type;
 	GtkWidget *wheel_type;
 	GtkWidget *range_colors;
@@ -49,7 +48,7 @@ typedef struct DialogGenerateArgs
 	ColorList *preview_color_list;
 	dynv::Ref options;
 	GlobalState* gs;
-}DialogGenerateArgs;
+};
 
 typedef struct ColorWheelType
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,56 +16,23 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_GLOBAL_STATE_H_
-#define GPICK_GLOBAL_STATE_H_
-#include "dynv/MapFwd.h"
-#include <memory>
-#include <optional>
-#include <cstdint>
-struct ColorNames;
-struct Sampler;
-struct ScreenReader;
-struct ColorList;
-struct Random;
-struct Converters;
-struct IColorSource;
-struct EventBus;
-typedef struct _GtkWidget GtkWidget;
-namespace layout {
-struct Layouts;
-}
-namespace transformation {
-struct Chain;
-}
-namespace lua {
-struct Script;
-struct Callbacks;
-}
-struct GlobalState {
-	GlobalState();
-	~GlobalState();
-	bool loadSettings();
-	bool loadAll();
-	bool writeSettings();
-	ColorNames *getColorNames();
-	Sampler *getSampler();
-	ScreenReader *getScreenReader();
-	ColorList *getColorList();
-	dynv::Map &settings();
-	lua::Script &script();
-	lua::Callbacks &callbacks();
-	Converters &converters();
-	Random *getRandom();
-	layout::Layouts &layouts();
-	transformation::Chain *getTransformationChain();
-	GtkWidget *getStatusBar();
-	void setStatusBar(GtkWidget *status_bar);
-	IColorSource *getCurrentColorSource();
-	void setCurrentColorSource(IColorSource *color_source);
-	std::optional<uint32_t> latinKeysGroup;
-	EventBus &eventBus();
-private:
-	struct Impl;
-	std::unique_ptr<Impl> m_impl;
+#pragma once
+#include <vector>
+#include <tuple>
+enum struct EventType {
+	optionsUpdate,
+	convertersUpdate,
+	displayFiltersUpdate,
+	colorDictionaryUpdate,
 };
-#endif /* GPICK_GLOBAL_STATE_H_ */
+struct IEventHandler {
+	virtual void onEvent(EventType eventType) = 0;
+};
+struct EventBus {
+	void subscribe(EventType type, IEventHandler &handler);
+	void unsubscribe(EventType type, IEventHandler &handler);
+	void unsubscribe(IEventHandler &handler);
+	void trigger(EventType type);
+private:
+	std::vector<std::tuple<EventType, IEventHandler &>> m_handlers;
+};

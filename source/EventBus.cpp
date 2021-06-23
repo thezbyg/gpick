@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2021, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,56 +16,25 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_GLOBAL_STATE_H_
-#define GPICK_GLOBAL_STATE_H_
-#include "dynv/MapFwd.h"
-#include <memory>
-#include <optional>
-#include <cstdint>
-struct ColorNames;
-struct Sampler;
-struct ScreenReader;
-struct ColorList;
-struct Random;
-struct Converters;
-struct IColorSource;
-struct EventBus;
-typedef struct _GtkWidget GtkWidget;
-namespace layout {
-struct Layouts;
+#include "EventBus.h"
+#include <algorithm>
+void EventBus::subscribe(EventType type, IEventHandler &handler) {
+	m_handlers.emplace_back(type, handler);
 }
-namespace transformation {
-struct Chain;
+void EventBus::unsubscribe(EventType type, IEventHandler &handler) {
+	m_handlers.erase(std::remove_if(m_handlers.begin(), m_handlers.end(), [type, &handler](const std::tuple<EventType, IEventHandler &> &item) {
+		return std::get<EventType>(item) == type && &std::get<IEventHandler &>(item) == &handler;
+	}), m_handlers.end());
 }
-namespace lua {
-struct Script;
-struct Callbacks;
+void EventBus::unsubscribe(IEventHandler &handler) {
+	m_handlers.erase(std::remove_if(m_handlers.begin(), m_handlers.end(), [&handler](const std::tuple<EventType, IEventHandler &> &item) {
+		return &std::get<IEventHandler &>(item) == &handler;
+	}), m_handlers.end());
 }
-struct GlobalState {
-	GlobalState();
-	~GlobalState();
-	bool loadSettings();
-	bool loadAll();
-	bool writeSettings();
-	ColorNames *getColorNames();
-	Sampler *getSampler();
-	ScreenReader *getScreenReader();
-	ColorList *getColorList();
-	dynv::Map &settings();
-	lua::Script &script();
-	lua::Callbacks &callbacks();
-	Converters &converters();
-	Random *getRandom();
-	layout::Layouts &layouts();
-	transformation::Chain *getTransformationChain();
-	GtkWidget *getStatusBar();
-	void setStatusBar(GtkWidget *status_bar);
-	IColorSource *getCurrentColorSource();
-	void setCurrentColorSource(IColorSource *color_source);
-	std::optional<uint32_t> latinKeysGroup;
-	EventBus &eventBus();
-private:
-	struct Impl;
-	std::unique_ptr<Impl> m_impl;
-};
-#endif /* GPICK_GLOBAL_STATE_H_ */
+void EventBus::trigger(EventType type) {
+	for (auto item: m_handlers) {
+		if (std::get<EventType>(item) == type) {
+			std::get<IEventHandler &>(item).onEvent(type);
+		}
+	}
+}

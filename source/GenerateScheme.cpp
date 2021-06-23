@@ -37,6 +37,7 @@
 #include "IDroppableColorUI.h"
 #include "IMenuExtension.h"
 #include "color_names/ColorNames.h"
+#include "EventBus.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
@@ -72,7 +73,7 @@ protected:
 	int m_ident;
 	int m_schemeType;
 };
-struct GenerateSchemeArgs: public IColorSource {
+struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *generationType, *wheelTypeCombo, *colorWheel, *hueRange, *saturationRange, *lightnessRange, *colorPreviews, *lastFocusedColor;
 	struct {
 		GtkWidget *widget;
@@ -87,18 +88,18 @@ struct GenerateSchemeArgs: public IColorSource {
 		gs(gs),
 		colorWheelEditable(*this) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::optionsUpdate, *this);
+		gs.eventBus().subscribe(EventType::convertersUpdate, *this);
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~GenerateSchemeArgs() {
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "generate_scheme";
 	}
 	virtual void activate() override {
-		auto chain = gs.getTransformationChain();
-		for (int i = 0; i < MaxColors; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(items[i].widget), chain);
-		}
 		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
 	virtual void deactivate() override {
@@ -114,6 +115,25 @@ struct GenerateSchemeArgs: public IColorSource {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	void setTransformationChain() {
+		auto chain = gs.getTransformationChain();
+		for (int i = 0; i < MaxColors; ++i) {
+			gtk_color_set_transformation_chain(GTK_COLOR(items[i].widget), chain);
+		}
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+			update();
+			break;
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::colorDictionaryUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
@@ -284,6 +304,7 @@ struct GenerateSchemeArgs: public IColorSource {
 			options->set("hue", hue);
 			options->set("saturation", saturation);
 			options->set("lightness", lightness);
+			return;
 		}
 		for (int i = colorsVisible; i > colorCount; --i)
 			gtk_widget_hide(items[i - 1].widget);
@@ -541,6 +562,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerGenerateScheme(ColorSourceManager &csm) {

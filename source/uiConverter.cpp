@@ -25,6 +25,7 @@
 #include "I18N.h"
 #include "ColorObject.h"
 #include "ColorList.h"
+#include "EventBus.h"
 #include <iostream>
 using namespace std;
 
@@ -259,6 +260,7 @@ void dialog_converter_show(GtkWindow *parent, GlobalState *gs)
 			args->options->remove("converters.paste");
 		}
 		args->gs->converters().rebuildCopyPasteArrays();
+		args->gs->eventBus().trigger(EventType::convertersUpdate);
 	}
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);

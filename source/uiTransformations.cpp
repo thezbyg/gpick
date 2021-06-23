@@ -21,6 +21,7 @@
 #include "uiUtilities.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
+#include "EventBus.h"
 #include "I18N.h"
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
@@ -375,6 +376,7 @@ void dialog_transformations_show(GtkWindow* parent, GlobalState* gs)
 		} else {
 			args->options->remove("items");
 		}
+		args->gs->eventBus().trigger(EventType::displayFiltersUpdate);
 	}
 	chain->clear();
 	chain->setEnabled(args->options->getBool("enabled", false));

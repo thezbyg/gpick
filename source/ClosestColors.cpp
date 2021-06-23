@@ -24,6 +24,7 @@
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
+#include "EventBus.h"
 #include "gtk/ColorWidget.h"
 #include "dynv/Map.h"
 #include "I18N.h"
@@ -52,7 +53,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
-struct ClosestColorsArgs: public IColorSource {
+struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *targetColor, *lastFocusedColor, *colorPreviews, *closestColors[9];
 	dynv::Ref options;
 	GlobalState &gs;
@@ -61,28 +62,46 @@ struct ClosestColorsArgs: public IColorSource {
 		gs(gs),
 		editable(*this) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
+		gs.eventBus().subscribe(EventType::colorDictionaryUpdate, *this);
 	}
 	virtual ~ClosestColorsArgs() {
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
 		options->set("color", color);
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "closest_colors";
 	}
 	virtual void activate() override {
-		auto chain = gs.getTransformationChain();
-		gtk_color_set_transformation_chain(GTK_COLOR(targetColor), chain);
-		for (int i = 0; i < 9; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(closestColors[i]), chain);
-		}
 		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
 	virtual void deactivate() override {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	void setTransformationChain() {
+		auto chain = gs.getTransformationChain();
+		gtk_color_set_transformation_chain(GTK_COLOR(targetColor), chain);
+		for (int i = 0; i < 9; ++i) {
+			gtk_color_set_transformation_chain(GTK_COLOR(closestColors[i]), chain);
+		}
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::colorDictionaryUpdate:
+			update();
+			break;
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
@@ -236,6 +255,7 @@ std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerClosestColors(ColorSourceManager &csm) {

@@ -25,6 +25,7 @@
 #include "color_names/ColorNames.h"
 #include "Sampler.h"
 #include "ColorList.h"
+#include "EventBus.h"
 #include "layout/Layout.h"
 #include "layout/Layouts.h"
 #include "transformation/Chain.h"
@@ -36,61 +37,57 @@
 #include <filesystem>
 #include <stdlib.h>
 #include <glib/gstdio.h>
-extern "C"{
+extern "C" {
 #include <lualib.h>
 #include <lauxlib.h>
 }
 #include <fstream>
 #include <iostream>
-using namespace std;
-
-struct GlobalState::Impl
-{
+struct GlobalState::Impl {
 	GlobalState *m_decl;
-	ColorNames *m_color_names;
+	ColorNames *m_colorNames;
 	Sampler *m_sampler;
-	ScreenReader *m_screen_reader;
-	ColorList *m_color_list;
+	ScreenReader *m_screenReader;
+	ColorList *m_colorList;
 	dynv::Map m_settings;
 	lua::Script m_script;
 	Random *m_random;
 	Converters m_converters;
 	layout::Layouts m_layouts;
 	lua::Callbacks m_callbacks;
-	transformation::Chain *m_transformation_chain;
-	GtkWidget *m_status_bar;
-	IColorSource *m_color_source;
+	transformation::Chain *m_transformationChain;
+	GtkWidget *m_statusBar;
+	IColorSource *m_colorSource;
+	EventBus m_eventBus;
 	Impl(GlobalState *decl):
 		m_decl(decl),
-		m_color_names(nullptr),
+		m_colorNames(nullptr),
 		m_sampler(nullptr),
-		m_screen_reader(nullptr),
-		m_color_list(nullptr),
+		m_screenReader(nullptr),
+		m_colorList(nullptr),
 		m_random(nullptr),
-		m_transformation_chain(nullptr),
-		m_status_bar(nullptr),
-		m_color_source(nullptr)
-	{
+		m_transformationChain(nullptr),
+		m_statusBar(nullptr),
+		m_colorSource(nullptr) {
 	}
-	~Impl()
-	{
-		if (m_transformation_chain != nullptr)
-			delete m_transformation_chain;
-		if (m_color_list != nullptr)
-			color_list_destroy(m_color_list);
+	~Impl() {
+		if (m_transformationChain != nullptr)
+			delete m_transformationChain;
+		if (m_colorList != nullptr)
+			color_list_destroy(m_colorList);
 		if (m_random != nullptr)
 			random_destroy(m_random);
-		if (m_color_names != nullptr)
-			color_names_destroy(m_color_names);
+		if (m_colorNames != nullptr)
+			color_names_destroy(m_colorNames);
 		if (m_sampler != nullptr)
 			sampler_destroy(m_sampler);
-		if (m_screen_reader != nullptr)
-			screen_reader_destroy(m_screen_reader);
+		if (m_screenReader != nullptr)
+			screen_reader_destroy(m_screenReader);
 	}
 	bool writeSettings() {
 		auto configFile = buildConfigPath("settings.xml");
 		std::ofstream settingsFile(configFile.c_str());
-		if (!settingsFile.is_open()){
+		if (!settingsFile.is_open()) {
 			return false;
 		}
 		if (!m_settings.serializeXml(settingsFile))
@@ -101,7 +98,7 @@ struct GlobalState::Impl
 	bool loadSettings() {
 		auto configFile = buildConfigPath("settings.xml");
 		std::ifstream settingsFile(configFile.c_str());
-		if (!settingsFile.is_open()){
+		if (!settingsFile.is_open()) {
 			return false;
 		}
 		if (!m_settings.deserializeXml(settingsFile)) {
@@ -130,30 +127,26 @@ struct GlobalState::Impl
 		}
 		newFile.close();
 	}
-	bool loadColorNames()
-	{
-		if (m_color_names != nullptr) return false;
-		m_color_names = color_names_new();
+	bool loadColorNames() {
+		if (m_colorNames != nullptr) return false;
+		m_colorNames = color_names_new();
 		auto options = m_settings.getOrCreateMap("gpick");
-		color_names_load(m_color_names, *options);
+		color_names_load(m_colorNames, *options);
 		return true;
 	}
-	bool initializeRandomGenerator()
-	{
+	bool initializeRandomGenerator() {
 		m_random = random_new("SHR3");
 		size_t seed_value = time(0) | 1;
 		random_seed(m_random, &seed_value);
 		return true;
 	}
-	bool createColorList()
-	{
-		if (m_color_list != nullptr) return false;
+	bool createColorList() {
+		if (m_colorList != nullptr) return false;
 		//create color list / callbacks must be defined elsewhere
-		m_color_list = color_list_new();
+		m_colorList = color_list_new();
 		return true;
 	}
-	bool initializeLua()
-	{
+	bool initializeLua() {
 		lua_State *L = m_script;
 		lua::registerAll(L, *m_decl);
 		std::vector<std::string> paths;
@@ -161,16 +154,15 @@ struct GlobalState::Impl
 		paths.push_back(buildConfigPath());
 		m_script.setPaths(paths);
 		bool result = m_script.load("init");
-		if (!result){
+		if (!result) {
 			std::cerr << "Lua load error: " << m_script.getLastError() << "\n";
 		}
 		return result;
 	}
-	bool loadConverters()
-	{
+	bool loadConverters() {
 		auto converters = m_settings.getOrCreateMap("gpick.converters");
 		if (converters->size() == 0) {
-			const char* names[] = {
+			const char *names[] = {
 				"color_web_hex",
 				"color_css_rgb",
 				"color_css_hsl",
@@ -203,9 +195,8 @@ struct GlobalState::Impl
 		m_converters.colorList(m_settings.getString("gpick.converters.color_list", "color_web_hex"));
 		return true;
 	}
-	bool loadTransformationChain()
-	{
-		if (m_transformation_chain != nullptr) return false;
+	bool loadTransformationChain() {
+		if (m_transformationChain != nullptr) return false;
 		transformation::Chain *chain = new transformation::Chain();
 		chain->setEnabled(m_settings.getBool("gpick.transformations.enabled", false));
 		auto items = m_settings.getMaps("gpick.transformations.items");
@@ -221,15 +212,14 @@ struct GlobalState::Impl
 			transformation->deserialize(*values);
 			chain->add(std::move(transformation));
 		}
-		m_transformation_chain = chain;
+		m_transformationChain = chain;
 		return true;
 	}
-	bool loadAll()
-	{
+	bool loadAll() {
 		checkConfigurationDirectory();
 		checkUserInitFile();
-		m_screen_reader = screen_reader_new();
-		m_sampler = sampler_new(m_screen_reader);
+		m_screenReader = screen_reader_new();
+		m_sampler = sampler_new(m_screenReader);
 		initializeRandomGenerator();
 		loadSettings();
 		loadColorNames();
@@ -241,82 +231,65 @@ struct GlobalState::Impl
 	}
 };
 
-GlobalState::GlobalState()
-{
-	m_impl = make_unique<Impl>(this);
+GlobalState::GlobalState() {
+	m_impl = std::make_unique<Impl>(this);
 }
-GlobalState::~GlobalState()
-{
+GlobalState::~GlobalState() {
 }
-bool GlobalState::loadSettings()
-{
+bool GlobalState::loadSettings() {
 	return m_impl->loadSettings();
 }
-bool GlobalState::loadAll()
-{
+bool GlobalState::loadAll() {
 	return m_impl->loadAll();
 }
-bool GlobalState::writeSettings()
-{
+bool GlobalState::writeSettings() {
 	return m_impl->writeSettings();
 }
-ColorNames *GlobalState::getColorNames()
-{
-	return m_impl->m_color_names;
+ColorNames *GlobalState::getColorNames() {
+	return m_impl->m_colorNames;
 }
-Sampler *GlobalState::getSampler()
-{
+Sampler *GlobalState::getSampler() {
 	return m_impl->m_sampler;
 }
-ScreenReader *GlobalState::getScreenReader()
-{
-	return m_impl->m_screen_reader;
+ScreenReader *GlobalState::getScreenReader() {
+	return m_impl->m_screenReader;
 }
-ColorList *GlobalState::getColorList()
-{
-	return m_impl->m_color_list;
+ColorList *GlobalState::getColorList() {
+	return m_impl->m_colorList;
 }
-dynv::Map &GlobalState::settings()
-{
+dynv::Map &GlobalState::settings() {
 	return m_impl->m_settings;
 }
-lua::Script &GlobalState::script()
-{
+lua::Script &GlobalState::script() {
 	return m_impl->m_script;
 }
-lua::Callbacks &GlobalState::callbacks()
-{
+lua::Callbacks &GlobalState::callbacks() {
 	return m_impl->m_callbacks;
 }
-Random *GlobalState::getRandom()
-{
+Random *GlobalState::getRandom() {
 	return m_impl->m_random;
 }
-Converters &GlobalState::converters()
-{
+Converters &GlobalState::converters() {
 	return m_impl->m_converters;
 }
-layout::Layouts &GlobalState::layouts()
-{
+layout::Layouts &GlobalState::layouts() {
 	return m_impl->m_layouts;
 }
-transformation::Chain *GlobalState::getTransformationChain()
-{
-	return m_impl->m_transformation_chain;
+transformation::Chain *GlobalState::getTransformationChain() {
+	return m_impl->m_transformationChain;
 }
-GtkWidget *GlobalState::getStatusBar()
-{
-	return m_impl->m_status_bar;
+GtkWidget *GlobalState::getStatusBar() {
+	return m_impl->m_statusBar;
 }
-void GlobalState::setStatusBar(GtkWidget *status_bar)
-{
-	m_impl->m_status_bar = status_bar;
+void GlobalState::setStatusBar(GtkWidget *status_bar) {
+	m_impl->m_statusBar = status_bar;
 }
-IColorSource *GlobalState::getCurrentColorSource()
-{
-	return m_impl->m_color_source;
+IColorSource *GlobalState::getCurrentColorSource() {
+	return m_impl->m_colorSource;
 }
-void GlobalState::setCurrentColorSource(IColorSource *color_source)
-{
-	m_impl->m_color_source = color_source;
+void GlobalState::setCurrentColorSource(IColorSource *color_source) {
+	m_impl->m_colorSource = color_source;
+}
+EventBus &GlobalState::eventBus() {
+	return m_impl->m_eventBus;
 }

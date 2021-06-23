@@ -27,6 +27,7 @@
 #include "gtk/LayoutPreview.h"
 #include "dynv/Map.h"
 #include "I18N.h"
+#include "EventBus.h"
 #include "color_names/ColorNames.h"
 #include "layout/Layout.h"
 #include "layout/Layouts.h"
@@ -59,7 +60,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
-struct BrightnessDarknessArgs: public IColorSource {
+struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 	Color color;
 	GtkWidget *main, *statusBar, *brightnessDarkness, *layoutView;
 	System *layoutSystem;
@@ -70,19 +71,19 @@ struct BrightnessDarknessArgs: public IColorSource {
 		gs(gs),
 		editable(*this) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~BrightnessDarknessArgs() {
 		if (layoutSystem)
 			System::unref(layoutSystem);
 		layoutSystem = nullptr;
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "brightness_darkness";
 	}
 	virtual void activate() override {
-		auto chain = gs.getTransformationChain();
-		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
 		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
 	virtual void deactivate() override {
@@ -91,6 +92,21 @@ struct BrightnessDarknessArgs: public IColorSource {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	void setTransformationChain() {
+		auto chain = gs.getTransformationChain();
+		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::colorDictionaryUpdate:
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		if (!isSelected())
@@ -280,8 +296,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	args->update(false);
 	gtk_widget_show_all(hbox);
 	args->main = hbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerBrightnessDarkness(ColorSourceManager &csm) {
-	csm.add("brightness_darkness", _("Brightness Darkness"), RegistrationFlags::needsViewport, GDK_KEY_d, build);
+	csm.add("brightness_darkness", _("Brightness Darkness"), RegistrationFlags::none, GDK_KEY_d, build);
 }

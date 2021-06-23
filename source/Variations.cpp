@@ -28,6 +28,7 @@
 #include "Converter.h"
 #include "dynv/Map.h"
 #include "I18N.h"
+#include "EventBus.h"
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
@@ -80,7 +81,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
-struct VariationsArgs: public IColorSource {
+struct VariationsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *strengthRange, *lastFocusedColor, *colorPreviews, *allColors;
 	struct {
 		GtkWidget *primary;
@@ -93,6 +94,7 @@ struct VariationsArgs: public IColorSource {
 		options(options),
 		gs(gs) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	~VariationsArgs() {
 		Color color;
@@ -107,11 +109,21 @@ struct VariationsArgs: public IColorSource {
 		gtk_color_get_color(GTK_COLOR(allColors), &color);
 		options->set("all_colors", color);
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "variations";
 	}
 	virtual void activate() override {
+		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
+	}
+	virtual void deactivate() override {
+		update(true);
+	}
+	virtual GtkWidget *getWidget() override {
+		return main;
+	}
+	void setTransformationChain() {
 		auto chain = gs.getTransformationChain();
 		gtk_color_set_transformation_chain(GTK_COLOR(allColors), chain);
 		for (int i = 0; i < Rows; ++i) {
@@ -120,13 +132,17 @@ struct VariationsArgs: public IColorSource {
 				gtk_color_set_transformation_chain(GTK_COLOR(rows[i].variants[j]), chain);
 			}
 		}
-		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
-	virtual void deactivate() override {
-		update(true);
-	}
-	virtual GtkWidget *getWidget() override {
-		return main;
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+		case EventType::colorDictionaryUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
@@ -442,6 +458,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerVariations(ColorSourceManager &csm) {

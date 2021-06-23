@@ -35,6 +35,7 @@
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
+#include "EventBus.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <fstream>
@@ -57,7 +58,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
-struct LayoutPreviewArgs: IColorSource {
+struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *layoutView;
 	System *layoutSystem;
 	std::string lastFilename;
@@ -69,6 +70,7 @@ struct LayoutPreviewArgs: IColorSource {
 		gs(gs),
 		editable(*this) {
 		statusBar = gs.getStatusBar();
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~LayoutPreviewArgs() {
 		saveColors();
@@ -76,19 +78,33 @@ struct LayoutPreviewArgs: IColorSource {
 			System::unref(layoutSystem);
 		layoutSystem = nullptr;
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const {
 		return "layout_preview";
 	}
 	virtual void activate() override {
-		auto chain = gs.getTransformationChain();
-		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
 		gtk_statusbar_push(GTK_STATUSBAR(statusBar), gtk_statusbar_get_context_id(GTK_STATUSBAR(statusBar), "empty"), "");
 	}
 	virtual void deactivate() override {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	void setTransformationChain() {
+		auto chain = gs.getTransformationChain();
+		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::displayFiltersUpdate:
+			setTransformationChain();
+			break;
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+		case EventType::colorDictionaryUpdate:
+			break;
+		}
 	}
 	void addToPalette() {
 		if (!isSelected())
@@ -478,6 +494,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	}
 	gtk_widget_show_all(vbox);
 	args->main = vbox;
+	args->setTransformationChain();
 	return args;
 }
 void registerLayoutPreview(ColorSourceManager &csm) {
