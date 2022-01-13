@@ -3,6 +3,7 @@ Version=1.0
 Name=Gpick
 Comment=Color picker
 Comment[ru]=Пипетка для снятия цвета
+Comment[de]=Farbwerte eines ausgewählten Punktes auf dem Bildschirm erfassen
 GenericName=Color picker
 Exec=gpick %u
 Icon=gpick
