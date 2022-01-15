@@ -18,10 +18,8 @@
 
 #include "GlobalState.h"
 #include "../GlobalState.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 namespace lua
 {
 void setGlobalState(lua_State *L, GlobalState &global_state)

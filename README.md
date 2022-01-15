@@ -45,8 +45,6 @@ Expat ([http://expat.sourceforge.net](http://expat.sourceforge.net)).
 Boost 1.71 or newer ([http://www.boost.org](http://www.boost.org)).
 Used libraries:
 
- * Filesystem.
- * System.
  * Interprocess.
  * Test (only when building/running tests).
 

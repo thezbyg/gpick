@@ -18,15 +18,25 @@
 
 #include <boost/test/unit_test.hpp>
 #include "lua/Script.h"
-extern "C" {
+#include "common/Scoped.h"
 #include <lualib.h>
 #include <lauxlib.h>
-}
 using namespace lua;
 static int test(lua_State *L) {
 	lua_pushstring(L, "ok");
 	return 1;
 }
+static int error(lua_State *L) {
+	lua_getglobal(L, "cleanupOnError");
+	auto &cleanupOnError = *reinterpret_cast<bool *>(lua_touserdata(L, -1));
+	lua_pop(L, 1);
+	common::Scoped<std::function<void()>> callOnScopeEnd([&cleanupOnError]() {
+		cleanupOnError = true;
+	});
+	luaL_error(L, "error");
+	return 0;
+}
+BOOST_AUTO_TEST_SUITE(script)
 BOOST_AUTO_TEST_CASE(register_extension) {
 	Script script;
 	bool status = script.registerExtension("test", [](Script &script) {
@@ -62,3 +72,25 @@ BOOST_AUTO_TEST_CASE(register_nullptr_extension) {
 	std::string returnValue = script.getString(-1);
 	BOOST_CHECK(returnValue == "ok");
 }
+BOOST_AUTO_TEST_CASE(error_handling) {
+	Script script;
+	lua_State *L = script;
+	bool cleanupOnError = false;
+	lua_pushlightuserdata(L, &cleanupOnError);
+	lua_setglobal(L, "cleanupOnError");
+	bool status = script.registerExtension("test", [](Script &script) {
+		static const struct luaL_Reg functions[] = {
+			{ "error", error },
+			{ nullptr, nullptr }
+		};
+		luaL_newlib(script, functions);
+		return 1;
+	});
+	BOOST_CHECK(status == true);
+	status = script.loadCode("test = require(\"gpick/test\")\nreturn test.error()");
+	BOOST_CHECK(status == true);
+	status = script.run(0, 0);
+	BOOST_CHECK(status == false);
+	BOOST_CHECK(cleanupOnError == true);
+}
+BOOST_AUTO_TEST_SUITE_END()

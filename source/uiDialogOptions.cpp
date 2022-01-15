@@ -28,12 +28,9 @@
 #include "lua/Callbacks.h"
 #include <string>
 #include <iostream>
-using namespace std;
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
-
+using namespace std;
 static const struct{
 	const char *label;
 	const char *setting;

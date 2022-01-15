@@ -20,10 +20,8 @@
 #include "System.h"
 #include "../lua/Layout.h"
 #include <iostream>
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 using namespace std;
 namespace layout
 {

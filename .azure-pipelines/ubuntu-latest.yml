@@ -9,16 +9,34 @@ jobs:
       gcc_gtk3_lua52:
         publish_prefix: gcc-gtk3-lua52
         lua_package: liblua5.2-dev
+        compiler: g++
+        CC: gcc
+        CXX: g++
       gcc_gtk3_lua53:
         publish_prefix: gcc-gtk3-lua53
         lua_package: liblua5.3-dev
+        compiler: g++
+        CC: gcc
+        CXX: g++
+      clang_gtk3_lua52:
+        publish_prefix: clang-gtk3-lua52
+        lua_package: liblua5.2-dev
+        compiler: clang
+        CC: clang
+        CXX: clang++
+      clang_gtk3_lua53:
+        publish_prefix: clang-gtk3-lua53
+        lua_package: liblua5.3-dev
+        compiler: clang
+        CC: clang
+        CXX: clang++
   pool:
     vmImage: ubuntu-latest
   steps:
   - script: >
       sudo apt-get update && sudo apt-get install
-      git ragel g++ gcc gettext libgtk-3-dev $(lua_package) libexpat1-dev
-      libboost-filesystem-dev libboost-system-dev libboost-test-dev
+      $(compiler) $(lua_package) git ragel gettext libgtk-3-dev libexpat1-dev
+      libboost-test-dev
   - task: CMake@1
     inputs:
       workingDirectory: 'build'

@@ -33,11 +33,9 @@
 #include <vector>
 #include <iostream>
 #include <functional>
-using namespace std;
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
+using namespace std;
 Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize):
 	m_name(name),
 	m_label(label),

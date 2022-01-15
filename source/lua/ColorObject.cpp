@@ -20,10 +20,8 @@
 #include "Color.h"
 #include "Script.h"
 #include "../ColorObject.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 namespace lua
 {
 static int newColorObject(lua_State *L)

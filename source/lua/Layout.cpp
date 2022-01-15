@@ -23,10 +23,8 @@
 #include "../layout/Box.h"
 #include "../layout/System.h"
 #include "../layout/Layout.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 #include <typeinfo>
 #include <iostream>
 using namespace std;

@@ -77,7 +77,7 @@ if not env.GetOption('clean'):
 			libs['GIO_PC'] = {'checks':{'gio-unix-2.0': '>= 2.26.0', 'gio-2.0': '>= 2.26.0'}}
 		else:
 			libs['GTK_PC'] = {'checks':{'gtk+-3.0': '>= 3.0.0'}}
-		libs['LUA_PC'] = {'checks':{'lua5.4': '>= 5.4', 'lua5.3': '>= 5.3', 'lua': '>= 5.2', 'lua5.2': '>= 5.2'}}
+		libs['LUA_PC'] = {'checks':{'lua5.4-c++': '>= 5.4', 'lua5.3-c++': '>= 5.3', 'lua-c++': '>= 5.2', 'lua5.2-c++': '>= 5.2'}}
 	env.ConfirmLibs(conf, libs)
 	env.ConfirmBoost(conf, '1.71')
 	env = conf.Finish()
@@ -291,8 +291,6 @@ def buildGpick(env):
 		gpick_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'expat2.1', 'pango-1.0', 'pangocairo-1.0', 'intl'])
 		gpick_env.Append(LINKFLAGS = ['/SUBSYSTEM:WINDOWS', '/ENTRY:mainCRTStartup'], CPPDEFINES = ['XML_STATIC'])
 		objects += buildWindowsResources(env)
-	else:
-		gpick_env.Append(LIBS = ['boost_filesystem', 'boost_system'])
 
 	if not gpick_env['BUILD_TARGET'] == 'win32':
 		gpick_env.Append(LIBS = ['expat'])

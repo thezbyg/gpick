@@ -31,10 +31,8 @@
 #include "../Converters.h"
 #include "../Converter.h"
 #include "version/Version.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 namespace lua
 {
 static void checkArgumentIsFunctionOrNil(lua_State *L, int index)

@@ -37,10 +37,8 @@
 #include <filesystem>
 #include <stdlib.h>
 #include <glib/gstdio.h>
-extern "C" {
 #include <lualib.h>
 #include <lauxlib.h>
-}
 #include <fstream>
 #include <iostream>
 struct GlobalState::Impl {

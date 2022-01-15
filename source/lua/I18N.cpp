@@ -18,10 +18,8 @@
 
 #include "I18N.h"
 #include "../I18N.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 namespace lua
 {
 int getText(lua_State *L)

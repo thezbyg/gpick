@@ -22,9 +22,7 @@
 #include "lua/Color.h"
 #include "lua/Script.h"
 #include "lua/Callbacks.h"
-extern "C"{
 #include <lua.h>
-}
 #include <iostream>
 using namespace std;
 

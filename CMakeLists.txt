@@ -16,11 +16,12 @@ file(GLOB SOURCES
 	source/transformation/*.cpp source/transformation/*.h
 	source/version/*.cpp source/version/*.h
 )
-list(REMOVE_ITEM SOURCES source/Color.cpp source/Color.h source/lua/Script.cpp source/lua/Script.h)
+list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/Color.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/Color.h ${CMAKE_CURRENT_SOURCE_DIR}/source/lua/Script.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/lua/Script.h)
+
 include(Version)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/source/version/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp" @ONLY)
 list(APPEND SOURCES "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp")
-find_package(Boost 1.58 COMPONENTS filesystem system unit_test_framework REQUIRED)
+find_package(Boost 1.58 COMPONENTS unit_test_framework REQUIRED)
 find_package(PkgConfig)
 if (PkgConfig_FOUND)
 	if (USE_GTK3)
@@ -29,7 +30,7 @@ if (PkgConfig_FOUND)
 		pkg_check_modules(GTK2 gtk+-2.0>=2.24)
 		pkg_check_modules(GioUnix gio-unix-2.0>=2.24)
 	endif()
-	pkg_search_module(Lua lua5.4>=5.4 lua5>=5.4 lua5.3>=5.3 lua5>=5.3 lua>=5.3 lua5.2>=5.2 lua>=5.2)
+	pkg_search_module(Lua lua5.4-c++>=5.4 lua5-c++>=5.4 lua5.3-c++>=5.3 lua5-c++>=5.3 lua-c++>=5.3 lua-c++5.2>=5.2 lua-c++>=5.2)
 	pkg_check_modules(Expat expat>=1.0)
 endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -80,7 +81,7 @@ function(add_gtk_options target)
 endfunction()
 
 file(GLOB MATH_SOURCES source/math/Empty.cpp)
-add_library(gpick-math STATIC ${MATH_SOURCES})
+add_library(gpick-math OBJECT ${MATH_SOURCES})
 set_compile_options(gpick-math)
 target_include_directories(gpick-math PRIVATE
 	source
@@ -88,7 +89,7 @@ target_include_directories(gpick-math PRIVATE
 )
 
 file(GLOB COLOR_SOURCES source/Color.cpp source/Color.h)
-add_library(gpick-color STATIC ${COLOR_SOURCES})
+add_library(gpick-color OBJECT ${COLOR_SOURCES})
 set_compile_options(gpick-color)
 target_link_libraries(gpick-color PRIVATE gpick-math)
 target_include_directories(gpick-color PRIVATE
@@ -97,7 +98,7 @@ target_include_directories(gpick-color PRIVATE
 )
 
 file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h)
-add_library(gpick-common STATIC ${COMMON_SOURCES})
+add_library(gpick-common OBJECT ${COMMON_SOURCES})
 set_compile_options(gpick-common)
 target_include_directories(gpick-common PRIVATE
 	source
@@ -105,7 +106,7 @@ target_include_directories(gpick-common PRIVATE
 )
 
 file(GLOB DYNV_SOURCES source/dynv/*.cpp source/dynv/*.h)
-add_library(gpick-dynv STATIC ${DYNV_SOURCES})
+add_library(gpick-dynv OBJECT ${DYNV_SOURCES})
 set_compile_options(gpick-dynv)
 target_link_libraries(gpick-dynv PRIVATE gpick-color)
 target_include_directories(gpick-dynv PRIVATE
@@ -115,7 +116,7 @@ target_include_directories(gpick-dynv PRIVATE
 )
 
 file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
-add_library(gpick-lua STATIC ${LUA_SOURCES})
+add_library(gpick-lua OBJECT ${LUA_SOURCES})
 set_compile_options(gpick-lua)
 target_link_libraries(gpick-lua PRIVATE
 	${Lua_LIBRARIES}
@@ -129,7 +130,7 @@ target_include_directories(gpick-lua PRIVATE
 file(GLOB PARSER_SOURCES source/parser/*.cpp source/parser/*.h)
 ragel_target(text_file_parser source/parser/TextFileParser.rl ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/TextFileParser.cpp)
 list(APPEND PARSER_SOURCES ${RAGEL_text_file_parser_OUTPUTS})
-add_library(gpick-parser STATIC ${PARSER_SOURCES})
+add_library(gpick-parser OBJECT ${PARSER_SOURCES})
 set_compile_options(gpick-parser)
 target_include_directories(gpick-parser PRIVATE
 	source
@@ -165,8 +166,6 @@ target_link_libraries(gpick PRIVATE
 	gpick-lua
 	gpick-parser
 	gpick-common
-	${Boost_FILESYSTEM_LIBRARY}
-	${Boost_SYSTEM_LIBRARY}
 	${Lua_LIBRARIES}
 	${Expat_LIBRARIES}
 	Threads::Threads

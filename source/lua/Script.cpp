@@ -18,10 +18,8 @@
 
 #include "Script.h"
 #include <sstream>
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 #include <iostream>
 using namespace std;
 namespace lua

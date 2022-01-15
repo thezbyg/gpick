@@ -17,10 +17,8 @@
  */
 
 #include "Ref.h"
-extern "C"{
 #include <lualib.h>
 #include <lauxlib.h>
-}
 namespace lua
 {
 Ref::Ref():
