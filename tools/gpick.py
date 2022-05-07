@@ -164,7 +164,7 @@ class GpickEnvironment(SConsEnvironment):
 		self.Replace(
 			GPICK_BUILD_VERSION = version,
 			GPICK_BUILD_REVISION = revision,
-			GPICK_BUILD_HASH = hash[0:10],
+			GPICK_BUILD_HASH = hash,
 			GPICK_BUILD_DATE = date,
 			GPICK_BUILD_VERSION_FULL = version + '-' + revision,
 			GPICK_BUILD_VERSION_FULL_COMMA = re.sub(r'(\d+)[^\.]*', '\\1', version).replace('.', ',') + ',' + revision,

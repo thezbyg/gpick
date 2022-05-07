@@ -152,8 +152,8 @@ if (ENABLE_NLS)
 	add_custom_target(prepare-translations ALL DEPENDS ${TRANSLATION_SOURCE_FILES})
 	file(GLOB LUA_SOURCES share/gpick/*.lua)
 	add_custom_target(template
-		COMMAND ${XGETTEXT_EXECUTABLE} --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=0.0 --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${SOURCES}
-		COMMAND ${XGETTEXT_EXECUTABLE} --language=C++ --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=0.0 --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot ${LUA_SOURCES}
+		COMMAND ${XGETTEXT_EXECUTABLE} --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${SOURCES}
+		COMMAND ${XGETTEXT_EXECUTABLE} --language=C++ --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot ${LUA_SOURCES}
 		COMMAND ${MSGCAT_EXECUTABLE} --use-first ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot --output-file=${CMAKE_CURRENT_BINARY_DIR}/template.pot
 	)
 endif()
@@ -217,4 +217,12 @@ if (ENABLE_NLS)
 		get_filename_component(dir ${name} DIRECTORY)
 		install(FILES ${translation} DESTINATION ${dir})
 	endforeach()
+endif()
+
+if (GIT_EXECUTABLE AND GITDIR)
+	add_custom_target(archive
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+		COMMAND ${GIT_EXECUTABLE} archive --format=tar.gz --prefix="gpick-${GPICK_BUILD_VERSION_FULL}/" --add-file="${CMAKE_CURRENT_BINARY_DIR}/.version" --output="${CMAKE_CURRENT_BINARY_DIR}/gpick-${GPICK_BUILD_VERSION_FULL}.tar.gz" HEAD
+		COMMAND ${GIT_EXECUTABLE} archive --format=zip --prefix="gpick-${GPICK_BUILD_VERSION_FULL}/" --add-file="${CMAKE_CURRENT_BINARY_DIR}/.version" --output="${CMAKE_CURRENT_BINARY_DIR}/gpick-${GPICK_BUILD_VERSION_FULL}.zip" HEAD
+	)
 endif()

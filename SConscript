@@ -146,6 +146,7 @@ env.Append(CPPPATH = ['#source'])
 
 def buildVersion(env):
 	version_env = env.Clone()
+	version_env['GPICK_BUILD_HASH'] = version_env['GPICK_BUILD_HASH'][:10]
 	sources = version_env.Template(version_env.Glob('source/version/*.in'), TEMPLATE_ENV_FILTER = ['GPICK_*'])
 	return version_env.StaticObject(version_env.Glob('#source/version/*.cpp') + sources)
 
@@ -216,7 +217,7 @@ def buildWindowsResources(env):
 
 def addDebianPackageAlias(env):
 	DEBNAME = "gpick"
-	DEBVERSION = str(env['GPICK_BUILD_VERSION'])+"-1"
+	DEBVERSION = str(env['GPICK_BUILD_VERSION_FULL'])
 	DEBMAINT = "Albertas Vyšniauskas <albertas.vysniauskas@gpick.org>"
 	DEBARCH = env['DEBARCH']
 	DEBDEPENDS = "libgtk2.0-0 (>= 2.24), libc6 (>= 2.13), liblua5.2-0 (>= 5.2), libcairo2 (>=1.8), libglib2.0-0 (>=2.24)"
@@ -342,8 +343,8 @@ if env['ENABLE_NLS']:
 		stripped_locales.append(env.Msgcat(translation, File(translation).srcnode(), MSGCAT_FLAGS = ['--no-location', '--sort-output', '--no-wrap', '--to-code=utf-8']))
 	env.Alias(target = "strip_locales", source = stripped_locales)
 	env.Alias(target = "locales", source = locales)
-	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
-	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION"'])
+	template_c = env.Xgettext("template_c.pot", env.Glob('source/*.cpp') + env.Glob('source/tools/*.cpp') + env.Glob('source/transformation/*.cpp'), XGETTEXT_FLAGS = ['--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION_FULL"'])
+	template_lua = env.Xgettext("template_lua.pot", env.Glob('share/gpick/*.lua'), XGETTEXT_FLAGS = ['--language=C++', '--keyword=N_', '--from-code=UTF-8', '--package-version="$GPICK_BUILD_VERSION_FULL"'])
 	template = env.Msgcat("template.pot", [template_c, template_lua], MSGCAT_FLAGS = ['--use-first'])
 	env.Alias(target = "template", source = [
 		template
@@ -363,18 +364,18 @@ env.Alias(target = "install", source = [
 ])
 
 env.Alias(target = "version", source = [
-	env.AlwaysBuild(env.Template(target = "#.version", source = None, TEMPLATE_ENV_FILTER = ['GPICK_*'], TEMPLATE_SOURCE = '@GPICK_BUILD_VERSION@\n@GPICK_BUILD_REVISION@\n@GPICK_BUILD_HASH@\n@GPICK_BUILD_DATE@\n'))
+	env.AlwaysBuild(env.Template(target = ".version", source = None, TEMPLATE_ENV_FILTER = ['GPICK_*'], TEMPLATE_SOURCE = '@GPICK_BUILD_VERSION@\n@GPICK_BUILD_REVISION@\n@GPICK_BUILD_HASH@\n@GPICK_BUILD_DATE@\n'))
 ])
 
-tarFiles = env.GetSourceFiles("(" + RegexEscape(os.sep) + r"\.)|(" + RegexEscape(os.sep) + r"\.svn$)|(^" + RegexEscape(os.sep) + r"build$)", r"(^\.)|(\.pyc$)|(\.orig$)|(~$)|(\.log$)|(\.diff)|(\.mo$)|(\.patch)|(^gpick-.*\.tar\.gz$)|(^user-config\.py$)")
+def phony(env, target, action):
+	alias = env.Alias(target, [], action)
+	env.AlwaysBuild(alias)
+	return alias
 
-if 'TAR' in env:
-	env.Alias(target = "tar", source = [
-		'version',
-		env.Append(TARFLAGS = ['-z']),
-		env.Prepend(TARFLAGS = ['--transform', '"s,(^(build/)?),gpick_' + str(env['GPICK_BUILD_VERSION']) + '/,x"']),
-		env.Tar('gpick_' + str(env['GPICK_BUILD_VERSION']) + '.tar.gz', tarFiles)
-	])
+env.Alias("archive", ['version'], [
+	'git archive --format=tar.gz --prefix="gpick-${GPICK_BUILD_VERSION_FULL}/" --add-file="build/.version" --output="build/gpick-${GPICK_BUILD_VERSION_FULL}.tar.gz" HEAD',
+	'git archive --format=zip --prefix="gpick-${GPICK_BUILD_VERSION_FULL}/" --add-file="build/.version" --output="build/gpick-${GPICK_BUILD_VERSION_FULL}.zip" HEAD',
+])
 
-env.Default(executable, executable)
+env.Default(executable)
 
