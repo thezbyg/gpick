@@ -159,9 +159,9 @@ static void gplColor(ColorObject* color_object, ostream &stream)
 	using boost::math::iround;
 	Color color = color_object->getColor();
 	stream
-		<< iround(color.rgb.red * 255) << "\t"
-		<< iround(color.rgb.green * 255) << "\t"
-		<< iround(color.rgb.blue * 255) << "\t" << color_object->getName() << endl;
+		<< iround(color.red * 255) << "\t"
+		<< iround(color.green * 255) << "\t"
+		<< iround(color.blue * 255) << "\t" << color_object->getName() << endl;
 }
 bool ImportExport::exportGPL()
 {
@@ -220,9 +220,10 @@ bool ImportExport::importGPL()
 		ss >> r >> g >> b;
 		getline(ss, line);
 		if (!f.good()) line = "";
-		c.rgb.red = r / 255.0f;
-		c.rgb.green = g / 255.0f;
-		c.rgb.blue = b / 255.0f;
+		c.red = r / 255.0f;
+		c.green = g / 255.0f;
+		c.blue = b / 255.0f;
+		c.alpha = 1;
 		color_object = color_list_new_color_object(m_color_list, &c);
 		stripLeadingTrailingChars(line, strip_chars);
 		color_object->setName(line);
@@ -339,8 +340,8 @@ static void cssColor(ColorObject* color_object, ostream &stream)
 	hsl = color.rgbToHsl();
 	stream << " * " << color_object->getName()
 		<< ": " << HtmlHEX{color}
-		<< ", " << HtmlRGB{color}
-		<< ", " << HtmlHSL{color}
+		<< ", " << HtmlRGBA{color}
+		<< ", " << HtmlHSLA{color}
 		<< endl;
 }
 bool ImportExport::exportCSS()
@@ -370,29 +371,32 @@ bool ImportExport::exportCSS()
 	f.close();
 	return true;
 }
-static void htmlColor(ColorObject* color_object, bool include_color_name, ostream &stream)
+static void htmlColor(ColorObject* color_object, Converter *converter, bool include_color_name, ostream &stream)
 {
 	Color color, text_color;
 	color = color_object->getColor();
 	text_color = color.getContrasting();
-	stream << "<div style=\"background-color:" << HtmlRGB{color} << "; color:" << HtmlRGB{text_color} << "\">";
+	stream << "<div style=\"background-color:" << HtmlRGBA{color} << "; color:" << HtmlRGB{text_color} << "\">";
 	if (include_color_name){
 		string name = color_object->getName();
 		escapeHtmlInplace(name);
 		if (!name.empty())
 			stream << name << ":<br/>";
 	}
-	stream << "<span>" << HtmlHEX{color} << "</span>" << "</div>";
+	if (converter)
+		stream << "<span>" << converter->serialize(color) << "</span></div>";
+	else
+		stream << "<span>" << HtmlRGB(color) << "</span></div>";
 }
 static string getHtmlColor(ColorObject* colorObject) {
 	Color color = colorObject->getColor();
 	std::stringstream ss;
-	ss << HtmlRGB{color};
+	ss << HtmlRGBA{color};
 	return ss.str();
 }
 static string getHtmlColor(const Color &color) {
 	std::stringstream ss;
-	ss << HtmlRGB{color};
+	ss << HtmlRGBA{color};
 	return ss.str();
 }
 bool ImportExport::exportHTML()
@@ -460,7 +464,7 @@ bool ImportExport::exportHTML()
 		<< "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" << endl
 		<< "<style>" << endl
 		<< "div#colors div{float: left; width: " << item_size << "px; height: " << item_size << "px; margin: 2px; text-align: center; font-size: 12px; font-family: Arial, Helvetica, sans-serif}" << endl
-		<< "div#colors div span{font-weight: bold; cursor: pointer}" << endl
+		<< "div#colors div span{font-weight: bold; cursor: pointer; display: block;}" << endl
 		<< "div#colors div span:hover{text-decoration: underline}" << endl
 		<< "html{" << htmlBackgroundCss << htmlColorCss << "}" << endl
 		<< "input{margin-left: 1em;}" << endl
@@ -485,7 +489,7 @@ bool ImportExport::exportHTML()
 		f << nouppercase;
 	}
 	for (auto color: ordered){
-		htmlColor(color, m_include_color_names, f);
+		htmlColor(color, m_converter, m_include_color_names, f);
 		if (!f.good()){
 			f.close();
 			m_last_error = Error::file_write_error;
@@ -536,7 +540,7 @@ static void mtlColor(ColorObject* color_object, ostream &stream)
 	stream << "newmtl " << color_object->getName() << endl;
 	stream << "Ns 90.000000" << endl;
 	stream << "Ka 0.000000 0.000000 0.000000" << endl;
-	stream << "Kd " << color.rgb.red << " " << color.rgb.green << " " << color.rgb.blue << endl;
+	stream << "Kd " << color.red << " " << color.green << " " << color.blue << endl;
 	stream << "Ks 0.500000 0.500000 0.500000" << endl << endl;
 }
 bool ImportExport::exportMTL()
@@ -583,9 +587,9 @@ static void aseColor(ColorObject* color_object, ostream &stream)
 	stream.write((char*)name_u16, (name_u16_len + 1) * 2);
 	stream << "RGB ";
 	FloatInt r, g, b;
-	r.f = color.rgb.red;
-	g.f = color.rgb.green;
-	b.f = color.rgb.blue;
+	r.f = color.red;
+	g.f = color.green;
+	b.f = color.blue;
 	r.i = boost::endian::native_to_big<uint32_t>(r.i);
 	g.i = boost::endian::native_to_big<uint32_t>(g.i);
 	b.i = boost::endian::native_to_big<uint32_t>(b.i);
@@ -676,9 +680,10 @@ bool ImportExport::importASE()
 					rgb[0].i = boost::endian::big_to_native<uint32_t>(rgb[0].i);
 					rgb[1].i = boost::endian::big_to_native<uint32_t>(rgb[1].i);
 					rgb[2].i = boost::endian::big_to_native<uint32_t>(rgb[2].i);
-					c.rgb.red = rgb[0].f;
-					c.rgb.green = rgb[1].f;
-					c.rgb.blue = rgb[2].f;
+					c.red = rgb[0].f;
+					c.green = rgb[1].f;
+					c.blue = rgb[2].f;
+					c.alpha = 1;
 					color_supported = 1;
 				}else if (memcmp(color_space, "CMYK", 4) == 0){
 					Color c2;
@@ -696,12 +701,14 @@ bool ImportExport::importASE()
 					c2.cmyk.y = cmyk[2].f;
 					c2.cmyk.k = cmyk[3].f;
 					c = c2.cmykToRgb();
+					c.alpha = 1;
 					color_supported = 1;
 				}else if (memcmp(color_space, "Gray", 4) == 0){
 					FloatInt gray;
 					f.read((char*)&gray, 4);
 					gray.i = boost::endian::big_to_native<uint32_t>(gray.i);
-					c.rgb.red = c.rgb.green = c.rgb.blue = gray.f;
+					c.red = c.green = c.blue = gray.f;
+					c.alpha = 1;
 					color_supported = 1;
 				}else if (memcmp(color_space, "LAB ", 4) == 0){
 					Color c2;
@@ -716,9 +723,10 @@ bool ImportExport::importASE()
 					c2.lab.a = lab[1].f;
 					c2.lab.b = lab[2].f;
 					c = c2.labToRgbD50();
-					c.rgb.red = math::clamp(c.rgb.red, 0.0f, 1.0f);
-					c.rgb.green = math::clamp(c.rgb.green, 0.0f, 1.0f);
-					c.rgb.blue = math::clamp(c.rgb.blue, 0.0f, 1.0f);
+					c.red = math::clamp(c.red, 0.0f, 1.0f);
+					c.green = math::clamp(c.green, 0.0f, 1.0f);
+					c.blue = math::clamp(c.blue, 0.0f, 1.0f);
+					c.alpha = 1;
 					color_supported = 1;
 				}
 				if (color_supported){
@@ -779,9 +787,10 @@ bool ImportExport::importRGBTXT()
 		if (hash_position != string::npos){
 			size_t last_non_space = rfind_first_of_not(line, hash_position, " \t");
 
-			c.rgb.red = hexPairToInt(&line.at(hash_position + 1)) / 255.0f;
-			c.rgb.green = hexPairToInt(&line.at(hash_position + 3)) / 255.0f;
-			c.rgb.blue = hexPairToInt(&line.at(hash_position + 5)) / 255.0f;
+			c.red = hexPairToInt(&line.at(hash_position + 1)) / 255.0f;
+			c.green = hexPairToInt(&line.at(hash_position + 3)) / 255.0f;
+			c.blue = hexPairToInt(&line.at(hash_position + 5)) / 255.0f;
+			c.alpha = 1;
 
 			color_object = color_list_new_color_object(m_color_list, &c);
 			if (last_non_space != string::npos){

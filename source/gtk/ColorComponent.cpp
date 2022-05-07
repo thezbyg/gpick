@@ -29,11 +29,12 @@ enum {
 	INPUT_CLICKED,
 	LAST_SIGNAL
 };
-static const int MaxNumberOfComponents = 4;
+static const int MaxNumberOfComponents = 5;
 static guint signals[LAST_SIGNAL] = {};
 struct GtkColorComponentPrivate {
 	Color orig_color;
 	Color color;
+	float alpha;
 	GtkColorComponentComp component;
 	int n_components;
 	int capture_on;
@@ -145,30 +146,34 @@ GtkWidget *gtk_color_component_new(GtkColorComponentComp component)
 	}
 	switch (component){
 		case GtkColorComponentComp::lab:
-			ns->n_components = 3;
+			ns->n_components = 4;
 			ns->range[0] = 100;
 			ns->offset[0] = 0;
 			ns->range[1] = ns->range[2] = 290;
 			ns->offset[1] = ns->offset[2] = -145;
+			ns->range[3] = 1;
+			ns->offset[3] = 0;
 			break;
 		case GtkColorComponentComp::lch:
-			ns->n_components = 3;
+			ns->n_components = 4;
 			ns->range[0] = 100;
 			ns->offset[0] = 0;
 			ns->range[1] = 136;
 			ns->range[2] = 360;
 			ns->offset[1] = ns->offset[2] = 0;
+			ns->range[3] = 1;
+			ns->offset[3] = 0;
 			break;
 		case GtkColorComponentComp::xyz:
 			//TODO: implement
 			break;
 		case GtkColorComponentComp::cmyk:
-			ns->n_components = 4;
-			ns->range[0] = ns->range[1] = ns->range[2] = ns->range[3] = 1;
-			ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = 0;
+			ns->n_components = 5;
+			ns->range[0] = ns->range[1] = ns->range[2] = ns->range[3] = ns->range[4] = 1;
+			ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = ns->offset[4] = 0;
 			break;
 		default:
-			ns->n_components = 3;
+			ns->n_components = 4;
 			ns->range[0] = ns->range[1] = ns->range[2] = ns->range[3] = 1;
 			ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = 0;
 	}
@@ -230,6 +235,7 @@ void gtk_color_component_set_color(GtkColorComponent* color_component, Color* co
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
 	ns->orig_color = *color;
+	ns->alpha = ns->orig_color.alpha;
 	switch (ns->component){
 		case GtkColorComponentComp::rgb:
 			ns->color = ns->orig_color;
@@ -294,7 +300,10 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	int steps;
 	int i, j;
 	for (int i = 0; i < ns->n_components; ++i){
-		pointer_pos[i] = (ns->color[i] - ns->offset[i]) / ns->range[i];
+		if (i < 4)
+			pointer_pos[i] = (ns->color[i] - ns->offset[i]) / ns->range[i];
+		else
+			pointer_pos[i] = (ns->alpha - ns->offset[i]) / ns->range[i];
 	}
 	cairo_surface_t *surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 200, ns->n_components * 16);
 	unsigned char *data = cairo_image_surface_get_data(surface);
@@ -313,6 +322,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 			}
 			for (i = 0; i < surface_width; ++i){
 				c[0].rgb.red = c[1].rgb.green = c[2].rgb.blue = (float)i / (float)(surface_width - 1);
+				c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -347,6 +357,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
 				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+				c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -381,6 +392,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
 				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+				c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -416,6 +428,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
 				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
 				interpolate_colors(&rgb_points[3 * (steps + 1) + index], &rgb_points[3 * (steps + 1) + index + 1], position, &c[3]);
+				c[4].rgb.red = c[4].rgb.green = c[4].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -454,6 +467,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
 				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+				c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -492,6 +506,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				interpolate_colors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
 				interpolate_colors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
 				interpolate_colors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+				c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
 				col_ptr = data + i * 4;
 				for (int y = 0; y < ns->n_components * 16; ++y){
 					if ((y & 0x0f) != 0x0f){
@@ -582,7 +597,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 				pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
 				pango_cairo_update_layout(cr, layout);
 				pango_layout_get_pixel_size(layout, &width, &height);
-				cairo_move_to(cr, 200 + offset_x, i * 16);
+				cairo_move_to(cr, 200 + offset_x - 5, i * 16);
 				pango_cairo_show_layout(cr, layout);
 			}
 			if (ns->label[i] && offset_x > 10){
@@ -636,6 +651,7 @@ static void update_rgb_color(GtkColorComponentPrivate *ns, Color *c)
 			break;
 		case GtkColorComponentComp::cmyk:
 			*c = ns->color.cmykToRgb().normalizeRgbInplace();
+			c->alpha = ns->alpha;
 			break;
 		case GtkColorComponentComp::lab:
 			{
@@ -659,10 +675,11 @@ void gtk_color_component_get_raw_color(GtkColorComponent* color_component, Color
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
 	*color = ns->color;
 }
-void gtk_color_component_set_raw_color(GtkColorComponent* color_component, Color* color)
+void gtk_color_component_set_raw_color(GtkColorComponent* color_component, const Color &color, float alpha)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
-	ns->color = *color;
+	ns->color = color;
+	ns->alpha = alpha;
 	Color c;
 	update_rgb_color(ns, &c);
 	ns->orig_color = c;
@@ -673,7 +690,13 @@ static void emit_color_change(GtkWidget *widget, int component, double value)
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(widget);
 	Color c;
-	ns->color[component] = static_cast<float>(value * ns->range[component] + ns->offset[component]);
+	if (component < 4) {
+		ns->color[component] = static_cast<float>(value * ns->range[component] + ns->offset[component]);
+		if (component == ns->n_components - 1)
+			ns->alpha = static_cast<float>(value * ns->range[component] + ns->offset[component]);
+	} else {
+		ns->alpha = static_cast<float>(value * ns->range[component] + ns->offset[component]);
+	}
 	update_rgb_color(ns, &c);
 	g_signal_emit(widget, signals[COLOR_CHANGED], 0, &c);
 }
@@ -763,4 +786,9 @@ bool gtk_color_component_get_out_of_gamut_mask(GtkColorComponent* color_componen
 {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
 	return ns->out_of_gamut_mask;
+}
+float gtk_color_component_get_alpha(GtkColorComponent* color_component)
+{
+	GtkColorComponentPrivate *ns = GET_PRIVATE(color_component);
+	return ns->alpha;
 }

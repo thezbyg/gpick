@@ -288,7 +288,7 @@ struct ImportExportDialogOptions
 	{
 		GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(m_dialog));
 		ImportExportFormat *format = (ImportExportFormat*)g_object_get_data(G_OBJECT(filter), "format");
-		gtk_widget_set_sensitive(m_converters, format->type == FileType::txt);
+		gtk_widget_set_sensitive(m_converters, format->type == FileType::txt || format->type == FileType::html);
 		gtk_widget_set_sensitive(m_item_sizes, format->type == FileType::html);
 		gtk_widget_set_sensitive(m_backgrounds, format->type == FileType::html);
 		gtk_widget_set_sensitive(m_include_color_names, format->type == FileType::html || format->type == FileType::txt);

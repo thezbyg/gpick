@@ -261,6 +261,7 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 				r = hsl1.hslToRgb();
 				break;
 			}
+			r.normalizeRgbInplace();
 			gtk_color_set_color(GTK_COLOR(rows[i].output), r);
 		}
 	}

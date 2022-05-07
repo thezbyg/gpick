@@ -52,9 +52,10 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 {
 	ConverterSerializePosition position(1);
 	Color c;
-	c.rgb.red = 0.75;
-	c.rgb.green = 0.50;
-	c.rgb.blue = 0.25;
+	c.red = 0.75;
+	c.green = 0.50;
+	c.blue = 0.25;
+	c.alpha = 0.9;
 	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	color_object->setName(_("Test color"));
 	string text_line = converter->serialize(color_object, position);

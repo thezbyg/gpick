@@ -47,10 +47,16 @@ OutputIterator escape(InputIterator begin, InputIterator end, OutputIterator out
 HtmlRGB::HtmlRGB(const Color &color):
 	color(color) {
 }
+HtmlRGBA::HtmlRGBA(const Color &color):
+	color(color) {
+}
 HtmlHEX::HtmlHEX(const Color &color):
 	color(color) {
 }
 HtmlHSL::HtmlHSL(const Color &color):
+	color(color) {
+}
+HtmlHSLA::HtmlHSLA(const Color &color):
 	color(color) {
 }
 std::string &escapeHtmlInplace(std::string &str) {
@@ -77,6 +83,17 @@ std::ostream& operator<<(std::ostream& os, const HtmlRGB color) {
 	os.setf(flags);
 	return os;
 }
+std::ostream& operator<<(std::ostream& os, const HtmlRGBA color) {
+	using boost::math::iround;
+	int r, g, b;
+	r = iround(color.color.rgb.red * 255);
+	g = iround(color.color.rgb.green * 255);
+	b = iround(color.color.rgb.blue * 255);
+	auto flags = os.flags();
+	os << "rgba(" << std::dec << r << ", " << g << ", " << b << ", " << std::setprecision(3) << color.color.alpha << ")";
+	os.setf(flags);
+	return os;
+}
 std::ostream& operator<<(std::ostream& os, const HtmlHEX color) {
 	using boost::math::iround;
 	int r, g, b;
@@ -97,6 +114,17 @@ std::ostream& operator<<(std::ostream& os, const HtmlHSL color) {
 	l = iround(color.color.hsl.lightness * 100);
 	auto flags = os.flags();
 	os << "hsl(" << std::dec << h << ", " << s << "%, " << l << "%)";
+	os.setf(flags);
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const HtmlHSLA color) {
+	using boost::math::iround;
+	int h, s, l;
+	h = iround(color.color.hsl.hue * 360);
+	s = iround(color.color.hsl.saturation * 100);
+	l = iround(color.color.hsl.lightness * 100);
+	auto flags = os.flags();
+	os << "hsla(" << std::dec << h << ", " << s << "%, " << l << "%, " << std::setprecision(3) << color.color.alpha << ")";
 	os.setf(flags);
 	return os;
 }

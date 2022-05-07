@@ -434,6 +434,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 	}
 
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
+		i->alpha = 1;
 		ColorObject *color_object = color_list_new_color_object(color_list, &(*i));
 		name_assigner.assign(*color_object, name, index);
 		color_list_add_color_object(color_list, color_object, 1);

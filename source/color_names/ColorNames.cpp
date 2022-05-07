@@ -116,7 +116,7 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 			if (line.at(0) == '!') continue;
 			rline.clear();
 			rline.str(line);
-			rline >> color.rgb.red >> color.rgb.green >> color.rgb.blue;
+			rline >> color.red >> color.green >> color.blue;
 			getline(rline, name);
 			const string strip_chars = " \t,.\n\r";
 			color_names_strip_spaces(name, strip_chars);
@@ -127,6 +127,7 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 					*i = tolower((unsigned char)*i);
 				}
 				color *= 1 / 255.0f;
+				color.alpha = 1;
 				ColorNameEntry* name_entry = new ColorNameEntry;
 				name_entry->name = name;
 				color_names->names.push_back(name_entry);

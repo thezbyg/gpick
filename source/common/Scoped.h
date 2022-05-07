@@ -18,32 +18,71 @@
 
 #ifndef GPICK_COMMON_SCOPED_H_
 #define GPICK_COMMON_SCOPED_H_
-#include <functional>
 #include <tuple>
+#include <utility>
 #include <type_traits>
 namespace common {
 namespace detail {
 template<typename Function, typename Tuple, size_t... I>
-auto apply(Function f, Tuple t, std::index_sequence<I...>) {
+auto apply(Function &f, Tuple &t, std::index_sequence<I...>) {
 	return f(std::get<I>(t)...);
 }
 template<typename Function, typename Tuple>
-auto apply(Function f, Tuple t) {
+auto apply(Function &f, Tuple &t) {
 	static constexpr auto size = std::tuple_size<Tuple>::value;
 	return apply(f, t, std::make_index_sequence<size> {});
 }
+template<class T>
+struct UnwrapRefWrapper {
+	using type = T;
+};
+template<class T>
+struct UnwrapRefWrapper<std::reference_wrapper<T>> {
+	using type = T &;
+};
+template<class T>
+using UnwrapAndDecay = typename UnwrapRefWrapper<std::decay_t<T>>::type;
 }
-template<typename... Args>
+template<typename Callable, typename... Args>
 struct Scoped;
-template<typename... Args>
-struct Scoped<void (*)(Args...)> {
-	Scoped(void (*callable)(Args...), Args... params):
+template<typename Callable>
+struct Scoped<Callable> {
+	Scoped(Callable callable):
+		m_callable(callable),
+		m_canceled(false) {
+	}
+	Scoped(Scoped &&scoped) {
+		m_callable = std::move(scoped.m_callable);
+		m_canceled = scoped.m_canceled;
+		scoped.m_canceled = true;
+	}
+	Scoped(const Scoped &) = delete;
+	Scoped &operator=(const Scoped &) = delete;
+	~Scoped() {
+		if constexpr (std::is_reference_v<Callable> || !std::is_convertible_v<Callable, bool>) {
+			if (!m_canceled)
+				m_callable();
+		} else {
+			if (!m_canceled && m_callable)
+				m_callable();
+		}
+	}
+	void cancel() {
+		m_canceled = true;
+	}
+private:
+	Callable m_callable;
+	bool m_canceled;
+};
+template<typename Callable, typename... Args>
+struct Scoped {
+	Scoped(Callable callable, Args... params):
 		m_callable(callable),
 		m_arguments(std::forward_as_tuple(params...)),
 		m_canceled(false) {
 	}
 	Scoped(Scoped &&scoped) {
-		m_callable = scoped.m_callable;
+		m_callable = std::move(scoped.m_callable);
 		m_arguments = std::move(scoped.m_arguments);
 		m_canceled = scoped.m_canceled;
 		scoped.m_canceled = true;
@@ -51,51 +90,22 @@ struct Scoped<void (*)(Args...)> {
 	Scoped(const Scoped &) = delete;
 	Scoped &operator=(const Scoped &) = delete;
 	~Scoped() {
-		if (!m_canceled && m_callable)
-			detail::apply(m_callable, m_arguments);
+		if constexpr (std::is_reference_v<Callable> || !std::is_convertible_v<Callable, bool>) {
+			if (!m_canceled)
+				detail::apply(m_callable, m_arguments);
+		} else {
+			if (!m_canceled && m_callable)
+				detail::apply(m_callable, m_arguments);
+		}
 	}
 	void cancel() {
 		m_canceled = true;
 	}
 private:
-	void (*m_callable)(Args...);
-	std::tuple<Args...> m_arguments;
+	Callable m_callable;
+	std::tuple<detail::UnwrapAndDecay<Args>...> m_arguments;
 	bool m_canceled;
 };
-template<typename... Args>
-struct Scoped<std::function<void(Args...)>> {
-	Scoped(std::function<void(Args...)> callable, Args... params):
-		m_callable(callable),
-		m_arguments(std::forward_as_tuple(params...)),
-		m_canceled(false) {
-	}
-	Scoped(Scoped &&scoped):
-		m_callable(std::move(scoped.m_callable)),
-		m_arguments(std::move(scoped.m_arguments)),
-		m_canceled(scoped.m_canceled) {
-		scoped.m_canceled = true;
-	}
-	Scoped(const Scoped &) = delete;
-	Scoped &operator=(const Scoped &) = delete;
-	~Scoped() {
-		if (!m_canceled && m_callable)
-			detail::apply(m_callable, m_arguments);
-	}
-	void cancel() {
-		m_canceled = true;
-	}
-private:
-	std::function<void(Args...)> m_callable;
-	std::tuple<Args...> m_arguments;
-	bool m_canceled;
-};
-template<typename Callable, typename... Args, std::enable_if_t<!std::is_function<std::remove_pointer_t<Callable>>::value, int> = 0>
-auto makeScoped(Callable callable, Args... args) {
-	return Scoped<Callable, Args...>(callable, args...);
-}
-template<typename Callable, typename... Args, std::enable_if_t<std::is_function<std::remove_pointer_t<Callable>>::value, int> = 0>
-auto makeScoped(Callable callable, Args... args) {
-	return Scoped<void (*)(Args...)>(callable, args...);
-}
+template<typename Callable, typename... Args> Scoped(Callable, Args &&...) -> Scoped<Callable, Args...>;
 }
 #endif /* GPICK_COMMON_SCOPED_H_ */

@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(test11) {
 		result = true;
 	};
 	{
-		makeScoped(callable);
+		Scoped scoped(callable);
 	}
 	BOOST_CHECK_EQUAL(result, true);
 }
@@ -47,14 +47,14 @@ static void makeTrue(bool *value) {
 BOOST_AUTO_TEST_CASE(test20) {
 	bool result = false;
 	{
-		Scoped<void (*)(bool *)> callOnScopeEnd(makeTrue, &result);
+		Scoped callOnScopeEnd(makeTrue, &result);
 	}
 	BOOST_CHECK_EQUAL(result, true);
 }
 BOOST_AUTO_TEST_CASE(test21) {
 	bool result = false;
 	{
-		makeScoped(&makeTrue, &result);
+		Scoped scoped(&makeTrue, &result);
 	}
 	BOOST_CHECK_EQUAL(result, true);
 }

@@ -372,15 +372,16 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 	void updateComponentText(GtkColorComponent *component, const char *type) {
 		Color transformed_color;
 		gtk_color_component_get_transformed_color(component, &transformed_color);
+		float alpha = gtk_color_component_get_alpha(component);
 		lua::Script &script = gs.script();
-		std::list<std::string> str = color_space_color_to_text(type, &transformed_color, script, &gs);
+		std::vector<std::string> str = color_space_color_to_text(type, transformed_color, alpha, script, &gs);
 		int j = 0;
-		const char *text[4];
-		memset(text, 0, sizeof(text));
+		const char *text[5] = {0};
 		for (auto i = str.begin(); i != str.end(); i++) {
 			text[j] = (*i).c_str();
 			j++;
-			if (j > 3) break;
+			if (j > 4)
+				break;
 		}
 		gtk_color_component_set_text(component, text);
 	}
@@ -909,6 +910,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			}
 
 			args->colorCode = gtk_color_new();
+			gtk_widget_set_size_request(GTK_WIDGET(args->colorCode), 40, 40);
 			gtk_box_pack_start (GTK_BOX(vbox), args->colorCode, false, true, 0);
 			g_signal_connect(G_OBJECT(args->colorCode), "activated", G_CALLBACK(show_dialog_converter), args.get());
 
@@ -967,7 +969,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::hsv);
-				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), nullptr};
+				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsv_labels);
 				args->hsvControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
@@ -981,7 +983,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::hsl);
-				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), nullptr};
+				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsl_labels);
 				args->hslControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
@@ -995,7 +997,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::rgb);
-				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), nullptr};
+				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), rgb_labels);
 				args->rgbControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
@@ -1009,7 +1011,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::cmyk);
-				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), nullptr};
+				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), cmyk_labels);
 				args->cmykControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
@@ -1023,7 +1025,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::lab);
-				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", nullptr};
+				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->labControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
@@ -1037,7 +1039,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
 				widget = gtk_color_component_new(GtkColorComponentComp::lch);
-				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", nullptr};
+				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", "A", _("Alpha"), nullptr};
 				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lch_labels);
 				args->lchControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());

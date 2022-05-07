@@ -26,8 +26,8 @@
 // Constant used for lab->xyz transform. Should be calculated with maximum accuracy possible.
 const double Epsilon = 216.0 / 24389.0;
 const double Kk = 24389.0 / 27.0;
-const Color Color::white = { 1.0f, 1.0f, 1.0f };
-const Color Color::black = { 0.0f, 0.0f, 0.0f };
+const Color Color::white = { 1.0f, 1.0f, 1.0f, 1.0f };
+const Color Color::black = { 0.0f, 0.0f, 0.0f, 1.0f };
 static Color::Matrix3d sRGBTransformation;
 static Color::Matrix3d sRGBTransformationInverted;
 static Color::Matrix3d d65d50AdaptationMatrixValue;
@@ -86,42 +86,36 @@ Color Color::zero() const {
 	return Color();
 }
 Color::Color() {
-	util::fill(data, 0.0f, ChannelCount);
+	util::fill(data, 0.0f, MemberCount);
 }
 Color::Color(float value) {
-	util::fill(data, value, ChannelCount);
+	util::fill(data, value, MemberCount);
 }
 Color::Color(int value) {
-	util::fill(data, value / 255.0f, ChannelCount);
+	util::fill(data, value / 255.0f, MemberCount);
 }
-Color::Color(float red, float green, float blue) {
-	rgb.red = red;
-	rgb.green = green;
-	rgb.blue = blue;
-	util::fill(data + 3, 0.0f, ChannelCount - 3);
+Color::Color(float red, float green, float blue, float alpha) {
+	this->rgb.red = red;
+	this->rgb.green = green;
+	this->rgb.blue = blue;
+	this->alpha = alpha;
 }
-Color::Color(float value1, float value2, float value3, float value4) {
-	data[0] = value1;
-	data[1] = value2;
-	data[2] = value3;
-	data[3] = value4;
-}
-Color::Color(int red, int green, int blue) {
-	rgb.red = static_cast<float>(red / 255.0f);
-	rgb.green = static_cast<float>(green / 255.0f);
-	rgb.blue = static_cast<float>(blue / 255.0f);
-	util::fill(data + 3, 0.0f, ChannelCount - 3);
+Color::Color(int red, int green, int blue, int alpha) {
+	this->red = static_cast<float>(red / 255.0f);
+	this->green = static_cast<float>(green / 255.0f);
+	this->blue = static_cast<float>(blue / 255.0f);
+	this->alpha = static_cast<float>(alpha / 255.0f);
 }
 Color::Color(const Color &color) {
 	util::copy(color.data, data, MemberCount);
 }
-Color::Color(const Vector3f &value) {
+Color::Color(const Vector3f &value, float alpha) {
 	util::copy(value.data, data, 3);
-	util::fill(data + 3, 0.0f, ChannelCount - 3);
+	this->alpha = alpha;
 }
-Color::Color(const Vector3d &value) {
+Color::Color(const Vector3d &value, float alpha) {
 	util::castCopy(value.data, data, 3);
-	util::fill(data + 3, 0.0f, ChannelCount - 3);
+	this->alpha = alpha;
 }
 template<>
 Color::Vector3f Color::rgbVector() const {
@@ -153,13 +147,14 @@ Color Color::rgbToHsv() const {
 		result.hsv.hue /= 6.0f;
 		result.hsv.hue = math::wrap(result.hsv.hue);
 	}
+	result.alpha = alpha;
 	return result;
 }
 Color Color::hsvToRgb() const {
 	float v = hsv.value;
 	Color result;
 	if (hsv.saturation == 0.0f) {
-		result.rgb.red = result.rgb.green = result.rgb.blue = hsv.value;
+		result.red = result.green = result.blue = hsv.value;
 	} else {
 		float h, f, x, y, z;
 		h = (hsv.hue - std::floor(hsv.hue)) * 6.0f;
@@ -169,31 +164,32 @@ Color Color::hsvToRgb() const {
 		y = v * (1.0f - (hsv.saturation * f));
 		z = v * (1.0f - (hsv.saturation * (1.0f - f)));
 		if (i == 0) {
-			result.rgb.red = v;
-			result.rgb.green = z;
-			result.rgb.blue = x;
+			result.red = v;
+			result.green = z;
+			result.blue = x;
 		} else if (i == 1) {
-			result.rgb.red = y;
-			result.rgb.green = v;
-			result.rgb.blue = x;
+			result.red = y;
+			result.green = v;
+			result.blue = x;
 		} else if (i == 2) {
-			result.rgb.red = x;
-			result.rgb.green = v;
-			result.rgb.blue = z;
+			result.red = x;
+			result.green = v;
+			result.blue = z;
 		} else if (i == 3) {
-			result.rgb.red = x;
-			result.rgb.green = y;
-			result.rgb.blue = v;
+			result.red = x;
+			result.green = y;
+			result.blue = v;
 		} else if (i == 4) {
-			result.rgb.red = z;
-			result.rgb.green = x;
-			result.rgb.blue = v;
+			result.red = z;
+			result.green = x;
+			result.blue = v;
 		} else {
-			result.rgb.red = v;
-			result.rgb.green = x;
-			result.rgb.blue = y;
+			result.red = v;
+			result.green = x;
+			result.blue = y;
 		}
 	}
+	result.alpha = alpha;
 	return result;
 }
 Color Color::rgbToHsl() const {
@@ -220,12 +216,13 @@ Color Color::rgbToHsl() const {
 		result.hsl.hue /= 6.0f;
 		result.hsl.hue = math::wrap(result.hsl.hue);
 	}
+	result.alpha = alpha;
 	return result;
 }
 Color Color::hslToRgb() const {
 	Color result;
 	if (hsl.saturation == 0) {
-		result.rgb.red = result.rgb.green = result.rgb.blue = hsl.lightness;
+		result.red = result.green = result.blue = hsl.lightness;
 	} else {
 		float q;
 		if (hsl.lightness < 0.5f)
@@ -239,49 +236,50 @@ Color Color::hslToRgb() const {
 		if (R > 1) R -= 1;
 		if (B < 0) B += 1;
 		if (6.0f * R < 1)
-			result.rgb.red = p + (q - p) * 6.0f * R;
+			result.red = p + (q - p) * 6.0f * R;
 		else if (2.0 * R < 1)
-			result.rgb.red = q;
+			result.red = q;
 		else if (3.0 * R < 2)
-			result.rgb.red = p + (q - p) * ((2.0f / 3.0f) - R) * 6.0f;
+			result.red = p + (q - p) * ((2.0f / 3.0f) - R) * 6.0f;
 		else
-			result.rgb.red = p;
+			result.red = p;
 		if (6.0f * G < 1)
-			result.rgb.green = p + (q - p) * 6.0f * G;
+			result.green = p + (q - p) * 6.0f * G;
 		else if (2.0f * G < 1)
-			result.rgb.green = q;
+			result.green = q;
 		else if (3.0f * G < 2)
-			result.rgb.green = p + (q - p) * ((2.0f / 3.0f) - G) * 6.0f;
+			result.green = p + (q - p) * ((2.0f / 3.0f) - G) * 6.0f;
 		else
-			result.rgb.green = p;
+			result.green = p;
 		if (6.0f * B < 1)
-			result.rgb.blue = p + (q - p) * 6.0f * B;
+			result.blue = p + (q - p) * 6.0f * B;
 		else if (2.0f * B < 1)
-			result.rgb.blue = q;
+			result.blue = q;
 		else if (3.0f * B < 2)
-			result.rgb.blue = p + (q - p) * ((2.0f / 3.0f) - B) * 6.0f;
+			result.blue = p + (q - p) * ((2.0f / 3.0f) - B) * 6.0f;
 		else
-			result.rgb.blue = p;
+			result.blue = p;
 	}
+	result.alpha = alpha;
 	return result;
 }
 Color Color::rgbToXyz(const Matrix3d &transformation) const {
-	return transformation * linearRgb().rgbVector<double>();
+	return Color(transformation * linearRgb().rgbVector<double>(), alpha);
 }
 static Color::Vector3d rgbToXyz(const Color::Vector3d &rgbVector, const Color::Matrix3d &transformation) {
 	return transformation * rgbVector;
 }
 Color Color::xyzToRgb(const Matrix3d &transformationInverted) const {
-	return Color(transformationInverted * rgbVector<double>()).nonLinearRgbInplace();
+	return Color(transformationInverted * rgbVector<double>(), alpha).nonLinearRgbInplace();
 }
 static Color::Vector3d xyzToRgb(const Color::Vector3d &xyzVector, const Color::Matrix3d &transformationInverted) {
 	return transformationInverted * xyzVector;
 }
 Color Color::rgbToLab(const Vector3f &referenceWhite, const Matrix3d &transformation, const Matrix3d &adaptationMatrix) const {
-	return ::xyzToLab(::xyzChromaticAdaptation(::rgbToXyz(linearRgb().rgbVector<double>(), transformation), adaptationMatrix), referenceWhite);
+	return Color(::xyzToLab(::xyzChromaticAdaptation(::rgbToXyz(linearRgb().rgbVector<double>(), transformation), adaptationMatrix), referenceWhite), alpha);
 }
 Color Color::labToRgb(const Vector3f &referenceWhite, const Matrix3d &transformationInverted, const Matrix3d &adaptationMatrixInverted) const {
-	return Color(::xyzToRgb(::xyzChromaticAdaptation(::labToXyz(rgbVector<double>(), referenceWhite), adaptationMatrixInverted), transformationInverted)).nonLinearRgbInplace();
+	return Color(::xyzToRgb(::xyzChromaticAdaptation(::labToXyz(rgbVector<double>(), referenceWhite), adaptationMatrixInverted), transformationInverted), alpha).nonLinearRgbInplace();
 }
 Color Color::labToLch() const {
 	double H;
@@ -293,10 +291,10 @@ Color Color::labToLch() const {
 	H *= 180.0f / math::PI;
 	if (H < 0) H += 360;
 	if (H >= 360) H -= 360;
-	return Color(lab.L, static_cast<float>(std::sqrt(lab.a * lab.a + lab.b * lab.b)), static_cast<float>(H));
+	return Color(lab.L, static_cast<float>(std::sqrt(lab.a * lab.a + lab.b * lab.b)), static_cast<float>(H), alpha);
 }
 Color Color::lchToLab() const {
-	return Color(lch.L, static_cast<float>(lch.C * std::cos(lch.h * math::PI / 180.0f)), static_cast<float>(lch.C * std::sin(lch.h * math::PI / 180.0f)));
+	return Color(lch.L, static_cast<float>(lch.C * std::cos(lch.h * math::PI / 180.0f)), static_cast<float>(lch.C * std::sin(lch.h * math::PI / 180.0f)), alpha);
 }
 Color Color::hslToHsv() const {
 	float l = hsl.lightness * 2.0f;
@@ -310,13 +308,14 @@ Color Color::hslToHsv() const {
 		result.hsv.value = (l + s) / 2.0f;
 		result.hsv.saturation = (2.0f * s) / (l + s);
 	}
+	result.alpha = alpha;
 	return result;
 }
 Color Color::hsvToHsl() const {
 	float l = (2.0f - hsv.saturation) * hsv.value;
 	float s = (hsv.saturation * hsv.value) / ((l <= 1.0f) ? (l) : (2 - l));
 	if (l == 0) s = 0;
-	return Color(hsv.hue, s, l / 2.0f);
+	return Color(hsv.hue, s, l / 2.0f, alpha);
 }
 Color &Color::linearRgbInplace() {
 	if (rgb.red > 0.04045f)
@@ -336,33 +335,35 @@ Color &Color::linearRgbInplace() {
 Color Color::linearRgb() const {
 	Color result;
 	if (rgb.red > 0.04045f)
-		result.rgb.red = std::pow((rgb.red + 0.055f) / 1.055f, 2.4f);
+		result.red = std::pow((rgb.red + 0.055f) / 1.055f, 2.4f);
 	else
-		result.rgb.red = rgb.red / 12.92f;
+		result.red = rgb.red / 12.92f;
 	if (rgb.green > 0.04045f)
-		result.rgb.green = std::pow((rgb.green + 0.055f) / 1.055f, 2.4f);
+		result.green = std::pow((rgb.green + 0.055f) / 1.055f, 2.4f);
 	else
-		result.rgb.green = rgb.green / 12.92f;
+		result.green = rgb.green / 12.92f;
 	if (rgb.blue > 0.04045f)
-		result.rgb.blue = std::pow((rgb.blue + 0.055f) / 1.055f, 2.4f);
+		result.blue = std::pow((rgb.blue + 0.055f) / 1.055f, 2.4f);
 	else
-		result.rgb.blue = rgb.blue / 12.92f;
+		result.blue = rgb.blue / 12.92f;
+	result.alpha = alpha;
 	return result;
 }
 Color Color::nonLinearRgb() const {
 	Color result;
 	if (rgb.red > 0.0031308f)
-		result.rgb.red = (1.055f * std::pow(rgb.red, 1.0f / 2.4f)) - 0.055f;
+		result.red = (1.055f * std::pow(rgb.red, 1.0f / 2.4f)) - 0.055f;
 	else
-		result.rgb.red = rgb.red * 12.92f;
+		result.red = rgb.red * 12.92f;
 	if (rgb.green > 0.0031308f)
-		result.rgb.green = (1.055f * std::pow(rgb.green, 1.0f / 2.4f)) - 0.055f;
+		result.green = (1.055f * std::pow(rgb.green, 1.0f / 2.4f)) - 0.055f;
 	else
-		result.rgb.green = rgb.green * 12.92f;
+		result.green = rgb.green * 12.92f;
 	if (rgb.blue > 0.0031308f)
-		result.rgb.blue = (1.055f * std::pow(rgb.blue, 1.0f / 2.4f)) - 0.055f;
+		result.blue = (1.055f * std::pow(rgb.blue, 1.0f / 2.4f)) - 0.055f;
 	else
-		result.rgb.blue = rgb.blue * 12.92f;
+		result.blue = rgb.blue * 12.92f;
+	result.alpha = alpha;
 	return result;
 }
 Color &Color::nonLinearRgbInplace() {
@@ -399,10 +400,10 @@ Color Color::labToRgbD50() const {
 	return labToRgb(getReference(ReferenceIlluminant::D50, ReferenceObserver::_2), sRGBInvertedMatrix, d50d65AdaptationMatrix);
 }
 Color Color::rgbToCmy() const {
-	return Color(1 - rgb.red, 1 - rgb.green, 1 - rgb.blue);
+	return Color(1 - rgb.red, 1 - rgb.green, 1 - rgb.blue, alpha);
 }
 Color Color::cmyToRgb() const {
-	return Color(1 - cmy.c, 1 - cmy.m, 1 - cmy.y);
+	return Color(1 - cmy.c, 1 - cmy.m, 1 - cmy.y, alpha);
 }
 Color Color::cmyToCmyk() const {
 	float k = 1;
@@ -448,7 +449,7 @@ Color Color::xyzToLab(const Vector3f &referenceWhite) const {
 	} else {
 		Z = static_cast<float>((Kk * Z + 16.0f) / 116.0f);
 	}
-	return Color((116 * Y) - 16, 500 * (X - Y), 200 * (Y - Z));
+	return Color((116 * Y) - 16, 500 * (X - Y), 200 * (Y - Z), alpha);
 }
 static Color::Vector3d xyzToLab(const Color::Vector3d &xyzVector, const Color::Vector3f &referenceWhite) {
 	double X = xyzVector.x / referenceWhite.x;
@@ -492,7 +493,7 @@ Color Color::labToXyz(const Vector3f &referenceWhite) const {
 	} else {
 		z = static_cast<float>((116 * fz - 16) / K);
 	}
-	return Color(x * referenceWhite.x, y * referenceWhite.y, z * referenceWhite.z);
+	return Color(x * referenceWhite.x, y * referenceWhite.y, z * referenceWhite.z, alpha);
 }
 static Color::Vector3d labToXyz(const Color::Vector3d &labVector, const Color::Vector3f &referenceWhite) {
 	double x, y, z;
@@ -602,9 +603,9 @@ float Color::distance(const Color &a, const Color &b) {
 	auto al = a.linearRgb();
 	auto bl = b.linearRgb();
 	return static_cast<float>(std::sqrt(
-		std::pow(bl.rgb.red - al.rgb.red, 2) +
-		std::pow(bl.rgb.green - al.rgb.green, 2) +
-		std::pow(bl.rgb.blue - al.rgb.blue, 2)));
+		std::pow(bl.red - al.red, 2) +
+		std::pow(bl.green - al.green, 2) +
+		std::pow(bl.blue - al.blue, 2)));
 }
 float Color::distanceLch(const Color &a, const Color &b) {
 	auto al = a.labToLch();
@@ -682,20 +683,22 @@ float Color::operator[](int index) const {
 	return data[index];
 }
 Color Color::normalizeRgb() const {
-	Color result(*this);
-	result.rgb.red = math::clamp(rgb.red, 0.0f, 1.0f);
-	result.rgb.green = math::clamp(rgb.green, 0.0f, 1.0f);
-	result.rgb.blue = math::clamp(rgb.blue, 0.0f, 1.0f);
+	Color result;
+	result.red = math::clamp(red, 0.0f, 1.0f);
+	result.green = math::clamp(green, 0.0f, 1.0f);
+	result.blue = math::clamp(blue, 0.0f, 1.0f);
+	result.alpha = math::clamp(alpha, 0.0f, 1.0f);
 	return result;
 }
 Color &Color::normalizeRgbInplace() {
-	rgb.red = math::clamp(rgb.red, 0.0f, 1.0f);
-	rgb.green = math::clamp(rgb.green, 0.0f, 1.0f);
-	rgb.blue = math::clamp(rgb.blue, 0.0f, 1.0f);
+	red = math::clamp(red, 0.0f, 1.0f);
+	green = math::clamp(green, 0.0f, 1.0f);
+	blue = math::clamp(blue, 0.0f, 1.0f);
+	alpha = math::clamp(alpha, 0.0f, 1.0f);
 	return *this;
 }
 Color Color::absolute() const {
-	Color result(*this);
+	Color result;
 	for (auto i = 0; i < Color::MemberCount; i++)
 		result.data[i] = math::abs(data[i]);
 	return result;

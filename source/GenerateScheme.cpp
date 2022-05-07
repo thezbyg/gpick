@@ -331,6 +331,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 			hsv.hsv.saturation = math::clamp(hsv.hsv.saturation + items[i].saturationShift, 0.0f, 1.0f);
 			hsv.hsv.value = math::clamp(hsv.hsv.value + items[i].valueShift, 0.0f, 1.0f);
 			r = hsv.hsvToRgb();
+			r.alpha = 1;
 			auto text = gs.converters().serialize(r, Converters::Type::display);
 			gtk_color_set_color(GTK_COLOR(items[i].widget), r, text);
 			items[i].colorHue = hueOffset;

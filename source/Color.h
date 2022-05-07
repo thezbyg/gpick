@@ -59,7 +59,6 @@ struct Color {
 	using Vector3f = math::Vector3f;
 	using Vector3d = math::Vector3d;
 	static const int MemberCount = 4;
-	static const int ChannelCount = MemberCount;
 	static const Color white;
 	static const Color black;
 	/**
@@ -86,11 +85,10 @@ struct Color {
 	Color(const Color &color);
 	Color(float value);
 	Color(int value);
-	Color(float red, float green, float blue);
-	Color(int red, int green, int blue);
-	Color(float value1, float value2, float value3, float value4);
-	Color(const Vector3f &value);
-	Color(const Vector3d &value);
+	Color(float red, float green, float blue, float alpha = 1.0f);
+	Color(int red, int green, int blue, int alpha = 255);
+	Color(const Vector3f &value, float alpha = 1.0f);
+	Color(const Vector3d &value, float alpha = 1.0f);
 	/**
 	 * Check if colors are equal.
 	 * @param[in] color Color in the same color space as current color.
@@ -481,6 +479,12 @@ struct Color {
 					float k;
 				} cmyk;
 			};
+		};
+		struct {
+			float red;
+			float green;
+			float blue;
+			float alpha;
 		};
 		float data[MemberCount]; /**< General data access array */
 	};

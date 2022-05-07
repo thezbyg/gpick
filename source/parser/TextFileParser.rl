@@ -52,39 +52,39 @@ struct FSM
 		{
 			Color color;
 			int start_index = with_hash_symbol ? 1 : 0;
-			color.rgb.red = hexPairToInt(ts + start_index) / 255.0f;
-			color.rgb.green = hexPairToInt(ts + start_index + 2) / 255.0f;
-			color.rgb.blue = hexPairToInt(ts + start_index + 4) / 255.0f;
-			color[3] = 0;
+			color.red = hexPairToInt(ts + start_index) / 255.0f;
+			color.green = hexPairToInt(ts + start_index + 2) / 255.0f;
+			color.blue = hexPairToInt(ts + start_index + 4) / 255.0f;
+			color.alpha = 1;
 			addColor(color);
 		}
 		void colorHexShort(bool with_hash_symbol)
 		{
 			Color color;
 			int start_index = with_hash_symbol ? 1 : 0;
-			color.rgb.red = hexToInt(ts[start_index + 0]) / 15.0f;
-			color.rgb.green = hexToInt(ts[start_index + 1]) / 15.0f;
-			color.rgb.blue = hexToInt(ts[start_index + 2]) / 15.0f;
-			color[3] = 0;
+			color.red = hexToInt(ts[start_index + 0]) / 15.0f;
+			color.green = hexToInt(ts[start_index + 1]) / 15.0f;
+			color.blue = hexToInt(ts[start_index + 2]) / 15.0f;
+			color.alpha = 1;
 			addColor(color);
 		}
 		void colorRgb()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0f;
-			color.rgb.green = numbers_i64[1] / 255.0f;
-			color.rgb.blue = numbers_i64[2] / 255.0f;
-			color[3] = 0;
+			color.red = numbers_i64[0] / 255.0f;
+			color.green = numbers_i64[1] / 255.0f;
+			color.blue = numbers_i64[2] / 255.0f;
+			color.alpha = 1;
 			numbers_i64.clear();
 			addColor(color);
 		}
 		void colorRgba()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0f;
-			color.rgb.green = numbers_i64[1] / 255.0f;
-			color.rgb.blue = numbers_i64[2] / 255.0f;
-			color[3] = static_cast<float>(numbers_double[0]);
+			color.red = numbers_i64[0] / 255.0f;
+			color.green = numbers_i64[1] / 255.0f;
+			color.blue = numbers_i64[2] / 255.0f;
+			color.alpha = static_cast<float>(numbers_double[0]);
 			numbers_i64.clear();
 			numbers_double.clear();
 			addColor(color);
@@ -92,20 +92,20 @@ struct FSM
 		void colorValues()
 		{
 			Color color;
-			color.rgb.red = static_cast<float>(numbers_double[0]);
-			color.rgb.green = static_cast<float>(numbers_double[1]);
-			color.rgb.blue = static_cast<float>(numbers_double[2]);
-			color[3] = 0;
+			color.red = static_cast<float>(numbers_double[0]);
+			color.green = static_cast<float>(numbers_double[1]);
+			color.blue = static_cast<float>(numbers_double[2]);
+			color.alpha = 1;
 			numbers_double.clear();
 			addColor(color);
 		}
 		void colorValueIntegers()
 		{
 			Color color;
-			color.rgb.red = numbers_i64[0] / 255.0f;
-			color.rgb.green = numbers_i64[1] / 255.0f;
-			color.rgb.blue = numbers_i64[2] / 255.0f;
-			color[3] = 0;
+			color.red = numbers_i64[0] / 255.0f;
+			color.green = numbers_i64[1] / 255.0f;
+			color.blue = numbers_i64[2] / 255.0f;
+			color.alpha = 1;
 			numbers_i64.clear();
 			addColor(color);
 		}

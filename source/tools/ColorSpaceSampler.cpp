@@ -29,7 +29,7 @@
 #include <algorithm>
 using namespace std;
 
-#define N_AXIS 3
+const int NumberOfAxes = 4;
 
 struct AxisOptions
 {
@@ -49,7 +49,7 @@ struct ColorSpaceSamplerArgs
 	GtkWidget *toggle_linearization;
 	int color_space;
 	bool linearization;
-	AxisOptions axis[N_AXIS];
+	AxisOptions axis[NumberOfAxes];
 	GtkWidget *preview_expander;
 	ColorList *color_list;
 	ColorList *preview_color_list;
@@ -81,7 +81,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 	else
 		color_list = args->gs->getColorList();
 	vector<Color> values;
-	size_t value_count = args->axis[0].samples * args->axis[1].samples * args->axis[2].samples;
+	size_t value_count = args->axis[0].samples * args->axis[1].samples * args->axis[2].samples * args->axis[3].samples;
 	if (preview)
 		value_count = std::min(limit, value_count);
 	values.resize(value_count);
@@ -92,14 +92,19 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 			float y_value = (args->axis[1].samples > 1) ? (args->axis[1].min_value + (args->axis[1].max_value - args->axis[1].min_value) * (y / (float)(args->axis[1].samples - 1))) : args->axis[1].min_value;
 			for (int z = 0; z < args->axis[2].samples; z++){
 				float z_value = (args->axis[2].samples > 1) ? (args->axis[2].min_value + (args->axis[2].max_value - args->axis[2].min_value) * (z / (float)(args->axis[2].samples - 1))) : args->axis[2].min_value;
-				values[value_i][0] = x_value;
-				values[value_i][1] = y_value;
-				values[value_i][2] = z_value;
-				value_i++;
-				if (preview && value_i >= limit){
-					x = args->axis[0].samples;
-					y = args->axis[1].samples;
-					break;
+				for (int w = 0; w < args->axis[3].samples; w++){
+					float w_value = (args->axis[3].samples > 1) ? (args->axis[3].min_value + (args->axis[3].max_value - args->axis[3].min_value) * (w / (float)(args->axis[3].samples - 1))) : args->axis[3].min_value;
+					values[value_i][0] = x_value;
+					values[value_i][1] = y_value;
+					values[value_i][2] = z_value;
+					values[value_i][3] = w_value;
+					value_i++;
+					if (preview && value_i >= limit){
+						x = args->axis[0].samples;
+						y = args->axis[1].samples;
+						z = args->axis[2].samples;
+						break;
+					}
 				}
 			}
 		}
@@ -153,7 +158,7 @@ static void get_settings(ColorSpaceSamplerArgs *args)
 {
 	args->color_space = gtk_combo_box_get_active(GTK_COMBO_BOX(args->combo_color_space));
 	args->linearization = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_linearization));
-	for (int i = 0; i < N_AXIS; i++){
+	for (int i = 0; i < NumberOfAxes; i++){
 		args->axis[i].samples = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_samples)));
 		args->axis[i].min_value = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_min_value)));
 		args->axis[i].max_value = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->axis[i].range_max_value)));
@@ -170,7 +175,7 @@ static void save_settings(ColorSpaceSamplerArgs *args)
 {
 	args->options->set("color_space", args->color_space);
 	args->options->set("linearization", args->linearization);
-	for (int i = 0; i < N_AXIS; i++){
+	for (int i = 0; i < NumberOfAxes; i++){
 		auto axis_config = get_axis_config(i, args);
 		axis_config->set("samples", args->axis[i].samples);
 		axis_config->set("min_value", args->axis[i].min_value);
@@ -251,8 +256,9 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 		_("X axis"),
 		_("Y axis"),
 		_("Z axis"),
+		_("W axis"),
 	};
-	for (int i = 0; i < N_AXIS; i++){
+	for (int i = 0; i < NumberOfAxes; i++){
 		string axis_name = string(axis_names[i]) + ":";
 		auto axis_config = get_axis_config(i, args);
 		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(axis_name.c_str()), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);

@@ -27,6 +27,10 @@ struct HtmlRGB {
 	HtmlRGB(const Color &color);
 	const Color &color;
 };
+struct HtmlRGBA {
+	HtmlRGBA(const Color &color);
+	const Color &color;
+};
 struct HtmlHEX {
 	HtmlHEX(const Color &color);
 	const Color &color;
@@ -35,7 +39,13 @@ struct HtmlHSL {
 	HtmlHSL(const Color &color);
 	const Color &color;
 };
+struct HtmlHSLA {
+	HtmlHSLA(const Color &color);
+	const Color &color;
+};
 std::ostream& operator<<(std::ostream& os, const HtmlRGB color);
+std::ostream& operator<<(std::ostream& os, const HtmlRGBA color);
 std::ostream& operator<<(std::ostream& os, const HtmlHEX color);
 std::ostream& operator<<(std::ostream& os, const HtmlHSL color);
+std::ostream& operator<<(std::ostream& os, const HtmlHSLA color);
 #endif /* GPICK_HTML_UTILS_H_ */

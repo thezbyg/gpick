@@ -194,6 +194,7 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			hsl = hslOriginal;
 			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 1.0f, brightness), i / 4.0f);
 			r = hsl.hslToRgb();
+			r.alpha = color.alpha;
 			name = format('b', i);
 			box = layoutSystem->getNamedBox(name);
 			if (box && box->style) {
@@ -202,6 +203,7 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			hsl = hslOriginal;
 			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 0.0f, darkness), i / 4.0f);
 			r = hsl.hslToRgb();
+			r.alpha = color.alpha;
 			name = format('c', i);
 			box = layoutSystem->getNamedBox(name);
 			if (box && box->style) {

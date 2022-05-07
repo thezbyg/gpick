@@ -19,9 +19,9 @@
 #include <boost/test/unit_test.hpp>
 #include "Color.h"
 #include <iostream>
-const Color testColor = { 0.5f, 0.25f, 0.1f };
+const Color testColor = { 0.5f, 0.25f, 0.1f, 1.0f };
 static std::ostream &operator<<(std::ostream &stream, const Color &color) {
-	stream << color[0] << ", " << color[1] << ", " << color[2] << ", " << color[3];
+	stream << color[0] << ", " << color[1] << ", " << color[2] << ", " << color[3] << ", " << color[4];
 	return stream;
 }
 struct Initialize {

@@ -153,10 +153,10 @@ static void onDragDataReceived(GtkWidget *widget, GdkDragContext *context, gint 
 	case Target::color: {
 		guint16 *data = (guint16 *)gtk_selection_data_get_data(selectionData);
 		Color color;
-		color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
-		color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
-		color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-		color[3] = 0;
+		color.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
+		color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
+		color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
+		color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
 		ColorObject colorObject("", color);
 		success = setColor(colorObject, readonlyColorUI, x, y);
 	} break;
@@ -278,10 +278,10 @@ static void onDragDataGet(GtkWidget *widget, GdkDragContext *context, GtkSelecti
 		const auto &colorObject = state.colorObjects[0];
 		color = colorObject.getColor();
 		guint16 dataColor[4];
-		dataColor[0] = int(color.rgb.red * 0xFFFF);
-		dataColor[1] = int(color.rgb.green * 0xFFFF);
-		dataColor[2] = int(color.rgb.blue * 0xFFFF);
-		dataColor[3] = 0xffff;
+		dataColor[0] = int(color.red * 0xFFFF);
+		dataColor[1] = int(color.green * 0xFFFF);
+		dataColor[2] = int(color.blue * 0xFFFF);
+		dataColor[3] = int(color.alpha * 0xFFFF);
 		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color", false), 16, (guchar *)dataColor, 8);
 	} break;
 	}

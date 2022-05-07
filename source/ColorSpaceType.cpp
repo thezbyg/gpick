@@ -27,47 +27,53 @@
 using namespace std;
 
 const ColorSpaceType color_space_types[] = {
-	{GtkColorComponentComp::hsv, 3,
+	{GtkColorComponentComp::hsv, 4,
 		{
 			{_("Hue"), 360, 0, 360, 0.01},
 			{_("Saturation"), 100, 0, 100, 0.01},
 			{_("Value"), 100, 0, 100, 0.01},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		},
 	},
-	{GtkColorComponentComp::hsl, 3,
+	{GtkColorComponentComp::hsl, 4,
 		{
 			{_("Hue"), 360, 0, 360, 0.01},
 			{_("Saturation"), 100, 0, 100, 0.01},
 			{_("Lightness"), 100, 0, 100, 0.01},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		},
 	},
-	{GtkColorComponentComp::rgb, 3,
+	{GtkColorComponentComp::rgb, 4,
 		{
 			{_("Red"), 255, 0, 255, 0.01},
 			{_("Green"), 255, 0, 255, 0.01},
 			{_("Blue"), 255, 0, 255, 0.01},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		},
 	},
-	{GtkColorComponentComp::cmyk, 4,
+	{GtkColorComponentComp::cmyk, 5,
 		{
 			{_("Cyan"), 255, 0, 255, 0.01},
 			{_("Magenta"), 255, 0, 255, 0.01},
 			{_("Yellow"), 255, 0, 255, 0.01},
-			{_("Key"), 255, 0, 255, 0.01}
+			{_("Key"), 255, 0, 255, 0.01},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		}
 	},
-	{GtkColorComponentComp::lab, 3,
+	{GtkColorComponentComp::lab, 4,
 		{
 			{_("Lightness"), 1, 0, 100, 0.0001},
 			{"a", 1, -145, 145, 0.0001},
-			{"b", 1, -145, 145, 0.0001}
+			{"b", 1, -145, 145, 0.0001},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		}
 	},
-	{GtkColorComponentComp::lch, 3,
+	{GtkColorComponentComp::lch, 4,
 		{
 			{_("Lightness"), 1, 0, 100, 0.0001},
 			{"Chroma", 1, 0, 100, 0.0001},
-			{"Hue", 1, 0, 360, 0.0001}
+			{"Hue", 1, 0, 360, 0.0001},
+			{_("Alpha"), 100, 0, 100, 0.01},
 		}
 	},
 };
@@ -79,20 +85,21 @@ size_t color_space_count_types()
 {
 	return sizeof(color_space_types) / sizeof(ColorSpaceType);
 }
-std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua::Script &script, GlobalState *gs)
+std::vector<std::string> color_space_color_to_text(const char *type, const Color &color, float alpha, lua::Script &script, GlobalState *gs)
 {
-	list<string> result;
+	vector<string> result;
 	if (!gs->callbacks().componentToText().valid())
 		return result;
 	lua_State *L = script;
 	int stack_top = lua_gettop(L);
 	gs->callbacks().componentToText().get();
 	lua_pushstring(L, type);
-	lua::pushColor(L, *color);
-	int status = lua_pcall(L, 2, 1, 0);
+	lua::pushColor(L, color);
+	lua_pushnumber(L, alpha);
+	int status = lua_pcall(L, 3, 1, 0);
 	if (status == 0){
 		if (lua_type(L, -1) == LUA_TTABLE){
-			for (int i = 0; i < 4; i++){
+			for (int i = 0; i < 5; i++){
 				lua_pushinteger(L, i + 1);
 				lua_gettable(L, -2);
 				if (lua_type(L, -1) == LUA_TSTRING){

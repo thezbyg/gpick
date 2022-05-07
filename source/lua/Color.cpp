@@ -27,12 +27,17 @@ static int newColor(lua_State *L)
 	Color *c = reinterpret_cast<Color*>(lua_newuserdata(L, sizeof(Color)));
 	luaL_getmetatable(L, "color");
 	lua_setmetatable(L, -2);
-	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER ){
-		c->rgb.red = static_cast<float>(luaL_checknumber(L, 2));
-		c->rgb.green = static_cast<float>(luaL_checknumber(L, 3));
-		c->rgb.blue = static_cast<float>(luaL_checknumber(L, 4));
+	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER){
+		c->red = static_cast<float>(luaL_checknumber(L, 2));
+		c->green = static_cast<float>(luaL_checknumber(L, 3));
+		c->blue = static_cast<float>(luaL_checknumber(L, 4));
+		if (lua_type(L, 5) == LUA_TNUMBER){
+			c->alpha = static_cast<float>(luaL_checknumber(L, 5));
+		}else{
+			c->alpha = 1.0f;
+		}
 	}else{
-		*c = { 0.0f };
+		*c = { 0.0f, 0.0f, 0.0f, 1.0f };
 	}
 	return 1;
 }
@@ -53,47 +58,71 @@ int pushColor(lua_State *L, const Color &color)
 static int toString(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
-	lua_pushfstring(L, "color(%f, %f, %f)", c.rgb.red, c.rgb.green, c.rgb.blue);
+	lua_pushfstring(L, "color(%f, %f, %f, %f)", c.red, c.green, c.blue, c.alpha);
 	return 1;
 }
 static int colorRgb(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER){
-		c.rgb.red = static_cast<float>(luaL_checknumber(L, 2));
-		c.rgb.green = static_cast<float>(luaL_checknumber(L, 3));
-		c.rgb.blue = static_cast<float>(luaL_checknumber(L, 4));
+		c.red = static_cast<float>(luaL_checknumber(L, 2));
+		c.green = static_cast<float>(luaL_checknumber(L, 3));
+		c.blue = static_cast<float>(luaL_checknumber(L, 4));
 	}
-	lua_pushnumber(L, c.rgb.red);
-	lua_pushnumber(L, c.rgb.green);
-	lua_pushnumber(L, c.rgb.blue);
+	lua_pushnumber(L, c.red);
+	lua_pushnumber(L, c.green);
+	lua_pushnumber(L, c.blue);
 	return 3;
+}
+static int colorRgba(lua_State *L)
+{
+	Color &c = checkColor(L, 1);
+	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER && lua_type(L, 5) == LUA_TNUMBER){
+		c.red = static_cast<float>(luaL_checknumber(L, 2));
+		c.green = static_cast<float>(luaL_checknumber(L, 3));
+		c.blue = static_cast<float>(luaL_checknumber(L, 4));
+		c.alpha = static_cast<float>(luaL_checknumber(L, 5));
+	}
+	lua_pushnumber(L, c.red);
+	lua_pushnumber(L, c.green);
+	lua_pushnumber(L, c.blue);
+	lua_pushnumber(L, c.alpha);
+	return 4;
 }
 static int colorRed(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.red = static_cast<float>(luaL_checknumber(L, 2));
+		c.red = static_cast<float>(luaL_checknumber(L, 2));
 	}
-	lua_pushnumber(L, c.rgb.red);
+	lua_pushnumber(L, c.red);
 	return 1;
 }
 static int colorGreen(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.green = static_cast<float>(luaL_checknumber(L, 2));
+		c.green = static_cast<float>(luaL_checknumber(L, 2));
 	}
-	lua_pushnumber(L, c.rgb.green);
+	lua_pushnumber(L, c.green);
 	return 1;
 }
 static int colorBlue(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
 	if (lua_type(L, 2) == LUA_TNUMBER){
-		c.rgb.blue = static_cast<float>(luaL_checknumber(L, 2));
+		c.blue = static_cast<float>(luaL_checknumber(L, 2));
 	}
-	lua_pushnumber(L, c.rgb.blue);
+	lua_pushnumber(L, c.blue);
+	return 1;
+}
+static int colorAlpha(lua_State *L)
+{
+	Color &c = checkColor(L, 1);
+	if (lua_type(L, 2) == LUA_TNUMBER){
+		c.alpha = static_cast<float>(luaL_checknumber(L, 2));
+	}
+	lua_pushnumber(L, c.alpha);
 	return 1;
 }
 static int colorHsl(lua_State *L)
@@ -267,7 +296,9 @@ static const struct luaL_Reg color_members[] =
 	{"red", colorRed},
 	{"green", colorGreen},
 	{"blue", colorBlue},
+	{"alpha", colorAlpha},
 	{"rgb", colorRgb},
+	{"rgba", colorRgba},
 	{"hue", colorHue},
 	{"saturation", colorSaturation},
 	{"lightness", colorLightness},

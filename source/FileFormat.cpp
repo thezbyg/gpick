@@ -36,7 +36,12 @@
 #define CHUNK_TYPE_COLOR_LIST "color_list"
 #define CHUNK_TYPE_COLOR_POSITIONS "color_positions"
 #define CHUNK_TYPE_COLOR_ACTIONS "color_actions"
-const uint32_t Version = static_cast<uint32_t>(1 * 0x10000 + 0);
+constexpr uint32_t toVersion(uint16_t major, uint16_t minor) {
+	return (static_cast<uint32_t>(major) << 16) | minor;
+}
+const uint32_t MinSupportedVersion = toVersion(1, 0);
+const uint32_t Version = toVersion(2, 0);
+const uint32_t MaxSupportedVersion = Version | 0xffffu;
 struct ChunkHeader {
 	void prepareWrite(const std::string &type, uint64_t size) {
 		size_t length = type.length();
@@ -103,8 +108,9 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 	uint32_t version;
 	if (!read(file, version))
 		return Result(ErrorCode::readFailed);
-	if (version != Version)
+	if (!(version >= MinSupportedVersion && version <= MaxSupportedVersion))
 		return Result(ErrorCode::badVersion);
+	bool noAlphaChannel = version < 0x20000u;
 	file.seekg(header.size() - 4, std::ios::cur);
 	if (!file.good())
 		return Result(ErrorCode::readFailed);
@@ -112,11 +118,11 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 		return file.eof() ? Result() : Result(ErrorCode::readFailed);
 	}
 	std::vector<ColorObject *> colorObjects;
-	auto releaseColorObjects = common::makeScoped(std::function<void()>([&colorObjects]() {
+	common::Scoped releaseColorObjects([&colorObjects]() {
 		for (auto colorObject: colorObjects)
 			if (colorObject)
 				colorObject->release();
-	}));
+	});
 	std::vector<uint32_t> positions;
 	std::unordered_map<uint8_t, dynv::types::ValueType> typeMap;
 	std::vector<std::string> handlers;
@@ -143,6 +149,8 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 					return file.good() ? Result(ErrorCode::badFile) : Result(ErrorCode::readFailed);
 				auto color = options.getColor("color", Color());
 				auto name = options.getString("name", "");
+				if (noAlphaChannel)
+					color.alpha = 1.0f;
 				colorObjects.push_back(new ColorObject(name, color));
 			}
 		} else if (header.is(CHUNK_TYPE_COLOR_POSITIONS)) {

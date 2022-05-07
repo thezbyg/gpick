@@ -158,6 +158,7 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		color_names_find_nearest(gs.getColorNames(), color, 9, colors);
 		for (size_t i = 0; i < 9; ++i) {
 			if (i < colors.size()) {
+				colors[i].second.alpha = color.alpha;
 				gtk_color_set_color(GTK_COLOR(closestColors[i]), &colors[i].second, colors[i].first);
 				gtk_widget_set_sensitive(closestColors[i], true);
 			} else {

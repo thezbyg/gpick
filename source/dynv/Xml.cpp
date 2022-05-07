@@ -405,7 +405,7 @@ bool serialize(std::ostream &stream, const Map &map, bool addRootElement) {
 }
 bool deserialize(std::istream &stream, Map &map) {
 	auto parser = XML_ParserCreate("UTF-8");
-	auto freeParser = common::makeScoped(XML_ParserFree, parser);
+	common::Scoped freeParser(XML_ParserFree, parser);
 	XML_SetElementHandler(parser, reinterpret_cast<XML_StartElementHandler>(onStartElement), reinterpret_cast<XML_EndElementHandler>(onEndElement));
 	XML_SetCharacterDataHandler(parser, reinterpret_cast<XML_CharacterDataHandler>(onCharacterData));
 	xml::Context context(map);

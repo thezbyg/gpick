@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <cstddef>
 #include <string>
-#include <list>
+#include <vector>
 namespace lua
 {
 struct Script;
@@ -39,9 +39,9 @@ struct ColorSpaceType
 		double min_value;
 		double max_value;
 		double step;
-	}items[4];
+	}items[5];
 };
 const ColorSpaceType *color_space_get_types();
 size_t color_space_count_types();
-std::list<std::string> color_space_color_to_text(const char *type, const Color *color, lua::Script &script, GlobalState *gs);
+std::vector<std::string> color_space_color_to_text(const char *type, const Color &color, float alpha, lua::Script &script, GlobalState *gs);
 #endif /* GPICK_COLOR_SPACE_TYPE_H_ */

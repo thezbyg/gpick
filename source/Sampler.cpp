@@ -118,6 +118,7 @@ int sampler_get_color_sample(Sampler *sampler, math::Vector2i &pointer, math::Re
 	}
 	if (divider > 0)
 		result *= 1 / divider;
+	result.alpha = 1;
 	*color = result;
 	return 0;
 }

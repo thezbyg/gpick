@@ -374,6 +374,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	gtk_widget_show(args->zoomed);
 	gtk_box_pack_start(GTK_BOX(vbox), args->zoomed, false, false, 0);
 	args->color_widget = gtk_color_new();
+	gtk_widget_set_size_request(GTK_WIDGET(args->color_widget), 40, 40);
 	gtk_widget_show(args->color_widget);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_widget, true, true, 0);
 	g_signal_connect(G_OBJECT(args->window), "scroll_event", G_CALLBACK(scroll_event_cb), args);

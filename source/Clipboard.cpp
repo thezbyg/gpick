@@ -87,10 +87,10 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		auto &colorObject = args->colors->colors.front();
 		auto &color = colorObject->getColor();
 		guint16 dataColor[4];
-		dataColor[0] = static_cast<guint16>(color.rgb.red * 0xFFFF);
-		dataColor[1] = static_cast<guint16>(color.rgb.green * 0xFFFF);
-		dataColor[2] = static_cast<guint16>(color.rgb.blue * 0xFFFF);
-		dataColor[3] = 0xffff;
+		dataColor[0] = static_cast<guint16>(color.red * 0xFFFF);
+		dataColor[1] = static_cast<guint16>(color.green * 0xFFFF);
+		dataColor[2] = static_cast<guint16>(color.blue * 0xFFFF);
+		dataColor[3] = static_cast<guint16>(color.alpha * 0xFFFF);
 		gtk_selection_data_set(selectionData, gdk_atom_intern("application/x-color", false), 16, reinterpret_cast<guchar *>(dataColor), 8);
 	} break;
 	case Target::serializedColorObjectList: {
@@ -291,10 +291,10 @@ ColorObject *getFirst(GlobalState *gs) {
 			guint16 values[4];
 			::memcpy(values, data, 8);
 			Color color;
-			color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
-			color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
-			color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-			color[3] = 0;
+			color.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
+			color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
+			color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
+			color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
 			result = new ColorObject("", color);
 			return VisitResult::stop;
 		} break;
@@ -352,10 +352,10 @@ ColorList *getColors(GlobalState *gs) {
 			guint16 values[4];
 			::memcpy(values, data, 8);
 			Color color;
-			color.rgb.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
-			color.rgb.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
-			color.rgb.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
-			color[3] = 0;
+			color.red = static_cast<float>(data[0] / static_cast<double>(0xFFFF));
+			color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
+			color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
+			color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
 			ColorObject *reference;
 			color_list_add_color_object(colorList, (reference = new ColorObject("", color)), false);
 			reference->release();
