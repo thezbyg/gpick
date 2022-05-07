@@ -3,24 +3,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: gpick 0.2.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2017-09-07 19:53+0300\n"
-"PO-Revision-Date: 2017-09-07 19:54+0300\n"
+"POT-Creation-Date: 2022-05-07 11:54+0300\n"
+"PO-Revision-Date: 2022-05-07 15:11+0300\n"
 "Last-Translator: Albertas Vyšniauskas <thezbyg@gmail.com>\n"
 "Language-Team: \n"
 "Language: lt\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 2.0.3\n"
-"X-Poedit-SourceCharset: UTF-8\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-
-#, c-format
-msgid "%d color"
-msgid_plural "%d colors"
-msgstr[0] "%d spalva"
-msgstr[1] "%d spalvos"
-msgstr[2] "%d spalvų"
+"X-Generator: Poedit 3.0.1\n"
+"X-Poedit-SourceCharset: UTF-8\n"
 
 msgid "'Spacebar' button behaviour"
 msgstr "'Tarpo' mygtuko elgsena"
@@ -28,8 +21,20 @@ msgstr "'Tarpo' mygtuko elgsena"
 msgid "(Imported)"
 msgstr "(Importuotas)"
 
+msgid "(semicolon separator)"
+msgstr "(kabliataškio skirtukas)"
+
+msgid "(tab separator)"
+msgstr "(tabuliatoriaus skirtukas)"
+
 msgid "A_dd all to palette"
 msgstr "Į_kelti visas į paletę"
+
+msgid "A_dd to swatch"
+msgstr "Į_kelti į mėginį"
+
+msgid "A_dd..."
+msgstr "Pri_dėti..."
 
 msgid "About Gpick"
 msgstr "Apie Gpick"
@@ -52,14 +57,14 @@ msgstr "Aktyvūs filtrai"
 msgid "Add"
 msgstr "Sudėtis"
 
+msgid "Add color"
+msgstr "Pridėti spalvą"
+
 msgid "Add color dictionary file"
 msgstr "Pridėti spalvų žodyną"
 
 msgid "Adobe Swatch Exchange (*.ase)"
 msgstr "Adobe Swatch Exchange (*.ase)"
-
-msgid "Advanced color picker"
-msgstr "Pažangi spalvų rinkyklė"
 
 msgid "Alias/WaveFront Material (*.mtl)"
 msgstr "Alias/WaveFront Material (*.mtl)"
@@ -72,6 +77,9 @@ msgstr "Visi paveikslėliai"
 
 msgid "All supported formats"
 msgstr "Visi palaikomi formatai"
+
+msgid "Alpha"
+msgstr "Alfa"
 
 msgid "Altered spectral sensitivity of blue receptors"
 msgstr "Pakitęs mėlynų receptorių spektro jautrumas"
@@ -154,8 +162,14 @@ msgstr "CSS selectorius"
 msgid "CSS: hue saturation lightness"
 msgstr "CSS: atspalvis įsotinimas šviesumas"
 
+msgid "CSS: hue saturation lightness alpha"
+msgstr "CSS: atspalvis įsotinimas šviesumas permatomumas"
+
 msgid "CSS: red green blue"
 msgstr "CSS: raudona žalia mėlyna"
+
+msgid "CSS: red green blue alpha"
+msgstr "CSS: raudona žalia mėlyna permatomumas"
 
 msgid "C_lear names"
 msgstr "I_švalyti pavadinimus"
@@ -259,8 +273,8 @@ msgstr "_Kopijuoti"
 msgid "Copy"
 msgstr "Kopijavimas"
 
-msgid "Copyright © 2009-2016, Albertas Vyšniauskas and Gpick development team"
-msgstr "Autorinės teisės priklauso © 2009-2016, Albertui Vyšniauskui ir Gpick kūrimo komandai"
+msgid "Copyright"
+msgstr "Autorinės teisės"
 
 msgid "Credits"
 msgstr "Padėkos"
@@ -436,6 +450,9 @@ msgstr "HSL Įsotinimas"
 msgid "HSV"
 msgstr "HSV"
 
+msgid "Hash"
+msgstr "Kodas"
+
 msgid "Hash single-line comments"
 msgstr "Grotelių simbolio vienos eilutės komentarai"
 
@@ -481,11 +498,14 @@ msgstr "Pridėti spalvų pavadinimus"
 msgid "Info"
 msgstr "Informacija"
 
+msgid "Input"
+msgstr "Įvestis"
+
 msgid "Integer values"
 msgstr "Sveikieji skaičiai"
 
 msgid "Item"
-msgstr "Lauk."
+msgstr "Elementas"
 
 msgid "Item size"
 msgstr "Elemento dydis"
@@ -632,7 +652,7 @@ msgid "Other settings"
 msgstr "Kiti nustatymai"
 
 msgid "Oversample:"
-msgstr "Mėginio vidurkis"
+msgstr "Mėginio vidurkis:"
 
 msgid "Palette"
 msgstr "Paletė"
@@ -643,8 +663,14 @@ msgstr "Paletė iš paveikslėlio..."
 msgid "Palette from image"
 msgstr "Paletė iš paveikslėlio"
 
+msgid "Parsed text color"
+msgstr "Išanalizuota teksto slapva"
+
 msgid "Paste"
 msgstr "Įdėjimas"
+
+msgid "Paste / Edit"
+msgstr "Įkėlimas / Keitimas"
 
 msgid "Path"
 msgstr "Kelias"
@@ -655,11 +681,17 @@ msgstr "Rinkti spalvą"
 msgid "Pick colors (Ctrl+P)"
 msgstr "Rinkti spalvas (Vald+P)"
 
+msgid "Picker"
+msgstr "Rinkėjas"
+
 msgid "Press Spacebar to sample color under mouse pointer"
 msgstr "Paspauskite Tarpą norėdami gauti spalvą esančią po pelės kursoriu"
 
 msgid "Preview"
 msgstr "Peržiūra"
+
+msgid "Primary"
+msgstr "Pirminis"
 
 msgid "Privacy"
 msgstr "Privatumas"
@@ -702,6 +734,9 @@ msgstr "RYB v2"
 
 msgid "R_everse"
 msgstr "_Atvirkščiai"
+
+msgid "R_otate swatch"
+msgstr "_Pasukti mėginį"
 
 msgid "Real values"
 msgstr "Realūs skaičiai"
@@ -750,6 +785,9 @@ msgstr "Schemos _generavimas"
 
 msgid "Scheme generation"
 msgstr "Schemos generavimas"
+
+msgid "Secondary"
+msgstr "Antrinis"
 
 msgid "Seed:"
 msgstr "Sėkla:"
@@ -811,11 +849,17 @@ msgstr "Sąlygos"
 msgid "Test color"
 msgstr "Testavimo spalva"
 
+msgid "Text"
+msgstr "Tekstas"
+
 msgid "Text File (*.txt)"
 msgstr "Tekstinis failas (*.txt)"
 
 msgid "Text file (*.txt)"
 msgstr "Tekstinis failas (*.txt)"
+
+msgid "Text parser"
+msgstr "Teksto Analizatorius"
 
 msgid "The quick brown fox jumps over the lazy dog"
 msgstr "Greita ruda lapė šoka per tingų šunį"
@@ -823,9 +867,8 @@ msgstr "Greita ruda lapė šoka per tingų šunį"
 msgid "Tool color naming"
 msgstr "Įrankių spalvų pavadinimai"
 
-#, c-format
-msgid "Total %d color"
-msgid_plural "Total %d colors"
+msgid "Total {} color"
+msgid_plural "Total {} colors"
 msgstr[0] "Viso %d spalva"
 msgstr[1] "Viso %d spalvos"
 msgstr[2] "Viso %d spalvų"
@@ -856,6 +899,9 @@ msgstr "Reikšmė:"
 
 msgid "Variations"
 msgstr "Pokyčiai"
+
+msgid "W axis"
+msgstr "W ašis"
 
 msgid "Web: hex code"
 msgstr "Tinklas: šešioliktainis kodas"
@@ -889,6 +935,9 @@ msgstr "Priartinimas:"
 
 msgid "_Add to palette"
 msgstr "_Įkelti į paletę"
+
+msgid "_Always use floating picker"
+msgstr "_Visada naudoti slankųjį rinkėją"
 
 msgid "_Append"
 msgstr "_Pridėti"
@@ -935,6 +984,9 @@ msgstr "_Generuoti..."
 msgid "_Help"
 msgstr "_Pagalba"
 
+msgid "_Hide cursor"
+msgstr "_Slėpti žymeklį"
+
 msgid "_Illuminant:"
 msgstr "_Apšvietimas:"
 
@@ -946,6 +998,9 @@ msgstr "_Netikslumo ženklas"
 
 msgid "_Include Endpoints"
 msgstr "Įtraukti _galinius taškus"
+
+msgid "_Layout"
+msgstr "_Išdėstymas"
 
 msgid "_Linearization"
 msgstr "_Tiesinimas"
@@ -977,8 +1032,14 @@ msgstr "_Stebėtojas:"
 msgid "_Paste"
 msgstr "_Įdėti"
 
+msgid "_Pick colors..."
+msgstr "_Rinkti spalvas..."
+
 msgid "_Picker"
 msgstr "_Rinkėjas"
+
+msgid "_Primary View"
+msgstr "_Pirminis vaizdas"
 
 msgid "_Quit"
 msgstr "_Išeiti"
@@ -1019,6 +1080,9 @@ msgstr "_Vienas egzempliorius"
 msgid "_Start in system tray"
 msgstr "_Paleisti sisteminiame dėkle"
 
+msgid "_Text Parser..."
+msgstr "_Teksto Analizatorius..."
+
 msgid "_Tool specific"
 msgstr "_Priklausomai nuo įrankio"
 
@@ -1036,6 +1100,9 @@ msgstr "_Rodymas"
 
 msgid "all colors"
 msgstr "visos spalvos"
+
+msgid "and Gpick development team"
+msgstr "ir Gpick kūrimo komanda"
 
 msgid "blend"
 msgstr "suliejimas"
@@ -1055,18 +1122,14 @@ msgstr "spalvų maišyklė"
 msgid "color space"
 msgstr "spalvų erdvė"
 
-msgid "error"
-msgstr "klaida"
-
 msgid "layout preview"
 msgstr "išdėstymo peržiūra"
 
 msgid "main"
 msgstr "pagrindinis"
 
-#, c-format
-msgid "match %d"
-msgstr "atitikmuo %d"
+msgid "match {}"
+msgstr "atitikmuo {}"
 
 msgid "mix"
 msgstr "maišymas"
@@ -1074,17 +1137,14 @@ msgstr "maišymas"
 msgid "mix node"
 msgstr "maišymo mazgas"
 
-#, c-format
-msgid "primary %d"
-msgstr "pirminė %d"
+msgid "primary {}"
+msgstr "pirminė {}"
 
-#, c-format
-msgid "result %d"
-msgstr "rezultatas %d"
+msgid "result {}"
+msgstr "rezultatas {}"
 
-#, c-format
-msgid "result %d line %d"
-msgstr "rezultatas %d eilutėje %d"
+msgid "result {} line {}"
+msgstr "rezultatas {} eilutėje {}"
 
 msgid "rgb.txt File (rgb.txt)"
 msgstr "rgb.txt failas (*.txt)"
@@ -1107,3 +1167,8 @@ msgstr "pokyčiai"
 msgid "variations"
 msgstr "pokyčiai"
 
+msgid "{} color"
+msgid_plural "{} colors"
+msgstr[0] "{} spalva"
+msgstr[1] "%d spalvos"
+msgstr[2] "%d spalvų"

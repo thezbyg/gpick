@@ -100,7 +100,7 @@ void show_about_box(GtkWidget *widget)
 	gtk_label_set_markup(GTK_LABEL(name), tmp_string);
 	gtk_box_pack_start(GTK_BOX(vbox2), name, false, false, 0);
 	g_free(tmp_string);
-	tmp_string = g_markup_printf_escaped ("<span size=\"small\">%s</span>", _("Copyright © 2009-2022, Albertas Vyšniauskas and Gpick development team"));
+	tmp_string = g_markup_printf_escaped("<span size=\"small\">%s © 2009-2022, Albertas Vyšniauskas %s</span>", _("Copyright"), _("and Gpick development team"));
 	GtkWidget *copyright = gtk_label_new(0);
 	gtk_label_set_selectable(GTK_LABEL(copyright), true);
 	gtk_label_set_justify(GTK_LABEL(copyright), GTK_JUSTIFY_CENTER);
