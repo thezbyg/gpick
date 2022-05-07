@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2009-2016 Albertas Vyšniauskas -->
+<!-- Copyright 2009-2022 Albertas Vyšniauskas -->
 <component type="desktop">
-	<id>gpick.desktop</id>
+	<id>org.gpick.gpick</id>
+	<launchable type="desktop-id">org.gpick.gpick.desktop</launchable>
 	<metadata_license>CC0-1.0</metadata_license>
 	<project_license>BSD-3-Clause</project_license>
 	<name>Gpick</name>
@@ -38,4 +39,7 @@
 		<keyword>scheme</keyword>
 	</keywords>
 	<url type="translate">http://www.gpick.org/help/translation.html</url>
+	<provides>
+		<binary>gpick</binary>
+	</provides>
 </component>

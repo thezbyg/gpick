@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project(gpick)
 option(ENABLE_NLS "compile with gettext support" true)
 option(USE_GTK3 "use GTK3 instead of GTK2" true)
@@ -203,9 +203,9 @@ target_include_directories(tests PRIVATE
 )
 
 install(TARGETS gpick DESTINATION bin)
-install(FILES share/metainfo/gpick.appdata.xml DESTINATION share/metainfo)
-install(FILES share/applications/gpick.desktop DESTINATION share/applications)
-install(FILES share/mime/packages/gpick.xml DESTINATION share/mime/packages)
+install(FILES share/metainfo/org.gpick.gpick.metainfo.xml DESTINATION share/metainfo)
+install(FILES share/applications/org.gpick.gpick.desktop DESTINATION share/applications)
+install(FILES share/mime/packages/org.gpick.gpick.xml DESTINATION share/mime/packages)
 install(FILES share/doc/gpick/copyright DESTINATION share/doc/gpick)
 install(FILES share/man/man1/gpick.1 DESTINATION share/man/man1)
 file(GLOB RESOURCE_FILES share/gpick/*.png share/gpick/*.lua share/gpick/*.txt share/gpick/.gpick-data-directory)

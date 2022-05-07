@@ -351,9 +351,9 @@ if env['ENABLE_NLS']:
 
 env.Alias(target = "install", source = [
 	env.InstallProgram(dir = env['DESTDIR'] +'/bin', source = [executable]),
-	env.InstallData(dir = env['DESTDIR'] +'/share/metainfo', source = ['share/metainfo/gpick.appdata.xml']),
-	env.InstallData(dir = env['DESTDIR'] +'/share/applications', source = ['share/applications/gpick.desktop']),
-	env.InstallData(dir = env['DESTDIR'] +'/share/mime/packages', source = ['share/mime/packages/gpick.xml']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/metainfo', source = ['share/metainfo/org.gpick.gpick.metainfo.xml']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/applications', source = ['share/applications/org.gpick.gpick.desktop']),
+	env.InstallData(dir = env['DESTDIR'] +'/share/mime/packages', source = ['share/mime/packages/org.gpick.gpick.xml']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/doc/gpick', source = ['share/doc/gpick/copyright']),
 	env.InstallData(dir = env['DESTDIR'] +'/share/gpick', source = [env.Glob('share/gpick/*.png'), env.Glob('share/gpick/*.lua'), env.Glob('share/gpick/*.txt'), env.Glob('share/gpick/.gpick-data-directory')]),
 	env.InstallData(dir = env['DESTDIR'] +'/share/man/man1', source = ['share/man/man1/gpick.1']),

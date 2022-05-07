@@ -22,7 +22,7 @@ C++17 support is required. Compilation is currently only tested on following com
 
 ### Build dependencies
 
-CMake 3.10 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
+CMake 3.12 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
 
 SCons 3.0 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
 
