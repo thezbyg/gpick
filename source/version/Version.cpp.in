@@ -19,6 +19,7 @@
 #include "version/Version.h"
 namespace version {
 const char* version = "@GPICK_BUILD_VERSION@";
+const char* versionFull = "@GPICK_BUILD_VERSION_FULL@";
 const unsigned long revision = @GPICK_BUILD_REVISION@;
 const char* hash = "@GPICK_BUILD_HASH@";
 const char* date = "@GPICK_BUILD_DATE@";

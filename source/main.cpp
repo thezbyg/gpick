@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 		return -1;
 	}
 	if (version_information){
-		std::cout << program_name << ' ' << version::version << (version::revision > 0 ? "-" + std::to_string(version::revision) : std::string()) + "-g" + std::string(version::hash) << "\nDate " << version::date << '\n';
+		std::cout << program_name << ' ' << version::versionFull << "-g" + std::string(version::hash) << "\nDate " << version::date << '\n';
 		g_option_context_free(context);
 		g_strfreev(argv_copy);
 		return 0;

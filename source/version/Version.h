@@ -18,6 +18,7 @@
 
 namespace version {
 extern const char* version;
+extern const char* versionFull;
 extern const unsigned long revision;
 extern const char* hash;
 extern const char* date;

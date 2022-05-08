@@ -80,6 +80,14 @@ static const struct luaL_Reg functions[] =
 	{"setOptionChangeCallback", setOptionChangeCallback},
 	{nullptr, nullptr}
 };
+static void setField(lua_State *L, const char *name, const char *value) {
+	lua_pushstring(L, value);
+	lua_setfield(L, -2, name);
+}
+static void setField(lua_State *L, const char *name, unsigned long value) {
+	lua_pushinteger(L, value);
+	lua_setfield(L, -2, name);
+}
 void registerAll(lua_State *L, GlobalState &global_state)
 {
 	Script script(L);
@@ -89,14 +97,11 @@ void registerAll(lua_State *L, GlobalState &global_state)
 	script.registerExtension("layout", registerLayout);
 	script.registerExtension(nullptr, [](lua_State *L){
 		luaL_newlib(L, functions);
-		lua_pushstring(L, version::version);
-		lua_setfield(L, -2, "version");
-		lua_pushinteger(L, version::revision);
-		lua_setfield(L, -2, "revision");
-		lua_pushstring(L, version::hash);
-		lua_setfield(L, -2, "hash");
-		lua_pushstring(L, version::date);
-		lua_setfield(L, -2, "date");
+		setField(L, "version", version::version);
+		setField(L, "revision", version::revision);
+		setField(L, "hash", version::hash);
+		setField(L, "date", version::date);
+		setField(L, "full_version", version::versionFull);
 		lua_pushcclosure(L, getText, 0);
 		lua_setfield(L, -2, "_");
 		return 1;

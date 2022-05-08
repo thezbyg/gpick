@@ -217,7 +217,7 @@ common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* c
 	if (!file.is_open())
 		return Result(ErrorCode::fileCouldNotBeOpened);
 	ChunkHeader header;
-	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + version::version, 4);
+	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + version::versionFull, 4);
 	if (!write(file, header))
 		return Result(ErrorCode::writeFailed);
 	if (!write(file, Version)) // file format version
