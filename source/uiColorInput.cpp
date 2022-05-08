@@ -29,6 +29,7 @@
 #include "ColorObject.h"
 #include "ColorSpaceType.h"
 #include "color_names/ColorNames.h"
+#include "common/SetOnScopeEnd.h"
 #include <string.h>
 #include <string>
 #include <iostream>
@@ -39,6 +40,7 @@ struct DialogInputArgs
 	ColorObject *color_object;
 	GtkWidget *color_widget;
 	GtkWidget *text_input;
+	bool ignore_text_change;
 	GtkWidget *rgb_expander, *hsv_expander, *hsl_expander, *cmyk_expander, *xyz_expander, *lab_expander, *lch_expander;
 	GtkWidget *rgb_control, *hsv_control, *hsl_control, *cmyk_control, *xyz_control, *lab_control, *lch_control;
 	dynv::Ref options;
@@ -66,6 +68,7 @@ static void update(DialogInputArgs *args, GtkWidget *except_widget)
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &color, "");
 	if (except_widget != args->text_input){
 		string text = args->gs->converters().serialize(args->color_object, Converters::Type::display);
+		common::SetOnScopeEnd ignoreTextChange(args->ignore_text_change = true, false);
 		gtk_entry_set_text(GTK_ENTRY(args->text_input), text.c_str());
 	}
 	if (except_widget != args->hsl_control) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->hsl_control), &color);
@@ -107,6 +110,8 @@ static void addComponentEditor(GtkWidget *vbox, const char *label, const char *e
 }
 static void onTextChanged(GtkWidget *entry, DialogInputArgs *args)
 {
+	if (args->ignore_text_change)
+		return;
 	ColorObject *color_object;
 	if (args->gs->converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object)){
 		args->color_object->setColor(color_object->getColor());
@@ -153,6 +158,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
 	gtk_widget_grab_focus(entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(onTextChanged), args);
+	args->ignore_text_change = false;
 
 	const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), "A", _("Alpha"), nullptr};
 	addComponentEditor(vbox, "HSV", "expander.hsv", GtkColorComponentComp::hsv, hsv_labels, args, args->hsv_expander, args->hsv_control);
