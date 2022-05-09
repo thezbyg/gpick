@@ -48,8 +48,7 @@ const int ScrollEdgeSize = 15; //SCROLL_EDGE_SIZE from gtktreeview.c
 struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, public IDraggableColorUI, public IEventHandler {
 	GtkWidget *treeview;
 	gint scrollTimeout;
-	math::Vector2i last_click_position;
-	bool disable_selection;
+	bool allowSelection;
 	GtkWidget* countLabel;
 	GlobalState &gs;
 	bool countUpdateBlocked;
@@ -367,6 +366,14 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			break;
 		}
 	}
+	static gboolean controlSelectionCallback(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
+		return args->allowSelection;
+	}
+	void controlSelection(bool allow) {
+		auto selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+		allowSelection = allow;
+		gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)controlSelectionCallback, this, nullptr);
+	}
 	ColorObject colorObject;
 };
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
@@ -428,16 +435,6 @@ GtkWidget* palette_list_get_widget(ColorList *color_list){
 	return (GtkWidget*)color_list->userdata;
 }
 
-static gboolean controlSelection(GtkTreeSelection *selection, GtkTreeModel *model, GtkTreePath *path, gboolean path_currently_selected, ListPaletteArgs *args) {
-	return args->disable_selection;
-}
-static void disablePaletteSelection(GtkTreeView *treeView, gboolean disable, int x, int y, ListPaletteArgs *args) {
-	auto selection = gtk_tree_view_get_selection(treeView);
-	args->disable_selection = disable;
-	gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)controlSelection, args, nullptr);
-	args->last_click_position.x = x;
-	args->last_click_position.y = y;
-}
 static void onPreviewActivate(GtkTreeView *treeView, GtkTreePath *path, GtkTreeViewColumn *column, ListPaletteArgs *args) {
 	auto model = gtk_tree_view_get_model(treeView);
 	GtkTreeIter iter;
@@ -496,37 +493,24 @@ static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPalet
 }
 #endif
 static gboolean onPreviewButtonPress(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (event->button == 3) {
-		return false;
-	}
-	disablePaletteSelection(treeView, true, -1, -1, args);
 	if (event->button != 1)
 		return false;
 	if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
 		return false;
+	args->controlSelection(true);
 	GtkTreePath *path = nullptr;
 	if (!gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, nullptr, nullptr, nullptr))
 		return false;
 	auto selection = gtk_tree_view_get_selection(treeView);
 	if (gtk_tree_selection_path_is_selected(selection, path))
-		disablePaletteSelection(treeView, false, static_cast<int>(event->x), static_cast<int>(event->y), args);
+		args->controlSelection(false);
 	if (path)
 		gtk_tree_path_free(path);
 	return false;
 }
 static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (args->last_click_position != math::Vector2i(-1, -1)) {
-		math::Vector2i clickPosition = args->last_click_position;
-		disablePaletteSelection(treeView, true, -1, -1, args);
-		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
-			GtkTreePath *path = nullptr;
-			GtkTreeViewColumn *column;
-			if (gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, &column, nullptr, nullptr)) {
-				gtk_tree_view_set_cursor(treeView, path, column, false);
-			}
-			if (path)
-				gtk_tree_path_free(path);
-		}
+	if (event->button == 1 && !args->allowSelection) {
+		args->controlSelection(true);
 	}
 	return false;
 }
@@ -589,42 +573,29 @@ static void destroy_arguments(gpointer data){
 	delete args;
 }
 static gboolean on_palette_button_press(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	disablePaletteSelection(treeView, true, -1, -1, args);
-	if (event->button != 1)
-		return false;
-	if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
-		return false;
-	GtkTreePath *path = nullptr;
-	if (!gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, nullptr, nullptr, nullptr))
-		return false;
-	auto selection = gtk_tree_view_get_selection(treeView);
-	if (gtk_tree_selection_path_is_selected(selection, path)) {
-		disablePaletteSelection(treeView, false, static_cast<int>(event->x), static_cast<int>(event->y), args);
+	if (event->button == 1 && !(event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))) {
+		args->controlSelection(true);
+		GtkTreePath *path = nullptr;
+		if (!gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, nullptr, nullptr, nullptr))
+			return false;
+		auto selection = gtk_tree_view_get_selection(treeView);
+		if (gtk_tree_selection_path_is_selected(selection, path)) {
+			args->controlSelection(false);
+		}
+		if (path)
+			gtk_tree_path_free(path);
 	}
-	if (path)
-		gtk_tree_path_free(path);
 	args->updateCounts();
 	return false;
 }
 
 static gboolean on_palette_button_release(GtkTreeView *treeView, GdkEventButton *event, ListPaletteArgs *args) {
-	if (args->last_click_position != math::Vector2i(-1, -1)) {
-		math::Vector2i clickPosition = args->last_click_position;
-		disablePaletteSelection(treeView, true, -1, -1, args);
-		if (clickPosition.x == static_cast<int>(event->x) && clickPosition.y == static_cast<int>(event->y)) {
-			GtkTreePath *path = nullptr;
-			GtkTreeViewColumn *column;
-			if (gtk_tree_view_get_path_at_pos(treeView, static_cast<int>(event->x), static_cast<int>(event->y), &path, &column, nullptr, nullptr)) {
-				gtk_tree_view_set_cursor(treeView, path, column, FALSE);
-			}
-			if (path)
-				gtk_tree_path_free(path);
-		}
+	if (event->button == 1 && !args->allowSelection) {
+		args->controlSelection(true);
 	}
 	args->updateCounts();
 	return false;
 }
-
 
 static void on_palette_cursor_changed(GtkTreeView *treeview, ListPaletteArgs *args){
 	args->updateCounts();

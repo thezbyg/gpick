@@ -300,7 +300,7 @@ static void onDragBegin(GtkWidget *widget, GdkDragContext *context, IReadonlyCol
 		auto hbox = gtk_vbox_new(true, 0);
 		gtk_container_add(GTK_CONTAINER(dragWindow), hbox);
 		auto showColors = std::min<size_t>(colorObjects.size(), 5);
-		gtk_widget_set_size_request(dragWindow, 164, 24 * showColors);
+		gtk_widget_set_size_request(dragWindow, 250, 24 * showColors);
 		auto converter = state.gs.converters().forType(state.converterType);
 		if (converter) {
 			for (size_t i = 0; i < showColors; i++) {
