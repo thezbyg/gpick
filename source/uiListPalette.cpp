@@ -540,7 +540,7 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	g_signal_connect(G_OBJECT(view), "button-release-event", G_CALLBACK(onPreviewButtonRelease), args);
 	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(onPreviewActivate), args);
 	StandardEventHandler::forWidget(view, &args->gs, args, StandardEventHandler::Options().afterEvents(false));
-	StandardDragDropHandler::forWidget(view, &args->gs, args, StandardDragDropHandler::Options().allowDrop(true).converterType(Converters::Type::colorList));
+	StandardDragDropHandler::forWidget(view, &args->gs, args, StandardDragDropHandler::Options().allowDrop(false).converterType(Converters::Type::colorList));
 
 	if (out_color_list) {
 		ColorList* cl=color_list_new();
