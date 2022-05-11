@@ -138,6 +138,21 @@ static int colorHsl(lua_State *L)
 	lua_pushnumber(L, c.hsl.lightness);
 	return 3;
 }
+static int colorHsla(lua_State *L)
+{
+	Color &c = checkColor(L, 1);
+	if (lua_type(L, 2) == LUA_TNUMBER && lua_type(L, 3) == LUA_TNUMBER && lua_type(L, 4) == LUA_TNUMBER && lua_type(L, 5) == LUA_TNUMBER){
+		c.hsl.hue = static_cast<float>(luaL_checknumber(L, 2));
+		c.hsl.saturation = static_cast<float>(luaL_checknumber(L, 3));
+		c.hsl.lightness = static_cast<float>(luaL_checknumber(L, 4));
+		c.alpha = static_cast<float>(luaL_checknumber(L, 5));
+	}
+	lua_pushnumber(L, c.hsl.hue);
+	lua_pushnumber(L, c.hsl.saturation);
+	lua_pushnumber(L, c.hsl.lightness);
+	lua_pushnumber(L, c.alpha);
+	return 4;
+}
 static int colorHue(lua_State *L)
 {
 	Color &c = checkColor(L, 1);
@@ -304,6 +319,7 @@ static const struct luaL_Reg color_members[] =
 	{"lightness", colorLightness},
 	{"value", colorLightness},
 	{"hsl", colorHsl},
+	{"hsla", colorHsla},
 	{"cyan", colorCyan},
 	{"magenta", colorMagenta},
 	{"yellow", colorYellow},
