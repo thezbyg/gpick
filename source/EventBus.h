@@ -33,6 +33,7 @@ struct EventBus {
 	void unsubscribe(EventType type, IEventHandler &handler);
 	void unsubscribe(IEventHandler &handler);
 	void trigger(EventType type);
+	bool empty() const;
 private:
-	std::vector<std::tuple<EventType, IEventHandler &>> m_handlers;
+	std::vector<std::tuple<EventType, IEventHandler *>> m_handlers;
 };

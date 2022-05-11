@@ -322,7 +322,7 @@ def buildGpick(env):
 	test_env = gpick_env.Clone()
 	test_env.Append(LIBS = ['boost_unit_test_framework'], CPPDEFINES = ['BOOST_TEST_DYN_LINK'])
 
-	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/Color'], object_map['source/lua/Script']] + dynv_objects + text_file_parser_objects + common_objects)
+	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/Color'], object_map['source/EventBus'], object_map['source/lua/Script']] + dynv_objects + text_file_parser_objects + common_objects)
 
 	return executable, tests
 

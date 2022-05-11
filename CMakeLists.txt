@@ -16,7 +16,9 @@ file(GLOB SOURCES
 	source/transformation/*.cpp source/transformation/*.h
 	source/version/*.cpp source/version/*.h
 )
-list(REMOVE_ITEM SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/Color.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/Color.h ${CMAKE_CURRENT_SOURCE_DIR}/source/lua/Script.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/lua/Script.h)
+set(SKIP_SOURCES Color.cpp Color.h lua/Script.cpp lua/Script.h EventBus.cpp EventBus.h)
+list(TRANSFORM SKIP_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/source/)
+list(REMOVE_ITEM SOURCES ${SKIP_SOURCES})
 
 include(Version)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/source/version/Version.cpp.in" "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp" @ONLY)
@@ -97,7 +99,7 @@ target_include_directories(gpick-color PRIVATE
 	${Boost_INCLUDE_DIRS}
 )
 
-file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h)
+file(GLOB COMMON_SOURCES source/common/*.cpp source/common/*.h source/EventBus.cpp source/EventBus.h)
 add_library(gpick-common OBJECT ${COMMON_SOURCES})
 set_compile_options(gpick-common)
 target_include_directories(gpick-common PRIVATE

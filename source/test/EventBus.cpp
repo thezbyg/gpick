@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2021, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,28 +16,45 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <boost/test/unit_test.hpp>
 #include "EventBus.h"
-#include <algorithm>
-void EventBus::subscribe(EventType type, IEventHandler &handler) {
-	m_handlers.emplace_back(type, &handler);
-}
-void EventBus::unsubscribe(EventType type, IEventHandler &handler) {
-	m_handlers.erase(std::remove_if(m_handlers.begin(), m_handlers.end(), [type, &handler](const std::tuple<EventType, IEventHandler *> &item) {
-		return std::get<EventType>(item) == type && std::get<IEventHandler *>(item) == &handler;
-	}), m_handlers.end());
-}
-void EventBus::unsubscribe(IEventHandler &handler) {
-	m_handlers.erase(std::remove_if(m_handlers.begin(), m_handlers.end(), [&handler](const std::tuple<EventType, IEventHandler *> &item) {
-		return std::get<IEventHandler *>(item) == &handler;
-	}), m_handlers.end());
-}
-bool EventBus::empty() const {
-	return m_handlers.empty();
-}
-void EventBus::trigger(EventType type) {
-	for (auto item: m_handlers) {
-		if (std::get<EventType>(item) == type) {
-			std::get<IEventHandler *>(item)->onEvent(type);
-		}
+BOOST_AUTO_TEST_SUITE(eventBus)
+struct HandlerA: public IEventHandler {
+	HandlerA(EventBus &eventBus):
+		m_eventBus(eventBus) {
+		m_eventBus.subscribe(EventType::optionsUpdate, *this);
 	}
+	virtual ~HandlerA() {
+		m_eventBus.unsubscribe(*this);
+	}
+	virtual void onEvent(EventType) override {
+	}
+private:
+	EventBus &m_eventBus;
+};
+struct HandlerB: public IEventHandler {
+	HandlerB(EventBus &eventBus):
+		m_eventBus(eventBus) {
+		m_eventBus.subscribe(EventType::convertersUpdate, *this);
+	}
+	virtual ~HandlerB() {
+		m_eventBus.unsubscribe(*this);
+	}
+	virtual void onEvent(EventType) override {
+	}
+private:
+	EventBus &m_eventBus;
+};
+BOOST_AUTO_TEST_CASE(unsubscribe) {
+	EventBus eventBus;
+	auto a1 = std::make_unique<HandlerA>(eventBus);
+	auto a2 = std::make_unique<HandlerA>(eventBus);
+	auto b1 = std::make_unique<HandlerB>(eventBus);
+	auto b2 = std::make_unique<HandlerB>(eventBus);
+	a2.reset();
+	a1.reset();
+	b1.reset();
+	b2.reset();
+	BOOST_CHECK(eventBus.empty());
 }
+BOOST_AUTO_TEST_SUITE_END()
