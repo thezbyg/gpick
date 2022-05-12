@@ -23,7 +23,7 @@
 #include <boost/endian/conversion.hpp>
 namespace dynv {
 namespace xml {
-bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true);
+bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true, size_t indentationLevel = 1);
 }
 namespace types {
 static const KnownHandler knownHandlers[] = {
@@ -74,6 +74,12 @@ static std::string escapeXmlString(const std::string &value) {
 		case '>':
 			result += "&gt;";
 			break;
+		case '\n':
+			result += "&#10;";
+			break;
+		case '\r':
+			result += "&#13;";
+			break;
 		default:
 			result += ch;
 		}
@@ -103,6 +109,11 @@ template<> bool write(std::ostream &stream, const Color &value) {
 template<> bool write(std::ostream &stream, const Ref &value) {
 	if (value)
 		dynv::xml::serialize(stream, *value, false);
+	return stream.good();
+}
+template<> bool write(std::ostream &stream, const Ref &value, size_t indentationLevel) {
+	if (value)
+		dynv::xml::serialize(stream, *value, false, indentationLevel);
 	return stream.good();
 }
 }

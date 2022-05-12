@@ -41,6 +41,8 @@ template<typename T> const KnownHandler &typeHandler();
 namespace xml {
 template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);
 template<typename T, typename std::enable_if_t<!std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, const T &value);
+template<typename T>
+bool write(std::ostream &stream, const common::Ref<T> &value, size_t indentationLevel);
 }
 namespace binary {
 template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);

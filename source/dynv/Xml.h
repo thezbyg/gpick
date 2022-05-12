@@ -22,7 +22,7 @@
 namespace dynv {
 struct Map;
 namespace xml {
-bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true);
+bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true, size_t indentationLevel = 1);
 bool deserialize(std::istream &stream, Map &map);
 }
 }

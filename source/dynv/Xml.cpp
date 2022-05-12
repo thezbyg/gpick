@@ -23,34 +23,58 @@
 #include "common/Scoped.h"
 #include <expat.h>
 #include <sstream>
+#include <type_traits>
 using namespace std::string_literals;
 namespace dynv {
 namespace xml {
 using ValueType = types::ValueType;
+static const char indentationChars[] = { '\t', '\t', '\t', '\t', '\t', '\t', '\t', '\t' };
+bool writeIndentation(std::ostream &stream, size_t indentation) {
+	while (indentation >= sizeof(indentationChars)) {
+		stream.write(indentationChars, sizeof(indentationChars));
+		indentation -= sizeof(indentationChars);
+	}
+	if (indentation > 0)
+		stream.write(indentationChars, indentation);
+	return stream.good();
+}
 bool writeStart(std::ostream &stream, const std::string &name) {
 	stream << "<" << name << ">";
 	return stream.good();
 }
-bool writeStart(std::ostream &stream, const std::string &name, const std::string &type) {
-	stream << "<" << name << " type=\"" << type << "\">";
+bool writeStart(std::ostream &stream, const std::string &name, bool newLine) {
+	if (newLine)
+		stream << "<" << name << ">\n";
+	else
+		stream << "<" << name << ">";
+	return stream.good();
+}
+bool writeStart(std::ostream &stream, const std::string &name, const std::string &type, bool map) {
+	if (map)
+		stream << "<" << name << " type=\"" << type << "\">\n";
+	else
+		stream << "<" << name << " type=\"" << type << "\">";
 	return stream.good();
 }
 bool writeEnd(std::ostream &stream, const std::string &name) {
-	stream << "</" << name << ">";
+	stream << "</" << name << ">\n";
 	return stream.good();
 }
 bool writeListStart(std::ostream &stream, const std::string &name, const std::string &type) {
-	stream << "<" << name << " type=\"" << type << "\" list=\"true\">";
+	stream << "<" << name << " type=\"" << type << "\" list=\"true\">\n";
 	return stream.good();
 }
 struct SerializeVisitor {
-	SerializeVisitor(std::ostream &stream, const std::string &name):
+	SerializeVisitor(std::ostream &stream, const std::string &name, size_t indentation):
 		stream(stream),
-		name(name) {
+		name(name),
+		indentation(indentation) {
 	}
 	template<typename T>
-	bool operator()(const T &value) const {
-		if (!writeStart(stream, name, dynv::types::typeHandler<T>().name))
+	bool operator()(const T &value) {
+		if (!writeIndentation(stream, indentation))
+			return false;
+		if (!writeStart(stream, name, dynv::types::typeHandler<T>().name, false))
 			return false;
 		if (!types::xml::write(stream, value))
 			return false;
@@ -58,32 +82,60 @@ struct SerializeVisitor {
 			return false;
 		return true;
 	}
-	bool operator()(const common::Ref<Map> &value) const {
-		if (!writeStart(stream, name, dynv::types::typeHandler<common::Ref<Map>>().name))
+	bool operator()(const common::Ref<Map> &value) {
+		if (!writeIndentation(stream, indentation))
 			return false;
-		if (!types::xml::write(stream, value))
+		if (!writeStart(stream, name, dynv::types::typeHandler<common::Ref<Map>>().name, true))
+			return false;
+		++indentation;
+		if (!types::xml::write(stream, value, indentation))
+			return false;
+		--indentation;
+		if (!writeIndentation(stream, indentation))
 			return false;
 		if (!writeEnd(stream, name))
 			return false;
 		return true;
 	}
 	template<typename T>
-	bool operator()(const std::vector<T> &values) const {
+	bool operator()(const std::vector<T> &values) {
 		using namespace std::string_literals;
+		if (!writeIndentation(stream, indentation))
+			return false;
 		if (!writeListStart(stream, name, dynv::types::typeHandler<T>().name))
 			return false;
+		++indentation;
 		for (const auto &i: values) {
-			if (!writeStart(stream, "li"s))
+			if (!writeIndentation(stream, indentation))
 				return false;
-			if (!types::xml::write(stream, i))
-				return false;
-			if (!writeEnd(stream, "li"s))
-				return false;
+			if constexpr (std::is_same_v<std::decay_t<decltype(i)>, common::Ref<Map>>) {
+				if (!writeStart(stream, "li"s, true))
+					return false;
+				++indentation;
+				if (!types::xml::write(stream, i, indentation))
+					return false;
+				--indentation;
+				if (!writeIndentation(stream, indentation))
+					return false;
+				if (!writeEnd(stream, "li"s))
+					return false;
+			} else {
+				if (!writeStart(stream, "li"s))
+					return false;
+				if (!types::xml::write(stream, i))
+					return false;
+				if (!writeEnd(stream, "li"s))
+					return false;
+			}
 		}
+		--indentation;
+		if (!writeIndentation(stream, indentation))
+			return false;
 		return writeEnd(stream, name);
 	}
 	std::ostream &stream;
 	const std::string &name;
+	size_t indentation;
 };
 static bool isTrue(const char *value) {
 	using namespace std::string_literals;
@@ -383,21 +435,21 @@ static void onEndElement(Context *context, const XML_Char *name) {
 		return;
 	}
 }
-bool serialize(std::ostream &stream, const Map &map, bool addRootElement) {
+bool serialize(std::ostream &stream, const Map &map, bool addRootElement, size_t indentationLevel) {
 	if (addRootElement) {
-		stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>";
+		stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\n";
 		if (!stream.good())
 			return false;
 	}
-	auto visitor = [&stream](const Variable &value) -> bool {
-		if (!std::visit(SerializeVisitor(stream, value.name()), value.data()))
+	auto visitor = [&stream, indentationLevel](const Variable &value) -> bool {
+		if (!std::visit(SerializeVisitor(stream, value.name(), indentationLevel), value.data()))
 			return false;
 		return true;
 	};
 	if (!map.visit(visitor))
 		return false;
 	if (addRootElement) {
-		stream << "</root>";
+		stream << "</root>\n";
 		if (!stream.good())
 			return false;
 	}
