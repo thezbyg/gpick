@@ -30,6 +30,7 @@
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "common/Format.h"
+#include "common/Guard.h"
 #include "StandardMenu.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
@@ -37,7 +38,6 @@
 #include <sstream>
 #include <iomanip>
 using namespace math;
-using namespace std;
 
 struct ListPaletteArgs;
 static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
@@ -52,24 +52,29 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 	GtkWidget* countLabel;
 	GlobalState &gs;
 	bool countUpdateBlocked;
-	ListPaletteArgs(GlobalState &gs, GtkWidget *countLabel):
+	bool mainPalette;
+	ListPaletteArgs(GlobalState &gs, GtkWidget *countLabel, bool mainPalette):
 		scrollTimeout(0),
 		countLabel(countLabel),
 		gs(gs),
-		countUpdateBlocked(false) {
+		countUpdateBlocked(false),
+		mainPalette(mainPalette) {
 		gs.eventBus().subscribe(EventType::optionsUpdate, *this);
 		gs.eventBus().subscribe(EventType::convertersUpdate, *this);
+		gs.eventBus().subscribe(EventType::paletteChanged, *this);
 	}
 	virtual ~ListPaletteArgs() {
 		gs.eventBus().unsubscribe(*this);
 	}
 	virtual void addToPalette(const ColorObject &) override {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		foreachSelectedItem(GTK_TREE_VIEW(treeview), [this](ColorObject *colorObject) {
 			color_list_add_color_object(gs.getColorList(), colorObject, true);
 			return true;
 		});
 	}
 	virtual void addAllToPalette() override {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		foreachItem(GTK_TREE_VIEW(treeview), [this](ColorObject *colorObject) {
 			color_list_add_color_object(gs.getColorList(), colorObject, true);
 			return true;
@@ -121,6 +126,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			gtk_tree_path_free(path);
 			insertIterator = iter;
 		}
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		ColorObject *colorObject = nullptr;
 		for (size_t i = 0, count = colorObjects.size(); i < count; i++) {
 			if (insertIterator) {
@@ -274,8 +280,12 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			}
 			color_list_remove_visited(gs.getColorList());
 			color_list_reset_selected(gs.getColorList());
+			if (mainPalette)
+				gs.eventBus().trigger(EventType::paletteChanged);
 		} else {
 			color_list_reset_all(gs.getColorList());
+			if (mainPalette)
+				gs.eventBus().trigger(EventType::paletteChanged);
 		}
 		countUpdateBlocked = false;
 		updateCounts();
@@ -363,6 +373,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			break;
 		case EventType::displayFiltersUpdate:
 		case EventType::colorDictionaryUpdate:
+		case EventType::paletteChanged:
 			break;
 		}
 	}
@@ -374,16 +385,20 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		allowSelection = allow;
 		gtk_tree_selection_set_select_function(selection, (GtkTreeSelectionFunc)controlSelectionCallback, this, nullptr);
 	}
+	void onChange() {
+		if (mainPalette)
+			gs.eventBus().trigger(EventType::paletteChanged);
+	}
 	ColorObject colorObject;
 };
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
+	std::string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 0, color_object->reference(), 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_row(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
+	std::string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_name(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object)
@@ -393,7 +408,8 @@ static void palette_list_entry_update_name(GtkListStore* store, GtkTreeIter *ite
 static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gchar *new_text, gpointer userData)
 {
 	GtkTreeIter iter;
-	GtkTreeModel *model=GTK_TREE_MODEL(userData);
+	GtkTreeModel *model = GTK_TREE_MODEL(userData);
+	ListPaletteArgs *args = reinterpret_cast<ListPaletteArgs *>(g_object_get_data(G_OBJECT(model), "arguments"));
 	gtk_tree_model_get_iter_from_string(model, &iter, path );
 	gtk_list_store_set(GTK_LIST_STORE(model), &iter,
 		2, new_text,
@@ -401,6 +417,7 @@ static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gch
 	ColorObject *color_object;
 	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
 	color_object->setName(new_text);
+	args->onChange();
 }
 static void palette_list_row_activated(GtkTreeView *treeView, GtkTreePath *path, GtkTreeViewColumn *column, gpointer userData)
 {
@@ -414,21 +431,22 @@ static void palette_list_row_activated(GtkTreeView *treeView, GtkTreePath *path,
 	if (colorSource != nullptr)
 		colorSource->setColor(*colorObject);
 	args->updateCounts();
+	args->onChange();
 }
 
-static int palette_list_preview_on_insert(ColorList* color_list, ColorObject* color_object){
-	palette_list_add_entry(GTK_WIDGET(color_list->userdata), color_object);
+static int palette_list_preview_on_insert(ColorList* color_list, ColorObject* color_object, void *userdata) {
+	palette_list_add_entry(GTK_WIDGET(userdata), color_object, false);
 	return 0;
 }
 
-static int palette_list_preview_on_clear(ColorList* color_list){
-	palette_list_remove_all_entries(GTK_WIDGET(color_list->userdata));
+static int palette_list_preview_on_clear(ColorList* color_list, void *userdata) {
+	palette_list_remove_all_entries(GTK_WIDGET(userdata), false);
 	return 0;
 }
 
 static void destroy_cb(GtkWidget* widget, ListPaletteArgs *args){
 	args->removeScrollTimeout();
-	palette_list_remove_all_entries(widget);
+	palette_list_remove_all_entries(widget, false);
 }
 
 GtkWidget* palette_list_get_widget(ColorList *color_list){
@@ -516,7 +534,7 @@ static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *ev
 }
 static void destroy_arguments(gpointer data);
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list) {
-	auto args = new ListPaletteArgs(*gs, nullptr);
+	auto args = new ListPaletteArgs(*gs, nullptr, false);
 	auto view = args->treeview = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 0);
 	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
@@ -543,11 +561,11 @@ GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expande
 	StandardDragDropHandler::forWidget(view, &args->gs, args, StandardDragDropHandler::Options().allowDrop(false).converterType(Converters::Type::colorList));
 
 	if (out_color_list) {
-		ColorList* cl=color_list_new();
-		cl->userdata=view;
-		cl->on_insert=palette_list_preview_on_insert;
-		cl->on_clear=palette_list_preview_on_clear;
-		*out_color_list=cl;
+		ColorList *colorList = color_list_new();
+		colorList->onInsert = palette_list_preview_on_insert;
+		colorList->onClear = palette_list_preview_on_clear;
+		colorList->userdata = view;
+		*out_color_list = colorList;
 	}
 
 	GtkWidget *scrolledWindow = gtk_scrolled_window_new(0, 0);
@@ -612,11 +630,12 @@ static gboolean on_palette_unselect_all(GtkTreeView *treeview, ListPaletteArgs *
 }
 
 GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* countLabel) {
-	auto args = new ListPaletteArgs(*gs, countLabel);
+	auto args = new ListPaletteArgs(*gs, countLabel, true);
 	auto view = args->treeview = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), true);
 	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
 	auto store = gtk_list_store_new (3, G_TYPE_POINTER, G_TYPE_STRING, G_TYPE_STRING);
+	g_object_set_data_full(G_OBJECT(store), "arguments", args, nullptr);
 	auto col = gtk_tree_view_column_new();
 	gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_resizable(col,1);
@@ -673,7 +692,7 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* countLabel) {
 	return view;
 }
 
-void palette_list_remove_all_entries(GtkWidget* widget) {
+void palette_list_remove_all_entries(GtkWidget* widget, bool allowUpdate) {
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
 	GtkListStore *store;
@@ -689,7 +708,10 @@ void palette_list_remove_all_entries(GtkWidget* widget) {
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 	}
 	gtk_list_store_clear(GTK_LIST_STORE(store));
-	args->updateCounts();
+	if (allowUpdate) {
+		args->updateCounts();
+		args->onChange();
+	}
 }
 
 gint32 palette_list_get_selected_count(GtkWidget* widget) {
@@ -724,7 +746,7 @@ gint32 palette_list_get_selected_color(GtkWidget* widget, Color* color)
 	return 0;
 }
 
-void palette_list_remove_selected_entries(GtkWidget* widget)
+void palette_list_remove_selected_entries(GtkWidget* widget, bool allowUpdate)
 {
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
@@ -742,10 +764,13 @@ void palette_list_remove_selected_entries(GtkWidget* widget)
 			valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 		}
 	}
-	args->updateCounts();
+	if (allowUpdate) {
+		args->updateCounts();
+		args->onChange();
+	}
 }
 
-void palette_list_add_entry(GtkWidget* widget, ColorObject* color_object)
+void palette_list_add_entry(GtkWidget* widget, ColorObject* color_object, bool allowUpdate)
 {
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter1;
@@ -753,9 +778,12 @@ void palette_list_add_entry(GtkWidget* widget, ColorObject* color_object)
 	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	gtk_list_store_append(store, &iter1);
 	palette_list_entry_fill(store, &iter1, color_object, args);
-	args->updateCounts();
+	if (allowUpdate) {
+		args->updateCounts();
+		args->onChange();
+	}
 }
-int palette_list_remove_entry(GtkWidget* widget, ColorObject* r_color_object)
+int palette_list_remove_entry(GtkWidget* widget, ColorObject* r_color_object, bool allowUpdate)
 {
 	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeIter iter;
@@ -769,127 +797,133 @@ int palette_list_remove_entry(GtkWidget* widget, ColorObject* r_color_object)
 		if (color_object == r_color_object){
 			valid = gtk_list_store_remove(GTK_LIST_STORE(store), &iter);
 			color_object->release();
+			if (allowUpdate) {
+				args->updateCounts();
+				args->onChange();
+			}
 			return 0;
 		}
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 	}
-	args->updateCounts();
 	return -1;
 }
-static void execute_callback(GtkListStore *store, GtkTreeIter *iter, ListPaletteArgs* args, PaletteListCallback callback, void *userdata)
-{
-	ColorObject* color_object;
-	gtk_tree_model_get(GTK_TREE_MODEL(store), iter, 0, &color_object, -1);
-	PaletteListCallbackReturn r = callback(color_object, userdata);
-	switch (r){
-		case PALETTE_LIST_CALLBACK_UPDATE_NAME:
-			palette_list_entry_update_name(store, iter, color_object);
-			break;
-		case PALETTE_LIST_CALLBACK_UPDATE_ROW:
-			palette_list_entry_update_row(store, iter, color_object, args);
-			break;
-		case PALETTE_LIST_CALLBACK_NO_UPDATE:
-			break;
+template<typename Callback>
+struct ExecuteContext {
+	ListPaletteArgs *args;
+	Callback callback;
+	void *userdata;
+	bool changed;
+	ExecuteContext(ListPaletteArgs *args, Callback callback, void *userdata):
+		args(args),
+		callback(callback),
+		userdata(userdata),
+		changed(false) {
+	}
+};
+static void executeCallback(GtkListStore *store, GtkTreeIter *iter, ExecuteContext<PaletteListCallback> &executeContext) {
+	ColorObject *colorObject;
+	gtk_tree_model_get(GTK_TREE_MODEL(store), iter, 0, &colorObject, -1);
+	switch (executeContext.callback(colorObject, executeContext.userdata)) {
+	case PaletteListCallbackResult::updateName:
+		palette_list_entry_update_name(store, iter, colorObject);
+		executeContext.changed = true;
+		break;
+	case PaletteListCallbackResult::updateRow:
+		palette_list_entry_update_row(store, iter, colorObject, executeContext.args);
+		executeContext.changed = true;
+		break;
+	case PaletteListCallbackResult::noUpdate:
+		break;
 	}
 }
-static void execute_replace_callback(GtkListStore *store, GtkTreeIter *iter, ListPaletteArgs* args, PaletteListReplaceCallback callback, void *userdata)
-{
-	ColorObject *color_object, *orig_color_object;
-	gtk_tree_model_get(GTK_TREE_MODEL(store), iter, 0, &color_object, -1);
-	orig_color_object = color_object;
-
-	color_object->reference();
-	PaletteListCallbackReturn r = callback(&color_object, userdata);
-	if (color_object != orig_color_object){
-		gtk_list_store_set(store, iter, 0, color_object, -1);
+static void executeReplaceCallback(GtkListStore *store, GtkTreeIter *iter, ExecuteContext<PaletteListReplaceCallback> &executeContext) {
+	ColorObject *colorObject, *originalColorObject;
+	gtk_tree_model_get(GTK_TREE_MODEL(store), iter, 0, &colorObject, -1);
+	originalColorObject = colorObject->reference();
+	auto result = executeContext.callback(&colorObject, executeContext.userdata);
+	if (colorObject != originalColorObject){
+		gtk_list_store_set(store, iter, 0, colorObject, -1);
+		executeContext.changed = true;
 	}
-	switch (r){
-		case PALETTE_LIST_CALLBACK_UPDATE_NAME:
-			palette_list_entry_update_name(store, iter, color_object);
-			break;
-		case PALETTE_LIST_CALLBACK_UPDATE_ROW:
-			palette_list_entry_update_row(store, iter, color_object, args);
-			break;
-		case PALETTE_LIST_CALLBACK_NO_UPDATE:
-			break;
+	switch (result) {
+	case PaletteListCallbackResult::updateName:
+		palette_list_entry_update_name(store, iter, colorObject);
+		executeContext.changed = true;
+		break;
+	case PaletteListCallbackResult::updateRow:
+		palette_list_entry_update_row(store, iter, colorObject, executeContext.args);
+		executeContext.changed = true;
+		break;
+	case PaletteListCallbackResult::noUpdate:
+		break;
 	}
-	color_object->release();
+	originalColorObject->release();
 }
-gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata)
-{
-	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+void palette_list_foreach(GtkWidget *widget, PaletteListCallback callback, void *userdata, bool allowUpdate) {
+	ListPaletteArgs *args = (ListPaletteArgs *)g_object_get_data(G_OBJECT(widget), "arguments");
+	GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	GtkTreeIter iter;
-	GtkListStore *store;
-	gboolean valid;
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
-	valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
-	while (valid){
-		execute_callback(store, &iter, args, callback, userdata);
+	bool valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter);
+	ExecuteContext executeContext(args, callback, userdata);
+	while (valid) {
+		executeCallback(store, &iter, executeContext);
 		valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 	}
-	return 0;
+	if (executeContext.changed && allowUpdate)
+		args->onChange();
 }
-gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata)
-{
-	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+void palette_list_foreach_selected(GtkWidget *widget, PaletteListCallback callback, void *userdata, bool allowUpdate) {
+	ListPaletteArgs *args = (ListPaletteArgs *)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-	GtkListStore *store;
+	GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	GtkTreeIter iter;
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
 	GList *i = list;
+	ExecuteContext executeContext(args, callback, userdata);
 	while (i) {
 		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
-		execute_callback(store, &iter, args, callback, userdata);
+		executeCallback(store, &iter, executeContext);
 		i = g_list_next(i);
 	}
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
-	return 0;
+	if (executeContext.changed && allowUpdate)
+		args->onChange();
 }
-
-gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata){
-	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+void palette_list_foreach_selected(GtkWidget *widget, PaletteListReplaceCallback callback, void *userdata, bool allowUpdate) {
+	ListPaletteArgs *args = (ListPaletteArgs *)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-	GtkListStore *store;
+	GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	GtkTreeIter iter;
-
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
-
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
 	GList *i = list;
-
+	ExecuteContext executeContext(args, callback, userdata);
 	while (i) {
 		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
-		execute_replace_callback(store, &iter, args, callback, userdata);
+		executeReplaceCallback(store, &iter, executeContext);
 		i = g_list_next(i);
 	}
-
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
-	return 0;
+	if (executeContext.changed && allowUpdate)
+		args->onChange();
 }
-
-gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata)
-{
-	ListPaletteArgs* args = (ListPaletteArgs*)g_object_get_data(G_OBJECT(widget), "arguments");
+void palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate) {
+	ListPaletteArgs *args = (ListPaletteArgs *)g_object_get_data(G_OBJECT(widget), "arguments");
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(widget));
-	GtkListStore *store;
+	GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
 	GtkTreeIter iter;
-
-	store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(widget)));
-
 	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
 	GList *i = list;
-
+	ExecuteContext executeContext(args, callback, userdata);
 	if (i) {
 		gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, (GtkTreePath*) (i->data));
-		execute_callback(store, &iter, args, callback, userdata);
+		executeCallback(store, &iter, executeContext);
 	}
-
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
-	return 0;
+	if (executeContext.changed && allowUpdate)
+		args->onChange();
 }
 ColorObject *palette_list_get_first_selected(GtkWidget* widget)
 {
@@ -926,8 +960,14 @@ void palette_list_update_first_selected(GtkWidget* widget, bool only_name)
 	}
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
+	args->onChange();
 }
 void palette_list_append_copy_menu(GtkWidget* widget, GtkWidget *menu) {
 	auto args = reinterpret_cast<ListPaletteArgs *>(g_object_get_data(G_OBJECT(widget), "arguments"));
 	StandardMenu::appendMenu(menu, args, &args->gs);
+}
+void palette_list_after_update(GtkWidget* widget) {
+	auto args = reinterpret_cast<ListPaletteArgs *>(g_object_get_data(G_OBJECT(widget), "arguments"));
+	args->updateCounts();
+	args->onChange();
 }

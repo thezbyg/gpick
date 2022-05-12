@@ -36,8 +36,9 @@
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
 #include "IMenuExtension.h"
-#include "color_names/ColorNames.h"
 #include "EventBus.h"
+#include "color_names/ColorNames.h"
+#include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
@@ -132,6 +133,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 			setTransformationChain();
 			break;
 		case EventType::colorDictionaryUpdate:
+		case EventType::paletteChanged:
 			break;
 		}
 	}
@@ -146,6 +148,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		color_list_add_color_object(gs.getColorList(), colorObject, true);
 	}
 	void addAllToPalette() {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		GenerateSchemeColorNameAssigner nameAssigner(gs);
 		Color color;
 		for (int i = 0; i < colorsVisible; ++i)

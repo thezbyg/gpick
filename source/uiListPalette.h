@@ -23,27 +23,27 @@ struct GlobalState;
 struct ColorObject;
 struct ColorList;
 GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label);
-void palette_list_add_entry(GtkWidget* widget, ColorObject *color_object);
+void palette_list_add_entry(GtkWidget* widget, ColorObject *color_object, bool allowUpdate);
 GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list);
 GtkWidget* palette_list_get_widget(ColorList *color_list);
-void palette_list_remove_all_entries(GtkWidget* widget);
-void palette_list_remove_selected_entries(GtkWidget* widget);
-int palette_list_remove_entry(GtkWidget* widget, ColorObject *color_object);
-enum PaletteListCallbackReturn
-{
-	PALETTE_LIST_CALLBACK_NO_UPDATE = 0,
-	PALETTE_LIST_CALLBACK_UPDATE_ROW = 1,
-	PALETTE_LIST_CALLBACK_UPDATE_NAME = 2,
+void palette_list_remove_all_entries(GtkWidget* widget, bool allowUpdate);
+void palette_list_remove_selected_entries(GtkWidget* widget, bool allowUpdate);
+int palette_list_remove_entry(GtkWidget* widget, ColorObject *color_object, bool allowUpdate);
+enum struct PaletteListCallbackResult {
+	noUpdate = 0,
+	updateRow = 1,
+	updateName = 2,
 };
-typedef PaletteListCallbackReturn (*PaletteListCallback)(ColorObject* color_object, void *userdata);
-typedef PaletteListCallbackReturn (*PaletteListReplaceCallback)(ColorObject** color_object, void *userdata);
-gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
-gint32 palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata);
-gint32 palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata);
-gint32 palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata);
+using PaletteListCallback = PaletteListCallbackResult (*)(ColorObject* color_object, void *userdata);
+using PaletteListReplaceCallback = PaletteListCallbackResult (*)(ColorObject** color_object, void *userdata);
+void palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
+void palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata, bool allowUpdate);
+void palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
+void palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
 gint32 palette_list_get_selected_count(GtkWidget* widget);
 gint32 palette_list_get_count(GtkWidget* widget);
 ColorObject *palette_list_get_first_selected(GtkWidget* widget);
 void palette_list_update_first_selected(GtkWidget* widget, bool only_name);
 void palette_list_append_copy_menu(GtkWidget* widget, GtkWidget *menu);
+void palette_list_after_update(GtkWidget* widget);
 #endif /* GPICK_UI_LIST_PALETTE_H_ */

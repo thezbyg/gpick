@@ -33,6 +33,8 @@
 #include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "common/Format.h"
+#include "common/Guard.h"
+#include "common/Match.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <cmath>
@@ -135,6 +137,7 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 		case EventType::colorDictionaryUpdate:
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
+		case EventType::paletteChanged:
 			break;
 		}
 	}
@@ -149,6 +152,7 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 		color_list_add_color_object(gs.getColorList(), colorObject, true);
 	}
 	void addAllToPalette() {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		ColorMixerColorNameAssigner nameAssigner(gs);
 		Color color;
 		for (int i = 0; i < Rows; ++i)
@@ -370,15 +374,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			}
 		}
 	}
+	args->mixerType = &common::matchById(types, options->getString("mixer_type", "normal"));
 	Color c = { 0.5f };
 	char tmp[32];
-	auto type_name = options->getString("mixer_type", "normal");
-	for (uint32_t j = 0; j < sizeof(types) / sizeof(Type); j++) {
-		if (types[j].id == type_name) {
-			args->mixerType = &types[j];
-			break;
-		}
-	}
 	for (gint i = 0; i < Rows; ++i) {
 		sprintf(tmp, "color%d", i);
 		gtk_color_set_color(GTK_COLOR(args->rows[i].input), options->getColor(tmp, c));

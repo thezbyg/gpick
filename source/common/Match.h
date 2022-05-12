@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2021, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,25 +16,28 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <vector>
-#include <tuple>
-enum struct EventType {
-	optionsUpdate,
-	convertersUpdate,
-	displayFiltersUpdate,
-	colorDictionaryUpdate,
-	paletteChanged,
-};
-struct IEventHandler {
-	virtual void onEvent(EventType eventType) = 0;
-};
-struct EventBus {
-	void subscribe(EventType type, IEventHandler &handler);
-	void unsubscribe(EventType type, IEventHandler &handler);
-	void unsubscribe(IEventHandler &handler);
-	void trigger(EventType type);
-	bool empty() const;
-private:
-	std::vector<std::tuple<EventType, IEventHandler *>> m_handlers;
-};
+#ifndef GPICK_COMMON_MATCH_H_
+#define GPICK_COMMON_MATCH_H_
+#include <string_view>
+namespace common {
+template<typename Type, std::size_t TypeCount>
+Type &matchById(Type (&types)[TypeCount], std::string_view id) {
+	static_assert(TypeCount > 0, "At least one type is required");
+	for (std::size_t index = 0; index < TypeCount; ++index) {
+		if (types[index].id == id) {
+			return types[index];
+		}
+	}
+	return types[0];
+}
+template<typename Type, std::size_t TypeCount>
+Type &matchById(Type (&types)[TypeCount], std::string_view id, Type &defaultValue) {
+	for (std::size_t index = 0; index < TypeCount; ++index) {
+		if (types[index].id == id) {
+			return types[index];
+		}
+	}
+	return defaultValue;
+}
+}
+#endif /* GPICK_COMMON_MATCH_H_ */

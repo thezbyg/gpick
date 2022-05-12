@@ -25,6 +25,7 @@
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "I18N.h"
+#include "common/Guard.h"
 #include <sstream>
 using namespace std;
 
@@ -84,7 +85,8 @@ static void calc(DialogVariationsArgs *args, bool preview, int limit)
 	else
 		color_list = args->gs->getColorList();
 	VariationsColorNameAssigner name_assigner(*args->gs);
-	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
+	for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		Color in = (*i)->getColor();
 		const char* name = (*i)->getName().c_str();
 		if (linearization)

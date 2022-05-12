@@ -23,36 +23,34 @@
 #include <list>
 #include <cstddef>
 struct ColorObject;
-struct ColorList
-{
-	std::list<ColorObject*> colors;
-	typedef std::list<ColorObject*>::iterator iter;
+struct ColorList {
+	std::list<ColorObject *> colors;
 	dynv::Ref options;
-	int (*on_insert)(ColorList *color_list, ColorObject *color_object);
-	int (*on_delete)(ColorList *color_list, ColorObject *color_object);
-	int (*on_delete_selected)(ColorList *color_list);
-	int (*on_change)(ColorList *color_list, ColorObject *color_object);
-	int (*on_clear)(ColorList *color_list);
-	int (*on_get_positions)(ColorList *color_list);
-	void* userdata;
+	bool blocked, changed;
+	int (*onInsert)(ColorList *colorList, ColorObject *colorObject, void *userdata);
+	int (*onDelete)(ColorList *colorList, ColorObject *colorObject, void *userdata);
+	int (*onDeleteSelected)(ColorList *colorList, void *userdata);
+	int (*onClear)(ColorList *colorList, void *userdata);
+	int (*onGetPositions)(ColorList *colorList, void *userdata);
+	int (*onUpdate)(ColorList *colorList, void *userdata);
+	void *userdata;
 };
-
-ColorList* color_list_new();
-ColorList* color_list_new(ColorList *color_list);
-ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color);
-void color_list_destroy(ColorList *color_list);
-ColorObject* color_list_new_color_object(ColorList *color_list, const Color *color);
-ColorObject* color_list_add_color(ColorList *color_list, const Color *color);
-int color_list_add_color_object(ColorList *color_list, ColorObject *color_object, bool add_to_palette);
-int color_list_add_color_object(ColorList *color_list, const ColorObject &colorObject, bool add_to_palette);
-int color_list_add(ColorList *color_list, ColorList *items, bool add_to_palette);
-int color_list_remove_color_object(ColorList *color_list, ColorObject *color_object);
-int color_list_remove_selected(ColorList *color_list);
-int color_list_remove_visited(ColorList *color_list);
-int color_list_reset_selected(ColorList *color_list);
-int color_list_reset_all(ColorList *color_list);
-int color_list_remove_all(ColorList *color_list);
-size_t color_list_get_count(ColorList *color_list);
-int color_list_get_positions(ColorList *color_list);
-
+ColorList *color_list_new();
+ColorList *color_list_new(ColorList *colorList);
+void color_list_destroy(ColorList *colorList);
+ColorObject *color_list_new_color_object(ColorList *colorList, const Color *color);
+ColorObject *color_list_add_color(ColorList *colorList, const Color *color);
+int color_list_add_color_object(ColorList *colorList, ColorObject *colorObject, bool addToPalette);
+int color_list_add_color_object(ColorList *colorList, const ColorObject &colorObject, bool addToPalette);
+int color_list_add(ColorList *colorList, ColorList *items, bool addToPalette);
+int color_list_remove_color_object(ColorList *colorList, ColorObject *colorObject);
+int color_list_remove_selected(ColorList *colorList);
+int color_list_remove_visited(ColorList *colorList);
+int color_list_reset_selected(ColorList *colorList);
+int color_list_reset_all(ColorList *colorList);
+int color_list_remove_all(ColorList *colorList);
+bool color_list_start_changes(ColorList *colorList);
+bool color_list_end_changes(ColorList *colorList);
+size_t color_list_get_count(ColorList *colorList);
+int color_list_get_positions(ColorList *colorList);
 #endif /* GPICK_COLOR_LIST_H_ */

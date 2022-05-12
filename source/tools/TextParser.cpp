@@ -26,6 +26,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "parser/TextFile.h"
+#include "common/Guard.h"
 #include <sstream>
 using namespace std::string_literals;
 
@@ -178,6 +179,7 @@ bool TextParserDialog::parse(ColorList *color_list) {
 		return false;
 	}
 	m_index = 0;
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
 	for (auto color: textParser.colors()) {
 		auto colorObject = new ColorObject("", color);
 		ToolColorNameAssigner::assign(*colorObject);

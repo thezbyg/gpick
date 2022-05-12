@@ -28,6 +28,7 @@
 #include "GlobalState.h"
 #include "I18N.h"
 #include "parser/TextFile.h"
+#include "common/Guard.h"
 #include <functional>
 #include <iostream>
 using namespace std;
@@ -385,6 +386,7 @@ bool ImportExportDialog::showImport()
 						import_export.setConverters(&m_gs->converters());
 						if (import_export.importType(formats[i].type)){
 							finished = true;
+							common::Guard colorListGuard(color_list_start_changes(m_color_list), color_list_end_changes, m_color_list);
 							color_list_add(m_color_list, color_list, true);
 						}else{
 							message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
@@ -441,6 +443,7 @@ bool ImportExportDialog::showImportTextFile()
 			configuration.float_values = import_export_dialog_options.isFloatValuesEnabled();
 			if (import_export.importTextFile(configuration)){
 				finished = true;
+				common::Guard colorListGuard(color_list_start_changes(m_color_list), color_list_end_changes, m_color_list);
 				color_list_add(m_color_list, color_list, true);
 			}else{
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));

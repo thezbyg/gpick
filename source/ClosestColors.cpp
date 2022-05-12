@@ -31,10 +31,28 @@
 #include "color_names/ColorNames.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
+#include "IMenuExtension.h"
 #include "common/Format.h"
+#include "common/Guard.h"
+#include "common/Match.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
+namespace {
+enum struct ColorSource {
+	colorDictionaries = 1,
+	palette,
+};
+struct Type {
+	const char *id;
+	const char *name;
+	ColorSource colorSource;
+};
+const Type types[] = {
+	{ "color_dictionaries", N_("Color dictionaries"), ColorSource::colorDictionaries },
+	{ "palette", N_("Palette"), ColorSource::palette },
+};
+}
 struct ClosestColorsArgs;
 struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner {
 	ClosestColorsColorNameAssigner(GlobalState &gs):
@@ -57,18 +75,25 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *targetColor, *lastFocusedColor, *colorPreviews, *closestColors[9];
 	dynv::Ref options;
 	GlobalState &gs;
+	const Type *type;
+	ColorNames *paletteColorNames;
 	ClosestColorsArgs(GlobalState &gs, const dynv::Ref &options):
 		options(options),
 		gs(gs),
+		type(nullptr),
 		editable(*this) {
 		statusBar = gs.getStatusBar();
+		paletteColorNames = color_names_new();
 		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 		gs.eventBus().subscribe(EventType::colorDictionaryUpdate, *this);
+		gs.eventBus().subscribe(EventType::paletteChanged, *this);
 	}
 	virtual ~ClosestColorsArgs() {
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
 		options->set("color", color);
+		options->set("type", type->id);
+		color_names_destroy(paletteColorNames);
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
@@ -101,12 +126,17 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
 			break;
+		case EventType::paletteChanged:
+			updatePaletteColorNames();
+			update();
+			break;
 		}
 	}
 	void addToPalette() {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
 	}
 	void addAllToPalette() {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		ClosestColorsColorNameAssigner nameAssigner(gs);
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
@@ -155,7 +185,11 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
 		std::vector<std::pair<const char *, Color>> colors;
-		color_names_find_nearest(gs.getColorNames(), color, 9, colors);
+		if (type->colorSource == ColorSource::palette) {
+			color_names_find_nearest(paletteColorNames, color, 9, colors);
+		} else {
+			color_names_find_nearest(gs.getColorNames(), color, 9, colors);
+		}
 		for (size_t i = 0; i < 9; ++i) {
 			if (i < colors.size()) {
 				colors[i].second.alpha = color.alpha;
@@ -165,6 +199,10 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 				gtk_widget_set_sensitive(closestColors[i], false);
 			}
 		}
+	}
+	void updatePaletteColorNames() {
+		color_names_clear(paletteColorNames);
+		color_names_load_from_list(paletteColorNames, *gs.getColorList());
 	}
 	bool isEditable() {
 		return lastFocusedColor == targetColor;
@@ -176,7 +214,21 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	static void onColorActivate(GtkWidget *, ClosestColorsArgs *args) {
 		args->addToPalette();
 	}
-	struct Editable: public IEditableColorsUI {
+	void setType(const Type *type) {
+		this->type = type;
+		if (type->colorSource == ColorSource::palette) {
+			updatePaletteColorNames();
+		} else {
+			color_names_clear(paletteColorNames);
+		}
+	}
+	static void onTypeChange(GtkWidget *widget, ClosestColorsArgs *args) {
+		if (!gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(widget)))
+			return;
+		args->setType(static_cast<const Type *>(g_object_get_data(G_OBJECT(widget), "type")));
+		args->update();
+	}
+	struct Editable: public IEditableColorsUI, IMenuExtension {
 		Editable(ClosestColorsArgs &args):
 			args(args) {
 		}
@@ -209,6 +261,21 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		}
 		virtual bool hasSelectedColor() override {
 			return true;
+		}
+		virtual void extendMenu(GtkWidget *menu, Position position) override {
+			if (position != Position::end || !isEditable())
+				return;
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+			GSList *group = nullptr;
+			for (size_t i = 0; i < sizeof(types) / sizeof(types[0]); i++) {
+				auto item = gtk_radio_menu_item_new_with_label(group, _(types[i].name));
+				group = gtk_radio_menu_item_get_group(GTK_RADIO_MENU_ITEM(item));
+				if (args.type == &types[i])
+					gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
+				g_object_set_data(G_OBJECT(item), "type", const_cast<Type *>(&types[i]));
+				g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(ClosestColorsArgs::onTypeChange), &args);
+				gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+			}
 		}
 	private:
 		ClosestColorsArgs &args;
@@ -251,6 +318,7 @@ std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 		}
 	}
 	gtk_color_set_color(GTK_COLOR(args->targetColor), options->getColor("color", Color(0.5f)));
+	args->setType(&common::matchById(types, options->getString("type", "color_dictionaries")));
 	auto hbox2 = gtk_hbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox2, false, false, 0);
 	gtk_widget_show_all(hbox);

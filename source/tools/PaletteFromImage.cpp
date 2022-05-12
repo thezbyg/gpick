@@ -25,6 +25,7 @@
 #include "ToolColorNaming.h"
 #include "dynv/Map.h"
 #include "I18N.h"
+#include "common/Guard.h"
 #include <string.h>
 #include <iostream>
 #include <sstream>
@@ -433,6 +434,7 @@ static void calc(PaletteFromImageArgs *args, bool preview, int limit){
 		node_delete(root_node);
 	}
 
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
 	for (list<Color>::iterator i = tmp_list.begin(); i != tmp_list.end(); i++){
 		i->alpha = 1;
 		ColorObject *color_object = color_list_new_color_object(color_list, &(*i));

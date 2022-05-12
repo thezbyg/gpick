@@ -43,6 +43,7 @@
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include "EventBus.h"
+#include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <iostream>
@@ -272,6 +273,8 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		case EventType::colorDictionaryUpdate:
 			updateDisplays(nullptr);
 			break;
+		case EventType::paletteChanged:
+			break;
 		}
 	}
 	ColorObject *getActive() {
@@ -313,6 +316,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		addToPalette(getActive());
 	}
 	void addAllToPalette() {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		Color color;
 		for (int i = 1; i < 7; ++i) {
 			gtk_swatch_get_color(GTK_SWATCH(swatch_display), i, &color);

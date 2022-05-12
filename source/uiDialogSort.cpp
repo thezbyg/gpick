@@ -27,6 +27,7 @@
 #include "Noise.h"
 #include "GenerateScheme.h"
 #include "I18N.h"
+#include "common/Guard.h"
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -429,7 +430,7 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 	range.w = 1;
 	int tmp_limit = limit;
 	if (group->get_group){
-		for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
+		for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 			in = (*i)->getColor();
 			node_update(group_nodes, &range, group->get_group(&in), 8);
 			if (preview){
@@ -443,7 +444,7 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 	node_reduce(group_nodes, group_sensitivity / 100.0, max_groups);
 
 	tmp_limit = limit;
-	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
+	for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		in = (*i)->getColor();
 
 		uintptr_t node_ptr = 0;
@@ -466,6 +467,7 @@ static void calc(DialogSortArgs *args, bool preview, int limit){
 		sorted_groups.insert(std::pair<double, uintptr_t>(sort->get_value(&in), (*i).first));
 	}
 
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
 	if (reverse_groups){
 		for (SortedGroups::reverse_iterator i = sorted_groups.rbegin(); i != sorted_groups.rend(); ++i){
 			GroupedSortedColors::iterator a, b;

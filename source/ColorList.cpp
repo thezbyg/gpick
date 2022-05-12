@@ -19,160 +19,162 @@
 #include "ColorList.h"
 #include "ColorObject.h"
 #include <algorithm>
-using namespace std;
-
-ColorList* color_list_new()
-{
-	ColorList* color_list = new ColorList;
-	color_list->on_insert = nullptr;
-	color_list->on_change = nullptr;
-	color_list->on_delete = nullptr;
-	color_list->on_clear = nullptr;
-	color_list->on_delete_selected = nullptr;
-	color_list->on_get_positions = nullptr;
-	color_list->userdata = nullptr;
-	return color_list;
+ColorList *color_list_new() {
+	auto *colorList = new ColorList();
+	colorList->blocked = false;
+	colorList->onInsert = nullptr;
+	colorList->onDelete = nullptr;
+	colorList->onClear = nullptr;
+	colorList->onDeleteSelected = nullptr;
+	colorList->onGetPositions = nullptr;
+	colorList->userdata = nullptr;
+	return colorList;
 }
-ColorList* color_list_new(ColorList *color_list)
-{
+ColorList *color_list_new(ColorList *colorList) {
 	ColorList *result = color_list_new();
-	if (color_list)
+	if (colorList)
 		result->options = dynv::Map::create();
 	return result;
 }
-ColorList* color_list_new_with_one_color(ColorList *template_color_list, const Color *color)
-{
-	ColorList *color_list = color_list_new();
-	ColorObject *color_object = new ColorObject("", *color);
-	color_list_add_color_object(color_list, color_object, 1);
-	return color_list;
-}
-void color_list_destroy(ColorList* color_list)
-{
-	for (auto color_object: color_list->colors){
-		color_object->release();
+void color_list_destroy(ColorList *colorList) {
+	for (auto *colorObject: colorList->colors) {
+		colorObject->release();
 	}
-	color_list->colors.clear();
-	delete color_list;
+	colorList->colors.clear();
+	delete colorList;
 }
-ColorObject* color_list_new_color_object(ColorList* color_list, const Color *color)
-{
+ColorObject *color_list_new_color_object(ColorList *colorList, const Color *color) {
 	return new ColorObject("", *color);
 }
-ColorObject* color_list_add_color(ColorList *color_list, const Color *color)
-{
-	ColorObject *color_object = new ColorObject("", *color);
-	int r = color_list_add_color_object(color_list, color_object, 1);
-	if (r == 0){
-		color_object->release();
-		return color_object;
-	}else{
-		delete color_object;
+ColorObject *color_list_add_color(ColorList *colorList, const Color *color) {
+	auto *colorObject = new ColorObject("", *color);
+	int r = color_list_add_color_object(colorList, colorObject, 1);
+	if (r == 0) {
+		colorObject->release();
+		return colorObject;
+	} else {
+		delete colorObject;
 		return 0;
 	}
 }
-int color_list_add_color_object(ColorList *color_list, ColorObject *color_object, bool add_to_palette)
-{
-	color_list->colors.push_back(color_object->reference());
-	if (add_to_palette && color_list->on_insert)
-		color_list->on_insert(color_list, color_object);
+int color_list_add_color_object(ColorList *colorList, ColorObject *colorObject, bool addToPalette) {
+	colorList->colors.push_back(colorObject->reference());
+	if (addToPalette && colorList->onInsert)
+		colorList->onInsert(colorList, colorObject, colorList->userdata);
+	colorList->changed = true;
 	return 0;
 }
-int color_list_add_color_object(ColorList *color_list, const ColorObject &colorObject, bool add_to_palette)
-{
+int color_list_add_color_object(ColorList *colorList, const ColorObject &colorObject, bool addToPalette) {
 	ColorObject *reference;
-	color_list->colors.push_back((reference = colorObject.copy()));
-	if (add_to_palette && color_list->on_insert)
-		color_list->on_insert(color_list, reference);
+	colorList->colors.push_back((reference = colorObject.copy()));
+	if (addToPalette && colorList->onInsert)
+		colorList->onInsert(colorList, reference, colorList->userdata);
+	colorList->changed = true;
 	return 0;
 }
-int color_list_add(ColorList *color_list, ColorList *items, bool add_to_palette)
-{
-	for (auto color_object: items->colors){
-		color_list->colors.push_back(color_object->reference());
-		if (add_to_palette && color_list->on_insert && color_object->isVisible())
-			color_list->on_insert(color_list, color_object);
+int color_list_add(ColorList *colorList, ColorList *items, bool addToPalette) {
+	for (auto *colorObject: items->colors) {
+		colorList->colors.push_back(colorObject->reference());
+		if (addToPalette && colorList->onInsert && colorObject->isVisible())
+			colorList->onInsert(colorList, colorObject, colorList->userdata);
+		colorList->changed = true;
 	}
 	return 0;
 }
-int color_list_remove_color_object(ColorList *color_list, ColorObject *color_object)
-{
-	list<ColorObject*>::iterator i = std::find(color_list->colors.begin(), color_list->colors.end(), color_object);
-	if (i != color_list->colors.end()){
-		if (color_list->on_delete) color_list->on_delete(color_list, color_object);
-		color_list->colors.erase(i);
-		color_object->release();
+int color_list_remove_color_object(ColorList *colorList, ColorObject *colorObject) {
+	auto i = std::find(colorList->colors.begin(), colorList->colors.end(), colorObject);
+	if (i != colorList->colors.end()) {
+		if (colorList->onDelete)
+			colorList->onDelete(colorList, colorObject, colorList->userdata);
+		colorList->colors.erase(i);
+		colorObject->release();
+		colorList->changed = true;
 		return 0;
-	}else return -1;
+	} else
+		return -1;
 }
-int color_list_remove_selected(ColorList *color_list)
-{
-	ColorList::iter i=color_list->colors.begin();
-	while (i != color_list->colors.end()){
-		if ((*i)->isSelected()){
+int color_list_remove_selected(ColorList *colorList) {
+	auto i = colorList->colors.begin();
+	while (i != colorList->colors.end()) {
+		if ((*i)->isSelected()) {
 			(*i)->release();
-			i = color_list->colors.erase(i);
-		}else ++i;
+			i = colorList->colors.erase(i);
+		} else
+			++i;
 	}
-	color_list->on_delete_selected(color_list);
+	colorList->onDeleteSelected(colorList, colorList->userdata);
+	colorList->changed = true;
 	return 0;
 }
-int color_list_remove_visited(ColorList *color_list)
-{
-	ColorList::iter i=color_list->colors.begin();
-	while (i != color_list->colors.end()){
-		if ((*i)->isVisited()){
+int color_list_remove_visited(ColorList *colorList) {
+	auto i = colorList->colors.begin();
+	while (i != colorList->colors.end()) {
+		if ((*i)->isVisited()) {
 			(*i)->release();
-			i = color_list->colors.erase(i);
-		}else ++i;
+			i = colorList->colors.erase(i);
+		} else
+			++i;
 	}
 	return 0;
 }
-int color_list_reset_selected(ColorList *color_list) {
-	for (auto &color : color_list->colors)
-		color->setSelected(false);
+int color_list_reset_selected(ColorList *colorList) {
+	for (auto *colorObject: colorList->colors)
+		colorObject->setSelected(false);
 	return 0;
 }
-int color_list_reset_all(ColorList *color_list) {
-	for (auto &color : color_list->colors) {
-		color->setSelected(false);
-		color->setVisited(false);
+int color_list_reset_all(ColorList *colorList) {
+	for (auto *colorObject: colorList->colors) {
+		colorObject->setSelected(false);
+		colorObject->setVisited(false);
 	}
 	return 0;
 }
-int color_list_remove_all(ColorList *color_list)
-{
-	ColorList::iter i;
-	if (color_list->on_clear){
-		color_list->on_clear(color_list);
-		for (i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
+int color_list_remove_all(ColorList *colorList) {
+	decltype(colorList->colors)::iterator i;
+	if (colorList->onClear) {
+		for (auto *colorObject: colorList->colors) {
+			colorObject->release();
+		}
+		colorList->colors.clear();
+		colorList->onClear(colorList, colorList->userdata);
+	} else {
+		for (i = colorList->colors.begin(); i != colorList->colors.end(); ++i) {
+			if (colorList->onDelete)
+				colorList->onDelete(colorList, *i, colorList->userdata);
 			(*i)->release();
 		}
-	}else{
-		for (i = color_list->colors.begin(); i != color_list->colors.end(); ++i){
-			if (color_list->on_delete) color_list->on_delete(color_list, *i);
-			(*i)->release();
-		}
+		colorList->colors.clear();
 	}
-	color_list->colors.clear();
+	colorList->changed = true;
 	return 0;
 }
-size_t color_list_get_count(ColorList *color_list)
-{
-	return color_list->colors.size();
+size_t color_list_get_count(ColorList *colorList) {
+	return colorList->colors.size();
 }
-int color_list_get_positions(ColorList *color_list)
-{
-	if (color_list->on_get_positions){
-		for (auto color: color_list->colors){
-			color->resetPosition();
+int color_list_get_positions(ColorList *colorList) {
+	if (colorList->onGetPositions) {
+		for (auto *colorObject: colorList->colors) {
+			colorObject->resetPosition();
 		}
-		color_list->on_get_positions(color_list);
-	}else{
+		colorList->onGetPositions(colorList, colorList->userdata);
+	} else {
 		size_t position = 0;
-		for (auto color: color_list->colors){
-			color->setPosition(position++);
+		for (auto *colorObject: colorList->colors) {
+			colorObject->setPosition(position++);
 		}
 	}
 	return 0;
+}
+bool color_list_start_changes(ColorList *colorList) {
+	if (colorList->blocked)
+		return false;
+	colorList->blocked = true;
+	colorList->changed = false;
+	return true;
+}
+bool color_list_end_changes(ColorList *colorList) {
+	if (colorList->changed && colorList->onUpdate)
+		colorList->onUpdate(colorList, colorList->userdata);
+	colorList->blocked = false;
+	return true;
 }

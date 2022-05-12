@@ -17,6 +17,8 @@
  */
 
 #include "ColorNames.h"
+#include "ColorList.h"
+#include "ColorObject.h"
 #include "Color.h"
 #include "Paths.h"
 #include "dynv/Map.h"
@@ -142,6 +144,21 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 		return 0;
 	}
 	return -1;
+}
+void color_names_load_from_list(ColorNames *color_names, const ColorList &colorList)
+{
+	Color color;
+	for (auto colorObject: colorList.colors) {
+		ColorNameEntry* name_entry = new ColorNameEntry;
+		name_entry->name = colorObject->getName();
+		color_names->names.push_back(name_entry);
+		ColorEntry* color_entry = new ColorEntry;
+		color_entry->name = name_entry;
+		color = colorObject->getColor();
+		color_entry->color = color.rgbToLabD50();
+		color_entry->original_color = color;
+		color_names_get_color_list(color_names, &color_entry->color)->push_back(color_entry);
+	}
 }
 void color_names_destroy(ColorNames* color_names)
 {

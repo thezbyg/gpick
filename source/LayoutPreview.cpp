@@ -36,6 +36,7 @@
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
 #include "EventBus.h"
+#include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <fstream>
@@ -103,6 +104,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
 		case EventType::colorDictionaryUpdate:
+		case EventType::paletteChanged:
 			break;
 		}
 	}
@@ -114,6 +116,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	void addAllToPalette() {
 		if (layoutSystem == nullptr)
 			return;
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
 		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color);

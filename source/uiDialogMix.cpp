@@ -25,6 +25,7 @@
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "I18N.h"
+#include "common/Guard.h"
 #ifndef _MSC_VER
 #include <stdbool.h>
 #endif
@@ -87,16 +88,6 @@ protected:
 	bool m_isNode;
 };
 
-
-#define STORE_COLOR() ColorObject *color_object=color_list_new_color_object(color_list, &r); \
-	float mixfactor = step_i/(float)(steps-1); \
-	name_assigner.assign(*color_object, name_a, name_b, (int)((1.0 - mixfactor)*100), (int)(mixfactor*100), with_endpoints && (step_i == 0 || step_i == (max_step - 1))); \
-	color_list_add_color_object(color_list, color_object, 1); \
-	color_object->release()
-
-#define STORE_LINEARCOLOR() color_linear_get_rgb(&r, &r); \
-	STORE_COLOR()
-
 static void store(ColorList *color_list, const Color *color, int step, MixColorNameAssigner &name_assigner)
 {
 	ColorObject *color_object = color_list_new_color_object(color_list, color);
@@ -134,9 +125,9 @@ static void calc( DialogMixArgs *args, bool preview, int limit)
 		color_list = args->preview_color_list;
 	else
 		color_list = args->gs->getColorList();
-
-	ColorList::iter j;
-	for (ColorList::iter i=args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
+	decltype(args->selected_color_list->colors)::iterator j;
+	for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		a = (*i)->getColor();
 		if (type == 0)
 			a.linearRgbInplace();

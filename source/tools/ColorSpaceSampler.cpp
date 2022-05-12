@@ -25,6 +25,7 @@
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ToolColorNaming.h"
+#include "common/Guard.h"
 #include <sstream>
 #include <algorithm>
 using namespace std;
@@ -110,6 +111,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		}
 	}
 	Color t;
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
 	for (size_t i = 0; i < value_count; i++){
 		if (preview){
 			if (limit <= 0) return;

@@ -206,9 +206,9 @@ void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection con
 		return;
 	setupClipboard(colorObject, converter, gs);
 }
-static PaletteListCallbackReturn addToColorList(ColorObject *colorObject, ColorList *colorList) {
+static PaletteListCallbackResult addToColorList(ColorObject *colorObject, ColorList *colorList) {
 	color_list_add_color_object(colorList, colorObject, 1);
-	return PALETTE_LIST_CALLBACK_NO_UPDATE;
+	return PaletteListCallbackResult::noUpdate;
 }
 void set(GtkWidget *palette_widget, GlobalState *gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
@@ -216,7 +216,7 @@ void set(GtkWidget *palette_widget, GlobalState *gs, ConverterSelection converte
 		return;
 	std::stringstream text;
 	auto colorList = color_list_new();
-	palette_list_foreach_selected(palette_widget, (PaletteListCallback)addToColorList, colorList);
+	palette_list_foreach_selected(palette_widget, (PaletteListCallback)addToColorList, colorList, false);
 	if (colorList->colors.empty())
 		return;
 	setupClipboard(colorList, converter, gs);

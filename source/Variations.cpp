@@ -34,6 +34,7 @@
 #include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "common/Format.h"
+#include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
@@ -141,6 +142,7 @@ struct VariationsArgs: public IColorSource, public IEventHandler {
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
 		case EventType::colorDictionaryUpdate:
+		case EventType::paletteChanged:
 			break;
 		}
 	}
@@ -154,6 +156,7 @@ struct VariationsArgs: public IColorSource, public IEventHandler {
 		color_list_add_color_object(gs.getColorList(), colorObject, true);
 	}
 	void addAllToPalette() {
+		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		VariationsColorNameAssigner nameAssigner(gs);
 		Color color;
 		addToPalette(nameAssigner, color, allColors);

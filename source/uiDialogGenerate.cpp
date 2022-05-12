@@ -30,6 +30,7 @@
 #include "GenerateScheme.h"
 #include "I18N.h"
 #include "Random.h"
+#include "common/Guard.h"
 #include <math.h>
 #include <sstream>
 #include <iostream>
@@ -147,7 +148,8 @@ static void calc(DialogGenerateArgs *args, bool preview, int limit)
 	}else{
 		scheme_type = generate_scheme_get_scheme_type(type);
 	}
-	for (ColorList::iter i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
+	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
+	for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
 		Color in = (*i)->getColor();
 		hsl = in.rgbToHsl();
 		wheel->rgbhue_to_hue(hsl.hsl.hue, &hue);

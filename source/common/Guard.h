@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2021, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,25 +16,46 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <vector>
-#include <tuple>
-enum struct EventType {
-	optionsUpdate,
-	convertersUpdate,
-	displayFiltersUpdate,
-	colorDictionaryUpdate,
-	paletteChanged,
-};
-struct IEventHandler {
-	virtual void onEvent(EventType eventType) = 0;
-};
-struct EventBus {
-	void subscribe(EventType type, IEventHandler &handler);
-	void unsubscribe(EventType type, IEventHandler &handler);
-	void unsubscribe(IEventHandler &handler);
-	void trigger(EventType type);
-	bool empty() const;
+#ifndef GPICK_COMMON_GUARD_H_
+#define GPICK_COMMON_GUARD_H_
+#include "Scoped.h"
+namespace common {
+template<typename Callable, typename... Args>
+struct Guard;
+template<typename Callable, typename... Args>
+struct Guard {
+	Guard(bool guarded, Callable callable, Args... params):
+		m_guarded(guarded),
+		m_canceled(false),
+		m_callable(callable),
+		m_arguments(std::forward_as_tuple(params...)) {
+	}
+	Guard(Guard &&guard):
+		m_guarded(guard.m_guarded),
+		m_canceled(guard.m_canceled),
+		m_callable(std::move(guard.m_callable)),
+		m_arguments(std::move(guard.m_arguments)) {
+		guard.m_canceled = true;
+	}
+	Guard(const Guard &) = delete;
+	Guard &operator=(const Guard &) = delete;
+	~Guard() {
+		if constexpr (std::is_reference_v<Callable> || !std::is_convertible_v<Callable, bool>) {
+			if (!m_canceled)
+				detail::apply(m_callable, m_arguments);
+		} else {
+			if (!m_canceled && m_callable)
+				detail::apply(m_callable, m_arguments);
+		}
+	}
+	void cancel() {
+		m_canceled = true;
+	}
 private:
-	std::vector<std::tuple<EventType, IEventHandler *>> m_handlers;
+	bool m_guarded, m_canceled;
+	Callable m_callable;
+	std::tuple<detail::UnwrapAndDecay<Args>...> m_arguments;
 };
+template<typename Callable, typename... Args> Guard(bool, Callable, Args &&...) -> Guard<Callable, Args...>;
+}
+#endif /* GPICK_COMMON_GUARD_H_ */
