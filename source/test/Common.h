@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_FILE_FORMAT_H_
-#define GPICK_FILE_FORMAT_H_
-#include "common/Result.h"
-#include "ErrorCode.h"
+#include "Color.h"
+#include "dynv/Map.h"
 #include <iosfwd>
-struct ColorList;
-common::ResultVoid<ErrorCode> paletteFileSave(const char *filename, ColorList *colorList);
-common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList *colorList);
-common::ResultVoid<ErrorCode> paletteFileLoad(const char *filename, ColorList *colorList);
-#endif /* GPICK_FILE_FORMAT_H_ */
+std::ostream &operator<<(std::ostream &stream, const Color &color);
+namespace dynv {
+std::ostream &operator<<(std::ostream &stream, const dynv::Ref &map);
+}

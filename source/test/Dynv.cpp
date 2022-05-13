@@ -17,26 +17,14 @@
  */
 
 #include <boost/test/unit_test.hpp>
+#include "Common.h"
+#include "Color.h"
+#include "dynv/Map.h"
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include "dynv/Map.h"
-#include "Color.h"
 using Map = dynv::Map;
 using Ref = dynv::Ref;
-static std::ostream &operator<<(std::ostream &stream, const Color &color) {
-	stream << color[0] << "," << color[1] << "," << color[2] << "," << color[3];
-	return stream;
-}
-namespace dynv {
-static std::ostream &operator<<(std::ostream &stream, const Ref &map) {
-	if (map)
-		stream << &*map;
-	else
-		stream << "-";
-	return stream;
-}
-}
 BOOST_AUTO_TEST_SUITE(dynv);
 BOOST_AUTO_TEST_CASE(basicBool) {
 	Map map;

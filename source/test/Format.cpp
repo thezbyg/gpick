@@ -19,24 +19,40 @@
 #include <boost/test/unit_test.hpp>
 #include "common/Format.h"
 using namespace common;
-BOOST_AUTO_TEST_CASE(format_empty) {
+namespace {
+struct CustomType {
+};
+static std::string to_string(const CustomType &) {
+	return "Hello world! Hello world! Hello world!";
+}
+}
+BOOST_AUTO_TEST_SUITE(commonFormat)
+BOOST_AUTO_TEST_CASE(empty) {
 	BOOST_CHECK_EQUAL(format(""), "");
 }
-BOOST_AUTO_TEST_CASE(format_missing_value) {
+BOOST_AUTO_TEST_CASE(missingValue) {
 	BOOST_CHECK_EQUAL(format("{}"), "");
 }
-BOOST_AUTO_TEST_CASE(format_useless_value) {
+BOOST_AUTO_TEST_CASE(uselessValue) {
 	BOOST_CHECK_EQUAL(format("", 123), "");
 }
-BOOST_AUTO_TEST_CASE(format_int) {
+BOOST_AUTO_TEST_CASE(valueInt) {
 	BOOST_CHECK_EQUAL(format("Hello world {}", 123), "Hello world 123");
 }
-BOOST_AUTO_TEST_CASE(format_string) {
+BOOST_AUTO_TEST_CASE(valueString) {
 	BOOST_CHECK_EQUAL(format("Hello {}", "world"), "Hello world");
 }
-BOOST_AUTO_TEST_CASE(format_mixed) {
+BOOST_AUTO_TEST_CASE(valuesMixed) {
 	BOOST_CHECK_EQUAL(format("Hello {} {}", "world", 123), "Hello world 123");
 }
-BOOST_AUTO_TEST_CASE(format_unterminated) {
+BOOST_AUTO_TEST_CASE(unterminated) {
 	BOOST_CHECK_EQUAL(format("Hello {", 123), "Hello {");
 }
+BOOST_AUTO_TEST_CASE(valueLongString) {
+	const std::string value = "Hello world! Hello world! Hello world!";
+	BOOST_CHECK_EQUAL(format("{}", value), value);
+}
+BOOST_AUTO_TEST_CASE(valueCustomType) {
+	BOOST_CHECK_EQUAL(format("{}", CustomType()), "Hello world! Hello world! Hello world!");
+}
+BOOST_AUTO_TEST_SUITE_END()

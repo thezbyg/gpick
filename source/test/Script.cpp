@@ -37,7 +37,7 @@ static int error(lua_State *L) {
 	return 0;
 }
 BOOST_AUTO_TEST_SUITE(script)
-BOOST_AUTO_TEST_CASE(register_extension) {
+BOOST_AUTO_TEST_CASE(registerExtension) {
 	Script script;
 	bool status = script.registerExtension("test", [](Script &script) {
 		static const struct luaL_Reg functions[] = {
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(register_extension) {
 	std::string returnValue = script.getString(-1);
 	BOOST_CHECK(returnValue == "ok");
 }
-BOOST_AUTO_TEST_CASE(register_nullptr_extension) {
+BOOST_AUTO_TEST_CASE(registerNullptrExtension) {
 	Script script;
 	bool status = script.registerExtension(nullptr, [](Script &script) {
 		lua_State *L = script;
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(register_nullptr_extension) {
 	std::string returnValue = script.getString(-1);
 	BOOST_CHECK(returnValue == "ok");
 }
-BOOST_AUTO_TEST_CASE(error_handling) {
+BOOST_AUTO_TEST_CASE(errorHandling) {
 	Script script;
 	lua_State *L = script;
 	bool cleanupOnError = false;

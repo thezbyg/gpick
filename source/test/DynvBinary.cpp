@@ -17,14 +17,11 @@
  */
 
 #include <boost/test/unit_test.hpp>
+#include "Common.h"
+#include "Color.h"
+#include "dynv/Types.h"
 #include <iostream>
 #include <sstream>
-#include "dynv/Types.h"
-#include "Color.h"
-static std::ostream &operator<<(std::ostream &stream, const Color &color) {
-	stream << color[0] << "," << color[1] << "," << color[2] << "," << color[3];
-	return stream;
-}
 BOOST_AUTO_TEST_SUITE(dynvBinary);
 BOOST_AUTO_TEST_CASE(serialize) {
 	using namespace dynv::types::binary;

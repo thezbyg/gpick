@@ -17,18 +17,17 @@
  */
 
 #include <boost/test/unit_test.hpp>
+#include "Common.h"
 #include "Color.h"
 #include <iostream>
+namespace {
 const Color testColor = { 0.5f, 0.25f, 0.1f, 1.0f };
-static std::ostream &operator<<(std::ostream &stream, const Color &color) {
-	stream << color[0] << ", " << color[1] << ", " << color[2] << ", " << color[3] << ", " << color[4];
-	return stream;
-}
 struct Initialize {
 	Initialize() {
 		Color::initialize();
 	}
 };
+}
 BOOST_FIXTURE_TEST_SUITE(color, Initialize)
 BOOST_AUTO_TEST_CASE(basic) {
 	Color empty;

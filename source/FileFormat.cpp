@@ -209,6 +209,53 @@ static bool write(std::ostream &stream, const std::string &value) {
 		stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
 	return stream.good();
 }
+common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList *colorList) {
+	using Result = common::ResultVoid<ErrorCode>;
+	if (!colorList)
+		return Result(ErrorCode::invalidArguments);
+	ChunkHeader header;
+	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + version::versionFull, 4);
+	if (!write(stream, header))
+		return Result(ErrorCode::writeFailed);
+	if (!write(stream, Version)) // file format version
+		return Result(ErrorCode::writeFailed);
+	auto handlerMapPosition = stream.tellp();
+	if (!write(stream, header)) // write temporary chunk header
+		return Result(ErrorCode::writeFailed);
+	if (!write(stream, static_cast<uint32_t>(2))) // handler count for colors
+		return Result(ErrorCode::writeFailed);
+	std::unordered_map<dynv::types::ValueType, uint8_t> typeMap;
+	typeMap[dynv::types::typeHandler<Color>().type] = 0;
+	if (!write(stream, dynv::types::typeHandler<Color>().name))
+		return Result(ErrorCode::writeFailed);
+	typeMap[dynv::types::typeHandler<std::string>().type] = 1;
+	if (!write(stream, dynv::types::typeHandler<std::string>().name))
+		return Result(ErrorCode::writeFailed);
+	auto endPosition = stream.tellp();
+	stream.seekp(handlerMapPosition);
+	header.prepareWrite(CHUNK_TYPE_HANDLER_MAP, endPosition - handlerMapPosition - sizeof(ChunkHeader));
+	if (!write(stream, header)) // write type handler chunk header
+		return Result(ErrorCode::writeFailed);
+	stream.seekp(endPosition);
+	auto colorListPosition = stream.tellp();
+	if (!write(stream, header)) // write temporary chunk header
+		return Result(ErrorCode::writeFailed);
+	color_list_get_positions(colorList);
+	colorList->colors.sort(colorObjectPositionSort);
+	dynv::Map options;
+	for (auto colorObject: colorList->colors) {
+		options.set("name", colorObject->getName());
+		options.set("color", colorObject->getColor());
+		if (!options.serialize(stream, typeMap))
+			return Result(ErrorCode::writeFailed);
+	}
+	endPosition = stream.tellp();
+	stream.seekp(colorListPosition);
+	header.prepareWrite(CHUNK_TYPE_COLOR_LIST, endPosition - colorListPosition - sizeof(ChunkHeader));
+	if (!write(stream, header)) // write color list chunk header
+		return Result(ErrorCode::writeFailed);
+	return Result();
+}
 common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* colorList) {
 	using Result = common::ResultVoid<ErrorCode>;
 	if (!filename || !colorList)
@@ -216,59 +263,9 @@ common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* c
 	std::ofstream file(filename, std::ios::binary);
 	if (!file.is_open())
 		return Result(ErrorCode::fileCouldNotBeOpened);
-	ChunkHeader header;
-	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + version::versionFull, 4);
-	if (!write(file, header))
-		return Result(ErrorCode::writeFailed);
-	if (!write(file, Version)) // file format version
-		return Result(ErrorCode::writeFailed);
-	auto handlerMapPosition = file.tellp();
-	if (!write(file, header)) // write temporary chunk header
-		return Result(ErrorCode::writeFailed);
-	if (!write(file, static_cast<uint32_t>(2))) // handler count for colors
-		return Result(ErrorCode::writeFailed);
-	std::unordered_map<dynv::types::ValueType, uint8_t> typeMap;
-	typeMap[dynv::types::typeHandler<Color>().type] = 0;
-	if (!write(file, dynv::types::typeHandler<Color>().name))
-		return Result(ErrorCode::writeFailed);
-	typeMap[dynv::types::typeHandler<std::string>().type] = 1;
-	if (!write(file, dynv::types::typeHandler<std::string>().name))
-		return Result(ErrorCode::writeFailed);
-	auto endPosition = file.tellp();
-	file.seekp(handlerMapPosition);
-	header.prepareWrite(CHUNK_TYPE_HANDLER_MAP, endPosition - handlerMapPosition - sizeof(ChunkHeader));
-	if (!write(file, header)) // write type handler chunk header
-		return Result(ErrorCode::writeFailed);
-	file.seekp(endPosition);
-	auto colorListPosition = file.tellp();
-	if (!write(file, header)) // write temporary chunk header
-		return Result(ErrorCode::writeFailed);
-	dynv::Map options;
-	for (auto colorObject: colorList->colors) {
-		options.set("name", colorObject->getName());
-		options.set("color", colorObject->getColor());
-		if (!options.serialize(file, typeMap))
-			return Result(ErrorCode::writeFailed);
-	}
-	endPosition = file.tellp();
-	file.seekp(colorListPosition);
-	header.prepareWrite(CHUNK_TYPE_COLOR_LIST, endPosition - colorListPosition - sizeof(ChunkHeader));
-	if (!write(file, header)) // write color list chunk header
-		return Result(ErrorCode::writeFailed);
-	file.seekp(endPosition);
-	color_list_get_positions(colorList);
-	std::vector<uint32_t> positions(colorList->colors.size());
-	size_t i = 0;
-	for (auto color: colorList->colors) {
-		positions[i++] = boost::endian::native_to_little<uint32_t>(color->getPosition());
-	}
-	header.prepareWrite(CHUNK_TYPE_COLOR_POSITIONS, positions.size() * sizeof(uint32_t));
-	if (!write(file, header)) // write positions chunk header
-		return Result(ErrorCode::writeFailed);
-	if (!positions.empty())
-		file.write(reinterpret_cast<const char *>(&positions.front()), positions.size() * sizeof(uint32_t));
-	if (!file.good())
-		return Result(ErrorCode::writeFailed);
+	auto result = paletteStreamSave(file, colorList);
+	if (!result)
+		return result;
 	file.close();
 	return file.good() ? Result() : Result(ErrorCode::writeFailed);
 }

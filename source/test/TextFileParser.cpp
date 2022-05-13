@@ -24,6 +24,7 @@
 #include "Color.h"
 using namespace text_file_parser;
 
+namespace {
 struct Parser: public TextFile {
 	std::istream *m_stream;
 	std::vector<Color> m_colors;
@@ -64,7 +65,9 @@ struct Parser: public TextFile {
 		TextFile::parse(configuration);
 	}
 };
-BOOST_AUTO_TEST_CASE(full_hex) {
+}
+BOOST_AUTO_TEST_SUITE(textFileParser)
+BOOST_AUTO_TEST_CASE(fullHex) {
 	std::ifstream file("test/textImport01.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -74,7 +77,7 @@ BOOST_AUTO_TEST_CASE(full_hex) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(short_hex) {
+BOOST_AUTO_TEST_CASE(shortHex) {
 	std::ifstream file("test/textImport02.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -84,7 +87,7 @@ BOOST_AUTO_TEST_CASE(short_hex) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(css_rgb) {
+BOOST_AUTO_TEST_CASE(cssRgb) {
 	std::ifstream file("test/textImport03.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -94,7 +97,7 @@ BOOST_AUTO_TEST_CASE(css_rgb) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(css_rgba) {
+BOOST_AUTO_TEST_CASE(cssRgba) {
 	std::ifstream file("test/textImport04.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -105,7 +108,7 @@ BOOST_AUTO_TEST_CASE(css_rgba) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(int_values) {
+BOOST_AUTO_TEST_CASE(intValues) {
 	std::ifstream file("test/textImport05.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -115,7 +118,7 @@ BOOST_AUTO_TEST_CASE(int_values) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(float_values_separated_by_comma) {
+BOOST_AUTO_TEST_CASE(floatValuesSeparatedByComma) {
 	std::ifstream file("test/textImport06.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -125,7 +128,7 @@ BOOST_AUTO_TEST_CASE(float_values_separated_by_comma) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(float_values_separated_by_space) {
+BOOST_AUTO_TEST_CASE(floatValuesSeparatedBySpace) {
 	std::ifstream file("test/textImport10.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -135,7 +138,7 @@ BOOST_AUTO_TEST_CASE(float_values_separated_by_space) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(single_line_c_comments) {
+BOOST_AUTO_TEST_CASE(singleLineCComments) {
 	std::ifstream file("test/textImport07.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -145,7 +148,7 @@ BOOST_AUTO_TEST_CASE(single_line_c_comments) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(multi_line_c_comments) {
+BOOST_AUTO_TEST_CASE(multiLineCComments) {
 	std::ifstream file("test/textImport08.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -155,7 +158,7 @@ BOOST_AUTO_TEST_CASE(multi_line_c_comments) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(single_line_hash_comments) {
+BOOST_AUTO_TEST_CASE(singleLineHashComments) {
 	std::ifstream file("test/textImport09.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -165,7 +168,7 @@ BOOST_AUTO_TEST_CASE(single_line_hash_comments) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
-BOOST_AUTO_TEST_CASE(out_of_range_float_value) {
+BOOST_AUTO_TEST_CASE(outOfRangeFloatValue) {
 	std::ifstream file("test/textImport11.txt");
 	BOOST_REQUIRE(file.is_open());
 	Parser parser(&file);
@@ -175,3 +178,4 @@ BOOST_AUTO_TEST_CASE(out_of_range_float_value) {
 	BOOST_CHECK(parser.checkColor(0, color));
 	file.close();
 }
+BOOST_AUTO_TEST_SUITE_END()
