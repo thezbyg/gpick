@@ -38,6 +38,7 @@
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
+struct ClosestColorsArgs;
 namespace {
 enum struct ColorSource {
 	colorDictionaries = 1,
@@ -52,8 +53,6 @@ const Type types[] = {
 	{ "color_dictionaries", N_("Color dictionaries"), ColorSource::colorDictionaries },
 	{ "palette", N_("Palette"), ColorSource::palette },
 };
-}
-struct ClosestColorsArgs;
 struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner {
 	ClosestColorsColorNameAssigner(GlobalState &gs):
 		ToolColorNameAssigner(gs) {
@@ -71,6 +70,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
+}
 struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *targetColor, *lastFocusedColor, *colorPreviews, *closestColors[9];
 	dynv::Ref options;

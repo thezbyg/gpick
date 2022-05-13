@@ -39,8 +39,9 @@
 #include <sstream>
 #include <cmath>
 
+namespace {
 const int Rows = 5;
-enum class Mode {
+enum struct Mode {
 	normal = 1,
 	multiply,
 	difference,
@@ -80,6 +81,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
+}
 struct ColorMixerArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *secondaryColor, *opacityRange, *lastFocusedColor, *colorPreviews;
 	const Type *mixerType;
@@ -376,10 +378,8 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	}
 	args->mixerType = &common::matchById(types, options->getString("mixer_type", "normal"));
 	Color c = { 0.5f };
-	char tmp[32];
-	for (gint i = 0; i < Rows; ++i) {
-		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->rows[i].input), options->getColor(tmp, c));
+	for (int i = 0; i < Rows; ++i) {
+		gtk_color_set_color(GTK_COLOR(args->rows[i].input), options->getColor(common::format("color{}", i), c));
 	}
 	gtk_color_set_color(GTK_COLOR(args->secondaryColor), options->getColor("secondary_color", c), _(args->mixerType->name));
 	hbox2 = gtk_hbox_new(false, 0);

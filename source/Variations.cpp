@@ -35,12 +35,14 @@
 #include "IMenuExtension.h"
 #include "common/Format.h"
 #include "common/Guard.h"
+#include "common/Match.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
+namespace {
 const int Rows = 5;
 const int VariantWidgets = 8;
-enum class Component {
+enum struct Component {
 	hslHue = 1,
 	hslSaturation,
 	hslLightness,
@@ -82,6 +84,7 @@ protected:
 	std::stringstream m_stream;
 	std::string_view m_ident;
 };
+}
 struct VariationsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *strengthRange, *lastFocusedColor, *colorPreviews, *allColors;
 	struct {
@@ -99,13 +102,10 @@ struct VariationsArgs: public IColorSource, public IEventHandler {
 	}
 	~VariationsArgs() {
 		Color color;
-		char tmp[32];
 		for (int i = 0; i < Rows; ++i) {
-			sprintf(tmp, "type%d", i);
-			options->set(tmp, rows[i].type->id);
-			sprintf(tmp, "color%d", i);
+			options->set(common::format("type{}", i), rows[i].type->id);
 			gtk_color_get_color(GTK_COLOR(rows[i].primary), &color);
-			options->set(tmp, color);
+			options->set(common::format("color{}", i), color);
 		}
 		gtk_color_get_color(GTK_COLOR(allColors), &color);
 		options->set("all_colors", color);
@@ -278,7 +278,7 @@ struct VariationsArgs: public IColorSource, public IEventHandler {
 				break;
 			}
 			for (int j = 0; j < VariantWidgets; ++j) {
-				float position = rows[i].type->strengthMultiplier * strength * (j / static_cast<float>(VariantWidgets - 1) - 0.5f);
+				float position = rows[i].type->strengthMultiplier * strength * (j / static_cast<float>(VariantWidgets - 1) - 0.5f) * 2.0f;
 				switch (rows[i].type->component) {
 				case Component::rgbRed:
 					rgbModified = rgb;
@@ -432,18 +432,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			StandardDragDropHandler::forWidget(widget, &args->gs, &*args->editable[index]);
 		}
 	}
-	char tmp[32];
 	for (int i = 0; i < Rows; ++i) {
-		sprintf(tmp, "type%d", i);
-		auto typeName = options->getString(tmp, "lab_lightness");
-		for (uint32_t j = 0; j < sizeof(types) / sizeof(Type); j++) {
-			if (types[j].id == typeName) {
-				args->rows[i].type = &types[j];
-				break;
-			}
-		}
-		sprintf(tmp, "color%d", i);
-		gtk_color_set_color(GTK_COLOR(args->rows[i].primary), options->getColor(tmp, Color(0.5f)), args->rows[i].type->symbol);
+		args->rows[i].type = &common::matchById(types, options->getString(common::format("type{}", i), "lab_lightness"));
+		gtk_color_set_color(GTK_COLOR(args->rows[i].primary), options->getColor(common::format("color{}", i), Color(0.5f)), args->rows[i].type->symbol);
 	}
 	gtk_color_set_color(GTK_COLOR(args->allColors), options->getColor("all_colors", Color(0.5f)));
 	hbox2 = gtk_hbox_new(false, 0);
