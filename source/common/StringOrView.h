@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,43 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Format.h"
+#ifndef GPICK_COMMON_STRING_OR_VIEW_H_
+#define GPICK_COMMON_STRING_OR_VIEW_H_
+#include <string>
+#include <string_view>
 namespace common {
-namespace detail {
-std::string format(const char *format, const Span<StringOrView> values) {
-	size_t maxLength = 0;
-	for (auto &v: values) {
-		maxLength += v.length();
-	}
-	char previousChar = 0;
-	size_t i;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previousChar == '{') {
-			maxLength -= 2;
-		}
-		previousChar = format[i];
-	}
-	maxLength += i;
-	std::string result;
-	result.reserve(maxLength);
-	previousChar = 0;
-	size_t argumentIndex = 0;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previousChar == '{') {
-			result.pop_back();
-			if (argumentIndex < values.size()) {
-				auto value = values[argumentIndex].view();
-				for (size_t j = 0; j < value.length(); ++j) {
-					result.push_back(value[j]);
-				}
-			}
-			argumentIndex++;
-		} else {
-			result.push_back(format[i]);
-		}
-		previousChar = format[i];
-	}
-	return result;
+struct StringOrView {
+	StringOrView();
+	explicit StringOrView(const char *value) noexcept;
+	explicit StringOrView(std::string_view value) noexcept;
+	explicit StringOrView(std::string &&value) noexcept;
+	StringOrView(StringOrView &&value) noexcept;
+	~StringOrView();
+	std::size_t length() const;
+	void reset();
+	std::string_view view() const;
+private:
+	union {
+		std::string_view m_view;
+		std::string m_string;
+	};
+	enum struct Type {
+		view,
+		string,
+	};
+	Type m_type;
+};
 }
-}
-}
+#endif /* GPICK_COMMON_STRING_OR_VIEW_H_ */

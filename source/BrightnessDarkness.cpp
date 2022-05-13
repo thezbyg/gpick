@@ -179,7 +179,7 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 		return gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(layoutView));
 	}
 	static std::string format(char prefix, int index) {
-		return prefix + common::as_string(index);
+		return prefix + std::to_string(index);
 	}
 	void update(bool saveSettings) {
 		float brightness = static_cast<float>(gtk_range_2d_get_x(GTK_RANGE_2D(brightnessDarkness)));

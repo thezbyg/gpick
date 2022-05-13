@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,43 +16,73 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Format.h"
+#include "StringOrView.h"
 namespace common {
-namespace detail {
-std::string format(const char *format, const Span<StringOrView> values) {
-	size_t maxLength = 0;
-	for (auto &v: values) {
-		maxLength += v.length();
-	}
-	char previousChar = 0;
-	size_t i;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previousChar == '{') {
-			maxLength -= 2;
-		}
-		previousChar = format[i];
-	}
-	maxLength += i;
-	std::string result;
-	result.reserve(maxLength);
-	previousChar = 0;
-	size_t argumentIndex = 0;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previousChar == '{') {
-			result.pop_back();
-			if (argumentIndex < values.size()) {
-				auto value = values[argumentIndex].view();
-				for (size_t j = 0; j < value.length(); ++j) {
-					result.push_back(value[j]);
-				}
-			}
-			argumentIndex++;
-		} else {
-			result.push_back(format[i]);
-		}
-		previousChar = format[i];
-	}
-	return result;
+StringOrView::StringOrView():
+	m_type(Type::view) {
+	new (&m_view) std::string_view();
 }
+StringOrView::StringOrView(const char *value) noexcept:
+	m_type(Type::view) {
+	new (&m_view) std::string_view(value);
+}
+StringOrView::StringOrView(std::string_view value) noexcept:
+	m_type(Type::view) {
+	new (&m_view) std::string_view(value);
+}
+StringOrView::StringOrView(std::string &&value) noexcept:
+	m_type(Type::string) {
+	new (&m_string) std::string(std::move(value));
+}
+StringOrView::StringOrView(StringOrView &&value) noexcept:
+	m_type(value.m_type) {
+	switch (m_type) {
+	case Type::view:
+		new (&m_view) std::string_view(value.m_view);
+		break;
+	case Type::string:
+		new (&m_string) std::string(std::move(value.m_string));
+		break;
+	}
+}
+StringOrView::~StringOrView() {
+	switch (m_type) {
+	case Type::view:
+		m_view.~basic_string_view();
+		break;
+	case Type::string:
+		m_string.~basic_string();
+		break;
+	}
+}
+std::size_t StringOrView::length() const {
+	switch (m_type) {
+	case Type::view:
+		return m_view.length();
+	case Type::string:
+		return m_string.length();
+	}
+	return 0;
+}
+void StringOrView::reset() {
+	switch (m_type) {
+	case Type::view:
+		m_view.~basic_string_view();
+		break;
+	case Type::string:
+		m_string.~basic_string();
+		break;
+	}
+	m_type = Type::view;
+	new (&m_view) std::string_view();
+}
+std::string_view StringOrView::view() const {
+	switch (m_type) {
+	case Type::view:
+		return m_view;
+	case Type::string:
+		return m_string;
+	}
+	return std::string_view();
 }
 }

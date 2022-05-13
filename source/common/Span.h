@@ -144,6 +144,12 @@ struct Span {
 	SizeT size() const {
 		return m_size;
 	}
+	const T &operator[](std::size_t index) const {
+		return m_data[index];
+	}
+	T &operator[](std::size_t index) {
+		return m_data[index];
+	}
 private:
 	T *m_data;
 	SizeT m_size;

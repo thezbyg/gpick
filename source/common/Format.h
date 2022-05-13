@@ -18,52 +18,29 @@
 
 #ifndef GPICK_COMMON_FORMAT_H_
 #define GPICK_COMMON_FORMAT_H_
+#include "Span.h"
+#include "StringOrView.h"
 #include <string>
-#include <vector>
+#include <string_view>
+#include <array>
+#include <type_traits>
 namespace common {
+namespace detail {
+std::string format(const char *format, const Span<StringOrView> values);
 template<typename T>
-std::string as_string(T value) {
-	return std::to_string(value);
+StringOrView asStringOrView(T &&value) {
+	if constexpr (std::is_same_v<std::decay_t<T>, std::string> || std::is_same_v<std::decay_t<T>, std::string_view> || std::is_same_v<std::remove_cv_t<std::remove_pointer_t<std::decay_t<std::remove_reference_t<T>>>>, char>) {
+		return StringOrView(std::string_view(value));
+	} else {
+		using std::to_string;
+		return StringOrView(to_string(value));
+	}
 }
-template<> std::string as_string<const std::string &>(const std::string &value);
-template<> std::string as_string<const char *>(const char *value);
-template<> std::string as_string<int>(int value);
+}
 template<typename... Args>
-std::string format(const char *format, const Args &... args) {
-	std::vector<std::string> values = { as_string(args)... };
-	size_t max_length = 0;
-	for (auto &v: values) {
-		max_length += v.length();
-	}
-	char previous_char = 0;
-	size_t i;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previous_char == '{') {
-			max_length -= 2;
-		}
-		previous_char = format[i];
-	}
-	max_length += i;
-	std::string result;
-	result.reserve(max_length);
-	previous_char = 0;
-	size_t argument_index = 0;
-	for (i = 0; format[i]; ++i) {
-		if (format[i] == '}' && previous_char == '{') {
-			result.pop_back();
-			if (argument_index < values.size()) {
-				auto &value = values[argument_index];
-				for (size_t j = 0; j < value.length(); ++j) {
-					result.push_back(value[j]);
-				}
-			}
-			argument_index++;
-		} else {
-			result.push_back(format[i]);
-		}
-		previous_char = format[i];
-	}
-	return result;
+std::string format(const char *format, Args &&... args) {
+	std::array<StringOrView, sizeof...(Args)> values = { detail::asStringOrView(std::forward<Args>(args))... };
+	return detail::format(format, Span<StringOrView>(values.data(), values.size()));
 }
 }
 #endif /* GPICK_COMMON_FORMAT_H_ */
