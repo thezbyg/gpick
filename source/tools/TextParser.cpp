@@ -77,7 +77,7 @@ struct TextParserDialog: public ToolColorNameAssigner {
 private:
 	GtkWindow *m_parent;
 	GtkWidget *m_dialog, *m_textView;
-	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_float_values, *m_int_values;
+	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_short_hex_with_alpha, *m_full_hex_with_alpha, *m_float_values, *m_int_values, *m_css_hsl, *m_css_hsla;
 	GtkWidget *m_preview_expander;
 	ColorList *m_preview_color_list;
 	GlobalState *m_gs;
@@ -88,8 +88,12 @@ private:
 	bool isSingleLineHashCommentsEnabled();
 	bool isCssRgbEnabled();
 	bool isCssRgbaEnabled();
+	bool isCssHslEnabled();
+	bool isCssHslaEnabled();
 	bool isFullHexEnabled();
 	bool isShortHexEnabled();
+	bool isFullHexWithAlphaEnabled();
+	bool isShortHexWithAlphaEnabled();
 	bool isIntValuesEnabled();
 	bool isFloatValuesEnabled();
 	void saveSettings();
@@ -108,7 +112,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	GtkWidget *dialog = m_dialog = gtk_dialog_new_with_buttons(_("Text parser"), m_parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), m_options->getInt32("window.width", -1), m_options->getInt32("window.height", -1));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
-	GtkWidget *table = gtk_table_new(5, 9, false);
+	GtkWidget *table = gtk_table_new(6, 12, false);
 	GtkWidget *scrolled_window = gtk_scrolled_window_new(0, 0);
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled_window), m_textView = newTextView(m_options->getString("text", "").c_str()));
@@ -116,7 +120,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), newLabel(_("Text") + ":"s), false, false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, true, true, 0);
-	gtk_table_attach(GTK_TABLE(table), vbox, 0, 8, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), vbox, 0, 11, 0, 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	int y = 1;
 	addOption(m_single_line_c_comments = newCheckbox(_("C style single-line comments") + " (//abc)"s, m_options->getBool("single_line_c_comments", true)), 0, y, table);
 	addOption(m_multi_line_c_comments = newCheckbox(_("C style multi-line comments") + " (/*abc*/)"s, m_options->getBool("multi_line_c_comments", true)), 0, y, table);
@@ -124,22 +128,32 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	y = 1;
 	addOption(m_css_rgb = newCheckbox("CSS rgb()", m_options->getBool("css_rgb", true)), 1, y, table);
 	addOption(m_css_rgba = newCheckbox("CSS rgba()", m_options->getBool("css_rgba", true)), 1, y, table);
-	addOption(m_full_hex = newCheckbox(_("Full hex"), m_options->getBool("full_hex", true)), 1, y, table);
+	addOption(m_css_hsl = newCheckbox("CSS hsl()", m_options->getBool("css_hsl", true)), 1, y, table);
+	addOption(m_css_hsla = newCheckbox("CSS hsla()", m_options->getBool("css_hsla", true)), 1, y, table);
 	y = 1;
+	addOption(m_full_hex = newCheckbox(_("Full hex"), m_options->getBool("full_hex", true)), 2, y, table);
+	addOption(m_full_hex_with_alpha = newCheckbox(_("Full hex with alpha"), m_options->getBool("full_hex_with_alpha", true)), 2, y, table);
 	addOption(m_short_hex = newCheckbox(_("Short hex"), m_options->getBool("short_hex", true)), 2, y, table);
-	addOption(m_int_values = newCheckbox(_("Integer values"), m_options->getBool("int_values", true)), 2, y, table);
-	addOption(m_float_values = newCheckbox(_("Real values"), m_options->getBool("float_values", true)), 2, y, table);
+	addOption(m_short_hex_with_alpha = newCheckbox(_("Short hex with alpha"), m_options->getBool("short_hex_with_alpha", true)), 2, y, table);
+	y = 1;
+	addOption(m_int_values = newCheckbox(_("Integer values"), m_options->getBool("int_values", true)), 3, y, table);
+	addOption(m_float_values = newCheckbox(_("Real values"), m_options->getBool("float_values", true)), 3, y, table);
+	y = 5;
 	g_signal_connect(G_OBJECT(m_single_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_multi_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_single_line_hash_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_css_rgb), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_css_rgba), "toggled", G_CALLBACK(onChange), this);
+	g_signal_connect(G_OBJECT(m_css_hsl), "toggled", G_CALLBACK(onChange), this);
+	g_signal_connect(G_OBJECT(m_css_hsla), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_full_hex), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_short_hex), "toggled", G_CALLBACK(onChange), this);
+	g_signal_connect(G_OBJECT(m_full_hex_with_alpha), "toggled", G_CALLBACK(onChange), this);
+	g_signal_connect(G_OBJECT(m_short_hex_with_alpha), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_int_values), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_float_values), "toggled", G_CALLBACK(onChange), this);
 	gtk_widget_show_all(table);
-	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, m_options->getBool("show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 8, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, m_options->getBool("show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 11, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	preview();
 	gtk_widget_show_all(table);
 	setDialogContent(dialog, table);
@@ -158,15 +172,19 @@ void TextParserDialog::onDestroy(GtkWidget *widget, TextParserDialog *dialog) {
 }
 bool TextParserDialog::parse(ColorList *color_list) {
 	text_file_parser::Configuration configuration;
-	configuration.single_line_c_comments = isSingleLineCCommentsEnabled();
-	configuration.multi_line_c_comments = isMultiLineCCommentsEnabled();
-	configuration.single_line_hash_comments = isSingleLineHashCommentsEnabled();
-	configuration.css_rgb = isCssRgbEnabled();
-	configuration.css_rgba = isCssRgbaEnabled();
-	configuration.full_hex = isFullHexEnabled();
-	configuration.short_hex = isShortHexEnabled();
-	configuration.int_values = isIntValuesEnabled();
-	configuration.float_values = isFloatValuesEnabled();
+	configuration.singleLineCComments = isSingleLineCCommentsEnabled();
+	configuration.multiLineCComments = isMultiLineCCommentsEnabled();
+	configuration.singleLineHashComments = isSingleLineHashCommentsEnabled();
+	configuration.cssRgb = isCssRgbEnabled();
+	configuration.cssRgba = isCssRgbaEnabled();
+	configuration.cssHsl = isCssHslEnabled();
+	configuration.cssHsla = isCssHslaEnabled();
+	configuration.fullHex = isFullHexEnabled();
+	configuration.shortHex = isShortHexEnabled();
+	configuration.fullHexWithAlpha = isFullHexWithAlphaEnabled();
+	configuration.shortHexWithAlpha = isShortHexWithAlphaEnabled();
+	configuration.intValues = isIntValuesEnabled();
+	configuration.floatValues = isFloatValuesEnabled();
 	auto text = getTextViewText(m_textView);
 	TextParser textParser(text);
 	if (!textParser.parse(configuration)) {
@@ -223,8 +241,12 @@ void TextParserDialog::saveSettings() {
 	m_options->set("single_line_hash_comments", isSingleLineHashCommentsEnabled());
 	m_options->set("css_rgb", isCssRgbEnabled());
 	m_options->set("css_rgba", isCssRgbaEnabled());
+	m_options->set("css_hsl", isCssHslEnabled());
+	m_options->set("css_hsla", isCssHslaEnabled());
 	m_options->set("full_hex", isFullHexEnabled());
 	m_options->set("short_hex", isShortHexEnabled());
+	m_options->set("full_hex_with_alpha", isFullHexWithAlphaEnabled());
+	m_options->set("short_hex_with_alpha", isShortHexWithAlphaEnabled());
 	m_options->set("int_values", isIntValuesEnabled());
 	m_options->set("float_values", isFloatValuesEnabled());
 	gint width, height;
@@ -248,11 +270,23 @@ bool TextParserDialog::isCssRgbEnabled() {
 bool TextParserDialog::isCssRgbaEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_rgba));
 }
+bool TextParserDialog::isCssHslEnabled() {
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_hsl));
+}
+bool TextParserDialog::isCssHslaEnabled() {
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_hsla));
+}
 bool TextParserDialog::isFullHexEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex));
 }
 bool TextParserDialog::isShortHexEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_short_hex));
+}
+bool TextParserDialog::isFullHexWithAlphaEnabled() {
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex_with_alpha));
+}
+bool TextParserDialog::isShortHexWithAlphaEnabled() {
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_short_hex_with_alpha));
 }
 bool TextParserDialog::isIntValuesEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_int_values));

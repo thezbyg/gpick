@@ -1,3 +1,0 @@
-/*color: #ccbbaa
-*/
-color: #aabbcc

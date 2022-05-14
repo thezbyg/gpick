@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -20,29 +20,30 @@
 #define GPICK_PARSER_TEXT_FILE_H_
 #include <cstddef>
 struct Color;
-namespace text_file_parser
-{
-	struct Configuration
-	{
-		Configuration();
-		bool single_line_c_comments;
-		bool single_line_hash_comments;
-		bool multi_line_c_comments;
-		bool short_hex;
-		bool full_hex;
-		bool css_rgb;
-		bool css_rgba;
-		bool float_values;
-		bool int_values;
-	};
-	struct TextFile
-	{
-		bool parse(const Configuration &configuration);
-		virtual ~TextFile();
-		virtual void outOfMemory() = 0;
-		virtual void syntaxError(size_t start_line, size_t start_column, size_t end_line, size_t end_colunn) = 0;
-		virtual size_t read(char *buffer, size_t length) = 0;
-		virtual void addColor(const Color &color) = 0;
-	};
+namespace text_file_parser {
+struct Configuration {
+	Configuration(bool initialValue = true);
+	bool singleLineCComments;
+	bool singleLineHashComments;
+	bool multiLineCComments;
+	bool shortHex;
+	bool fullHex;
+	bool shortHexWithAlpha;
+	bool fullHexWithAlpha;
+	bool cssRgb;
+	bool cssRgba;
+	bool cssHsl;
+	bool cssHsla;
+	bool floatValues;
+	bool intValues;
+};
+struct TextFile {
+	bool parse(const Configuration &configuration);
+	virtual ~TextFile();
+	virtual void outOfMemory() = 0;
+	virtual void syntaxError(size_t startLine, size_t startColumn, size_t endLine, size_t endColunn) = 0;
+	virtual size_t read(char *buffer, size_t length) = 0;
+	virtual void addColor(const Color &color) = 0;
+};
 }
 #endif /* GPICK_PARSER_TEXT_FILE_H_ */

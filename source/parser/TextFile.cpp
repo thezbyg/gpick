@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,26 +17,26 @@
  */
 
 #include "TextFile.h"
-
 namespace text_file_parser {
-	Configuration::Configuration()
-	{
-		single_line_c_comments = true;
-		single_line_hash_comments = true;
-		multi_line_c_comments = true;
-		short_hex = true;
-		full_hex = true;
-		css_rgb = true;
-		css_rgba = true;
-		float_values = true;
-		int_values = true;
-	}
-	bool scanner(TextFile &text_file, const Configuration &configuration);
-	bool TextFile::parse(const Configuration &configuration)
-	{
-		return scanner(*this, configuration);
-	}
-	TextFile::~TextFile()
-	{
-	}
+Configuration::Configuration(bool initialValue) {
+	singleLineCComments = initialValue;
+	singleLineHashComments = initialValue;
+	multiLineCComments = initialValue;
+	shortHex = initialValue;
+	fullHex = initialValue;
+	shortHexWithAlpha = initialValue;
+	fullHexWithAlpha = initialValue;
+	cssRgb = initialValue;
+	cssRgba = initialValue;
+	cssHsl = initialValue;
+	cssHsla = initialValue;
+	floatValues = initialValue;
+	intValues = initialValue;
+}
+bool scanner(TextFile &text_file, const Configuration &configuration);
+bool TextFile::parse(const Configuration &configuration) {
+	return scanner(*this, configuration);
+}
+TextFile::~TextFile() {
+}
 }

@@ -1,6 +1,25 @@
+/*
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the software author nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ * IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+ * OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include "parser/TextFile.h"
 #include "Color.h"
-#include <string.h>
+#include "math/Algorithms.h"
+#include <cstring>
 #include <stdlib.h>
 #include <cstddef>
 #include <functional>
@@ -8,212 +27,314 @@
 #include <string>
 #include <iostream>
 #include <cmath>
-using namespace std;
-namespace text_file_parser
-{
-struct FSM
-{
-	public:
-		int cs;
-		char separator;
-		int act;
-		int top;
-		char *ts;
-		char *te;
-		int stack[256];
-		char buffer[8 * 1024];
-		int line;
-		int column;
-		int line_start;
-		int buffer_offset;
-		int64_t number_i64;
-		vector<int64_t> numbers_i64;
-		char *number_double_start;
-		vector<double> numbers_double;
-		function<void(const Color&)> addColor;
-		void handleNewline()
-		{
-			line++;
-			column = 0;
-			line_start = te - buffer;
+namespace text_file_parser {
+enum struct Unit {
+	unitless,
+	percentage,
+	degree,
+	gradian,
+	turn,
+	radian,
+};
+struct FSM {
+	int cs;
+	int act;
+	char ws;
+	char *ts, *te;
+	char buffer[8 * 1024];
+	int line, column, lineStart, bufferOffset;
+	int64_t numberI64;
+	std::vector<std::pair<int64_t, Unit>> numbersI64;
+	char *numberStart;
+	std::vector<std::pair<double, Unit>> numbersDouble;
+	std::function<void(const Color&)> addColor;
+	void handleNewline() {
+		line++;
+		column = 0;
+		lineStart = te - buffer;
+	}
+	int hexToInt(char hex) {
+		if (hex >= '0' && hex <= '9') return hex - '0';
+		if (hex >= 'a' && hex <= 'f') return hex - 'a' + 10;
+		if (hex >= 'A' && hex <= 'F') return hex - 'A' + 10;
+		return 0;
+	}
+	int hexPairToInt(const char *hexPair) {
+		return hexToInt(hexPair[0]) << 4 | hexToInt(hexPair[1]);
+	}
+	void colorHexFull(bool withHashSymbol) {
+		Color color;
+		int startIndex = withHashSymbol ? 1 : 0;
+		color.red = hexPairToInt(ts + startIndex) / 255.0f;
+		color.green = hexPairToInt(ts + startIndex + 2) / 255.0f;
+		color.blue = hexPairToInt(ts + startIndex + 4) / 255.0f;
+		color.alpha = 1;
+		addColor(color);
+	}
+	void colorHexShort(bool withHashSymbol) {
+		Color color;
+		int startIndex = withHashSymbol ? 1 : 0;
+		color.red = hexToInt(ts[startIndex + 0]) / 15.0f;
+		color.green = hexToInt(ts[startIndex + 1]) / 15.0f;
+		color.blue = hexToInt(ts[startIndex + 2]) / 15.0f;
+		color.alpha = 1;
+		addColor(color);
+	}
+	void colorHexWithAlphaFull(bool withHashSymbol) {
+		Color color;
+		int startIndex = withHashSymbol ? 1 : 0;
+		color.red = hexPairToInt(ts + startIndex) / 255.0f;
+		color.green = hexPairToInt(ts + startIndex + 2) / 255.0f;
+		color.blue = hexPairToInt(ts + startIndex + 4) / 255.0f;
+		color.alpha = hexPairToInt(ts + startIndex + 6) / 255.0f;
+		addColor(color);
+	}
+	void colorHexWithAlphaShort(bool withHashSymbol) {
+		Color color;
+		int startIndex = withHashSymbol ? 1 : 0;
+		color.red = hexToInt(ts[startIndex + 0]) / 15.0f;
+		color.green = hexToInt(ts[startIndex + 1]) / 15.0f;
+		color.blue = hexToInt(ts[startIndex + 2]) / 15.0f;
+		color.alpha = hexToInt(ts[startIndex + 3]) / 15.0f;
+		addColor(color);
+	}
+	float getPercentage(size_t index) const {
+		switch (numbersDouble[index].second) {
+		case Unit::unitless:
+			return static_cast<float>(numbersDouble[index].first);
+		case Unit::percentage:
+			return static_cast<float>(numbersDouble[index].first * (1 / 100.0));
+		case Unit::degree:
+		case Unit::turn:
+		case Unit::radian:
+		case Unit::gradian:
+			break;
 		}
-		int hexToInt(char hex)
-		{
-			if (hex >= '0' && hex <= '9') return hex - '0';
-			if (hex >= 'a' && hex <= 'f') return hex - 'a' + 10;
-			if (hex >= 'A' && hex <= 'F') return hex - 'A' + 10;
+		return 0;
+	}
+	float getPercentage(size_t index, double unitlessDivider) const {
+		switch (numbersDouble[index].second) {
+		case Unit::unitless:
+			return static_cast<float>(numbersDouble[index].first / unitlessDivider);
+		case Unit::percentage:
+			return static_cast<float>(numbersDouble[index].first * (1 / 100.0));
+		case Unit::degree:
+		case Unit::turn:
+		case Unit::radian:
+		case Unit::gradian:
+			break;
+		}
+		return 0;
+	}
+	static double normalizeDegrees(double value) {
+		double tmp;
+		double result = std::modf(value, &tmp);
+		if (result < 0)
+			result += 1.0;
+		return result;
+	}
+	float getDegrees(size_t index) const {
+		switch (numbersDouble[index].second) {
+		case Unit::unitless:
+		case Unit::degree:
+			return static_cast<float>(normalizeDegrees(numbersDouble[index].first * (1 / 360.0)));
+		case Unit::turn:
+			return static_cast<float>(normalizeDegrees(numbersDouble[index].first));
+		case Unit::radian:
+			return static_cast<float>(normalizeDegrees(numbersDouble[index].first * (1 / math::PI / 2)));
+		case Unit::gradian:
+			return static_cast<float>(normalizeDegrees(numbersDouble[index].first * (1 / 400.0)));
+		case Unit::percentage:
+			break;
+		}
+		return 0;
+	}
+	void colorRgb() {
+		Color color;
+		color.red = getPercentage(0, 255);
+		color.green = getPercentage(1, 255);
+		color.blue = getPercentage(2, 255);
+		color.alpha = 1;
+		numbersDouble.clear();
+		addColor(color);
+	}
+	void colorRgba() {
+		Color color;
+		color.red = getPercentage(0, 255);
+		color.green = getPercentage(1, 255);
+		color.blue = getPercentage(2, 255);
+		color.alpha = getPercentage(3);
+		numbersDouble.clear();
+		addColor(color);
+	}
+	void colorHsl() {
+		Color color;
+		color.hsl.hue = getDegrees(0);
+		color.hsl.saturation = getPercentage(1);
+		color.hsl.lightness = getPercentage(2);
+		color.alpha = 1;
+		numbersDouble.clear();
+		addColor(color.normalizeRgb().hslToRgb());
+	}
+	void colorHsla() {
+		Color color;
+		color.hsl.hue = getDegrees(0);
+		color.hsl.saturation = getPercentage(1);
+		color.hsl.lightness = getPercentage(2);
+		color.alpha = getPercentage(3);
+		numbersDouble.clear();
+		addColor(color.normalizeRgb().hslToRgb());
+	}
+	void colorValues() {
+		Color color;
+		color.red = static_cast<float>(numbersDouble[0].first);
+		color.green = static_cast<float>(numbersDouble[1].first);
+		color.blue = static_cast<float>(numbersDouble[2].first);
+		if (numbersDouble.size() > 3)
+			color.alpha = static_cast<float>(numbersDouble[3].first);
+		else
+			color.alpha = 1;
+		numbersDouble.clear();
+		addColor(color);
+	}
+	void colorValueIntegers() {
+		Color color;
+		color.red = numbersI64[0].first / 255.0f;
+		color.green = numbersI64[1].first / 255.0f;
+		color.blue = numbersI64[2].first / 255.0f;
+		if (numbersI64.size() > 3)
+			color.alpha = numbersI64[3].first / 255.0f;
+		else
+			color.alpha = 1;
+		numbersI64.clear();
+		addColor(color);
+	}
+	double parseDouble(const char *start, const char *end) {
+		std::string v(start, end);
+		try {
+			return std::stod(v.c_str());
+		} catch(...) {
 			return 0;
 		}
-		int hexPairToInt(const char *hex_pair)
-		{
-			return hexToInt(hex_pair[0]) << 4 | hexToInt(hex_pair[1]);
-		}
-		void colorHexFull(bool with_hash_symbol)
-		{
-			Color color;
-			int start_index = with_hash_symbol ? 1 : 0;
-			color.red = hexPairToInt(ts + start_index) / 255.0f;
-			color.green = hexPairToInt(ts + start_index + 2) / 255.0f;
-			color.blue = hexPairToInt(ts + start_index + 4) / 255.0f;
-			color.alpha = 1;
-			addColor(color);
-		}
-		void colorHexShort(bool with_hash_symbol)
-		{
-			Color color;
-			int start_index = with_hash_symbol ? 1 : 0;
-			color.red = hexToInt(ts[start_index + 0]) / 15.0f;
-			color.green = hexToInt(ts[start_index + 1]) / 15.0f;
-			color.blue = hexToInt(ts[start_index + 2]) / 15.0f;
-			color.alpha = 1;
-			addColor(color);
-		}
-		void colorRgb()
-		{
-			Color color;
-			color.red = numbers_i64[0] / 255.0f;
-			color.green = numbers_i64[1] / 255.0f;
-			color.blue = numbers_i64[2] / 255.0f;
-			color.alpha = 1;
-			numbers_i64.clear();
-			addColor(color);
-		}
-		void colorRgba()
-		{
-			Color color;
-			color.red = numbers_i64[0] / 255.0f;
-			color.green = numbers_i64[1] / 255.0f;
-			color.blue = numbers_i64[2] / 255.0f;
-			color.alpha = static_cast<float>(numbers_double[0]);
-			numbers_i64.clear();
-			numbers_double.clear();
-			addColor(color);
-		}
-		void colorValues()
-		{
-			Color color;
-			color.red = static_cast<float>(numbers_double[0]);
-			color.green = static_cast<float>(numbers_double[1]);
-			color.blue = static_cast<float>(numbers_double[2]);
-			color.alpha = 1;
-			numbers_double.clear();
-			addColor(color);
-		}
-		void colorValueIntegers()
-		{
-			Color color;
-			color.red = numbers_i64[0] / 255.0f;
-			color.green = numbers_i64[1] / 255.0f;
-			color.blue = numbers_i64[2] / 255.0f;
-			color.alpha = 1;
-			numbers_i64.clear();
-			addColor(color);
-		}
-		double parseDouble(const char *start, const char *end)
-		{
-			string v(start, end);
-			try {
-				return stod(v.c_str());
-			} catch(...) {
-				return 0;
-			}
-		}
-		void clearNumberStacks()
-		{
-			numbers_i64.clear();
-			numbers_double.clear();
-		}
+	}
+	void clearNumberStacks() {
+		numbersI64.clear();
+		numbersDouble.clear();
+	}
 };
-
 
 %%{
 	machine text_file;
-	access fsm->;
-	number_i64 = digit+ >{ fsm->number_i64 = 0; } ${ fsm->number_i64 = fsm->number_i64 * 10 + (*p - '0'); };
+	access fsm.;
+	numberI64 = digit+ >{ fsm.numberI64 = 0; } ${ fsm.numberI64 = fsm.numberI64 * 10 + (*p - '0'); };
 	sign = '-' | '+';
-	number_double = sign? (([0-9]+ '.' [0-9]+) | ('.' [0-9]+) | ([0-9]+)) ('e'i sign? digit+)?;
-	number = number_i64 %{ fsm->numbers_i64.push_back(fsm->number_i64); };
-	real_number = number_double >{ fsm->number_double_start = p; } %{ fsm->numbers_double.push_back(fsm->parseDouble(fsm->number_double_start, p)); };
+	numberDouble = sign? (([0-9]+ '.' [0-9]+) | ('.' [0-9]+) | ([0-9]+)) ('e'i sign? digit+)?;
+	integer = numberI64 %{ fsm.numbersI64.emplace_back(fsm.numberI64, Unit::unitless); };
+	number = numberDouble >{ fsm.numberStart = p; } %{ fsm.numbersDouble.emplace_back(fsm.parseDouble(fsm.numberStart, p), Unit::unitless); };
+	degrees = numberDouble >{ fsm.numberStart = p; } %{ fsm.numbersDouble.emplace_back(fsm.parseDouble(fsm.numberStart, p), Unit::unitless); } ('deg'i %{ fsm.numbersDouble.back().second = Unit::degree; } | 'grad'i %{ fsm.numbersDouble.back().second = Unit::gradian; } | 'turn'i %{ fsm.numbersDouble.back().second = Unit::turn; } | 'rad'i %{ fsm.numbersDouble.back().second = Unit::radian; })?;
+	percentage = numberDouble >{ fsm.numberStart = p; } %{ fsm.numbersDouble.emplace_back(fsm.parseDouble(fsm.numberStart, p), Unit::percentage); } '%';
+	numberOrPercentage = numberDouble >{ fsm.numberStart = p; } %{ fsm.numbersDouble.emplace_back(fsm.parseDouble(fsm.numberStart, p), Unit::unitless); } ('%' %{ fsm.numbersDouble.back().second = Unit::percentage; })?;
+	newline = ('\n' | '\r\n') @{ fsm.handleNewline(); };
+	ws = [ \t];
+	separator = [,:;];
 
-	newline = ('\n' | '\r\n') @{ fsm->handleNewline(); };
-	anything = any | newline;
-	multi_line_comment := anything* :>> '*/' @{ fgoto main; };
-	single_line_comment := (any - newline)* :>> ('\n' | '\r\n') @{ fgoto main; };
+	action fullHexWithAlpha { configuration.fullHexWithAlpha }
+	action fullHex { configuration.fullHex }
+	action shortHexWithAlpha { configuration.shortHexWithAlpha }
+	action shortHex { configuration.shortHex }
+	action cssRgb { configuration.cssRgb }
+	action cssRgba { configuration.cssRgba }
+	action cssHsl { configuration.cssHsl }
+	action cssHsla { configuration.cssHsla }
+	action intValues { configuration.intValues }
+	action floatValues { configuration.floatValues }
+	action singleLineCComments { configuration.singleLineCComments }
+	action multiLineCComments { configuration.multiLineCComments }
+	action singleLineHashComments { configuration.singleLineHashComments }
 
-	main := |*
-		( '#'[0-9a-fA-F]{6} ) { if (configuration.full_hex) fsm->colorHexFull(true); };
-		( '#'[0-9a-fA-F]{3} ) { if (configuration.short_hex) fsm->colorHexShort(true); };
-		( [0-9a-fA-F]{6} ) { if (configuration.full_hex) fsm->colorHexFull(false); };
-		( [0-9a-fA-F]{3} ) { if (configuration.short_hex) fsm->colorHexShort(false); };
-		( 'rgb'i '(' space* number space* ',' space* number space* ',' space* number space* ')' ) { if (configuration.css_rgb) fsm->colorRgb(); else fsm->clearNumberStacks(); };
-		( 'rgba'i '(' space* number space* ',' space* number space* ',' space* number space* ',' space* real_number space* ')' ) { if (configuration.css_rgba) fsm->colorRgba(); else fsm->clearNumberStacks(); };
-		( number space* ',' space* number space* ',' space* number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
-		( number space+ number space+ number ) { if (configuration.int_values) fsm->colorValueIntegers(); else fsm->clearNumberStacks(); };
-		( real_number space* ',' space* real_number space* ',' space* real_number ) { if (configuration.float_values) fsm->colorValues(); else fsm->clearNumberStacks(); };
-		( real_number space+ real_number space+ real_number ) { if (configuration.float_values) fsm->colorValues(); else fsm->clearNumberStacks(); };
-		( '//' ) { if (configuration.single_line_c_comments) fgoto single_line_comment; };
-		( '/*' ) {  if (configuration.multi_line_c_comments) fgoto multi_line_comment; };
-		( '#' ) { if (configuration.single_line_hash_comments) fgoto single_line_comment; };
-		( space+ ) { };
-		( punct+ ) { };
-		( (any - (newline | space | punct | '//' | '/*'))+ ) { };
+	multiLineComment := |*
+		( '*/' ) { fgoto main; };
+		( any - newline ) { };
 		( newline ) { };
+		*|;
+	singleLineComment := |*
+		( newline ) { fgoto main; };
+		( any - newline ) { };
+		*|;
+	main := |*
+		( '#'[0-9a-fA-F]{8} ) when fullHexWithAlpha { fsm.colorHexWithAlphaFull(true); };
+		( '#'[0-9a-fA-F]{6} ) when fullHex { fsm.colorHexFull(true); };
+		( '#'[0-9a-fA-F]{4} ) when shortHexWithAlpha { fsm.colorHexWithAlphaShort(true); };
+		( '#'[0-9a-fA-F]{3} ) when shortHex { fsm.colorHexShort(true); };
+		( [0-9a-fA-F]{8} ) when fullHexWithAlpha { fsm.colorHexWithAlphaFull(false); };
+		( [0-9a-fA-F]{6} ) when fullHex { fsm.colorHexFull(false); };
+		( [0-9a-fA-F]{4} ) when shortHexWithAlpha { fsm.colorHexWithAlphaShort(false); };
+		( [0-9a-fA-F]{3} ) when shortHex { fsm.colorHexShort(false); };
+		( 'rgb'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* ')' ) when cssRgb { fsm.colorRgb(); };
+		( 'rgb'i '(' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssRgb { fsm.colorRgb(); };
+		( 'rgba'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgba(); };
+		( 'rgba'i '(' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgba(); };
+		( 'hsl'i '(' ws* degrees ws+ percentage ws+ percentage ws* ')' ) when cssHsl { fsm.colorHsl(); };
+		( 'hsl'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ')' ) when cssHsl { fsm.colorHsl(); };
+		( 'hsla'i '(' ws* degrees ws+ percentage ws+ percentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsla(); };
+		( 'hsla'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsla(); };
+		( integer ws* separator ws* integer ws* separator ws* integer (ws* separator ws* integer)? ) when intValues { fsm.colorValueIntegers(); };
+		( integer ws+ integer ws+ integer (ws+ integer)? ) when intValues { fsm.colorValueIntegers(); };
+		( number ws* separator ws* number ws* separator ws* number (ws* separator ws* number)? ) when floatValues { fsm.colorValues(); };
+		( number ws+ number ws+ number (ws+ number)? ) when floatValues { fsm.colorValues(); };
+		( '//' ) when singleLineCComments { fgoto singleLineComment; };
+		( '/*' ) when multiLineCComments { fgoto multiLineComment; };
+		( '#' ) when singleLineHashComments { fgoto singleLineComment; };
+		( any - newline ) { fsm.clearNumberStacks(); };
+		( newline ) { fsm.clearNumberStacks(); };
 		*|;
 }%%
 
 %% write data;
 
-bool scanner(TextFile &text_file, const Configuration &configuration)
-{
-	FSM fsm_struct;
-	FSM *fsm = &fsm_struct;
-	fsm->ts = 0;
-	fsm->te = 0;
-	fsm->line = 0;
-	fsm->line_start = 0;
-	fsm->column = 0;
-	fsm->buffer_offset = 0;
-	bool parse_error = false;
-	fsm->addColor = [&text_file](const Color &color){
-		text_file.addColor(color.normalizeRgb());
+bool scanner(TextFile &textFile, const Configuration &configuration) {
+	FSM fsm = {};
+	bool parseError = false;
+	fsm.addColor = [&textFile](const Color &color) {
+		textFile.addColor(color.normalizeRgb());
 	};
 	%% write init;
 	int have = 0;
-	while (1){
-		char *p = fsm->buffer + have;
-		int space = sizeof(fsm->buffer) - have;
-		if (space == 0){
-			text_file.outOfMemory();
+	while (1) {
+		char *p = fsm.buffer + have;
+		int ws = sizeof(fsm.buffer) - have;
+		if (ws == 0) {
+			textFile.outOfMemory();
 			break;
 		}
 		char *eof = 0;
-		auto read_size = text_file.read(fsm->buffer + have, space);
-		char *pe = p + read_size;
-		if (read_size > 0){
-			if (read_size < sizeof(fsm->buffer)) eof = pe;
+		auto readSize = textFile.read(fsm.buffer + have, ws);
+		char *pe = p + readSize;
+		if (readSize > 0) {
+			if (readSize < sizeof(fsm.buffer))
+				eof = pe;
 			%% write exec;
-			if (fsm->cs == text_file_error) {
-				parse_error = true;
-				text_file.syntaxError(fsm->line, fsm->ts - fsm->buffer - fsm->line_start, fsm->line, fsm->te - fsm->buffer - fsm->line_start);
+			if (fsm.cs == text_file_error) {
+				parseError = true;
+				textFile.syntaxError(fsm.line, fsm.ts - fsm.buffer - fsm.lineStart, fsm.line, fsm.te - fsm.buffer - fsm.lineStart);
 				break;
 			}
-			if (fsm->ts == 0){
+			if (fsm.ts == 0) {
 				have = 0;
-				fsm->line_start -= sizeof(fsm->buffer);
-			}else{
-				have = pe - fsm->ts;
-				memmove(fsm->buffer, fsm->ts, have);
-				int buffer_movement = fsm->ts - fsm->buffer;
-				fsm->te -= buffer_movement;
-				fsm->line_start -= buffer_movement;
-				fsm->ts = fsm->buffer;
-				fsm->buffer_offset += fsm->ts - fsm->buffer;
+				fsm.lineStart -= sizeof(fsm.buffer);
+			} else {
+				have = pe - fsm.ts;
+				std::memmove(fsm.buffer, fsm.ts, have);
+				int bufferMovement = fsm.ts - fsm.buffer;
+				fsm.te -= bufferMovement;
+				fsm.lineStart -= bufferMovement;
+				fsm.ts = fsm.buffer;
+				fsm.bufferOffset += fsm.ts - fsm.buffer;
 			}
-		}else{
+		} else {
 			break;
 		}
 	}
-	return parse_error == false;
+	return parseError == false;
 }
-
 }
