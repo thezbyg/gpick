@@ -153,10 +153,19 @@ if (ENABLE_NLS)
 	add_custom_target(translations ALL DEPENDS ${TRANSLATION_FILES})
 	add_custom_target(prepare-translations ALL DEPENDS ${TRANSLATION_SOURCE_FILES})
 	file(GLOB LUA_SOURCES share/gpick/*.lua)
+	foreach(file ${SOURCES})
+		file(RELATIVE_PATH file "${CMAKE_CURRENT_SOURCE_DIR}" "${file}")
+		list(APPEND RELATIVE_SOURCES "${file}")
+	endforeach()
+	foreach(file ${LUA_SOURCES})
+		file(RELATIVE_PATH file "${CMAKE_CURRENT_SOURCE_DIR}" "${file}")
+		list(APPEND RELATIVE_LUA_SOURCES "${file}")
+	endforeach()
 	add_custom_target(template
-		COMMAND ${XGETTEXT_EXECUTABLE} --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${SOURCES}
-		COMMAND ${XGETTEXT_EXECUTABLE} --language=C++ --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot ${LUA_SOURCES}
+		COMMAND ${XGETTEXT_EXECUTABLE} --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${RELATIVE_SOURCES}
+		COMMAND ${XGETTEXT_EXECUTABLE} --language=C++ --keyword=_ --keyword=N_ --from-code=UTF-8 --package-name=gpick --package-version=${GPICK_BUILD_VERSION_FULL} --output=${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot ${RELATIVE_LUA_SOURCES}
 		COMMAND ${MSGCAT_EXECUTABLE} --use-first ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_c.pot ${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/template_lua.pot --output-file=${CMAKE_CURRENT_BINARY_DIR}/template.pot
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 	)
 endif()
 
