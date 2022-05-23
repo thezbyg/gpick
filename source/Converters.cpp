@@ -19,294 +19,199 @@
 #include "Converters.h"
 #include "Converter.h"
 #include "ColorObject.h"
-#include <map>
-#include <set>
-using namespace std;
-Converters::Converters()
-{
+#include "common/First.h"
+#include <unordered_set>
+Converters::Converters() {
 }
-Converters::~Converters()
-{
-	for (auto converter: m_all_converters){
+Converters::~Converters() {
+	for (auto converter: m_allConverters) {
 		delete converter;
 	}
 }
-void Converters::add(Converter *converter)
-{
-	m_all_converters.push_back(converter);
+void Converters::add(Converter *converter) {
+	m_allConverters.push_back(converter);
 	if (converter->copy() && converter->hasSerialize())
-		m_copy_converters.push_back(converter);
+		m_copyConverters.push_back(converter);
 	if (converter->paste() && converter->hasDeserialize())
-		m_paste_converters.push_back(converter);
+		m_pasteConverters.push_back(converter);
 	m_converters[converter->name()] = converter;
 }
-void Converters::rebuildCopyPasteArrays()
-{
-	m_copy_converters.clear();
-	m_paste_converters.clear();
-	for (auto converter: m_all_converters){
+void Converters::rebuildCopyPasteArrays() {
+	m_copyConverters.clear();
+	m_pasteConverters.clear();
+	for (auto converter: m_allConverters) {
 		if (converter->copy() && converter->hasSerialize())
-			m_copy_converters.push_back(converter);
+			m_copyConverters.push_back(converter);
 		if (converter->paste() && converter->hasDeserialize())
-			m_paste_converters.push_back(converter);
+			m_pasteConverters.push_back(converter);
 	}
 }
-const std::vector<Converter*> &Converters::all() const
-{
-	return m_all_converters;
+const std::vector<Converter *> &Converters::all() const {
+	return m_allConverters;
 }
-const std::vector<Converter*> &Converters::allCopy() const
-{
-	return m_copy_converters;
+const std::vector<Converter *> &Converters::allCopy() const {
+	return m_copyConverters;
 }
-bool Converters::hasCopy() const
-{
-	return m_copy_converters.size() != 0;
+bool Converters::hasCopy() const {
+	return m_copyConverters.size() != 0;
 }
-const std::vector<Converter*> &Converters::allPaste() const
-{
-	return m_paste_converters;
+const std::vector<Converter *> &Converters::allPaste() const {
+	return m_pasteConverters;
 }
-Converter *Converters::byName(const char *name) const
-{
+Converter *Converters::byName(const char *name) const {
 	auto i = m_converters.find(name);
-	if (i != m_converters.end()){
+	if (i != m_converters.end())
 		return i->second;
-	}
 	return nullptr;
 }
 Converter *Converters::byName(const std::string &name) const {
 	auto i = m_converters.find(name);
-	if (i != m_converters.end()){
+	if (i != m_converters.end())
 		return i->second;
-	}
 	return nullptr;
 }
-Converter *Converters::display() const
-{
-	return m_display_converter;
+Converter *Converters::display() const {
+	return m_displayConverter;
 }
-Converter *Converters::colorList() const
-{
-	return m_color_list_converter;
+Converter *Converters::colorList() const {
+	return m_colorListConverter;
 }
 Converter *Converters::forType(Type type) const {
 	switch (type) {
 	case Type::display:
-		return m_display_converter;
+		return m_displayConverter;
 	case Type::colorList:
-		return m_color_list_converter;
+		return m_colorListConverter;
 	case Type::copy:
-		return m_copy_converters.size() != 0 ? m_copy_converters.front() : nullptr;
+		return m_copyConverters.size() != 0 ? m_copyConverters.front() : nullptr;
 	}
 	return nullptr;
 }
-void Converters::display(const char *name)
-{
-	m_display_converter = byName(name);
+void Converters::display(const char *name) {
+	m_displayConverter = byName(name);
 }
-void Converters::colorList(const char *name)
-{
-	m_color_list_converter = byName(name);
+void Converters::colorList(const char *name) {
+	m_colorListConverter = byName(name);
 }
-void Converters::display(const std::string &name)
-{
-	m_display_converter = byName(name);
+void Converters::display(const std::string &name) {
+	m_displayConverter = byName(name);
 }
-void Converters::colorList(const std::string &name)
-{
-	m_color_list_converter = byName(name);
+void Converters::colorList(const std::string &name) {
+	m_colorListConverter = byName(name);
 }
-void Converters::display(Converter *converter)
-{
-	m_display_converter = converter;
+void Converters::display(Converter *converter) {
+	m_displayConverter = converter;
 }
-void Converters::colorList(Converter *converter)
-{
-	m_color_list_converter = converter;
+void Converters::colorList(Converter *converter) {
+	m_colorListConverter = converter;
 }
-Converter *Converters::firstCopy() const
-{
-	if (m_copy_converters.size() == 0) return nullptr;
-	return m_copy_converters.front();
+Converter *Converters::firstCopy() const {
+	if (m_copyConverters.size() == 0)
+		return nullptr;
+	return m_copyConverters.front();
 }
-Converter *Converters::firstCopyOrAny() const
-{
-	if (m_copy_converters.size() == 0){
-		if (m_all_converters.size() == 0){
+Converter *Converters::firstCopyOrAny() const {
+	if (m_copyConverters.size() == 0) {
+		if (m_allConverters.size() == 0)
 			return nullptr;
-		}
-		return m_all_converters.front();
+		return m_allConverters.front();
 	}
-	return m_copy_converters.front();
+	return m_copyConverters.front();
 }
-Converter *Converters::byNameOrFirstCopy(const char *name) const
-{
-	if (name){
+Converter *Converters::byNameOrFirstCopy(const char *name) const {
+	if (name) {
 		Converter *result = byName(name);
-		if (result) return result;
+		if (result)
+			return result;
 	}
-	if (m_copy_converters.size() == 0) return nullptr;
-	return m_copy_converters.front();
+	if (m_copyConverters.size() == 0)
+		return nullptr;
+	return m_copyConverters.front();
 }
 std::string Converters::serialize(const ColorObject &colorObject, Type type) {
 	Converter *converter;
-	switch (type){
-		case Type::colorList:
-			converter = colorList();
-			break;
-		case Type::display:
-			converter = display();
-			break;
-		default:
-			converter = nullptr;
+	switch (type) {
+	case Type::colorList:
+		converter = colorList();
+		break;
+	case Type::display:
+		converter = display();
+		break;
+	default:
+		converter = nullptr;
 	}
-	if (converter){
-		return converter->serialize(&colorObject);
-	}
+	if (converter)
+		return converter->serialize(colorObject);
 	converter = firstCopyOrAny();
-	if (converter){
-		return converter->serialize(&colorObject);
-	}
+	if (converter)
+		return converter->serialize(colorObject);
 	return "";
 }
-std::string Converters::serialize(ColorObject *color_object, Type type)
-{
-	Converter *converter;
-	switch (type){
-		case Type::colorList:
-			converter = colorList();
-			break;
-		case Type::display:
-			converter = display();
-			break;
-		default:
-			converter = nullptr;
-	}
-	if (converter){
-		return converter->serialize(color_object);
-	}
-	converter = firstCopyOrAny();
-	if (converter){
-		return converter->serialize(color_object);
-	}
-	return "";
-}
-std::string Converters::serialize(const Color &color, Type type)
-{
-	ColorObject color_object("", color);
-	return serialize(&color_object, type);
-}
-bool Converters::deserialize(const char *value, ColorObject **output_color_object)
-{
-	ColorObject color_object;
-	multimap<float, ColorObject*, greater<float>> results;
-	if (m_display_converter){
-		Converter *converter = m_display_converter;
-		if (converter->hasDeserialize()){
-			float quality;
-			if (converter->deserialize(value, &color_object, quality)){
-				if (quality > 0){
-					results.insert(make_pair(quality, color_object.copy()));
-				}
-			}
-		}
-	}
-	for (auto &converter: m_paste_converters){
-		if (!converter->hasDeserialize())
-			continue;
-		float quality;
-		if (converter->deserialize(value, &color_object, quality)){
-			if (quality > 0){
-				results.insert(make_pair(quality, color_object.copy()));
-			}
-		}
-	}
-	bool first = true;
-	for (auto result: results){
-		if (first){
-			first = false;
-			*output_color_object = result.second;
-		}else{
-			result.second->release();
-		}
-	}
-	if (first){
-		return false;
-	}else{
-		return true;
-	}
+std::string Converters::serialize(const Color &color, Type type) {
+	ColorObject colorObject("", color);
+	return serialize(colorObject, type);
 }
 bool Converters::deserialize(const std::string &value, ColorObject &outputColorObject) {
-	std::multimap<float, ColorObject, greater<float>> results;
-	if (m_display_converter) {
-		Converter *converter = m_display_converter;
+	common::First<float, std::greater<float>, ColorObject> bestConversion;
+	ColorObject colorObject;
+	float quality;
+	if (m_displayConverter) {
+		Converter *converter = m_displayConverter;
 		if (converter->hasDeserialize()) {
-			float quality;
-			if (converter->deserialize(value.c_str(), &outputColorObject, quality)){
-				if (quality > 0){
-					results.insert(std::make_pair(quality, outputColorObject));
+			if (converter->deserialize(value.c_str(), colorObject, quality)) {
+				if (quality > 0) {
+					bestConversion(quality, colorObject);
 				}
 			}
 		}
 	}
-	for (auto &converter: m_paste_converters) {
+	for (auto &converter: m_pasteConverters) {
 		if (!converter->hasDeserialize())
 			continue;
-		float quality;
-		if (converter->deserialize(value.c_str(), &outputColorObject, quality)){
-			if (quality > 0){
-				results.insert(std::make_pair(quality, outputColorObject));
+		if (converter->deserialize(value.c_str(), colorObject, quality)) {
+			if (quality > 0) {
+				bestConversion(quality, colorObject);
 			}
 		}
 	}
-	bool first = true;
-	for (auto result: results) {
-		if (first) {
-			first = false;
-			outputColorObject = result.second;
-		} else break;
-	}
-	if (first) {
+	if (!bestConversion)
 		return false;
-	}else{
-		return true;
-	}
+	outputColorObject = bestConversion.data<ColorObject>();
+	return true;
 }
-void Converters::reorder(const char **names, size_t count)
-{
-	set<Converter*> used;
-	vector<Converter*> converters;
-	for (size_t i = 0; i < count; i++){
+void Converters::reorder(const char **names, size_t count) {
+	std::unordered_set<Converter *> used;
+	std::vector<Converter *> converters;
+	for (size_t i = 0; i < count; i++) {
 		auto converter = byName(names[i]);
-		if (converter){
+		if (converter) {
 			used.insert(converter);
 			converters.push_back(converter);
 		}
 	}
-	for (auto converter: m_all_converters){
-		if (used.count(converter) == 0){
+	for (auto converter: m_allConverters) {
+		if (used.count(converter) == 0) {
 			converters.push_back(converter);
 		}
 	}
-	m_all_converters.clear();
-	m_all_converters = converters;
+	m_allConverters.clear();
+	m_allConverters = converters;
 }
 void Converters::reorder(const std::vector<std::string> &names) {
-	set<Converter*> used;
-	vector<Converter*> converters;
-	for (size_t i = 0; i < names.size(); i++){
+	std::unordered_set<Converter *> used;
+	std::vector<Converter *> converters;
+	for (size_t i = 0; i < names.size(); i++) {
 		auto converter = byName(names[i]);
-		if (converter){
+		if (converter) {
 			used.insert(converter);
 			converters.push_back(converter);
 		}
 	}
-	for (auto converter: m_all_converters){
-		if (used.count(converter) == 0){
+	for (auto converter: m_allConverters) {
+		if (used.count(converter) == 0) {
 			converters.push_back(converter);
 		}
 	}
-	m_all_converters.clear();
-	m_all_converters = converters;
+	m_allConverters.clear();
+	m_allConverters = converters;
 }

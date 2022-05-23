@@ -69,7 +69,7 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 			for (auto &color: colors) {
 				if (position.index() + 1 == position.count())
 					position.last(true);
-				textLine = args->converter->serialize(color, position);
+				textLine = args->converter->serialize(*color, position);
 				if (position.first()) {
 					text << textLine;
 					position.first(false);
@@ -272,7 +272,7 @@ ColorObject *getFirst(GlobalState *gs) {
 		g_free(availableTargets);
 		return nullptr;
 	}
-	ColorObject *result = nullptr;
+	ColorObject result;
 	perMatchedTarget(availableTargets, static_cast<size_t>(availableTargetCount), [&result, clipboard, availableTargets, gs](size_t i, Target target) {
 		auto selectionData = gtk_clipboard_wait_for_contents(clipboard, availableTargets[i]);
 		if (!selectionData)
@@ -281,7 +281,7 @@ ColorObject *getFirst(GlobalState *gs) {
 		case Target::string: {
 			auto data = gtk_selection_data_get_data(selectionData);
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
-			if (gs->converters().deserialize(text.c_str(), &result))
+			if (gs->converters().deserialize(text.c_str(), result))
 				return VisitResult::stop;
 		} break;
 		case Target::color: {
@@ -295,7 +295,7 @@ ColorObject *getFirst(GlobalState *gs) {
 			color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
 			color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
-			result = new ColorObject("", color);
+			result = ColorObject("", color);
 			return VisitResult::stop;
 		} break;
 		case Target::serializedColorObjectList: {
@@ -309,13 +309,13 @@ ColorObject *getFirst(GlobalState *gs) {
 			if (colors.size() == 0)
 				return VisitResult::advance;
 			static Color defaultColor = {};
-			result = new ColorObject(colors[0]->getString("name", ""), colors[0]->getColor("color", defaultColor));
+			result = ColorObject(colors[0]->getString("name", ""), colors[0]->getColor("color", defaultColor));
 			return VisitResult::stop;
 		} break;
 		}
 		return VisitResult::advance;
 	});
-	return result;
+	return result.copy();
 }
 ColorList *getColors(GlobalState *gs) {
 	auto clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
@@ -337,9 +337,9 @@ ColorList *getColors(GlobalState *gs) {
 		case Target::string: {
 			auto data = gtk_selection_data_get_data(selectionData);
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
-			ColorObject *colorObject = nullptr;
+			ColorObject colorObject;
 			//TODO: multiple colors should be extracted from string, but converters do not support this right now
-			if (gs->converters().deserialize(text.c_str(), &colorObject)) {
+			if (gs->converters().deserialize(text.c_str(), colorObject)) {
 				color_list_add_color_object(colorList, colorObject, false);
 				success = true;
 				return VisitResult::stop;

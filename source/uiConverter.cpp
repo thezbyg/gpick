@@ -58,7 +58,7 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	c.alpha = 0.9f;
 	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
 	color_object->setName(_("Test color"));
-	string text_line = converter->serialize(color_object, position);
+	string text_line = converter->serialize(*color_object, position);
 	gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 		CONVERTERLIST_LABEL, converter->label().c_str(),
 		CONVERTERLIST_EXAMPLE, text_line.c_str(),

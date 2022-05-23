@@ -67,7 +67,7 @@ static void update(DialogInputArgs *args, GtkWidget *except_widget)
 	auto color = args->color_object->getColor();
 	gtk_color_set_color(GTK_COLOR(args->color_widget), &color, "");
 	if (except_widget != args->text_input){
-		string text = args->gs->converters().serialize(args->color_object, Converters::Type::display);
+		string text = args->gs->converters().serialize(*args->color_object, Converters::Type::display);
 		common::SetOnScopeEnd ignoreTextChange(args->ignore_text_change = true, false);
 		gtk_entry_set_text(GTK_ENTRY(args->text_input), text.c_str());
 	}
@@ -112,10 +112,9 @@ static void onTextChanged(GtkWidget *entry, DialogInputArgs *args)
 {
 	if (args->ignore_text_change)
 		return;
-	ColorObject *color_object;
-	if (args->gs->converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(entry)), &color_object)){
-		args->color_object->setColor(color_object->getColor());
-		color_object->release();
+	ColorObject color_object;
+	if (args->gs->converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(entry)), color_object)){
+		args->color_object->setColor(color_object.getColor());
 		update(args, entry);
 	}
 }

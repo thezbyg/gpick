@@ -249,12 +249,11 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		gtk_zoomed_set_size(GTK_ZOOMED(zoomed_display), options->getInt32("zoom_size", 150));
 	}
 	void updateColorWidget() {
-		ColorObject *colorObject;
-		if (gs.converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(colorInput)), &colorObject)) {
-			auto color = colorObject->getColor();
+		ColorObject colorObject;
+		if (gs.converters().deserialize((char*)gtk_entry_get_text(GTK_ENTRY(colorInput)), colorObject)) {
+			auto color = colorObject.getColor();
 			auto text = gs.converters().serialize(colorObject, Converters::Type::display);
 			gtk_color_set_color(GTK_COLOR(colorWidget), color, text);
-			colorObject->release();
 			gtk_widget_set_sensitive(GTK_WIDGET(colorWidget), true);
 		} else {
 			gtk_widget_set_sensitive(GTK_WIDGET(colorWidget), false);

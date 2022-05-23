@@ -393,12 +393,12 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 };
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	std::string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
+	std::string text = args->gs.converters().serialize(*color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 0, color_object->reference(), 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_row(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
 {
-	std::string text = args->gs.converters().serialize(color_object, Converters::Type::colorList);
+	std::string text = args->gs.converters().serialize(*color_object, Converters::Type::colorList);
 	gtk_list_store_set(store, iter, 1, text.c_str(), 2, color_object->getName().c_str(), -1);
 }
 static void palette_list_entry_update_name(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object)
@@ -481,7 +481,7 @@ static void updateAll(GtkTreeView *treeView, GlobalState &gs) {
 	while (valid) {
 		ColorObject *colorObject;
 		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
-		std::string text = gs.converters().serialize(colorObject, Converters::Type::colorList);
+		std::string text = gs.converters().serialize(*colorObject, Converters::Type::colorList);
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter, 1, text.c_str(), -1);
 		valid = gtk_tree_model_iter_next(model, &iter);
 	}

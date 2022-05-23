@@ -1886,9 +1886,7 @@ struct FloatingPickerAction
 			if (args->startupOptions.converter_name.length() > 0){
 				auto converter = args->gs->converters().byName(args->startupOptions.converter_name);
 				if (converter != nullptr){
-					auto color_object = color_list_new_color_object(args->gs->getColorList(), &color);
-					text = converter->serialize(color_object);
-					color_object->release();
+					text = converter->serialize(color);
 				}
 			}else{
 				auto converter = args->gs->converters().firstCopy();

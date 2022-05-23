@@ -18,7 +18,7 @@
 
 #ifndef GPICK_CONVERTERS_H_
 #define GPICK_CONVERTERS_H_
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <string>
 struct ColorObject;
@@ -50,21 +50,17 @@ struct Converters {
 	Converter *firstCopy() const;
 	Converter *firstCopyOrAny() const;
 	Converter *byNameOrFirstCopy(const char *name) const;
-	std::string serialize(ColorObject *color_object, Type type);
 	std::string serialize(const ColorObject &colorObject, Type type);
 	std::string serialize(const Color &color, Type type);
-	bool deserialize(const char *value, ColorObject **color_object);
 	bool deserialize(const std::string &value, ColorObject &outputColorObject);
 	void rebuildCopyPasteArrays();
 	void reorder(const char **names, size_t count);
 	void reorder(const std::vector<std::string> &names);
 	bool hasCopy() const;
 private:
-	std::map<std::string, Converter *> m_converters;
-	std::vector<Converter *> m_all_converters;
-	std::vector<Converter *> m_copy_converters;
-	std::vector<Converter *> m_paste_converters;
-	Converter *m_display_converter;
-	Converter *m_color_list_converter;
+	std::unordered_map<std::string, Converter *> m_converters;
+	std::vector<Converter *> m_allConverters, m_copyConverters, m_pasteConverters;
+	Converter *m_displayConverter;
+	Converter *m_colorListConverter;
 };
 #endif /* GPICK_CONVERTERS_H_ */

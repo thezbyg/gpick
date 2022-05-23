@@ -29,6 +29,7 @@
 #include "dynv/Map.h"
 #include "version/Version.h"
 #include "parser/TextFile.h"
+#include "common/First.h"
 #include <glib.h>
 #include <fstream>
 #include <string>
@@ -256,7 +257,7 @@ bool ImportExport::exportTXT()
 	getOrderedColors(m_color_list, ordered);
 	ConverterSerializePosition position(ordered.size());
 	for (auto color: ordered){
-		string line = m_converter->serialize(color, position);
+		string line = m_converter->serialize(*color, position);
 		if (m_include_color_names) {
 			f << line << " " << color->getName() << endl;
 		} else {
@@ -277,58 +278,46 @@ bool ImportExport::exportTXT()
 	f.close();
 	return true;
 }
-bool ImportExport::importTXT()
-{
-	ifstream f(m_filename.c_str(), ios::in);
-	if (!f.is_open()){
+bool ImportExport::importTXT() {
+	std::ifstream f(m_filename.c_str(), std::ios::in);
+	if (!f.is_open()) {
 		m_last_error = Error::could_not_open_file;
 		return false;
 	}
-	ColorObject *color_object;
-	Color dummy_color;
-	multimap<float, ColorObject*, greater<float>> valid_converters;
-	string line;
-	string strip_chars = " \t";
+	common::First<float, std::greater<float>, ColorObject> bestConversion;
+	ColorObject colorObject;
+	float quality;
+	std::string line, stripChars = " \t";
 	bool imported = false;
-	for(;;){
-		getline(f, line);
-		stripLeadingTrailingChars(line, strip_chars);
-		if (!line.empty()){
-			for (auto &converter: m_converters->allPaste()){
+	for(;;) {
+		std::getline(f, line);
+		stripLeadingTrailingChars(line, stripChars);
+		if (!line.empty()) {
+			for (auto &converter: m_converters->allPaste()) {
 				if (!converter->hasDeserialize())
 					continue;
-				color_object = color_list_new_color_object(m_color_list, &dummy_color);
-				float quality;
-				if (converter->deserialize(line.c_str(), color_object, quality)){
-					if (quality > 0){
-						valid_converters.insert(make_pair(quality, color_object));
-					}else{
-						color_object->release();
+				if (converter->deserialize(line.c_str(), colorObject, quality)) {
+					if (quality > 0) {
+						bestConversion(quality, colorObject);
 					}
-				}else{
-					color_object->release();
 				}
 			}
-			bool first = true;
-			for (auto result: valid_converters){
-				if (first){
-					first = false;
-					color_list_add_color_object(m_color_list, result.second, true);
-					imported = true;
-				}
-				result.second->release();
+			if (bestConversion) {
+				color_list_add_color_object(m_color_list, bestConversion.data<ColorObject>(), true);
+				imported = true;
+				bestConversion.reset();
 			}
-			valid_converters.clear();
 		}
 		if (!f.good()) {
-			if (f.eof()) break;
+			if (f.eof())
+				break;
 			f.close();
 			m_last_error = Error::file_read_error;
 			return false;
 		}
 	}
 	f.close();
-	if (!imported){
+	if (!imported) {
 		m_last_error = Error::no_colors_imported;
 	}
 	return imported;
@@ -384,7 +373,7 @@ static void htmlColor(ColorObject* color_object, Converter *converter, bool incl
 			stream << name << ":<br/>";
 	}
 	if (converter)
-		stream << "<span>" << converter->serialize(color) << "</span></div>";
+		stream << "<span>" << converter->serialize(*color_object) << "</span></div>";
 	else
 		stream << "<span>" << HtmlRGB(color) << "</span></div>";
 }

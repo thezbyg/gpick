@@ -22,8 +22,7 @@
 #include "lua/Ref.h"
 struct ColorObject;
 struct Color;
-struct ConverterSerializePosition
-{
+struct ConverterSerializePosition {
 	ConverterSerializePosition();
 	ConverterSerializePosition(size_t count);
 	bool first() const;
@@ -33,12 +32,11 @@ struct ConverterSerializePosition
 	void incrementIndex();
 	void first(bool value);
 	void last(bool value);
-	private:
+private:
 	bool m_first, m_last;
 	size_t m_index, m_count;
 };
-struct Converter
-{
+struct Converter {
 	Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize);
 	const std::string &name() const;
 	const std::string &label() const;
@@ -48,13 +46,11 @@ struct Converter
 	bool paste() const;
 	void copy(bool value);
 	void paste(bool value);
-	std::string serialize(const ColorObject *color_object, const ConverterSerializePosition &position);
-	std::string serialize(const ColorObject *color_object);
 	std::string serialize(const ColorObject &colorObject, const ConverterSerializePosition &position);
 	std::string serialize(const ColorObject &colorObject);
 	std::string serialize(const Color &color);
-	bool deserialize(const char *value, ColorObject *color_object, float &quality);
-	private:
+	bool deserialize(const char *value, ColorObject &colorObject, float &quality);
+private:
 	std::string m_name;
 	std::string m_label;
 	lua::Ref m_serialize, m_deserialize;

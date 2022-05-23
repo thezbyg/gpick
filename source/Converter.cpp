@@ -35,21 +35,19 @@
 #include <functional>
 #include <lualib.h>
 #include <lauxlib.h>
-using namespace std;
 Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize):
 	m_name(name),
 	m_label(label),
-	m_serialize(move(serialize)),
-	m_deserialize(move(deserialize)),
+	m_serialize(std::move(serialize)),
+	m_deserialize(std::move(deserialize)),
 	m_copy(false),
-	m_paste(false)
-{
+	m_paste(false) {
 }
 std::string Converter::serialize(const ColorObject &colorObject, const ConverterSerializePosition &position) {
 	if (!m_serialize.valid())
 		return "";
 	lua_State *L = m_serialize.script();
-	int stack_top = lua_gettop(L);
+	int stackTop = lua_gettop(L);
 	m_serialize.get();
 	ColorObject tmp = colorObject;
 	lua::pushColorObject(L, &tmp);
@@ -63,135 +61,106 @@ std::string Converter::serialize(const ColorObject &colorObject, const Converter
 	lua_pushinteger(L, position.count());
 	lua_setfield(L, -2, "count");
 	int status = lua_pcall(L, 2, 1, 0);
-	if (status == 0){
-		if (lua_type(L, -1) == LUA_TSTRING){
-			string result = luaL_checkstring(L, -1);
-			lua_settop(L, stack_top);
+	if (status == 0) {
+		if (lua_type(L, -1) == LUA_TSTRING) {
+			std::string result = luaL_checkstring(L, -1);
+			lua_settop(L, stackTop);
 			return result;
-		}else{
-			cerr << "serialize: returned not a string value \"" << m_name << "\"" << endl;
+		} else {
+			std::cerr << "serialize: returned not a string value \"" << m_name << "\"\n";
 		}
-	}else{
-		cerr << "serialize: " << lua_tostring(L, -1) << endl;
+	} else {
+		std::cerr << "serialize: " << lua_tostring(L, -1) << '\n';
 	}
-	lua_settop(L, stack_top);
+	lua_settop(L, stackTop);
 	return "";
 }
-std::string Converter::serialize(const ColorObject *color_object, const ConverterSerializePosition &position)
-{
-	return serialize(*color_object, position);
-}
-bool Converter::deserialize(const char *value, ColorObject *color_object, float &quality)
-{
+bool Converter::deserialize(const char *value, ColorObject &colorObject, float &quality) {
 	if (!m_deserialize.valid())
 		return "";
 	lua_State *L = m_deserialize.script();
-	int stack_top = lua_gettop(L);
+	int stackTop = lua_gettop(L);
 	m_deserialize.get();
 	lua_pushstring(L, value);
-	lua::pushColorObject(L, color_object);
+	lua::pushColorObject(L, &colorObject);
 	int status = lua_pcall(L, 2, 1, 0);
-	if (status == 0){
-		if (lua_type(L, -1) == LUA_TNUMBER){
+	if (status == 0) {
+		if (lua_type(L, -1) == LUA_TNUMBER) {
 			quality = static_cast<float>(luaL_checknumber(L, -1));
-			lua_settop(L, stack_top);
+			lua_settop(L, stackTop);
 			return true;
-		}else{
-			cerr << "deserialize: returned not a number value \"" << m_name <<"\"" << endl;
+		} else {
+			std::cerr << "deserialize: returned not a number value \"" << m_name << "\"\n";
 		}
-	}else{
-		cerr << "deserialize: " << lua_tostring(L, -1) << endl;
+	} else {
+		std::cerr << "deserialize: " << lua_tostring(L, -1) << '\n';
 	}
-	lua_settop(L, stack_top);
+	lua_settop(L, stackTop);
 	return false;
-}
-std::string Converter::serialize(const ColorObject *color_object)
-{
-	ConverterSerializePosition position;
-	return serialize(color_object, position);
 }
 std::string Converter::serialize(const ColorObject &colorObject) {
 	ConverterSerializePosition position;
 	return serialize(colorObject, position);
 }
-std::string Converter::serialize(const Color &color)
-{
-	ColorObject color_object("", color);
+std::string Converter::serialize(const Color &color) {
+	ColorObject colorObject("", color);
 	ConverterSerializePosition position;
-	return serialize(&color_object, position);
+	return serialize(colorObject, position);
 }
-const std::string &Converter::name() const
-{
+const std::string &Converter::name() const {
 	return m_name;
 }
-const std::string &Converter::label() const
-{
+const std::string &Converter::label() const {
 	return m_label;
 }
-bool Converter::hasSerialize() const
-{
+bool Converter::hasSerialize() const {
 	return m_serialize.valid();
 }
-bool Converter::hasDeserialize() const
-{
+bool Converter::hasDeserialize() const {
 	return m_deserialize.valid();
 }
-void Converter::copy(bool value)
-{
+void Converter::copy(bool value) {
 	m_copy = value;
 }
-void Converter::paste(bool value)
-{
+void Converter::paste(bool value) {
 	m_paste = value;
 }
-bool Converter::copy() const
-{
+bool Converter::copy() const {
 	return m_copy;
 }
-bool Converter::paste() const
-{
+bool Converter::paste() const {
 	return m_paste;
 }
-
 ConverterSerializePosition::ConverterSerializePosition():
 	m_first(true),
 	m_last(true),
 	m_index(0),
-	m_count(1)
-{
+	m_count(1) {
 }
 ConverterSerializePosition::ConverterSerializePosition(size_t count):
 	m_first(true),
 	m_last(count <= 1),
 	m_index(0),
-	m_count(count)
-{
+	m_count(count) {
 }
-bool ConverterSerializePosition::first() const
-{
+bool ConverterSerializePosition::first() const {
 	return m_first;
 }
-bool ConverterSerializePosition::last() const
-{
+bool ConverterSerializePosition::last() const {
 	return m_last;
 }
-size_t ConverterSerializePosition::index() const
-{
+size_t ConverterSerializePosition::index() const {
 	return m_index;
 }
-size_t ConverterSerializePosition::count() const
-{
+size_t ConverterSerializePosition::count() const {
 	return m_count;
 }
-void ConverterSerializePosition::incrementIndex()
-{
+void ConverterSerializePosition::incrementIndex() {
 	m_index++;
 }
-void ConverterSerializePosition::first(bool value)
-{
+void ConverterSerializePosition::first(bool value) {
 	m_first = value;
 }
-void ConverterSerializePosition::last(bool value)
-{
+void ConverterSerializePosition::last(bool value) {
 	m_last = value;
 }
