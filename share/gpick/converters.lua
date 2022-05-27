@@ -16,49 +16,6 @@ local serializeWebHex = function(colorObject)
 		return '#' .. format('%02x%02x%02x', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255))
 	end
 end
-local deserializeWebHex = function(text, colorObject)
-	local c = color:new()
-	local findStart, findEnd, red, green, blue = string.find(text, '#([%x][%x])([%x][%x])([%x][%x])[^%x]?')
-	if findStart ~= nil then
-		red = tonumber(red, 16)
-		green = tonumber(green, 16)
-		blue = tonumber(blue, 16)
-		c:red(red / 255)
-		c:green(green / 255)
-		c:blue(blue / 255)
-		colorObject:setColor(c)
-		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
-	else
-		return -1
-	end
-end
-local serializeWebHexWithAlpha = function(colorObject)
-	if not colorObject then return nil end
-	local c = colorObject:getColor()
-	if options.upperCase then
-		return '#' .. format('%02X%02X%02X%02X', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255), round(c:alpha() * 255))
-	else
-		return '#' .. format('%02x%02x%02x%02x', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255), round(c:alpha() * 255))
-	end
-end
-local deserializeWebHexWithAlpha = function(text, colorObject)
-	local c = color:new()
-	local findStart, findEnd, red, green, blue, alpha = string.find(text, '#([%x][%x])([%x][%x])([%x][%x])([%x][%x])[^%x]?')
-	if findStart ~= nil then
-		red = tonumber(red, 16)
-		green = tonumber(green, 16)
-		blue = tonumber(blue, 16)
-		alpha = tonumber(alpha, 16)
-		c:red(red / 255)
-		c:green(green / 255)
-		c:blue(blue / 255)
-		c:alpha(alpha / 255)
-		colorObject:setColor(c)
-		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
-	else
-		return -1
-	end
-end
 local serializeWebHexNoHash = function(colorObject)
 	if not colorObject then return nil end
 	local c = colorObject:getColor()
@@ -103,36 +60,6 @@ local deserializeWebHex3Digit = function(text, colorObject)
 		c:red(red / 15)
 		c:green(green / 15)
 		c:blue(blue / 15)
-		colorObject:setColor(c)
-		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
-	else
-		return -1
-	end
-end
-local serializeCssRgb = function(colorObject)
-	local c = colorObject:getColor()
-	return 'rgb(' .. format('%d, %d, %d', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255)) .. ')'
-end
-local deserializeCssRgb = function(text, colorObject)
-	local c = color:new()
-	local findStart, findEnd, red, green, blue = string.find(text, 'rgb%([%s]*([%d]*)[%s]*,[%s]*([%d]*)[%s]*,[%s]*([%d]*)[%s]*%)')
-	if findStart ~= nil then
-		c:rgb(math.min(1, red / 255), math.min(1, green / 255), math.min(1, blue / 255))
-		colorObject:setColor(c)
-		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
-	else
-		return -1
-	end
-end
-local serializeCssRgba = function(colorObject)
-	local c = colorObject:getColor()
-	return 'rgba(' .. format('%d, %d, %d, %.3f', round(c:red() * 255), round(c:green() * 255), round(c:blue() * 255), c:alpha()) .. ')'
-end
-local deserializeCssRgba = function(text, colorObject)
-	local c = color:new()
-	local findStart, findEnd, red, green, blue, alpha = string.find(text, 'rgba%([%s]*([%d]*)[%s]*,[%s]*([%d]*)[%s]*,[%s]*([%d]*)[%s]*,[%s]*([%d]*.[%d]*)[%s]*%)')
-	if findStart ~= nil then
-		c:rgba(math.min(1, red / 255), math.min(1, green / 255), math.min(1, blue / 255), tonumber(alpha))
 		colorObject:setColor(c)
 		return 1 - (math.atan(findStart - 1) / math.pi) - (math.atan(string.len(text) - findEnd) / math.pi)
 	else
@@ -293,14 +220,10 @@ local deserializeValueRgba = function(text, colorObject)
 		return -1
 	end
 end
-gpick:addConverter('color_web_hex', _("Web: hex code"), serializeWebHex, deserializeWebHex)
-gpick:addConverter('color_web_hex_with_alpha', _("Web: hex code with alpha"), serializeWebHexWithAlpha, deserializeWebHexWithAlpha)
 gpick:addConverter('color_web_hex_3_digit', _("Web: hex code (3 digits)"), serializeWebHex3Digit, deserializeWebHex3Digit)
 gpick:addConverter('color_web_hex_no_hash', _("Web: hex code (no hash symbol)"), serializeWebHexNoHash, deserializeWebHexNoHash)
 gpick:addConverter('color_css_hsl', _("CSS: hue saturation lightness"), serializeCssHsl, deserializeCssHsl)
-gpick:addConverter('color_css_rgb', _("CSS: red green blue"), serializeCssRgb, deserializeCssRgb)
 gpick:addConverter('color_css_hsla', _("CSS: hue saturation lightness alpha"), serializeCssHsla, deserializeCssHsla)
-gpick:addConverter('color_css_rgba', _("CSS: red green blue alpha"), serializeCssRgba, deserializeCssRgba)
 gpick:addConverter('css_color_hex', 'CSS(color)', serializeCssColorHex)
 gpick:addConverter('css_background_color_hex', 'CSS(background-color)', serializeCssBackgroundColorHex)
 gpick:addConverter('css_border_color_hex', 'CSS(border-color)', serializeCssBorderColorHex)

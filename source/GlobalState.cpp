@@ -21,6 +21,7 @@
 #include "ScreenReader.h"
 #include "Converters.h"
 #include "Converter.h"
+#include "InternalConverters.h"
 #include "Random.h"
 #include "color_names/ColorNames.h"
 #include "Sampler.h"
@@ -41,6 +42,35 @@
 #include <lauxlib.h>
 #include <fstream>
 #include <iostream>
+namespace {
+struct ConverterOptions: public Converter::Options, public IEventHandler {
+	ConverterOptions(const dynv::Map &settings):
+		m_settings(settings) {
+	}
+	void update() {
+		auto options = m_settings.getMap("gpick.options");
+		upperCaseHex = options->getString("hex_case", "upper") == "upper";
+		cssPercentages = options->getBool("css_percentages", false);
+		cssAlphaPercentage = options->getBool("css_alpha_percentage", false);
+	}
+	virtual ~ConverterOptions() {
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::optionsUpdate:
+			update();
+			break;
+		case EventType::convertersUpdate:
+		case EventType::displayFiltersUpdate:
+		case EventType::colorDictionaryUpdate:
+		case EventType::paletteChanged:
+			break;
+		}
+	}
+private:
+	const dynv::Map &m_settings;
+};
+}
 struct GlobalState::Impl {
 	GlobalState *m_decl;
 	ColorNames *m_colorNames;
@@ -57,6 +87,7 @@ struct GlobalState::Impl {
 	GtkWidget *m_statusBar;
 	IColorSource *m_colorSource;
 	EventBus m_eventBus;
+	ConverterOptions m_converterOptions;
 	Impl(GlobalState *decl):
 		m_decl(decl),
 		m_colorNames(nullptr),
@@ -66,9 +97,11 @@ struct GlobalState::Impl {
 		m_random(nullptr),
 		m_transformationChain(nullptr),
 		m_statusBar(nullptr),
-		m_colorSource(nullptr) {
+		m_colorSource(nullptr),
+		m_converterOptions(m_settings) {
 	}
-	~Impl() {
+	virtual ~Impl() {
+		m_eventBus.unsubscribe(m_converterOptions);
 		if (m_transformationChain != nullptr)
 			delete m_transformationChain;
 		if (m_colorList != nullptr)
@@ -157,6 +190,11 @@ struct GlobalState::Impl {
 		}
 		return result;
 	}
+	void initializeConverters() {
+		m_eventBus.subscribe(EventType::optionsUpdate, m_converterOptions);
+		m_converterOptions.update();
+		addInternalConverters(m_converters, m_converterOptions);
+	}
 	bool loadConverters() {
 		auto converters = m_settings.getOrCreateMap("gpick.converters");
 		if (converters->size() == 0) {
@@ -222,6 +260,7 @@ struct GlobalState::Impl {
 		loadSettings();
 		loadColorNames();
 		createColorList();
+		initializeConverters();
 		initializeLua();
 		loadConverters();
 		loadTransformationChain();

@@ -29,12 +29,19 @@ Converters::~Converters() {
 	}
 }
 void Converters::add(Converter *converter) {
+	if (m_converters.find(converter->name()) != m_converters.end()) {
+		delete converter;
+		return;
+	}
 	m_allConverters.push_back(converter);
 	if (converter->copy() && converter->hasSerialize())
 		m_copyConverters.push_back(converter);
 	if (converter->paste() && converter->hasDeserialize())
 		m_pasteConverters.push_back(converter);
 	m_converters[converter->name()] = converter;
+}
+void Converters::add(const char *name, const char *label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize) {
+	add(new Converter(name, label, serialize, deserialize));
 }
 void Converters::rebuildCopyPasteArrays() {
 	m_copyConverters.clear();
@@ -166,7 +173,7 @@ bool Converters::deserialize(const std::string &value, ColorObject &outputColorO
 		}
 	}
 	for (auto &converter: m_pasteConverters) {
-		if (!converter->hasDeserialize())
+		if (converter == m_displayConverter || !converter->hasDeserialize())
 			continue;
 		if (converter->deserialize(value.c_str(), colorObject, quality)) {
 			if (quality > 0) {

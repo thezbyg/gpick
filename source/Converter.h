@@ -18,8 +18,10 @@
 
 #ifndef GPICK_CONVERTER_H_
 #define GPICK_CONVERTER_H_
-#include <string>
 #include "lua/Ref.h"
+#include "common/Scoped.h"
+#include <string>
+#include <locale>
 struct ColorObject;
 struct Color;
 struct ConverterSerializePosition {
@@ -37,6 +39,38 @@ private:
 	size_t m_index, m_count;
 };
 struct Converter {
+	struct Options {
+		bool upperCaseHex;
+		bool cssPercentages;
+		bool cssAlphaPercentage;
+	};
+	static Options emptyOptions;
+	template<typename T>
+	struct Callback {
+		Callback():
+			m_callback(nullptr),
+			m_options(emptyOptions) {
+		}
+		Callback(T callback, const Options &options):
+			m_callback(callback),
+			m_options(options) {
+		}
+		template<typename... Args>
+		auto operator()(Args &... args) const {
+			auto locale = std::setlocale(LC_NUMERIC, "C");
+			common::Scoped resetLocale(std::setlocale, LC_NUMERIC, locale);
+			return m_callback(args..., m_options);
+		}
+		explicit operator bool() const {
+			return m_callback;
+		}
+	private:
+		T m_callback;
+		const Options &m_options;
+	};
+	using Serialize = std::string (*)(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options);
+	using Deserialize = bool (*)(const char *value, ColorObject &colorObject, float &quality, const Options &options);
+	Converter(const char *name, const char *label, Callback<Serialize> serialize, Callback<Deserialize> deserialize);
 	Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize);
 	const std::string &name() const;
 	const std::string &label() const;
@@ -54,6 +88,8 @@ private:
 	std::string m_name;
 	std::string m_label;
 	lua::Ref m_serialize, m_deserialize;
+	Callback<Serialize> m_serializeCallback;
+	Callback<Deserialize> m_deserializeCallback;
 	bool m_copy, m_paste;
 };
 #endif /* GPICK_CONVERTER_H_ */

@@ -35,6 +35,7 @@
 #include <functional>
 #include <lualib.h>
 #include <lauxlib.h>
+Converter::Options Converter::emptyOptions = {};
 Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize):
 	m_name(name),
 	m_label(label),
@@ -43,7 +44,17 @@ Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, 
 	m_copy(false),
 	m_paste(false) {
 }
+Converter::Converter(const char *name, const char *label, Callback<Serialize> serialize, Callback<Deserialize> deserialize):
+	m_name(name),
+	m_label(label),
+	m_serializeCallback(serialize),
+	m_deserializeCallback(deserialize),
+	m_copy(false),
+	m_paste(false) {
+}
 std::string Converter::serialize(const ColorObject &colorObject, const ConverterSerializePosition &position) {
+	if (m_serializeCallback)
+		return m_serializeCallback(colorObject, position);
 	if (!m_serialize.valid())
 		return "";
 	lua_State *L = m_serialize.script();
@@ -76,6 +87,8 @@ std::string Converter::serialize(const ColorObject &colorObject, const Converter
 	return "";
 }
 bool Converter::deserialize(const char *value, ColorObject &colorObject, float &quality) {
+	if (m_deserializeCallback)
+		return m_deserializeCallback(value, colorObject, quality);
 	if (!m_deserialize.valid())
 		return "";
 	lua_State *L = m_deserialize.script();
@@ -114,10 +127,10 @@ const std::string &Converter::label() const {
 	return m_label;
 }
 bool Converter::hasSerialize() const {
-	return m_serialize.valid();
+	return m_serialize.valid() || m_serializeCallback;
 }
 bool Converter::hasDeserialize() const {
-	return m_deserialize.valid();
+	return m_deserialize.valid() || m_deserializeCallback;
 }
 void Converter::copy(bool value) {
 	m_copy = value;

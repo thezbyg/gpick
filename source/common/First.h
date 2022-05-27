@@ -18,22 +18,10 @@
 
 #ifndef GPICK_COMMON_FIRST_H_
 #define GPICK_COMMON_FIRST_H_
+#include "TypeTraits.h"
 #include <tuple>
 #include <utility>
-#include <type_traits>
 namespace common {
-namespace detail {
-template<class T>
-struct UnwrapRefWrapper {
-	using type = T;
-};
-template<class T>
-struct UnwrapRefWrapper<std::reference_wrapper<T>> {
-	using type = T &;
-};
-template<class T>
-using UnwrapAndDecay = typename UnwrapRefWrapper<std::decay_t<T>>::type;
-}
 template<typename ValueT, typename OpT = std::less<ValueT>, typename... Args> struct First {
 	First():
 		m_empty(true) {

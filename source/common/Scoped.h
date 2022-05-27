@@ -18,12 +18,12 @@
 
 #ifndef GPICK_COMMON_SCOPED_H_
 #define GPICK_COMMON_SCOPED_H_
+#include "TypeTraits.h"
 #include <tuple>
 #include <utility>
-#include <type_traits>
 namespace common {
 namespace detail {
-template<typename Function, typename Tuple, size_t... I>
+template<typename Function, typename Tuple, std::size_t... I>
 auto apply(Function &f, Tuple &t, std::index_sequence<I...>) {
 	return f(std::get<I>(t)...);
 }
@@ -32,16 +32,6 @@ auto apply(Function &f, Tuple &t) {
 	static constexpr auto size = std::tuple_size<Tuple>::value;
 	return apply(f, t, std::make_index_sequence<size> {});
 }
-template<class T>
-struct UnwrapRefWrapper {
-	using type = T;
-};
-template<class T>
-struct UnwrapRefWrapper<std::reference_wrapper<T>> {
-	using type = T &;
-};
-template<class T>
-using UnwrapAndDecay = typename UnwrapRefWrapper<std::decay_t<T>>::type;
 }
 template<typename Callable, typename... Args>
 struct Scoped;

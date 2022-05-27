@@ -18,11 +18,11 @@
 
 #ifndef GPICK_CONVERTERS_H_
 #define GPICK_CONVERTERS_H_
+#include "Converter.h"
 #include <unordered_map>
 #include <vector>
 #include <string>
 struct ColorObject;
-struct Converter;
 struct Color;
 struct Converters {
 	enum class Type {
@@ -33,6 +33,7 @@ struct Converters {
 	Converters();
 	~Converters();
 	void add(Converter *converter);
+	void add(const char *name, const char *label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize);
 	const std::vector<Converter *> &all() const;
 	const std::vector<Converter *> &allCopy() const;
 	const std::vector<Converter *> &allPaste() const;
