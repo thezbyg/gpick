@@ -16,7 +16,7 @@ file(GLOB SOURCES
 	source/transformation/*.cpp source/transformation/*.h
 	source/version/*.cpp source/version/*.h
 )
-set(SKIP_SOURCES Color.cpp Color.h lua/Script.cpp lua/Script.h)
+set(SKIP_SOURCES Color.cpp Color.h lua/Script.cpp lua/Script.h lua/Ref.cpp lua/Ref.h lua/Color.cpp lua/Color.h lua/ColorObject.cpp lua/ColorObject.h)
 list(TRANSFORM SKIP_SOURCES PREPEND ${CMAKE_CURRENT_SOURCE_DIR}/source/)
 list(REMOVE_ITEM SOURCES ${SKIP_SOURCES})
 
@@ -117,7 +117,7 @@ target_include_directories(gpick-dynv PRIVATE
 	${Boost_INCLUDE_DIRS}
 )
 
-file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h)
+file(GLOB LUA_SOURCES source/lua/Script.cpp source/lua/Script.h source/lua/Ref.cpp source/lua/Ref.h source/lua/Color.cpp source/lua/Color.h source/lua/ColorObject.cpp source/lua/ColorObject.h)
 add_library(gpick-lua OBJECT ${LUA_SOURCES})
 set_compile_options(gpick-lua)
 target_link_libraries(gpick-lua PRIVATE
@@ -190,7 +190,7 @@ target_include_directories(gpick PRIVATE
 	${Expat_INCLUDE_DIRS}
 )
 
-file(GLOB TESTS_SOURCES source/test/*.cpp source/test/*.h source/EventBus.cpp source/EventBus.h source/ColorObject.cpp source/ColorObject.h source/ColorList.cpp source/ColorList.h source/FileFormat.cpp source/FileFormat.h source/ErrorCode.cpp source/ErrorCode.h source/version/*.cpp source/version/*.h "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp")
+file(GLOB TESTS_SOURCES source/test/*.cpp source/test/*.h source/EventBus.cpp source/EventBus.h source/ColorObject.cpp source/ColorObject.h source/ColorList.cpp source/ColorList.h source/FileFormat.cpp source/FileFormat.h source/ErrorCode.cpp source/ErrorCode.h source/Converter.h source/Converter.cpp source/Converters.h source/Converters.cpp source/InternalConverters.cpp source/InternalConverters.h source/version/*.cpp source/version/*.h "${CMAKE_CURRENT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/Version.cpp")
 add_executable(tests ${TESTS_SOURCES})
 set_compile_options(tests)
 target_compile_definitions(tests PRIVATE BOOST_TEST_DYN_LINK)

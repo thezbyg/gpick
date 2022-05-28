@@ -51,9 +51,9 @@ static float toQuality(size_t start, size_t end, size_t length) {
 }
 inline auto numberOrPercentage(std::string_view &value, bool &percentage) {
 	using namespace common::ops;
-	return sequence(save(number, value), optional(sequence(single('%'), save(percentage))));
+	return sequence(save(percentage, false), save(number, value), optional(sequence(single('%'), save(percentage))));
 }
-std::string webHexSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+static std::string webHexSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[8];
 	auto &c = colorObject.getColor();
 	if (options.upperCaseHex) {
@@ -63,12 +63,12 @@ std::string webHexSerialize(const ColorObject &colorObject, const ConverterSeria
 	}
 	return result;
 }
-bool webHexDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+static bool webHexDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	using namespace common;
 	using namespace common::ops;
 	std::string_view matched;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), findSingle('#'), save(save(count(hex, 6), matched), start, end)))
+	if (!matchPattern(std::string_view(value), startWith('#', save(save(count(hex, 6), matched), start, end))))
 		return false;
 	Color c;
 	c.red = (fromHex(matched[0]) << 4 | fromHex(matched[1])) / 255.0f;
@@ -79,7 +79,7 @@ bool webHexDeserialize(const char *value, ColorObject &colorObject, float &quali
 	quality = toQuality(start - 1, end, std::string_view(value).length());
 	return true;
 }
-std::string webHexWithAlphaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+static std::string webHexWithAlphaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[10];
 	auto &c = colorObject.getColor();
 	if (options.upperCaseHex) {
@@ -89,12 +89,12 @@ std::string webHexWithAlphaSerialize(const ColorObject &colorObject, const Conve
 	}
 	return result;
 }
-bool webHexWithAlphaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+static bool webHexWithAlphaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	using namespace common;
 	using namespace common::ops;
 	std::string_view matched;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), findSingle('#'), save(save(count(hex, 8), matched), start, end)))
+	if (!matchPattern(std::string_view(value), startWith('#', save(save(count(hex, 8), matched), start, end))))
 		return false;
 	Color c;
 	c.red = (fromHex(matched[0]) << 4 | fromHex(matched[1])) / 255.0f;
@@ -105,7 +105,7 @@ bool webHexWithAlphaDeserialize(const char *value, ColorObject &colorObject, flo
 	quality = toQuality(start - 1, end, std::string_view(value).length());
 	return true;
 }
-std::string cssRgbSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+static std::string cssRgbSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[22];
 	auto &c = colorObject.getColor();
 	if (options.cssPercentages) {
@@ -115,13 +115,13 @@ std::string cssRgbSerialize(const ColorObject &colorObject, const ConverterSeria
 	}
 	return result;
 }
-bool cssRgbDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+static bool cssRgbDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	using namespace common;
 	using namespace common::ops;
 	std::string_view red, green, blue;
 	bool redPercentage = false, greenPercentage = false, bluePercentage = false;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), find("rgb("sv), save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(')')), start, end)))
+	if (!matchPattern(std::string_view(value), startWith("rgb("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(')')), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f) / (redPercentage ? 100.0f : 255.0f));
@@ -132,7 +132,7 @@ bool cssRgbDeserialize(const char *value, ColorObject &colorObject, float &quali
 	quality = toQuality(start - 1, end, std::string_view(value).length());
 	return true;
 }
-std::string cssRgbaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+static std::string cssRgbaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[30];
 	auto &c = colorObject.getColor();
 	if (options.cssAlphaPercentage) {
@@ -150,13 +150,13 @@ std::string cssRgbaSerialize(const ColorObject &colorObject, const ConverterSeri
 	}
 	return result;
 }
-bool cssRgbaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+static bool cssRgbaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	using namespace common;
 	using namespace common::ops;
 	std::string_view red, green, blue, alpha;
 	bool redPercentage = false, greenPercentage = false, bluePercentage = false, alphaPercentage = false;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), find("rgba("sv), save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, single(')')), start, end)))
+	if (!matchPattern(std::string_view(value), startWith("rgba("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, single(')')), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f) / (redPercentage ? 100.0f : 255.0f));

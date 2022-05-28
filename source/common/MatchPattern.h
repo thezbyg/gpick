@@ -66,23 +66,6 @@ struct CharsOp {
 private:
 	std::array<CharT, Count> m_values;
 };
-template<typename CharT>
-struct FindCharOp {
-	FindCharOp(CharT value):
-		m_value(value) {
-	}
-	template<typename T>
-	bool operator()(T value, std::size_t &position) const {
-		for (;;) {
-			if (position >= value.length())
-				return false;
-			if (value[position++] == m_value)
-				return true;
-		}
-	}
-private:
-	CharT m_value;
-};
 template<typename StringT>
 struct StringOp {
 	StringOp(StringT value):
@@ -94,7 +77,7 @@ struct StringOp {
 		if (position + length > value.length())
 			return false;
 		for (std::size_t i = 0; i < length; i++) {
-			if (value[i] != m_value[i])
+			if (value[position + i] != m_value[i])
 				return false;
 		}
 		position += length;
@@ -103,33 +86,29 @@ struct StringOp {
 private:
 	StringT m_value;
 };
-template<typename StringT>
-struct FindStringOp {
-	FindStringOp(StringT value):
-		m_value(value) {
+template<typename StartOpT, typename MatchOpT>
+struct StartOp {
+	StartOp(StartOpT startOp, MatchOpT matchOp):
+		m_startOp(startOp),
+		m_matchOp(matchOp) {
 	}
 	template<typename T>
 	bool operator()(T value, std::size_t &position) const {
-		auto length = m_value.length();
 		for (;;) {
-			if (position + length > value.length())
+			if (position >= value.length())
 				return false;
-			bool matched = true;
-			for (std::size_t i = 0; i < length; i++) {
-				if (value[position + i] != m_value[i]) {
-					matched = false;
-					break;
+			std::size_t savedPosition = position;
+			if (apply(value, position, m_startOp)) {
+				if (apply(value, position, m_matchOp)) {
+					return true;
 				}
 			}
-			if (matched) {
-				position += length;
-				return true;
-			}
-			position++;
+			position = savedPosition + 1;
 		}
 	}
 private:
-	StringT m_value;
+	StartOpT m_startOp;
+	MatchOpT m_matchOp;
 };
 template<typename T, typename OpT>
 bool apply(T value, std::size_t &position, OpT op) {
@@ -253,16 +232,18 @@ private:
 };
 template<>
 struct Save<bool, void> {
-	Save(bool &visited):
-		m_visited(visited) {
+	Save(bool &visited, bool value = true):
+		m_visited(visited),
+		m_value(value) {
 	}
 	template<typename T>
 	bool operator()(T value, std::size_t &position) const {
-		m_visited = true;
+		m_visited = m_value;
 		return true;
 	}
 private:
 	bool &m_visited;
+	bool m_value;
 };
 template<typename OpT>
 struct Count {
@@ -415,13 +396,19 @@ template<typename CharT, std::size_t Count>
 auto single(const CharT (&values)[Count]) {
 	return detail::CharsOp<CharT, Count>(values, std::make_index_sequence<Count> {});
 }
-template<typename CharT>
-auto findSingle(CharT value) {
-	return detail::FindCharOp<CharT>(value);
-}
-template<typename StringT>
-auto find(StringT value) {
-	return detail::FindStringOp<StringT>(value);
+template<typename StartOpT, typename MatchOpT>
+auto startWith(StartOpT startOp, MatchOpT matchOp) {
+	if constexpr (std::is_same_v<StartOpT, char> || std::is_same_v<StartOpT, wchar_t>) {
+		return detail::StartOp<detail::CharOp<StartOpT>, MatchOpT>(detail::CharOp(startOp), matchOp);
+	} else if constexpr (std::is_same_v<StartOpT, std::basic_string_view<char>> || std::is_same_v<StartOpT, std::basic_string<char>> || std::is_same_v<StartOpT, std::basic_string_view<wchar_t>> || std::is_same_v<StartOpT, std::basic_string<wchar_t>>) {
+		return detail::StartOp<detail::StringOp<StartOpT>, MatchOpT>(detail::StringOp(startOp), matchOp);
+	} else if constexpr (std::is_same_v<StartOpT, const char *>) {
+		return detail::StartOp<detail::StringOp<std::string_view>, MatchOpT>(detail::StringOp(std::string_view(startOp)), matchOp);
+	} else if constexpr (std::is_same_v<StartOpT, const wchar_t *>) {
+		return detail::StartOp<detail::StringOp<std::wstring_view>, MatchOpT>(detail::StringOp(std::wstring_view(startOp)), matchOp);
+	} else {
+		return detail::StartOp<StartOpT, MatchOpT>(startOp, matchOp);
+	}
 }
 template<typename CharT>
 auto range(CharT from, CharT to) {
@@ -462,8 +449,8 @@ template<typename OpT>
 inline auto save(OpT op, std::size_t &start, std::size_t &end) {
 	return detail::Save<std::size_t, OpT>(start, end, op);
 }
-inline auto save(bool &visited) {
-	return detail::Save<bool, void>(visited);
+inline auto save(bool &visited, bool value = true) {
+	return detail::Save<bool, void>(visited, value);
 }
 template<typename... OpTs>
 inline auto sequence(OpTs... ops) {
