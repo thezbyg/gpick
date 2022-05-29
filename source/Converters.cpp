@@ -43,6 +43,9 @@ void Converters::add(Converter *converter) {
 void Converters::add(const char *name, const char *label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize) {
 	add(new Converter(name, label, serialize, deserialize));
 }
+void Converters::add(const char *name, const std::string &label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize) {
+	add(new Converter(name, label.c_str(), serialize, deserialize));
+}
 void Converters::rebuildCopyPasteArrays() {
 	m_copyConverters.clear();
 	m_pasteConverters.clear();

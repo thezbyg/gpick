@@ -34,6 +34,7 @@ struct Converters {
 	~Converters();
 	void add(Converter *converter);
 	void add(const char *name, const char *label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize);
+	void add(const char *name, const std::string &label, Converter::Callback<Converter::Serialize> serialize, Converter::Callback<Converter::Deserialize> deserialize);
 	const std::vector<Converter *> &all() const;
 	const std::vector<Converter *> &allCopy() const;
 	const std::vector<Converter *> &allPaste() const;

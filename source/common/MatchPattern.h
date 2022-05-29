@@ -22,6 +22,7 @@
 #include <string_view>
 #include <type_traits>
 #include <tuple>
+#include <array>
 namespace common {
 namespace detail {
 template<typename CharT>
@@ -109,6 +110,26 @@ struct StartOp {
 private:
 	StartOpT m_startOp;
 	MatchOpT m_matchOp;
+};
+template<typename StartOpT>
+struct StartOp<StartOpT, void> {
+	StartOp(StartOpT startOp):
+		m_startOp(startOp) {
+	}
+	template<typename T>
+	bool operator()(T value, std::size_t &position) const {
+		for (;;) {
+			if (position >= value.length())
+				return false;
+			std::size_t savedPosition = position;
+			if (apply(value, position, m_startOp)) {
+				return true;
+			}
+			position = savedPosition + 1;
+		}
+	}
+private:
+	StartOpT m_startOp;
 };
 template<typename T, typename OpT>
 bool apply(T value, std::size_t &position, OpT op) {
@@ -410,6 +431,20 @@ auto startWith(StartOpT startOp, MatchOpT matchOp) {
 		return detail::StartOp<StartOpT, MatchOpT>(startOp, matchOp);
 	}
 }
+template<typename StartOpT>
+auto startWith(StartOpT startOp) {
+	if constexpr (std::is_same_v<StartOpT, char> || std::is_same_v<StartOpT, wchar_t>) {
+		return detail::StartOp<detail::CharOp<StartOpT>, void>(detail::CharOp(startOp));
+	} else if constexpr (std::is_same_v<StartOpT, std::basic_string_view<char>> || std::is_same_v<StartOpT, std::basic_string<char>> || std::is_same_v<StartOpT, std::basic_string_view<wchar_t>> || std::is_same_v<StartOpT, std::basic_string<wchar_t>>) {
+		return detail::StartOp<detail::StringOp<StartOpT>, void>(detail::StringOp(startOp));
+	} else if constexpr (std::is_same_v<StartOpT, const char *>) {
+		return detail::StartOp<detail::StringOp<std::string_view>, void>(detail::StringOp(std::string_view(startOp)));
+	} else if constexpr (std::is_same_v<StartOpT, const wchar_t *>) {
+		return detail::StartOp<detail::StringOp<std::wstring_view>, void>(detail::StringOp(std::wstring_view(startOp)));
+	} else {
+		return detail::StartOp<StartOpT, void>(startOp);
+	}
+}
 template<typename CharT>
 auto range(CharT from, CharT to) {
 	return detail::CharRangeOp<CharT>(from, to);
@@ -457,6 +492,7 @@ inline auto sequence(OpTs... ops) {
 	return detail::Sequence<OpTs...>(std::forward<OpTs>(ops)...);
 }
 const auto maybeSpace = zeroOrMore(whitespace);
+const auto maybeSpaceStrict = zeroOrMore(single(' '));
 const auto space = oneOrMore(whitespace);
 const auto number = sequence(optional(single({'+', '-'})), opOr(sequence(oneOrMore(digit), single('.'), oneOrMore(digit)), sequence(single('.'), oneOrMore(digit)), oneOrMore(digit)), optional(sequence(single({'e', 'E'}), oneOrMore(digit))));
 }

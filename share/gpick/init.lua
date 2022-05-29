@@ -27,5 +27,4 @@ end
 gpick:setComponentToTextCallback(componentToText)
 require('options')
 require('layouts')
-require('converters')
 helpers.suggest('user_init')
