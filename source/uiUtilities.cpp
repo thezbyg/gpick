@@ -122,3 +122,45 @@ void showContextMenu(GtkWidget *menu, GdkEventButton *event) {
 void setWidgetData(GtkWidget *widget, const char *name, const std::string &value) {
 	g_object_set_data_full(G_OBJECT(widget), name, g_strdup(value.c_str()), (GDestroyNotify)g_free);
 }
+Grid::Grid(int columns, int rows, int columnSpacing, int rowSpacing):
+	m_columns(columns),
+	m_column(0),
+	m_row(0),
+	m_columnSpacing(columnSpacing),
+	m_rowSpacing(rowSpacing) {
+#if GTK_MAJOR_VERSION >= 3
+	m_grid = gtk_grid_new();
+	gtk_grid_set_column_spacing(GTK_GRID(m_grid), columnSpacing);
+	gtk_grid_set_row_spacing(GTK_GRID(m_grid), rowSpacing);
+#else
+	m_grid = gtk_table_new(rows, columns, false);
+#endif
+}
+GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width) {
+#if GTK_MAJOR_VERSION >= 3
+	if (expand)
+		gtk_widget_set_hexpand(widget, true);
+	gtk_grid_attach(GTK_GRID(m_grid), widget, m_column, m_row, width, 1);
+#else
+	gtk_table_attach(GTK_TABLE(m_grid), widget, m_column, m_column + width, m_row, m_row + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | (expand ? GTK_EXPAND : 0)), m_columnSpacing / 2, m_rowSpacing / 2);
+#endif
+	m_column += width;
+	if (m_column >= m_columns) {
+		m_column = 0;
+		m_row++;
+	}
+	return widget;
+}
+void Grid::nextColumn(int columns) {
+	m_column += columns;
+	if (m_column >= m_columns) {
+		m_column = 0;
+		m_row++;
+	}
+}
+void Grid::nextRow() {
+	m_row++;
+}
+Grid::operator GtkWidget *() {
+	return m_grid;
+}

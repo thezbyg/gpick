@@ -42,4 +42,14 @@ GtkWidget *newIcon(const char *name, int size);
 GtkWidget *newMenuItem(const char *label, const char *iconName);
 void showContextMenu(GtkWidget *menu, GdkEventButton *event);
 void setWidgetData(GtkWidget *widget, const char *name, const std::string &value);
+struct Grid {
+	Grid(int columns, int rows, int columnSpacing = 5, int rowSpacing = 5);
+	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1);
+	void nextColumn(int columns = 1);
+	void nextRow();
+	operator GtkWidget *();
+private:
+	GtkWidget *m_grid;
+	int m_columns, m_column, m_row, m_columnSpacing, m_rowSpacing;
+};
 #endif /* GPICK_UI_UTILITIES_H_ */

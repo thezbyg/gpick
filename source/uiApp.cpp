@@ -1232,7 +1232,7 @@ static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs* args)
 static void palette_popup_menu_add(GtkWidget *widget, AppArgs* args)
 {
 	ColorObject *new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, nullptr, &new_color_object) == 0){
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, nullptr, true, &new_color_object) == 0){
 		color_list_add_color_object(args->gs->getColorList(), new_color_object, true);
 		new_color_object->release();
 	}
@@ -1240,8 +1240,9 @@ static void palette_popup_menu_add(GtkWidget *widget, AppArgs* args)
 static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 {
 	ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, &new_color_object) == 0){
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, true, &new_color_object) == 0){
 		color_object->setColor(new_color_object->getColor());
+		color_object->setName(new_color_object->getName());
 		new_color_object->release();
 		palette_list_update_first_selected(args->color_list, false);
 	}

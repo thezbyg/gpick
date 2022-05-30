@@ -40,6 +40,7 @@ struct DialogInputArgs
 	ColorObject *color_object;
 	GtkWidget *color_widget;
 	GtkWidget *text_input;
+	GtkWidget *name_input, *automatic_name;
 	bool ignore_text_change;
 	GtkWidget *rgb_expander, *hsv_expander, *hsl_expander, *cmyk_expander, *xyz_expander, *lab_expander, *lch_expander;
 	GtkWidget *rgb_control, *hsv_control, *hsl_control, *cmyk_control, *xyz_control, *lab_control, *lch_control;
@@ -118,8 +119,11 @@ static void onTextChanged(GtkWidget *entry, DialogInputArgs *args)
 		update(args, entry);
 	}
 }
+static void onAutomaticNameToggled(GtkWidget *entry, DialogInputArgs *args) {
+	gtk_widget_set_sensitive(args->name_input, !gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->automatic_name)));
+}
 
-int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *color_object, ColorObject **new_color_object)
+int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *color_object, bool editable_name, ColorObject **new_color_object)
 {
 	auto args = new DialogInputArgs();
 	args->gs = gs;
@@ -148,16 +152,24 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 		gtk_color_set_split_color(GTK_COLOR(widget), &color_object->getColor());
 	}
 	gtk_box_pack_start(GTK_BOX(vbox), widget, true, true, 0);
-	GtkWidget *hbox = gtk_hbox_new(false, 5);
-	gtk_box_pack_start(GTK_BOX(vbox), hbox, false, false, 0);
-	gtk_box_pack_start(GTK_BOX(hbox), gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0), false, false, 0);
 
-	GtkWidget* entry = args->text_input = gtk_entry_new();
+	Grid grid(2, 3);
+	gtk_box_pack_start(GTK_BOX(vbox), grid, false, false, 0);
+	grid.add(gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0));
+	GtkWidget *entry = args->text_input = grid.add(gtk_entry_new(), true);
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
-	gtk_box_pack_start(GTK_BOX(hbox), entry, true, true, 0);
 	gtk_widget_grab_focus(entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(onTextChanged), args);
 	args->ignore_text_change = false;
+	if (editable_name) {
+		grid.add(gtk_label_aligned_new(_("Name:"), 0, 0.5, 0, 0));
+		args->name_input = grid.add(gtk_entry_new(), true);
+		gtk_widget_set_sensitive(args->name_input, !args->options->getBool("automatic_name", false));
+		grid.nextColumn();
+		args->automatic_name = grid.add(gtk_check_button_new_with_mnemonic(_("_Automatic name")), true);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->automatic_name), args->options->getBool("automatic_name", false));
+		g_signal_connect(G_OBJECT(args->automatic_name), "toggled", G_CALLBACK(onAutomaticNameToggled), args);
+	}
 
 	const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), "A", _("Alpha"), nullptr};
 	addComponentEditor(vbox, "HSV", "expander.hsv", GtkColorComponentComp::hsv, hsv_labels, args, args->hsv_expander, args->hsv_control);
@@ -177,6 +189,8 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 		gtk_entry_set_text(GTK_ENTRY(args->text_input), text.c_str());
 	} else {
 		update(args, nullptr);
+		if (editable_name)
+			gtk_entry_set_text(GTK_ENTRY(args->name_input), args->color_object->getName().c_str());
 	}
 
 	gtk_widget_show_all(vbox);
@@ -184,15 +198,21 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
 	int result = -1;
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
-		if (new_item) {
-			string name = color_names_get(args->gs->getColorNames(), &args->color_object->getColor(), args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
-			args->color_object->setName(name);
+		if (editable_name) {
+			if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->automatic_name))) {
+				std::string name = color_names_get(args->gs->getColorNames(), &args->color_object->getColor(), args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false));
+				args->color_object->setName(name);
+			} else {
+				args->color_object->setName(gtk_entry_get_text(GTK_ENTRY(args->name_input)));
+			}
 		}
 		*new_color_object = args->color_object->reference();
 		result = 0;
 	}
 	if (new_item)
 		args->options->set("text", gtk_entry_get_text(GTK_ENTRY(entry)));
+	if (editable_name)
+		args->options->set<bool>("automatic_name", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->automatic_name)));
 	args->options->set<bool>("expander.rgb", gtk_expander_get_expanded(GTK_EXPANDER(args->rgb_expander)));
 	args->options->set<bool>("expander.hsv", gtk_expander_get_expanded(GTK_EXPANDER(args->hsv_expander)));
 	args->options->set<bool>("expander.hsl", gtk_expander_get_expanded(GTK_EXPANDER(args->hsl_expander)));

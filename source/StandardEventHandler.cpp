@@ -80,7 +80,7 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 			return false;
 		auto *colorObject = readonlyColorUI->getColor().copy();
 		ColorObject *newColorObject;
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, &newColorObject) == 0) {
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
 			editableColorUI->setColor(*newColorObject);
 			newColorObject->release();
 		}

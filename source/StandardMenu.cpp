@@ -219,13 +219,13 @@ static void onEditableColorEdit(GtkWidget *widget, IReadonlyColorUI *readonlyCol
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
 	ColorObject *newColorObject;
 	if (colorObject) {
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, &newColorObject) == 0) {
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
 			dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*newColorObject);
 			newColorObject->release();
 		}
 	} else {
 		auto colorObject = readonlyColorUI->getColor();
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, &colorObject, &newColorObject) == 0) {
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, &colorObject, false, &newColorObject) == 0) {
 			dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*newColorObject);
 			newColorObject->release();
 		}
