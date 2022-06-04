@@ -82,7 +82,7 @@ function(add_gtk_options target)
 	endif()
 endfunction()
 
-file(GLOB MATH_SOURCES source/math/Empty.cpp)
+file(GLOB MATH_SOURCES source/math/*.cpp)
 add_library(gpick-math OBJECT ${MATH_SOURCES})
 set_compile_options(gpick-math)
 target_include_directories(gpick-math PRIVATE

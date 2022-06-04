@@ -135,6 +135,7 @@ Grid::Grid(int columns, int rows, int columnSpacing, int rowSpacing):
 #else
 	m_grid = gtk_table_new(rows, columns, false);
 #endif
+	gtk_container_set_border_width(GTK_CONTAINER(m_grid), 5);
 }
 GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width) {
 #if GTK_MAJOR_VERSION >= 3

@@ -203,6 +203,9 @@ def buildLua(env):
 def buildColorNames(env):
 	return env.StaticObject(env.Glob('source/color_names/*.cpp'))
 
+def buildMath(env):
+	return env.StaticObject(env.Glob('source/math/*.cpp'))
+
 def buildWindowsResources(env):
 	resources_env = env.Clone()
 	resources = resources_env.Template(resources_env.Glob('source/winres/*.rc.in'), TEMPLATE_ENV_FILTER = ['GPICK_*'])
@@ -287,6 +290,7 @@ def buildGpick(env):
 	objects += buildTools(env)
 	objects += buildLua(env)
 	objects += buildColorNames(env)
+	objects += buildMath(env)
 
 	if env['TOOLCHAIN'] == 'msvc':
 		gpick_env.Append(LIBS = ['glib-2.0', 'gtk-win32-2.0', 'gobject-2.0', 'gdk-win32-2.0', 'cairo', 'gdk_pixbuf-2.0', 'lua5.2', 'expat2.1', 'pango-1.0', 'pangocairo-1.0', 'intl'])
