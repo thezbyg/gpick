@@ -108,6 +108,9 @@ msgstr "Sunumeruoti spalvas"
 msgid "Available filters"
 msgstr "Galimi filtrai"
 
+msgid "Average"
+msgstr "Vidurkis"
+
 msgid "Background color"
 msgstr "Fono spalva"
 
@@ -156,6 +159,15 @@ msgstr "C stiliaus kelių eilučių komentarai"
 msgid "C style single-line comments"
 msgstr "C stiliaus vienos eilutės komentarai"
 
+msgid "CSS block"
+msgstr "CSS blokas"
+
+msgid "CSS block with alpha"
+msgstr "CSS blokas su alfa"
+
+msgid "CSS format"
+msgstr "CSS formatas"
+
 msgid "CSS selector"
 msgstr "CSS selectorius"
 
@@ -180,8 +192,14 @@ msgstr "Cascading Style Sheets (*.css)"
 msgid "Cascading Style Sheets *.css"
 msgstr "Cascading Style Sheets *.css"
 
+msgid "Channel:"
+msgstr "Kanalas:"
+
 msgid "Chaos:"
 msgstr "Chaosas:"
+
+msgid "Chroma"
+msgstr "Chroma"
 
 msgid "Clash"
 msgstr "Nedarna"
@@ -315,6 +333,9 @@ msgstr "Rodymo filtrai"
 msgid "Displays:"
 msgstr "Rodymas:"
 
+msgid "E_qualize..."
+msgstr "I_šlyginti..."
+
 msgid "Edit"
 msgstr "Keisti"
 
@@ -335,6 +356,9 @@ msgstr "Pabaigos žingsniai:"
 
 msgid "End:"
 msgstr "Pabaiga:"
+
+msgid "Equalize colors"
+msgstr "Išlyginti spalvas"
 
 msgid "Ex_port..."
 msgstr "Eksportuoti..."
@@ -395,6 +419,9 @@ msgstr "Paraštė"
 
 msgid "Full hex"
 msgstr "Pilnas šešioliktainis"
+
+msgid "Full hex with alpha"
+msgstr "Pilnas šešioliktainis su alfa"
 
 msgid "Function name"
 msgstr "Funkcijos pavadinimas"
@@ -477,11 +504,11 @@ msgstr "Atspalvis:"
 msgid "Hyper Text Markup Language (*.html, *.htm)"
 msgstr "Hyper Text Markup Language (*.html, *.htm)"
 
-msgid "Image"
-msgstr "Paveikslėlis"
-
 msgid "Image file"
 msgstr "Paveikslėlio failas"
+
+msgid "Image:"
+msgstr "Paveikslėlis:"
 
 msgid "Import"
 msgstr "Importuoti"
@@ -591,6 +618,9 @@ msgstr "Purpurinė"
 msgid "Maximal value"
 msgstr "Maksimali reikšmė"
 
+msgid "Maximum"
+msgstr "Maksimali reikšmė"
+
 msgid "Maximum number of groups:"
 msgstr "Maksimalus grupių skaičius:"
 
@@ -604,6 +634,9 @@ msgid "Middle:"
 msgstr "Vidurys:"
 
 msgid "Minimal value"
+msgstr "Minimali reikšmė"
+
+msgid "Minimum"
 msgstr "Minimali reikšmė"
 
 msgid "Mix colors"
@@ -723,6 +756,12 @@ msgstr "RGB Žalia"
 msgid "RGB Red"
 msgstr "RGB Raudona"
 
+msgid "RGB values"
+msgstr "RGB reikšmės"
+
+msgid "RGBA values"
+msgstr "RGBA reikšmės"
+
 msgid "RSS"
 msgstr "RSS"
 
@@ -797,6 +836,9 @@ msgstr "Nustatymai"
 
 msgid "Short hex"
 msgstr "Trumpas šešioliktainis"
+
+msgid "Short hex with alpha"
+msgstr "Trumpas šešioliktainis su alfa"
 
 msgid "Sidebar"
 msgstr "Šonas"
@@ -888,6 +930,12 @@ msgstr "Tipas:"
 msgid "Upper case"
 msgstr "Viršutinis registras"
 
+msgid "Use percentage for alpha"
+msgstr "Naudoti procentą alfa kanalui"
+
+msgid "Use percentages"
+msgstr "Naudoti procentus"
+
 msgid "User controllable"
 msgstr "Varotojo valdomas"
 
@@ -906,11 +954,17 @@ msgstr "W ašis"
 msgid "Web: hex code"
 msgstr "Tinklas: šešioliktainis kodas"
 
-msgid "Web: hex code (3 digits)"
-msgstr "Tinklas: šešioliktainis kodas (3 skaitmenys)"
-
 msgid "Web: hex code (no hash symbol)"
 msgstr "Tinklas: šešioliktainis kodas (be grotelių simbolio)"
+
+msgid "Web: hex code with alpha"
+msgstr "Tinklas: šešioliktainis kodas su alfa"
+
+msgid "Web: short hex code"
+msgstr "Tinklas: trumpas šešioliktainis kodas"
+
+msgid "Web: short hex code with alpha"
+msgstr "Tinklas: trumpas šešioliktainis kodas su alfa"
 
 msgid "Webpage"
 msgstr "Puslapis"

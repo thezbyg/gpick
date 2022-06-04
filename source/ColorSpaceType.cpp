@@ -71,8 +71,8 @@ const ColorSpaceType color_space_types[] = {
 	{GtkColorComponentComp::lch, 4,
 		{
 			{_("Lightness"), 1, 0, 100, 0.0001},
-			{"Chroma", 1, 0, 100, 0.0001},
-			{"Hue", 1, 0, 360, 0.0001},
+			{_("Chroma"), 1, 0, 100, 0.0001},
+			{_("Hue"), 1, 0, 360, 0.0001},
 			{_("Alpha"), 100, 0, 100, 0.01},
 		}
 	},

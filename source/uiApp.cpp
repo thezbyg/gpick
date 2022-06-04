@@ -39,6 +39,7 @@
 #include "uiDialogMix.h"
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
+#include "uiDialogEqualize.h"
 #include "uiDialogAutonumber.h"
 #include "uiDialogSort.h"
 #include "uiColorDictionaries.h"
@@ -1289,6 +1290,17 @@ static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args)
 	color_list_destroy(color_list);
 }
 
+static PaletteListCallbackResult color_list_update(ColorObject *colorObject, void *userdata) {
+	return PaletteListCallbackResult::updateRow;
+}
+static void palette_popup_menu_equalize(GtkWidget *widget, AppArgs *args) {
+	ColorList *colorList = color_list_new();
+	palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
+	dialog_equalize_show(GTK_WINDOW(args->window), *colorList, *args->gs);
+	color_list_destroy(colorList);
+	palette_list_foreach_selected(args->color_list, color_list_update, nullptr, true);
+}
+
 typedef struct GroupAndSortState{
 	std::list<ColorObject*>::iterator iter;
 } GroupAndSortState;
@@ -1357,6 +1369,10 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_generate), args);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
+	item = newMenuItem(_("E_qualize..."), GTK_STOCK_CONVERT);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_equalize), args);
+	gtk_widget_set_sensitive(item, selected_count > 1);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = gtk_menu_item_new_with_mnemonic (_("C_lear names"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
