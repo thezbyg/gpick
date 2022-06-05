@@ -140,6 +140,7 @@ struct DialogEditArgs {
 				color.alpha = math::clamp(color.alpha + alpha * adjustments[4], 0, 1);
 				color.alpha = alpha;
 			}
+			color.normalizeRgbInplace();
 			if (preview) {
 				ColorObject *colorObject = color_list_new_color_object(&colorList, &color);
 				colorObject->setName((*i)->getName());
