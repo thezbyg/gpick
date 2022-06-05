@@ -40,6 +40,7 @@
 #include "uiDialogVariations.h"
 #include "uiDialogGenerate.h"
 #include "uiDialogEqualize.h"
+#include "uiDialogEdit.h"
 #include "uiDialogAutonumber.h"
 #include "uiDialogSort.h"
 #include "uiColorDictionaries.h"
@@ -1238,16 +1239,27 @@ static void palette_popup_menu_add(GtkWidget *widget, AppArgs* args)
 		new_color_object->release();
 	}
 }
+static PaletteListCallbackResult color_list_update(ColorObject *colorObject, void *userdata) {
+	return PaletteListCallbackResult::updateRow;
+}
 static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 {
-	ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, true, &new_color_object) == 0){
-		color_object->setColor(new_color_object->getColor());
-		color_object->setName(new_color_object->getName());
-		new_color_object->release();
-		palette_list_update_first_selected(args->color_list, false);
+	if (palette_list_get_selected_count(args->color_list) == 1) {
+		ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, true, &new_color_object) == 0){
+			color_object->setColor(new_color_object->getColor());
+			color_object->setName(new_color_object->getName());
+			new_color_object->release();
+			palette_list_update_first_selected(args->color_list, false);
+		}
+		color_object->release();
+	} else {
+		ColorList *colorList = color_list_new();
+		palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
+		dialog_edit_show(GTK_WINDOW(args->window), *colorList, *args->gs);
+		color_list_destroy(colorList);
+		palette_list_foreach_selected(args->color_list, color_list_update, nullptr, true);
 	}
-	color_object->release();
 }
 static void palette_popup_menu_paste(GtkWidget *, AppArgs *args) {
 	auto newColorList = clipboard::getColors(args->gs);
@@ -1290,9 +1302,6 @@ static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args)
 	color_list_destroy(color_list);
 }
 
-static PaletteListCallbackResult color_list_update(ColorObject *colorObject, void *userdata) {
-	return PaletteListCallbackResult::updateRow;
-}
 static void palette_popup_menu_equalize(GtkWidget *widget, AppArgs *args) {
 	ColorList *colorList = color_list_new();
 	palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
@@ -1348,7 +1357,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_edit), args);
-	gtk_widget_set_sensitive(item, (selected_count == 1));
+	gtk_widget_set_sensitive(item, selected_count > 0);
 
 	item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);

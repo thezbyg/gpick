@@ -345,6 +345,9 @@ msgstr "Keisti _keitėjus..."
 msgid "Edit color"
 msgstr "Keisti spalvą"
 
+msgid "Edit colors"
+msgstr "Keisti spalvas"
+
 msgid "Enable"
 msgstr "Įjungti"
 
@@ -1100,6 +1103,9 @@ msgstr "_Išeiti"
 
 msgid "_Refresh rate:"
 msgstr "_Atnaujinimo dažnis:"
+
+msgid "_Relative adjustment"
+msgstr "_Santykinis koregavimas"
 
 msgid "_Remove"
 msgstr "_Pašalinti"

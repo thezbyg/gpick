@@ -21,87 +21,18 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
+#include "ColorSpaces.h"
+#include "Channels.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
 #include "common/Guard.h"
 #include "common/Match.h"
+#include "math/Algorithms.h"
 #include <vector>
-#include <optional>
 #include <algorithm>
+#include <functional>
 namespace {
-enum struct ColorSpace {
-	rgb = 1,
-	hsl,
-	hsv,
-	cmyk,
-	lab,
-	lch,
-	all,
-};
-struct ColorSpaceDescription {
-	const char *id;
-	const char *name;
-	ColorSpace type;
-};
-const ColorSpaceDescription colorSpaces[] = {
-	{ "rgb", "RGB", ColorSpace::rgb },
-	{ "hsl", "HSL", ColorSpace::hsl },
-	{ "hsv", "HSV", ColorSpace::hsv },
-	{ "cmyk", "CMYK", ColorSpace::cmyk },
-	{ "lab", "LAB", ColorSpace::lab },
-	{ "lch", "LCH", ColorSpace::lch },
-};
-enum struct Channel {
-	rgbRed = 1,
-	rgbGreen,
-	rgbBlue,
-	hslHue,
-	hslSaturation,
-	hslLightness,
-	hsvHue,
-	hsvSaturation,
-	hsvValue,
-	cmykCyan,
-	cmykMagenta,
-	cmykYellow,
-	cmykKey,
-	labLightness,
-	labA,
-	labB,
-	lchLightness,
-	lchChroma,
-	lchHue,
-	alpha,
-};
-struct ChannelDescription {
-	const char *id;
-	const char *name;
-	ColorSpace colorSpace;
-	Channel type;
-};
-const ChannelDescription channels[] = {
-	{ "rgb_red", N_("Red"), ColorSpace::rgb, Channel::rgbRed },
-	{ "rgb_green", N_("Green"), ColorSpace::rgb, Channel::rgbGreen },
-	{ "rgb_blue", N_("Blue"), ColorSpace::rgb, Channel::rgbBlue },
-	{ "hsl_hue", N_("Hue"), ColorSpace::hsl, Channel::hslHue },
-	{ "hsl_saturation", N_("Saturation"), ColorSpace::hsl, Channel::hslSaturation },
-	{ "hsl_lightness", N_("Lightness"), ColorSpace::hsl, Channel::hslLightness },
-	{ "hsv_hue", N_("Hue"), ColorSpace::hsv, Channel::hsvHue },
-	{ "hsv_saturation", N_("Saturation"), ColorSpace::hsv, Channel::hsvSaturation },
-	{ "hsv_value", N_("Value"), ColorSpace::hsv, Channel::hsvValue },
-	{ "cmyk_cyan", N_("Cyan"), ColorSpace::cmyk, Channel::cmykCyan },
-	{ "cmyk_magenta", N_("Magenta"), ColorSpace::cmyk, Channel::cmykMagenta },
-	{ "cmyk_yellow", N_("Yellow"), ColorSpace::cmyk, Channel::cmykYellow },
-	{ "cmyk_key", N_("Key"), ColorSpace::cmyk, Channel::cmykKey },
-	{ "lab_lightness", N_("Lightness"), ColorSpace::lab, Channel::labLightness },
-	{ "lab_a", "a", ColorSpace::lab, Channel::labA },
-	{ "lab_b", "b", ColorSpace::lab, Channel::labB },
-	{ "lch_lightness", N_("Lightness"), ColorSpace::lch, Channel::lchLightness },
-	{ "lch_chroma", N_("Chroma"), ColorSpace::lch, Channel::lchChroma },
-	{ "lch_hue", N_("Hue"), ColorSpace::lch, Channel::lchHue },
-	{ "alpha", N_("Alpha"), ColorSpace::all, Channel::alpha },
-};
 enum struct Type {
 	average = 1,
 	minimum,
@@ -133,8 +64,8 @@ struct DialogEqualizeArgs {
 		gs(gs),
 		blockChannelChange(false) {
 		options = gs.settings().getOrCreateMap("gpick.equalize");
-		colorSpace = &common::matchById(colorSpaces, options->getString("color_space", "lab"));
-		channel = &common::matchById(channels, options->getString("channel", "lab_lightness"));
+		colorSpace = &common::matchById(colorSpaces(), options->getString("color_space", "lab"));
+		channel = &common::matchById(channels(), options->getString("channel", "lab_lightness"));
 		type = &common::matchById(types, options->getString("type", "average"));
 		selectChannel();
 		dialog = gtk_dialog_new_with_buttons(_("Equalize colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
@@ -143,10 +74,10 @@ struct DialogEqualizeArgs {
 		Grid grid(2, 5);
 		grid.add(gtk_label_aligned_new(_("Color space:"), 0, 0.5, 0, 0));
 		grid.add(colorSpaceComboBox = gtk_combo_box_text_new(), true);
-		for (const auto &i: colorSpaces) {
+		for (const auto &i: colorSpaces()) {
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(colorSpaceComboBox), _(i.name));
 			if (&i == colorSpace)
-				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces);
+				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces().data());
 		}
 		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(DialogEqualizeArgs::onColorSpaceChange), this);
 		grid.add(gtk_label_aligned_new(_("Channel:"), 0, 0.5, 0, 0));
@@ -188,113 +119,44 @@ struct DialogEqualizeArgs {
 			options->set("strength", static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(strengthSpinButton))) / 100);
 		}
 	}
-	static void apply(float &now, float value, float strength) {
-		now = now * (1 - strength) + value * strength;
-	}
 	void update(bool preview) {
 		if (preview)
 			color_list_remove_all(previewColorList);
-		colorSpace = &colorSpaces[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
+		colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
 		channel = channelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(channelComboBox))];
 		type = &types[gtk_combo_box_get_active(GTK_COMBO_BOX(typeComboBox))];
 		float strength = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(strengthSpinButton)) / 100);
 		ColorList &colorList = preview ? *previewColorList : *gs.getColorList();
 		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
 		size_t count = 0;
-		std::optional<float> commonValue;
+		bool first = true;
+		float commonValue = 0;
 		for (auto i = selectedColorList.colors.begin(); i != selectedColorList.colors.end(); ++i) {
 			++count;
 			Color color = (*i)->getColor();
-			float value = 0;
-			switch (channel->type) {
-			case Channel::rgbRed:
-				value = color.linearRgb().red;
-				break;
-			case Channel::rgbGreen:
-				value = color.linearRgb().green;
-				break;
-			case Channel::rgbBlue:
-				value = color.linearRgb().blue;
-				break;
-			case Channel::hslHue:
-				value = color.rgbToHsl().hsl.hue;
-				break;
-			case Channel::hslSaturation:
-				value = color.rgbToHsl().hsl.saturation;
-				break;
-			case Channel::hslLightness:
-				value = color.rgbToHsl().hsl.lightness;
-				break;
-			case Channel::hsvHue:
-				value = color.rgbToHsv().hsv.hue;
-				break;
-			case Channel::hsvSaturation:
-				value = color.rgbToHsv().hsv.saturation;
-				break;
-			case Channel::hsvValue:
-				value = color.rgbToHsv().hsv.value;
-				break;
-			case Channel::cmykCyan:
-				value = color.rgbToCmyk().cmyk.c;
-				break;
-			case Channel::cmykMagenta:
-				value = color.rgbToCmyk().cmyk.m;
-				break;
-			case Channel::cmykYellow:
-				value = color.rgbToCmyk().cmyk.y;
-				break;
-			case Channel::cmykKey:
-				value = color.rgbToCmyk().cmyk.k;
-				break;
-			case Channel::labLightness:
-				value = color.rgbToLabD50().lab.L;
-				break;
-			case Channel::labA:
-				value = color.rgbToLabD50().lab.a;
-				break;
-			case Channel::labB:
-				value = color.rgbToLabD50().lab.b;
-				break;
-			case Channel::lchLightness:
-				value = color.rgbToLchD50().lch.L;
-				break;
-			case Channel::lchChroma:
-				value = color.rgbToLchD50().lch.C;
-				break;
-			case Channel::lchHue:
-				value = color.rgbToLchD50().lch.h;
-				break;
-			case Channel::alpha:
-				value = color.alpha;
-				break;
-			}
-			switch (type->type) {
-			case Type::average:
-				if (!commonValue)
-					commonValue = value;
-				else
-					commonValue = *commonValue + value;
-				break;
-			case Type::minimum:
-				if (!commonValue)
-					commonValue = value;
-				else
-					commonValue = std::min(*commonValue, value);
-				break;
-			case Type::maximum:
-				if (!commonValue)
-					commonValue = value;
-				else
-					commonValue = std::max(*commonValue, value);
-				break;
+			float value = std::invoke(colorSpace->convertTo, color).data[channel->index];
+			if (first) {
+				commonValue = value;
+				first = false;
+			} else {
+				switch (type->type) {
+				case Type::average:
+					commonValue += value;
+					break;
+				case Type::minimum:
+					commonValue = std::min(commonValue, value);
+					break;
+				case Type::maximum:
+					commonValue = std::max(commonValue, value);
+					break;
+				}
 			}
 		}
 		if (count == 0)
 			return;
 		switch (type->type) {
 		case Type::average:
-			if (commonValue)
-				commonValue = *commonValue / count;
+			commonValue /= count;
 			break;
 		case Type::minimum:
 			break;
@@ -303,105 +165,14 @@ struct DialogEqualizeArgs {
 		}
 		for (auto i = selectedColorList.colors.begin(); i != selectedColorList.colors.end(); ++i) {
 			Color color = (*i)->getColor();
-			switch (channel->type) {
-			case Channel::rgbRed:
-				color.linearRgbInplace();
-				apply(color.red, *commonValue, strength);
-				color.nonLinearRgbInplace();
-				break;
-			case Channel::rgbGreen:
-				color.linearRgbInplace();
-				apply(color.green, *commonValue, strength);
-				color.nonLinearRgbInplace();
-				break;
-			case Channel::rgbBlue:
-				color.linearRgbInplace();
-				apply(color.blue, *commonValue, strength);
-				color.nonLinearRgbInplace();
-				break;
-			case Channel::hslHue:
-				color = color.rgbToHsl();
-				apply(color.hsl.hue, *commonValue, strength);
-				color = color.hslToRgb();
-				break;
-			case Channel::hslSaturation:
-				color = color.rgbToHsl();
-				apply(color.hsl.saturation, *commonValue, strength);
-				color = color.hslToRgb();
-				break;
-			case Channel::hslLightness:
-				color = color.rgbToHsl();
-				apply(color.hsl.lightness, *commonValue, strength);
-				color = color.hslToRgb();
-				break;
-			case Channel::hsvHue:
-				color = color.rgbToHsv();
-				apply(color.hsv.hue, *commonValue, strength);
-				color = color.hsvToRgb();
-				break;
-			case Channel::hsvSaturation:
-				color = color.rgbToHsv();
-				apply(color.hsv.saturation, *commonValue, strength);
-				color = color.hsvToRgb();
-				break;
-			case Channel::hsvValue:
-				color = color.rgbToHsv();
-				apply(color.hsv.value, *commonValue, strength);
-				color = color.hsvToRgb();
-				break;
-			case Channel::cmykCyan:
-				color = color.rgbToCmyk();
-				apply(color.cmyk.c, *commonValue, strength);
-				color = color.cmykToRgb();
-				break;
-			case Channel::cmykMagenta:
-				color = color.rgbToCmyk();
-				apply(color.cmyk.m, *commonValue, strength);
-				color = color.cmykToRgb();
-				break;
-			case Channel::cmykYellow:
-				color = color.rgbToCmyk();
-				apply(color.cmyk.y, *commonValue, strength);
-				color = color.cmykToRgb();
-				break;
-			case Channel::cmykKey:
-				color = color.rgbToCmyk();
-				apply(color.cmyk.k, *commonValue, strength);
-				color = color.cmykToRgb();
-				break;
-			case Channel::labLightness:
-				color = color.rgbToLabD50();
-				apply(color.lab.L, *commonValue, strength);
-				color = color.labToRgbD50();
-				break;
-			case Channel::labA:
-				color = color.rgbToLabD50();
-				apply(color.lab.a, *commonValue, strength);
-				color = color.labToRgbD50();
-				break;
-			case Channel::labB:
-				color = color.rgbToLabD50();
-				apply(color.lab.b, *commonValue, strength);
-				color = color.labToRgbD50();
-				break;
-			case Channel::lchLightness:
-				color = color.rgbToLchD50();
-				apply(color.lch.L, *commonValue, strength);
-				color = color.lchToRgbD50();
-				break;
-			case Channel::lchChroma:
-				color = color.rgbToLchD50();
-				apply(color.lch.C, *commonValue, strength);
-				color = color.lchToRgbD50();
-				break;
-			case Channel::lchHue:
-				color = color.rgbToLchD50();
-				apply(color.lch.h, *commonValue, strength);
-				color = color.lchToRgbD50();
-				break;
-			case Channel::alpha:
-				apply(color.alpha, *commonValue, strength);
-				break;
+			float alpha = color.alpha;
+			color = std::invoke(colorSpace->convertTo, color);
+			float value = color.data[channel->index];
+			value = math::mix(value, commonValue, strength);
+			color.data[channel->index] = value;
+			color = std::invoke(colorSpace->convertFrom, color);
+			if ((colorSpace->flags & ColorSpaceFlags::externalAlpha) == ColorSpaceFlags::externalAlpha) {
+				color.alpha = alpha;
 			}
 			if (preview) {
 				ColorObject *colorObject = color_list_new_color_object(&colorList, &color);
@@ -414,8 +185,8 @@ struct DialogEqualizeArgs {
 		}
 	}
 	void selectChannel() {
-		if (colorSpace->type != channel->colorSpace && channel->colorSpace != ColorSpace::all) {
-			for (const auto &i: channels) {
+		if (!channel->allColorSpaces && colorSpace->type != channel->colorSpace) {
+			for (const auto &i: channels()) {
 				if (i.colorSpace == colorSpace->type) {
 					channel = &i;
 					break;
@@ -427,8 +198,8 @@ struct DialogEqualizeArgs {
 		blockChannelChange = true;
 		channelsInComboBox.clear();
 		gtk_list_store_clear(GTK_LIST_STORE(gtk_combo_box_get_model(GTK_COMBO_BOX(channelComboBox))));
-		for (const auto &i: channels) {
-			if (i.colorSpace != colorSpace->type && i.colorSpace != ColorSpace::all)
+		for (const auto &i: channels()) {
+			if (!i.allColorSpaces && i.colorSpace != colorSpace->type)
 				continue;
 			channelsInComboBox.push_back(&i);
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(channelComboBox), _(i.name));
@@ -438,7 +209,7 @@ struct DialogEqualizeArgs {
 		blockChannelChange = false;
 	}
 	static void onColorSpaceChange(GtkWidget *, DialogEqualizeArgs *args) {
-		args->colorSpace = &colorSpaces[gtk_combo_box_get_active(GTK_COMBO_BOX(args->colorSpaceComboBox))];
+		args->colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(args->colorSpaceComboBox))];
 		args->selectChannel();
 		args->buildChannelComboBox();
 		args->update(true);

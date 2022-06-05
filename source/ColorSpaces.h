@@ -16,46 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COMMON_MATCH_H_
-#define GPICK_COMMON_MATCH_H_
-#include <string_view>
-namespace common {
-template<typename Type, std::size_t TypeCount>
-Type &matchById(Type (&types)[TypeCount], std::string_view id) {
-	static_assert(TypeCount > 0, "At least one type is required");
-	for (std::size_t index = 0; index < TypeCount; ++index) {
-		if (types[index].id == id) {
-			return types[index];
-		}
-	}
-	return types[0];
-}
-template<typename Type, std::size_t TypeCount>
-Type &matchById(Type (&types)[TypeCount], std::string_view id, Type &defaultValue) {
-	for (std::size_t index = 0; index < TypeCount; ++index) {
-		if (types[index].id == id) {
-			return types[index];
-		}
-	}
-	return defaultValue;
-}
-template<typename Container>
-typename Container::value_type &matchById(Container &&types, std::string_view id) {
-	for (std::size_t index = 0, end = types.size(); index < end; ++index) {
-		if (types[index].id == id) {
-			return types[index];
-		}
-	}
-	return types[0];
-}
-template<typename Container>
-typename Container::value_type &matchById(Container &&types, std::string_view id, typename Container::value_type &defaultValue) {
-	for (std::size_t index = 0, end = types.size(); index < end; ++index) {
-		if (types[index].id == id) {
-			return types[index];
-		}
-	}
-	return defaultValue;
-}
-}
-#endif /* GPICK_COMMON_MATCH_H_ */
+#ifndef GPICK_COLOR_SPACES_H_
+#define GPICK_COLOR_SPACES_H_
+#include "common/Bitmask.h"
+#include "common/Span.h"
+struct Color;
+enum struct ColorSpace {
+	rgb = 1,
+	hsl,
+	hsv,
+	cmyk,
+	lab,
+	lch,
+};
+enum struct ColorSpaceFlags {
+	none = 0,
+	externalAlpha = 1,
+};
+ENABLE_BITMASK_OPERATORS(ColorSpaceFlags);
+struct ColorSpaceDescription {
+	const char *id;
+	const char *name;
+	ColorSpace type;
+	ColorSpaceFlags flags;
+	Color (Color::*convertTo)() const;
+	Color (Color::*convertFrom)() const;
+};
+common::Span<const ColorSpaceDescription> colorSpaces();
+#endif /* GPICK_COLOR_SPACES_H_ */

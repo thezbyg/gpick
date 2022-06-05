@@ -23,6 +23,11 @@
 namespace common {
 template<typename T, typename SizeT = size_t>
 struct Span {
+	using value_type = T;
+	using size_type = SizeT;
+	using difference_type = SizeT;
+	using reference = T &;
+	using const_reference = const T &;
 	struct Iterator {
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = T;
@@ -56,6 +61,7 @@ struct Span {
 		Span &m_span;
 		SizeT m_position;
 	};
+	using iterator = Iterator;
 	struct ConstIterator {
 		using iterator_category = std::forward_iterator_tag;
 		using value_type = T;
@@ -89,6 +95,7 @@ struct Span {
 		const Span &m_span;
 		SizeT m_position;
 	};
+	using const_iterator = ConstIterator;
 	Span():
 		m_data(nullptr),
 		m_size(0) {
