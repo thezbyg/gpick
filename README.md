@@ -54,17 +54,17 @@ gettext ([http://www.gnu.org/s/gettext](http://www.gnu.org/s/gettext)). Required
 
 ### Building
 
-Using CMake:
+#### Using CMake:
 
 `mkdir build && cd build` to create out-of-source build directory.
 
-`cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local` to prepare build files for installation to '/usr/local'.
+`cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local` to prepare build files for installation to `/usr/local`.
 
 `make` to compile all files.
 
 `make install` to install executable and resources to `DESTDIR`. Default `DESTDIR` value is set by `CMAKE_INSTALL_PREFIX` variable.
 
-Using SCons:
+#### Using SCons:
 
 `scons` to compile all files and place executable file in `build/`.
 
@@ -76,3 +76,4 @@ ENABLE\_NLS - compile with gettext support. Enabled by default.
 
 USE\_GTK3 - use GTK3 instead of GTK2. Enabled by default.
 
+PREFER\_VERSION\_FILE - read version information from file instead of using GIT. Disabled by default. This option enables unconditional `.version` file usage. `.version` file is included in release source archives and is a simple text file containing the following information in four lines: major/minor version, revision, commit hash and commit date.

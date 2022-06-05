@@ -17,6 +17,7 @@ vars.Add('MSVS_VERSION', 'Visual Studio version', '11.0')
 vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Add(BoolVariable('USE_GTK3', 'Use GTK3 instead of GTK2', True))
 vars.Add(BoolVariable('DEV_BUILD', 'Use development flags', False))
+vars.Add(BoolVariable('PREFER_VERSION_FILE', 'Read version information from file instead of using GIT', False))
 vars.Update(env)
 
 if env['LOCALEDIR'] == '':
@@ -39,7 +40,7 @@ if env['BUILD_TARGET'] == 'win32':
 			env.Tool('mingw')
 
 env.AddCustomBuilders()
-env.GetVersionInfo()
+env.GetVersionInfo(env['PREFER_VERSION_FILE'])
 
 try:
 	umask = os.umask(0o022)

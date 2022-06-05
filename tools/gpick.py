@@ -151,10 +151,15 @@ class GpickEnvironment(SConsEnvironment):
 		MatchFiles(files, self.GetLaunchDir(), os.sep, dir_exclude_prog, file_exclude_prog)
 		return files
 
-	def GetVersionInfo(self):
-		try:
-			(version, revision, hash, date) = getVersionInfo()
-		except:
+	def GetVersionInfo(self, preferVersionFile):
+		haveVersionInfo = False
+		if not preferVersionFile:
+			try:
+				(version, revision, hash, date) = getVersionInfo()
+				haveVersionInfo = True
+			except:
+				pass
+		if not haveVersionInfo:
 			try:
 				with open("../.version", "r", encoding = 'utf-8') as version_file:
 					(version, revision, hash, date) = version_file.read().splitlines()

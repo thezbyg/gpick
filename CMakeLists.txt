@@ -3,6 +3,7 @@ project(gpick)
 option(ENABLE_NLS "compile with gettext support" true)
 option(USE_GTK3 "use GTK3 instead of GTK2" true)
 option(DEV_BUILD "use development flags" false)
+option(PREFER_VERSION_FILE "read version information from file instead of using GIT" false)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 file(GLOB SOURCES
 	source/*.cpp source/*.h
