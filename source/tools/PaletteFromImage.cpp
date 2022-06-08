@@ -30,6 +30,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <mutex>
 
 struct PaletteColorNameAssigner: public ToolColorNameAssigner {
 	PaletteColorNameAssigner(GlobalState &gs):
@@ -59,6 +61,9 @@ struct PaletteFromImageArgs {
 	ColorList *previewColorList;
 	dynv::Ref options;
 	GlobalState *gs;
+	static uint8_t toUint8(float value) {
+		return static_cast<uint8_t>(std::max(std::min(static_cast<int>(value * 256), 255), 0));
+	}
 	void processImage() {
 		previousFilename = filename;
 		octree.clear();
@@ -74,20 +79,66 @@ struct PaletteFromImageArgs {
 		int height = gdk_pixbuf_get_height(pixbuf);
 		int stride = gdk_pixbuf_get_rowstride(pixbuf);
 		guchar *imageData = gdk_pixbuf_get_pixels(pixbuf);
-
-		guchar *dataPointer = imageData;
-		Color color;
-		for (int y = 0; y < height; y ++) {
-			dataPointer = imageData + stride * y;
-			for (int x = 0; x < width; x++) {
-				color.xyz.x = dataPointer[0] / 255.0f;
-				color.xyz.y = dataPointer[1] / 255.0f;
-				color.xyz.z = dataPointer[2] / 255.0f;
-				color.alpha = 1.0f;
-				color.linearRgbInplace();
-				std::array<uint8_t, 3> position = { dataPointer[0], dataPointer[1], dataPointer[2] };
-				octree.add(color, position);
-				dataPointer += channels;
+		if (width * height < (1 << 16) || std::max(1u, std::thread::hardware_concurrency()) == 1) {
+			guchar *dataPointer = imageData;
+			Color color;
+			for (int y = 0; y < height; y++) {
+				dataPointer = imageData + stride * y;
+				for (int x = 0; x < width; x++) {
+					if (channels == 1) {
+						color.xyz.x = color.xyz.y = color.xyz.z = dataPointer[0] / 255.0f;
+					} else {
+						color.xyz.x = dataPointer[0] / 255.0f;
+						color.xyz.y = dataPointer[1] / 255.0f;
+						color.xyz.z = dataPointer[2] / 255.0f;
+					}
+					color.alpha = 1.0f;
+					color.linearRgbInplace();
+					std::array<uint8_t, 3> position = { dataPointer[0], dataPointer[1], dataPointer[2] };
+					octree.add(color, position);
+					dataPointer += channels;
+				}
+			}
+		} else {
+			size_t threadCount = std::min(8u, std::thread::hardware_concurrency());
+			std::mutex octreeMutex;
+			std::vector<std::thread> threads(threadCount);
+			size_t index = 0;
+			for (auto &thread: threads) {
+				thread = std::thread([this, &octreeMutex, index, threadCount, imageData, channels, width, height, stride]() {
+					math::OctreeColorQuantization threadOctree;
+					guchar *dataPointer = imageData + stride * index;
+					Color color;
+					for (int y = 0; y < height; y += threadCount) {
+						dataPointer = imageData + stride * y;
+						for (int x = 0; x < width; x++) {
+							if (channels == 1) {
+								color.xyz.x = color.xyz.y = color.xyz.z = dataPointer[0] / 255.0f;
+							} else {
+								color.xyz.x = dataPointer[0] / 255.0f;
+								color.xyz.y = dataPointer[1] / 255.0f;
+								color.xyz.z = dataPointer[2] / 255.0f;
+							}
+							color.alpha = 1.0f;
+							color.linearRgbInplace();
+							std::array<uint8_t, 3> position = { dataPointer[0], dataPointer[1], dataPointer[2] };
+							threadOctree.add(color, position);
+							dataPointer += channels;
+						}
+					}
+					threadOctree.reduce(1000);
+					std::scoped_lock<std::mutex> lock(octreeMutex);
+					threadOctree.visit([this](const float sum[3], size_t pixels) {
+						Color color(sum[0] / pixels, sum[1] / pixels, sum[2] / pixels, 1.0f);
+						Color nonLinearColor = color.nonLinearRgb();
+						std::array<uint8_t, 3> position = { toUint8(nonLinearColor.red), toUint8(nonLinearColor.green), toUint8(nonLinearColor.blue) };
+						octree.add(color, pixels, position);
+					});
+				});
+				++index;
+			}
+			for (auto &thread: threads) {
+				thread.join();
 			}
 		}
 		g_object_unref(pixbuf);

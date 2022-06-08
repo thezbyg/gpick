@@ -37,6 +37,7 @@ struct OctreeColorQuantization {
 		Node(const Node &node, uint8_t depth, OctreeColorQuantization &ocq);
 		Node &operator=(const Node &node);
 		void add(const Color &color, const Position position, uint8_t depth, OctreeColorQuantization &ocq);
+		void add(const Color &color, size_t pixels, const Position position, uint8_t depth, OctreeColorQuantization &ocq);
 		void clear();
 		uint8_t removeLeafs(OctreeColorQuantization &ocq);
 		uint8_t reduceLeafs(uint8_t reduceBy, OctreeColorQuantization &ocq);
@@ -63,6 +64,7 @@ struct OctreeColorQuantization {
 	OctreeColorQuantization();
 	OctreeColorQuantization(const OctreeColorQuantization &ocq);
 	void add(const Color &color, const Position position);
+	void add(const Color &color, size_t pixels, const Position position);
 	void clear();
 	void reduce(size_t numberOfColors, bool accurate = true);
 	size_t size() const;

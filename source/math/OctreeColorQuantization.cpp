@@ -146,6 +146,26 @@ void OctreeColorQuantization::Node::add(const Color &color, const Position posit
 	}
 	m_children[i]->add(color, position, depth + 1, ocq);
 }
+void OctreeColorQuantization::Node::add(const Color &color, size_t pixels, const Position position, uint8_t depth, OctreeColorQuantization &ocq) {
+	if (ocq.m_leafs + 1 >= maxNodesPerLevel)
+		ocq.reduce(maxNodesPerLevel / 2, false);
+	if (depth == maxDepth || isLeaf()) {
+		if (m_pixels == 0)
+			ocq.m_leafs++;
+		m_pixels += pixels;
+		m_colorSum[0] += color.xyz.x * pixels;
+		m_colorSum[1] += color.xyz.y * pixels;
+		m_colorSum[2] += color.xyz.z * pixels;
+		return;
+	}
+	uint8_t i = toIndex(position[0], depth) | (toIndex(position[1], depth) << 1) | (toIndex(position[2], depth) << 2);
+	if (!m_children[i]) {
+		m_children[i] = newNode(ocq.m_allocator, ocq.m_freeNodes);
+		if (depth < maxDepth - 1)
+			ocq.m_levels[depth].push_back(m_children[i]);
+	}
+	m_children[i]->add(color, pixels, position, depth + 1, ocq);
+}
 bool OctreeColorQuantization::Node::isLeaf() const {
 	return m_pixels > 0;
 }
@@ -173,6 +193,9 @@ OctreeColorQuantization::OctreeColorQuantization(const OctreeColorQuantization &
 }
 void OctreeColorQuantization::add(const Color &color, const Position position) {
 	m_root.add(color, position, 0, *this);
+}
+void OctreeColorQuantization::add(const Color &color, size_t pixels, const Position position) {
+	m_root.add(color, pixels, position, 0, *this);
 }
 void OctreeColorQuantization::clear() {
 	m_root.clear();
