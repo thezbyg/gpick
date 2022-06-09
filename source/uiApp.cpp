@@ -43,6 +43,7 @@
 #include "uiDialogEdit.h"
 #include "uiDialogAutonumber.h"
 #include "uiDialogSort.h"
+#include "uiTemporaryPalette.h"
 #include "uiColorDictionaries.h"
 #include "uiTransformations.h"
 #include "uiDialogOptions.h"
@@ -824,6 +825,10 @@ static void view_layout_cb(GtkWidget *widget, AppArgs* args)
 		repositionViews(args);
 	}
 }
+static void view_new_temporary_palette_cb(GtkWidget *widget, AppArgs* args)
+{
+	temporary_palette_show(GTK_WINDOW(args->window), *args->gs);
+}
 
 static void palette_from_image_cb(GtkWidget *widget, AppArgs* args)
 {
@@ -1055,7 +1060,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 		gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), true);
 	g_object_set_data_full(G_OBJECT(item), "source", nullptr, (GDestroyNotify)nullptr);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(secondary_view_cb), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_N, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_n, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
 	args->csm.visit([args, accel_group, menu2, &colorSourceName, &group](const ColorSourceManager::Registration &registration) {
 		if (registration.singleInstanceOnly)
@@ -1084,6 +1089,10 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), args->options->getBool("view.palette", true));
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+	item = gtk_menu_item_new_with_mnemonic(_("New temporary palette"));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_new_temporary_palette_cb), args);
 
 	file_item = gtk_menu_item_new_with_mnemonic (_("_View"));
 	gtk_menu_item_set_submenu (GTK_MENU_ITEM (file_item),GTK_WIDGET( menu));
@@ -1252,7 +1261,10 @@ static PaletteListCallbackResult color_list_update(ColorObject *colorObject, voi
 }
 static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 {
-	if (palette_list_get_selected_count(args->color_list) == 1) {
+	auto selectedCount = palette_list_get_selected_count(args->color_list);
+	if (selectedCount == 0)
+		return;
+	if (selectedCount == 1) {
 		ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
 		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, true, &new_color_object) == 0){
 			color_object->setColor(new_color_object->getColor());
@@ -1361,14 +1373,16 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	auto item = newMenuItem(_("A_dd..."), GTK_STOCK_NEW);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_add), args);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_n, GdkModifierType(), GTK_ACCEL_VISIBLE);
 
 	item = newMenuItem(_("_Edit..."), GTK_STOCK_EDIT);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_edit), args);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_e, GdkModifierType(), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, selected_count > 0);
 
 	item = newMenuItem(_("_Paste"), GTK_STOCK_PASTE);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_v, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_paste), args);
 	gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
@@ -1394,28 +1408,28 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	item = gtk_menu_item_new_with_mnemonic (_("C_lear names"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_clear_names), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_E, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_c, GdkModifierType(GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	item = gtk_menu_item_new_with_mnemonic (_("Autona_me"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_autoname), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_N, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_a, GdkModifierType(GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	item = gtk_menu_item_new_with_mnemonic (_("Auto_number..."));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_autonumber), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_a, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_n, GdkModifierType(GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = gtk_menu_item_new_with_mnemonic(_("R_everse"));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_reverse), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_v, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_r, GdkModifierType(GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
 	item = gtk_menu_item_new_with_mnemonic(_("Group and _sort..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_group_and_sort), args);
-	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_g, GdkModifierType(0), GTK_ACCEL_VISIBLE);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_g, GdkModifierType(GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 2));
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), gtk_separator_menu_item_new ());
 	item = newMenuItem(_("_Remove"), GTK_STOCK_REMOVE);
@@ -1426,6 +1440,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	item = newMenuItem(_("Remove _All"), GTK_STOCK_REMOVE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_all), args);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (total_count >= 1));
 	showContextMenu(menu, event);
 	g_object_ref_sink(G_OBJECT(accel_group));
@@ -1448,9 +1463,9 @@ static gboolean on_palette_button_press(GtkWidget *widget, GdkEventButton *event
 
 static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event, AppArgs *args)
 {
-	guint modifiers = gtk_accelerator_get_default_mod_mask();
+	guint state = event->state & gtk_accelerator_get_default_mod_mask();
 	guint keyval;
-	switch((keyval = getKeyval(*event, args->gs->latinKeysGroup))) {
+	switch ((keyval = getKeyval(*event, args->gs->latinKeysGroup))) {
 		case GDK_KEY_1:
 		case GDK_KEY_KP_1:
 		case GDK_KEY_2:
@@ -1484,7 +1499,7 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 						case GDK_KEY_KP_6:
 						case GDK_KEY_6: color_index = 5; break;
 					}
-					if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+					if (state == GDK_CONTROL_MASK) {
 						auto colorObject = colorSource->getNthColor(color_index);
 						auto color = colorObject.getColor();
 						palette_list_forfirst_selected(args->color_list, color_list_set_color, &color, true);
@@ -1497,40 +1512,58 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			}
 			return false;
 		case GDK_KEY_c:
-			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			if (state == GDK_CONTROL_MASK) {
 				clipboard::set(args->color_list, args->gs, Converters::Type::copy);
+				return true;
+			} else if (state == GDK_SHIFT_MASK) {
+				palette_popup_menu_clear_names(widget, args);
 				return true;
 			}
 			return false;
 		case GDK_KEY_v:
-			if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+			if (state == GDK_CONTROL_MASK) {
 				palette_popup_menu_paste(nullptr, args);
 				return true;
-			} else {
+			}
+			return false;
+		case GDK_KEY_r:
+			if (state == GDK_SHIFT_MASK) {
 				palette_popup_menu_reverse(widget, args);
 				return true;
 			}
 			return false;
 		case GDK_KEY_g:
-			palette_popup_menu_group_and_sort(widget, args);
-			return true;
-		case GDK_KEY_Delete:
-			palette_popup_menu_remove_selected(widget, args);
-			break;
-		case GDK_KEY_a:
-			if ((event->state & GDK_CONTROL_MASK) == 0){
-				palette_popup_menu_autonumber(widget, args);
+			if (state == GDK_SHIFT_MASK) {
+				palette_popup_menu_group_and_sort(widget, args);
 				return true;
 			}
 			break;
-		case GDK_KEY_e:
-			if ((event->state & GDK_CONTROL_MASK) == 0){
-				palette_popup_menu_clear_names(widget, args);
+		case GDK_KEY_Delete:
+			if (state == GDK_CONTROL_MASK) {
+				palette_popup_menu_remove_all(widget, args);
+				return true;
+			} else if (state == 0) {
+				palette_popup_menu_remove_selected(widget, args);
 				return true;
 			}
 			break;
 		case GDK_KEY_n:
-			if ((event->state & GDK_CONTROL_MASK) == 0){
+			if (state == GDK_SHIFT_MASK) {
+				palette_popup_menu_autonumber(widget, args);
+				return true;
+			} else if (state == 0) {
+				palette_popup_menu_add(widget, args);
+				return true;
+			}
+			break;
+		case GDK_KEY_e:
+			if (state == 0) {
+				palette_popup_menu_edit(widget, args);
+				return true;
+			}
+			break;
+		case GDK_KEY_a:
+			if (state == GDK_SHIFT_MASK) {
 				palette_popup_menu_autoname(widget, args);
 				return true;
 			}
@@ -1561,14 +1594,15 @@ static int color_list_on_clear(ColorList* color_list, void *userdata) {
 	palette_list_remove_all_entries(((AppArgs*)userdata)->color_list, !color_list->blocked);
 	return 0;
 }
-static PaletteListCallbackResult callback_color_list_on_get_positions(ColorObject* color_object, size_t *position, void *userdata) {
-	color_object->setPosition(*position);
-	(*position)++;
+static PaletteListCallbackResult callback_color_list_on_get_positions(ColorObject* color_object, void *userdata) {
+	auto &position = *reinterpret_cast<size_t *>(userdata);
+	color_object->setPosition(position);
+	++position;
 	return PaletteListCallbackResult::noUpdate;
 }
 static int color_list_on_get_positions(ColorList* color_list, void *userdata) {
 	size_t position = 0;
-	palette_list_foreach(((AppArgs*)userdata)->color_list, (PaletteListCallback)callback_color_list_on_get_positions, &position, false);
+	palette_list_foreach(((AppArgs*)userdata)->color_list, callback_color_list_on_get_positions, &position, false);
 	return 0;
 }
 

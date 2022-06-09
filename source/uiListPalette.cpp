@@ -27,6 +27,8 @@
 #include "Converter.h"
 #include "GlobalState.h"
 #include "EventBus.h"
+#include "uiDialogEdit.h"
+#include "uiColorInput.h"
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "common/Format.h"
@@ -35,6 +37,7 @@
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
+#include "IContainerUI.h"
 #include <sstream>
 #include <iomanip>
 using namespace math;
@@ -42,23 +45,27 @@ using namespace math;
 struct ListPaletteArgs;
 static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
 static void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
+static void updateSelected(GtkTreeView *treeView, GlobalState &gs);
 static void updateAll(GtkTreeView *treeView, GlobalState &gs);
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args);
 const int ScrollEdgeSize = 15; //SCROLL_EDGE_SIZE from gtktreeview.c
-struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, public IDraggableColorUI, public IEventHandler {
+struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public IDroppableColorsUI, public IDraggableColorUI, public IEventHandler {
 	GtkWidget *treeview;
 	gint scrollTimeout;
 	bool allowSelection;
 	GtkWidget* countLabel;
 	GlobalState &gs;
 	bool countUpdateBlocked;
-	bool mainPalette;
-	ListPaletteArgs(GlobalState &gs, GtkWidget *countLabel, bool mainPalette):
+	bool mainPalette, readOnly;
+	ColorList &colorList;
+	ListPaletteArgs(GlobalState &gs, GtkWidget *countLabel, bool mainPalette, bool readOnly, ColorList &colorList):
 		scrollTimeout(0),
 		countLabel(countLabel),
 		gs(gs),
 		countUpdateBlocked(false),
-		mainPalette(mainPalette) {
+		mainPalette(mainPalette),
+		readOnly(readOnly),
+		colorList(colorList) {
 		gs.eventBus().subscribe(EventType::optionsUpdate, *this);
 		gs.eventBus().subscribe(EventType::convertersUpdate, *this);
 		gs.eventBus().subscribe(EventType::paletteChanged, *this);
@@ -104,9 +111,58 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		return result;
 	}
 	virtual bool isEditable() override {
-		return false;
+		return !readOnly;
+	}
+	virtual bool isContainer() override {
+		return !readOnly;
+	}
+	virtual void addColors(const std::vector<ColorObject> &colorObjects) {
+		for (auto &colorObject: colorObjects) {
+			color_list_add_color_object(&colorList, colorObject.copy(), true);
+		}
+	}
+	virtual void editColors() {
+		auto selectedCount = palette_list_get_selected_count(treeview);
+		if (selectedCount == 0)
+			return;
+		if (selectedCount == 1) {
+			ColorObject *colorObject = palette_list_get_first_selected(treeview)->reference(), *newColorObject = nullptr;
+			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(treeview)), &gs, colorObject, true, &newColorObject) == 0) {
+				colorObject->setColor(newColorObject->getColor());
+				colorObject->setName(newColorObject->getName());
+				newColorObject->release();
+				palette_list_update_first_selected(treeview, false);
+			}
+			colorObject->release();
+		} else {
+			ColorList *colorList = color_list_new();
+			foreachSelectedItem(GTK_TREE_VIEW(treeview), [colorList](ColorObject *colorObject) {
+				color_list_add_color_object(colorList, colorObject, false);
+				return true;
+			});
+			dialog_edit_show(GTK_WINDOW(gtk_widget_get_toplevel(treeview)), *colorList, gs);
+			color_list_destroy(colorList);
+			updateSelected(GTK_TREE_VIEW(treeview), gs);
+		}
+	}
+	virtual void removeColors(bool selected) override {
+		if (selected) {
+			color_list_reset_selected(&colorList);
+			foreachSelectedItem(GTK_TREE_VIEW(treeview), [](ColorObject *colorObject) {
+				colorObject->setSelected(true);
+				return true;
+			});
+			color_list_remove_selected(&colorList);
+		} else {
+			palette_list_remove_all_entries(treeview, true);
+		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {
+		foreachSelectedItem(GTK_TREE_VIEW(treeview), [&colorObject](ColorObject *old) {
+			old->setName(colorObject.getName());
+			old->setColor(colorObject.getColor());
+			return false;
+		});
 	}
 	virtual void setColors(const std::vector<ColorObject> &colorObjects) override {
 	}
@@ -114,7 +170,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		setColorsAt(std::vector<ColorObject>{ colorObject }, x, y);
 	}
 	virtual void setColorsAt(const std::vector<ColorObject> &colorObjects, int x, int y) override {
-		color_list_reset_selected(gs.getColorList());
+		color_list_reset_selected(&colorList);
 		removeScrollTimeout();
 		auto model = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 		std::optional<GtkTreeIter> insertIterator;
@@ -126,7 +182,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 			gtk_tree_path_free(path);
 			insertIterator = iter;
 		}
-		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
+		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
 		ColorObject *colorObject = nullptr;
 		for (size_t i = 0, count = colorObjects.size(); i < count; i++) {
 			if (insertIterator) {
@@ -143,18 +199,18 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 					gtk_list_store_insert_after(GTK_LIST_STORE(model), &iter, &*insertIterator);
 				}
 				palette_list_entry_fill(GTK_LIST_STORE(model), &iter, colorObject, this);
-				color_list_add_color_object(gs.getColorList(), colorObject, false);
+				color_list_add_color_object(&colorList, colorObject, false);
 			} else {
 				colorObject = colorObjects[i].copy();
 				colorObject->setSelected(true);
-				color_list_add_color_object(gs.getColorList(), colorObject, true);
+				color_list_add_color_object(&colorList, colorObject, true);
 			}
 			colorObject->release();
 		}
 	}
 	virtual std::vector<ColorObject> getColors(bool selected) override {
 		std::vector<ColorObject> result;
-		color_list_reset_all(gs.getColorList());
+		color_list_reset_all(&colorList);
 		if (selected)
 			foreachSelectedItem(GTK_TREE_VIEW(treeview), [&result](ColorObject *colorObject) {
 				result.push_back(*colorObject);
@@ -241,6 +297,10 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		}
 	}
 	virtual void dropEnd(bool move) override {
+		removeScrollTimeout();
+		updateCounts();
+	}
+	virtual void dragEnd(bool move) override {
 		countUpdateBlocked = true;
 		removeScrollTimeout();
 		auto *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
@@ -278,20 +338,16 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 					valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iter);
 				}
 			}
-			color_list_remove_visited(gs.getColorList());
-			color_list_reset_selected(gs.getColorList());
+			color_list_remove_visited(&colorList);
+			color_list_reset_selected(&colorList);
 			if (mainPalette)
 				gs.eventBus().trigger(EventType::paletteChanged);
 		} else {
-			color_list_reset_all(gs.getColorList());
+			color_list_reset_all(&colorList);
 			if (mainPalette)
 				gs.eventBus().trigger(EventType::paletteChanged);
 		}
 		countUpdateBlocked = false;
-		updateCounts();
-	}
-	virtual void dragEnd(bool move) override {
-		removeScrollTimeout();
 		updateCounts();
 	}
 	struct SelectionBoundsArgs {
@@ -389,6 +445,22 @@ struct ListPaletteArgs : public IEditableColorsUI, public IDroppableColorsUI, pu
 		if (mainPalette)
 			gs.eventBus().trigger(EventType::paletteChanged);
 	}
+	static void onRowActivated(GtkTreeView *, GtkTreePath *path, GtkTreeViewColumn *, ListPaletteArgs *args) {
+		GtkTreeModel* model = gtk_tree_view_get_model(GTK_TREE_VIEW(args->treeview));
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, path);
+		ColorObject *colorObject;
+		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+		if (colorObject && args->mainPalette) {
+			auto *colorSource = args->gs.getCurrentColorSource();
+			if (colorSource != nullptr)
+				colorSource->setColor(*colorObject);
+		} else if (colorObject) {
+			color_list_add_color_object(args->gs.getColorList(), colorObject, true);
+		}
+		args->updateCounts();
+		args->onChange();
+	}
 	ColorObject colorObject;
 };
 static void palette_list_entry_fill(GtkListStore* store, GtkTreeIter *iter, ColorObject* color_object, ListPaletteArgs* args)
@@ -417,20 +489,6 @@ static void palette_list_cell_edited(GtkCellRendererText *cell, gchar *path, gch
 	ColorObject *color_object;
 	gtk_tree_model_get(model, &iter, 0, &color_object, -1);
 	color_object->setName(new_text);
-	args->onChange();
-}
-static void palette_list_row_activated(GtkTreeView *treeView, GtkTreePath *path, GtkTreeViewColumn *column, gpointer userData)
-{
-	ListPaletteArgs* args = (ListPaletteArgs*)userData;
-	GtkTreeModel* model = gtk_tree_view_get_model(treeView);;
-	GtkTreeIter iter;
-	gtk_tree_model_get_iter(model, &iter, path);
-	ColorObject *colorObject;
-	gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
-	auto *colorSource = args->gs.getCurrentColorSource();
-	if (colorSource != nullptr)
-		colorSource->setColor(*colorObject);
-	args->updateCounts();
 	args->onChange();
 }
 
@@ -503,6 +561,23 @@ static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorO
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
 	g_list_free(list);
 }
+static void updateSelected(GtkTreeView *treeView, GlobalState &gs) {
+	auto model = gtk_tree_view_get_model(treeView);
+	auto selection = gtk_tree_view_get_selection(treeView);
+	GList *list = gtk_tree_selection_get_selected_rows(selection, 0);
+	GList *i = list;
+	while (i) {
+		GtkTreeIter iter;
+		gtk_tree_model_get_iter(model, &iter, reinterpret_cast<GtkTreePath *>(i->data));
+		ColorObject *colorObject;
+		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
+		std::string text = gs.converters().serialize(*colorObject, Converters::Type::colorList);
+		gtk_list_store_set(GTK_LIST_STORE(model), &iter, 1, text.c_str(), -1);
+		i = g_list_next(i);
+	}
+	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
+	g_list_free(list);
+}
 #if GTK_MAJOR_VERSION >= 3
 static void onExpanderStateChange(GtkExpander *expander, GParamSpec *, ListPaletteArgs *args) {
 	bool expanded = gtk_expander_get_expanded(expander);
@@ -533,8 +608,8 @@ static gboolean onPreviewButtonRelease(GtkTreeView *treeView, GdkEventButton *ev
 	return false;
 }
 static void destroy_arguments(gpointer data);
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list) {
-	auto args = new ListPaletteArgs(*gs, nullptr, false);
+GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList*, ColorList** out_color_list) {
+	auto args = new ListPaletteArgs(*gs, nullptr, false, true, *gs->getColorList());
 	auto view = args->treeview = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), 0);
 	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
@@ -629,8 +704,8 @@ static gboolean on_palette_unselect_all(GtkTreeView *treeview, ListPaletteArgs *
 	return false;
 }
 
-GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* countLabel) {
-	auto args = new ListPaletteArgs(*gs, countLabel, true);
+static GtkWidget* palette_list_new(GlobalState &gs, GtkWidget *countLabel, bool mainPalette, bool readOnly, ColorList &colorList) {
+	auto args = new ListPaletteArgs(gs, countLabel, mainPalette, readOnly, colorList);
 	auto view = args->treeview = gtk_tree_view_new();
 	gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), true);
 	gtk_tree_view_set_fixed_height_mode(GTK_TREE_VIEW(view), true);
@@ -671,7 +746,7 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* countLabel) {
 
 	GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
-	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(palette_list_row_activated), args);
+	g_signal_connect(G_OBJECT(view), "row-activated", G_CALLBACK(ListPaletteArgs::onRowActivated), args);
 	g_signal_connect(G_OBJECT(view), "button-press-event", G_CALLBACK(on_palette_button_press), args);
 	g_signal_connect(G_OBJECT(view), "button-release-event", G_CALLBACK(on_palette_button_release), args);
 	g_signal_connect(G_OBJECT(view), "cursor-changed", G_CALLBACK(on_palette_cursor_changed), args);
@@ -684,12 +759,22 @@ GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* countLabel) {
 
 	g_object_set_data_full(G_OBJECT(view), "arguments", args, destroy_arguments);
 	g_signal_connect(G_OBJECT(view), "destroy", G_CALLBACK(destroy_cb), args);
+
+	if (!mainPalette)
+		StandardEventHandler::forWidget(view, &args->gs, args, StandardEventHandler::Options().afterEvents(false));
 	StandardDragDropHandler::forWidget(view, &args->gs, args, StandardDragDropHandler::Options().supportsMove(true).converterType(Converters::Type::colorList));
 
 	if (countLabel){
 		args->updateCounts();
 	}
 	return view;
+}
+
+GtkWidget* palette_list_new(GlobalState *gs, GtkWidget *countLabel) {
+	return palette_list_new(*gs, countLabel, true, false, *gs->getColorList());
+}
+GtkWidget* palette_list_temporary_new(GlobalState &gs, GtkWidget* countLabel, ColorList &colorList) {
+	return palette_list_new(gs, countLabel, false, false, colorList);
 }
 
 void palette_list_remove_all_entries(GtkWidget* widget, bool allowUpdate) {

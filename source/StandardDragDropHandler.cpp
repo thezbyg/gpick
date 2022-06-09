@@ -340,7 +340,7 @@ static void onDragEnd(GtkWidget *widget, GdkDragContext *context, IReadonlyColor
 		gtk_widget_destroy(state.dragWidget);
 		state.dragWidget = nullptr;
 	}
-	auto *draggableColorUI= dynamic_cast<IDraggableColorUI*>(readonlyColorUI);
+	auto *draggableColorUI = dynamic_cast<IDraggableColorUI*>(readonlyColorUI);
 	if (draggableColorUI)
 		draggableColorUI->dragEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE);
 }

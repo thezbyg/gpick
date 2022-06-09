@@ -23,14 +23,18 @@
 #include "GlobalState.h"
 #include "uiUtilities.h"
 #include "ColorObject.h"
+#include "ColorList.h"
+#include "IContainerUI.h"
 #include <gdk/gdkkeysyms.h>
 
 static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColorUI *readonlyColorUI) {
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
-	auto modifiers = gtk_accelerator_get_default_mod_mask();
+	auto state = event->state & gtk_accelerator_get_default_mod_mask();
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	bool isContainer = containerUI && containerUI->isContainer();
 	switch (getKeyval(*event, gs->latinKeysGroup)) {
 	case GDK_KEY_c:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+		if (state == GDK_CONTROL_MASK) {
 			auto *editableColorsUI = dynamic_cast<IEditableColorsUI *>(readonlyColorUI);
 			if (editableColorsUI) {
 				auto colors = editableColorsUI->getColors(true);
@@ -51,7 +55,19 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 		}
 		return false;
 	case GDK_KEY_v:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+		if (state == GDK_CONTROL_MASK) {
+			if (isContainer) {
+				auto *colorList = clipboard::getColors(gs);
+				if (colorList == nullptr)
+					return false;
+				std::vector<ColorObject> colorObjects;
+				for (auto *colorObject: colorList->colors) {
+					colorObjects.emplace_back(*colorObject);
+				}
+				containerUI->addColors(colorObjects);
+				color_list_destroy(colorList);
+				return true;
+			}
 			auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
 			if (!editableColorUI || !editableColorUI->isEditable())
 				return false;
@@ -64,29 +80,64 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 		}
 		return false;
 	case GDK_KEY_a:
-		if ((event->state & modifiers) == GDK_CONTROL_MASK) {
+		if (state == GDK_SHIFT_MASK) {
 			auto *readonlyColorsUI = dynamic_cast<IReadonlyColorsUI *>(readonlyColorUI);
 			if (!readonlyColorsUI)
 				return false;
 			readonlyColorsUI->addAllToPalette();
-		} else {
+			return true;
+		} else if (state == 0) {
 			auto &colorObject = readonlyColorUI->getColor();
 			readonlyColorUI->addToPalette(colorObject);
+			return true;
 		}
-		return true;
-	case GDK_KEY_e: {
-		auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
-		if (!editableColorUI || !editableColorUI->isEditable())
-			return false;
-		auto *colorObject = readonlyColorUI->getColor().copy();
-		ColorObject *newColorObject;
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
-			editableColorUI->setColor(*newColorObject);
-			newColorObject->release();
+		return false;
+	case GDK_KEY_e:
+		if (state == 0) {
+			auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
+			if (!editableColorUI || !editableColorUI->isEditable())
+				return false;
+			if (isContainer) {
+				containerUI->editColors();
+				return true;
+			}
+			auto *colorObject = readonlyColorUI->getColor().copy();
+			ColorObject *newColorObject;
+			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
+				editableColorUI->setColor(*newColorObject);
+				newColorObject->release();
+			}
+			colorObject->release();
+			return true;
 		}
-		colorObject->release();
-		return true;
-	}
+		return false;
+	case GDK_KEY_n:
+		if (state == 0) {
+			if (!isContainer)
+				return false;
+			ColorObject *newColorObject;
+			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, nullptr, true, &newColorObject) == 0) {
+				std::vector<ColorObject> colorObjects;
+				colorObjects.emplace_back(*newColorObject);
+				containerUI->addColors(colorObjects);
+				newColorObject->release();
+			}
+			return true;
+		}
+		return false;
+	case GDK_KEY_Delete:
+		if (state == 0) {
+			if (!isContainer)
+				return false;
+			containerUI->removeColors(true);
+			return true;
+		} else if (state == GDK_CONTROL_MASK) {
+			if (!isContainer)
+				return false;
+			containerUI->removeColors(false);
+			return true;
+		}
+		return false;
 	}
 	return false;
 }

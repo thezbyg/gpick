@@ -26,6 +26,7 @@
 #include "uiUtilities.h"
 #include "uiColorInput.h"
 #include "I18N.h"
+#include "IContainerUI.h"
 #include "common/CastToVariant.h"
 #include "IMenuExtension.h"
 #include <gdk/gdkkeysyms.h>
@@ -214,10 +215,40 @@ static void onEditableColorAdd(GtkWidget *widget, IReadonlyColorUI *readonlyColo
 static void onEditableColorAddAll(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	dynamic_cast<IReadonlyColorsUI *>(readonlyColorUI)->addAllToPalette();
 }
+static void onEditableColorAddNew(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
+	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		ColorObject *newColorObject;
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, nullptr, true, &newColorObject) == 0) {
+			std::vector<ColorObject> colorObjects;
+			colorObjects.emplace_back(*newColorObject);
+			containerUI->addColors(colorObjects);
+			newColorObject->release();
+		}
+	}
+}
+static void onEditableColorRemove(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		containerUI->removeColors(true);
+	}
+}
+static void onEditableColorRemoveAll(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		containerUI->removeColors(false);
+	}
+}
 static void onEditableColorEdit(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *colorObject = reinterpret_cast<ColorObject *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "color"));
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
 	ColorObject *newColorObject;
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		containerUI->editColors();
+		return;
+	}
 	if (colorObject) {
 		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
 			dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*newColorObject);
@@ -233,6 +264,19 @@ static void onEditableColorEdit(GtkWidget *widget, IReadonlyColorUI *readonlyCol
 }
 static void onEditableColorPaste(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		auto *colorList = clipboard::getColors(gs);
+		if (colorList == nullptr)
+			return;
+		std::vector<ColorObject> colorObjects;
+		for (auto *colorObject: colorList->colors) {
+			colorObjects.emplace_back(*colorObject);
+		}
+		containerUI->addColors(colorObjects);
+		color_list_destroy(colorList);
+		return;
+	}
 	auto colorObject = clipboard::getFirst(gs);
 	if (colorObject) {
 		dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*colorObject);
@@ -243,12 +287,13 @@ static void releaseColorObject(ColorObject *colorObject) {
 	colorObject->release();
 }
 struct InterfaceInspector {
-	InterfaceInspector(bool &editable, bool &currentlyEditable, bool &multiple, bool &hasSelection, bool &hasColor):
+	InterfaceInspector(bool &editable, bool &currentlyEditable, bool &multiple, bool &hasSelection, bool &hasColor, bool &isContainer):
 		editable(editable),
 		currentlyEditable(currentlyEditable),
 		multiple(multiple),
 		hasSelection(hasSelection),
-		hasColor(hasColor) {
+		hasColor(hasColor),
+		isContainer(isContainer) {
 	}
 	template<typename T>
 	void common(T interface) const {
@@ -261,12 +306,14 @@ struct InterfaceInspector {
 		multiple = false;
 		hasSelection = interface->hasSelectedColor();
 		hasColor = true;
+		isContainer = false;
 		return interface;
 	}
 	IReadonlyColorUI *operator()(IReadonlyColorsUI *interface) const {
 		editable = false;
 		currentlyEditable = false;
 		multiple = true;
+		isContainer = false;
 		common(interface);
 		return interface;
 	}
@@ -276,28 +323,31 @@ struct InterfaceInspector {
 		multiple = false;
 		hasSelection = interface->hasSelectedColor();
 		hasColor = true;
+		isContainer = false;
 		return interface;
 	}
 	IReadonlyColorUI *operator()(IEditableColorsUI *interface) const {
 		editable = true;
 		currentlyEditable = interface->isEditable();
 		multiple = true;
+		auto *containerUI = dynamic_cast<IContainerUI *>(interface);
+		isContainer = containerUI && containerUI->isContainer();
 		common(interface);
 		return interface;
 	}
 private:
-	bool &editable, &currentlyEditable, &multiple, &hasSelection, &hasColor;
+	bool &editable, &currentlyEditable, &multiple, &hasSelection, &hasColor, &isContainer;
 };
 void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *gs, GdkEventButton *event, Interface interface) {
 	auto menu = gtk_menu_new();
 	auto acceleratorGroup = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
-	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false;
+	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false, isContainer = false;
 	IReadonlyColorUI *baseInterface;
-	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
-	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
+	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor, isContainer), interface)));
+	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_a, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
 	if (multiple) {
-		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
+		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_a, GdkModifierType(GDK_SHIFT_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
 	}
 	auto *menuExtension = dynamic_cast<IMenuExtension *>(baseInterface);
 	if (menuExtension)
@@ -306,8 +356,15 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 	StandardMenu::appendMenu(menu, baseInterface, gs);
 	if (editable) {
 		appender.appendSeparator();
-		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
-		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && currentlyEditable && clipboard::colorObjectAvailable());
+		if (isContainer)
+			appender.appendItem(_("_Add..."), GTK_STOCK_ADD, GDK_KEY_n, GdkModifierType(0), G_CALLBACK(onEditableColorAddNew), currentlyEditable);
+		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_e, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
+		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_v, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), (isContainer || hasSelection) && currentlyEditable && clipboard::colorObjectAvailable());
+		if (isContainer) {
+			appender.appendSeparator();
+			appender.appendItem(_("_Remove"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(0), G_CALLBACK(onEditableColorRemove), hasSelection && currentlyEditable);
+			appender.appendItem(_("Remove _All"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorRemoveAll), hasColor && currentlyEditable);
+		}
 	}
 	if (menuExtension)
 		menuExtension->extendMenu(menu, IMenuExtension::Position::end);
@@ -320,12 +377,12 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 	auto menu = gtk_menu_new();
 	auto acceleratorGroup = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), acceleratorGroup);
-	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false;
+	bool editable = false, currentlyEditable = false, multiple = false, hasSelection = false, hasColor = false, isContainer;
 	IReadonlyColorUI *baseInterface;
-	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor), interface)));
-	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
+	Appender appender(menu, acceleratorGroup, (baseInterface = std::visit(InterfaceInspector(editable, currentlyEditable, multiple, hasSelection, hasColor, isContainer), interface)));
+	appender.appendItem(_("_Add to palette"), GTK_STOCK_ADD, GDK_KEY_a, GdkModifierType(0), G_CALLBACK(onEditableColorAdd), hasSelection);
 	if (multiple) {
-		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_A, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
+		appender.appendItem(_("A_dd all to palette"), GTK_STOCK_ADD, GDK_KEY_a, GdkModifierType(GDK_SHIFT_MASK), G_CALLBACK(onEditableColorAddAll), hasColor);
 	}
 	auto *menuExtension = dynamic_cast<IMenuExtension *>(baseInterface);
 	if (menuExtension)
@@ -334,8 +391,15 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 	StandardMenu::appendMenu(menu, baseInterface, gs);
 	if (editable) {
 		appender.appendSeparator();
-		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_E, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
-		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_V, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), hasSelection && currentlyEditable && clipboard::colorObjectAvailable());
+		if (isContainer)
+			appender.appendItem(_("_Add..."), GTK_STOCK_ADD, GDK_KEY_n, GdkModifierType(0), G_CALLBACK(onEditableColorAddNew), currentlyEditable);
+		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_e, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
+		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_v, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), (hasSelection || isContainer) && currentlyEditable && clipboard::colorObjectAvailable());
+		if (isContainer) {
+			appender.appendSeparator();
+			appender.appendItem(_("_Remove"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(0), G_CALLBACK(onEditableColorRemove), hasSelection && currentlyEditable);
+			appender.appendItem(_("Remove _All"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorRemoveAll), hasColor && currentlyEditable);
+		}
 	}
 	if (menuExtension)
 		menuExtension->extendMenu(menu, IMenuExtension::Position::end);
