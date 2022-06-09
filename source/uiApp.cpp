@@ -239,6 +239,14 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args)
 	}else{
 		args->options->set("secondary_color_source", "");
 	}
+	std::vector<int> columnWidths;
+	for (size_t i = 0; ; ++i) {
+		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(args->color_list), i);
+		if (!column)
+			break;
+		columnWidths.push_back(gtk_tree_view_column_get_width(column));
+	}
+	args->options->set("column_widths", columnWidths);
 	args->options->set("window.x", args->x);
 	args->options->set("window.y", args->y);
 	args->options->set("window.width", args->width);
@@ -1805,6 +1813,14 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value
 	GtkWidget *count_label = gtk_label_new("");
 	widget = palette_list_new(args->gs, count_label);
 	args->color_list = widget;
+	auto columnWidths = args->options->getInt32s("column_widths");
+	for (size_t i = 0; ; ++i) {
+		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(widget), i);
+		if (!column)
+			break;
+		if (i < columnWidths.size())
+			gtk_tree_view_column_set_fixed_width(column, columnWidths[i]);
+	}
 	gtk_widget_show(widget);
 	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK (on_palette_popup_menu), args);
 	g_signal_connect(G_OBJECT(widget), "button-press-event",G_CALLBACK (on_palette_button_press), args);
