@@ -227,11 +227,16 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 	}
 	static gboolean scrollRowTimeout(ListPaletteArgs *args){
 		GdkRectangle visibleRect;
-		gint y, offset, dy;
-		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(args->treeview)), nullptr, &y, nullptr);
-		gtk_tree_view_convert_bin_window_to_tree_coords(GTK_TREE_VIEW(args->treeview), 0, 0, 0, &dy);
+		gint x, y, offset, dx, dy;
+		gdk_window_get_pointer(gtk_tree_view_get_bin_window(GTK_TREE_VIEW(args->treeview)), &x, &y, nullptr);
+		gtk_tree_view_convert_bin_window_to_tree_coords(GTK_TREE_VIEW(args->treeview), 0, 0, &dx, &dy);
+		x += dx;
 		y += dy;
 		gtk_tree_view_get_visible_rect(GTK_TREE_VIEW(args->treeview), &visibleRect);
+		if (x < visibleRect.x || x > visibleRect.x + visibleRect.width)
+			return true;
+		if (y < visibleRect.y - 50 || y  > visibleRect.y + visibleRect.height + 50)
+			return true;
 		offset = y - (visibleRect.y + 2 * ScrollEdgeSize);
 		if (offset > 0) {
 			offset = y - (visibleRect.y + visibleRect.height - 2 * ScrollEdgeSize);
