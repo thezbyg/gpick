@@ -44,7 +44,7 @@ void showContextMenu(GtkWidget *menu, GdkEventButton *event);
 void setWidgetData(GtkWidget *widget, const char *name, const std::string &value);
 struct Grid {
 	Grid(int columns, int rows, int columnSpacing = 5, int rowSpacing = 5);
-	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1);
+	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1, bool verticalExpand = false);
 	void nextColumn(int columns = 1);
 	void nextRow();
 	operator GtkWidget *();

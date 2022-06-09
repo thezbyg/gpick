@@ -78,7 +78,7 @@ struct DialogEditArgs {
 			g_signal_connect(G_OBJECT(channel.adjustmentRange), "format-value", G_CALLBACK(DialogEditArgs::onFormat), this);
 			++index;
 		}
-		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2);
+		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2, true);
 		setDialogContent(dialog, grid);
 		setupChannels();
 		update(true);

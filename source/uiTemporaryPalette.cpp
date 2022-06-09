@@ -50,8 +50,12 @@ struct TemporaryPalette {
 		colorList->onUpdate = onUpdate;
 		colorList->userdata = this;
 		GtkWidget *informationLabel = gtk_label_new("");
+#if GTK_MAJOR_VERSION >= 3
 		gtk_widget_set_halign(informationLabel, GTK_ALIGN_END);
 		gtk_widget_set_margin_end(informationLabel, 5);
+#else
+		gtk_misc_set_alignment(GTK_MISC(informationLabel), 1.0f, 0.5f);
+#endif
 		GtkWidget* vbox = gtk_vbox_new(false, 0);
 		palette = palette_list_temporary_new(gs, informationLabel, *colorList);
 		auto columnWidths = options->getInt32s("column_widths");

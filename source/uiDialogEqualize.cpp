@@ -96,7 +96,7 @@ struct DialogEqualizeArgs {
 		grid.add(strengthSpinButton = gtk_spin_button_new_with_range(0, 100, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(strengthSpinButton), options->getFloat("strength", 1) * 100);
 		g_signal_connect(G_OBJECT(strengthSpinButton), "value-changed", G_CALLBACK(DialogEqualizeArgs::onStrengthUpdate), this);
-		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2);
+		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2, true);
 		update(true);
 		gtk_widget_show_all(grid);
 		setDialogContent(dialog, grid);

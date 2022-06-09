@@ -137,13 +137,15 @@ Grid::Grid(int columns, int rows, int columnSpacing, int rowSpacing):
 #endif
 	gtk_container_set_border_width(GTK_CONTAINER(m_grid), 5);
 }
-GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width) {
+GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width, bool verticalExpand) {
 #if GTK_MAJOR_VERSION >= 3
 	if (expand)
 		gtk_widget_set_hexpand(widget, true);
+	if (verticalExpand)
+		gtk_widget_set_vexpand(widget, true);
 	gtk_grid_attach(GTK_GRID(m_grid), widget, m_column, m_row, width, 1);
 #else
-	gtk_table_attach(GTK_TABLE(m_grid), widget, m_column, m_column + width, m_row, m_row + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | (expand ? GTK_EXPAND : 0)), m_columnSpacing / 2, m_rowSpacing / 2);
+	gtk_table_attach(GTK_TABLE(m_grid), widget, m_column, m_column + width, m_row, m_row + 1, GtkAttachOptions(GTK_FILL | (expand ? GTK_EXPAND : 0)), GtkAttachOptions(GTK_FILL | (verticalExpand ? GTK_EXPAND : 0)), m_columnSpacing / 2, m_rowSpacing / 2);
 #endif
 	m_column += width;
 	if (m_column >= m_columns) {

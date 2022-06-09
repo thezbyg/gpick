@@ -281,7 +281,7 @@ void tools_palette_from_image_show(GtkWindow *parent, GlobalState *gs) {
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("colors", 3));
 	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(PaletteFromImageArgs::onUpdate), args);
 	ColorList *previewColorList = nullptr;
-	args->previewExpander = grid.add(palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &previewColorList), true, 2);
+	args->previewExpander = grid.add(palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &previewColorList), true, 2, true);
 	args->previewColorList = previewColorList;
 	gtk_widget_show_all(grid);
 	setDialogContent(dialog, grid);
