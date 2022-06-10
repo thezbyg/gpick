@@ -31,30 +31,27 @@
 #define GTK_IS_LAYOUT_PREVIEW_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_LAYOUT_PREVIEW))
 #define GTK_LAYOUT_PREVIEW_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_LAYOUT_PREVIEW, GtkLayoutPreviewClass))
 
-struct GtkLayoutPreview
-{
+struct GtkLayoutPreview {
 	GtkDrawingArea parent;
 };
-struct GtkLayoutPreviewClass
-{
+struct GtkLayoutPreviewClass {
 	GtkDrawingAreaClass parent_class;
-	void (* active_color_changed)(GtkWidget* widget, gint32 active_color, gpointer userdata);
-	void (* color_changed)(GtkWidget* widget, gpointer userdata);
-	void (* color_activated)(GtkWidget* widget, gpointer userdata);
+	void (*active_color_changed)(GtkWidget *widget, gint32 active_color, gpointer userdata);
+	void (*color_changed)(GtkWidget *widget, gpointer userdata);
+	void (*color_activated)(GtkWidget *widget, gpointer userdata);
 };
-GtkWidget* gtk_layout_preview_new();
+GtkWidget *gtk_layout_preview_new();
 GType gtk_layout_preview_get_type();
-int gtk_layout_preview_set_system(GtkLayoutPreview* widget, layout::System* system);
-int gtk_layout_preview_set_color_at(GtkLayoutPreview* widget, Color* color, gdouble x, gdouble y);
-int gtk_layout_preview_set_focus_at(GtkLayoutPreview* widget, gdouble x, gdouble y);
-int gtk_layout_preview_set_focus_named(GtkLayoutPreview* widget, const char *name);
-int gtk_layout_preview_set_color_named(GtkLayoutPreview* widget, Color* color, const char *name);
-int gtk_layout_preview_get_current_color(GtkLayoutPreview* widget, Color* color);
-int gtk_layout_preview_set_current_color(GtkLayoutPreview* widget, Color* color);
-bool gtk_layout_preview_is_selected(GtkLayoutPreview* widget);
-bool gtk_layout_preview_is_editable(GtkLayoutPreview* widget);
-int gtk_layout_preview_get_current_style(GtkLayoutPreview* widget, layout::Style** style);
-void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview* widget, transformation::Chain *chain);
-void gtk_layout_preview_set_fill(GtkLayoutPreview* widget, bool fill);
-
+int gtk_layout_preview_set_system(GtkLayoutPreview *widget, common::Ref<layout::System> system);
+int gtk_layout_preview_set_color_at(GtkLayoutPreview *widget, Color *color, gdouble x, gdouble y);
+int gtk_layout_preview_set_focus_at(GtkLayoutPreview *widget, gdouble x, gdouble y);
+int gtk_layout_preview_set_focus_named(GtkLayoutPreview *widget, const char *name);
+int gtk_layout_preview_set_color_named(GtkLayoutPreview *widget, const Color &color, const char *name);
+int gtk_layout_preview_get_current_color(GtkLayoutPreview *widget, Color &color);
+int gtk_layout_preview_set_current_color(GtkLayoutPreview *widget, const Color &color);
+bool gtk_layout_preview_is_selected(GtkLayoutPreview *widget);
+bool gtk_layout_preview_is_editable(GtkLayoutPreview *widget);
+int gtk_layout_preview_get_current_style(GtkLayoutPreview *widget, common::Ref<layout::Style> &style);
+void gtk_layout_preview_set_transformation_chain(GtkLayoutPreview *widget, transformation::Chain *chain);
+void gtk_layout_preview_set_fill(GtkLayoutPreview *widget, bool fill);
 #endif /* GPICK_GTK_LAYOUT_PREVIEW_H_ */

@@ -23,7 +23,7 @@ namespace layout {
 Layouts::Layouts() {
 }
 Layouts::~Layouts() {
-	for (auto layout: m_allLayouts) {
+	for (auto *layout: m_allLayouts) {
 		delete layout;
 	}
 }
@@ -34,7 +34,7 @@ void Layouts::add(Layout *layout) {
 const std::vector<Layout *> &Layouts::all() const {
 	return m_allLayouts;
 }
-Layout *Layouts::byName(const char *name) const {
+Layout *Layouts::byName(std::string_view name) const {
 	auto i = m_layouts.find(name);
 	if (i != m_layouts.end()) {
 		return i->second;

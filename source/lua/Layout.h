@@ -18,14 +18,13 @@
 
 #ifndef GPICK_LUA_LAYOUT_H_
 #define GPICK_LUA_LAYOUT_H_
+#include "common/Ref.h"
 struct lua_State;
-namespace layout
-{
+namespace layout {
 struct System;
 }
-namespace lua
-{
+namespace lua {
 int registerLayout(lua_State *L);
-int pushLayoutSystem(lua_State *L, layout::System *system);
+int pushLayoutSystem(lua_State *L, common::Ref<layout::System> system);
 }
 #endif /* GPICK_LUA_LAYOUT_H_ */

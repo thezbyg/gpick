@@ -17,53 +17,46 @@
  */
 
 #include "System.h"
+#include "Style.h"
+#include "Box.h"
 namespace layout {
 System::System() {
-	m_box = nullptr;
 }
 System::~System() {
-	for (auto i = m_styles.begin(); i != m_styles.end(); i++) {
-		Style::unref(*i);
-	}
-	m_styles.clear();
-	Box::unref(m_box);
 }
-void System::draw(Context *context, const math::Rectangle<float> &parentRect) {
-	if (!m_box) return;
+void System::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	if (!m_box)
+		return;
 	m_box->draw(context, parentRect);
 }
-void System::addStyle(Style *style) {
-	m_styles.push_back(static_cast<Style *>(style->ref()));
+void System::addStyle(common::Ref<Style> style) {
+	m_styles.push_back(style);
 }
-const std::vector<Style *> &System::styles() const {
+const std::vector<common::Ref<Style>> &System::styles() const {
 	return m_styles;
 }
-Box *System::box() {
+common::Ref<Box> System::box() {
 	return m_box;
 }
-void System::setBox(Box *box) {
-	if (m_box) {
-		Box::unref(m_box);
-		m_box = nullptr;
-	}
-	m_box = static_cast<Box *>(box->ref());
+void System::setBox(common::Ref<Box> box) {
+	m_box = box;
 }
-Box *System::getBoxAt(const math::Vector2f &point) {
+common::Ref<Box> System::getBoxAt(const math::Vector2f &point) {
 	if (m_box)
 		return m_box->getBoxAt(point);
 	else
-		return nullptr;
+		return common::nullRef;
 }
-Box *System::getNamedBox(const char *name) {
+common::Ref<Box> System::getNamedBox(std::string_view name) {
 	if (m_box)
 		return m_box->getNamedBox(name);
 	else
-		return nullptr;
+		return common::nullRef;
 }
-Box *System::getNamedBox(const std::string &name) {
-	if (m_box)
-		return m_box->getNamedBox(name.c_str());
-	else
-		return nullptr;
+void System::setSelected(common::Ref<Box> box) {
+	m_selectedBox = box;
+}
+const common::Ref<Box> &System::selectedBox() const {
+	return m_selectedBox;
 }
 }

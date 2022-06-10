@@ -18,25 +18,20 @@
 
 #ifndef GPICK_LAYOUT_CONTEXT_H_
 #define GPICK_LAYOUT_CONTEXT_H_
-#include "../transformation/Chain.h"
-#include <gtk/gtk.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <stdint.h>
-#include <list>
-#include <string>
-namespace layout
-{
-struct Context
-{
-	Context(cairo_t *cr, transformation::Chain *chain);
+#include "transformation/Chain.h"
+#include <cairo/cairo.h>
+namespace layout {
+struct System;
+struct Context {
+	Context(System &system, cairo_t *cr, transformation::Chain *chain);
 	~Context();
-	cairo_t* getCairo() const;
-	transformation::Chain* getTransformationChain() const;
+	cairo_t *getCairo() const;
+	transformation::Chain *getTransformationChain() const;
+	System &system();
 private:
-	cairo_t *cr;
-	transformation::Chain *chain;
+	System &m_system;
+	cairo_t *m_cr;
+	transformation::Chain *m_chain;
 };
 }
 #endif /* GPICK_LAYOUT_CONTEXT_H_ */

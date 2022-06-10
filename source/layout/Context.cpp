@@ -17,22 +17,21 @@
  */
 
 #include "Context.h"
-namespace layout
-{
-Context::Context(cairo_t *cr_, transformation::Chain *chain_)
-{
-	cr = cr_;
-	chain = chain_;
+namespace layout {
+Context::Context(System &system, cairo_t *cr, transformation::Chain *chain):
+	m_system(system),
+	m_cr(cr),
+	m_chain(chain) {
 }
-Context::~Context()
-{
+Context::~Context() {
 }
-cairo_t* Context::getCairo() const
-{
-	return cr;
+cairo_t *Context::getCairo() const {
+	return m_cr;
 }
-transformation::Chain* Context::getTransformationChain() const
-{
-	return chain;
+transformation::Chain *Context::getTransformationChain() const {
+	return m_chain;
+}
+System &Context::system() {
+	return m_system;
 }
 }

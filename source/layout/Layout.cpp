@@ -18,46 +18,39 @@
 
 #include "Layout.h"
 #include "System.h"
-#include "../lua/Layout.h"
+#include "Style.h"
+#include "lua/Layout.h"
 #include <iostream>
 #include <lualib.h>
 #include <lauxlib.h>
-using namespace std;
-namespace layout
-{
-Layout::Layout(const char *name, const char *label, int mask, lua::Ref &&callback):
+namespace layout {
+Layout::Layout(std::string_view name, std::string_view label, int mask, lua::Ref &&callback):
 	m_name(name),
 	m_label(label),
 	m_mask(mask),
-	m_callback(move(callback))
-{
+	m_callback(std::move(callback)) {
 }
-const std::string &Layout::name() const
-{
+const std::string &Layout::name() const {
 	return m_name;
 }
-const std::string &Layout::label() const
-{
+const std::string &Layout::label() const {
 	return m_label;
 }
-const int Layout::mask() const
-{
+const int Layout::mask() const {
 	return m_mask;
 }
-System *Layout::build()
-{
+common::Ref<System> Layout::build() {
 	lua_State *L = m_callback.script();
 	m_callback.get();
-	System *system = new System();
+	common::Ref<System> system(new System());
 	lua::pushLayoutSystem(L, system);
 	int status;
-	if ((status = lua_pcall(L, 1, 0, 0)) == 0){
+	if ((status = lua_pcall(L, 1, 0, 0)) == 0) {
 		return system;
-	}else{
-		cerr << "layout.build: " << lua_tostring(L, -1) << endl;
+	} else {
+		std::cerr << "layout.build: " << lua_tostring(L, -1) << '\n';
 	}
 	lua_pop(L, 1);
-	delete system;
-	return nullptr;
+	return common::nullRef;
 }
 }

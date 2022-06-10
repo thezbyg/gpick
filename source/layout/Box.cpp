@@ -17,143 +17,338 @@
  */
 
 #include "Box.h"
+#include "Style.h"
+#include "Context.h"
+#include "System.h"
+#include "math/Algorithms.h"
+#include <cairo/cairo.h>
+#include <pango/pangocairo.h>
 #include <string>
 #include <typeinfo>
-#include <iostream>
 #include <boost/math/special_functions/round.hpp>
 namespace layout {
-void Box::setStyle(Style *_style) {
-	if (style) {
-		unref(style);
-		style = 0;
-	}
-	if (_style) {
-		style = static_cast<Style *>(_style->ref());
-	}
-}
-void Box::draw(Context *context, const math::Rectangle<float> &parent_rect) {
-	drawChildren(context, parent_rect);
-}
-void Box::drawChildren(Context *context, const math::Rectangle<float> &parent_rect) {
-	math::Rectangle<float> child_rect = rect.impose(parent_rect);
-	for (auto i = child.begin(); i != child.end(); i++) {
-		(*i)->draw(context, child_rect);
-	}
-}
-void Box::addChild(Box *box) {
-	child.push_back(box);
-}
-Box::Box(const char *_name, float x, float y, float width, float height) {
-	style = 0;
-	name = _name;
-	rect = math::Rectangle<float>(x, y, x + width, y + height);
-	helper_only = false;
-	locked = false;
+Box::Box(std::string_view name, float x, float y, float width, float height):
+	m_name(name),
+	m_helperOnly(false),
+	m_locked(false),
+	m_rect(x, y, x + width, y + height) {
 }
 Box::~Box() {
-	setStyle(nullptr);
-	for (auto i = child.begin(); i != child.end(); i++) {
-		unref(*i);
+}
+Box &Box::setStyle(common::Ref<Style> style) {
+	m_style = style;
+	return *this;
+}
+common::Ref<Style> Box::style() {
+	return m_style;
+}
+bool Box::locked() const {
+	return m_locked;
+}
+Box &Box::setLocked(bool locked) {
+	m_locked = locked;
+	return *this;
+}
+bool Box::helperOnly() const {
+	return m_helperOnly;
+}
+Box &Box::setHelperOnly(bool helperOnly) {
+	m_helperOnly = helperOnly;
+	return *this;
+}
+const math::Rectangle<float> &Box::rect() const {
+	return m_rect;
+}
+void Box::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	drawChildren(context, parentRect);
+}
+void Box::drawChildren(Context &context, const math::Rectangle<float> &parentRect) {
+	math::Rectangle<float> childRect = m_rect.impose(parentRect);
+	for (auto &child: m_children) {
+		if (child != context.system().selectedBox())
+			child->draw(context, childRect);
+	}
+	for (auto &child: m_children) {
+		if (child == context.system().selectedBox())
+			child->draw(context, childRect);
 	}
 }
-Box *Box::getNamedBox(const char *name_) {
-	if (name.compare(name_) == 0) {
-		return this;
-	}
-	Box *r;
-	for (auto i = child.begin(); i != child.end(); i++) {
-		if ((r = (*i)->getNamedBox(name_))) {
-			if (!r->helper_only)
-				return r;
+void Box::addChild(common::Ref<Box> box) {
+	m_children.push_back(box);
+}
+common::Ref<Box> Box::getNamedBox(std::string_view name) {
+	if (m_helperOnly)
+		return common::nullRef;
+	if (m_name.compare(name) == 0)
+		return common::Ref<Box>(this->reference());
+	common::Ref<Box> box;
+	for (auto &child: m_children) {
+		if ((box = child->getNamedBox(name))) {
+			return box;
 		}
 	}
-	return 0;
+	return common::nullRef;
 }
-Box *Box::getBoxAt(const math::Vector2f &point) {
-	if (rect.isInside(point.x, point.y)) {
-		math::Vector2f transformed_point = math::Vector2f((point.x - rect.getX()) / rect.getWidth(), (point.y - rect.getY()) / rect.getHeight());
-		Box *r;
-		for (auto i = child.begin(); i != child.end(); i++) {
-			if ((r = (*i)->getBoxAt(transformed_point))) {
-				if (!r->helper_only)
-					return r;
-			}
+common::Ref<Box> Box::getBoxAt(const math::Vector2f &point) {
+	if (!hitTest(point) || m_helperOnly)
+		return common::nullRef;
+	math::Vector2f transformedPoint = math::Vector2f((point.x - m_rect.getX()) / m_rect.getWidth(), (point.y - m_rect.getY()) / m_rect.getHeight());
+	common::Ref<Box> box;
+	for (auto &child: m_children) {
+		if ((box = child->getBoxAt(transformedPoint))) {
+			return box;
 		}
-		if (typeid(*this) == typeid(Box)) //do not match Box, because it is invisible
-			return 0;
-		else
-			return this;
-	} else {
-		return 0;
 	}
+	if (typeid(*this) == typeid(Box)) //do not match Box, because it is invisible
+		return common::nullRef;
+	else
+		return common::Ref<Box>(this->reference());
 }
-Text::Text(const char *name, float x, float y, float width, float height):
+bool Box::hitTest(const math::Vector2f &point) const {
+	return m_rect.isInside(point.x, point.y);
+}
+Text::Text(std::string_view name, float x, float y, float width, float height):
 	Box(name, x, y, width, height) {
 }
 Text::~Text() {
 }
-void Text::draw(Context *context, const math::Rectangle<float> &parent_rect) {
-	math::Rectangle<float> draw_rect = rect.impose(parent_rect);
-	cairo_t *cr = context->getCairo();
-	if (text != "") {
-		if (helper_only) {
-			cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_ITALIC, CAIRO_FONT_WEIGHT_NORMAL);
+Text &Text::setText(std::string_view text) {
+	m_text = text;
+	return *this;
+}
+Text &Text::setStyle(common::Ref<Style> style) {
+	Box::setStyle(style);
+	return *this;
+}
+Text &Text::setLocked(bool locked) {
+	Box::setLocked(locked);
+	return *this;
+}
+Text &Text::setHelperOnly(bool helperOnly) {
+	Box::setHelperOnly(helperOnly);
+	return *this;
+}
+Text *Text::reference() {
+	return static_cast<Text *>(Counter::reference());
+}
+void Text::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	math::Rectangle<float> drawRect = rect().impose(parentRect);
+	cairo_t *cr = context.getCairo();
+	if (m_text != "") {
+		PangoFontDescription *fontDescription = pango_font_description_new();
+		pango_font_description_set_family(fontDescription, "sans-serif");
+		if (helperOnly()) {
+			pango_font_description_set_style(fontDescription, PANGO_STYLE_ITALIC);
 		} else {
-			cairo_select_font_face(cr, "sans-serif", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+			pango_font_description_set_style(fontDescription, PANGO_STYLE_NORMAL);
 		}
-		if (style) {
-			cairo_set_font_size(cr, style->font_size * draw_rect.getHeight());
-			Color color;
-			if (context->getTransformationChain()) {
-				context->getTransformationChain()->apply(&style->color, &color);
-			} else {
-				color = style->color;
+		math::Vector2f textOffset(0, 0);
+		if (style()) {
+			pango_font_description_set_absolute_size(fontDescription, style()->fontSize() * drawRect.getHeight() * PANGO_SCALE);
+			Color color = style()->color();
+			if (context.getTransformationChain()) {
+				context.getTransformationChain()->apply(&color, &color);
 			}
 			cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
+			textOffset = style()->textOffset() * math::Vector2f(drawRect.getWidth(), drawRect.getHeight());
 		} else {
-			cairo_set_font_size(cr, draw_rect.getHeight());
+			pango_font_description_set_absolute_size(fontDescription, drawRect.getHeight() * PANGO_SCALE);
 			cairo_set_source_rgb(cr, 0, 0, 0);
 		}
-		cairo_text_extents_t extents;
-		cairo_text_extents(cr, text.c_str(), &extents);
-		cairo_move_to(cr, draw_rect.getX() + draw_rect.getWidth() / 2 - (extents.width / 2 + extents.x_bearing), draw_rect.getY() + draw_rect.getHeight() / 2 - (extents.height / 2 + extents.y_bearing));
-		cairo_show_text(cr, text.c_str());
-		if (style && style->getBox() == this) {
-			cairo_rectangle(cr, draw_rect.getX() + 1, draw_rect.getY() + 1, draw_rect.getWidth() - 2, draw_rect.getHeight() - 2);
+		PangoLayout *layout = pango_cairo_create_layout(cr);
+		pango_layout_set_font_description(layout, fontDescription);
+		pango_font_description_free(fontDescription);
+		pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
+		pango_layout_set_alignment(layout, PANGO_ALIGN_CENTER);
+		pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+		pango_layout_set_width(layout, static_cast<int>(drawRect.getWidth() * PANGO_SCALE));
+		pango_layout_set_height(layout, static_cast<int>(drawRect.getHeight() * PANGO_SCALE));
+		pango_layout_set_text(layout, m_text.c_str(), -1);
+		pango_cairo_update_layout(cr, layout);
+		int width, height;
+		pango_layout_get_pixel_size(layout, &width, &height);
+		cairo_move_to(cr, drawRect.getX() + textOffset.x, drawRect.getY() + (drawRect.getHeight() - height) / 2 + textOffset.y);
+		pango_cairo_show_layout(cr, layout);
+		g_object_unref(layout);
+
+		if (context.system().selectedBox() == this) {
+			cairo_rectangle(cr, drawRect.getX() + 1, drawRect.getY() + 1, drawRect.getWidth() - 2, drawRect.getHeight() - 2);
 			cairo_set_source_rgb(cr, 1, 1, 1);
 			cairo_set_line_width(cr, 2);
 			cairo_stroke(cr);
 		}
 	}
-	drawChildren(context, parent_rect);
+	drawChildren(context, parentRect);
 }
-Fill::Fill(const char *name, float x, float y, float width, float height):
+Fill::Fill(std::string_view name, float x, float y, float width, float height):
 	Box(name, x, y, width, height) {
 }
 Fill::~Fill() {
 }
-void Fill::draw(Context *context, const math::Rectangle<float> &parent_rect) {
-	math::Rectangle<float> draw_rect = rect.impose(parent_rect);
-	cairo_t *cr = context->getCairo();
-	Color color;
-	if (context->getTransformationChain()) {
-		context->getTransformationChain()->apply(&style->color, &color);
-	} else {
-		color = style->color;
+Fill &Fill::setStyle(common::Ref<Style> style) {
+	Box::setStyle(style);
+	return *this;
+}
+Fill &Fill::setLocked(bool locked) {
+	Box::setLocked(locked);
+	return *this;
+}
+Fill &Fill::setHelperOnly(bool helperOnly) {
+	Box::setHelperOnly(helperOnly);
+	return *this;
+}
+void Fill::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	math::Rectangle<float> drawRect = rect().impose(parentRect);
+	cairo_t *cr = context.getCairo();
+	Color color = style()->color();
+	if (context.getTransformationChain()) {
+		context.getTransformationChain()->apply(&color, &color);
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
-	cairo_rectangle(cr, draw_rect.getX(), draw_rect.getY(), draw_rect.getWidth(), draw_rect.getHeight());
+	cairo_rectangle(cr, drawRect.getX(), drawRect.getY(), drawRect.getWidth(), drawRect.getHeight());
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 	cairo_fill_preserve(cr);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
 	cairo_set_line_width(cr, 1);
 	cairo_stroke(cr);
-	if (style->getBox() == this) {
-		cairo_rectangle(cr, draw_rect.getX() + 1, draw_rect.getY() + 1, draw_rect.getWidth() - 2, draw_rect.getHeight() - 2);
+	if (context.system().selectedBox() == this) {
+		cairo_rectangle(cr, drawRect.getX() + 1, drawRect.getY() + 1, drawRect.getWidth() - 2, drawRect.getHeight() - 2);
 		cairo_set_source_rgb(cr, 1, 1, 1);
 		cairo_set_line_width(cr, 2);
 		cairo_stroke(cr);
 	}
-	drawChildren(context, parent_rect);
+	drawChildren(context, parentRect);
+}
+Circle::Circle(std::string_view name, float x, float y, float width, float height):
+	Box(name, x, y, width, height) {
+}
+Circle::~Circle() {
+}
+Circle &Circle::setStyle(common::Ref<Style> style) {
+	Box::setStyle(style);
+	return *this;
+}
+Circle &Circle::setLocked(bool locked) {
+	Box::setLocked(locked);
+	return *this;
+}
+Circle &Circle::setHelperOnly(bool helperOnly) {
+	Box::setHelperOnly(helperOnly);
+	return *this;
+}
+void Circle::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	math::Rectangle<float> drawRect = rect().impose(parentRect);
+	cairo_t *cr = context.getCairo();
+	Color color = style()->color();
+	if (context.getTransformationChain()) {
+		context.getTransformationChain()->apply(&color, &color);
+	}
+	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
+	cairo_save(cr);
+	cairo_translate(cr, drawRect.getX() + drawRect.getWidth() / 2, drawRect.getY() + drawRect.getHeight() / 2);
+	cairo_scale(cr, drawRect.getWidth() / 2, drawRect.getHeight() / 2);
+	cairo_arc(cr, 0, 0, 1, 0, 2 * math::PI);
+	cairo_restore(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_fill_preserve(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	cairo_set_line_width(cr, 1);
+	cairo_stroke(cr);
+	if (context.system().selectedBox() == this) {
+		cairo_rectangle(cr, drawRect.getX() + 1, drawRect.getY() + 1, drawRect.getWidth() - 2, drawRect.getHeight() - 2);
+		cairo_set_source_rgb(cr, 1, 1, 1);
+		cairo_set_line_width(cr, 2);
+		cairo_stroke(cr);
+	}
+	drawChildren(context, parentRect);
+}
+bool Circle::hitTest(const math::Vector2f &point) const {
+	if (!rect().isInside(point.x, point.y))
+		return false;
+	if (rect().getWidth() > rect().getHeight())
+		return ((point - rect().center()) * 2 * math::Vector2f(rect().getHeight() / rect().getWidth(), 1.0f)).length() <= std::min(rect().getWidth(), rect().getHeight());
+	else
+		return ((point - rect().center()) * 2 * math::Vector2f(1.0f, rect().getWidth() / rect().getHeight())).length() <= std::min(rect().getWidth(), rect().getHeight());
+}
+Pie::Pie(std::string_view name, float x, float y, float width, float height):
+	Box(name, x, y, width, height) {
+}
+Pie::~Pie() {
+}
+Pie &Pie::setStartAngle(float startAngle) {
+	m_startAngle = startAngle;
+	return *this;
+}
+Pie &Pie::setEndAngle(float endAngle) {
+	m_endAngle = endAngle;
+	return *this;
+}
+Pie &Pie::setStyle(common::Ref<Style> style) {
+	Box::setStyle(style);
+	return *this;
+}
+Pie &Pie::setLocked(bool locked) {
+	Box::setLocked(locked);
+	return *this;
+}
+Pie &Pie::setHelperOnly(bool helperOnly) {
+	Box::setHelperOnly(helperOnly);
+	return *this;
+}
+void Pie::draw(Context &context, const math::Rectangle<float> &parentRect) {
+	math::Rectangle<float> drawRect = rect().impose(parentRect);
+	cairo_t *cr = context.getCairo();
+	Color color = style()->color();
+	if (context.getTransformationChain()) {
+		context.getTransformationChain()->apply(&color, &color);
+	}
+	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
+	cairo_save(cr);
+	cairo_translate(cr, drawRect.getX() + drawRect.getWidth() / 2, drawRect.getY() + drawRect.getHeight() / 2);
+	cairo_scale(cr, drawRect.getWidth() / 2, drawRect.getHeight() / 2);
+	cairo_arc(cr, 0, 0, 1, m_startAngle * 2 * math::PI, m_endAngle * 2 * math::PI);
+	cairo_line_to(cr, 0, 0);
+	cairo_close_path(cr);
+	cairo_restore(cr);
+	cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
+	cairo_fill_preserve(cr);
+	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
+	if (context.system().selectedBox() == this) {
+		cairo_set_source_rgb(cr, 1, 1, 1);
+		cairo_set_line_width(cr, 2);
+		cairo_stroke(cr);
+	} else {
+		cairo_set_line_width(cr, 1);
+		cairo_stroke(cr);
+	}
+	drawChildren(context, parentRect);
+}
+static bool angleIsBetween(float angle, float start, float end) {
+	angle = math::wrap(angle);
+	start = math::wrap(start);
+	end = math::wrap(end);
+	if (start < end)
+		return angle >= start && angle <= end;
+	else
+		return angle >= start || angle <= end;
+}
+bool Pie::hitTest(const math::Vector2f &point) const {
+	if (!rect().isInside(point.x, point.y))
+		return false;
+	auto pointFromCenter = point - rect().center();
+	if (rect().getWidth() > rect().getHeight()) {
+		if ((pointFromCenter * 2 * math::Vector2f(rect().getHeight() / rect().getWidth(), 1.0f)).length() > std::min(rect().getWidth(), rect().getHeight()))
+			return false;
+	} else {
+		if ((pointFromCenter * 2 * math::Vector2f(1.0f, rect().getWidth() / rect().getHeight())).length() > std::min(rect().getWidth(), rect().getHeight()))
+			return false;
+	}
+	if (pointFromCenter.length() < 0.0001f)
+		return false;
+	auto angle = std::atan2(pointFromCenter.y, pointFromCenter.x) / (math::PI * 2);
+	if (angle < 0)
+		angle = 1 + angle;
+	return angleIsBetween(static_cast<float>(angle), m_startAngle, m_endAngle);
 }
 }

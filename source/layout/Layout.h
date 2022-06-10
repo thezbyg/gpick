@@ -18,21 +18,20 @@
 
 #ifndef GPICK_LAYOUT_LAYOUT_H_
 #define GPICK_LAYOUT_LAYOUT_H_
-#include "../lua/Ref.h"
+#include "lua/Ref.h"
+#include "common/Ref.h"
 #include <string>
-#include <map>
-#include <vector>
+#include <string_view>
 namespace layout {
 struct System;
 struct Layout {
-	Layout(const char *name, const char *label, int mask, lua::Ref &&callback);
+	Layout(std::string_view name, std::string_view label, int mask, lua::Ref &&callback);
 	const std::string &name() const;
 	const std::string &label() const;
 	const int mask() const;
-	System *build();
+	common::Ref<System> build();
 private:
-	std::string m_name;
-	std::string m_label;
+	std::string m_name, m_label;
 	int m_mask;
 	lua::Ref m_callback;
 };

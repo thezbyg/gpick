@@ -20,231 +20,234 @@
 #include "Script.h"
 #include "Color.h"
 #include "GlobalState.h"
-#include "../layout/Box.h"
-#include "../layout/System.h"
-#include "../layout/Layout.h"
+#include "layout/Box.h"
+#include "layout/Layout.h"
+#include "layout/Style.h"
+#include "layout/System.h"
 #include <lualib.h>
 #include <lauxlib.h>
 #include <typeinfo>
 #include <iostream>
-using namespace std;
-using namespace layout;
-namespace lua
-{
-static int newLayoutStyle(lua_State *L)
-{
+namespace lua {
+static int newLayoutStyle(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
-	Color &color = checkColor(L, 3);
-	double font_size = luaL_optnumber(L, 4, 1.0);
-	Style **c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
+	Color color = checkColor(L, 3);
+	double fontSize = luaL_optnumber(L, 4, 1.0);
+	layout::Style **c = static_cast<layout::Style **>(lua_newuserdata(L, sizeof(layout::Style *)));
 	luaL_getmetatable(L, "layoutStyle");
 	lua_setmetatable(L, -2);
-	*c = new Style(name, &color, static_cast<float>(font_size));
+	*c = new layout::Style(name, color, static_cast<float>(fontSize));
 	return 1;
 }
-Style *checkLayoutStyle(lua_State *L, int index)
-{
-	Style **c = static_cast<Style**>(luaL_checkudata(L, index, "layoutStyle"));
+common::Ref<layout::Style> checkLayoutStyle(lua_State *L, int index) {
+	layout::Style **c = static_cast<layout::Style **>(luaL_checkudata(L, index, "layoutStyle"));
 	luaL_argcheck(L, c != nullptr, index, "`layoutStyle' expected");
-	return *c;
+	return common::Ref<layout::Style>((*c)->reference());
 }
-int pushLayoutStyle(lua_State *L, Style *style)
-{
-	Style **c = static_cast<Style**>(lua_newuserdata(L, sizeof(Style*)));
+int pushLayoutStyle(lua_State *L, common::Ref<layout::Style> style) {
+	layout::Style **c = static_cast<layout::Style **>(lua_newuserdata(L, sizeof(layout::Style *)));
 	luaL_getmetatable(L, "layoutStyle");
 	lua_setmetatable(L, -2);
-	*c = style;
+	*c = style.unwrap();
 	return 1;
 }
-int styleGc(lua_State *L)
-{
-	Style *style = checkLayoutStyle(L, 1);
-	Style::unref(style);
+int styleGc(lua_State *L) {
+	checkLayoutStyle(L, 1)->release();
 	return 0;
 }
-int styleLabel(lua_State *L)
-{
-	Style *style = checkLayoutStyle(L, 1);
-	if (lua_type(L, 2) == LUA_TSTRING){
+int styleLabel(lua_State *L) {
+	common::Ref<layout::Style> style = checkLayoutStyle(L, 1);
+	if (lua_type(L, 2) == LUA_TSTRING) {
 		const char *name = luaL_checkstring(L, 2);
-		style->label = name;
+		style->setLabel(name);
 		return 0;
-	}else{
-		lua_pushstring(L, style->label.c_str());
+	} else {
+		lua_pushstring(L, style->label().c_str());
 		return 1;
 	}
 }
-static int newLayoutBox(lua_State *L)
-{
+static int newLayoutBox(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
 	double x = luaL_checknumber(L, 3);
 	double y = luaL_checknumber(L, 4);
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
-	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	*c = new Box(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+	*c = new layout::Box(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
 	return 1;
 }
-static int newLayoutFill(lua_State *L)
-{
+static int newLayoutFill(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
 	double x = luaL_checknumber(L, 3);
 	double y = luaL_checknumber(L, 4);
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
-	Style *style = checkLayoutStyle(L, 7);
-	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
+	common::Ref<layout::Style> style = checkLayoutStyle(L, 7);
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	Fill *e = new Fill(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+	layout::Fill *e = new layout::Fill(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
 	e->setStyle(style);
 	*c = e;
 	return 1;
 }
-static int newLayoutText(lua_State *L)
-{
+static int newLayoutCircle(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
 	double x = luaL_checknumber(L, 3);
 	double y = luaL_checknumber(L, 4);
 	double w = luaL_checknumber(L, 5);
 	double h = luaL_checknumber(L, 6);
-	Style *style = nullptr;
-	if (lua_type(L, 7) != LUA_TNIL){
-		style = checkLayoutStyle(L, 7);
-	}
-	const char *text = luaL_checkstring(L, 8);
-	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
+	common::Ref<layout::Style> style = checkLayoutStyle(L, 7);
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	Text *e = new Text(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
-	if (style) e->setStyle(style);
-	e->text = text;
+	layout::Circle *e = new layout::Circle(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+	e->setStyle(style);
 	*c = e;
 	return 1;
 }
-Box *checkLayoutBox(lua_State *L, int index)
-{
-	Box **c = static_cast<Box**>(luaL_checkudata(L, index, "layout"));
-	luaL_argcheck(L, c != nullptr, index, "`layout' expected");
-	return *c;
-}
-int pushLayoutBox(lua_State *L, Box *box)
-{
-	Box **c = static_cast<Box**>(lua_newuserdata(L, sizeof(Box*)));
+static int newLayoutPie(lua_State *L) {
+	const char *name = luaL_checkstring(L, 2);
+	double x = luaL_checknumber(L, 3);
+	double y = luaL_checknumber(L, 4);
+	double w = luaL_checknumber(L, 5);
+	double h = luaL_checknumber(L, 6);
+	double start = luaL_checknumber(L, 7);
+	double end = luaL_checknumber(L, 8);
+	common::Ref<layout::Style> style = checkLayoutStyle(L, 9);
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
 	luaL_getmetatable(L, "layout");
 	lua_setmetatable(L, -2);
-	*c = static_cast<Box*>(box->ref());
+	layout::Pie *e = new layout::Pie(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+	e->setStyle(style);
+	e->setStartAngle(static_cast<float>(start));
+	e->setEndAngle(static_cast<float>(end));
+	*c = e;
 	return 1;
 }
-int boxAdd(lua_State *L)
-{
-	Box *box = checkLayoutBox(L, 1);
-	Box *box2 = checkLayoutBox(L, 2);
-	box->addChild(static_cast<Box*>(box2->ref()));
+static int newLayoutText(lua_State *L) {
+	const char *name = luaL_checkstring(L, 2);
+	double x = luaL_checknumber(L, 3);
+	double y = luaL_checknumber(L, 4);
+	double w = luaL_checknumber(L, 5);
+	double h = luaL_checknumber(L, 6);
+	common::Ref<layout::Style> style;
+	if (lua_type(L, 7) != LUA_TNIL) {
+		style = checkLayoutStyle(L, 7);
+	}
+	const char *text = luaL_checkstring(L, 8);
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
+	luaL_getmetatable(L, "layout");
+	lua_setmetatable(L, -2);
+	layout::Text *e = new layout::Text(name, static_cast<float>(x), static_cast<float>(y), static_cast<float>(w), static_cast<float>(h));
+	if (style)
+		e->setStyle(style);
+	e->setText(text);
+	*c = e;
+	return 1;
+}
+common::Ref<layout::Box> checkLayoutBox(lua_State *L, int index) {
+	layout::Box **c = static_cast<layout::Box **>(luaL_checkudata(L, index, "layout"));
+	luaL_argcheck(L, c != nullptr, index, "`layout' expected");
+	return common::Ref<layout::Box>((*c)->reference());
+}
+int pushLayoutBox(lua_State *L, common::Ref<layout::Box> box) {
+	layout::Box **c = static_cast<layout::Box **>(lua_newuserdata(L, sizeof(layout::Box *)));
+	luaL_getmetatable(L, "layout");
+	lua_setmetatable(L, -2);
+	*c = box.unwrap();
+	return 1;
+}
+int boxAdd(lua_State *L) {
+	common::Ref<layout::Box> box = checkLayoutBox(L, 1);
+	common::Ref<layout::Box> box2 = checkLayoutBox(L, 2);
+	box->addChild(box2);
 	pushLayoutBox(L, box);
 	return 1;
 }
-int boxHelperOnly(lua_State *L)
-{
-	Box *box = checkLayoutBox(L, 1);
-	if (lua_type(L, 2) == LUA_TBOOLEAN){
+int boxHelperOnly(lua_State *L) {
+	common::Ref<layout::Box> box = checkLayoutBox(L, 1);
+	if (lua_type(L, 2) == LUA_TBOOLEAN) {
 		int v = lua_toboolean(L, 2);
-		if (v){
-			box->helper_only = true;
-		}else{
-			box->helper_only = false;
-		}
+		box->setHelperOnly(v);
 		return 0;
-	}else{
-		lua_pushboolean(L, box->helper_only);
+	} else {
+		lua_pushboolean(L, box->helperOnly());
 		return 1;
 	}
 }
-int boxLocked(lua_State *L)
-{
-	Box *box = checkLayoutBox(L, 1);
-	if (lua_type(L, 2) == LUA_TBOOLEAN){
+int boxLocked(lua_State *L) {
+	common::Ref<layout::Box> box = checkLayoutBox(L, 1);
+	if (lua_type(L, 2) == LUA_TBOOLEAN) {
 		int v = lua_toboolean(L, 2);
-		if (v){
-			box->locked = true;
-		}else{
-			box->locked = false;
-		}
+		box->setLocked(v);
 		return 0;
-	}else{
-		lua_pushboolean(L, box->locked);
+	} else {
+		lua_pushboolean(L, box->locked());
 		return 1;
 	}
 }
 int boxGc(lua_State *L) {
-	Box *box = checkLayoutBox(L, 1);
-	Box::unref(box);
+	checkLayoutBox(L, 1)->release();
 	return 0;
 }
-System *checkLayoutSystem(lua_State *L, int index)
-{
-	System **c = static_cast<System**>(luaL_checkudata(L, index, "layoutSystem"));
+common::Ref<layout::System> checkLayoutSystem(lua_State *L, int index) {
+	layout::System **c = static_cast<layout::System **>(luaL_checkudata(L, index, "layoutSystem"));
 	luaL_argcheck(L, c != nullptr, index, "`layoutSystem' expected");
-	return *c;
+	return common::Ref<layout::System>((*c)->reference());
 }
-int pushLayoutSystem(lua_State *L, System *system)
-{
-	System **c = static_cast<System**>(lua_newuserdata(L, sizeof(System*)));
+int pushLayoutSystem(lua_State *L, common::Ref<layout::System> system) {
+	layout::System **c = static_cast<layout::System **>(lua_newuserdata(L, sizeof(layout::System *)));
 	luaL_getmetatable(L, "layoutSystem");
 	lua_setmetatable(L, -2);
-	*c = system;
+	*c = system.unwrap();
 	return 1;
 }
-int systemAddStyle(lua_State *L)
-{
-	System *system = checkLayoutSystem(L, 1);
-	Style *style = checkLayoutStyle(L, 2);
+int systemAddStyle(lua_State *L) {
+	common::Ref<layout::System> system = checkLayoutSystem(L, 1);
+	common::Ref<layout::Style> style = checkLayoutStyle(L, 2);
 	system->addStyle(style);
 	return 0;
 }
-int systemSetBox(lua_State *L)
-{
-	System *system = checkLayoutSystem(L, 1);
-	Box *box = checkLayoutBox(L, 2);
+int systemSetBox(lua_State *L) {
+	common::Ref<layout::System> system = checkLayoutSystem(L, 1);
+	common::Ref<layout::Box> box = checkLayoutBox(L, 2);
 	system->setBox(box);
 	return 0;
 }
-static const struct luaL_Reg system_members[] =
-{
-	{"addStyle", systemAddStyle},
-	{"setBox", systemSetBox},
-	{nullptr, nullptr}
+static const struct luaL_Reg systemMembers[] = {
+	{ "addStyle", systemAddStyle },
+	{ "setBox", systemSetBox },
+	{ nullptr, nullptr }
 };
-static const struct luaL_Reg box_members[] =
-{
-	{"add", boxAdd},
-	{"helperOnly", boxHelperOnly},
-	{"locked", boxLocked},
-	{"__gc", boxGc},
-	{nullptr, nullptr}
+static const struct luaL_Reg boxMembers[] = {
+	{ "add", boxAdd },
+	{ "helperOnly", boxHelperOnly },
+	{ "locked", boxLocked },
+	{ "__gc", boxGc },
+	{ nullptr, nullptr }
 };
-static const struct luaL_Reg style_members[] =
-{
-	{"label", styleLabel},
-	{"__gc", styleGc},
-	{nullptr, nullptr}
+static const struct luaL_Reg styleMembers[] = {
+	{ "label", styleLabel },
+	{ "__gc", styleGc },
+	{ nullptr, nullptr }
 };
-static const struct luaL_Reg functions[] =
-{
-	{"newBox", newLayoutBox},
-	{"newText", newLayoutText},
-	{"newFill", newLayoutFill},
-	{"newStyle", newLayoutStyle},
-	{nullptr, nullptr}
+static const struct luaL_Reg functions[] = {
+	{ "newBox", newLayoutBox },
+	{ "newText", newLayoutText },
+	{ "newFill", newLayoutFill },
+	{ "newCircle", newLayoutCircle },
+	{ "newPie", newLayoutPie },
+	{ "newStyle", newLayoutStyle },
+	{ nullptr, nullptr }
 };
-int registerLayout(lua_State *L)
-{
+int registerLayout(lua_State *L) {
 	Script script(L);
-	script.createType("layout", box_members);
-	script.createType("layoutStyle", style_members);
-	script.createType("layoutSystem", system_members);
+	script.createType("layout", boxMembers);
+	script.createType("layoutStyle", styleMembers);
+	script.createType("layoutSystem", systemMembers);
 	luaL_newlib(L, functions);
 	return 1;
 }

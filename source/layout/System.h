@@ -18,34 +18,30 @@
 
 #ifndef GPICK_LAYOUT_SYSTEM_H_
 #define GPICK_LAYOUT_SYSTEM_H_
-#include "Box.h"
-#include "Style.h"
-#include "Context.h"
-#include "ReferenceCounter.h"
+#include "common/Ref.h"
 #include "math/Rectangle.h"
 #include "math/Vector.h"
-#include <gtk/gtk.h>
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <stdint.h>
 #include <vector>
-#include <string>
+#include <string_view>
 namespace layout {
-struct System: public ReferenceCounter {
+struct Context;
+struct Box;
+struct Style;
+struct System: public common::Ref<System>::Counter {
 	System();
 	virtual ~System();
-	void draw(Context *context, const math::Rectangle<float> &parentRect);
-	Box *getBoxAt(const math::Vector2f &point);
-	Box *getNamedBox(const char *name);
-	Box *getNamedBox(const std::string &name);
-	void addStyle(Style *style);
-	void setBox(Box *box);
-	const std::vector<Style *> &styles() const;
-	Box *box();
+	void draw(Context &context, const math::Rectangle<float> &parentRect);
+	common::Ref<Box> getBoxAt(const math::Vector2f &point);
+	common::Ref<Box> getNamedBox(const std::string_view name);
+	void addStyle(common::Ref<Style> style);
+	void setBox(common::Ref<Box> box);
+	const std::vector<common::Ref<Style>> &styles() const;
+	common::Ref<Box> box();
+	void setSelected(common::Ref<Box> box);
+	const common::Ref<Box> &selectedBox() const;
 private:
-	std::vector<Style *> m_styles;
-	Box *m_box;
+	std::vector<common::Ref<Style>> m_styles;
+	common::Ref<Box> m_box, m_selectedBox;
 };
 }
 #endif /* GPICK_LAYOUT_SYSTEM_H_ */

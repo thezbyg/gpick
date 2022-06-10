@@ -19,6 +19,7 @@
 #ifndef GPICK_LAYOUT_LAYOUTS_H_
 #define GPICK_LAYOUT_LAYOUTS_H_
 #include <string>
+#include <string_view>
 #include <map>
 #include <vector>
 namespace layout {
@@ -28,9 +29,9 @@ struct Layouts {
 	~Layouts();
 	void add(Layout *layout);
 	const std::vector<Layout *> &all() const;
-	Layout *byName(const char *name) const;
+	Layout *byName(std::string_view name) const;
 private:
-	std::map<std::string, Layout *> m_layouts;
+	std::map<std::string, Layout *, std::less<>> m_layouts;
 	std::vector<Layout *> m_allLayouts;
 };
 }

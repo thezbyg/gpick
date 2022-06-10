@@ -18,35 +18,40 @@
 
 #ifndef GPICK_LAYOUT_STYLE_H_
 #define GPICK_LAYOUT_STYLE_H_
-#include "../Color.h"
-#include "ReferenceCounter.h"
+#include "Color.h"
 #include "Box.h"
+#include "common/Ref.h"
+#include "math/Vector.h"
 #include <string>
-#include <list>
 namespace layout {
 struct Box;
-struct Style: public ReferenceCounter {
-	std::string ident_name;
-	std::string label;
-	Color color;
-	float font_size;
-	enum class Type {
+struct Style: public common::Ref<Style>::Counter {
+	enum struct Type {
 		unknown = 0,
 		color,
 		background,
 		border,
 	};
-	Type styleType;
-	bool dirty;
-	bool highlight;
-	Box *selected_box;
-	bool isDirty();
-	void setDirty(bool dirty);
-	bool getHighlight();
-	Box *getBox();
-	void setState(bool highlight, Box *box);
-	Style(const char *name, Color *color, float font_size);
+	Style(std::string_view name, Color color, float fontSize);
 	virtual ~Style();
+	const std::string &name() const;
+	const std::string &label() const;
+	Type type() const;
+	Style &setLabel(std::string_view label);
+	Color color() const;
+	Style &setColor(Color color);
+	bool dirty() const;
+	Style &setDirty(bool dirty);
+	float fontSize() const;
+	math::Vector2f textOffset() const;
+	Style &setTextOffset(math::Vector2f textOffset);
+private:
+	std::string m_name, m_label;
+	Color m_color;
+	float m_fontSize;
+	Type m_type;
+	bool m_dirty;
+	math::Vector2f m_textOffset;
 };
 }
 #endif /* LAYOUT_STYLE_H_ */

@@ -16,51 +16,69 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "Style.h"
 #include "Box.h"
 #include <string>
-#include <iostream>
 namespace layout {
-Style::Style(const char *_name, Color *_color, float _font_size) {
-	std::string name = std::string(_name);
-	size_t pos = name.find(":");
-	if (pos != std::string::npos) {
-		ident_name = name.substr(0, pos);
-		label = name.substr(pos + 1);
+Style::Style(std::string_view name, Color color, float fontSize) {
+	size_t position = name.find(":");
+	if (position != std::string_view::npos) {
+		m_name = std::string(name.substr(0, position));
+		m_label = std::string(name.substr(position + 1));
 	} else {
-		ident_name = name;
-		label = name;
+		m_name = m_label = std::string(name);
 	}
-	styleType = Type::unknown;
-	if ((pos = ident_name.rfind("_")) != std::string::npos) {
-		std::string flags = ident_name.substr(pos);
+	m_type = Type::unknown;
+	if ((position = m_name.rfind("_")) != std::string::npos) {
+		std::string flags = m_name.substr(position);
 		if (flags.find("t") != std::string::npos) {
-			styleType = Type::color;
+			m_type = Type::color;
 		} else if (flags.find("b") != std::string::npos) {
-			styleType = Type::background;
+			m_type = Type::background;
 		}
 	}
-	color = *_color;
-	font_size = _font_size;
-	dirty = true;
-	highlight = false;
-	selected_box = 0;
+	m_color = color;
+	m_fontSize = fontSize;
+	m_dirty = true;
+	m_textOffset = math::Vector2f(0, 0);
 }
 Style::~Style() {
 }
-bool Style::isDirty() {
-	return dirty;
+bool Style::dirty() const {
+	return m_dirty;
 }
-void Style::setDirty(bool _dirty) {
-	dirty = _dirty;
+Style &Style::setDirty(bool dirty) {
+	m_dirty = dirty;
+	return *this;
 }
-bool Style::getHighlight() {
-	return highlight;
+Color Style::color() const {
+	return m_color;
 }
-Box *Style::getBox() {
-	return selected_box;
+Style &Style::setColor(Color color) {
+	m_color = color;
+	return *this;
 }
-void Style::setState(bool _highlight, Box *box) {
-	selected_box = box;
-	highlight = _highlight;
+const std::string &Style::name() const {
+	return m_name;
+}
+const std::string &Style::label() const {
+	return m_label;
+}
+Style &Style::setLabel(std::string_view label) {
+	m_label = label;
+	return *this;
+}
+Style::Type Style::type() const {
+	return m_type;
+}
+float Style::fontSize() const {
+	return m_fontSize;
+}
+math::Vector2f Style::textOffset() const {
+	return m_textOffset;
+}
+Style &Style::setTextOffset(math::Vector2f textOffset) {
+	m_textOffset = textOffset;
+	return *this;
 }
 }

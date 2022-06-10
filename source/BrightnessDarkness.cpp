@@ -41,7 +41,6 @@
 #include <math.h>
 #include <sstream>
 #include <optional>
-using namespace layout;
 
 struct BrightnessDarknessArgs;
 struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner {
@@ -64,7 +63,7 @@ protected:
 struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 	Color color;
 	GtkWidget *main, *statusBar, *brightnessDarkness, *layoutView;
-	System *layoutSystem;
+	common::Ref<layout::System> layoutSystem;
 	dynv::Ref options;
 	GlobalState &gs;
 	BrightnessDarknessArgs(GlobalState &gs, const dynv::Ref &options):
@@ -75,9 +74,6 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~BrightnessDarknessArgs() {
-		if (layoutSystem)
-			System::unref(layoutSystem);
-		layoutSystem = nullptr;
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
@@ -116,19 +112,19 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
 	}
 	void addAllToPalette() {
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return;
 		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		BrightnessDarknessColorNameAssigner nameAssigner(gs);
 		for (auto &style: layoutSystem->styles()) {
-			ColorObject colorObject(style->color);
-			nameAssigner.assign(colorObject, style->label);
+			ColorObject colorObject(style->color());
+			nameAssigner.assign(colorObject, style->label());
 			color_list_add_color_object(gs.getColorList(), colorObject, true);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {
 		color = colorObject.getColor();
-		gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(layoutView), &color, "main");
+		gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(layoutView), color, "main");
 		update(false);
 	}
 	virtual void setNthColor(size_t index, const ColorObject &colorObject) override {
@@ -136,21 +132,21 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 	ColorObject colorObject;
 	virtual const ColorObject &getColor() override {
 		Color color;
-		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color) != 0)
+		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), color) != 0)
 			return colorObject;
-		Style *style = 0;
-		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(layoutView), &style) != 0)
+		common::Ref<layout::Style> style;
+		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(layoutView), style) != 0)
 			return colorObject;
 		colorObject.setColor(color);
 		BrightnessDarknessColorNameAssigner nameAssigner(gs);
-		nameAssigner.assign(colorObject, style->label);
+		nameAssigner.assign(colorObject, style->label());
 		return colorObject;
 	}
 	virtual const ColorObject &getNthColor(size_t index) override {
 		return colorObject;
 	}
 	std::vector<ColorObject> getColors(bool selected) {
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return std::vector<ColorObject>();
 		BrightnessDarknessColorNameAssigner nameAssigner(gs);
 		std::vector<ColorObject> colors;
@@ -159,8 +155,8 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			colors.push_back(colorObject);
 		} else {
 			for (auto &style: layoutSystem->styles()) {
-				ColorObject colorObject(style->color);
-				nameAssigner.assign(colorObject, style->label);
+				ColorObject colorObject(style->color());
+				nameAssigner.assign(colorObject, style->label());
 				colors.push_back(colorObject);
 			}
 		}
@@ -189,9 +185,9 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			options->set("darkness", brightness);
 		}
 		Color hslOriginal = color.rgbToHsl(), hsl, r;
-		Box *box;
+		common::Ref<layout::Box> box;
 		std::string name;
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return;
 		for (int i = 1; i <= 4; i++) {
 			hsl = hslOriginal;
@@ -200,8 +196,8 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			r.alpha = color.alpha;
 			name = format('b', i);
 			box = layoutSystem->getNamedBox(name);
-			if (box && box->style) {
-				box->style->color = r;
+			if (box && box->style()) {
+				box->style()->setColor(r);
 			}
 			hsl = hslOriginal;
 			hsl.hsl.lightness = math::mix(hsl.hsl.lightness, math::mix(hsl.hsl.lightness, 0.0f, darkness), i / 4.0f);
@@ -209,8 +205,8 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 			r.alpha = color.alpha;
 			name = format('c', i);
 			box = layoutSystem->getNamedBox(name);
-			if (box && box->style) {
-				box->style->color = r;
+			if (box && box->style()) {
+				box->style()->setColor(r);
 			}
 		}
 		gtk_widget_queue_draw(GTK_WIDGET(layoutView));
@@ -272,7 +268,6 @@ static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event, Brightne
 }
 static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 	auto args = std::make_unique<BrightnessDarknessArgs>(gs, options);
-	args->layoutSystem = nullptr;
 	GtkWidget *hbox, *widget;
 	hbox = gtk_hbox_new(false, 0);
 	args->brightnessDarkness = widget = gtk_range_2d_new();
@@ -288,16 +283,13 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_box_pack_start(GTK_BOX(hbox), widget, true, true, 0);
 	auto layout = gs.layouts().byName("std_layout_brightness_darkness");
 	if (layout != nullptr) {
-		System *layoutSystem = layout->build();
-		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), layoutSystem);
-		if (args->layoutSystem) System::unref(args->layoutSystem);
-		args->layoutSystem = layoutSystem;
+		args->layoutSystem = layout->build();
+		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), args->layoutSystem);
 	} else {
-		if (args->layoutSystem) System::unref(args->layoutSystem);
-		args->layoutSystem = nullptr;
+		args->layoutSystem = common::nullRef;
 	}
 	args->color = options->getColor("color", Color(0.5f));
-	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layoutView), &args->color, "main");
+	gtk_layout_preview_set_color_named(GTK_LAYOUT_PREVIEW(args->layoutView), args->color, "main");
 	args->update(false);
 	gtk_widget_show_all(hbox);
 	args->main = hbox;

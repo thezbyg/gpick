@@ -40,7 +40,6 @@
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 #include <fstream>
-using namespace layout;
 
 struct LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
 	LayoutPreviewColorNameAssigner(GlobalState &gs):
@@ -61,12 +60,11 @@ protected:
 };
 struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *statusBar, *layoutView;
-	System *layoutSystem;
+	common::Ref<layout::System> layoutSystem;
 	std::string lastFilename;
 	dynv::Ref options;
 	GlobalState &gs;
 	LayoutPreviewArgs(GlobalState &gs, const dynv::Ref &options):
-		layoutSystem(nullptr),
 		options(options),
 		gs(gs),
 		editable(*this) {
@@ -75,9 +73,6 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	}
 	virtual ~LayoutPreviewArgs() {
 		saveColors();
-		if (layoutSystem)
-			System::unref(layoutSystem);
-		layoutSystem = nullptr;
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
@@ -114,40 +109,40 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		color_list_add_color_object(gs.getColorList(), getColor(), true);
 	}
 	void addAllToPalette() {
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return;
 		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
 		for (auto &style: layoutSystem->styles()) {
-			ColorObject colorObject(style->color);
-			nameAssigner.assign(colorObject, style->label);
+			ColorObject colorObject(style->color());
+			nameAssigner.assign(colorObject, style->label());
 			color_list_add_color_object(gs.getColorList(), colorObject, true);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {
 		Color color = colorObject.getColor();
-		gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color);
+		gtk_layout_preview_set_current_color(GTK_LAYOUT_PREVIEW(layoutView), color);
 	}
 	virtual void setNthColor(size_t index, const ColorObject &colorObject) override {
 	}
 	ColorObject colorObject;
 	virtual const ColorObject &getColor() override {
 		Color color;
-		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), &color) != 0)
+		if (gtk_layout_preview_get_current_color(GTK_LAYOUT_PREVIEW(layoutView), color) != 0)
 			return colorObject;
-		Style *style = 0;
-		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(layoutView), &style) != 0)
+		common::Ref<layout::Style> style;
+		if (gtk_layout_preview_get_current_style(GTK_LAYOUT_PREVIEW(layoutView), style) != 0)
 			return colorObject;
 		colorObject.setColor(color);
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
-		nameAssigner.assign(colorObject, style->label);
+		nameAssigner.assign(colorObject, style->label());
 		return colorObject;
 	}
 	virtual const ColorObject &getNthColor(size_t index) override {
 		return colorObject;
 	}
 	std::vector<ColorObject> getColors(bool selected) {
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return std::vector<ColorObject>();
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
 		std::vector<ColorObject> colors;
@@ -156,8 +151,8 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 			colors.push_back(colorObject);
 		} else {
 			for (auto &style: layoutSystem->styles()) {
-				ColorObject colorObject(style->color);
-				nameAssigner.assign(colorObject, style->label);
+				ColorObject colorObject(style->color());
+				nameAssigner.assign(colorObject, style->label());
 				colors.push_back(colorObject);
 			}
 		}
@@ -176,11 +171,11 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		return gtk_layout_preview_is_editable(GTK_LAYOUT_PREVIEW(layoutView));
 	}
 	void saveColors() {
-		if (layoutSystem == nullptr)
+		if (!layoutSystem)
 			return;
 		auto assignments = options->getOrCreateMap("css_selectors.assignments");
 		for (auto style: layoutSystem->styles())
-			assignments->set(style->ident_name + ".color", style->color);
+			assignments->set(style->name() + ".color", style->color());
 	}
 	struct Editable: IEditableColorsUI, IDroppableColorUI {
 		Editable(LayoutPreviewArgs &args):
@@ -245,11 +240,11 @@ static void onSelectorEdit(GtkCellRendererText *cell, gchar *path, gchar *new_te
 	gtk_list_store_set(store, &iter1, STYLELIST_CSS_SELECTOR, new_text, -1);
 }
 static void loadColors(LayoutPreviewArgs *args) {
-	if (args->layoutSystem == nullptr)
+	if (!args->layoutSystem)
 		return;
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
 	for (auto style: args->layoutSystem->styles())
-		style->color = assignments->getColor(style->ident_name + ".color", style->color);
+		style->setColor(assignments->getColor(style->name() + ".color", style->color()));
 }
 static GtkWidget *newSelectorList(LayoutPreviewArgs *args) {
 	auto view = gtk_tree_view_new();
@@ -278,7 +273,7 @@ static GtkWidget *newSelectorList(LayoutPreviewArgs *args) {
 	return view;
 }
 static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
-	if (args->layoutSystem == nullptr)
+	if (!args->layoutSystem)
 		return;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Assign CSS selectors"), GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("css_selectors.window.width", -1), args->options->getInt32("css_selectors.window.height", -1));
@@ -293,10 +288,10 @@ static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(selectorList));
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
 	for (auto style: args->layoutSystem->styles()) {
-		auto css_selector = assignments->getString(style->ident_name + ".selector", style->ident_name);
+		auto css_selector = assignments->getString(style->name() + ".selector", style->name());
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,
-			STYLELIST_LABEL, style->label.c_str(),
+			STYLELIST_LABEL, style->label().c_str(),
 			STYLELIST_CSS_SELECTOR, css_selector.c_str(),
 			STYLELIST_PTR, style,
 			-1);
@@ -306,10 +301,10 @@ static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		auto valid = gtk_tree_model_get_iter_first(model, &iter1);
 		while (valid) {
-			Style *style;
+			layout::Style *style;
 			char *selector;
 			gtk_tree_model_get(model, &iter1, STYLELIST_PTR, &style, STYLELIST_CSS_SELECTOR, &selector, -1);
-			assignments->set(style->ident_name + ".selector", selector);
+			assignments->set(style->name() + ".selector", selector);
 			g_free(selector);
 			valid = gtk_tree_model_iter_next(model, &iter1);
 		}
@@ -334,19 +329,17 @@ static void onLayoutChange(GtkWidget *widget, LayoutPreviewArgs *args) {
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(widget), &iter)) {
 		GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(widget));
-		Layout *layout;
+		layout::Layout *layout;
 		gtk_tree_model_get(model, &iter, LAYOUTLIST_PTR, &layout, -1);
 		args->saveColors();
-		System *layoutSystem = layout->build();
-		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), layoutSystem);
-		if (args->layoutSystem) System::unref(args->layoutSystem);
-		args->layoutSystem = layoutSystem;
+		args->layoutSystem = layout->build();
+		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(args->layoutView), args->layoutSystem);
 		args->options->set("layout_name", layout->name());
 		loadColors(args);
 	}
 }
 static int saveCssFile(const char *filename, LayoutPreviewArgs *args) {
-	if (args->layoutSystem == nullptr)
+	if (!args->layoutSystem)
 		return -1;
 	std::ofstream file(filename, std::ios::out);
 	if (!file.is_open())
@@ -354,17 +347,17 @@ static int saveCssFile(const char *filename, LayoutPreviewArgs *args) {
 	auto converter = args->gs.converters().firstCopy();
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
 	for (auto style: args->layoutSystem->styles()) {
-		auto cssSelector = assignments->getString(style->ident_name + ".selector", style->ident_name);
+		auto cssSelector = assignments->getString(style->name() + ".selector", style->name());
 		if (cssSelector.empty())
 			continue;
-		ColorObject colorObject(style->color);
+		ColorObject colorObject(style->color());
 		std::string text = converter->serialize(colorObject);
 		file << cssSelector << " {\n";
-		if (style->styleType == Style::Type::background) {
+		if (style->type() == layout::Style::Type::background) {
 			file << "\tbackground-color: " << text << ";\n";
-		} else if (style->styleType == Style::Type::color) {
+		} else if (style->type() == layout::Style::Type::color) {
 			file << "\tcolor: " << text << ";\n";
-		} else if (style->styleType == Style::Type::border) {
+		} else if (style->type() == layout::Style::Type::border) {
 			file << "\tborder-color: " << text << ";\n";
 		}
 		file << "}\n\n";

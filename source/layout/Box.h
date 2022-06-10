@@ -18,42 +18,95 @@
 
 #ifndef GPICK_LAYOUT_BOX_H_
 #define GPICK_LAYOUT_BOX_H_
-#include "Color.h"
-#include "ReferenceCounter.h"
-#include "Style.h"
-#include "Context.h"
+#include "common/Ref.h"
 #include "math/Rectangle.h"
 #include "math/Vector.h"
-#include <gtk/gtk.h>
 #include <string>
-#include <list>
+#include <string_view>
+#include <vector>
 namespace layout {
-struct Box: public ReferenceCounter {
-	Box(const char *name, float x, float y, float width, float height);
+struct Context;
+struct Style;
+struct Box: public common::Ref<Box>::Counter {
+	Box(std::string_view name, float x, float y, float width, float height);
 	virtual ~Box();
-	virtual void draw(Context *context, const math::Rectangle<float> &parentRect);
-	void drawChildren(Context *context, const math::Rectangle<float> &parentRect);
-	void addChild(Box *box);
-	void setStyle(Style *style);
-	Box *getBoxAt(const math::Vector2f &point);
-	Box *getNamedBox(const char *name);
-	std::string name;
-	Style *style;
-	bool helper_only;
-	bool locked;
-	math::Rectangle<float> rect;
-	std::list<Box *> child;
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect);
+	void drawChildren(Context &context, const math::Rectangle<float> &parentRect);
+	void addChild(common::Ref<Box> box);
+	Box &setStyle(common::Ref<Style> style);
+	Box &setLocked(bool locked);
+	Box &setHelperOnly(bool helperOnly);
+	const std::string &name();
+	common::Ref<Style> style();
+	const math::Rectangle<float> &rect() const;
+	common::Ref<Box> getBoxAt(const math::Vector2f &point);
+	common::Ref<Box> getNamedBox(std::string_view name);
+	bool locked() const;
+	bool helperOnly() const;
+	virtual bool hitTest(const math::Vector2f &point) const;
+private:
+	std::string m_name;
+	common::Ref<Style> m_style;
+	bool m_helperOnly, m_locked;
+	math::Rectangle<float> m_rect;
+	std::vector<common::Ref<Box>> m_children;
 };
 struct Text: public Box {
-	Text(const char *name, float x, float y, float width, float height);
+	Text(std::string_view name, float x, float y, float width, float height);
 	virtual ~Text();
-	virtual void draw(Context *context, const math::Rectangle<float> &parentRect) override;
-	std::string text;
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	Text &setText(std::string_view text);
+	Text &setStyle(common::Ref<Style> style);
+	Text &setLocked(bool locked);
+	Text &setHelperOnly(bool helperOnly);
+	Text *reference();
+private:
+	std::string m_text;
 };
 struct Fill: public Box {
-	Fill(const char *name, float x, float y, float width, float height);
+	Fill(std::string_view name, float x, float y, float width, float height);
 	virtual ~Fill();
-	virtual void draw(Context *context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	Fill &setStyle(common::Ref<Style> style);
+	Fill &setLocked(bool locked);
+	Fill &setHelperOnly(bool helperOnly);
+	Fill *reference();
+};
+struct Circle: public Box {
+	Circle(std::string_view name, float x, float y, float width, float height);
+	virtual ~Circle();
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	Circle &setStyle(common::Ref<Style> style);
+	Circle &setLocked(bool locked);
+	Circle &setHelperOnly(bool helperOnly);
+	Circle *reference();
+	virtual bool hitTest(const math::Vector2f &point) const override;
+};
+struct Pie: public Box {
+	Pie(std::string_view name, float x, float y, float width, float height);
+	virtual ~Pie();
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	Pie &setStartAngle(float startAngle);
+	Pie &setEndAngle(float endAngle);
+	Pie &setStyle(common::Ref<Style> style);
+	Pie &setLocked(bool locked);
+	Pie &setHelperOnly(bool helperOnly);
+	Pie *reference();
+	virtual bool hitTest(const math::Vector2f &point) const override;
+private:
+	float m_startAngle, m_endAngle;
+};
+struct AspectRatio: public Box {
+	AspectRatio(std::string_view name, float x, float y, float width, float height);
+	virtual ~AspectRatio();
+	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	AspectRatio &setAspectRatio(float aspectRatio);
+	AspectRatio &setStyle(common::Ref<Style> style);
+	AspectRatio &setLocked(bool locked);
+	AspectRatio &setHelperOnly(bool helperOnly);
+	AspectRatio *reference();
+private:
+	float m_aspectRatio;
 };
 }
 #endif /* GPICK_LAYOUT_BOX_H_ */
