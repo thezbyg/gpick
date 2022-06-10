@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(stringArrayOverwrite) {
 }
 BOOST_AUTO_TEST_CASE(mapArray) {
 	Map map;
-	std::vector<Ref> data { new Map(), new Map(), new Map() };
+	std::vector<Ref> data { Ref(new Map()), Ref(new Map()), Ref(new Map()) };
 	map.set("a", data);
 	auto result = map.getMaps("a");
 	BOOST_CHECK_EQUAL(data.size(), 3);
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(mapArray) {
 }
 BOOST_AUTO_TEST_CASE(noMoveOnSet) {
 	Map map;
-	std::vector<Ref> data { new Map() };
+	std::vector<Ref> data { Ref(new Map()) };
 	map.set("a", data);
 	BOOST_CHECK_EQUAL(map.size(), 1);
 	BOOST_CHECK_EQUAL(data.size(), 1);

@@ -81,7 +81,7 @@ bool dialog_options_update(GlobalState *gs) {
 	lua_State* L = gs->script();
 	int stack_top = lua_gettop(L);
 	gs->callbacks().optionChange().get();
-	lua::pushDynvSystem(L, &gs->settings());
+	lua::pushDynvSystem(L, dynv::Ref(&gs->settings()));
 	int status = lua_pcall(L, 1, 0, 0);
 	if (status == 0){
 		lua_settop(L, stack_top);

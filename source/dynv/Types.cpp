@@ -20,6 +20,7 @@
 #include "Map.h"
 #include "Color.h"
 #include <algorithm>
+#include <istream>
 #include <boost/endian/conversion.hpp>
 namespace dynv {
 namespace xml {

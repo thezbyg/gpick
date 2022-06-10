@@ -20,6 +20,7 @@
 #include "Map.h"
 #include "Types.h"
 #include "Variable.h"
+#include <istream>
 namespace dynv {
 namespace binary {
 using ValueType = types::ValueType;

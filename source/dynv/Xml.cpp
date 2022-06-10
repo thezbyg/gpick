@@ -23,6 +23,7 @@
 #include "common/Scoped.h"
 #include <expat.h>
 #include <sstream>
+#include <iostream>
 #include <type_traits>
 using namespace std::string_literals;
 namespace dynv {

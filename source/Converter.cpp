@@ -23,6 +23,7 @@
 #include "lua/ColorObject.h"
 #include "lua/Script.h"
 #include <string>
+#include <iostream>
 #include <lualib.h>
 #include <lauxlib.h>
 Converter::Options Converter::emptyOptions = {};

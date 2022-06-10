@@ -19,8 +19,13 @@
 #ifndef GPICK_COMMON_REF_H_
 #define GPICK_COMMON_REF_H_
 #include <cstdint>
-#include <iostream>
+#include <type_traits>
 namespace common {
+struct NullRef {
+	explicit constexpr NullRef(int) {
+	}
+};
+void validateRefCounterDestruction(void *thisPointer, uint32_t referenceCounter);
 template<typename T>
 struct Ref {
 	struct Counter {
@@ -28,13 +33,11 @@ struct Ref {
 			m_referenceCounter(1) {
 		}
 		virtual ~Counter() {
-			if (m_referenceCounter > 1) {
-				std::cerr << "Referenced value destroyed [address: " << this << ", reference count: " << m_referenceCounter << "]\n";
-			}
+			validateRefCounterDestruction(this, m_referenceCounter);
 		}
 		T *reference() {
 			m_referenceCounter++;
-			return reinterpret_cast<T *>(this);
+			return static_cast<T *>(this);
 		}
 		bool release() {
 			if (m_referenceCounter > 1) {
@@ -51,23 +54,37 @@ struct Ref {
 	private:
 		uint32_t m_referenceCounter;
 	};
-	Ref():
+	Ref() noexcept:
 		m_value(nullptr) {
 	}
-	Ref(T *value):
+	Ref(const NullRef &) noexcept:
+		m_value(nullptr) {
+	}
+	explicit Ref(T *value) noexcept:
 		m_value(value) {
 	}
-	Ref(const Ref<T> &reference):
-		m_value(reference.m_value->reference()) {
+	Ref(const Ref<T> &reference) noexcept:
+		m_value(reference.m_value ? reference.m_value->reference() : nullptr) {
 	}
-	Ref(Ref<T> &&reference):
+	template<typename OtherT, std::enable_if_t<std::is_base_of_v<T, OtherT> && !std::is_same_v<T, OtherT>, int> = 0>
+	Ref(const Ref<OtherT> &reference) noexcept:
+		m_value(reference.m_value ? reference.m_value->reference() : nullptr) {
+	}
+	Ref(Ref<T> &&reference) noexcept:
 		m_value(reference.m_value) {
 		reference.m_value = nullptr;
 	}
 	Ref &operator=(const Ref<T> &reference) {
 		if (m_value)
 			m_value->release();
-		m_value = reference.m_value->reference();
+		m_value = reference.m_value ? reference.m_value->reference() : nullptr;
+		return *this;
+	}
+	template<typename OtherT, std::enable_if_t<std::is_base_of_v<T, OtherT> && !std::is_same_v<T, OtherT>, int> = 0>
+	Ref &operator=(const Ref<OtherT> &reference) {
+		if (m_value)
+			m_value->release();
+		m_value = reference.m_value ? reference.m_value->reference() : nullptr;
 		return *this;
 	}
 	~Ref() {
@@ -87,6 +104,23 @@ struct Ref {
 	bool operator==(const Ref<T> &reference) const {
 		return m_value == reference.m_value;
 	}
+	bool operator!=(const Ref<T> &reference) const {
+		return m_value != reference.m_value;
+	}
+	template<typename OtherT, std::enable_if_t<std::is_base_of_v<T, OtherT> && !std::is_same_v<T, OtherT>, int> = 0>
+	bool operator==(const Ref<OtherT> &reference) const {
+		return m_value == reference.m_value;
+	}
+	template<typename OtherT, std::enable_if_t<std::is_base_of_v<T, OtherT> && !std::is_same_v<T, OtherT>, int> = 0>
+	bool operator!=(const Ref<OtherT> &reference) const {
+		return m_value != reference.m_value;
+	}
+	bool operator==(const T *value) const {
+		return m_value == value;
+	}
+	bool operator!=(const T *value) const {
+		return m_value != value;
+	}
 	T &operator*() {
 		return *m_value;
 	}
@@ -102,8 +136,23 @@ struct Ref {
 	uint32_t references() const {
 		return m_value ? m_value->references() : 0;
 	}
+	[[nodiscard]] static Ref wrap(T *value) {
+		return Ref<T>(value ? value->reference() : nullptr);
+	}
+	[[nodiscard]] T *unwrap() {
+		T *result = m_value;
+		m_value = nullptr;
+		return result;
+	}
 private:
 	T *m_value;
+	template<typename OtherT>
+	friend struct Ref;
 };
+inline constexpr NullRef nullRef { 0 };
+template<typename T>
+Ref<T> wrapInRef(T *value) {
+	return Ref<T>::wrap(value);
+}
 }
 #endif /* GPICK_COMMON_REF_H_ */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2020, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,42 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_DYNV_TYPES_H_
-#define GPICK_DYNV_TYPES_H_
-#include "common/Ref.h"
-#include <iosfwd>
-#include <type_traits>
-#include <string>
-namespace dynv {
-struct Map;
-namespace types {
-enum class ValueType : uint8_t {
-	unknown,
-	map,
-	basicBool,
-	basicFloat,
-	basicInt32,
-	color,
-	string,
-};
-struct KnownHandler {
-	std::string name;
-	ValueType type;
-};
-template<typename T> const KnownHandler &typeHandler();
-namespace xml {
-template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);
-template<typename T, typename std::enable_if_t<!std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, const T &value);
-template<typename T>
-bool write(std::ostream &stream, const common::Ref<T> &value, size_t indentationLevel);
-}
-namespace binary {
-template<typename T, typename std::enable_if_t<std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, T value);
-template<typename T, typename std::enable_if_t<!std::is_arithmetic<T>::value, int> = 0> bool write(std::ostream &stream, const T &value);
-template<typename T> T read(std::istream &stream);
-}
-ValueType stringToType(const char *value);
-ValueType stringToType(const std::string &value);
+#include "Ref.h"
+#include <iostream>
+namespace common {
+void validateRefCounterDestruction(void *thisPointer, uint32_t referenceCounter) {
+	if (referenceCounter > 1) {
+		std::cerr << "Referenced value destroyed [address: " << thisPointer << ", reference count: " << referenceCounter << "]\n";
+	}
 }
 }
-#endif /* GPICK_DYNV_TYPES_H_ */
