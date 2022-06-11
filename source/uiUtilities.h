@@ -50,7 +50,6 @@ struct Grid {
 	operator GtkWidget *();
 private:
 	GtkWidget *m_grid;
-	int m_columns, m_column, m_row;
-	[[maybe_unused]] int m_columnSpacing, m_rowSpacing;
+	int m_columns, m_column, m_row, m_columnSpacing, m_rowSpacing;
 };
 #endif /* GPICK_UI_UTILITIES_H_ */

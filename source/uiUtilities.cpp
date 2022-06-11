@@ -17,6 +17,7 @@
  */
 
 #include "uiUtilities.h"
+#include "common/Unused.h"
 GtkWidget* gtk_label_aligned_new(const gchar* text, gfloat xalign, gfloat yalign, gfloat xscale, gfloat yscale) {
 	GtkWidget *align = gtk_alignment_new(xalign, yalign, xscale, yscale);
 	GtkWidget *label = gtk_label_new(text);
@@ -139,6 +140,7 @@ Grid::Grid(int columns, int rows, int columnSpacing, int rowSpacing):
 }
 GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width, bool verticalExpand) {
 #if GTK_MAJOR_VERSION >= 3
+	common::maybeUnused(m_columnSpacing, m_rowSpacing);
 	if (expand)
 		gtk_widget_set_hexpand(widget, true);
 	if (verticalExpand)

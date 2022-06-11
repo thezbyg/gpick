@@ -28,6 +28,7 @@
 #include "I18N.h"
 #include "IContainerUI.h"
 #include "common/CastToVariant.h"
+#include "common/Unused.h"
 #include "IMenuExtension.h"
 #include <gdk/gdkkeysyms.h>
 #include <map>
@@ -193,7 +194,7 @@ StandardMenu::Appender::Appender(GtkWidget *menu, GtkAccelGroup *acceleratorGrou
 	data(data) {
 }
 GtkWidget *StandardMenu::Appender::appendItem(const char *label, const char *icon, guint key, GdkModifierType modifiers, GCallback callback, bool enabled) {
-	(void)acceleratorGroup;
+	common::maybeUnused(acceleratorGroup);
 	auto item = newMenuItem(label, icon);
 	gtk_widget_add_accelerator(item, "activate", gtk_menu_get_accel_group(GTK_MENU(menu)), key, modifiers, GTK_ACCEL_VISIBLE);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
