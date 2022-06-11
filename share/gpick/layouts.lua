@@ -12,8 +12,11 @@ local makeLocked = function(container)
 end
 local addText = function(container, lines, style)
 	local text = color:new()
+	local heights = {0.15, 0.12, 0.10, 0.09, 0.08, 0.07, 0.06, 0.05, 0.04, 0.03}
+	local y = 0
 	for i = 0, lines - 1 do
-		container:add(layout:newText("content_text", 0.02, i * 0.06 + 0.01, 0.96, 0.06, style, _("The quick brown fox jumps over the lazy dog")))
+		container:add(layout:newText("content_text", 0.02, y, 0.96, heights[1 + i], style, _("The quick brown fox jumps over the lazy dog")))
+		y = y + heights[1 + i] + 0.01
 	end
 	return container
 end
@@ -27,8 +30,8 @@ local addButtons = function(container, buttons, percentage, buttonStyle, textSty
 	local texts = {_("Homepage"), _("About us"), _("Links to us"), _("Privacy"), _("Terms"), _("Contact us"), _("RSS")}
 	for i = 0, buttons - 1 do
 		local button = layout:newFill("button", padding, i * size + padding, 1 - padding * 2, size - padding, buttonStyle[i % styleCount + 1])
-		button:add(makeHelper(layout:newText("button_text", 0.25, 0.65, 0.5, 0.3, textStyle[i % styleTextCount + 1], buttonStyle[i % styleCount + 1]:label())))
-		button:add(layout:newText("button_text", 0.25, 0.25, 0.5, 0.5, textStyle[i % styleTextCount + 1], texts[i % #texts + 1]))
+		button:add(makeHelper(layout:newText("button_text", 0.25, 0.7, 0.5, 0.25, textStyle[i % styleTextCount + 1], buttonStyle[i % styleCount + 1]:label())))
+		button:add(layout:newText("button_text", 0.1, 0.25, 0.8, 0.5, textStyle[i % styleTextCount + 1], texts[i % #texts + 1]))
 		root:add(button)
 	end
 	return container
@@ -99,7 +102,7 @@ gpick:addLayout('std_layout_menu_1', _("Menu"), function(system)
 	system:setBox(root)
 	root:add(addButtons(layout:newFill("menu", 0, 0, 1, 1, styles['menu']), 7, 1, { styles['button'], styles['button'], styles['button_hover'] }, { styles['button_text'], styles['button_text'], styles['button_text_hover'] }, 0.1))
 end)
-gpick:addLayout('std_layout_grid_1', _("Grid (4x3)"), function(system)
+gpick:addLayout('std_layout_grid_1', _("Grid") .. " (4x3)", function(system)
 	local root = layout:newBox("root", 0, 0, 400, 300)
 	system:setBox(root)
 	for j = 0, 2 do
@@ -115,7 +118,7 @@ gpick:addLayout('std_layout_grid_1', _("Grid (4x3)"), function(system)
 		end
 	end
 end)
-gpick:addLayout('std_layout_grid_2', _("Grid (5x4)"), function(system)
+gpick:addLayout('std_layout_grid_2', _("Grid") .. " (5x4)", function(system)
 	local root = layout:newBox("root", 0, 0, 500, 400)
 	system:setBox(root)
 	for j = 0, 3 do
@@ -129,6 +132,40 @@ gpick:addLayout('std_layout_grid_2', _("Grid (5x4)"), function(system)
 			fill:add(layout:newText("item_text".. itemIndex, 0, 0.25, 1, 0.5, styleText, _("Item") .. itemIndex))
 			root:add(fill)
 		end
+	end
+end)
+gpick:addLayout('std_layout_pie_1', _("Pie chart") .. ' 1', function(system)
+	local root = layout:newBox("root", 0, 0, 400, 400)
+	system:setBox(root)
+	local style = layout:newStyle("background_b:" .. _("Background"), color:new(0.7, 0.7, 0.7), 1.0)
+	system:addStyle(style)
+	background = layout:newFill("background", 0, 0, 1, 1, style)
+	root:add(background)
+	local percents = {0.4, 0.2, 0.13, 0.07, 0.06, 0.05, 0.04, 0.03, 0.02}
+	local start = -0.25
+	for i, percent in ipairs(percents) do
+		local itemIndex = i
+		style = layout:newStyle("part" .. itemIndex .. "_b:" .. _("Part") .. " " .. itemIndex, color:new(0.8 - (0.1 * i), 0.8, 0.5 - (0.05 * i)), 1.0)
+		system:addStyle(style)
+		background:add(layout:newPie("part" .. itemIndex, 0.05, 0.05, 0.9, 0.9, start, start + percent, style))
+		start = start + percent
+	end
+end)
+gpick:addLayout('std_layout_pie_2', _("Pie chart") .. ' 2', function(system)
+	local root = layout:newBox("root", 0, 0, 400, 400)
+	system:setBox(root)
+	local style = layout:newStyle("background_b:" .. _("Background"), color:new(0.7, 0.7, 0.7), 1.0)
+	system:addStyle(style)
+	background = layout:newFill("background", 0, 0, 1, 1, style)
+	root:add(background)
+	local percents = {0.4, 0.25, 0.15, 0.10, 0.10}
+	local start = -0.25
+	for i, percent in ipairs(percents) do
+		local itemIndex = i
+		style = layout:newStyle("part" .. itemIndex .. "_b:" .. _("Part") .. " " .. itemIndex, color:new(0.8 - (0.1 * i), 0.8, 0.5 - (0.05 * i)), 1.0)
+		system:addStyle(style)
+		background:add(layout:newPie("part" .. itemIndex, 0.05, 0.05, 0.9, 0.9, start, start + percent, style))
+		start = start + percent
 	end
 end)
 return {}

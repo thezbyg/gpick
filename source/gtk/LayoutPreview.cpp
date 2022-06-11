@@ -150,6 +150,7 @@ int gtk_layout_preview_set_system(GtkLayoutPreview *widget, common::Ref<layout::
 	if (ns->system && ns->system->box()) {
 		gtk_widget_set_size_request(GTK_WIDGET(widget), static_cast<int>(ns->system->box()->rect().getWidth()), static_cast<int>(ns->system->box()->rect().getHeight()));
 	}
+	gtk_widget_queue_draw(GTK_WIDGET(widget));
 	return 0;
 }
 int gtk_layout_preview_set_color_at(GtkLayoutPreview *widget, Color *color, gdouble x, gdouble y) {

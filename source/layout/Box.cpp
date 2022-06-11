@@ -252,12 +252,12 @@ void Circle::draw(Context &context, const math::Rectangle<float> &parentRect) {
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
 	cairo_fill_preserve(cr);
 	cairo_set_antialias(cr, CAIRO_ANTIALIAS_DEFAULT);
-	cairo_set_line_width(cr, 1);
-	cairo_stroke(cr);
 	if (context.system().selectedBox() == this) {
-		cairo_rectangle(cr, drawRect.getX() + 1, drawRect.getY() + 1, drawRect.getWidth() - 2, drawRect.getHeight() - 2);
 		cairo_set_source_rgb(cr, 1, 1, 1);
 		cairo_set_line_width(cr, 2);
+		cairo_stroke(cr);
+	} else {
+		cairo_set_line_width(cr, 1);
 		cairo_stroke(cr);
 	}
 	drawChildren(context, parentRect);
