@@ -20,11 +20,12 @@
 #include "Style.h"
 #include "Box.h"
 namespace layout {
-System::System() {
+System::System():
+	m_selectable(true) {
 }
 System::~System() {
 }
-void System::draw(Context &context, const math::Rectangle<float> &parentRect) {
+void System::draw(Context &context, const math::Rectanglef &parentRect) {
 	if (!m_box)
 		return;
 	m_box->draw(context, parentRect);
@@ -61,5 +62,11 @@ void System::setSelected(common::Ref<Box> box) {
 }
 const common::Ref<Box> &System::selectedBox() const {
 	return m_selectedBox;
+}
+const bool System::selectable() const {
+	return m_selectable;
+}
+void System::setSelectable(bool selectable) {
+	m_selectable = selectable;
 }
 }

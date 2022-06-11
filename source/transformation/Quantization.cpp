@@ -45,6 +45,7 @@ void Quantization::apply(Color *input, Color *output) {
 		output->rgb.green = boost::math::round(input->rgb.green * actualmax) / actualmax;
 		output->rgb.blue = boost::math::round(input->rgb.blue * actualmax) / actualmax;
 	}
+	output->alpha = input->alpha;
 }
 Quantization::Quantization():
 	Transformation(transformationId, getName()) {

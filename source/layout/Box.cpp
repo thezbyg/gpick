@@ -56,14 +56,14 @@ Box &Box::setHelperOnly(bool helperOnly) {
 	m_helperOnly = helperOnly;
 	return *this;
 }
-const math::Rectangle<float> &Box::rect() const {
+const math::Rectanglef &Box::rect() const {
 	return m_rect;
 }
-void Box::draw(Context &context, const math::Rectangle<float> &parentRect) {
+void Box::draw(Context &context, const math::Rectanglef &parentRect) {
 	drawChildren(context, parentRect);
 }
-void Box::drawChildren(Context &context, const math::Rectangle<float> &parentRect) {
-	math::Rectangle<float> childRect = m_rect.impose(parentRect);
+void Box::drawChildren(Context &context, const math::Rectanglef &parentRect) {
+	math::Rectanglef childRect = m_rect.impose(parentRect);
 	for (auto &child: m_children) {
 		if (child != context.system().selectedBox())
 			child->draw(context, childRect);
@@ -131,8 +131,8 @@ Text &Text::setHelperOnly(bool helperOnly) {
 Text *Text::reference() {
 	return static_cast<Text *>(Counter::reference());
 }
-void Text::draw(Context &context, const math::Rectangle<float> &parentRect) {
-	math::Rectangle<float> drawRect = rect().impose(parentRect);
+void Text::draw(Context &context, const math::Rectanglef &parentRect) {
+	math::Rectanglef drawRect = rect().impose(parentRect);
 	cairo_t *cr = context.getCairo();
 	if (m_text != "") {
 		PangoFontDescription *fontDescription = pango_font_description_new();
@@ -149,7 +149,7 @@ void Text::draw(Context &context, const math::Rectangle<float> &parentRect) {
 			if (context.getTransformationChain()) {
 				context.getTransformationChain()->apply(&color, &color);
 			}
-			cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
+			cairo_set_source_rgba(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0, color.alpha);
 			textOffset = style()->textOffset() * math::Vector2f(drawRect.getWidth(), drawRect.getHeight());
 		} else {
 			pango_font_description_set_absolute_size(fontDescription, drawRect.getHeight() * PANGO_SCALE);
@@ -197,8 +197,8 @@ Fill &Fill::setHelperOnly(bool helperOnly) {
 	Box::setHelperOnly(helperOnly);
 	return *this;
 }
-void Fill::draw(Context &context, const math::Rectangle<float> &parentRect) {
-	math::Rectangle<float> drawRect = rect().impose(parentRect);
+void Fill::draw(Context &context, const math::Rectanglef &parentRect) {
+	math::Rectanglef drawRect = rect().impose(parentRect);
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {
@@ -236,8 +236,8 @@ Circle &Circle::setHelperOnly(bool helperOnly) {
 	Box::setHelperOnly(helperOnly);
 	return *this;
 }
-void Circle::draw(Context &context, const math::Rectangle<float> &parentRect) {
-	math::Rectangle<float> drawRect = rect().impose(parentRect);
+void Circle::draw(Context &context, const math::Rectanglef &parentRect) {
+	math::Rectanglef drawRect = rect().impose(parentRect);
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {
@@ -295,8 +295,8 @@ Pie &Pie::setHelperOnly(bool helperOnly) {
 	Box::setHelperOnly(helperOnly);
 	return *this;
 }
-void Pie::draw(Context &context, const math::Rectangle<float> &parentRect) {
-	math::Rectangle<float> drawRect = rect().impose(parentRect);
+void Pie::draw(Context &context, const math::Rectanglef &parentRect) {
+	math::Rectanglef drawRect = rect().impose(parentRect);
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {

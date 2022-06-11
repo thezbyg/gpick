@@ -46,24 +46,24 @@ struct GtkLayoutPreviewPrivate {
 };
 #define GET_PRIVATE(obj) reinterpret_cast<GtkLayoutPreviewPrivate *>(gtk_layout_preview_get_instance_private(GTK_LAYOUT_PREVIEW(obj)))
 G_DEFINE_TYPE_WITH_CODE(GtkLayoutPreview, gtk_layout_preview, GTK_TYPE_DRAWING_AREA, G_ADD_PRIVATE(GtkLayoutPreview));
-static gboolean button_release(GtkWidget *layout_preview, GdkEventButton *event);
-static gboolean button_press(GtkWidget *layout_preview, GdkEventButton *event);
+static gboolean onButtonRelease(GtkWidget *layout_preview, GdkEventButton *event);
+static gboolean onButtonPress(GtkWidget *layout_preview, GdkEventButton *event);
 #if GTK_MAJOR_VERSION >= 3
-static gboolean draw(GtkWidget *widget, cairo_t *cr);
+static gboolean onDraw(GtkWidget *widget, cairo_t *cr);
 #else
-static gboolean expose(GtkWidget *layout_preview, GdkEventExpose *event);
+static gboolean onExpose(GtkWidget *layout_preview, GdkEventExpose *event);
 #endif
 static void gtk_layout_preview_class_init(GtkLayoutPreviewClass *klass) {
-	GObjectClass *obj_class = G_OBJECT_CLASS(klass);
-	GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
-	widget_class->button_release_event = button_release;
-	widget_class->button_press_event = button_press;
+	GObjectClass *objectClass = G_OBJECT_CLASS(klass);
+	GtkWidgetClass *widgetClass = GTK_WIDGET_CLASS(klass);
+	widgetClass->button_release_event = onButtonRelease;
+	widgetClass->button_press_event = onButtonPress;
 #if GTK_MAJOR_VERSION >= 3
-	widget_class->draw = draw;
+	widgetClass->draw = onDraw;
 #else
-	widget_class->expose_event = expose;
+	widgetClass->expose_event = onExpose;
 #endif
-	signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(obj_class), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkLayoutPreviewClass, color_changed), nullptr, nullptr, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1, G_TYPE_POINTER);
+	signals[COLOR_CHANGED] = g_signal_new("color_changed", G_OBJECT_CLASS_TYPE(objectClass), G_SIGNAL_RUN_FIRST, G_STRUCT_OFFSET(GtkLayoutPreviewClass, color_changed), nullptr, nullptr, g_cclosure_marshal_VOID__POINTER, G_TYPE_NONE, 1, G_TYPE_POINTER);
 }
 static void gtk_layout_preview_init(GtkLayoutPreview *layout_preview) {
 	gtk_widget_add_events(GTK_WIDGET(layout_preview), GDK_2BUTTON_PRESS | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_FOCUS_CHANGE_MASK | GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK);
@@ -103,10 +103,10 @@ static math::Vector2i getSize(GtkWidget *widget) {
 #else
 	GtkAllocation rectangle;
 	gtk_widget_get_allocation(widget, &rectangle);
-	return math::Vector2i(rectangle.width - widget->style()->xthickness * 2 - 1, rectangle.height - widget->style()->ythickness * 2 - 1);
+	return math::Vector2i(rectangle.width - widget->style->xthickness * 2 - 1, rectangle.height - widget->style->ythickness * 2 - 1);
 #endif
 }
-static gboolean draw(GtkWidget *widget, cairo_t *cr) {
+static gboolean onDraw(GtkWidget *widget, cairo_t *cr) {
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
 	if (ns->system && ns->system->box()) {
 		ns->area = math::Rectangle<float>(0, 0, 1, 1);
@@ -121,22 +121,22 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr) {
 	return true;
 }
 #if GTK_MAJOR_VERSION < 3
-static gboolean expose(GtkWidget *widget, GdkEventExpose *event) {
+static gboolean onExpose(GtkWidget *widget, GdkEventExpose *event) {
 	cairo_t *cr = gdk_cairo_create(gtk_widget_get_window(widget));
 	cairo_rectangle(cr, event->area.x, event->area.y, event->area.width, event->area.height);
 	cairo_clip(cr);
-	gboolean result = draw(widget, cr);
+	gboolean result = onDraw(widget, cr);
 	cairo_destroy(cr);
 	return result;
 }
 #endif
-static gboolean button_release(GtkWidget *layout_preview, GdkEventButton *event) {
+static gboolean onButtonRelease(GtkWidget *layout_preview, GdkEventButton *event) {
 	return true;
 }
-static gboolean button_press(GtkWidget *widget, GdkEventButton *event) {
+static gboolean onButtonPress(GtkWidget *widget, GdkEventButton *event) {
 	gtk_widget_grab_focus(widget);
 	GtkLayoutPreviewPrivate *ns = GET_PRIVATE(widget);
-	if (ns->system) {
+	if (ns->system && ns->system->selectable()) {
 		math::Vector2f point = math::Vector2f(static_cast<float>((event->x - ns->area.getX()) / ns->area.getWidth()), static_cast<float>((event->y - ns->area.getY()) / ns->area.getHeight()));
 		if (setSelectedBox(ns, ns->system->getBoxAt(point))) {
 			gtk_widget_queue_draw(GTK_WIDGET(widget));

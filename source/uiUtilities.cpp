@@ -169,3 +169,13 @@ void Grid::nextRow() {
 Grid::operator GtkWidget *() {
 	return m_grid;
 }
+void Grid::setColumn(int column) {
+	m_column = column;
+}
+void Grid::setRow(int row) {
+	m_row = row;
+}
+void Grid::setColumnAndRow(int column, int row) {
+	m_column = column;
+	m_row = row;
+}

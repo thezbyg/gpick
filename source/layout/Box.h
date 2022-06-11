@@ -30,31 +30,39 @@ struct Style;
 struct Box: public common::Ref<Box>::Counter {
 	Box(std::string_view name, float x, float y, float width, float height);
 	virtual ~Box();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect);
-	void drawChildren(Context &context, const math::Rectangle<float> &parentRect);
+	virtual void draw(Context &context, const math::Rectanglef &parentRect);
+	void drawChildren(Context &context, const math::Rectanglef &parentRect);
 	void addChild(common::Ref<Box> box);
 	Box &setStyle(common::Ref<Style> style);
 	Box &setLocked(bool locked);
 	Box &setHelperOnly(bool helperOnly);
 	const std::string &name();
 	common::Ref<Style> style();
-	const math::Rectangle<float> &rect() const;
+	const math::Rectanglef &rect() const;
 	common::Ref<Box> getBoxAt(const math::Vector2f &point);
 	common::Ref<Box> getNamedBox(std::string_view name);
 	bool locked() const;
 	bool helperOnly() const;
 	virtual bool hitTest(const math::Vector2f &point) const;
+	template<typename Callable>
+	void visit(const math::Rectanglef &rectangle, Callable &&callable) {
+		math::Rectanglef thisRectangle = m_rect.impose(rectangle);
+		callable(thisRectangle, *this);
+		for (auto &child: m_children) {
+			child->visit(thisRectangle, callable);
+		}
+	}
 private:
 	std::string m_name;
 	common::Ref<Style> m_style;
 	bool m_helperOnly, m_locked;
-	math::Rectangle<float> m_rect;
+	math::Rectanglef m_rect;
 	std::vector<common::Ref<Box>> m_children;
 };
 struct Text: public Box {
 	Text(std::string_view name, float x, float y, float width, float height);
 	virtual ~Text();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectanglef &parentRect) override;
 	Text &setText(std::string_view text);
 	Text &setStyle(common::Ref<Style> style);
 	Text &setLocked(bool locked);
@@ -66,7 +74,7 @@ private:
 struct Fill: public Box {
 	Fill(std::string_view name, float x, float y, float width, float height);
 	virtual ~Fill();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectanglef &parentRect) override;
 	Fill &setStyle(common::Ref<Style> style);
 	Fill &setLocked(bool locked);
 	Fill &setHelperOnly(bool helperOnly);
@@ -75,7 +83,7 @@ struct Fill: public Box {
 struct Circle: public Box {
 	Circle(std::string_view name, float x, float y, float width, float height);
 	virtual ~Circle();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectanglef &parentRect) override;
 	Circle &setStyle(common::Ref<Style> style);
 	Circle &setLocked(bool locked);
 	Circle &setHelperOnly(bool helperOnly);
@@ -85,7 +93,7 @@ struct Circle: public Box {
 struct Pie: public Box {
 	Pie(std::string_view name, float x, float y, float width, float height);
 	virtual ~Pie();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectanglef &parentRect) override;
 	Pie &setStartAngle(float startAngle);
 	Pie &setEndAngle(float endAngle);
 	Pie &setStyle(common::Ref<Style> style);
@@ -99,7 +107,7 @@ private:
 struct AspectRatio: public Box {
 	AspectRatio(std::string_view name, float x, float y, float width, float height);
 	virtual ~AspectRatio();
-	virtual void draw(Context &context, const math::Rectangle<float> &parentRect) override;
+	virtual void draw(Context &context, const math::Rectanglef &parentRect) override;
 	AspectRatio &setAspectRatio(float aspectRatio);
 	AspectRatio &setStyle(common::Ref<Style> style);
 	AspectRatio &setLocked(bool locked);

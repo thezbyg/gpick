@@ -37,6 +37,7 @@ void GammaModification::apply(Color *input, Color *output) {
 	linear_output.rgb.green = std::pow(linear_input.rgb.green, value);
 	linear_output.rgb.blue = std::pow(linear_input.rgb.blue, value);
 	*output = linear_output.nonLinearRgbInplace().normalizeRgbInplace();
+	output->alpha = input->alpha;
 }
 GammaModification::GammaModification():
 	Transformation(transformationId, getName()) {

@@ -18,30 +18,30 @@
 
 #ifndef GPICK_COLOR_SPACE_TYPE_H_
 #define GPICK_COLOR_SPACE_TYPE_H_
-#include "gtk/ColorComponent.h"
-#include <stdint.h>
+#include "ColorSpaces.h"
+#include <cstdint>
 #include <cstddef>
 #include <string>
 #include <vector>
-namespace lua
-{
+namespace lua {
 struct Script;
 }
 struct Color;
 struct GlobalState;
-struct ColorSpaceType
-{
-	GtkColorComponentComp comp_type;
-	int8_t n_items;
+struct ColorSpaceType {
+	ColorSpace colorSpace;
+	const char *name;
+	int8_t channelCount;
 	struct {
-		const char *name;
-		double raw_scale;
-		double min_value;
-		double max_value;
+		const char *name, *shortName;
+		double rawScale;
+		double minValue;
+		double maxValue;
 		double step;
-	}items[5];
+	} channels[5];
 };
 const ColorSpaceType *color_space_get_types();
+const ColorSpaceType *color_space_get(ColorSpace colorSpace);
 size_t color_space_count_types();
 std::vector<std::string> color_space_color_to_text(const char *type, const Color &color, float alpha, lua::Script &script, GlobalState *gs);
 #endif /* GPICK_COLOR_SPACE_TYPE_H_ */

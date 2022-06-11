@@ -47,6 +47,9 @@ struct Grid {
 	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1, bool verticalExpand = false);
 	void nextColumn(int columns = 1);
 	void nextRow();
+	void setColumn(int column);
+	void setRow(int row);
+	void setColumnAndRow(int column, int row);
 	operator GtkWidget *();
 private:
 	GtkWidget *m_grid;

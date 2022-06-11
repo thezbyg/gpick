@@ -184,6 +184,7 @@ void ColorVisionDeficiency::apply(Color *input, Color *output) {
 		return;
 	}
 	*output = linearOutput.nonLinearRgbInplace().normalizeRgbInplace();
+	output->alpha = input->alpha;
 }
 ColorVisionDeficiency::ColorVisionDeficiency():
 	Transformation(transformationId, getName()),

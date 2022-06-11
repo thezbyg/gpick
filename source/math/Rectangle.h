@@ -160,5 +160,8 @@ private:
 	bool m_empty;
 	T m_x1, m_y1, m_x2, m_y2;
 };
+using Rectanglef = Rectangle<float>;
+using Rectangled = Rectangle<double>;
+using Rectanglei = Rectangle<int>;
 }
 #endif /* GPICK_MATH_RECTANGLE_H_ */

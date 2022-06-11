@@ -53,6 +53,7 @@
 #include "tools/PaletteFromImage.h"
 #include "tools/ColorSpaceSampler.h"
 #include "tools/TextParser.h"
+#include "tools/BackgroundColorPicker.h"
 #include "dbus/Control.h"
 #include "dynv/Map.h"
 #include "common/Guard.h"
@@ -842,6 +843,10 @@ static void text_parser_cb(GtkWidget *widget, AppArgs* args)
 {
 	tools_text_parser_show(GTK_WINDOW(args->window), args->gs);
 }
+static void background_color_picker_cb(GtkWidget *widget, AppArgs* args)
+{
+	tools_background_color_picker(GTK_WINDOW(args->window), *args->gs);
+}
 static void destroy_file_menu_items(FileMenuItems *items)
 {
 	delete items;
@@ -1090,7 +1095,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_p, GdkModifierType(GDK_CONTROL_MASK | GDK_SHIFT_MASK), GTK_ACCEL_VISIBLE);
 	g_signal_connect(G_OBJECT(item), "toggled", G_CALLBACK(view_palette_cb), args);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
-	item = gtk_menu_item_new_with_mnemonic(_("New temporary palette"));
+	item = gtk_menu_item_new_with_mnemonic(_("New Temporary Palette"));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(view_new_temporary_palette_cb), args);
 
@@ -1112,6 +1117,9 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 	item = gtk_menu_item_new_with_mnemonic(_("_Text Parser..."));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(text_parser_cb), args);
+	item = gtk_menu_item_new_with_mnemonic(_("_Background Color Picker..."));
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(background_color_picker_cb), args);
 	file_item = gtk_menu_item_new_with_mnemonic(_("_Tools"));
 	gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), GTK_WIDGET(menu));
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu_bar), file_item);
@@ -1370,7 +1378,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	}
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 
-	auto item = newMenuItem(_("A_dd..."), GTK_STOCK_NEW);
+	auto item = newMenuItem(_("_Add..."), GTK_STOCK_NEW);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_add), args);
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_n, GdkModifierType(), GTK_ACCEL_VISIBLE);
@@ -1437,7 +1445,7 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_selected), args);
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_Delete, GdkModifierType(0), GTK_ACCEL_VISIBLE);
 	gtk_widget_set_sensitive(item, (selected_count >= 1));
-	item = newMenuItem(_("Remove _All"), GTK_STOCK_REMOVE);
+	item = newMenuItem(_("Remove All"), GTK_STOCK_REMOVE);
 	gtk_menu_shell_append (GTK_MENU_SHELL (menu), item);
 	g_signal_connect(G_OBJECT (item), "activate", G_CALLBACK(palette_popup_menu_remove_all), args);
 	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);

@@ -372,32 +372,32 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			gtk_swatch_set_main_color(GTK_SWATCH(swatch_display), &c);
 		}
 	}
-	void updateComponentText(GtkColorComponent *component, const char *type) {
-		Color transformed_color;
-		gtk_color_component_get_transformed_color(component, &transformed_color);
-		float alpha = gtk_color_component_get_alpha(component);
+	void updateComponentText(GtkColorComponent *colorSpace, const char *type) {
+		Color transformedColor;
+		gtk_color_component_get_transformed_color(colorSpace, transformedColor);
+		float alpha = gtk_color_component_get_alpha(colorSpace);
 		lua::Script &script = gs.script();
-		std::vector<std::string> str = color_space_color_to_text(type, transformed_color, alpha, script, &gs);
+		std::vector<std::string> str = color_space_color_to_text(type, transformedColor, alpha, script, &gs);
 		int j = 0;
-		const char *text[5] = {0};
+		const char *texts[5] = {0};
 		for (auto i = str.begin(); i != str.end(); i++) {
-			text[j] = (*i).c_str();
+			texts[j] = (*i).c_str();
 			j++;
 			if (j > 4)
 				break;
 		}
-		gtk_color_component_set_text(component, text);
+		gtk_color_component_set_texts(colorSpace, texts);
 	}
 	void updateDisplays(GtkWidget *exceptWidget) {
 		updateMainColorNow();
 		Color c, c2;
 		gtk_swatch_get_active_color(GTK_SWATCH(swatch_display),&c);
-		if (exceptWidget != hslControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(hslControl), &c);
-		if (exceptWidget != hsvControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(hsvControl), &c);
-		if (exceptWidget != rgbControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(rgbControl), &c);
-		if (exceptWidget != cmykControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(cmykControl), &c);
-		if (exceptWidget != labControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(labControl), &c);
-		if (exceptWidget != lchControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(lchControl), &c);
+		if (exceptWidget != hslControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(hslControl), c);
+		if (exceptWidget != hsvControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(hsvControl), c);
+		if (exceptWidget != rgbControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(rgbControl), c);
+		if (exceptWidget != cmykControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(cmykControl), c);
+		if (exceptWidget != labControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(labControl), c);
+		if (exceptWidget != lchControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(lchControl), c);
 		updateComponentText(GTK_COLOR_COMPONENT(hslControl), "hsl");
 		updateComponentText(GTK_COLOR_COMPONENT(hsvControl), "hsv");
 		updateComponentText(GTK_COLOR_COMPONENT(rgbControl), "rgb");
@@ -589,10 +589,10 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 	};
 	std::optional<ContrastEditable> contrastEditable;
 };
-struct ColorCompItem{
+struct ColorCompItem {
 	GtkWidget *widget;
-	GtkColorComponentComp component;
-	int component_id;
+	ColorSpace colorSpace;
+	int channel;
 };
 static void on_swatch_active_color_changed(GtkWidget *widget, gint32 new_active_color, gpointer data)
 {
@@ -701,41 +701,41 @@ static void color_component_change_value(GtkWidget *widget, Color* c, ColorPicke
 	args->updateDisplays(widget);
 }
 
-static void color_component_input_clicked(GtkWidget *widget, int component_id, ColorPickerArgs* args){
-	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(widget), component_id, args->options->getOrCreateMap("component_edit"));
+static void color_component_input_clicked(GtkWidget *widget, int channel, ColorPickerArgs* args){
+	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(widget), channel, args->options->getOrCreateMap("component_edit"));
 }
 
-static void ser_decimal_get(GtkColorComponentComp component, int component_id, Color* color, const char *text){
+static void ser_decimal_get(ColorSpace colorSpace, int channel, Color* color, const char *text){
 	double v;
 	std::stringstream ss(text);
 	ss >> v;
-	switch (component){
-		case GtkColorComponentComp::hsv:
-		case GtkColorComponentComp::hsl:
-			if (component_id == 0){
-				(*color)[component_id] = static_cast<float>(v / 360);
+	switch (colorSpace){
+		case ColorSpace::hsv:
+		case ColorSpace::hsl:
+			if (channel == 0){
+				(*color)[channel] = static_cast<float>(v / 360);
 			}else{
-				(*color)[component_id] = static_cast<float>(v / 100);
+				(*color)[channel] = static_cast<float>(v / 100);
 			}
 			break;
 		default:
-			(*color)[component_id] = static_cast<float>(v / 100);
+			(*color)[channel] = static_cast<float>(v / 100);
 	}
 }
 
-static std::string ser_decimal_set(GtkColorComponentComp component, int component_id, Color* color){
+static std::string ser_decimal_set(ColorSpace colorSpace, int channel, Color* color){
 	std::stringstream ss;
-	switch (component){
-		case GtkColorComponentComp::hsv:
-		case GtkColorComponentComp::hsl:
-			if (component_id == 0){
-				ss << std::setprecision(0) << std::fixed << (*color)[component_id] * 360;
+	switch (colorSpace){
+		case ColorSpace::hsv:
+		case ColorSpace::hsl:
+			if (channel == 0){
+				ss << std::setprecision(0) << std::fixed << (*color)[channel] * 360;
 			}else{
-				ss << std::setprecision(0) << std::fixed << (*color)[component_id] * 100;
+				ss << std::setprecision(0) << std::fixed << (*color)[channel] * 100;
 			}
 			break;
 		default:
-			ss << std::setprecision(0) << std::fixed << (*color)[component_id] * 100;
+			ss << std::setprecision(0) << std::fixed << (*color)[channel] * 100;
 	}
 	return ss.str();
 }
@@ -743,8 +743,8 @@ static std::string ser_decimal_set(GtkColorComponentComp component, int componen
 static struct{
 	const char *name;
 	const char *human_name;
-	void (*get)(GtkColorComponentComp component, int component_id, Color* color, const char *text);
-	std::string (*set)(GtkColorComponentComp component, int component_id, Color* color);
+	void (*get)(ColorSpace colorSpace, int channel, Color* color, const char *text);
+	std::string (*set)(ColorSpace colorSpace, int channel, Color* color);
 }serial[] = {
 	{"decimal", "Decimal", ser_decimal_get, ser_decimal_set},
 };
@@ -753,7 +753,7 @@ static struct{
 
 static void color_component_copy(GtkWidget *widget, ColorPickerArgs* args){
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
-	const char *text = gtk_color_component_get_text(GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id);
+	const char *text = gtk_color_component_get_text(GTK_COLOR_COMPONENT(comp_item->widget), comp_item->channel);
 	if (text){
 		gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, strlen(text));
 		gtk_clipboard_store(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
@@ -764,15 +764,13 @@ static void color_component_copy(GtkWidget *widget, ColorPickerArgs* args){
 static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 	Color color;
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
-	gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
-
+	gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), color);
 	gchar *text = gtk_clipboard_wait_for_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD));
-	if (text){
-		serial[0].get(comp_item->component, comp_item->component_id, &color, text);
-		gtk_color_component_set_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
+	if (text) {
+		serial[0].get(comp_item->colorSpace, comp_item->channel, &color, text);
+		gtk_color_component_set_transformed_color(GTK_COLOR_COMPONENT(comp_item->widget), color);
 		g_free(text);
-
-		gtk_color_component_get_color(GTK_COLOR_COMPONENT(comp_item->widget), &color);
+		gtk_color_component_get_color(GTK_COLOR_COMPONENT(comp_item->widget), color);
 		gtk_swatch_set_active_color(GTK_SWATCH(args->swatch_display), &color);
 		args->updateDisplays(comp_item->widget);
 	}
@@ -780,7 +778,7 @@ static void color_component_paste(GtkWidget *widget, ColorPickerArgs* args){
 
 static void color_component_edit(GtkWidget *widget, ColorPickerArgs* args){
 	struct ColorCompItem *comp_item = (struct ColorCompItem*)g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "comp_item");
-	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(comp_item->widget), comp_item->component_id, args->options->getOrCreateMap("component_edit"));
+	dialog_color_component_input_show(GTK_WINDOW(gtk_widget_get_toplevel(args->main)), GTK_COLOR_COMPONENT(comp_item->widget), comp_item->channel, args->options->getOrCreateMap("component_edit"));
 }
 
 static void destroy_comp_item(struct ColorCompItem *comp_item){
@@ -792,8 +790,8 @@ static gboolean color_component_key_up_cb(GtkWidget *widget, GdkEventButton *eve
 		auto menu = gtk_menu_new();
 		struct ColorCompItem *comp_item = new struct ColorCompItem;
 		comp_item->widget = widget;
-		comp_item->component_id = gtk_color_component_get_component_id_at(GTK_COLOR_COMPONENT(widget), static_cast<int>(event->x), static_cast<int>(event->y));
-		comp_item->component = gtk_color_component_get_component(GTK_COLOR_COMPONENT(widget));
+		comp_item->channel = gtk_color_component_get_channel_at(GTK_COLOR_COMPONENT(widget), static_cast<int>(event->x), static_cast<int>(event->y));
+		comp_item->colorSpace = gtk_color_component_get_color_space(GTK_COLOR_COMPONENT(widget));
 		g_object_set_data_full(G_OBJECT(menu), "comp_item", comp_item, (GDestroyNotify)destroy_comp_item);
 		auto item = newMenuItem(_("Copy"), GTK_STOCK_COPY);
 		gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
@@ -971,9 +969,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderHSV=expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::hsv);
+				widget = gtk_color_component_new(ColorSpace::hsv);
 				const char *hsv_labels[] = {"H", _("Hue"), "S", _("Saturation"), "V", _("Value"), "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsv_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), hsv_labels);
 				args->hsvControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
@@ -985,9 +983,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderHSL = expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::hsl);
+				widget = gtk_color_component_new(ColorSpace::hsl);
 				const char *hsl_labels[] = {"H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), hsl_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), hsl_labels);
 				args->hslControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
@@ -999,9 +997,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderRGB = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::rgb);
+				widget = gtk_color_component_new(ColorSpace::rgb);
 				const char *rgb_labels[] = {"R", _("Red"), "G", _("Green"), "B", _("Blue"), "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), rgb_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), rgb_labels);
 				args->rgbControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
@@ -1013,9 +1011,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderCMYK = expander;
 			gtk_box_pack_start(GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::cmyk);
+				widget = gtk_color_component_new(ColorSpace::cmyk);
 				const char *cmyk_labels[] = {"C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), cmyk_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), cmyk_labels);
 				args->cmykControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
@@ -1027,9 +1025,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderLAB = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::lab);
+				widget = gtk_color_component_new(ColorSpace::lab);
 				const char *lab_labels[] = {"L", _("Lightness"), "a", "a", "b", "b", "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lab_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), lab_labels);
 				args->labControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
@@ -1041,9 +1039,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			args->expanderLCH = expander;
 			gtk_box_pack_start (GTK_BOX(vbox), expander, FALSE, FALSE, 0);
 
-				widget = gtk_color_component_new(GtkColorComponentComp::lch);
+				widget = gtk_color_component_new(ColorSpace::lch);
 				const char *lch_labels[] = {"L", _("Lightness"), "C", "Chroma", "H", "Hue", "A", _("Alpha"), nullptr};
-				gtk_color_component_set_label(GTK_COLOR_COMPONENT(widget), lch_labels);
+				gtk_color_component_set_labels(GTK_COLOR_COMPONENT(widget), lch_labels);
 				args->lchControl = widget;
 				g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(color_component_change_value), args.get());
 				g_signal_connect(G_OBJECT(widget), "button_release_event", G_CALLBACK(color_component_key_up_cb), args.get());
