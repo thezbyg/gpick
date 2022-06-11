@@ -106,7 +106,7 @@ struct BlendColorsArgs: public IColorSource {
 		color_list_destroy(previewColorList);
 		gtk_widget_destroy(main);
 	}
-	virtual std::string_view name() const {
+	virtual std::string_view name() const override {
 		return "blend_colors";
 	}
 	virtual void activate() override {

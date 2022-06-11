@@ -97,7 +97,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
-	virtual std::string_view name() const {
+	virtual std::string_view name() const override {
 		return "generate_scheme";
 	}
 	virtual void activate() override {

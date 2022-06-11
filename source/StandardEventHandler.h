@@ -34,7 +34,5 @@ struct StandardEventHandler {
 		friend StandardEventHandler;
 	};
 	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options = {});
-private:
-	GlobalState *gs;
 };
 #endif /* GPICK_STANDARD_EVENT_HANDLER_H_ */

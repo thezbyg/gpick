@@ -111,7 +111,7 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
-	virtual std::string_view name() const {
+	virtual std::string_view name() const override {
 		return "color_mixer";
 	}
 	virtual void activate() override {

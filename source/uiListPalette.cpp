@@ -116,12 +116,12 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 	virtual bool isContainer() override {
 		return !readOnly;
 	}
-	virtual void addColors(const std::vector<ColorObject> &colorObjects) {
+	virtual void addColors(const std::vector<ColorObject> &colorObjects) override {
 		for (auto &colorObject: colorObjects) {
 			color_list_add_color_object(&colorList, colorObject.copy(), true);
 		}
 	}
-	virtual void editColors() {
+	virtual void editColors() override {
 		auto selectedCount = palette_list_get_selected_count(treeview);
 		if (selectedCount == 0)
 			return;

@@ -76,7 +76,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
-	virtual std::string_view name() const {
+	virtual std::string_view name() const override {
 		return "layout_preview";
 	}
 	virtual void activate() override {
@@ -174,7 +174,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		if (!layoutSystem)
 			return;
 		auto assignments = options->getOrCreateMap("css_selectors.assignments");
-		for (auto style: layoutSystem->styles())
+		for (auto &style: layoutSystem->styles())
 			assignments->set(style->name() + ".color", style->color());
 	}
 	struct Editable: IEditableColorsUI, IDroppableColorUI {
@@ -243,7 +243,7 @@ static void loadColors(LayoutPreviewArgs *args) {
 	if (!args->layoutSystem)
 		return;
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles())
+	for (auto &style: args->layoutSystem->styles())
 		style->setColor(assignments->getColor(style->name() + ".color", style->color()));
 }
 static GtkWidget *newSelectorList(LayoutPreviewArgs *args) {
@@ -287,13 +287,13 @@ static void onAssignSelectors(GtkWidget *widget, LayoutPreviewArgs *args) {
 	GtkTreeIter iter1;
 	GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(selectorList));
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles()) {
+	for (auto &style: args->layoutSystem->styles()) {
 		auto css_selector = assignments->getString(style->name() + ".selector", style->name());
 		gtk_list_store_append(GTK_LIST_STORE(model), &iter1);
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter1,
 			STYLELIST_LABEL, style->label().c_str(),
 			STYLELIST_CSS_SELECTOR, css_selector.c_str(),
-			STYLELIST_PTR, style,
+			STYLELIST_PTR, common::Ref(style).unwrap(),
 			-1);
 	}
 	gtk_widget_show_all(table);
@@ -346,7 +346,7 @@ static int saveCssFile(const char *filename, LayoutPreviewArgs *args) {
 		return -1;
 	auto converter = args->gs.converters().firstCopy();
 	auto assignments = args->options->getOrCreateMap("css_selectors.assignments");
-	for (auto style: args->layoutSystem->styles()) {
+	for (auto &style: args->layoutSystem->styles()) {
 		auto cssSelector = assignments->getString(style->name() + ".selector", style->name());
 		if (cssSelector.empty())
 			continue;

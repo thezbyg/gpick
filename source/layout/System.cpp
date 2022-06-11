@@ -32,6 +32,9 @@ void System::draw(Context &context, const math::Rectangle<float> &parentRect) {
 void System::addStyle(common::Ref<Style> style) {
 	m_styles.push_back(style);
 }
+std::vector<common::Ref<Style>> &System::styles() {
+	return m_styles;
+}
 const std::vector<common::Ref<Style>> &System::styles() const {
 	return m_styles;
 }

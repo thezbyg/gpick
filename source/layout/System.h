@@ -35,6 +35,7 @@ struct System: public common::Ref<System>::Counter {
 	common::Ref<Box> getNamedBox(const std::string_view name);
 	void addStyle(common::Ref<Style> style);
 	void setBox(common::Ref<Box> box);
+	std::vector<common::Ref<Style>> &styles();
 	const std::vector<common::Ref<Style>> &styles() const;
 	common::Ref<Box> box();
 	void setSelected(common::Ref<Box> box);

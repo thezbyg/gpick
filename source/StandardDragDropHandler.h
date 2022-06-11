@@ -40,7 +40,5 @@ struct StandardDragDropHandler {
 		friend StandardDragDropHandler;
 	};
 	static void forWidget(GtkWidget *widget, GlobalState *gs, Interface interface, Options options = {});
-private:
-	GlobalState *gs;
 };
 #endif /* GPICK_STANDARD_DRAG_DROP_HANDLER_H_ */
