@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2021, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -21,585 +21,209 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
+#include "Channels.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
-#include "ColorRYB.h"
-#include "Noise.h"
-#include "GenerateScheme.h"
 #include "I18N.h"
 #include "common/Guard.h"
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <sstream>
-#include <iostream>
-#include <map>
-using namespace std;
-
-typedef struct DialogSortArgs{
-	GtkWidget *group_type;
-	GtkWidget *group_sensitivity;
-	GtkWidget *max_groups;
-	GtkWidget *sort_type;
-	GtkWidget *toggle_reverse;
-	GtkWidget *toggle_reverse_groups;
-
-	ColorList *sorted_color_list;
-	ColorList *selected_color_list;
-	ColorList *preview_color_list;
-
+#include "common/Match.h"
+#include "common/Format.h"
+#include "common/Unused.h"
+#include "math/BinaryTreeQuantization.h"
+#include <tuple>
+#include <algorithm>
+namespace {
+static float toGrayscale(const Color &color) {
+	Color r = color.linearRgb();
+	return (r.red + r.green + r.blue) / 3;
+}
+static const ChannelDescription channelNone = { "none" };
+static const ChannelDescription virtualChannels[] = {
+	{ "rgb_grayscale", N_("RGB Grayscale"), ColorSpace::rgb, Channel::userDefined, ChannelFlags::useConvertTo, { .convertTo = toGrayscale }, 0, 1 },
+};
+struct DialogSortArgs {
+	GtkWidget *dialog, *groupComboBox, *groupSensitivitySpin, *maxGroupsSpin, *sortComboBox, *reverseCheck, *reverseGroupsCheck, *previewExpander;
+	ColorList &selectedColors, &sortedColors, *previewColors;
 	dynv::Ref options;
-	GlobalState* gs;
-}DialogSortArgs;
+	GlobalState &gs;
+	std::vector<const ChannelDescription *> sortChannelsInComboBox, groupChannelsInComboBox;
+	const ChannelDescription *groupChannel, *sortChannel;
+	DialogSortArgs(ColorList &selectedColors, ColorList &sortedColors, GlobalState &gs, GtkWindow *parent):
+		selectedColors(selectedColors),
+		sortedColors(sortedColors),
+		gs(gs) {
+		options = gs.settings().getOrCreateMap("gpick.group_and_sort");
+		groupChannel = &common::matchById(channels(), options->getString("group_type", "rgb_red"), [](std::string_view id) -> const ChannelDescription & {
+			if (id.empty() || id == "none")
+				return channelNone;
+			return common::matchById(virtualChannels, id, channels()[0]);
+		});
+		sortChannel = &common::matchById(channels(), options->getString("sort_type", "rgb_red"), [](std::string_view id) -> const ChannelDescription & {
+			return common::matchById(virtualChannels, id, channels()[0]);
+		});
 
-typedef struct SortType{
-	const char *name;
-	double (*get_value)(Color *color);
-}SortType;
+		dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
+		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
+		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 
-typedef struct GroupType{
-	const char *name;
-	double (*get_group)(Color *color);
-}GroupType;
+		Grid grid(2, 8);
+		grid.addLabel(_("Sort by:"));
+		grid.add(sortComboBox = gtk_combo_box_text_new(), true);
+		for (const auto &i: channels()) {
+			sortChannelsInComboBox.emplace_back(&i);
+			auto label = common::format("{} {}", colorSpace(i.colorSpace).name, _(i.name));
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(sortComboBox), label.c_str());
+			if (&i == sortChannel)
+				gtk_combo_box_set_active(GTK_COMBO_BOX(sortComboBox), sortChannelsInComboBox.size() - 1);
+		}
+		for (const auto &i: virtualChannels) {
+			sortChannelsInComboBox.emplace_back(&i);
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(sortComboBox), _(i.name));
+			if (&i == sortChannel)
+				gtk_combo_box_set_active(GTK_COMBO_BOX(sortComboBox), sortChannelsInComboBox.size() - 1);
+		}
+		g_signal_connect(G_OBJECT(sortComboBox), "changed", G_CALLBACK(DialogSortArgs::onChange), this);
 
-static double sort_rgb_red(Color *color)
-{
-	return color->rgb.red;
-}
-static double sort_rgb_green(Color *color)
-{
-	return color->rgb.green;
-}
-static double sort_rgb_blue(Color *color)
-{
-	return color->rgb.blue;
-}
-static double sort_rgb_grayscale(Color *color)
-{
-	return (color->rgb.red + color->rgb.green + color->rgb.blue) / 3.0;
-}
-static double sort_hsl_hue(Color *color)
-{
-	return color->rgbToHsl().hsl.hue;
-}
-static double sort_hsl_saturation(Color *color)
-{
-	return color->rgbToHsl().hsl.saturation;
-}
-static double sort_hsl_lightness(Color *color)
-{
-	return color->rgbToHsl().hsl.lightness;
-}
-static double sort_lab_lightness(Color *color)
-{
-	return color->rgbToLabD50().lab.L;
-}
-static double sort_lab_a(Color *color)
-{
-	return color->rgbToLabD50().lab.a;
-}
-static double sort_lab_b(Color *color)
-{
-	return color->rgbToLabD50().lab.b;
-}
-static double sort_lch_lightness(Color *color)
-{
-	return color->rgbToLchD50().lch.L;
-}
-static double sort_lch_chroma(Color *color)
-{
-	return color->rgbToLchD50().lch.C;
-}
-static double sort_lch_hue(Color *color)
-{
-	return color->rgbToLchD50().lch.h;
-}
+		grid.nextColumn();
+		grid.add(reverseCheck = gtk_check_button_new_with_mnemonic(_("_Reverse sort order")), true);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseCheck), options->getBool("reverse", false));
+		g_signal_connect(G_OBJECT(reverseCheck), "toggled", G_CALLBACK(DialogSortArgs::onChange), this);
 
-const SortType sort_types[] = {
-	{N_("RGB Red"), sort_rgb_red},
-	{N_("RGB Green"), sort_rgb_green},
-	{N_("RGB Blue"), sort_rgb_blue},
-	{N_("RGB Grayscale"), sort_rgb_grayscale},
-	{N_("HSL Hue"), sort_hsl_hue},
-	{N_("HSL Saturation"), sort_hsl_saturation},
-	{N_("HSL Lightness"), sort_hsl_lightness},
-	{N_("Lab Lightness"), sort_lab_lightness},
-	{N_("Lab A"), sort_lab_a},
-	{N_("Lab B"), sort_lab_b},
-	{N_("LCh Lightness"), sort_lch_lightness},
-	{N_("LCh Chroma"), sort_lch_chroma},
-	{N_("LCh Hue"), sort_lch_hue},
+		grid.addLabel(_("Group by:"));
+		grid.add(groupComboBox = gtk_combo_box_text_new(), true);
+		groupChannelsInComboBox.emplace_back(&channelNone);
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(groupComboBox), _("None"));
+		if (groupChannel == &channelNone)
+			gtk_combo_box_set_active(GTK_COMBO_BOX(groupComboBox), groupChannelsInComboBox.size() - 1);
+		for (const auto &i: channels()) {
+			groupChannelsInComboBox.emplace_back(&i);
+			auto label = common::format("{} {}", colorSpace(i.colorSpace).name, _(i.name));
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(groupComboBox), label.c_str());
+			if (&i == groupChannel)
+				gtk_combo_box_set_active(GTK_COMBO_BOX(groupComboBox), groupChannelsInComboBox.size() - 1);
+		}
+		for (const auto &i: virtualChannels) {
+			groupChannelsInComboBox.emplace_back(&i);
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(groupComboBox), _(i.name));
+			if (&i == groupChannel)
+				gtk_combo_box_set_active(GTK_COMBO_BOX(groupComboBox), groupChannelsInComboBox.size() - 1);
+		}
+		g_signal_connect(G_OBJECT(groupComboBox), "changed", G_CALLBACK(DialogSortArgs::onChange), this);
+
+		grid.addLabel(_("Maximum number of groups:"));
+		grid.add(maxGroupsSpin = gtk_spin_button_new_with_range(1, 255, 1), true);
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(maxGroupsSpin), options->getInt32("max_groups", 10));
+		g_signal_connect(G_OBJECT(maxGroupsSpin), "value-changed", G_CALLBACK(DialogSortArgs::onChange), this);
+
+		grid.addLabel(_("Grouping sensitivity:"));
+		grid.add(groupSensitivitySpin = gtk_spin_button_new_with_range(0, 100, 0.1), true);
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(groupSensitivitySpin), options->getFloat("group_sensitivity", 50));
+		g_signal_connect(G_OBJECT(groupSensitivitySpin), "value-changed", G_CALLBACK(DialogSortArgs::onChange), this);
+
+		grid.nextColumn();
+		grid.add(reverseGroupsCheck = gtk_check_button_new_with_mnemonic(_("_Reverse group order")), true);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseGroupsCheck), options->getBool("reverse_groups", false));
+		g_signal_connect(G_OBJECT(reverseGroupsCheck), "toggled", G_CALLBACK(DialogSortArgs::onChange), this);
+
+		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColors), true, 2, true);
+		update(true);
+		setDialogContent(dialog, grid);
+	}
+	~DialogSortArgs() {
+		gint width, height;
+		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+		options->set("window.width", width);
+		options->set("window.height", height);
+		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
+		gtk_widget_destroy(dialog);
+		color_list_destroy(previewColors);
+	}
+	bool run() {
+		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+			update(false);
+			return true;
+		}
+		return false;
+	}
+	void enableGroupInputs(bool enable) {
+		gtk_widget_set_sensitive(maxGroupsSpin, enable);
+		gtk_widget_set_sensitive(groupSensitivitySpin, enable);
+		gtk_widget_set_sensitive(reverseGroupsCheck, enable);
+	}
+	void update(bool preview) {
+		groupChannel = groupChannelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(groupComboBox))];
+		sortChannel = sortChannelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(sortComboBox))];
+		float groupSensitivity = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(groupSensitivitySpin)));
+		int maxGroups = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(maxGroupsSpin)));
+		bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(reverseCheck));
+		bool reverseGroups = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(reverseGroupsCheck));
+		if (!preview) {
+			options->set("group_type", groupChannel->id);
+			options->set("group_sensitivity", groupSensitivity);
+			options->set("max_groups", maxGroups);
+			options->set("sort_type", sortChannel->id);
+			options->set("reverse", reverse);
+			options->set("reverse_groups", reverseGroups);
+		} else {
+			color_list_remove_all(previewColors);
+			enableGroupInputs(groupChannel != &channelNone);
+		}
+		ColorList &colorList = preview ? *previewColors : sortedColors;
+		using ColorWithProperties = std::tuple<float, float, ColorObject *>;
+		std::vector<ColorWithProperties> colors;
+		colors.reserve(selectedColors.colors.size());
+		if (maxGroups == 1 || groupChannel == &channelNone) {
+			auto sortConvertTo = sortChannel->useConvertTo() ? nullptr : colorSpace(sortChannel->colorSpace).convertTo;
+			for (auto *colorObject: selectedColors.colors) {
+				Color color = colorObject->getColor();
+				float sortValue = sortConvertTo ? (std::invoke(sortConvertTo, color).data[sortChannel->index] - sortChannel->min) / (sortChannel->max - sortChannel->min) : sortChannel->convertTo(color);
+				colors.emplace_back(0, sortValue, colorObject);
+			}
+			std::stable_sort(colors.begin(), colors.end(), [reverse](const ColorWithProperties &a, const ColorWithProperties &b) -> bool {
+				float aSort, bSort;
+				std::tie(std::ignore, aSort, std::ignore) = a;
+				std::tie(std::ignore, bSort, std::ignore) = b;
+				return (aSort < bSort) ^ reverse;
+			});
+		} else {
+			math::BinaryTreeQuantization<float> tree;
+			auto groupConvertTo = groupChannel->useConvertTo() ? nullptr : colorSpace(groupChannel->colorSpace).convertTo;
+			for (auto *colorObject: selectedColors.colors) {
+				Color color = colorObject->getColor();
+				float value = groupConvertTo ? (std::invoke(groupConvertTo, color).data[groupChannel->index] - groupChannel->min) / (groupChannel->max - groupChannel->min) : groupChannel->convertTo(color);
+				tree.add(value);
+			}
+			tree.reduce(maxGroups);
+			tree.reduceByMinDistance(groupSensitivity / 100.0f);
+			auto sortConvertTo = sortChannel->useConvertTo() ? nullptr : colorSpace(sortChannel->colorSpace).convertTo;
+			for (auto *colorObject: selectedColors.colors) {
+				Color color = colorObject->getColor();
+				float groupValue = tree.find(groupConvertTo ? (std::invoke(groupConvertTo, color).data[groupChannel->index] - groupChannel->min) / (groupChannel->max - groupChannel->min) : groupChannel->convertTo(color));
+				float sortValue = sortConvertTo ? (std::invoke(sortConvertTo, color).data[sortChannel->index] - sortChannel->min) / (sortChannel->max - sortChannel->min) : sortChannel->convertTo(color);
+				colors.emplace_back(groupValue, sortValue, colorObject);
+			}
+			std::stable_sort(colors.begin(), colors.end(), [reverse, reverseGroups](const ColorWithProperties &a, const ColorWithProperties &b) -> bool {
+				float aGroup, aSort, bGroup, bSort;
+				std::tie(aGroup, aSort, std::ignore) = a;
+				std::tie(bGroup, bSort, std::ignore) = b;
+				if (aGroup != bGroup) {
+					return (aGroup < bGroup) ^ reverseGroups;
+				}
+				return (aSort < bSort) ^ reverse;
+			});
+		}
+		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
+		for (auto [group, sort, colorObject]: colors) {
+			common::maybeUnused(group, sort);
+			color_list_add_color_object(&colorList, colorObject, true);
+		}
+	}
+	static void onChange(GtkWidget *, DialogSortArgs *args) {
+		args->update(true);
+	}
 };
-
-static double group_rgb_red(Color *color)
-{
-	return color->rgb.red;
 }
-static double group_rgb_green(Color *color)
-{
-	return color->rgb.green;
-}
-static double group_rgb_blue(Color *color)
-{
-	return color->rgb.blue;
-}
-static double group_rgb_grayscale(Color *color)
-{
-	return (color->rgb.red + color->rgb.green + color->rgb.blue) / 3.0;
-}
-static double group_hsl_hue(Color *color)
-{
-	return color->rgbToHsl().hsl.hue;
-}
-static double group_hsl_saturation(Color *color)
-{
-	return color->rgbToHsl().hsl.saturation;
-}
-static double group_hsl_lightness(Color *color)
-{
-	return color->rgbToHsl().hsl.lightness;
-}
-static double group_lab_lightness(Color *color)
-{
-	return color->rgbToLabD50().lab.L / 100.0;
-}
-static double group_lab_a(Color *color)
-{
-	return (color->rgbToLabD50().lab.a + 145) / 290.0;
-}
-static double group_lab_b(Color *color)
-{
-	return (color->rgbToLabD50().lab.b + 145) / 290.0;
-}
-static double group_lch_lightness(Color *color)
-{
-	return color->rgbToLchD50().lch.L / 100.0;
-}
-static double group_lch_chroma(Color *color)
-{
-	return color->rgbToLchD50().lch.C / 136.0;
-}
-static double group_lch_hue(Color *color)
-{
-	return color->rgbToLchD50().lch.h / 360.0;
-}
-
-const GroupType group_types[] = {
-	{N_("None"), nullptr},
-	{N_("RGB Red"), group_rgb_red},
-	{N_("RGB Green"), group_rgb_green},
-	{N_("RGB Blue"), group_rgb_blue},
-	{N_("RGB Grayscale"), group_rgb_grayscale},
-	{N_("HSL Hue"), group_hsl_hue},
-	{N_("HSL Saturation"), group_hsl_saturation},
-	{N_("HSL Lightness"), group_hsl_lightness},
-	{N_("Lab Lightness"), group_lab_lightness},
-	{N_("Lab A"), group_lab_a},
-	{N_("Lab B"), group_lab_b},
-	{N_("LCh Lightness"), group_lch_lightness},
-	{N_("LCh Chroma"), group_lch_chroma},
-	{N_("LCh Hue"), group_lch_hue},
-};
-
-
-
-typedef struct Node{
-	uint32_t n_values;
-	uint32_t n_values_in;
-	double value_sum;
-	double distance;
-
-	Node *child[2];
-	Node *parent;
-}Node;
-
-typedef struct Range{
-	double x;
-	double w;
-}Range;
-
-static Node* node_new(Node *parent){
-	Node *n = new Node;
-	n->value_sum = 0;
-	n->distance = 0;
-	n->n_values = 0;
-	n->n_values_in = 0;
-	n->parent = parent;
-	for (int i = 0; i < 2; i++){
-		n->child[i] = 0;
-	}
-	return n;
-}
-
-static void node_delete(Node *node){
-	for (int i = 0; i < 2; i++){
-		if (node->child[i]){
-			node_delete(node->child[i]);
-		}
-	}
-	delete node;
-}
-
-static Node* node_copy(Node *node, Node *parent){
-	Node *n = node_new(0);
-	memcpy(n, node, sizeof(Node));
-	n->parent = parent;
-
-	for (int i = 0; i < 2; i++){
-		if (node->child[i]){
-			n->child[i] = node_copy(node->child[i], n);
-		}else{
-			n->child[i] = 0;
-		}
-	}
-	return n;
-}
-
-static uint32_t node_count_leafs(Node *node){
-	uint32_t r = 0;
-	if (node->n_values_in) r++;
-	for (int i = 0; i < 2; i++){
-		if (node->child[i])
-			r += node_count_leafs(node->child[i]);
-	}
-	return r;
-}
-
-static void node_leaf_callback(Node *node, void (*leaf_cb)(Node* node, void* userdata), void* userdata){
-	if (node->n_values_in > 0) leaf_cb(node, userdata);
-
-	for (int i = 0; i < 2; i++){
-		if (node->child[i])
-			node_leaf_callback(node->child[i], leaf_cb, userdata);
-	}
-}
-
-static void node_prune(Node *node){
-	for (int i = 0; i < 2; i++){
-		if (node->child[i]){
-			node_prune(node->child[i]);
-			node->child[i] = 0;
-		}
-	}
-	if (node->parent){
-		node->parent->n_values_in += node->n_values_in;
-		node->parent->value_sum += node->value_sum;
-	}
-	node_delete(node);
-}
-
-typedef struct PruneData{
-	double threshold;
-	double min_distance;
-	uint32_t n_values;
-	uint32_t n_values_target;
-
-	Node *prune_node;
-	uint32_t distant_nodes;
-}PruneData;
-
-static bool node_prune_threshold(Node *node, PruneData *prune_data, bool leave_node){
-	if (node->distance <= prune_data->threshold){
-		uint32_t values_removed;
-		if (leave_node){
-			values_removed = 0;
-			for (int i = 0; i < 2; i++){
-				if (node->child[i]){
-					values_removed += node_count_leafs(node->child[i]);
-					node_prune(node->child[i]);
-					node->child[i] = 0;
-				}
-			}
-		}else{
-			values_removed = node_count_leafs(node);
-			node_prune(node);
-		}
-		prune_data->n_values -= values_removed;
-		return true;
-	}
-	if (node->distance < prune_data->min_distance){
-		prune_data->min_distance = node->distance;
-	}
-	uint32_t n = node->n_values_in;
-	for (int i = 0; i < 2; i++){
-		if (node->child[i]){
-			if (node_prune_threshold(node->child[i], prune_data, false)){
-				node->child[i] = 0;
-			}
-		}
-	}
-	if (node->n_values_in > 0 && n == 0) prune_data->n_values++;
-	return false;
-}
-
-static void node_reduce(Node *node, double threshold, uintptr_t max_values){
-	PruneData prune_data;
-	prune_data.n_values = node_count_leafs(node);
-	prune_data.n_values_target = max_values;
-	prune_data.threshold = threshold;
-
-	prune_data.min_distance = node->distance;
-	node_prune_threshold(node, &prune_data, true);
-	prune_data.threshold = prune_data.min_distance;
-
-	while (prune_data.n_values > max_values){
-		prune_data.min_distance = node->distance;
-		if (node_prune_threshold(node, &prune_data, true)) break;
-		prune_data.threshold = prune_data.min_distance;
-	}
-}
-
-static Node* node_find(Node *node, Range *range, double value)
-{
-	Range new_range;
-	new_range.w = range->w / 2;
-	int x;
-	if (value - range->x < new_range.w)
-		x = 0;
-	else
-		x = 1;
-	new_range.x = range->x + new_range.w * x;
-	if (node->child[x]){
-		return node_find(node->child[x], &new_range, value);
-	}else return node;
-}
-
-static void node_update(Node *node, Range *range, double value, uint32_t max_depth){
-	Range new_range;
-	new_range.w = range->w / 2;
-	node->n_values++;
-	node->distance += (value - (range->x + new_range.w)) * (value - (range->x + new_range.w));
-
-	if (!max_depth){
-		node->n_values_in++;
-		node->value_sum += value;
-	}else{
-		int x;
-		if (value - range->x < new_range.w)
-			x = 0;
-		else
-			x = 1;
-
-		new_range.x = range->x + new_range.w * x;
-		if (!node->child[x])
-			node->child[x] = node_new(node);
-
-		node->n_values++;
-		node_update(node->child[x], &new_range, value, max_depth - 1);
-	}
-}
-
-
-static void calc(DialogSortArgs *args, bool preview, int limit){
-	int32_t group_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->group_type));
-	float group_sensitivity = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->group_sensitivity)));
-	int max_groups = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->max_groups)));
-	int32_t sort_type = gtk_combo_box_get_active(GTK_COMBO_BOX(args->sort_type));
-	bool reverse = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse));
-	bool reverse_groups = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups));
-
-	if (!preview){
-		args->options->set("group_type", group_type);
-		args->options->set("group_sensitivity", group_sensitivity);
-		args->options->set("max_groups", max_groups);
-		args->options->set("sort_type", sort_type);
-		args->options->set("reverse", reverse);
-		args->options->set("reverse_groups", reverse_groups);
-	}
-
-	ColorList *color_list;
-	if (preview)
-		color_list = args->preview_color_list;
-	else
-		color_list = args->sorted_color_list;
-
-	typedef std::multimap<double, ColorObject*> SortedColors;
-	typedef std::map<uintptr_t, SortedColors> GroupedSortedColors;
-	GroupedSortedColors grouped_sorted_colors;
-
-	typedef std::multimap<double, uintptr_t> SortedGroups;
-	SortedGroups sorted_groups;
-
-	const GroupType *group = &group_types[group_type];
-	const SortType *sort = &sort_types[sort_type];
-
-	Color in;
-	Node *group_nodes = node_new(0);
-	Range range;
-	range.x = 0;
-	range.w = 1;
-	int tmp_limit = limit;
-	if (group->get_group){
-		for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-			in = (*i)->getColor();
-			node_update(group_nodes, &range, group->get_group(&in), 8);
-			if (preview){
-				if (tmp_limit <= 0)
-					break;
-				tmp_limit--;
-			}
-		}
-	}
-
-	node_reduce(group_nodes, group_sensitivity / 100.0, max_groups);
-
-	tmp_limit = limit;
-	for (auto i = args->selected_color_list->colors.begin(); i != args->selected_color_list->colors.end(); ++i){
-		in = (*i)->getColor();
-
-		uintptr_t node_ptr = 0;
-		if (group->get_group){
-			node_ptr = reinterpret_cast<uintptr_t>(node_find(group_nodes, &range, group->get_group(&in)));
-		}
-		grouped_sorted_colors[node_ptr].insert(std::pair<double, ColorObject*>(sort->get_value(&in), *i));
-
-		if (preview){
-			if (tmp_limit <= 0)
-				break;
-			tmp_limit--;
-		}
-	}
-
-	node_delete(group_nodes);
-
-	for (GroupedSortedColors::iterator i = grouped_sorted_colors.begin(); i != grouped_sorted_colors.end(); ++i){
-		in = (*(*i).second.begin()).second->getColor();
-		sorted_groups.insert(std::pair<double, uintptr_t>(sort->get_value(&in), (*i).first));
-	}
-
-	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
-	if (reverse_groups){
-		for (SortedGroups::reverse_iterator i = sorted_groups.rbegin(); i != sorted_groups.rend(); ++i){
-			GroupedSortedColors::iterator a, b;
-			a = grouped_sorted_colors.lower_bound((*i).second);
-			b = grouped_sorted_colors.upper_bound((*i).second);
-			for (GroupedSortedColors::iterator j = a; j != b; ++j){
-				if (reverse){
-					for (SortedColors::reverse_iterator k = (*j).second.rbegin(); k != (*j).second.rend(); ++k){
-						color_list_add_color_object(color_list, (*k).second, true);
-					}
-				}else{
-					for (SortedColors::iterator k = (*j).second.begin(); k != (*j).second.end(); ++k){
-						color_list_add_color_object(color_list, (*k).second, true);
-					}
-				}
-			}
-		}
-	}else{
-		for (SortedGroups::iterator i = sorted_groups.begin(); i != sorted_groups.end(); ++i){
-			GroupedSortedColors::iterator a, b;
-			a = grouped_sorted_colors.lower_bound((*i).second);
-			b = grouped_sorted_colors.upper_bound((*i).second);
-			for (GroupedSortedColors::iterator j = a; j != b; ++j){
-				if (reverse){
-					for (SortedColors::reverse_iterator k = (*j).second.rbegin(); k != (*j).second.rend(); ++k){
-						color_list_add_color_object(color_list, (*k).second, true);
-					}
-				}else{
-					for (SortedColors::iterator k = (*j).second.begin(); k != (*j).second.end(); ++k){
-						color_list_add_color_object(color_list, (*k).second, true);
-					}
-				}
-			}
-		}
-	}
-}
-
-static void update(GtkWidget *widget, DialogSortArgs *args ){
-	color_list_remove_all(args->preview_color_list);
-	calc(args, true, 100);
-}
-
-bool dialog_sort_show(GtkWindow* parent, ColorList *selected_color_list, ColorList *sorted_color_list, GlobalState* gs)
-{
-	DialogSortArgs *args = new DialogSortArgs;
-	args->gs = gs;
-	args->options = args->gs->settings().getOrCreateMap("gpick.group_and_sort");
-	args->sorted_color_list = sorted_color_list;
-
-	GtkWidget *table;
-
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
-	gint table_y;
-	table = gtk_table_new(4, 4, FALSE);
-	table_y = 0;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Group type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->group_type = gtk_combo_box_text_new();
-	for (uint32_t i = 0; i < sizeof(group_types) / sizeof(GroupType); i++){
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->group_type), _(group_types[i].name));
-	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->group_type), args->options->getInt32("group_type", 0));
-	g_signal_connect(G_OBJECT(args->group_type), "changed", G_CALLBACK(update), args);
-	gtk_table_attach(GTK_TABLE(table), args->group_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	table_y++;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Grouping sensitivity:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->group_sensitivity = gtk_spin_button_new_with_range(0, 100, 0.01);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->group_sensitivity), args->options->getFloat("group_sensitivity", 50));
-	gtk_table_attach(GTK_TABLE(table), args->group_sensitivity,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	g_signal_connect(G_OBJECT(args->group_sensitivity), "value-changed", G_CALLBACK(update), args);
-	table_y++;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Maximum number of groups:"),0,0,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->max_groups = gtk_spin_button_new_with_range(1, 255, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->max_groups), args->options->getInt32("max_groups", 10));
-	gtk_table_attach(GTK_TABLE(table), args->max_groups,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	g_signal_connect(G_OBJECT(args->max_groups), "value-changed", G_CALLBACK(update), args);
-	table_y++;
-
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Sort type:"),0,0.5,0,0),2,3,table_y,table_y+1,GtkAttachOptions(GTK_FILL),GTK_FILL,5,5);
-	args->sort_type = gtk_combo_box_text_new();
-	for (uint32_t i = 0; i < sizeof(sort_types) / sizeof(SortType); i++){
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(args->sort_type), _(sort_types[i].name));
-	}
-	gtk_combo_box_set_active(GTK_COMBO_BOX(args->sort_type), args->options->getInt32("sort_type", 0));
-	g_signal_connect (G_OBJECT (args->sort_type), "changed", G_CALLBACK(update), args);
-	gtk_table_attach(GTK_TABLE(table), args->sort_type,3,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	table_y++;
-
-	args->toggle_reverse_groups = gtk_check_button_new_with_mnemonic(_("_Reverse group order"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse_groups), args->options->getBool("reverse_groups", false));
-	gtk_table_attach(GTK_TABLE(table), args->toggle_reverse_groups,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	g_signal_connect (G_OBJECT(args->toggle_reverse_groups), "toggled", G_CALLBACK(update), args);
-	table_y++;
-
-	args->toggle_reverse = gtk_check_button_new_with_mnemonic(_("_Reverse order inside groups"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->toggle_reverse), args->options->getBool("reverse", false));
-	gtk_table_attach(GTK_TABLE(table), args->toggle_reverse,1,4,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,5,0);
-	g_signal_connect (G_OBJECT(args->toggle_reverse), "toggled", G_CALLBACK(update), args);
-	table_y++;
-
-
-	GtkWidget* preview_expander;
-	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table), preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 4, table_y, table_y + 1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
-	table_y++;
-
-	args->selected_color_list = selected_color_list;
-	args->preview_color_list = preview_color_list;
-
-	update(0, args);
-
-	gtk_widget_show_all(table);
-	setDialogContent(dialog, table);
-
-	bool retval = false;
-	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
-		calc(args, false, 0);
-		retval = true;
-	}
-
-	gint width, height;
-	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-	args->options->set("window.width", width);
-	args->options->set("window.height", height);
-	args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(preview_expander)));
-	gtk_widget_destroy(dialog);
-	color_list_destroy(args->preview_color_list);
-	delete args;
-	return retval;
+bool dialog_sort_show(GtkWindow *parent, ColorList *selectedColors, ColorList *sortedColors, GlobalState *gs) {
+	DialogSortArgs args(*selectedColors, *sortedColors, *gs, parent);
+	return args.run();
 }

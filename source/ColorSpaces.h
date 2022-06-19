@@ -41,6 +41,8 @@ struct ColorSpaceDescription {
 	ColorSpaceFlags flags;
 	Color (Color::*convertTo)() const;
 	Color (Color::*convertFrom)() const;
+	bool externalAlpha() const;
 };
 common::Span<const ColorSpaceDescription> colorSpaces();
+const ColorSpaceDescription &colorSpace(ColorSpace colorSpace);
 #endif /* GPICK_COLOR_SPACES_H_ */

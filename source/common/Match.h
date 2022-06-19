@@ -39,6 +39,15 @@ Type &matchById(Type (&types)[TypeCount], std::string_view id, Type &defaultValu
 	}
 	return defaultValue;
 }
+template<typename Type, std::size_t TypeCount, typename Callback>
+Type &matchById(Type (&types)[TypeCount], std::string_view id, Callback &&callback) {
+	for (std::size_t index = 0; index < TypeCount; ++index) {
+		if (types[index].id == id) {
+			return types[index];
+		}
+	}
+	return callback(id);
+}
 template<typename Container>
 typename Container::value_type &matchById(Container &&types, std::string_view id) {
 	for (std::size_t index = 0, end = types.size(); index < end; ++index) {
@@ -56,6 +65,15 @@ typename Container::value_type &matchById(Container &&types, std::string_view id
 		}
 	}
 	return defaultValue;
+}
+template<typename Container, typename Callback>
+typename Container::value_type &matchById(Container &&types, std::string_view id, Callback &&callback) {
+	for (std::size_t index = 0, end = types.size(); index < end; ++index) {
+		if (types[index].id == id) {
+			return types[index];
+		}
+	}
+	return callback(id);
 }
 }
 #endif /* GPICK_COMMON_MATCH_H_ */

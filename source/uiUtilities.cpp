@@ -156,6 +156,9 @@ GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width, bool verticalExp
 	}
 	return widget;
 }
+GtkWidget *Grid::addLabel(const char *label) {
+	return add(gtk_label_aligned_new(label, 0, 0.5f, 0, 0));
+}
 void Grid::nextColumn(int columns) {
 	m_column += columns;
 	if (m_column >= m_columns) {

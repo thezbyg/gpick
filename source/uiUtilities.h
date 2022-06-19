@@ -45,6 +45,7 @@ void setWidgetData(GtkWidget *widget, const char *name, const std::string &value
 struct Grid {
 	Grid(int columns, int rows, int columnSpacing = 5, int rowSpacing = 5);
 	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1, bool verticalExpand = false);
+	GtkWidget *addLabel(const char *label);
 	void nextColumn(int columns = 1);
 	void nextRow();
 	void setColumn(int column);

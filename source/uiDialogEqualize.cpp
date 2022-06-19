@@ -72,7 +72,7 @@ struct DialogEqualizeArgs {
 		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
 		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 		Grid grid(2, 5);
-		grid.add(gtk_label_aligned_new(_("Color space:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Color space:"));
 		grid.add(colorSpaceComboBox = gtk_combo_box_text_new(), true);
 		for (const auto &i: colorSpaces()) {
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(colorSpaceComboBox), _(i.name));
@@ -80,11 +80,11 @@ struct DialogEqualizeArgs {
 				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces().data());
 		}
 		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(DialogEqualizeArgs::onColorSpaceChange), this);
-		grid.add(gtk_label_aligned_new(_("Channel:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Channel:"));
 		grid.add(channelComboBox = gtk_combo_box_text_new(), true);
 		buildChannelComboBox();
 		g_signal_connect(G_OBJECT(channelComboBox), "changed", G_CALLBACK(DialogEqualizeArgs::onChannelChange), this);
-		grid.add(gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Type:"));
 		grid.add(typeComboBox = gtk_combo_box_text_new(), true);
 		for (const auto &i: types) {
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(typeComboBox), _(i.name));
@@ -92,13 +92,12 @@ struct DialogEqualizeArgs {
 				gtk_combo_box_set_active(GTK_COMBO_BOX(typeComboBox), &i - types);
 		}
 		g_signal_connect(G_OBJECT(typeComboBox), "changed", G_CALLBACK(DialogEqualizeArgs::onTypeChange), this);
-		grid.add(gtk_label_aligned_new(_("Strength:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Strength:"));
 		grid.add(strengthSpinButton = gtk_spin_button_new_with_range(0, 100, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(strengthSpinButton), options->getFloat("strength", 1) * 100);
 		g_signal_connect(G_OBJECT(strengthSpinButton), "value-changed", G_CALLBACK(DialogEqualizeArgs::onStrengthUpdate), this);
 		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2, true);
 		update(true);
-		gtk_widget_show_all(grid);
 		setDialogContent(dialog, grid);
 	}
 	~DialogEqualizeArgs() {
@@ -171,7 +170,7 @@ struct DialogEqualizeArgs {
 			value = math::mix(value, commonValue, strength);
 			color.data[channel->index] = value;
 			color = std::invoke(colorSpace->convertFrom, color);
-			if ((colorSpace->flags & ColorSpaceFlags::externalAlpha) == ColorSpaceFlags::externalAlpha) {
+			if (colorSpace->externalAlpha()) {
 				color.alpha = alpha;
 			}
 			if (preview) {
@@ -185,7 +184,7 @@ struct DialogEqualizeArgs {
 		}
 	}
 	void selectChannel() {
-		if (!channel->allColorSpaces && colorSpace->type != channel->colorSpace) {
+		if (!channel->allColorSpaces() && colorSpace->type != channel->colorSpace) {
 			for (const auto &i: channels()) {
 				if (i.colorSpace == colorSpace->type) {
 					channel = &i;
@@ -199,7 +198,7 @@ struct DialogEqualizeArgs {
 		channelsInComboBox.clear();
 		gtk_list_store_clear(GTK_LIST_STORE(gtk_combo_box_get_model(GTK_COMBO_BOX(channelComboBox))));
 		for (const auto &i: channels()) {
-			if (!i.allColorSpaces && i.colorSpace != colorSpace->type)
+			if (!i.allColorSpaces() && i.colorSpace != colorSpace->type)
 				continue;
 			channelsInComboBox.push_back(&i);
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(channelComboBox), _(i.name));

@@ -19,6 +19,7 @@
 #include "OctreeColorQuantization.h"
 #include <stdexcept>
 #include <cstring>
+#include <algorithm>
 namespace math {
 using Node = OctreeColorQuantization::Node;
 template<typename... Args>

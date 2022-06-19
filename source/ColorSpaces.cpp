@@ -18,6 +18,7 @@
 
 #include "ColorSpaces.h"
 #include "Color.h"
+#include <stdexcept>
 static const ColorSpaceDescription colorSpaceDescriptions[] = {
 	{ "rgb", "RGB", ColorSpace::rgb, ColorSpaceFlags::none, &Color::linearRgb, &Color::nonLinearRgb },
 	{ "hsl", "HSL", ColorSpace::hsl, ColorSpaceFlags::none, &Color::rgbToHsl, &Color::hslToRgb },
@@ -28,4 +29,14 @@ static const ColorSpaceDescription colorSpaceDescriptions[] = {
 };
 common::Span<const ColorSpaceDescription> colorSpaces() {
 	return common::Span(colorSpaceDescriptions, sizeof(colorSpaceDescriptions) / sizeof(colorSpaceDescriptions[0]));
+}
+const ColorSpaceDescription &colorSpace(ColorSpace colorSpace) {
+	for (auto &description: colorSpaceDescriptions) {
+		if (description.type == colorSpace)
+			return description;
+	}
+	throw std::invalid_argument("colorSpace");
+}
+bool ColorSpaceDescription::externalAlpha() const {
+	return (flags & ColorSpaceFlags::externalAlpha) == ColorSpaceFlags::externalAlpha;
 }

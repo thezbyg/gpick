@@ -19,6 +19,7 @@
 #ifndef GPICK_CHANNELS_H_
 #define GPICK_CHANNELS_H_
 #include "ColorSpaces.h"
+#include "common/Bitmask.h"
 #include "common/Span.h"
 enum struct Channel {
 	rgbRed = 1,
@@ -41,15 +42,30 @@ enum struct Channel {
 	lchChroma,
 	lchHue,
 	alpha,
+	userDefined,
 };
+enum struct ChannelFlags {
+	none = 0,
+	allColorSpaces = 1,
+	wrap = 2,
+	useConvertTo = 4,
+};
+ENABLE_BITMASK_OPERATORS(ChannelFlags);
 struct ChannelDescription {
 	const char *id;
 	const char *name;
 	ColorSpace colorSpace;
 	Channel type;
-	size_t index;
-	bool allColorSpaces, wrap;
+	ChannelFlags flags;
+	union {
+		size_t index;
+		float (*convertTo)(const Color &color);
+	};
 	float min, max;
+	bool allColorSpaces() const;
+	bool wrap() const;
+	bool useConvertTo() const;
 };
 common::Span<const ChannelDescription> channels();
+const ChannelDescription &channel(Channel channel);
 #endif /* GPICK_CHANNELS_H_ */

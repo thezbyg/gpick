@@ -54,7 +54,7 @@ struct DialogEditArgs {
 		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
 		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 		Grid grid(2, 3 + channels.size());
-		grid.add(gtk_label_aligned_new(_("Color space:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Color space:"));
 		grid.add(colorSpaceComboBox = gtk_combo_box_text_new(), true);
 		for (const auto &i: colorSpaces()) {
 			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(colorSpaceComboBox), _(i.name));
@@ -124,19 +124,19 @@ struct DialogEditArgs {
 			for (size_t j = 0, end = std::min<size_t>(channels.size(), Color::MemberCount); j != end; ++j) {
 				const auto &channel = *channels[j].channel;
 				if (relative) {
-					if (channel.wrap)
+					if (channel.wrap())
 						color.data[j] = math::wrap(color.data[j] + color.data[j] * adjustments[j], channel.min, channel.max);
 					else
 						color.data[j] = math::clamp(color.data[j] + color.data[j] * adjustments[j], channel.min, channel.max);
 				} else  {
-					if (channel.wrap)
+					if (channel.wrap())
 						color.data[j] = math::wrap(color.data[j] + (channel.max - channel.min) * adjustments[j], channel.min, channel.max);
 					else
 						color.data[j] = math::clamp(color.data[j] + (channel.max - channel.min) * adjustments[j], channel.min, channel.max);
 				}
 			}
 			color = std::invoke(colorSpace->convertFrom, color);
-			if ((colorSpace->flags & ColorSpaceFlags::externalAlpha) == ColorSpaceFlags::externalAlpha) {
+			if (colorSpace->externalAlpha()) {
 				color.alpha = math::clamp(color.alpha + alpha * adjustments[4], 0, 1);
 				color.alpha = alpha;
 			}
@@ -154,7 +154,7 @@ struct DialogEditArgs {
 	void setupChannels() {
 		size_t index = 0;
 		for (const auto &channel: ::channels()) {
-			if (channel.allColorSpaces || channel.colorSpace == colorSpace->type) {
+			if (channel.allColorSpaces() || channel.colorSpace == colorSpace->type) {
 				auto text = std::string(_(channel.name)) + ':';
 				gtk_label_set_text(GTK_LABEL(channels[index].label), text.c_str());
 				channels[index].channel = &channel;

@@ -18,28 +18,45 @@
 
 #include "Channels.h"
 #include "I18N.h"
+#include <stdexcept>
 static const ChannelDescription channelDescriptions[] = {
-	{ "rgb_red", N_("Red"), ColorSpace::rgb, Channel::rgbRed, 0, false, false, 0, 1 },
-	{ "rgb_green", N_("Green"), ColorSpace::rgb, Channel::rgbGreen, 1, false, false, 0, 1 },
-	{ "rgb_blue", N_("Blue"), ColorSpace::rgb, Channel::rgbBlue, 2, false, false, 0, 1 },
-	{ "hsl_hue", N_("Hue"), ColorSpace::hsl, Channel::hslHue, 0, false, true, 0, 1 },
-	{ "hsl_saturation", N_("Saturation"), ColorSpace::hsl, Channel::hslSaturation, 1, false, false, 0, 1 },
-	{ "hsl_lightness", N_("Lightness"), ColorSpace::hsl, Channel::hslLightness, 2, false, false, 0, 1 },
-	{ "hsv_hue", N_("Hue"), ColorSpace::hsv, Channel::hsvHue, 0, false, true, 0, 1 },
-	{ "hsv_saturation", N_("Saturation"), ColorSpace::hsv, Channel::hsvSaturation, 1, false, false, 0, 1 },
-	{ "hsv_value", N_("Value"), ColorSpace::hsv, Channel::hsvValue, 2, false, false, 0, 1 },
-	{ "cmyk_cyan", N_("Cyan"), ColorSpace::cmyk, Channel::cmykCyan, 0, false, false, 0, 1 },
-	{ "cmyk_magenta", N_("Magenta"), ColorSpace::cmyk, Channel::cmykMagenta, 1, false, false, 0, 1 },
-	{ "cmyk_yellow", N_("Yellow"), ColorSpace::cmyk, Channel::cmykYellow, 2, false, false, 0, 1 },
-	{ "cmyk_key", N_("Key"), ColorSpace::cmyk, Channel::cmykKey, 3, false, false, 0, 1 },
-	{ "lab_lightness", N_("Lightness"), ColorSpace::lab, Channel::labLightness, 0, false, false, 0, 100 },
-	{ "lab_a", "a", ColorSpace::lab, Channel::labA, 1, false, false, -145, 145 },
-	{ "lab_b", "b", ColorSpace::lab, Channel::labB, 2, false, false, -145, 145 },
-	{ "lch_lightness", N_("Lightness"), ColorSpace::lch, Channel::lchLightness, 0, false, false, 0, 100 },
-	{ "lch_chroma", N_("Chroma"), ColorSpace::lch, Channel::lchChroma, 1, false, false, 0, 100 },
-	{ "lch_hue", N_("Hue"), ColorSpace::lch, Channel::lchHue, 2, false, true, 0, 360 },
-	{ "alpha", N_("Alpha"), ColorSpace::rgb, Channel::alpha, 3, true, false, 0, 1 },
+	{ "rgb_red", N_("Red"), ColorSpace::rgb, Channel::rgbRed, ChannelFlags::none, { 0 }, 0, 1 },
+	{ "rgb_green", N_("Green"), ColorSpace::rgb, Channel::rgbGreen, ChannelFlags::none, { 1 }, 0, 1 },
+	{ "rgb_blue", N_("Blue"), ColorSpace::rgb, Channel::rgbBlue, ChannelFlags::none, { 2 }, 0, 1 },
+	{ "hsl_hue", N_("Hue"), ColorSpace::hsl, Channel::hslHue, ChannelFlags::wrap, { 0 }, 0, 1 },
+	{ "hsl_saturation", N_("Saturation"), ColorSpace::hsl, Channel::hslSaturation, ChannelFlags::none, { 1 }, 0, 1 },
+	{ "hsl_lightness", N_("Lightness"), ColorSpace::hsl, Channel::hslLightness, ChannelFlags::none, { 2 }, 0, 1 },
+	{ "hsv_hue", N_("Hue"), ColorSpace::hsv, Channel::hsvHue, ChannelFlags::wrap, { 0 }, 0, 1 },
+	{ "hsv_saturation", N_("Saturation"), ColorSpace::hsv, Channel::hsvSaturation, ChannelFlags::none, { 1 }, 0, 1 },
+	{ "hsv_value", N_("Value"), ColorSpace::hsv, Channel::hsvValue, ChannelFlags::none, { 2 }, 0, 1 },
+	{ "cmyk_cyan", N_("Cyan"), ColorSpace::cmyk, Channel::cmykCyan, ChannelFlags::none, { 0 }, 0, 1 },
+	{ "cmyk_magenta", N_("Magenta"), ColorSpace::cmyk, Channel::cmykMagenta, ChannelFlags::none, { 1 }, 0, 1 },
+	{ "cmyk_yellow", N_("Yellow"), ColorSpace::cmyk, Channel::cmykYellow, ChannelFlags::none, { 2 }, 0, 1 },
+	{ "cmyk_key", N_("Key"), ColorSpace::cmyk, Channel::cmykKey, ChannelFlags::none, { 3 }, 0, 1 },
+	{ "lab_lightness", N_("Lightness"), ColorSpace::lab, Channel::labLightness, ChannelFlags::none, { 0 }, 0, 100 },
+	{ "lab_a", "a", ColorSpace::lab, Channel::labA, ChannelFlags::none, { 1 }, -145, 145 },
+	{ "lab_b", "b", ColorSpace::lab, Channel::labB, ChannelFlags::none, { 2 }, -145, 145 },
+	{ "lch_lightness", N_("Lightness"), ColorSpace::lch, Channel::lchLightness, ChannelFlags::none, { 0 }, 0, 100 },
+	{ "lch_chroma", N_("Chroma"), ColorSpace::lch, Channel::lchChroma, ChannelFlags::none, { 1 }, 0, 100 },
+	{ "lch_hue", N_("Hue"), ColorSpace::lch, Channel::lchHue, ChannelFlags::wrap, { 2 }, 0, 360 },
+	{ "alpha", N_("Alpha"), ColorSpace::rgb, Channel::alpha, ChannelFlags::allColorSpaces, { 3 }, 0, 1 },
 };
 common::Span<const ChannelDescription> channels() {
 	return common::Span(channelDescriptions, sizeof(channelDescriptions) / sizeof(channelDescriptions[0]));
+}
+const ChannelDescription &channel(Channel channel) {
+	for (auto &description: channelDescriptions) {
+		if (description.type == channel)
+			return description;
+	}
+	throw std::invalid_argument("channel");
+}
+bool ChannelDescription::allColorSpaces() const {
+	return (flags & ChannelFlags::allColorSpaces) == ChannelFlags::allColorSpaces;
+}
+bool ChannelDescription::wrap() const {
+	return (flags & ChannelFlags::wrap) == ChannelFlags::wrap;
+}
+bool ChannelDescription::useConvertTo() const {
+	return (flags & ChannelFlags::useConvertTo) == ChannelFlags::useConvertTo;
 }

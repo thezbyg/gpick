@@ -231,7 +231,7 @@ void tools_palette_from_image_show(GtkWindow *parent, GlobalState *gs) {
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
 
 	Grid grid(2, 3);
-	grid.add(gtk_label_aligned_new(_("Image:"), 0, 0.5, 0, 0));
+	grid.addLabel(_("Image:"));
 	GtkWidget *widget;
 	args->fileBrowser = widget = grid.add(gtk_file_chooser_button_new(_("Image file"), GTK_FILE_CHOOSER_ACTION_OPEN), true);
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), args->options->getString("current_folder", "").c_str());
@@ -276,7 +276,7 @@ void tools_palette_from_image_show(GtkWindow *parent, GlobalState *gs) {
 	}
 	if (formats)
 		g_slist_free(formats);
-	grid.add(gtk_label_aligned_new(_("Colors:"), 0, 0.5, 0, 0));
+	grid.addLabel(_("Colors:"));
 	args->rangeColors = widget = grid.add(gtk_spin_button_new_with_range(1, 1000, 1), true);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("colors", 3));
 	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(PaletteFromImageArgs::onUpdate), args);

@@ -152,14 +152,14 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState *gs, ColorObject *col
 
 	Grid grid(2, 3);
 	gtk_box_pack_start(GTK_BOX(vbox), grid, false, false, 0);
-	grid.add(gtk_label_aligned_new(_("Color:"), 0, 0.5, 0, 0));
+	grid.addLabel(_("Color:"));
 	GtkWidget *entry = args->text_input = grid.add(gtk_entry_new(), true);
 	gtk_entry_set_activates_default(GTK_ENTRY(entry), true);
 	gtk_widget_grab_focus(entry);
 	g_signal_connect(G_OBJECT(entry), "changed", G_CALLBACK(onTextChanged), args);
 	args->ignore_text_change = false;
 	if (editable_name) {
-		grid.add(gtk_label_aligned_new(_("Name:"), 0, 0.5, 0, 0));
+		grid.addLabel(_("Name:"));
 		args->name_input = grid.add(gtk_entry_new(), true);
 		gtk_widget_set_sensitive(args->name_input, !args->options->getBool("automatic_name", false));
 		grid.nextColumn();

@@ -197,7 +197,7 @@ struct BackgroundColorPicker: public IEventHandler {
 			adjustableColor.colorSpace = &common::matchById(colorSpaces(), adjustableColor.options->getString("color_space", "rgb"));
 			grid.setColumnAndRow(i* 2, 0);
 			auto label = std::string(_(labels[i])) + ':';
-			grid.add(gtk_label_aligned_new(label.c_str(), 0, 0.5, 0, 0));
+			grid.addLabel(label.c_str());
 			grid.add(adjustableColor.colorWidget = gtk_color_new(), true);
 			gtk_color_set_rounded(GTK_COLOR(adjustableColor.colorWidget), true);
 			gtk_color_set_hcenter(GTK_COLOR(adjustableColor.colorWidget), true);
@@ -206,7 +206,7 @@ struct BackgroundColorPicker: public IEventHandler {
 			StandardEventHandler::forWidget(adjustableColor.colorWidget, &gs, &adjustableColor);
 			StandardDragDropHandler::forWidget(adjustableColor.colorWidget, &gs, &adjustableColor);
 			grid.setColumnAndRow(i * 2, 1);
-			grid.add(gtk_label_aligned_new(_("Color space:"), 0, 0.5, 0, 0));
+			grid.addLabel(_("Color space:"));
 			grid.add(adjustableColor.colorSpaceComboBox = gtk_combo_box_text_new(), true);
 			for (const auto &i: colorSpaces()) {
 				gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(adjustableColor.colorSpaceComboBox), _(i.name));
