@@ -228,7 +228,7 @@ struct DialogGenerateArgs {
 				r = hsl.hslToRgb();
 				ColorObject colorObject(r);
 				nameAssigner.assign(colorObject, i, _(schemeType->name));
-				colorList.add(colorObject, true);
+				colorList.add(colorObject);
 				hueStep = (schemeType->turn[i % schemeType->turnCount]) / (360.0f) + chaos * (random_get_double(random) - 0.5f) + additionalRotation / 360.0f;
 				if (reverse) {
 					hue = math::wrap(static_cast<float>(hue - hueStep));

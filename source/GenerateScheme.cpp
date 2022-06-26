@@ -138,14 +138,14 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void addToPalette() {
-		gs.colorList().add(getColor(), true);
+		gs.colorList().add(getColor());
 	}
 	void addToPalette(GenerateSchemeColorNameAssigner &nameAssigner, Color &color, GtkWidget *widget) {
 		gtk_color_get_color(GTK_COLOR(widget), &color);
 		colorObject.setColor(color);
 		int type = gtk_combo_box_get_active(GTK_COMBO_BOX(generationType));
 		nameAssigner.assign(colorObject, identifyColorWidget(widget), type);
-		gs.colorList().add(colorObject, true);
+		gs.colorList().add(colorObject);
 	}
 	void addAllToPalette() {
 		common::Guard colorListGuard = gs.colorList().changeGuard();

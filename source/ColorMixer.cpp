@@ -144,14 +144,14 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void addToPalette() {
-		gs.colorList().add(getColor(), true);
+		gs.colorList().add(getColor());
 	}
 	void addToPalette(ColorMixerColorNameAssigner &nameAssigner, Color &color, GtkWidget *widget) {
 		gtk_color_get_color(GTK_COLOR(widget), &color);
 		colorObject.setColor(color);
 		auto widgetName = identifyColorWidget(widget);
 		nameAssigner.assign(colorObject, widgetName);
-		gs.colorList().add(colorObject, true);
+		gs.colorList().add(colorObject);
 	}
 	void addAllToPalette() {
 		common::Guard colorListGuard = gs.colorList().changeGuard();

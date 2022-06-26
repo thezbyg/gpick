@@ -140,7 +140,7 @@ struct DialogEditArgs {
 			}
 			color.normalizeRgbInplace();
 			if (preview) {
-				colorList.add(ColorObject(colorObject->getName(), color), true);
+				colorList.add(ColorObject(colorObject->getName(), color));
 			} else {
 				colorObject->setColor(color);
 			}

@@ -256,7 +256,7 @@ struct DialogMixArgs {
 	static void addColor(ColorList &colorList, const Color &color, int step, MixColorNameAssigner &nameAssigner) {
 		ColorObject colorObject(color);
 		nameAssigner.assign(colorObject, step);
-		colorList.add(colorObject, true);
+		colorList.add(colorObject);
 	}
 	static void onUpdate(GtkWidget *, DialogMixArgs *args) {
 		args->update(true);

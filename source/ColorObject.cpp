@@ -19,47 +19,22 @@
 #include "ColorObject.h"
 ColorObject::ColorObject():
 	m_name(),
-	m_color(),
-	m_position(0),
-	m_positionSet(false),
-	m_selected(false),
-	m_visited(false),
-	m_visible(true) {
+	m_color() {
 }
 ColorObject::ColorObject(const Color &color):
-	m_color(color),
-	m_position(0),
-	m_positionSet(false),
-	m_selected(false),
-	m_visited(false),
-	m_visible(true) {
+	m_color(color) {
 }
 ColorObject::ColorObject(std::string_view name, const Color &color):
 	m_name(name),
-	m_color(color),
-	m_position(0),
-	m_positionSet(false),
-	m_selected(false),
-	m_visited(false),
-	m_visible(true) {
+	m_color(color) {
 }
 ColorObject::ColorObject(const ColorObject &colorObject):
 	m_name(colorObject.m_name),
-	m_color(colorObject.m_color),
-	m_position(colorObject.m_position),
-	m_positionSet(colorObject.m_positionSet),
-	m_selected(colorObject.m_selected),
-	m_visited(colorObject.m_visited),
-	m_visible(colorObject.m_visible) {
+	m_color(colorObject.m_color) {
 }
 ColorObject &ColorObject::operator=(const ColorObject &colorObject) {
 	m_name = colorObject.m_name;
 	m_color = colorObject.m_color;
-	m_position = colorObject.m_position;
-	m_positionSet = colorObject.m_positionSet;
-	m_selected = colorObject.m_selected;
-	m_visited = colorObject.m_visited;
-	m_visible = colorObject.m_visible;
 	return *this;
 }
 const Color &ColorObject::getColor() const {
@@ -76,35 +51,4 @@ void ColorObject::setName(const std::string &name) {
 }
 [[nodiscard]] common::Ref<ColorObject> ColorObject::copy() const {
 	return common::Ref(new ColorObject(*this));
-}
-bool ColorObject::isSelected() const {
-	return m_selected;
-}
-bool ColorObject::isVisited() const {
-	return m_visited;
-}
-size_t ColorObject::getPosition() const {
-	return m_position;
-}
-bool ColorObject::isPositionSet() const {
-	return m_positionSet;
-}
-bool ColorObject::isVisible() const {
-	return m_visible;
-}
-void ColorObject::setPosition(size_t position) {
-	m_position = position;
-	m_positionSet = true;
-}
-void ColorObject::resetPosition() {
-	m_positionSet = false;
-}
-void ColorObject::setSelected(bool selected) {
-	m_selected = selected;
-}
-void ColorObject::setVisited(bool visited) {
-	m_visited = visited;
-}
-void ColorObject::setVisible(bool visible) {
-	m_visible = visible;
 }

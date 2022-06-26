@@ -119,11 +119,11 @@ struct BlendColorsArgs: public IColorSource {
 	void add(const Color &color, int step, BlendColorNameAssigner &nameAssigner) {
 		colorObject.setColor(color);
 		nameAssigner.assign(colorObject, step);
-		previewColorList->add(colorObject, true);
+		previewColorList->add(colorObject);
 	}
 	void addToPalette() {
 		colorObject = getColor();
-		gs.colorList().add(colorObject, true);
+		gs.colorList().add(colorObject);
 	}
 	virtual const ColorObject &getColor() override {
 		Color color;

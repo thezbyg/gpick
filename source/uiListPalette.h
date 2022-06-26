@@ -16,10 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_LIST_PALETTE_H_
-#define GPICK_UI_LIST_PALETTE_H_
+#pragma once
 #include "common/Ref.h"
 #include <gtk/gtk.h>
+#include <unordered_set>
+#include <functional>
 struct GlobalState;
 struct ColorObject;
 struct ColorList;
@@ -30,21 +31,19 @@ GtkWidget* palette_list_preview_new(GlobalState &gs, bool expander, bool expande
 void palette_list_remove_all_entries(GtkWidget* widget, bool allowUpdate);
 void palette_list_remove_selected_entries(GtkWidget* widget, bool allowUpdate);
 int palette_list_remove_entry(GtkWidget* widget, ColorObject *color_object, bool allowUpdate);
-enum struct PaletteListCallbackResult {
-	noUpdate = 0,
-	updateRow = 1,
-	updateName = 2,
-};
-using PaletteListCallback = PaletteListCallbackResult (*)(ColorObject* color_object, void *userdata);
-using PaletteListReplaceCallback = PaletteListCallbackResult (*)(ColorObject** color_object, void *userdata);
-void palette_list_foreach_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
-void palette_list_foreach_selected(GtkWidget* widget, PaletteListReplaceCallback callback, void *userdata, bool allowUpdate);
-void palette_list_forfirst_selected(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
-void palette_list_foreach(GtkWidget* widget, PaletteListCallback callback, void *userdata, bool allowUpdate);
-gint32 palette_list_get_selected_count(GtkWidget* widget);
-gint32 palette_list_get_count(GtkWidget* widget);
+int palette_list_get_selected_count(GtkWidget* widget);
+int palette_list_get_count(GtkWidget* widget);
 ColorObject *palette_list_get_first_selected(GtkWidget* widget);
-void palette_list_update_first_selected(GtkWidget* widget, bool only_name);
+void palette_list_update_first_selected(GtkWidget *widget, bool onlyName, bool allowUpdate);
 void palette_list_append_copy_menu(GtkWidget* widget, GtkWidget *menu);
 void palette_list_after_update(GtkWidget* widget);
-#endif /* GPICK_UI_LIST_PALETTE_H_ */
+std::unordered_set<ColorObject *> palette_list_get_selected(GtkWidget* widget);
+void palette_list_get_selected(GtkWidget* widget, ColorList &colorList);
+void palette_list_update_selected(GtkWidget *widget, bool onlyName, bool allowUpdate);
+enum struct Update {
+	none,
+	row,
+	name,
+};
+void palette_list_foreach(GtkWidget *widget, bool selected, std::function<Update(ColorObject *)> &&callback, bool allowUpdate = true);
+void palette_list_foreach(GtkWidget *widget, bool selected, std::function<Update(ColorObject **)> &&callback, bool allowUpdate = true);

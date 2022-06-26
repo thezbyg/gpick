@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(load_0_2_6) {
 BOOST_AUTO_TEST_CASE(save) {
 	ColorList colors;
 	for (size_t i = 0; i < sizeof(savedColors) / sizeof(savedColors[0]); ++i) {
-		colors.add(ColorObject(std::string(savedColors[i].name), savedColors[i].color), false);
+		colors.add(ColorObject(std::string(savedColors[i].name), savedColors[i].color));
 	}
 	std::stringstream output(std::ios::out | std::ios::binary);
 	auto result = paletteStreamSave(output, colors);

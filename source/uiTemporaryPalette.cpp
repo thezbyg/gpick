@@ -108,16 +108,6 @@ struct TemporaryPalette: public IPalette {
 	virtual void clear(ColorList &colorList) override {
 		palette_list_remove_all_entries(palette, !colorList.blocked());
 	}
-	static PaletteListCallbackResult getPositionsCallback(ColorObject *colorObject, void *userdata) {
-		auto &position = *reinterpret_cast<size_t *>(userdata);
-		colorObject->setPosition(position);
-		++position;
-		return PaletteListCallbackResult::noUpdate;
-	}
-	virtual void getPositions(ColorList &) override {
-		size_t position = 0;
-		palette_list_foreach(palette, getPositionsCallback, &position, false);
-	}
 	virtual void update(ColorList &) override {
 		palette_list_after_update(palette);
 	}

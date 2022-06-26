@@ -201,7 +201,7 @@ bool TextParserDialog::parse(ColorList &colorList) {
 	for (auto color: textParser.colors()) {
 		ColorObject colorObject(color);
 		ToolColorNameAssigner::assign(colorObject);
-		colorList.add(colorObject, true);
+		colorList.add(colorObject);
 		m_index++;
 	}
 	return true;

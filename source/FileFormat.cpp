@@ -72,9 +72,6 @@ private:
 	char m_type[16];
 	uint64_t m_size;
 };
-static bool colorObjectPositionSort(ColorObject* x, ColorObject* y) {
-	return x->getPosition() < y->getPosition();
-}
 static bool read(std::istream &stream, ChunkHeader &header) {
 	stream.read(reinterpret_cast<char *>(&header), sizeof(header));
 	header.prepareRead();
@@ -178,15 +175,21 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList &c
 		}
 	}
 	if (hasPositions) {
+		std::vector<std::pair<ColorObject *, size_t>> colorObjectsWithPositions;
+		colorObjectsWithPositions.reserve(colorObjects.size());
 		for (size_t i = 0, end = std::min(colorObjects.size(), positions.size()); i < end; i++) {
-			colorObjects[i]->setPosition(positions[i]);
+			colorObjectsWithPositions.emplace_back(colorObjects[i], positions[i]);
 		}
-		std::stable_sort(colorObjects.begin(), colorObjects.end(), colorObjectPositionSort);
-	}
-	for (auto colorObject: colorObjects) {
-		bool visible = hasPositions ? colorObject->getPosition() != ~(size_t)0 : true;
-		colorObject->setVisible(visible);
-		colorList.add(colorObject, visible);
+		std::stable_sort(colorObjectsWithPositions.begin(), colorObjectsWithPositions.end(), [](const std::pair<ColorObject *, size_t> &a, const std::pair<ColorObject *, size_t> &b) {
+			return a.second < b.second;
+		});
+		for (auto colorObjectWithPosition: colorObjectsWithPositions) {
+			colorList.add(colorObjectWithPosition.first);
+		}
+	} else {
+		for (auto colorObject: colorObjects) {
+			colorList.add(colorObject);
+		}
 	}
 	file.close();
 	return (file.good() || file.eof()) ? Result() : Result(ErrorCode::readFailed);
@@ -238,8 +241,6 @@ common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList 
 	auto colorListPosition = stream.tellp();
 	if (!write(stream, header)) // write temporary chunk header
 		return Result(ErrorCode::writeFailed);
-	colorList.getPositions();
-	std::stable_sort(colorList.begin(), colorList.end(), colorObjectPositionSort);
 	dynv::Map options;
 	for (auto *colorObject: colorList) {
 		options.set("name", colorObject->getName());

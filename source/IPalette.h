@@ -25,6 +25,5 @@ struct IPalette {
 	virtual void remove(ColorList &colorList, ColorObject *colorObject) = 0;
 	virtual void removeSelected(ColorList &colorList) = 0;
 	virtual void clear(ColorList &colorList) = 0;
-	virtual void getPositions(ColorList &colorList) = 0;
 	virtual void update(ColorList &colorList) = 0;
 };

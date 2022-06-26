@@ -106,7 +106,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	void addToPalette() {
 		if (!isSelected())
 			return;
-		gs.colorList().add(getColor(), true);
+		gs.colorList().add(getColor());
 	}
 	void addAllToPalette() {
 		if (!layoutSystem)
@@ -116,7 +116,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color());
 			nameAssigner.assign(colorObject, style->label());
-			gs.colorList().add(colorObject, true);
+			gs.colorList().add(colorObject);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {

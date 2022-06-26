@@ -32,22 +32,7 @@ struct ColorObject: public common::Ref<ColorObject>::Counter {
 	const std::string &getName() const;
 	void setName(const std::string &name);
 	[[nodiscard]] common::Ref<ColorObject> copy() const;
-	bool isSelected() const;
-	bool isVisited() const;
-	size_t getPosition() const;
-	bool isPositionSet() const;
-	void setPosition(size_t position);
-	void resetPosition();
-	void setSelected(bool selected);
-	void setVisited(bool visited);
-	void setVisible(bool visible);
-	bool isVisible() const;
 private:
 	std::string m_name;
 	Color m_color;
-	size_t m_position;
-	bool m_positionSet;
-	bool m_selected;
-	bool m_visited;
-	bool m_visible;
 };

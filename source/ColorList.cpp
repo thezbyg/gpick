@@ -32,8 +32,6 @@ struct NullPalette: public IPalette {
 	}
 	virtual void clear(ColorList &colorList) override {
 	}
-	virtual void getPositions(ColorList &colorList) override {
-	}
 	virtual void update(ColorList &colorList) override {
 	}
 };
@@ -68,39 +66,29 @@ ColorList::ColorList(ColorList &&colorList):
 [[nodiscard]] common::Ref<ColorList> ColorList::newList(IPalette &palette) {
 	return common::Ref<ColorList>(new ColorList(palette));
 }
-void ColorList::add(ColorObject *colorObject, bool addToPalette) {
+void ColorList::add(ColorObject *colorObject) {
 	m_colors.push_back(colorObject->reference());
-	if (addToPalette)
+	m_palette.add(*this, colorObject);
+	m_changed = true;
+}
+void ColorList::add(ColorObject *colorObject, size_t position, bool updatePalette) {
+	m_colors.insert(m_colors.begin() + position, colorObject->reference());
+	if (updatePalette)
 		m_palette.add(*this, colorObject);
 	m_changed = true;
 }
-void ColorList::add(const ColorObject &colorObject, bool addToPalette) {
+void ColorList::add(const ColorObject &colorObject) {
 	auto *copy = colorObject.copy().unwrap();
 	m_colors.push_back(copy);
-	if (addToPalette)
-		m_palette.add(*this, copy);
+	m_palette.add(*this, copy);
 	m_changed = true;
 }
-void ColorList::add(ColorList &colorList, bool addToPalette) {
+void ColorList::add(ColorList &colorList) {
 	common::Guard colorListGuard = changeGuard();
 	for (auto *colorObject: colorList) {
 		m_colors.push_back(colorObject->reference());
-		if (addToPalette && colorObject->isVisible())
-			m_palette.add(*this, colorObject);
+		m_palette.add(*this, colorObject);
 		m_changed = true;
-	}
-}
-void ColorList::getPositions() {
-	if (&m_palette != &nullPalette) {
-		for (auto *colorObject: m_colors) {
-			colorObject->resetPosition();
-		}
-		m_palette.getPositions(*this);
-	} else {
-		size_t position = 0;
-		for (auto *colorObject: m_colors) {
-			colorObject->setPosition(position++);
-		}
 	}
 }
 bool ColorList::startChanges() {
@@ -127,38 +115,6 @@ size_t ColorList::size() const {
 }
 bool ColorList::empty() const {
 	return m_colors.empty();
-}
-void ColorList::removeSelected() {
-	auto i = m_colors.begin();
-	while (i != m_colors.end()) {
-		if ((*i)->isSelected()) {
-			(*i)->release();
-			i = m_colors.erase(i);
-		} else
-			++i;
-	}
-	m_palette.removeSelected(*this);
-	m_changed = true;
-}
-void ColorList::removeVisited() {
-	auto i = m_colors.begin();
-	while (i != m_colors.end()) {
-		if ((*i)->isVisited()) {
-			(*i)->release();
-			i = m_colors.erase(i);
-		} else
-			++i;
-	}
-}
-void ColorList::resetSelected() {
-	for (auto *colorObject: m_colors)
-		colorObject->setSelected(false);
-}
-void ColorList::resetAll() {
-	for (auto *colorObject: m_colors) {
-		colorObject->setSelected(false);
-		colorObject->setVisited(false);
-	}
 }
 void ColorList::removeAll() {
 	for (auto *colorObject: m_colors) {
@@ -195,9 +151,21 @@ std::vector<ColorObject *>::const_reverse_iterator ColorList::rend() const {
 ColorObject *&ColorList::front() {
 	return m_colors.front();
 }
+ColorObject *&ColorList::back() {
+	return m_colors.back();
+}
 common::Guard<void (*)(ColorList *), ColorList *> ColorList::changeGuard() {
 	return common::Guard(startChanges(), ColorList::onEndChanges, this);
 }
 void ColorList::onEndChanges(ColorList *colorList) {
 	colorList->endChanges();
+}
+void ColorList::releaseItem(ColorObject *colorObject) {
+	colorObject->release();
+}
+void ColorList::paletteRemoveSelected() {
+	m_palette.removeSelected(*this);
+}
+void ColorList::paletteRemove(ColorObject *colorObject) {
+	m_palette.remove(*this, colorObject);
 }

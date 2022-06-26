@@ -16,10 +16,8 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_IMPORT_EXPORT_H_
-#define GPICK_IMPORT_EXPORT_H_
+#pragma once
 #include <string>
-
 struct ColorList;
 struct Converter;
 struct Converters;
@@ -27,8 +25,7 @@ struct GlobalState;
 namespace text_file_parser {
 struct Configuration;
 }
-enum class FileType
-{
+enum struct FileType {
 	gpa,
 	gpl,
 	ase,
@@ -39,42 +36,38 @@ enum class FileType
 	rgbtxt,
 	unknown,
 };
-struct ImportExport
-{
-	enum class Error
-	{
+struct ImportExport {
+	enum struct Error {
 		none,
-		could_not_open_file,
-		file_read_error,
-		file_write_error,
-		no_colors_imported,
-		parsing_failed,
+		couldNotOpenFile,
+		fileReadError,
+		fileWriteError,
+		noColorsImported,
+		parsingFailed,
 	};
-	enum class ItemSize
-	{
+	enum struct ItemSize {
 		small,
 		medium,
 		big,
 		controllable,
 	};
-	enum class Background
-	{
+	enum struct Background {
 		none,
 		white,
 		gray,
 		black,
-		first_color,
-		last_color,
+		firstColor,
+		lastColor,
 		controllable,
 	};
-	ImportExport(ColorList &colorList, const char* filename, GlobalState *gs);
+	ImportExport(ColorList &colorList, const char *filename, GlobalState &gs);
 	void setConverter(Converter *converter);
 	void setConverters(Converters *converters);
-	void setItemSize(ItemSize item_size);
-	void setItemSize(const char *item_size);
+	void setItemSize(ItemSize itemSize);
+	void setItemSize(const char *itemSize);
 	void setBackground(Background background);
 	void setBackground(const char *background);
-	void setIncludeColorNames(bool include_color_names);
+	void setIncludeColorNames(bool includeColorNames);
 	bool exportGPL();
 	bool importGPL();
 	bool exportASE();
@@ -94,18 +87,16 @@ struct ImportExport
 	static FileType getFileType(const char *filename);
 	static FileType getFileTypeByExtension(const char *extension);
 	static FileType getFileTypeByContent(const char *filename);
-	void fixFileExtension(const char *selected_filter);
+	void fixFileExtension(const char *selectedFilter);
 	const std::string &getFilename() const;
-	private:
+private:
 	ColorList &m_colorList;
 	Converter *m_converter;
 	Converters *m_converters;
 	std::string m_filename;
-	ItemSize m_item_size;
+	ItemSize m_itemSize;
 	Background m_background;
-	GlobalState *m_gs;
-	bool m_include_color_names;
-	Error m_last_error;
+	GlobalState &m_gs;
+	bool m_includeColorNames;
+	Error m_lastError;
 };
-
-#endif /* GPICK_IMPORT_EXPORT_H_ */

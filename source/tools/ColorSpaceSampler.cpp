@@ -142,7 +142,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		t.normalizeRgbInplace();
 		ColorObject colorObject(t);
 		nameAssigner.assign(colorObject);
-		colorList.add(colorObject, true);
+		colorList.add(colorObject);
 	}
 }
 static void destroy_cb(GtkWidget* widget, ColorSpaceSamplerArgs *args)

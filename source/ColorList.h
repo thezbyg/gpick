@@ -35,15 +35,28 @@ struct ColorList: public common::Ref<ColorList>::Counter {
 	virtual ~ColorList();
 	size_t size() const;
 	bool empty() const;
-	void add(const ColorObject &colorObject, bool addToPalette);
-	void add(ColorObject *colorObject, bool addToPalette);
-	void add(ColorList &colorList, bool addToPalette);
-	void removeSelected();
-	void removeVisited();
-	void resetSelected();
-	void resetAll();
+	void add(const ColorObject &colorObject);
+	void add(ColorObject *colorObject);
+	void add(ColorObject *colorObject, size_t position, bool updatePalette = false);
+	void add(ColorList &colorList);
+	template<typename Callback>
+	void remove(Callback &&callback, bool selected, bool updatePalette) {
+		auto i = m_colors.begin();
+		while (i != m_colors.end()) {
+			if (callback(*i)) {
+				if (updatePalette && !selected) {
+					paletteRemove(*i);
+				}
+				releaseItem(*i);
+				i = m_colors.erase(i);
+			} else
+				++i;
+		}
+		if (updatePalette && selected)
+			paletteRemoveSelected();
+		m_changed = true;
+	}
 	void removeAll();
-	void getPositions();
 	bool startChanges();
 	bool endChanges();
 	bool blocked() const;
@@ -57,12 +70,16 @@ struct ColorList: public common::Ref<ColorList>::Counter {
 	std::vector<ColorObject *>::const_reverse_iterator rbegin() const;
 	std::vector<ColorObject *>::const_reverse_iterator rend() const;
 	ColorObject *&front();
+	ColorObject *&back();
 	common::Guard<void (*)(ColorList *), ColorList *> changeGuard();
-	static void onEndChanges(ColorList *colorList);
 	[[nodiscard]] static common::Ref<ColorList> newList();
 	[[nodiscard]] static common::Ref<ColorList> newList(IPalette &palette);
 private:
 	std::vector<ColorObject *> m_colors;
 	IPalette &m_palette;
 	bool m_blocked, m_changed;
+	static void onEndChanges(ColorList *colorList);
+	void releaseItem(ColorObject *colorObject);
+	void paletteRemoveSelected();
+	void paletteRemove(ColorObject *colorObject);
 };

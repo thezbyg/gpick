@@ -133,7 +133,7 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void addToPalette() {
-		gs.colorList().add(getColor(), true);
+		gs.colorList().add(getColor());
 	}
 	void addAllToPalette() {
 		common::Guard colorListGuard = gs.colorList().changeGuard();
@@ -143,13 +143,13 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		colorObject.setColor(color);
 		auto widgetName = identifyColorWidget(targetColor);
 		nameAssigner.assign(colorObject, widgetName);
-		gs.colorList().add(colorObject, true);
+		gs.colorList().add(colorObject);
 		for (int i = 0; i < 9; ++i) {
 			gtk_color_get_color(GTK_COLOR(closestColors[i]), &color);
 			colorObject.setColor(color);
 			widgetName = identifyColorWidget(closestColors[i]);
 			nameAssigner.assign(colorObject, widgetName);
-			gs.colorList().add(colorObject, true);
+			gs.colorList().add(colorObject);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {

@@ -186,7 +186,7 @@ struct DialogVariationsArgs {
 					r.nonLinearRgbInplace();
 				ColorObject colorObject(r);
 				nameAssigner.assign(colorObject, name, stepIndex);
-				colorList.add(colorObject, true);
+				colorList.add(colorObject);
 			}
 		}
 	}

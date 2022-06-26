@@ -215,7 +215,7 @@ static void complete_picking(FloatingPickerArgs *args)
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_on_release", true)){
 					PickerColorNameAssigner nameAssigner(*args->gs);
 					nameAssigner.assign(colorObject);
-					args->gs->colorList().add(colorObject, true);
+					args->gs->colorList().add(colorObject);
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_to_swatch_on_release", true)){
 					args->colorPicker->setCurrentColor();

@@ -113,7 +113,7 @@ static void deleteState(GtkClipboard *, CopyPasteArgs *args) {
 }
 static bool setupClipboard(const ColorObject &colorObject, Converter *converter, GlobalState &gs) {
 	ColorList colorList;
-	colorList.add(colorObject, false);
+	colorList.add(colorObject);
 	auto args = new CopyPasteArgs(std::move(colorList), converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
@@ -138,7 +138,7 @@ static bool setupClipboard(ColorList &&colorList, Converter *converter, GlobalSt
 static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Converter *converter, GlobalState &gs) {
 	ColorList colorList;
 	for (auto &colorObject: colorObjects) {
-		colorList.add(colorObject, false);
+		colorList.add(colorObject);
 	}
 	auto args = new CopyPasteArgs(std::move(colorList), converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
@@ -199,17 +199,13 @@ void set(const ColorObject &colorObject, GlobalState &gs, ConverterSelection con
 		return;
 	setupClipboard(colorObject, converter, gs);
 }
-static PaletteListCallbackResult addToColorList(ColorObject *colorObject, ColorList *colorList) {
-	colorList->add(colorObject, true);
-	return PaletteListCallbackResult::noUpdate;
-}
 void set(GtkWidget *paletteWidget, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
 	std::stringstream text;
 	ColorList colorList;
-	palette_list_foreach_selected(paletteWidget, (PaletteListCallback)addToColorList, &colorList, false);
+	palette_list_get_selected(paletteWidget, colorList);
 	if (colorList.empty())
 		return;
 	setupClipboard(std::move(colorList), converter, gs);
@@ -333,7 +329,7 @@ bool colorObjectAvailable() {
 			ColorObject colorObject;
 			//TODO: multiple colors should be extracted from string, but converters do not support this right now
 			if (gs.converters().deserialize(text.c_str(), colorObject)) {
-				colorList->add(colorObject, false);
+				colorList->add(colorObject);
 				success = true;
 				return VisitResult::stop;
 			}
@@ -349,7 +345,7 @@ bool colorObjectAvailable() {
 			color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
 			color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
-			colorList->add(ColorObject("", color), false);
+			colorList->add(ColorObject("", color));
 			success = true;
 			return VisitResult::stop;
 		} break;
@@ -365,7 +361,7 @@ bool colorObjectAvailable() {
 				return VisitResult::advance;
 			static Color defaultColor = {};
 			for (auto &color: colors) {
-				colorList->add(ColorObject(color->getString("name", ""), color->getColor("color", defaultColor)), false);
+				colorList->add(ColorObject(color->getString("name", ""), color->getColor("color", defaultColor)));
 			}
 			success = true;
 			return VisitResult::stop;

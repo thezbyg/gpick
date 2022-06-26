@@ -409,11 +409,11 @@ bool ImportExportDialog::showImport()
 				for (size_t i = 0; i != n_formats; ++i){
 					if (formats[i].type == type){
 						ColorList colorList;
-						ImportExport importExport(colorList, filename, m_gs);
+						ImportExport importExport(colorList, filename, *m_gs);
 						importExport.setConverters(&m_gs->converters());
 						if (importExport.importType(formats[i].type)){
 							finished = true;
-							m_colorList.add(colorList, true);
+							m_colorList.add(colorList);
 						}else{
 							message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 							gtk_window_set_title(GTK_WINDOW(message), _("Import"));
@@ -454,7 +454,7 @@ bool ImportExportDialog::showImportTextFile()
 			GtkWidget* message;
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
 			ColorList colorList;
-			ImportExport importExport(colorList, filename, m_gs);
+			ImportExport importExport(colorList, filename, *m_gs);
 			importExport.setConverters(&m_gs->converters());
 			text_file_parser::Configuration configuration;
 			configuration.singleLineCComments = importExportDialogOptions.isSingleLineCCommentsEnabled();
@@ -472,7 +472,7 @@ bool ImportExportDialog::showImportTextFile()
 			configuration.floatValues = importExportDialogOptions.isFloatValuesEnabled();
 			if (importExport.importTextFile(configuration)){
 				finished = true;
-				m_colorList.add(colorList, true);
+				m_colorList.add(colorList);
 			}else{
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 				gtk_window_set_title(GTK_WINDOW(message), _("Import text file"));
@@ -532,7 +532,7 @@ bool ImportExportDialog::showExport()
 			string format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
 			for (size_t i = 0; i != n_formats; ++i){
 				if (formats[i].name == format_name){
-					ImportExport importExport(m_colorList, filename, m_gs);
+					ImportExport importExport(m_colorList, filename, *m_gs);
 					importExport.fixFileExtension(formats[i].pattern);
 					importExport.setConverter(importExportDialogOptions.getSelectedConverter());
 					string item_size = importExportDialogOptions.getSelectedItemSize();

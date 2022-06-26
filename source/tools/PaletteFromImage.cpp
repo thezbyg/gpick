@@ -159,7 +159,7 @@ struct PaletteFromImageArgs {
 			color.nonLinearRgbInplace();
 			ColorObject colorObject(color);
 			nameAssigner.assign(colorObject, name, index);
-			colorList.add(colorObject, true);
+			colorList.add(colorObject);
 			index++;
 		});
 	}

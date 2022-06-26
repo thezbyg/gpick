@@ -215,7 +215,7 @@ struct DialogSortArgs {
 		common::Guard colorListGuard = colorList.changeGuard();
 		for (auto [group, sort, colorObject]: colors) {
 			common::maybeUnused(group, sort);
-			colorList.add(colorObject, true);
+			colorList.add(colorObject);
 		}
 	}
 	static void onChange(GtkWidget *, DialogSortArgs *args) {

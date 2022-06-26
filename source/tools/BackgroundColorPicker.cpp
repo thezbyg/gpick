@@ -94,7 +94,7 @@ struct BackgroundColorPicker: public IEventHandler {
 			ColorObject colorObject;
 			BackgroundColorPickerNameAssigner nameAssigner(gs);
 			nameAssigner.assign(colorObject, label);
-			gs.colorList().add(colorObject, true);
+			gs.colorList().add(colorObject);
 		}
 		virtual const ColorObject &getColor() override {
 			Color color;

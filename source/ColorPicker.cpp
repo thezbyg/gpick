@@ -297,7 +297,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		colorObject.setColor(color);
 	}
 	void addToPalette(ColorObject *colorObject) {
-		gs.colorList().add(colorObject, true);
+		gs.colorList().add(colorObject);
 	}
 	void addToPalette(const Color &color) {
 		auto name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
@@ -449,7 +449,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			Color color;
 			gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
 			ColorObject colorObject(color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false)), color);
-			gs.colorList().add(colorObject, true);
+			gs.colorList().add(colorObject);
 		}
 		if (options->getBool("sampler.copy_to_clipboard", true)) {
 			Color color;
