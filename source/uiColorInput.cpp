@@ -27,7 +27,7 @@
 #include "gtk/ColorComponent.h"
 #include "gtk/ColorWidget.h"
 #include "ColorObject.h"
-#include "ColorSpaceType.h"
+#include "ColorSpaces.h"
 #include "color_names/ColorNames.h"
 #include "common/SetOnScopeEnd.h"
 #include <string>
@@ -46,12 +46,11 @@ struct DialogInputArgs {
 		options = gs.settings().getOrCreateMap("gpick.color_input");
 	}
 };
-static void updateComponentText(DialogInputArgs *args, GtkColorComponent *component, const char *type) {
+static void updateComponentText(DialogInputArgs *args, GtkColorComponent *component) {
 	Color transformedColor;
 	gtk_color_component_get_transformed_color(component, transformedColor);
 	float alpha = gtk_color_component_get_alpha(component);
-	lua::Script &script = args->gs.script();
-	std::vector<std::string> values = color_space_color_to_text(type, transformedColor, alpha, script, &args->gs);
+	std::vector<std::string> values = toTexts(gtk_color_component_get_color_space(component), transformedColor, alpha, args->gs);
 	const char *texts[5] = { 0 };
 	int j = 0;
 	for (auto &value: values) {
@@ -75,12 +74,12 @@ static void update(DialogInputArgs *args, GtkWidget *exceptWidget) {
 	if (exceptWidget != args->cmykControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->cmykControl), color);
 	if (exceptWidget != args->labControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->labControl), color);
 	if (exceptWidget != args->lchControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(args->lchControl), color);
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->hslControl), "hsl");
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsvControl), "hsv");
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->rgbControl), "rgb");
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->cmykControl), "cmyk");
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->labControl), "lab");
-	updateComponentText(args, GTK_COLOR_COMPONENT(args->lchControl), "lch");
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->hslControl));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->hsvControl));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->rgbControl));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->cmykControl));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->labControl));
+	updateComponentText(args, GTK_COLOR_COMPONENT(args->lchControl));
 }
 static void onComponentChangeValue(GtkWidget *widget, Color *color, DialogInputArgs *args) {
 	args->colorObject->setColor(*color);
@@ -93,11 +92,17 @@ static void setComponentHandlers(GtkWidget *widget, DialogInputArgs *args) {
 	g_signal_connect(G_OBJECT(widget), "color-changed", G_CALLBACK(onComponentChangeValue), args);
 	g_signal_connect(G_OBJECT(widget), "input-clicked", G_CALLBACK(onComponentInputClicked), args);
 }
-static void addComponentEditor(GtkWidget *vbox, const char *label, const char *expandOption, ColorSpace type, const char **labels, DialogInputArgs *args, GtkWidget *&expander, GtkWidget *&control) {
-	expander = gtk_expander_new(label);
+static void addComponentEditor(GtkWidget *vbox, ColorSpace colorSpace, const char *expandOption, DialogInputArgs *args, GtkWidget *&expander, GtkWidget *&control) {
+	expander = gtk_expander_new(::colorSpace(colorSpace).name);
 	gtk_expander_set_expanded(GTK_EXPANDER(expander), args->options->getBool(expandOption, false));
 	gtk_box_pack_start(GTK_BOX(vbox), expander, false, false, 0);
-	control = gtk_color_component_new(type);
+	control = gtk_color_component_new(colorSpace);
+	const char *labels[ColorSpaceDescription::maxChannels * 2] = { 0 };
+	const auto &type = ::colorSpace(colorSpace);
+	for (int i = 0; i < type.channelCount; ++i) {
+		labels[i * 2 + 0] = type.channels[i].shortName;
+		labels[i * 2 + 1] = _(type.channels[i].name);
+	}
 	gtk_color_component_set_labels(GTK_COLOR_COMPONENT(control), labels);
 	setComponentHandlers(control, args);
 	gtk_container_add(GTK_CONTAINER(expander), control);
@@ -158,20 +163,12 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState &gs, common::Optional
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(args->automaticName), args->options->getBool("automatic_name", false));
 		g_signal_connect(G_OBJECT(args->automaticName), "toggled", G_CALLBACK(onAutomaticNameToggled), args);
 	}
-
-	const char *hsvLabels[] = { "H", _("Hue"), "S", _("Saturation"), "V", _("Value"), "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "HSV", "expander.hsv", ColorSpace::hsv, hsvLabels, args, args->hsvExpander, args->hsvControl);
-	const char *hslLabels[] = { "H", _("Hue"), "S", _("Saturation"), "L", _("Lightness"), "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "HSL", "expander.hsl", ColorSpace::hsl, hslLabels, args, args->hslExpander, args->hslControl);
-	const char *rgbLabels[] = { "R", _("Red"), "G", _("Green"), "B", _("Blue"), "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "RGB", "expander.rgb", ColorSpace::rgb, rgbLabels, args, args->rgbExpander, args->rgbControl);
-	const char *cmykLabels[] = { "C", _("Cyan"), "M", _("Magenta"), "Y", _("Yellow"), "K", _("Key"), "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "CMYK", "expander.cmyk", ColorSpace::cmyk, cmykLabels, args, args->cmykExpander, args->cmykControl);
-	const char *labLabels[] = { "L", _("Lightness"), "a", "a", "b", "b", "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "Lab", "expander.lab", ColorSpace::lab, labLabels, args, args->labExpander, args->labControl);
-	const char *lchLabels[] = { "L", _("Lightness"), "C", "Chroma", "H", "Hue", "A", _("Alpha"), nullptr };
-	addComponentEditor(vbox, "LCH", "expander.lch", ColorSpace::lch, lchLabels, args, args->lchExpander, args->lchControl);
-
+	addComponentEditor(vbox, ColorSpace::hsv, "expander.hsv", args, args->hsvExpander, args->hsvControl);
+	addComponentEditor(vbox, ColorSpace::hsl, "expander.hsl", args, args->hslExpander, args->hslControl);
+	addComponentEditor(vbox, ColorSpace::rgb, "expander.rgb", args, args->rgbExpander, args->rgbControl);
+	addComponentEditor(vbox, ColorSpace::cmyk, "expander.cmyk", args, args->cmykExpander, args->cmykControl);
+	addComponentEditor(vbox, ColorSpace::lab, "expander.lab", args, args->labExpander, args->labControl);
+	addComponentEditor(vbox, ColorSpace::lch, "expander.lch", args, args->lchExpander, args->lchControl);
 	if (newItem) {
 		auto text = args->options->getString("text", "");
 		gtk_entry_set_text(GTK_ENTRY(args->textInput), text.c_str());
@@ -230,62 +227,40 @@ void dialog_color_component_input_show(GtkWindow *parent, GtkColorComponent *col
 	args->colorSpace = colorSpace;
 	args->channel = channel;
 	memset(args->value, 0, sizeof(args->value));
-	GtkWidget *table;
 	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Edit"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
 		GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 		GTK_STOCK_OK, GTK_RESPONSE_OK,
 		nullptr);
-
 	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1), args->options->getInt32("window.height", -1));
-
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
-	table = gtk_table_new(2, 2, FALSE);
-
+	GtkWidget *table = gtk_table_new(2, 2, FALSE);
 	Color rawColor;
 	gtk_color_component_get_raw_color(colorComponent, rawColor);
 	float alpha = gtk_color_component_get_alpha(colorComponent);
-
-	const ColorSpaceType *colorSpaceType = 0;
-	for (uint32_t i = 0; i < color_space_count_types(); i++) {
-		if (color_space_get_types()[i].colorSpace == colorSpace) {
-			colorSpaceType = &color_space_get_types()[i];
-			break;
-		}
+	auto &colorSpaceType = ::colorSpace(colorSpace);
+	for (int i = 0; i < colorSpaceType.channelCount; i++) {
+		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_(colorSpaceType.channels[i].name), 0, 0, 0, 0), 0, 1, i, i + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
+		args->value[i] = gtk_spin_button_new_with_range(colorSpaceType.channels[i].minValue, colorSpaceType.channels[i].maxValue, colorSpaceType.channels[i].step);
+		gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
+		if (i < 4)
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), rawColor[i] * colorSpaceType.channels[i].rawScale);
+		else
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), alpha * colorSpaceType.channels[i].rawScale);
+		gtk_table_attach(GTK_TABLE(table), args->value[i], 1, 2, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
+		if (i == channel)
+			gtk_widget_grab_focus(args->value[i]);
 	}
-
-	if (colorSpaceType) {
-		for (int i = 0; i < colorSpaceType->channelCount; i++) {
-			gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(colorSpaceType->channels[i].name, 0, 0, 0, 0), 0, 1, i, i + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-			args->value[i] = gtk_spin_button_new_with_range(colorSpaceType->channels[i].minValue, colorSpaceType->channels[i].maxValue, colorSpaceType->channels[i].step);
-			gtk_entry_set_activates_default(GTK_ENTRY(args->value[i]), true);
-			if (i < 4)
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), rawColor[i] * colorSpaceType->channels[i].rawScale);
-			else
-				gtk_spin_button_set_value(GTK_SPIN_BUTTON(args->value[i]), alpha * colorSpaceType->channels[i].rawScale);
-			gtk_table_attach(GTK_TABLE(table), args->value[i], 1, 2, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-			if (i == channel)
-				gtk_widget_grab_focus(args->value[i]);
-		}
-	}
-
-	gtk_widget_show_all(table);
 	setDialogContent(dialog, table);
-
 	gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_OK);
-
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-		if (colorSpaceType) {
-			for (int i = 0; i < colorSpaceType->channelCount; i++) {
-				if (i < 4)
-					rawColor[i] = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / colorSpaceType->channels[i].rawScale);
-				else
-					alpha = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / colorSpaceType->channels[i].rawScale);
-			}
-			gtk_color_component_set_raw_color(colorComponent, rawColor, alpha);
+		for (int i = 0; i < colorSpaceType.channelCount; i++) {
+			if (i < 4)
+				rawColor[i] = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / colorSpaceType.channels[i].rawScale);
+			else
+				alpha = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->value[i])) / colorSpaceType.channels[i].rawScale);
 		}
+		gtk_color_component_set_raw_color(colorComponent, rawColor, alpha);
 	}
-
 	gint width, height;
 	gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
 	options->set("window.width", width);

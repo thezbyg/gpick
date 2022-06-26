@@ -22,6 +22,7 @@
 #include "ColorList.h"
 #include "ColorObject.h"
 #include "Channels.h"
+#include "ColorSpaces.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"

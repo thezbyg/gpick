@@ -26,7 +26,7 @@
 #include "FloatingPicker.h"
 #include "ColorRYB.h"
 #include "ColorWheelType.h"
-#include "ColorSpaceType.h"
+#include "ColorSpaces.h"
 #include "gtk/Swatch.h"
 #include "gtk/Zoomed.h"
 #include "gtk/ColorComponent.h"
@@ -239,12 +239,12 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(labControl), out_of_gamut_mask);
 		gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(labControl), Color::getIlluminant(options->getString("lab.illuminant", "D50")));
 		gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(labControl), Color::getObserver(options->getString("lab.observer", "2")));
-		updateComponentText(GTK_COLOR_COMPONENT(labControl), "lab");
+		updateComponentText(GTK_COLOR_COMPONENT(labControl));
 
 		gtk_color_component_set_out_of_gamut_mask(GTK_COLOR_COMPONENT(lchControl), out_of_gamut_mask);
 		gtk_color_component_set_lab_illuminant(GTK_COLOR_COMPONENT(lchControl), Color::getIlluminant(options->getString("lab.illuminant", "D50")));
 		gtk_color_component_set_lab_observer(GTK_COLOR_COMPONENT(lchControl), Color::getObserver(options->getString("lab.observer", "2")));
-		updateComponentText(GTK_COLOR_COMPONENT(lchControl), "lch");
+		updateComponentText(GTK_COLOR_COMPONENT(lchControl));
 
 		gtk_zoomed_set_size(GTK_ZOOMED(zoomed_display), options->getInt32("zoom_size", 150));
 	}
@@ -372,12 +372,11 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			gtk_swatch_set_main_color(GTK_SWATCH(swatch_display), &c);
 		}
 	}
-	void updateComponentText(GtkColorComponent *colorSpace, const char *type) {
+	void updateComponentText(GtkColorComponent *colorComponent) {
 		Color transformedColor;
-		gtk_color_component_get_transformed_color(colorSpace, transformedColor);
-		float alpha = gtk_color_component_get_alpha(colorSpace);
-		lua::Script &script = gs.script();
-		std::vector<std::string> str = color_space_color_to_text(type, transformedColor, alpha, script, &gs);
+		gtk_color_component_get_transformed_color(colorComponent, transformedColor);
+		float alpha = gtk_color_component_get_alpha(colorComponent);
+		std::vector<std::string> str = toTexts(gtk_color_component_get_color_space(colorComponent), transformedColor, alpha, gs);
 		int j = 0;
 		const char *texts[5] = {0};
 		for (auto i = str.begin(); i != str.end(); i++) {
@@ -386,7 +385,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			if (j > 4)
 				break;
 		}
-		gtk_color_component_set_texts(colorSpace, texts);
+		gtk_color_component_set_texts(colorComponent, texts);
 	}
 	void updateDisplays(GtkWidget *exceptWidget) {
 		updateMainColorNow();
@@ -398,12 +397,12 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		if (exceptWidget != cmykControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(cmykControl), c);
 		if (exceptWidget != labControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(labControl), c);
 		if (exceptWidget != lchControl) gtk_color_component_set_color(GTK_COLOR_COMPONENT(lchControl), c);
-		updateComponentText(GTK_COLOR_COMPONENT(hslControl), "hsl");
-		updateComponentText(GTK_COLOR_COMPONENT(hsvControl), "hsv");
-		updateComponentText(GTK_COLOR_COMPONENT(rgbControl), "rgb");
-		updateComponentText(GTK_COLOR_COMPONENT(cmykControl), "cmyk");
-		updateComponentText(GTK_COLOR_COMPONENT(labControl), "lab");
-		updateComponentText(GTK_COLOR_COMPONENT(lchControl), "lch");
+		updateComponentText(GTK_COLOR_COMPONENT(hslControl));
+		updateComponentText(GTK_COLOR_COMPONENT(hsvControl));
+		updateComponentText(GTK_COLOR_COMPONENT(rgbControl));
+		updateComponentText(GTK_COLOR_COMPONENT(cmykControl));
+		updateComponentText(GTK_COLOR_COMPONENT(labControl));
+		updateComponentText(GTK_COLOR_COMPONENT(lchControl));
 		std::string name = color_names_get(gs.getColorNames(), &c, true);
 		gtk_entry_set_text(GTK_ENTRY(colorName), name.c_str());
 		gtk_color_get_color(GTK_COLOR(contrastCheck), &c2);

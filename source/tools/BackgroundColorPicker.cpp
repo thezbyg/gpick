@@ -21,7 +21,7 @@
 #include "uiUtilities.h"
 #include "ColorObject.h"
 #include "GlobalState.h"
-#include "ColorSpaceType.h"
+#include "ColorSpaces.h"
 #include "Converters.h"
 #include "I18N.h"
 #include "EventBus.h"
@@ -127,9 +127,7 @@ struct BackgroundColorPicker: public IEventHandler {
 			Color transformedColor;
 			gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(colorComponent), transformedColor);
 			float alpha = gtk_color_component_get_alpha(GTK_COLOR_COMPONENT(colorComponent));
-			lua::Script &script = gs.script();
-			const auto &type = *color_space_get(colorSpace->type);
-			std::vector<std::string> values = color_space_color_to_text(type.name, transformedColor, alpha, script, &gs);
+			std::vector<std::string> values = toTexts(colorSpace->type, transformedColor, alpha, gs);
 			const char *texts[5] = { 0 };
 			int j = 0;
 			for (auto &value: values) {
@@ -287,11 +285,11 @@ struct BackgroundColorPicker: public IEventHandler {
 	}
 	void updateColorSpace(AdjustableColor &adjustableColor) {
 		gtk_color_component_set_color_space(GTK_COLOR_COMPONENT(adjustableColor.colorComponent), adjustableColor.colorSpace->type);
-		const char *labels[10] = { 0 };
-		const auto &type = *color_space_get(adjustableColor.colorSpace->type);
+		const char *labels[ColorSpaceDescription::maxChannels * 2] = { 0 };
+		const auto &type = colorSpace(adjustableColor.colorSpace->type);
 		for (int i = 0; i < type.channelCount; ++i) {
 			labels[i * 2 + 0] = type.channels[i].shortName;
-			labels[i * 2 + 1] = type.channels[i].name;
+			labels[i * 2 + 1] = _(type.channels[i].name);
 		}
 		gtk_color_component_set_labels(GTK_COLOR_COMPONENT(adjustableColor.colorComponent), labels);
 	}

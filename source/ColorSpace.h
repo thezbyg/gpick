@@ -17,32 +17,11 @@
  */
 
 #pragma once
-#include "Channel.h"
-#include "ColorSpace.h"
-#include "common/Bitmask.h"
-#include "common/Span.h"
-struct Color;
-enum struct ChannelFlags {
-	none = 0,
-	allColorSpaces = 1,
-	wrap = 2,
-	useConvertTo = 4,
+enum struct ColorSpace {
+	rgb = 1,
+	hsl,
+	hsv,
+	cmyk,
+	lab,
+	lch,
 };
-ENABLE_BITMASK_OPERATORS(ChannelFlags);
-struct ChannelDescription {
-	const char *id;
-	const char *name;
-	ColorSpace colorSpace;
-	Channel type;
-	ChannelFlags flags;
-	union {
-		size_t index;
-		float (*convertTo)(const Color &color);
-	};
-	float min, max;
-	bool allColorSpaces() const;
-	bool wrap() const;
-	bool useConvertTo() const;
-};
-common::Span<const ChannelDescription> channels();
-const ChannelDescription &channel(Channel channel);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,32 +16,27 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_SPACE_TYPE_H_
-#define GPICK_COLOR_SPACE_TYPE_H_
-#include "ColorSpaces.h"
-#include <cstdint>
-#include <cstddef>
-#include <string>
-#include <vector>
-namespace lua {
-struct Script;
-}
-struct Color;
-struct GlobalState;
-struct ColorSpaceType {
-	ColorSpace colorSpace;
-	const char *name;
-	int8_t channelCount;
-	struct {
-		const char *name, *shortName;
-		double rawScale;
-		double minValue;
-		double maxValue;
-		double step;
-	} channels[5];
+#pragma once
+enum struct Channel {
+	rgbRed = 1,
+	rgbGreen,
+	rgbBlue,
+	hslHue,
+	hslSaturation,
+	hslLightness,
+	hsvHue,
+	hsvSaturation,
+	hsvValue,
+	cmykCyan,
+	cmykMagenta,
+	cmykYellow,
+	cmykKey,
+	labLightness,
+	labA,
+	labB,
+	lchLightness,
+	lchChroma,
+	lchHue,
+	alpha,
+	userDefined,
 };
-const ColorSpaceType *color_space_get_types();
-const ColorSpaceType *color_space_get(ColorSpace colorSpace);
-size_t color_space_count_types();
-std::vector<std::string> color_space_color_to_text(const char *type, const Color &color, float alpha, lua::Script &script, GlobalState *gs);
-#endif /* GPICK_COLOR_SPACE_TYPE_H_ */

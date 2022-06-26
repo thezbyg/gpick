@@ -16,19 +16,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_SPACES_H_
-#define GPICK_COLOR_SPACES_H_
+#pragma once
+#include "ColorSpace.h"
+#include "Channel.h"
 #include "common/Bitmask.h"
 #include "common/Span.h"
+#include <vector>
+#include <string>
 struct Color;
-enum struct ColorSpace {
-	rgb = 1,
-	hsl,
-	hsv,
-	cmyk,
-	lab,
-	lch,
-};
+struct GlobalState;
 enum struct ColorSpaceFlags {
 	none = 0,
 	externalAlpha = 1,
@@ -41,8 +37,18 @@ struct ColorSpaceDescription {
 	ColorSpaceFlags flags;
 	Color (Color::*convertTo)() const;
 	Color (Color::*convertFrom)() const;
+	int8_t channelCount;
+	static constexpr size_t maxChannels = 5;
+	struct {
+		Channel type;
+		const char *id, *name, *shortName;
+		double rawScale;
+		double minValue;
+		double maxValue;
+		double step;
+	} channels[maxChannels];
 	bool externalAlpha() const;
 };
 common::Span<const ColorSpaceDescription> colorSpaces();
 const ColorSpaceDescription &colorSpace(ColorSpace colorSpace);
-#endif /* GPICK_COLOR_SPACES_H_ */
+std::vector<std::string> toTexts(ColorSpace colorSpace, const Color &color, float alpha, GlobalState &gs);
