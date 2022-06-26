@@ -1144,34 +1144,8 @@ static void palette_popup_menu_auto_name(GtkWidget *widget, AppArgs *args) {
 		return Update::name;
 	});
 }
-static void palette_popup_menu_auto_number(GtkWidget *widget, AppArgs *args) {
-	int selectedCount = palette_list_get_selected_count(args->colorList);
-	if (dialog_autonumber_show(GTK_WINDOW(args->window), selectedCount, args->gs) != GTK_RESPONSE_OK)
-		return;
-	auto options = args->gs->settings().getOrCreateMap("gpick.autonumber");
-	std::string name = options->getString("name", "autonum");
-	uint32_t index = options->getInt32("startindex", 1);
-	uint32_t nplaces = options->getInt32("nplaces", 1);
-	bool decreasing = options->getBool("decreasing", true);
-	bool append = options->getBool("append", true);
-	palette_list_foreach(args->colorList, true, [&](ColorObject *colorObject) {
-		std::stringstream ss;
-		if (append) {
-			ss << colorObject->getName() << " ";
-		}
-		ss << name << "-";
-		ss.width(nplaces);
-		ss.fill('0');
-		if (decreasing) {
-			ss << right << index;
-			--index;
-		} else {
-			ss << right << index;
-			++index;
-		}
-		colorObject->setName(ss.str());
-		return Update::name;
-	});
+static void palette_popup_menu_auto_number(GtkWidget *, AppArgs *args) {
+	dialog_autonumber_show(GTK_WINDOW(args->window), args->colorList, *args->gs);
 }
 static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs *args) {
 	ColorList colorList;

@@ -17,6 +17,20 @@
  */
 
 #pragma once
+#include "dynv/MapFwd.h"
+#include "common/Ref.h"
 #include <gtk/gtk.h>
 struct GlobalState;
-void dialog_autonumber_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs);
+struct ColorList;
+struct DialogBase {
+	DialogBase(GlobalState &gs, const char *optionsKey, const char *title, GtkWindow *parent);
+	virtual ~DialogBase();
+	void run();
+	virtual void apply(bool preview) = 0;
+	void setContent(GtkWidget *widget);
+	static void onUpdate(GtkWidget *, DialogBase *);
+	GlobalState &gs;
+	dynv::Ref options;
+	common::Ref<ColorList> previewColorList;
+	GtkWidget *dialog;
+};

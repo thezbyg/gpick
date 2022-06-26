@@ -16,7 +16,36 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#include <gtk/gtk.h>
-struct GlobalState;
-void dialog_autonumber_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs);
+#include "uiDialogBase.h"
+#include "uiUtilities.h"
+#include "GlobalState.h"
+#include "ColorList.h"
+#include "dynv/Map.h"
+DialogBase::DialogBase(GlobalState &gs, const char *optionsKey, const char *title, GtkWindow *parent):
+	gs(gs),
+	dialog(nullptr) {
+	options = gs.settings().getOrCreateMap(optionsKey);
+	dialog = gtk_dialog_new_with_buttons(title, parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
+	gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
+	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+}
+DialogBase::~DialogBase() {
+	if (dialog != nullptr) {
+		gint width, height;
+		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+		options->set("window.width", width);
+		options->set("window.height", height);
+		gtk_widget_destroy(dialog);
+	}
+}
+void DialogBase::run() {
+	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
+		apply(false);
+	}
+}
+void DialogBase::setContent(GtkWidget *widget) {
+	setDialogContent(dialog, widget);
+}
+void DialogBase::onUpdate(GtkWidget *, DialogBase *dialogBase) {
+	dialogBase->apply(true);
+}
