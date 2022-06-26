@@ -21,18 +21,20 @@
 #include "uiUtilities.h"
 #include "ColorList.h"
 #include "ColorObject.h"
+#include "IPalette.h"
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
 namespace {
-struct TemporaryPalette {
+struct TemporaryPalette: public IPalette {
 	GlobalState &gs;
 	dynv::Ref options;
-	ColorList *colorList;
+	ColorList colorList;
 	GtkWindow *window;
 	GtkWidget *palette;
 	TemporaryPalette(GlobalState &gs, GtkWindow *parent):
-		gs(gs) {
+		gs(gs),
+		colorList(*this) {
 		options = gs.settings().getOrCreateMap("gpick.temporary_palette");
 		window = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
 		gtk_window_set_title(window, _("Temporary palette"));
@@ -41,14 +43,6 @@ struct TemporaryPalette {
 		gtk_window_set_skip_taskbar_hint(window, true);
 		gtk_window_set_skip_pager_hint(window, true);
 		gtk_window_set_default_size(window, options->getInt32("window.width", -1), options->getInt32("window.height", -1));
-		colorList = color_list_new();
-		colorList->onInsert = onInsert;
-		colorList->onClear = onClear;
-		colorList->onDeleteSelected = onDeleteSelected;
-		colorList->onGetPositions = onGetPositions;
-		colorList->onDelete = onDelete;
-		colorList->onUpdate = onUpdate;
-		colorList->userdata = this;
 		GtkWidget *informationLabel = gtk_label_new("");
 #if GTK_MAJOR_VERSION >= 3
 		gtk_widget_set_halign(informationLabel, GTK_ALIGN_END);
@@ -57,7 +51,7 @@ struct TemporaryPalette {
 		gtk_misc_set_alignment(GTK_MISC(informationLabel), 1.0f, 0.5f);
 #endif
 		GtkWidget* vbox = gtk_vbox_new(false, 0);
-		palette = palette_list_temporary_new(gs, informationLabel, *colorList);
+		palette = palette_list_temporary_new(gs, informationLabel, colorList);
 		auto columnWidths = options->getInt32s("column_widths");
 		for (size_t i = 0; ; ++i) {
 			GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(palette), i);
@@ -77,7 +71,7 @@ struct TemporaryPalette {
 		g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(TemporaryPalette::onConfigureEvent), this);
 		gtk_widget_show_all(GTK_WIDGET(window));
 	}
-	~TemporaryPalette() {
+	virtual ~TemporaryPalette() {
 		std::vector<int> columnWidths;
 		for (size_t i = 0; ; ++i) {
 			GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(palette), i);
@@ -86,7 +80,6 @@ struct TemporaryPalette {
 			columnWidths.push_back(gtk_tree_view_column_get_width(column));
 		}
 		options->set("column_widths", columnWidths);
-		color_list_destroy(colorList);
 	}
 	void updateWindowSize() {
 		if (gdk_window_get_state(gtk_widget_get_window(GTK_WIDGET(window))) & (GDK_WINDOW_STATE_MAXIMIZED | GDK_WINDOW_STATE_FULLSCREEN | GDK_WINDOW_STATE_ICONIFIED))
@@ -103,25 +96,17 @@ struct TemporaryPalette {
 		temporaryPalette->updateWindowSize();
 		return false;
 	}
-	static int onInsert(ColorList *colorList, ColorObject *colorObject, void *userdata) {
-		palette_list_add_entry(((TemporaryPalette *)userdata)->palette, colorObject, !colorList->blocked);
-		return 0;
+	virtual void add(ColorList &colorList, ColorObject *colorObject) override {
+		palette_list_add_entry(palette, colorObject, !colorList.blocked());
 	}
-	static int onDeleteSelected(ColorList *colorList, void *userdata) {
-		palette_list_remove_selected_entries(((TemporaryPalette *)userdata)->palette, !colorList->blocked);
-		return 0;
+	virtual void remove(ColorList &colorList, ColorObject *colorObject) override {
+		palette_list_remove_entry(palette, colorObject, !colorList.blocked());
 	}
-	static int onDelete(ColorList *colorList, ColorObject *colorObject, void *userdata) {
-		palette_list_remove_entry(((TemporaryPalette *)userdata)->palette, colorObject, !colorList->blocked);
-		return 0;
+	virtual void removeSelected(ColorList &colorList) override {
+		palette_list_remove_selected_entries(palette, !colorList.blocked());
 	}
-	static int onUpdate(ColorList *colorList, void *userdata) {
-		palette_list_after_update(((TemporaryPalette *)userdata)->palette);
-		return 0;
-	}
-	static int onClear(ColorList *colorList, void *userdata) {
-		palette_list_remove_all_entries(((TemporaryPalette *)userdata)->palette, !colorList->blocked);
-		return 0;
+	virtual void clear(ColorList &colorList) override {
+		palette_list_remove_all_entries(palette, !colorList.blocked());
 	}
 	static PaletteListCallbackResult getPositionsCallback(ColorObject *colorObject, void *userdata) {
 		auto &position = *reinterpret_cast<size_t *>(userdata);
@@ -129,10 +114,12 @@ struct TemporaryPalette {
 		++position;
 		return PaletteListCallbackResult::noUpdate;
 	}
-	static int onGetPositions(ColorList *colorList, void *userdata) {
+	virtual void getPositions(ColorList &) override {
 		size_t position = 0;
-		palette_list_foreach(((TemporaryPalette *)userdata)->palette, getPositionsCallback, &position, false);
-		return 0;
+		palette_list_foreach(palette, getPositionsCallback, &position, false);
+	}
+	virtual void update(ColorList &) override {
+		palette_list_after_update(palette);
 	}
 };
 }

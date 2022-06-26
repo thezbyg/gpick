@@ -148,7 +148,7 @@ int color_names_load_from_file(ColorNames* color_names, const std::string &filen
 void color_names_load_from_list(ColorNames *color_names, const ColorList &colorList)
 {
 	Color color;
-	for (auto colorObject: colorList.colors) {
+	for (auto *colorObject: colorList) {
 		ColorNameEntry* name_entry = new ColorNameEntry;
 		name_entry->name = colorObject->getName();
 		color_names->names.push_back(name_entry);

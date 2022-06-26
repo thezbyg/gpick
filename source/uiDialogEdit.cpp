@@ -26,7 +26,6 @@
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
-#include "common/Guard.h"
 #include "common/Match.h"
 #include "common/Format.h"
 #include "math/Algorithms.h"
@@ -37,7 +36,7 @@ struct DialogEditArgs {
 	ColorList &selectedColorList;
 	GlobalState &gs;
 	dynv::Ref options;
-	ColorList *previewColorList;
+	common::Ref<ColorList> previewColorList;
 	const ColorSpaceDescription *colorSpace;
 	struct Channel {
 		GtkWidget *label, *alignment, *adjustmentRange;
@@ -61,11 +60,11 @@ struct DialogEditArgs {
 			if (&i == colorSpace)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces().data());
 		}
-		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(DialogEditArgs::onColorSpaceChange), this);
+		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(onColorSpaceChange), this);
 		grid.nextColumn();
 		grid.add(relativeCheck = gtk_check_button_new_with_mnemonic(_("_Relative adjustment")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(relativeCheck), options->getBool("relative", true));
-		g_signal_connect(G_OBJECT(relativeCheck), "toggled", G_CALLBACK(DialogEditArgs::onRelativeChange), this);
+		g_signal_connect(G_OBJECT(relativeCheck), "toggled", G_CALLBACK(onRelativeChange), this);
 		size_t index = 0;
 		for (auto &channel: channels) {
 			channel.label = gtk_label_new("");
@@ -74,11 +73,11 @@ struct DialogEditArgs {
 			grid.add(channel.alignment);
 			grid.add(channel.adjustmentRange = gtk_hscale_new_with_range(-100, 100, 1), true);
 			gtk_range_set_value(GTK_RANGE(channel.adjustmentRange), options->getFloat(common::format("adjustment{}", index), 0) * 100);
-			g_signal_connect(G_OBJECT(channel.adjustmentRange), "value-changed", G_CALLBACK(DialogEditArgs::onAdjustmentChange), this);
-			g_signal_connect(G_OBJECT(channel.adjustmentRange), "format-value", G_CALLBACK(DialogEditArgs::onFormat), this);
+			g_signal_connect(G_OBJECT(channel.adjustmentRange), "value-changed", G_CALLBACK(onAdjustmentChange), this);
+			g_signal_connect(G_OBJECT(channel.adjustmentRange), "format-value", G_CALLBACK(onFormat), this);
 			++index;
 		}
-		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2, true);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
 		setDialogContent(dialog, grid);
 		setupChannels();
 		update(true);
@@ -90,7 +89,6 @@ struct DialogEditArgs {
 		options->set("window.height", height);
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
 		gtk_widget_destroy(dialog);
-		color_list_destroy(previewColorList);
 	}
 	void run() {
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -106,7 +104,7 @@ struct DialogEditArgs {
 	}
 	void update(bool preview) {
 		if (preview)
-			color_list_remove_all(previewColorList);
+			previewColorList->removeAll();
 		colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
 		bool relative = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(relativeCheck));
 		size_t index = 0;
@@ -115,10 +113,10 @@ struct DialogEditArgs {
 			adjustments[index] = static_cast<float>(gtk_range_get_value(GTK_RANGE(channel.adjustmentRange)) / 100);
 			++index;
 		}
-		ColorList &colorList = preview ? *previewColorList : *gs.getColorList();
-		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
-		for (auto i = selectedColorList.colors.begin(); i != selectedColorList.colors.end(); ++i) {
-			Color color = (*i)->getColor();
+		ColorList &colorList = preview ? *previewColorList : gs.colorList();
+		common::Guard colorListGuard = colorList.changeGuard();
+		for (auto *colorObject: selectedColorList) {
+			Color color = colorObject->getColor();
 			float alpha = color.alpha;
 			color = std::invoke(colorSpace->convertTo, color);
 			for (size_t j = 0, end = std::min<size_t>(channels.size(), Color::MemberCount); j != end; ++j) {
@@ -142,12 +140,9 @@ struct DialogEditArgs {
 			}
 			color.normalizeRgbInplace();
 			if (preview) {
-				ColorObject *colorObject = color_list_new_color_object(&colorList, &color);
-				colorObject->setName((*i)->getName());
-				color_list_add_color_object(&colorList, colorObject, 1);
-				colorObject->release();
+				colorList.add(ColorObject(colorObject->getName(), color), true);
 			} else {
-				(*i)->setColor(color);
+				colorObject->setColor(color);
 			}
 		}
 	}

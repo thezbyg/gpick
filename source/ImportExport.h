@@ -67,7 +67,7 @@ struct ImportExport
 		last_color,
 		controllable,
 	};
-	ImportExport(ColorList *color_list, const char* filename, GlobalState *gs);
+	ImportExport(ColorList &colorList, const char* filename, GlobalState *gs);
 	void setConverter(Converter *converter);
 	void setConverters(Converters *converters);
 	void setItemSize(ItemSize item_size);
@@ -97,7 +97,7 @@ struct ImportExport
 	void fixFileExtension(const char *selected_filter);
 	const std::string &getFilename() const;
 	private:
-	ColorList *m_color_list;
+	ColorList &m_colorList;
 	Converter *m_converter;
 	Converters *m_converters;
 	std::string m_filename;

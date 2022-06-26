@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,41 +16,53 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_LIST_H_
-#define GPICK_COLOR_LIST_H_
+#pragma once
 #include "Color.h"
-#include "dynv/Map.h"
-#include <list>
+#include "common/Ref.h"
+#include "common/Guard.h"
+#include <vector>
 #include <cstddef>
 struct ColorObject;
-struct ColorList {
-	std::list<ColorObject *> colors;
-	dynv::Ref options;
-	bool blocked, changed;
-	int (*onInsert)(ColorList *colorList, ColorObject *colorObject, void *userdata);
-	int (*onDelete)(ColorList *colorList, ColorObject *colorObject, void *userdata);
-	int (*onDeleteSelected)(ColorList *colorList, void *userdata);
-	int (*onClear)(ColorList *colorList, void *userdata);
-	int (*onGetPositions)(ColorList *colorList, void *userdata);
-	int (*onUpdate)(ColorList *colorList, void *userdata);
-	void *userdata;
+struct IPalette;
+struct ColorList: public common::Ref<ColorList>::Counter {
+	using value_type = ColorList *;
+	using iterator = std::vector<ColorObject *>::iterator;
+	ColorList();
+	ColorList(IPalette &palette);
+	ColorList(const ColorList &) = delete;
+	ColorList(ColorList &&colorList);
+	ColorList &operator=(const ColorList &) = delete;
+	virtual ~ColorList();
+	size_t size() const;
+	bool empty() const;
+	void add(const ColorObject &colorObject, bool addToPalette);
+	void add(ColorObject *colorObject, bool addToPalette);
+	void add(ColorList &colorList, bool addToPalette);
+	void removeSelected();
+	void removeVisited();
+	void resetSelected();
+	void resetAll();
+	void removeAll();
+	void getPositions();
+	bool startChanges();
+	bool endChanges();
+	bool blocked() const;
+	bool changed() const;
+	std::vector<ColorObject *>::iterator begin();
+	std::vector<ColorObject *>::iterator end();
+	std::vector<ColorObject *>::const_iterator begin() const;
+	std::vector<ColorObject *>::const_iterator end() const;
+	std::vector<ColorObject *>::reverse_iterator rbegin();
+	std::vector<ColorObject *>::reverse_iterator rend();
+	std::vector<ColorObject *>::const_reverse_iterator rbegin() const;
+	std::vector<ColorObject *>::const_reverse_iterator rend() const;
+	ColorObject *&front();
+	common::Guard<void (*)(ColorList *), ColorList *> changeGuard();
+	static void onEndChanges(ColorList *colorList);
+	[[nodiscard]] static common::Ref<ColorList> newList();
+	[[nodiscard]] static common::Ref<ColorList> newList(IPalette &palette);
+private:
+	std::vector<ColorObject *> m_colors;
+	IPalette &m_palette;
+	bool m_blocked, m_changed;
 };
-ColorList *color_list_new();
-ColorList *color_list_new(ColorList *colorList);
-void color_list_destroy(ColorList *colorList);
-ColorObject *color_list_new_color_object(ColorList *colorList, const Color *color);
-ColorObject *color_list_add_color(ColorList *colorList, const Color *color);
-int color_list_add_color_object(ColorList *colorList, ColorObject *colorObject, bool addToPalette);
-int color_list_add_color_object(ColorList *colorList, const ColorObject &colorObject, bool addToPalette);
-int color_list_add(ColorList *colorList, ColorList *items, bool addToPalette);
-int color_list_remove_color_object(ColorList *colorList, ColorObject *colorObject);
-int color_list_remove_selected(ColorList *colorList);
-int color_list_remove_visited(ColorList *colorList);
-int color_list_reset_selected(ColorList *colorList);
-int color_list_reset_all(ColorList *colorList);
-int color_list_remove_all(ColorList *colorList);
-bool color_list_start_changes(ColorList *colorList);
-bool color_list_end_changes(ColorList *colorList);
-size_t color_list_get_count(ColorList *colorList);
-int color_list_get_positions(ColorList *colorList);
-#endif /* GPICK_COLOR_LIST_H_ */

@@ -91,11 +91,10 @@ struct BackgroundColorPicker: public IEventHandler {
 		virtual void addToPalette(const ColorObject &) override {
 			Color color;
 			gtk_color_get_color(GTK_COLOR(colorWidget), &color);
-			auto colorObject = new ColorObject(color);
+			ColorObject colorObject;
 			BackgroundColorPickerNameAssigner nameAssigner(gs);
-			nameAssigner.assign(*colorObject, label);
-			color_list_add_color_object(gs.getColorList(), colorObject, true);
-			colorObject->release();
+			nameAssigner.assign(colorObject, label);
+			gs.colorList().add(colorObject, true);
 		}
 		virtual const ColorObject &getColor() override {
 			Color color;

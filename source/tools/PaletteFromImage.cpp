@@ -58,7 +58,7 @@ struct PaletteFromImageArgs {
 	std::string filename, previousFilename;
 	uint32_t numberOfColors;
 	math::OctreeColorQuantization octree;
-	ColorList *previewColorList;
+	common::Ref<ColorList> previewColorList;
 	dynv::Ref options;
 	GlobalState *gs;
 	static uint8_t toUint8(float value) {
@@ -150,21 +150,16 @@ struct PaletteFromImageArgs {
 		PaletteColorNameAssigner nameAssigner(*gs);
 		if (!filename.empty() && previousFilename != filename)
 			processImage();
-		ColorList *colorList;
-		if (preview)
-			colorList = previewColorList;
-		else
-			colorList = gs->getColorList();
+		ColorList &colorList = preview ? *previewColorList : gs->colorList();
 		math::OctreeColorQuantization reducedOctree(octree);
 		reducedOctree.reduce(numberOfColors);
-		common::Guard colorListGuard(color_list_start_changes(colorList), color_list_end_changes, colorList);
+		common::Guard colorListGuard = colorList.changeGuard();
 		reducedOctree.visit([&](const float sum[3], size_t pixels) {
 			Color color(sum[0] / pixels, sum[1] / pixels, sum[2] / pixels, 1.0f);
 			color.nonLinearRgbInplace();
-			ColorObject *colorObject = color_list_new_color_object(colorList, &color);
-			nameAssigner.assign(*colorObject, name, index);
-			color_list_add_color_object(colorList, colorObject, 1);
-			colorObject->release();
+			ColorObject colorObject(color);
+			nameAssigner.assign(colorObject, name, index);
+			colorList.add(colorObject, true);
 			index++;
 		});
 	}
@@ -192,12 +187,11 @@ struct PaletteFromImageArgs {
 		}
 	}
 	static void onUpdate(GtkWidget *widget, PaletteFromImageArgs *args) {
-		color_list_remove_all(args->previewColorList);
+		args->previewColorList->removeAll();
 		args->getSettings();
 		args->update(true);
 	}
 	static void onDestroy(GtkWidget *widget, PaletteFromImageArgs *args) {
-		color_list_destroy(args->previewColorList);
 		delete args;
 	}
 	static void onResponse(GtkWidget *widget, gint responseId, PaletteFromImageArgs *args) {
@@ -280,9 +274,7 @@ void tools_palette_from_image_show(GtkWindow *parent, GlobalState *gs) {
 	args->rangeColors = widget = grid.add(gtk_spin_button_new_with_range(1, 1000, 1), true);
 	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("colors", 3));
 	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(PaletteFromImageArgs::onUpdate), args);
-	ColorList *previewColorList = nullptr;
-	args->previewExpander = grid.add(palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &previewColorList), true, 2, true);
-	args->previewColorList = previewColorList;
+	args->previewExpander = grid.add(palette_list_preview_new(*gs, true, args->options->getBool("show_preview", true), args->previewColorList), true, 2, true);
 	gtk_widget_show_all(grid);
 	setDialogContent(dialog, grid);
 	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(PaletteFromImageArgs::onDestroy), args);

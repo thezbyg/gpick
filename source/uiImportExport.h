@@ -21,16 +21,15 @@
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorList;
-struct ImportExportDialog
-{
-	ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs);
+struct ImportExportDialog {
+	ImportExportDialog(GtkWindow *parent, ColorList &colorList, GlobalState *gs);
 	~ImportExportDialog();
 	bool showImport();
 	bool showImportTextFile();
 	bool showExport();
-	private:
+private:
 	GtkWindow *m_parent;
-	ColorList *m_color_list;
+	ColorList &m_colorList;
 	GlobalState *m_gs;
 };
 #endif /* GPICK_UI_IMPORT_EXPORT_H_ */

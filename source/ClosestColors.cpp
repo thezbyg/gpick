@@ -133,23 +133,23 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void addToPalette() {
-		color_list_add_color_object(gs.getColorList(), getColor(), true);
+		gs.colorList().add(getColor(), true);
 	}
 	void addAllToPalette() {
-		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
+		common::Guard colorListGuard = gs.colorList().changeGuard();
 		ClosestColorsColorNameAssigner nameAssigner(gs);
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
 		colorObject.setColor(color);
 		auto widgetName = identifyColorWidget(targetColor);
 		nameAssigner.assign(colorObject, widgetName);
-		color_list_add_color_object(gs.getColorList(), colorObject, true);
+		gs.colorList().add(colorObject, true);
 		for (int i = 0; i < 9; ++i) {
 			gtk_color_get_color(GTK_COLOR(closestColors[i]), &color);
 			colorObject.setColor(color);
 			widgetName = identifyColorWidget(closestColors[i]);
 			nameAssigner.assign(colorObject, widgetName);
-			color_list_add_color_object(gs.getColorList(), colorObject, true);
+			gs.colorList().add(colorObject, true);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {
@@ -202,7 +202,7 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	}
 	void updatePaletteColorNames() {
 		color_names_clear(paletteColorNames);
-		color_names_load_from_list(paletteColorNames, *gs.getColorList());
+		color_names_load_from_list(paletteColorNames, gs.colorList());
 	}
 	bool isEditable() {
 		return lastFocusedColor == targetColor;

@@ -18,15 +18,15 @@
 
 #ifndef GPICK_UI_LIST_PALETTE_H_
 #define GPICK_UI_LIST_PALETTE_H_
+#include "common/Ref.h"
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorObject;
 struct ColorList;
-GtkWidget* palette_list_new(GlobalState* gs, GtkWidget* count_label);
+GtkWidget* palette_list_new(GlobalState &gs, GtkWidget *countLabel);
 GtkWidget* palette_list_temporary_new(GlobalState &gs, GtkWidget* countLabel, ColorList &colorList);
 void palette_list_add_entry(GtkWidget* widget, ColorObject *color_object, bool allowUpdate);
-GtkWidget* palette_list_preview_new(GlobalState* gs, bool expander, bool expanded, ColorList* color_list, ColorList** out_color_list);
-GtkWidget* palette_list_get_widget(ColorList *color_list);
+GtkWidget* palette_list_preview_new(GlobalState &gs, bool expander, bool expanded, common::Ref<ColorList> &outColorList);
 void palette_list_remove_all_entries(GtkWidget* widget, bool allowUpdate);
 void palette_list_remove_selected_entries(GtkWidget* widget, bool allowUpdate);
 int palette_list_remove_entry(GtkWidget* widget, ColorObject *color_object, bool allowUpdate);

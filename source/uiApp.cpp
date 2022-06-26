@@ -86,7 +86,7 @@ struct AppArgs
 	GtkWidget *secondary_source_widget;
 	GtkWidget *secondary_source_scrolled_viewpoint;
 	GtkWidget *secondary_source_container;
-	GtkWidget *color_list;
+	GtkWidget *colorList;
 	GtkWidget *notebook;
 	GtkWidget *statusbar;
 	GtkWidget *hpaned;
@@ -243,7 +243,7 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args)
 	}
 	std::vector<int> columnWidths;
 	for (size_t i = 0; ; ++i) {
-		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(args->color_list), i);
+		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(args->colorList), i);
 		if (!column)
 			break;
 		columnWidths.push_back(gtk_tree_view_column_get_width(column));
@@ -309,7 +309,7 @@ static void show_dialog_color_dictionaries(GtkWidget *widget, AppArgs *args)
 static void menu_file_new(GtkWidget *widget, AppArgs *args)
 {
 	args->current_filename_set = false;
-	color_list_remove_all(args->gs->getColorList());
+	args->gs->colorList().removeAll();
 	app_update_program_name(args);
 }
 
@@ -324,7 +324,7 @@ int app_save_file(AppArgs *args, const char *filename, const char *filter)
 		current_filename = args->current_filename;
 	}
 	FileType filetype;
-	ImportExport import_export(args->gs->getColorList(), current_filename.c_str(), args->gs);
+	ImportExport import_export(args->gs->colorList(), current_filename.c_str(), args->gs);
 	import_export.fixFileExtension(filter);
 	current_filename = import_export.getFilename();
 	bool return_value = false;
@@ -359,11 +359,11 @@ int app_save_file(AppArgs *args, const char *filename, const char *filter)
 	return 0;
 }
 
-int app_load_file(AppArgs *args, const std::string &filename, ColorList *color_list, bool autoload)
+int app_load_file(AppArgs *args, const std::string &filename, ColorList &colorList, bool autoload)
 {
 	bool imported = false;
 	bool return_value = false;
-	ImportExport import_export(color_list, filename.c_str(), args->gs);
+	ImportExport import_export(colorList, filename.c_str(), args->gs);
 	switch (ImportExport::getFileType(filename.c_str())){
 		case FileType::gpl:
 			return_value = import_export.importGPL();
@@ -400,16 +400,15 @@ int app_load_file(AppArgs *args, const std::string &filename, ColorList *color_l
 }
 int app_load_file(AppArgs *args, const std::string &filename, bool autoload)
 {
-	int r = 0;
-	ColorList *color_list = color_list_new(args->gs->getColorList());
-	if ((r = app_load_file(args, filename, color_list, autoload)) == 0){
-		auto *destination = args->gs->getColorList();
-		common::Guard colorListGuard(color_list_start_changes(destination), color_list_end_changes, destination);
-		color_list_remove_all(destination);
-		color_list_add(destination, color_list, true);
+	int result = 0;
+	ColorList colorList;
+	if ((result = app_load_file(args, filename, colorList, autoload)) == 0){
+		auto &destination = args->gs->colorList();
+		common::Guard colorListGuard = destination.changeGuard();
+		destination.removeAll();
+		destination.add(colorList, true);
 	}
-	color_list_destroy(color_list);
-	return r;
+	return result;
 }
 
 int app_parse_geometry(AppArgs *args, const char *geometry)
@@ -599,50 +598,48 @@ static void menu_file_save(GtkWidget *widget, AppArgs *args)
 	}
 }
 
-static PaletteListCallbackResult color_list_selected(ColorObject* color_object, void *userdata)
+static PaletteListCallbackResult color_list_selected(ColorObject* colorObject, void *userdata)
 {
-	color_list_add_color_object((ColorList *)userdata, color_object, true);
+	reinterpret_cast<ColorList *>(userdata)->add(colorObject, true);
 	return PaletteListCallbackResult::noUpdate;
 }
 
 static void menu_file_export_all(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
-	import_export_dialog.showExport();
+	ImportExportDialog importExportDialog(GTK_WINDOW(args->window), args->gs->colorList(), args->gs);
+	importExportDialog.showExport();
 }
 static void menu_file_import(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
-	import_export_dialog.showImport();
+	ImportExportDialog importExportDialog(GTK_WINDOW(args->window), args->gs->colorList(), args->gs);
+	importExportDialog.showImport();
 }
 static void menu_file_import_text_file(GtkWidget *widget, AppArgs *args)
 {
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), args->gs->getColorList(), args->gs);
-	import_export_dialog.showImportTextFile();
+	ImportExportDialog importExportDialog(GTK_WINDOW(args->window), args->gs->colorList(), args->gs);
+	importExportDialog.showImportTextFile();
 }
-
 static void menu_file_export(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	ColorList *color_list = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, color_list, false);
-	ImportExportDialog import_export_dialog(GTK_WINDOW(args->window), color_list, args->gs);
-	import_export_dialog.showExport();
-	color_list_destroy(color_list);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, false);
+	ImportExportDialog importExportDialog(GTK_WINDOW(args->window), colorList, args->gs);
+	importExportDialog.showExport();
 }
 
-typedef struct FileMenuItems{
+struct FileMenuItems {
 	GtkWidget *export_all;
 	GtkWidget *export_selected;
 	GtkWidget *recent_files;
 	GtkWidget *revert;
-}FileMenuItems;
+};
 
 static void menu_file_activate(GtkWidget *widget, gpointer data)
 {
 	AppArgs* args = (AppArgs*)data;
-	gint32 selected_count = palette_list_get_selected_count(args->color_list);
-	gint32 total_count = palette_list_get_count(args->color_list);
+	gint32 selected_count = palette_list_get_selected_count(args->colorList);
+	gint32 total_count = palette_list_get_count(args->colorList);
 	FileMenuItems *items = (FileMenuItems*) g_object_get_data(G_OBJECT(widget), "items");
 	gtk_widget_set_sensitive(items->export_all, (total_count >= 1));
 	gtk_widget_set_sensitive(items->export_selected, (selected_count >= 1));
@@ -1143,13 +1140,13 @@ static PaletteListCallbackResult color_list_mark_selected(ColorObject* color_obj
 
 static void palette_popup_menu_remove_all(GtkWidget *widget, AppArgs* args)
 {
-	color_list_remove_all(args->gs->getColorList());
+	args->gs->colorList().removeAll();
 }
 
 static void palette_popup_menu_remove_selected(GtkWidget *widget, AppArgs* args)
 {
-	palette_list_foreach_selected(args->color_list, color_list_mark_selected, nullptr, true);
-	color_list_remove_selected(args->gs->getColorList());
+	palette_list_foreach_selected(args->colorList, color_list_mark_selected, nullptr, true);
+	args->gs->colorList().removeSelected();
 }
 
 static PaletteListCallbackResult color_list_clear_names(ColorObject* color_object, void *userdata)
@@ -1160,7 +1157,7 @@ static PaletteListCallbackResult color_list_clear_names(ColorObject* color_objec
 
 static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs* args)
 {
-	palette_list_foreach_selected(args->color_list, color_list_clear_names, nullptr, true);
+	palette_list_foreach_selected(args->colorList, color_list_clear_names, nullptr, true);
 }
 
 typedef struct AutonameState{
@@ -1181,7 +1178,7 @@ static void palette_popup_menu_autoname(GtkWidget *widget, AppArgs* args)
 	AutonameState state;
 	state.color_names = args->gs->getColorNames();
 	state.imprecision_postfix = args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false);
-	palette_list_foreach_selected(args->color_list, color_list_autoname, &state, true);
+	palette_list_foreach_selected(args->colorList, color_list_autoname, &state, true);
 }
 
 typedef struct AutonumberState{
@@ -1223,7 +1220,7 @@ static PaletteListCallbackResult color_list_set_color(ColorObject* color_object,
 static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 	AutonumberState state;
 	int response;
-	uint32_t selected_count = palette_list_get_selected_count(args->color_list);
+	uint32_t selected_count = palette_list_get_selected_count(args->colorList);
 	response = dialog_autonumber_show(GTK_WINDOW(args->window), selected_count, args->gs);
 	if (response == GTK_RESPONSE_OK){
 		auto autonumberOptions = args->gs->settings().getOrCreateMap("gpick.autonumber");
@@ -1232,12 +1229,12 @@ static void palette_popup_menu_autonumber(GtkWidget *widget, AppArgs* args) {
 		state.index = autonumberOptions->getInt32("startindex", 1);
 		state.decreasing = autonumberOptions->getBool("decreasing", true);
 		state.append = autonumberOptions->getBool("append", true);
-		palette_list_foreach_selected(args->color_list, color_list_autonumber, &state, true);
+		palette_list_foreach_selected(args->colorList, color_list_autonumber, &state, true);
 	}
 }
 
 struct ReplaceState {
-	std::list<ColorObject *>::reverse_iterator iter;
+	std::vector<ColorObject *>::reverse_iterator iter;
 };
 static PaletteListCallbackResult color_list_reverse_replace(ColorObject** color_object, void *userdata)
 {
@@ -1248,20 +1245,18 @@ static PaletteListCallbackResult color_list_reverse_replace(ColorObject** color_
 }
 static void palette_popup_menu_reverse(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *colorList = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
 	ReplaceState state;
-	state.iter = colorList->colors.rbegin();
-	palette_list_foreach_selected(args->color_list, color_list_reverse_replace, &state, true);
-	color_list_destroy(colorList);
+	state.iter = colorList.rbegin();
+	palette_list_foreach_selected(args->colorList, color_list_reverse_replace, &state, true);
 }
 
 static void palette_popup_menu_add(GtkWidget *widget, AppArgs* args)
 {
-	ColorObject *new_color_object = nullptr;
-	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, nullptr, true, &new_color_object) == 0){
-		color_list_add_color_object(args->gs->getColorList(), new_color_object, true);
-		new_color_object->release();
+	common::Ref<ColorObject> newColorObject;
+	if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), *args->gs, std::nullopt, true, newColorObject) == 0){
+		args->gs->colorList().add(newColorObject.pointer(), true);
 	}
 }
 static PaletteListCallbackResult color_list_update(ColorObject *colorObject, void *userdata) {
@@ -1269,36 +1264,30 @@ static PaletteListCallbackResult color_list_update(ColorObject *colorObject, voi
 }
 static void palette_popup_menu_edit(GtkWidget *widget, AppArgs* args)
 {
-	auto selectedCount = palette_list_get_selected_count(args->color_list);
+	auto selectedCount = palette_list_get_selected_count(args->colorList);
 	if (selectedCount == 0)
 		return;
 	if (selectedCount == 1) {
-		ColorObject *color_object = palette_list_get_first_selected(args->color_list)->reference(), *new_color_object = nullptr;
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), args->gs, color_object, true, &new_color_object) == 0){
-			color_object->setColor(new_color_object->getColor());
-			color_object->setName(new_color_object->getName());
-			new_color_object->release();
-			palette_list_update_first_selected(args->color_list, false);
+		ColorObject *colorObject = palette_list_get_first_selected(args->colorList)->reference();
+		common::Ref<ColorObject> newColorObject;
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), *args->gs, *colorObject, true, newColorObject) == 0){
+			colorObject->setColor(newColorObject->getColor());
+			colorObject->setName(newColorObject->getName());
+			palette_list_update_first_selected(args->colorList, false);
 		}
-		color_object->release();
+		colorObject->release();
 	} else {
-		ColorList *colorList = color_list_new();
-		palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
-		dialog_edit_show(GTK_WINDOW(args->window), *colorList, *args->gs);
-		color_list_destroy(colorList);
-		palette_list_foreach_selected(args->color_list, color_list_update, nullptr, true);
+		ColorList colorList;
+		palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+		dialog_edit_show(GTK_WINDOW(args->window), colorList, *args->gs);
+		palette_list_foreach_selected(args->colorList, color_list_update, nullptr, true);
 	}
 }
 static void palette_popup_menu_paste(GtkWidget *, AppArgs *args) {
-	auto newColorList = clipboard::getColors(args->gs);
+	auto newColorList = clipboard::getColors(*args->gs);
 	if (!newColorList)
 		return;
-	auto *ourColorList = args->gs->getColorList();
-	common::Guard colorListGuard(color_list_start_changes(ourColorList), color_list_end_changes, ourColorList);
-	for (auto &colorObject: newColorList->colors) {
-		color_list_add_color_object(ourColorList, colorObject, true);
-	}
-	color_list_destroy(newColorList);
+	args->gs->colorList().add(*newColorList, true);
 }
 gint32 palette_popup_menu_mix_list(Color* color, void *userdata)
 {
@@ -1308,38 +1297,34 @@ gint32 palette_popup_menu_mix_list(Color* color, void *userdata)
 
 static void palette_popup_menu_mix(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, color_list, true);
-	dialog_mix_show(GTK_WINDOW(args->window), color_list, args->gs);
-	color_list_destroy(color_list);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+	dialog_mix_show(GTK_WINDOW(args->window), colorList, *args->gs);
 }
 
 static void palette_popup_menu_variations(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, color_list, true);
-	dialog_variations_show(GTK_WINDOW(args->window), color_list, args->gs);
-	color_list_destroy(color_list);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+	dialog_variations_show(GTK_WINDOW(args->window), colorList, *args->gs);
 }
 
 static void palette_popup_menu_generate(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, color_list, true);
-	dialog_generate_show(GTK_WINDOW(args->window), color_list, args->gs);
-	color_list_destroy(color_list);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+	dialog_generate_show(GTK_WINDOW(args->window), colorList, *args->gs);
 }
 
 static void palette_popup_menu_equalize(GtkWidget *widget, AppArgs *args) {
-	ColorList *colorList = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, colorList, true);
-	dialog_equalize_show(GTK_WINDOW(args->window), *colorList, *args->gs);
-	color_list_destroy(colorList);
-	palette_list_foreach_selected(args->color_list, color_list_update, nullptr, true);
+	ColorList colorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+	dialog_equalize_show(GTK_WINDOW(args->window), colorList, *args->gs);
+	palette_list_foreach_selected(args->colorList, color_list_update, nullptr, true);
 }
 
 typedef struct GroupAndSortState{
-	std::list<ColorObject*>::iterator iter;
+	std::vector<ColorObject*>::iterator iter;
 } GroupAndSortState;
 
 static PaletteListCallbackResult color_list_group_and_sort_replace(ColorObject** color_object, void *userdata)
@@ -1352,16 +1337,13 @@ static PaletteListCallbackResult color_list_group_and_sort_replace(ColorObject**
 
 static void palette_popup_menu_group_and_sort(GtkWidget *widget, AppArgs* args)
 {
-	ColorList *color_list = color_list_new();
-	ColorList *sorted_color_list = color_list_new();
-	palette_list_foreach_selected(args->color_list, color_list_selected, color_list, true);
-	if (dialog_sort_show(GTK_WINDOW(args->window), color_list, sorted_color_list, args->gs)){
+	ColorList colorList, sortedColorList;
+	palette_list_foreach_selected(args->colorList, color_list_selected, &colorList, true);
+	if (dialog_sort_show(GTK_WINDOW(args->window), &colorList, &sortedColorList, args->gs)){
 		GroupAndSortState state;
-		state.iter = sorted_color_list->colors.begin();
-		palette_list_foreach_selected(args->color_list, color_list_group_and_sort_replace, &state, true);
+		state.iter = sortedColorList.begin();
+		palette_list_foreach_selected(args->colorList, color_list_group_and_sort_replace, &state, true);
 	}
-	color_list_destroy(color_list);
-	color_list_destroy(sorted_color_list);
 }
 
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event, AppArgs *args)
@@ -1369,10 +1351,10 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton* event
 	auto menu = gtk_menu_new();
 	GtkAccelGroup *accel_group = gtk_accel_group_new();
 	gtk_menu_set_accel_group(GTK_MENU(menu), accel_group);
-	gint32 selected_count = palette_list_get_selected_count(args->color_list);
-	gint32 total_count = palette_list_get_count(args->color_list);
+	gint32 selected_count = palette_list_get_selected_count(args->colorList);
+	gint32 total_count = palette_list_get_count(args->colorList);
 	if (total_count > 0 && selected_count >= 1){
-		palette_list_append_copy_menu(args->color_list, menu);
+		palette_list_append_copy_menu(args->colorList, menu);
 	}else{
 		StandardMenu::appendMenu(menu);
 	}
@@ -1487,9 +1469,9 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 		case GDK_KEY_6:
 		case GDK_KEY_KP_6:
 			{
-				ColorList *color_list = color_list_new();
-				palette_list_forfirst_selected(args->color_list, color_list_selected, color_list, true);
-				if (color_list_get_count(color_list) > 0){
+				ColorList colorList;
+				palette_list_forfirst_selected(args->colorList, color_list_selected, &colorList, true);
+				if (!colorList.empty()){
 					IColorSource *colorSource = args->gs->getCurrentColorSource();
 					uint32_t color_index = 0;
 					switch(keyval)
@@ -1510,18 +1492,17 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 					if (state == GDK_CONTROL_MASK) {
 						auto colorObject = colorSource->getNthColor(color_index);
 						auto color = colorObject.getColor();
-						palette_list_forfirst_selected(args->color_list, color_list_set_color, &color, true);
+						palette_list_forfirst_selected(args->colorList, color_list_set_color, &color, true);
 					} else {
-						colorSource->setNthColor(color_index, **color_list->colors.begin());
+						colorSource->setNthColor(color_index, *colorList.front());
 					}
 				}
-				color_list_destroy(color_list);
 				return true;
 			}
 			return false;
 		case GDK_KEY_c:
 			if (state == GDK_CONTROL_MASK) {
-				clipboard::set(args->color_list, args->gs, Converters::Type::copy);
+				clipboard::set(args->colorList, *args->gs, Converters::Type::copy);
 				return true;
 			} else if (state == GDK_SHIFT_MASK) {
 				palette_popup_menu_clear_names(widget, args);
@@ -1580,38 +1561,6 @@ static gboolean on_palette_list_key_press(GtkWidget *widget, GdkEventKey *event,
 			return false;
 	}
 	return false;
-}
-
-static int color_list_on_insert(ColorList* color_list, ColorObject* color_object, void *userdata) {
-	palette_list_add_entry(((AppArgs*)userdata)->color_list, color_object, !color_list->blocked);
-	return 0;
-}
-static int color_list_on_delete_selected(ColorList* color_list, void *userdata) {
-	palette_list_remove_selected_entries(((AppArgs*)userdata)->color_list, !color_list->blocked);
-	return 0;
-}
-static int color_list_on_delete(ColorList* color_list, ColorObject* color_object, void *userdata) {
-	palette_list_remove_entry(((AppArgs*)userdata)->color_list, color_object, !color_list->blocked);
-	return 0;
-}
-static int color_list_on_update(ColorList* color_list, void *userdata) {
-	palette_list_after_update(((AppArgs*)userdata)->color_list);
-	return 0;
-}
-static int color_list_on_clear(ColorList* color_list, void *userdata) {
-	palette_list_remove_all_entries(((AppArgs*)userdata)->color_list, !color_list->blocked);
-	return 0;
-}
-static PaletteListCallbackResult callback_color_list_on_get_positions(ColorObject* color_object, void *userdata) {
-	auto &position = *reinterpret_cast<size_t *>(userdata);
-	color_object->setPosition(position);
-	++position;
-	return PaletteListCallbackResult::noUpdate;
-}
-static int color_list_on_get_positions(ColorList* color_list, void *userdata) {
-	size_t position = 0;
-	palette_list_foreach(((AppArgs*)userdata)->color_list, callback_color_list_on_get_positions, &position, false);
-	return 0;
 }
 
 int main_show_window(GtkWidget* window, const dynv::Ref &options) {
@@ -1692,18 +1641,6 @@ static void app_initialize_variables(AppArgs *args)
 	args->options = args->gs->settings().getOrCreateMap("gpick.main");
 	registerSources(args->csm);
 }
-
-static void app_initialize_color_list(AppArgs *args)
-{
-	args->gs->getColorList()->onInsert = color_list_on_insert;
-	args->gs->getColorList()->onClear = color_list_on_clear;
-	args->gs->getColorList()->onDeleteSelected = color_list_on_delete_selected;
-	args->gs->getColorList()->onGetPositions = color_list_on_get_positions;
-	args->gs->getColorList()->onDelete = color_list_on_delete;
-	args->gs->getColorList()->onUpdate = color_list_on_update;
-	args->gs->getColorList()->userdata = args;
-}
-
 static void app_initialize_floating_picker(AppArgs *args)
 {
 	args->floatingPicker = floating_picker_new(args->gs);
@@ -1779,7 +1716,6 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value
 			return 0;
 		}
 		app_initialize_variables(args);
-		app_initialize_color_list(args);
 	}
 	g_signal_connect(G_OBJECT(gdk_keymap_get_for_display(gdk_display_get_default())), "keys-changed", G_CALLBACK(detectLatinKeyGroup), args);
 	detectLatinKeyGroup(nullptr, args);
@@ -1853,8 +1789,8 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value
 		gtk_widget_show(widget);
 	}
 	GtkWidget *count_label = gtk_label_new("");
-	widget = palette_list_new(args->gs, count_label);
-	args->color_list = widget;
+	widget = palette_list_new(*args->gs, count_label);
+	args->colorList = widget;
 	auto columnWidths = args->options->getInt32s("column_widths");
 	for (size_t i = 0; ; ++i) {
 		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(widget), i);
@@ -1871,7 +1807,7 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &return_value
 	scrolled_window = gtk_scrolled_window_new (0,0);
 	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(scrolled_window), args->color_list );
+	gtk_container_add(GTK_CONTAINER(scrolled_window), args->colorList );
 	gtk_widget_show(scrolled_window);
 	args->palette = scrolled_window;
 	args->hpaned = hpaned;
@@ -1943,10 +1879,10 @@ static void app_release(AppArgs *args) {
 	floating_picker_free(args->floatingPicker);
 	if (!args->startupOptions.single_color_pick_mode){
 		if (app_is_autoload_enabled(args)){
-			autoSave(args->gs->getColorList());
+			autoSave(args->gs->colorList());
 		}
+		args->gs->colorList().removeAll();
 	}
-	color_list_remove_all(args->gs->getColorList());
 }
 
 static void app_save_recent_file_list(AppArgs *args) {

@@ -205,18 +205,17 @@ static void complete_picking(FloatingPickerArgs *args)
 			if (args->custom_pick_action)
 				args->custom_pick_action(args, c);
 		}else{
-			ColorObject* color_object;
-			color_object = color_list_new_color_object(args->gs->getColorList(), &c);
+			ColorObject colorObject(c);
 			if (args->single_pick_mode){
-				clipboard::set(color_object, args->gs, args->converter);
+				clipboard::set(colorObject, *args->gs, args->converter);
 			}else{
 				if (args->gs->settings().getBool("gpick.picker.sampler.copy_on_release", true)){
-					clipboard::set(color_object, args->gs, args->converter);
+					clipboard::set(colorObject, *args->gs, args->converter);
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_on_release", true)){
-					PickerColorNameAssigner name_assigner(*args->gs);
-					name_assigner.assign(*color_object);
-					color_list_add_color_object(args->gs->getColorList(), color_object, 1);
+					PickerColorNameAssigner nameAssigner(*args->gs);
+					nameAssigner.assign(colorObject);
+					args->gs->colorList().add(colorObject, true);
 				}
 				if (args->gs->settings().getBool("gpick.picker.sampler.add_to_swatch_on_release", true)){
 					args->colorPicker->setCurrentColor();
@@ -225,7 +224,6 @@ static void complete_picking(FloatingPickerArgs *args)
 					args->colorPicker->rotateSwatch();
 				}
 			}
-			color_object->release();
 		}
 	}
 }

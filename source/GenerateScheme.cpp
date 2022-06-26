@@ -41,8 +41,8 @@
 #include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
-
-const int MaxColors = 6;
+namespace {
+const int maxColors = 6;
 const SchemeType types[] = {
 	{ N_("Complementary"), 1, 1, { 180 } },
 	{ N_("Analogous"), 5, 1, { 30 } },
@@ -79,7 +79,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	struct {
 		GtkWidget *widget;
 		float colorHue, hueShift, saturationShift, valueShift, originalHue, originalSaturation, originalValue;
-	} items[MaxColors];
+	} items[maxColors];
 	bool wheelLocked;
 	int colorsVisible;
 	dynv::Ref options;
@@ -106,20 +106,20 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	virtual void deactivate() override {
 		update(true);
 		options->set("wheel_locked", wheelLocked);
-		float hsvShifts[MaxColors * 3];
-		for (uint32_t i = 0; i < MaxColors; ++i) {
+		float hsvShifts[maxColors * 3];
+		for (uint32_t i = 0; i < maxColors; ++i) {
 			hsvShifts[i * 3 + 0] = items[i].hueShift;
 			hsvShifts[i * 3 + 1] = items[i].saturationShift;
 			hsvShifts[i * 3 + 2] = items[i].valueShift;
 		}
-		options->set("hsv_shift", common::Span<float>(hsvShifts, MaxColors * 3));
+		options->set("hsv_shift", common::Span<float>(hsvShifts, maxColors * 3));
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
 	void setTransformationChain() {
 		auto chain = gs.getTransformationChain();
-		for (int i = 0; i < MaxColors; ++i) {
+		for (int i = 0; i < maxColors; ++i) {
 			gtk_color_set_transformation_chain(GTK_COLOR(items[i].widget), chain);
 		}
 	}
@@ -138,17 +138,17 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void addToPalette() {
-		color_list_add_color_object(gs.getColorList(), getColor(), true);
+		gs.colorList().add(getColor(), true);
 	}
 	void addToPalette(GenerateSchemeColorNameAssigner &nameAssigner, Color &color, GtkWidget *widget) {
 		gtk_color_get_color(GTK_COLOR(widget), &color);
 		colorObject.setColor(color);
 		int type = gtk_combo_box_get_active(GTK_COMBO_BOX(generationType));
 		nameAssigner.assign(colorObject, identifyColorWidget(widget), type);
-		color_list_add_color_object(gs.getColorList(), colorObject, true);
+		gs.colorList().add(colorObject, true);
 	}
 	void addAllToPalette() {
-		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
+		common::Guard colorListGuard = gs.colorList().changeGuard();
 		GenerateSchemeColorNameAssigner nameAssigner(gs);
 		Color color;
 		for (int i = 0; i < colorsVisible; ++i)
@@ -185,7 +185,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		update();
 	}
 	virtual void setNthColor(size_t index, const ColorObject &colorObject) override {
-		if (index < 0 || index >= MaxColors)
+		if (index < 0 || index >= maxColors)
 			return;
 		setActiveWidget(items[index].widget);
 		setColor(colorObject);
@@ -201,7 +201,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		return colorObject;
 	}
 	virtual const ColorObject &getNthColor(size_t index) override {
-		if (index < 0 || index >= MaxColors)
+		if (index < 0 || index >= maxColors)
 			return colorObject;
 		Color color;
 		gtk_color_get_color(GTK_COLOR(items[index].widget), &color);
@@ -212,7 +212,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		return colorObject;
 	}
 	int identifyColorWidget(GtkWidget *widget) {
-		for (int i = 0; i < MaxColors; ++i) {
+		for (int i = 0; i < maxColors; ++i) {
 			if (items[i].widget == widget) {
 				return i + 1;
 			}
@@ -238,7 +238,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	}
 	void setActiveWidget(GtkWidget *widget) {
 		lastFocusedColor = widget;
-		for (int i = 0; i < MaxColors; ++i) {
+		for (int i = 0; i < maxColors; ++i) {
 			if (widget == items[i].widget) {
 				gtk_color_wheel_set_selected(GTK_COLOR_WHEEL(colorWheel), i);
 				break;
@@ -257,7 +257,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	static void onResetAll(GtkWidget *, GenerateSchemeArgs *args) {
-		for (int i = 0; i < MaxColors; ++i) {
+		for (int i = 0; i < maxColors; ++i) {
 			args->items[i].hueShift = 0;
 			args->items[i].saturationShift = 0;
 			args->items[i].valueShift = 0;
@@ -341,7 +341,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 			gtk_color_wheel_set_hue(GTK_COLOR_WHEEL(colorWheel), i, math::wrap(hue + items[i].hueShift));
 			gtk_color_wheel_set_saturation(GTK_COLOR_WHEEL(colorWheel), i, hsv.hsv.saturation);
 			gtk_color_wheel_set_value(GTK_COLOR_WHEEL(colorWheel), i, hsv.hsv.value);
-			hueStep = (generate_scheme_get_scheme_type(type)->turn[i % generate_scheme_get_scheme_type(type)->turn_types]) / (360.0f) + chaos * static_cast<float>(random_get_double(gs.getRandom()) - 0.5);
+			hueStep = (generate_scheme_get_scheme_type(type)->turn[i % generate_scheme_get_scheme_type(type)->turnCount]) / (360.0f) + chaos * static_cast<float>(random_get_double(gs.getRandom()) - 0.5);
 			hue = math::wrap(hue + hueStep);
 			hueOffset = math::wrap(hueOffset + hueStep);
 		}
@@ -400,7 +400,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		GenerateSchemeArgs &args;
 		GtkWidget *widget;
 	};
-	std::optional<Editable> editable[MaxColors];
+	std::optional<Editable> editable[maxColors];
 	struct ColorWheelEditable: IEditableColorUI, IDroppableColorUI {
 		ColorWheelEditable(GenerateSchemeArgs &args):
 			args(args) {
@@ -412,7 +412,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		}
 		virtual void setColorAt(const ColorObject &colorObject, int x, int y) override {
 			int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(args.colorWheel), x, y);
-			if (!(index >= 0 && index < MaxColors))
+			if (!(index >= 0 && index < maxColors))
 				return;
 			Color color, hsl;
 			float hue;
@@ -443,7 +443,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 		}
 		virtual bool testDropAt(int x, int y) override {
 			int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(args.colorWheel), x, y);
-			return index >= 0 && index < MaxColors;
+			return index >= 0 && index < maxColors;
 		}
 		virtual void dropEnd(bool move) override {
 		}
@@ -453,6 +453,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	};
 	std::optional<ColorWheelEditable> colorWheelEditable;
 };
+}
 static void showMenu(GtkWidget *widget, GenerateSchemeArgs *args, GdkEventButton *event) {
 	auto menu = gtk_menu_new();
 	auto item = gtk_check_menu_item_new_with_mnemonic(_("_Linked"));
@@ -478,7 +479,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	auto args = std::make_unique<GenerateSchemeArgs>(gs, options);
 	auto hsvShifts = args->options->getFloats("hsv_shift");
 	auto hsvShiftCount = hsvShifts.size() / 3;
-	for (uint32_t i = 0; i < MaxColors; ++i) {
+	for (uint32_t i = 0; i < maxColors; ++i) {
 		if (i < hsvShiftCount) {
 			args->items[i].hueShift = hsvShifts[i * 3 + 0];
 			args->items[i].saturationShift = hsvShifts[i * 3 + 1];
@@ -495,7 +496,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_box_pack_start(GTK_BOX(hbox), vbox, true, true, 5);
 	args->colorPreviews = gtk_table_new(3, 2, false);
 	gtk_box_pack_start(GTK_BOX(vbox), args->colorPreviews, true, true, 0);
-	for (intptr_t i = 0; i < MaxColors; ++i) {
+	for (intptr_t i = 0; i < maxColors; ++i) {
 		widget = gtk_color_new();
 		gtk_color_set_rounded(GTK_COLOR(widget), true);
 		gtk_color_set_roundness(GTK_COLOR(widget), 5);
@@ -562,7 +563,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(GenerateSchemeArgs::onChange), args.get());
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GTK_FILL, GTK_SHRINK, 5, 0);
 	table_y++;
-	args->colorsVisible = MaxColors;
+	args->colorsVisible = maxColors;
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;

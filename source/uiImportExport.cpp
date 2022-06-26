@@ -326,9 +326,9 @@ struct ImportExportDialogOptions
 		import_export_dialog->afterFilterChanged();
 	}
 };
-ImportExportDialog::ImportExportDialog(GtkWindow* parent, ColorList *color_list, GlobalState *gs):
+ImportExportDialog::ImportExportDialog(GtkWindow* parent, ColorList &colorList, GlobalState *gs):
 	m_parent(parent),
-	m_color_list(color_list),
+	m_colorList(colorList),
 	m_gs(gs)
 {
 }
@@ -408,13 +408,12 @@ bool ImportExportDialog::showImport()
 			}else{
 				for (size_t i = 0; i != n_formats; ++i){
 					if (formats[i].type == type){
-						ColorList *color_list = color_list_new(m_color_list);
-						ImportExport import_export(color_list, filename, m_gs);
-						import_export.setConverters(&m_gs->converters());
-						if (import_export.importType(formats[i].type)){
+						ColorList colorList;
+						ImportExport importExport(colorList, filename, m_gs);
+						importExport.setConverters(&m_gs->converters());
+						if (importExport.importType(formats[i].type)){
 							finished = true;
-							common::Guard colorListGuard(color_list_start_changes(m_color_list), color_list_end_changes, m_color_list);
-							color_list_add(m_color_list, color_list, true);
+							m_colorList.add(colorList, true);
 						}else{
 							message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 							gtk_window_set_title(GTK_WINDOW(message), _("Import"));
@@ -423,7 +422,6 @@ bool ImportExportDialog::showImport()
 						}
 						const char *identification = (const char*)g_object_get_data(G_OBJECT(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog))), "identification");
 						m_gs->settings().set("gpick.import.filter", identification);
-						color_list_destroy(color_list);
 						break;
 					}
 				}
@@ -444,38 +442,37 @@ bool ImportExportDialog::showImportTextFile()
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 	auto default_path = m_gs->settings().getString("gpick.import_text_file.path", "");
 	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), default_path.c_str());
-	ImportExportDialogOptions import_export_dialog_options(dialog, m_gs);
-	import_export_dialog_options.createImportTextFileOptions();
+	ImportExportDialogOptions importExportDialogOptions(dialog, m_gs);
+	importExportDialogOptions.createImportTextFileOptions();
 	bool finished = false;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			m_gs->settings().set("gpick.import_text_file.path", path);
 			g_free(path);
-			import_export_dialog_options.saveState();
+			importExportDialogOptions.saveState();
 			GtkWidget* message;
 			gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-			ColorList *color_list = color_list_new(m_color_list);
-			ImportExport import_export(color_list, filename, m_gs);
-			import_export.setConverters(&m_gs->converters());
+			ColorList colorList;
+			ImportExport importExport(colorList, filename, m_gs);
+			importExport.setConverters(&m_gs->converters());
 			text_file_parser::Configuration configuration;
-			configuration.singleLineCComments = import_export_dialog_options.isSingleLineCCommentsEnabled();
-			configuration.multiLineCComments = import_export_dialog_options.isMultiLineCCommentsEnabled();
-			configuration.singleLineHashComments = import_export_dialog_options.isSingleLineHashCommentsEnabled();
-			configuration.cssRgb = import_export_dialog_options.isCssRgbEnabled();
-			configuration.cssRgba = import_export_dialog_options.isCssRgbaEnabled();
-			configuration.cssHsl = import_export_dialog_options.isCssHslEnabled();
-			configuration.cssHsla = import_export_dialog_options.isCssHslaEnabled();
-			configuration.fullHex = import_export_dialog_options.isFullHexEnabled();
-			configuration.shortHex = import_export_dialog_options.isShortHexEnabled();
-			configuration.fullHexWithAlpha = import_export_dialog_options.isFullHexWithAlphaEnabled();
-			configuration.shortHexWithAlpha = import_export_dialog_options.isShortHexWithAlphaEnabled();
-			configuration.intValues = import_export_dialog_options.isIntValuesEnabled();
-			configuration.floatValues = import_export_dialog_options.isFloatValuesEnabled();
-			if (import_export.importTextFile(configuration)){
+			configuration.singleLineCComments = importExportDialogOptions.isSingleLineCCommentsEnabled();
+			configuration.multiLineCComments = importExportDialogOptions.isMultiLineCCommentsEnabled();
+			configuration.singleLineHashComments = importExportDialogOptions.isSingleLineHashCommentsEnabled();
+			configuration.cssRgb = importExportDialogOptions.isCssRgbEnabled();
+			configuration.cssRgba = importExportDialogOptions.isCssRgbaEnabled();
+			configuration.cssHsl = importExportDialogOptions.isCssHslEnabled();
+			configuration.cssHsla = importExportDialogOptions.isCssHslaEnabled();
+			configuration.fullHex = importExportDialogOptions.isFullHexEnabled();
+			configuration.shortHex = importExportDialogOptions.isShortHexEnabled();
+			configuration.fullHexWithAlpha = importExportDialogOptions.isFullHexWithAlphaEnabled();
+			configuration.shortHexWithAlpha = importExportDialogOptions.isShortHexWithAlphaEnabled();
+			configuration.intValues = importExportDialogOptions.isIntValuesEnabled();
+			configuration.floatValues = importExportDialogOptions.isFloatValuesEnabled();
+			if (importExport.importTextFile(configuration)){
 				finished = true;
-				common::Guard colorListGuard(color_list_start_changes(m_color_list), color_list_end_changes, m_color_list);
-				color_list_add(m_color_list, color_list, true);
+				m_colorList.add(colorList, true);
 			}else{
 				message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be imported"));
 				gtk_window_set_title(GTK_WINDOW(message), _("Import text file"));
@@ -483,7 +480,6 @@ bool ImportExportDialog::showImportTextFile()
 				gtk_widget_destroy(message);
 			}
 			g_free(filename);
-			color_list_destroy(color_list);
 		}else break;
 	}
 	gtk_widget_destroy(dialog);
@@ -523,8 +519,8 @@ bool ImportExportDialog::showExport()
 			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(dialog), filter);
 		}
 	}
-	ImportExportDialogOptions import_export_dialog_options(dialog, m_gs);
-	import_export_dialog_options.createImportOptions();
+	ImportExportDialogOptions importExportDialogOptions(dialog, m_gs);
+	importExportDialogOptions.createImportOptions();
 	bool finished = false;
 	while (!finished){
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK){
@@ -532,19 +528,19 @@ bool ImportExportDialog::showExport()
 			gchar *path = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(dialog));
 			m_gs->settings().set("gpick.export.path", path);
 			g_free(path);
-			import_export_dialog_options.saveState();
+			importExportDialogOptions.saveState();
 			string format_name = gtk_file_filter_get_name(gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(dialog)));
 			for (size_t i = 0; i != n_formats; ++i){
 				if (formats[i].name == format_name){
-					ImportExport import_export(m_color_list, filename, m_gs);
-					import_export.fixFileExtension(formats[i].pattern);
-					import_export.setConverter(import_export_dialog_options.getSelectedConverter());
-					string item_size = import_export_dialog_options.getSelectedItemSize();
-					import_export.setItemSize(item_size.c_str());
-					string background = import_export_dialog_options.getSelectedBackground();
-					import_export.setBackground(background.c_str());
-					import_export.setIncludeColorNames(import_export_dialog_options.isIncludeColorNamesEnabled());
-					if (import_export.exportType(formats[i].type)){
+					ImportExport importExport(m_colorList, filename, m_gs);
+					importExport.fixFileExtension(formats[i].pattern);
+					importExport.setConverter(importExportDialogOptions.getSelectedConverter());
+					string item_size = importExportDialogOptions.getSelectedItemSize();
+					importExport.setItemSize(item_size.c_str());
+					string background = importExportDialogOptions.getSelectedBackground();
+					importExport.setBackground(background.c_str());
+					importExport.setIncludeColorNames(importExportDialogOptions.isIncludeColorNamesEnabled());
+					if (importExport.exportType(formats[i].type)){
 						finished = true;
 					}else{
 						GtkWidget* message = gtk_message_dialog_new(GTK_WINDOW(dialog), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be exported"));

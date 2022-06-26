@@ -52,8 +52,7 @@ struct ColorSpaceSamplerArgs
 	bool linearization;
 	AxisOptions axis[NumberOfAxes];
 	GtkWidget *preview_expander;
-	ColorList *color_list;
-	ColorList *preview_color_list;
+	common::Ref<ColorList> previewColorList;
 	dynv::Ref options;
 	GlobalState* gs;
 };
@@ -75,12 +74,8 @@ protected:
 };
 static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 {
-	ColorSpaceSamplerNameAssigner name_assigner(*args->gs);
-	ColorList *color_list;
-	if (preview)
-		color_list = args->preview_color_list;
-	else
-		color_list = args->gs->getColorList();
+	ColorSpaceSamplerNameAssigner nameAssigner(*args->gs);
+	ColorList &colorList = preview ? *args->previewColorList : args->gs->colorList();
 	vector<Color> values;
 	size_t value_count = args->axis[0].samples * args->axis[1].samples * args->axis[2].samples * args->axis[3].samples;
 	if (preview)
@@ -111,7 +106,7 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		}
 	}
 	Color t;
-	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
+	common::Guard colorListGuard = colorList.changeGuard();
 	for (size_t i = 0; i < value_count; i++){
 		if (preview){
 			if (limit <= 0) return;
@@ -145,15 +140,13 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 		if (args->linearization)
 			t.nonLinearRgbInplace();
 		t.normalizeRgbInplace();
-		ColorObject *color_object = color_list_new_color_object(color_list, &t);
-		name_assigner.assign(*color_object);
-		color_list_add_color_object(color_list, color_object, 1);
-		color_object->release();
+		ColorObject colorObject(t);
+		nameAssigner.assign(colorObject);
+		colorList.add(colorObject, true);
 	}
 }
 static void destroy_cb(GtkWidget* widget, ColorSpaceSamplerArgs *args)
 {
-	color_list_destroy(args->preview_color_list);
 	delete args;
 }
 static void get_settings(ColorSpaceSamplerArgs *args)
@@ -186,7 +179,7 @@ static void save_settings(ColorSpaceSamplerArgs *args)
 }
 static void update(GtkWidget *widget, ColorSpaceSamplerArgs *args)
 {
-	color_list_remove_all(args->preview_color_list);
+	args->previewColorList->removeAll();
 	get_settings(args);
 	calc(args, true, 100);
 }
@@ -281,11 +274,9 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 
 		table_y++;
 	}
-	ColorList* preview_color_list = nullptr;
-	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(gs, true, args->options->getBool("show_preview", true), gs->getColorList(), &preview_color_list), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table_m), args->preview_expander = palette_list_preview_new(*gs, true, args->options->getBool("show_preview", true), args->previewColorList), 0, 1, table_m_y, table_m_y+1 , GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_m_y++;
 
-	args->preview_color_list = preview_color_list;
 	get_settings(args);
 	calc(args, true, 100);
 	gtk_widget_show_all(table_m);

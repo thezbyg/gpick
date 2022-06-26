@@ -28,11 +28,11 @@
 #include <gdk/gdkkeysyms.h>
 
 static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColorUI *readonlyColorUI) {
-	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
+	auto &gs = *reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(widget), "gs"));
 	auto state = event->state & gtk_accelerator_get_default_mod_mask();
 	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
 	bool isContainer = containerUI && containerUI->isContainer();
-	switch (getKeyval(*event, gs->latinKeysGroup)) {
+	switch (getKeyval(*event, gs.latinKeysGroup)) {
 	case GDK_KEY_c:
 		if (state == GDK_CONTROL_MASK) {
 			auto *editableColorsUI = dynamic_cast<IEditableColorsUI *>(readonlyColorUI);
@@ -57,15 +57,14 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 	case GDK_KEY_v:
 		if (state == GDK_CONTROL_MASK) {
 			if (isContainer) {
-				auto *colorList = clipboard::getColors(gs);
-				if (colorList == nullptr)
+				auto colorList = clipboard::getColors(gs);
+				if (colorList == common::nullRef)
 					return false;
 				std::vector<ColorObject> colorObjects;
-				for (auto *colorObject: colorList->colors) {
+				for (auto *colorObject: *colorList) {
 					colorObjects.emplace_back(*colorObject);
 				}
 				containerUI->addColors(colorObjects);
-				color_list_destroy(colorList);
 				return true;
 			}
 			auto *editableColorUI = dynamic_cast<IEditableColorUI *>(readonlyColorUI);
@@ -74,7 +73,6 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 			auto colorObject = clipboard::getFirst(gs);
 			if (colorObject) {
 				editableColorUI->setColor(*colorObject);
-				colorObject->release();
 			}
 			return true;
 		}
@@ -101,13 +99,11 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 				containerUI->editColors();
 				return true;
 			}
-			auto *colorObject = readonlyColorUI->getColor().copy();
-			ColorObject *newColorObject;
-			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
+			auto colorObject = readonlyColorUI->getColor();
+			common::Ref<ColorObject> newColorObject;
+			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, newColorObject) == 0) {
 				editableColorUI->setColor(*newColorObject);
-				newColorObject->release();
 			}
-			colorObject->release();
 			return true;
 		}
 		return false;
@@ -115,12 +111,11 @@ static gboolean onKeyPress(GtkWidget *widget, GdkEventKey *event, IReadonlyColor
 		if (state == 0) {
 			if (!isContainer)
 				return false;
-			ColorObject *newColorObject;
-			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, nullptr, true, &newColorObject) == 0) {
+			common::Ref<ColorObject> newColorObject;
+			if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, std::nullopt, true, newColorObject) == 0) {
 				std::vector<ColorObject> colorObjects;
 				colorObjects.emplace_back(*newColorObject);
 				containerUI->addColors(colorObjects);
-				newColorObject->release();
 			}
 			return true;
 		}

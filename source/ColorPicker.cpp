@@ -297,7 +297,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		colorObject.setColor(color);
 	}
 	void addToPalette(ColorObject *colorObject) {
-		color_list_add_color_object(gs.getColorList(), colorObject, true);
+		gs.colorList().add(colorObject, true);
 	}
 	void addToPalette(const Color &color) {
 		auto name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
@@ -308,14 +308,14 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 	void copy(const Color &color) {
 		auto name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
 		auto colorObject = new ColorObject(name, color);
-		clipboard::set(colorObject, &gs, Converters::Type::copy);
+		clipboard::set(colorObject, gs, Converters::Type::copy);
 		colorObject->release();
 	}
 	virtual void addToPalette() override {
 		addToPalette(getActive());
 	}
 	void addAllToPalette() {
-		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
+		common::Guard colorListGuard = gs.colorList().changeGuard();
 		Color color;
 		for (int i = 1; i < 7; ++i) {
 			gtk_swatch_get_color(GTK_SWATCH(swatch_display), i, &color);
@@ -449,16 +449,13 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		if (options->getBool("sampler.add_to_palette", true)) {
 			Color color;
 			gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
-			ColorObject *color_object = color_list_new_color_object(gs.getColorList(), &color);
-			std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
-			color_object->setName(name);
-			color_list_add_color_object(gs.getColorList(), color_object, 1);
-			color_object->release();
+			ColorObject colorObject(color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false)), color);
+			gs.colorList().add(colorObject, true);
 		}
 		if (options->getBool("sampler.copy_to_clipboard", true)) {
 			Color color;
 			gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
-			clipboard::set(color, &gs, Converters::Type::copy);
+			clipboard::set(color, gs, Converters::Type::copy);
 		}
 		if (options->getBool("sampler.rotate_swatch_after_sample", true)) {
 			gtk_swatch_move_active(GTK_SWATCH(swatch_display), 1);

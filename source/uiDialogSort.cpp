@@ -25,7 +25,6 @@
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
-#include "common/Guard.h"
 #include "common/Match.h"
 #include "common/Format.h"
 #include "common/Unused.h"
@@ -43,7 +42,8 @@ static const ChannelDescription virtualChannels[] = {
 };
 struct DialogSortArgs {
 	GtkWidget *dialog, *groupComboBox, *groupSensitivitySpin, *maxGroupsSpin, *sortComboBox, *reverseCheck, *reverseGroupsCheck, *previewExpander;
-	ColorList &selectedColors, &sortedColors, *previewColors;
+	ColorList &selectedColors, &sortedColors;
+	common::Ref<ColorList> previewColors;
 	dynv::Ref options;
 	GlobalState &gs;
 	std::vector<const ChannelDescription *> sortChannelsInComboBox, groupChannelsInComboBox;
@@ -82,12 +82,12 @@ struct DialogSortArgs {
 			if (&i == sortChannel)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(sortComboBox), sortChannelsInComboBox.size() - 1);
 		}
-		g_signal_connect(G_OBJECT(sortComboBox), "changed", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(sortComboBox), "changed", G_CALLBACK(onChange), this);
 
 		grid.nextColumn();
 		grid.add(reverseCheck = gtk_check_button_new_with_mnemonic(_("_Reverse sort order")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseCheck), options->getBool("reverse", false));
-		g_signal_connect(G_OBJECT(reverseCheck), "toggled", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(reverseCheck), "toggled", G_CALLBACK(onChange), this);
 
 		grid.addLabel(_("Group by:"));
 		grid.add(groupComboBox = gtk_combo_box_text_new(), true);
@@ -108,24 +108,24 @@ struct DialogSortArgs {
 			if (&i == groupChannel)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(groupComboBox), groupChannelsInComboBox.size() - 1);
 		}
-		g_signal_connect(G_OBJECT(groupComboBox), "changed", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(groupComboBox), "changed", G_CALLBACK(onChange), this);
 
 		grid.addLabel(_("Maximum number of groups:"));
 		grid.add(maxGroupsSpin = gtk_spin_button_new_with_range(1, 255, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(maxGroupsSpin), options->getInt32("max_groups", 10));
-		g_signal_connect(G_OBJECT(maxGroupsSpin), "value-changed", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(maxGroupsSpin), "value-changed", G_CALLBACK(onChange), this);
 
 		grid.addLabel(_("Grouping sensitivity:"));
 		grid.add(groupSensitivitySpin = gtk_spin_button_new_with_range(0, 100, 0.1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(groupSensitivitySpin), options->getFloat("group_sensitivity", 50));
-		g_signal_connect(G_OBJECT(groupSensitivitySpin), "value-changed", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(groupSensitivitySpin), "value-changed", G_CALLBACK(onChange), this);
 
 		grid.nextColumn();
 		grid.add(reverseGroupsCheck = gtk_check_button_new_with_mnemonic(_("_Reverse group order")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseGroupsCheck), options->getBool("reverse_groups", false));
-		g_signal_connect(G_OBJECT(reverseGroupsCheck), "toggled", G_CALLBACK(DialogSortArgs::onChange), this);
+		g_signal_connect(G_OBJECT(reverseGroupsCheck), "toggled", G_CALLBACK(onChange), this);
 
-		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColors), true, 2, true);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColors), true, 2, true);
 		update(true);
 		setDialogContent(dialog, grid);
 	}
@@ -136,7 +136,6 @@ struct DialogSortArgs {
 		options->set("window.height", height);
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
 		gtk_widget_destroy(dialog);
-		color_list_destroy(previewColors);
 	}
 	bool run() {
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -165,16 +164,16 @@ struct DialogSortArgs {
 			options->set("reverse", reverse);
 			options->set("reverse_groups", reverseGroups);
 		} else {
-			color_list_remove_all(previewColors);
+			previewColors->removeAll();
 			enableGroupInputs(groupChannel != &channelNone);
 		}
 		ColorList &colorList = preview ? *previewColors : sortedColors;
 		using ColorWithProperties = std::tuple<float, float, ColorObject *>;
 		std::vector<ColorWithProperties> colors;
-		colors.reserve(selectedColors.colors.size());
+		colors.reserve(selectedColors.size());
 		if (maxGroups == 1 || groupChannel == &channelNone) {
 			auto sortConvertTo = sortChannel->useConvertTo() ? nullptr : colorSpace(sortChannel->colorSpace).convertTo;
-			for (auto *colorObject: selectedColors.colors) {
+			for (auto *colorObject: selectedColors) {
 				Color color = colorObject->getColor();
 				float sortValue = sortConvertTo ? (std::invoke(sortConvertTo, color).data[sortChannel->index] - sortChannel->min) / (sortChannel->max - sortChannel->min) : sortChannel->convertTo(color);
 				colors.emplace_back(0, sortValue, colorObject);
@@ -188,7 +187,7 @@ struct DialogSortArgs {
 		} else {
 			math::BinaryTreeQuantization<float> tree;
 			auto groupConvertTo = groupChannel->useConvertTo() ? nullptr : colorSpace(groupChannel->colorSpace).convertTo;
-			for (auto *colorObject: selectedColors.colors) {
+			for (auto *colorObject: selectedColors) {
 				Color color = colorObject->getColor();
 				float value = groupConvertTo ? (std::invoke(groupConvertTo, color).data[groupChannel->index] - groupChannel->min) / (groupChannel->max - groupChannel->min) : groupChannel->convertTo(color);
 				tree.add(value);
@@ -196,7 +195,7 @@ struct DialogSortArgs {
 			tree.reduce(maxGroups);
 			tree.reduceByMinDistance(groupSensitivity / 100.0f);
 			auto sortConvertTo = sortChannel->useConvertTo() ? nullptr : colorSpace(sortChannel->colorSpace).convertTo;
-			for (auto *colorObject: selectedColors.colors) {
+			for (auto *colorObject: selectedColors) {
 				Color color = colorObject->getColor();
 				float groupValue = tree.find(groupConvertTo ? (std::invoke(groupConvertTo, color).data[groupChannel->index] - groupChannel->min) / (groupChannel->max - groupChannel->min) : groupChannel->convertTo(color));
 				float sortValue = sortConvertTo ? (std::invoke(sortConvertTo, color).data[sortChannel->index] - sortChannel->min) / (sortChannel->max - sortChannel->min) : sortChannel->convertTo(color);
@@ -212,10 +211,10 @@ struct DialogSortArgs {
 				return (aSort < bSort) ^ reverse;
 			});
 		}
-		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
+		common::Guard colorListGuard = colorList.changeGuard();
 		for (auto [group, sort, colorObject]: colors) {
 			common::maybeUnused(group, sort);
-			color_list_add_color_object(&colorList, colorObject, true);
+			colorList.add(colorObject, true);
 		}
 	}
 	static void onChange(GtkWidget *, DialogSortArgs *args) {

@@ -25,7 +25,7 @@ std::ostream &operator<<(std::ostream &stream, const Color &color) {
 namespace dynv {
 std::ostream &operator<<(std::ostream &stream, const dynv::Ref &map) {
 	if (map)
-		stream << &*map;
+		stream << map.pointer();
 	else
 		stream << "-";
 	return stream;

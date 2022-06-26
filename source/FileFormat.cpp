@@ -95,7 +95,7 @@ static bool read(std::istream &stream, std::string &value) {
 	stream.read(reinterpret_cast<char *>(&value.front()), length);
 	return stream.good();
 }
-common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* colorList) {
+common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList &colorList) {
 	using Result = common::ResultVoid<ErrorCode>;
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open())
@@ -181,12 +181,12 @@ common::ResultVoid<ErrorCode> paletteFileLoad(const char* filename, ColorList* c
 		for (size_t i = 0, end = std::min(colorObjects.size(), positions.size()); i < end; i++) {
 			colorObjects[i]->setPosition(positions[i]);
 		}
-		std::sort(colorObjects.begin(), colorObjects.end(), colorObjectPositionSort);
+		std::stable_sort(colorObjects.begin(), colorObjects.end(), colorObjectPositionSort);
 	}
 	for (auto colorObject: colorObjects) {
 		bool visible = hasPositions ? colorObject->getPosition() != ~(size_t)0 : true;
 		colorObject->setVisible(visible);
-		color_list_add_color_object(colorList, colorObject, visible);
+		colorList.add(colorObject, visible);
 	}
 	file.close();
 	return (file.good() || file.eof()) ? Result() : Result(ErrorCode::readFailed);
@@ -209,10 +209,8 @@ static bool write(std::ostream &stream, const std::string &value) {
 		stream.write(reinterpret_cast<const char *>(&value.front()), value.length());
 	return stream.good();
 }
-common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList *colorList) {
+common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList &colorList) {
 	using Result = common::ResultVoid<ErrorCode>;
-	if (!colorList)
-		return Result(ErrorCode::invalidArguments);
 	ChunkHeader header;
 	header.prepareWrite(std::string(CHUNK_TYPE_VERSION) + " " + version::versionFull, 4);
 	if (!write(stream, header))
@@ -240,10 +238,10 @@ common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList 
 	auto colorListPosition = stream.tellp();
 	if (!write(stream, header)) // write temporary chunk header
 		return Result(ErrorCode::writeFailed);
-	color_list_get_positions(colorList);
-	colorList->colors.sort(colorObjectPositionSort);
+	colorList.getPositions();
+	std::stable_sort(colorList.begin(), colorList.end(), colorObjectPositionSort);
 	dynv::Map options;
-	for (auto colorObject: colorList->colors) {
+	for (auto *colorObject: colorList) {
 		options.set("name", colorObject->getName());
 		options.set("color", colorObject->getColor());
 		if (!options.serialize(stream, typeMap))
@@ -256,9 +254,9 @@ common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList 
 		return Result(ErrorCode::writeFailed);
 	return Result();
 }
-common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList* colorList) {
+common::ResultVoid<ErrorCode> paletteFileSave(const char* filename, ColorList &colorList) {
 	using Result = common::ResultVoid<ErrorCode>;
-	if (!filename || !colorList)
+	if (!filename)
 		return Result(ErrorCode::invalidArguments);
 	std::ofstream file(filename, std::ios::binary);
 	if (!file.is_open())

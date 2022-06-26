@@ -21,10 +21,9 @@
 struct ColorSourceManager;
 struct SchemeType {
 	const char *name;
-	int colors;
-	int turn_types;
+	int colors, turnCount;
 	float turn[4];
 };
 void registerGenerateScheme(ColorSourceManager &csm);
-const SchemeType* generate_scheme_get_scheme_type(size_t index);
+const SchemeType *generate_scheme_get_scheme_type(size_t index);
 size_t generate_scheme_get_n_scheme_types();

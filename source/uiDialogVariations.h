@@ -21,5 +21,5 @@
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorList;
-void dialog_variations_show(GtkWindow* parent, ColorList *selected_color_list, GlobalState *gs);
+void dialog_variations_show(GtkWindow* parent, ColorList &selectedColorList, GlobalState &gs);
 #endif /* GPICK_UI_DIALOG_VARIATIONS_H_ */

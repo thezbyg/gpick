@@ -26,7 +26,6 @@
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "I18N.h"
-#include "common/Guard.h"
 #include "common/Match.h"
 #include "math/Algorithms.h"
 #include <vector>
@@ -52,7 +51,7 @@ struct DialogEqualizeArgs {
 	ColorList &selectedColorList;
 	GlobalState &gs;
 	dynv::Ref options;
-	ColorList *previewColorList;
+	common::Ref<ColorList> previewColorList;
 	const ColorSpaceDescription *colorSpace;
 	const ChannelDescription *channel;
 	const TypeDescription *type;
@@ -96,7 +95,7 @@ struct DialogEqualizeArgs {
 		grid.add(strengthSpinButton = gtk_spin_button_new_with_range(0, 100, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(strengthSpinButton), options->getFloat("strength", 1) * 100);
 		g_signal_connect(G_OBJECT(strengthSpinButton), "value-changed", G_CALLBACK(DialogEqualizeArgs::onStrengthUpdate), this);
-		grid.add(previewExpander = palette_list_preview_new(&gs, true, options->getBool("show_preview", true), gs.getColorList(), &previewColorList), true, 2, true);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
 		update(true);
 		setDialogContent(dialog, grid);
 	}
@@ -107,7 +106,6 @@ struct DialogEqualizeArgs {
 		options->set("window.height", height);
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
 		gtk_widget_destroy(dialog);
-		color_list_destroy(previewColorList);
 	}
 	void run() {
 		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
@@ -120,19 +118,19 @@ struct DialogEqualizeArgs {
 	}
 	void update(bool preview) {
 		if (preview)
-			color_list_remove_all(previewColorList);
+			previewColorList->removeAll();
 		colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
 		channel = channelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(channelComboBox))];
 		type = &types[gtk_combo_box_get_active(GTK_COMBO_BOX(typeComboBox))];
 		float strength = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(strengthSpinButton)) / 100);
-		ColorList &colorList = preview ? *previewColorList : *gs.getColorList();
-		common::Guard colorListGuard(color_list_start_changes(&colorList), color_list_end_changes, &colorList);
+		ColorList &colorList = preview ? *previewColorList : gs.colorList();
+		common::Guard colorListGuard = colorList.changeGuard();
 		size_t count = 0;
 		bool first = true;
 		float commonValue = 0;
-		for (auto i = selectedColorList.colors.begin(); i != selectedColorList.colors.end(); ++i) {
+		for (auto *colorObject: selectedColorList) {
 			++count;
-			Color color = (*i)->getColor();
+			Color color = colorObject->getColor();
 			float value = std::invoke(colorSpace->convertTo, color).data[channel->index];
 			if (first) {
 				commonValue = value;
@@ -162,8 +160,8 @@ struct DialogEqualizeArgs {
 		case Type::maximum:
 			break;
 		}
-		for (auto i = selectedColorList.colors.begin(); i != selectedColorList.colors.end(); ++i) {
-			Color color = (*i)->getColor();
+		for (auto *colorObject: selectedColorList) {
+			Color color = colorObject->getColor();
 			float alpha = color.alpha;
 			color = std::invoke(colorSpace->convertTo, color);
 			float value = color.data[channel->index];
@@ -174,12 +172,9 @@ struct DialogEqualizeArgs {
 				color.alpha = alpha;
 			}
 			if (preview) {
-				ColorObject *colorObject = color_list_new_color_object(&colorList, &color);
-				colorObject->setName((*i)->getName());
-				color_list_add_color_object(&colorList, colorObject, 1);
-				colorObject->release();
+				colorList.add(ColorObject(colorObject->getName(), color), true);
 			} else {
-				(*i)->setColor(color);
+				colorObject->setColor(color);
 			}
 		}
 	}

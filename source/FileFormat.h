@@ -22,7 +22,7 @@
 #include "ErrorCode.h"
 #include <iosfwd>
 struct ColorList;
-common::ResultVoid<ErrorCode> paletteFileSave(const char *filename, ColorList *colorList);
-common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList *colorList);
-common::ResultVoid<ErrorCode> paletteFileLoad(const char *filename, ColorList *colorList);
+common::ResultVoid<ErrorCode> paletteFileSave(const char *filename, ColorList &colorList);
+common::ResultVoid<ErrorCode> paletteStreamSave(std::ostream &stream, ColorList &colorList);
+common::ResultVoid<ErrorCode> paletteFileLoad(const char *filename, ColorList &colorList);
 #endif /* GPICK_FILE_FORMAT_H_ */

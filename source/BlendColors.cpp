@@ -79,7 +79,7 @@ private:
 };
 struct BlendColorsArgs: public IColorSource {
 	GtkWidget *main, *mixType, *stepsSpinButton1, *stepsSpinButton2, *startColor, *middleColor, *endColor, *lastFocusedColor;
-	ColorList *previewColorList;
+	common::Ref<ColorList> previewColorList;
 	dynv::Ref options;
 	GlobalState &gs;
 	BlendColorsArgs(GlobalState &gs, const dynv::Ref &options):
@@ -103,7 +103,6 @@ struct BlendColorsArgs: public IColorSource {
 		options->set("middle_color", color);
 		gtk_color_get_color(GTK_COLOR(endColor), &color);
 		options->set("end_color", color);
-		color_list_destroy(previewColorList);
 		gtk_widget_destroy(main);
 	}
 	virtual std::string_view name() const override {
@@ -120,11 +119,11 @@ struct BlendColorsArgs: public IColorSource {
 	void add(const Color &color, int step, BlendColorNameAssigner &nameAssigner) {
 		colorObject.setColor(color);
 		nameAssigner.assign(colorObject, step);
-		color_list_add_color_object(previewColorList, colorObject, true);
+		previewColorList->add(colorObject, true);
 	}
 	void addToPalette() {
 		colorObject = getColor();
-		color_list_add_color_object(gs.getColorList(), colorObject, true);
+		gs.colorList().add(colorObject, true);
 	}
 	virtual const ColorObject &getColor() override {
 		Color color;
@@ -171,7 +170,7 @@ struct BlendColorsArgs: public IColorSource {
 		int type = gtk_combo_box_get_active(GTK_COMBO_BOX(mixType));
 		Color r, a, b;
 		BlendColorNameAssigner nameAssigner(gs);
-		color_list_remove_all(previewColorList);
+		previewColorList->removeAll();
 		for (int stage = 0; stage < 2; stage++) {
 			int steps;
 			if (stage == 0) {
@@ -325,10 +324,8 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	table_y++;
 	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(BlendColorsArgs::onChange), args.get());
 	table_y = 3;
-	ColorList *previewColorList = nullptr;
-	gtk_table_attach(GTK_TABLE(table), palette_list_preview_new(&gs, false, false, gs.getColorList(), &previewColorList), 0, 5, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), palette_list_preview_new(gs, false, false, args->previewColorList), 0, 5, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
 	table_y++;
-	args->previewColorList = previewColorList;
 	args->update();
 	gtk_widget_show_all(table);
 	args->main = table;

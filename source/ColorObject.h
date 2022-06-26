@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,23 +16,22 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_OBJECT_H_
-#define GPICK_COLOR_OBJECT_H_
+#pragma once
 #include "Color.h"
+#include "common/Ref.h"
 #include <string>
-struct ColorObject
-{
+#include <string_view>
+struct ColorObject: public common::Ref<ColorObject>::Counter {
 	ColorObject();
-	ColorObject(const char *name, const Color &color);
 	ColorObject(const Color &color);
-	ColorObject(const std::string &name, const Color &color);
-	ColorObject *reference();
-	void release();
+	ColorObject(std::string_view name, const Color &color);
+	ColorObject(const ColorObject &colorObject);
+	ColorObject &operator=(const ColorObject &colorObject);
 	const Color &getColor() const;
 	void setColor(const Color &color);
 	const std::string &getName() const;
 	void setName(const std::string &name);
-	ColorObject* copy() const;
+	[[nodiscard]] common::Ref<ColorObject> copy() const;
 	bool isSelected() const;
 	bool isVisited() const;
 	size_t getPosition() const;
@@ -41,18 +40,14 @@ struct ColorObject
 	void resetPosition();
 	void setSelected(bool selected);
 	void setVisited(bool visited);
-	size_t getReferenceCount() const;
 	void setVisible(bool visible);
 	bool isVisible() const;
-	private:
-	size_t m_refcnt;
+private:
 	std::string m_name;
 	Color m_color;
 	size_t m_position;
-	bool m_position_set;
+	bool m_positionSet;
 	bool m_selected;
 	bool m_visited;
 	bool m_visible;
 };
-
-#endif /* GPICK_COLOR_OBJECT_H_ */

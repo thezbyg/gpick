@@ -28,6 +28,7 @@
 #include "parser/TextFile.h"
 #include "common/Guard.h"
 #include <sstream>
+#include <vector>
 using namespace std::string_literals;
 
 struct TextParserDialog: public ToolColorNameAssigner {
@@ -66,12 +67,12 @@ struct TextParserDialog: public ToolColorNameAssigner {
 		bool failed() const {
 			return m_failed;
 		}
-		const std::list<Color> &colors() const {
+		const std::vector<Color> &colors() const {
 			return m_colors;
 		}
 	private:
 		std::stringstream m_text;
-		std::list<Color> m_colors;
+		std::vector<Color> m_colors;
 		bool m_failed;
 	};
 private:
@@ -79,7 +80,7 @@ private:
 	GtkWidget *m_dialog, *m_textView;
 	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_short_hex_with_alpha, *m_full_hex_with_alpha, *m_float_values, *m_int_values, *m_css_hsl, *m_css_hsla;
 	GtkWidget *m_preview_expander;
-	ColorList *m_preview_color_list;
+	common::Ref<ColorList> m_previewColorList;
 	GlobalState *m_gs;
 	size_t m_index;
 	dynv::Ref m_options;
@@ -99,7 +100,7 @@ private:
 	void saveSettings();
 	void preview();
 	void apply();
-	bool parse(ColorList *color_list);
+	bool parse(ColorList &colorList);
 	static void onDestroy(GtkWidget *widget, TextParserDialog *dialog);
 	static void onResponse(GtkWidget *widget, gint response_id, TextParserDialog *dialog);
 	static void onChange(GtkWidget *widget, TextParserDialog *dialog);
@@ -153,7 +154,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	g_signal_connect(G_OBJECT(m_int_values), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_float_values), "toggled", G_CALLBACK(onChange), this);
 	gtk_widget_show_all(table);
-	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(m_gs, true, m_options->getBool("show_preview", true), m_gs->getColorList(), &m_preview_color_list), 0, 11, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
+	gtk_table_attach(GTK_TABLE(table), m_preview_expander = palette_list_preview_new(*m_gs, true, m_options->getBool("show_preview", true), m_previewColorList), 0, 11, y, y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL), 5, 5);
 	preview();
 	gtk_widget_show_all(table);
 	setDialogContent(dialog, table);
@@ -161,7 +162,6 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(onResponse), this);
 }
 TextParserDialog::~TextParserDialog() {
-	color_list_destroy(m_preview_color_list);
 }
 bool TextParserDialog::show() {
 	gtk_widget_show(m_dialog);
@@ -170,7 +170,7 @@ bool TextParserDialog::show() {
 void TextParserDialog::onDestroy(GtkWidget *widget, TextParserDialog *dialog) {
 	delete dialog;
 }
-bool TextParserDialog::parse(ColorList *color_list) {
+bool TextParserDialog::parse(ColorList &colorList) {
 	text_file_parser::Configuration configuration;
 	configuration.singleLineCComments = isSingleLineCCommentsEnabled();
 	configuration.multiLineCComments = isMultiLineCCommentsEnabled();
@@ -197,12 +197,11 @@ bool TextParserDialog::parse(ColorList *color_list) {
 		return false;
 	}
 	m_index = 0;
-	common::Guard colorListGuard(color_list_start_changes(color_list), color_list_end_changes, color_list);
+	common::Guard colorListGuard = colorList.changeGuard();
 	for (auto color: textParser.colors()) {
-		auto colorObject = new ColorObject("", color);
-		ToolColorNameAssigner::assign(*colorObject);
-		color_list_add_color_object(color_list, colorObject, true);
-		colorObject->release();
+		ColorObject colorObject(color);
+		ToolColorNameAssigner::assign(colorObject);
+		colorList.add(colorObject, true);
 		m_index++;
 	}
 	return true;
@@ -211,11 +210,11 @@ void TextParserDialog::onChange(GtkWidget *widget, TextParserDialog *dialog) {
 	dialog->preview();
 }
 void TextParserDialog::preview() {
-	color_list_remove_all(m_preview_color_list);
-	parse(m_preview_color_list);
+	m_previewColorList->removeAll();
+	parse(*m_previewColorList);
 }
 void TextParserDialog::apply() {
-	parse(m_gs->getColorList());
+	parse(m_gs->colorList());
 }
 std::string TextParserDialog::getToolSpecificName(const ColorObject &colorObject) {
 	return _("Parsed text color") + " #"s + std::to_string(m_index);

@@ -34,13 +34,13 @@
 #include <map>
 
 struct CopyMenuItemState {
-	CopyMenuItemState(Converter *converter, const ColorObject &colorObject, GlobalState *gs):
+	CopyMenuItemState(Converter *converter, const ColorObject &colorObject, GlobalState &gs):
 		m_converter(converter),
 		m_data(colorObject),
 		m_gs(gs),
 		m_recursion(false) {
 	}
-	CopyMenuItemState(Converter *converter, IReadonlyColorUI *interface, GlobalState *gs):
+	CopyMenuItemState(Converter *converter, IReadonlyColorUI *interface, GlobalState &gs):
 		m_converter(converter),
 		m_data(interface),
 		m_gs(gs),
@@ -78,7 +78,7 @@ struct CopyMenuItemState {
 private:
 	Converter *m_converter;
 	std::variant<ColorObject, IReadonlyColorUI *> m_data;
-	GlobalState *m_gs;
+	GlobalState &m_gs;
 	bool m_recursion;
 };
 GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, GlobalState *gs, bool includeName) {
@@ -92,7 +92,7 @@ GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, GlobalState *gs
 		textLine += colorObject.getName();
 	}
 	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
-	auto state = new CopyMenuItemState(converter, colorObject, gs);
+	auto state = new CopyMenuItemState(converter, colorObject, *gs);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
 	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
 	return item;
@@ -101,7 +101,7 @@ GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, Converter *conv
 	ConverterSerializePosition position;
 	auto textLine = converter->serialize(colorObject, position);
 	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
-	auto state = new CopyMenuItemState(converter, colorObject, gs);
+	auto state = new CopyMenuItemState(converter, colorObject, *gs);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
 	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
 	return item;
@@ -110,7 +110,7 @@ GtkWidget *StandardMenu::newItem(const ColorObject &colorObject, IReadonlyColorU
 	ConverterSerializePosition position;
 	auto textLine = converter->serialize(colorObject, position);
 	auto item = newMenuItem(textLine.c_str(), GTK_STOCK_COPY);
-	auto state = new CopyMenuItemState(converter, interface, gs);
+	auto state = new CopyMenuItemState(converter, interface, *gs);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(&CopyMenuItemState::onActivate), state);
 	g_object_set_data_full(G_OBJECT(item), "item_data", state, (GDestroyNotify)&CopyMenuItemState::onReleaseState);
 	return item;
@@ -135,7 +135,7 @@ GtkWidget *StandardMenu::newNearestColorsMenu(const ColorObject &colorObject, Gl
 	GtkWidget *menu = gtk_menu_new();
 	std::multimap<float, ColorObject *> colorDistances;
 	Color sourceColor = colorObject.getColor().rgbToLabD50();
-	for (auto &colorObject: gs->getColorList()->colors) {
+	for (auto *colorObject: gs->colorList()) {
 		Color targetColor = colorObject->getColor().rgbToLabD50();
 		colorDistances.insert(std::pair<float, ColorObject *>(Color::distanceLch(sourceColor, targetColor), colorObject));
 	}
@@ -218,15 +218,14 @@ static void onEditableColorAddAll(GtkWidget *widget, IReadonlyColorUI *readonlyC
 	dynamic_cast<IReadonlyColorsUI *>(readonlyColorUI)->addAllToPalette();
 }
 static void onEditableColorAddNew(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
-	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
+	auto &gs = *reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
 	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
 	if (containerUI && containerUI->isContainer()) {
-		ColorObject *newColorObject;
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, nullptr, true, &newColorObject) == 0) {
+		common::Ref<ColorObject> newColorObject;
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, std::nullopt, true, newColorObject) == 0) {
 			std::vector<ColorObject> colorObjects;
 			colorObjects.emplace_back(*newColorObject);
 			containerUI->addColors(colorObjects);
-			newColorObject->release();
 		}
 	}
 }
@@ -244,45 +243,41 @@ static void onEditableColorRemoveAll(GtkWidget *widget, IReadonlyColorUI *readon
 }
 static void onEditableColorEdit(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *colorObject = reinterpret_cast<ColorObject *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "color"));
-	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
-	ColorObject *newColorObject;
+	auto &gs = *reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
+	common::Ref<ColorObject> newColorObject;
 	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
 	if (containerUI && containerUI->isContainer()) {
 		containerUI->editColors();
 		return;
 	}
 	if (colorObject) {
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, &newColorObject) == 0) {
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, *colorObject, false, newColorObject) == 0) {
 			dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*newColorObject);
-			newColorObject->release();
 		}
 	} else {
 		auto colorObject = readonlyColorUI->getColor();
-		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, &colorObject, false, &newColorObject) == 0) {
+		if (dialog_color_input_show(GTK_WINDOW(gtk_widget_get_toplevel(widget)), gs, colorObject, false, newColorObject) == 0) {
 			dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*newColorObject);
-			newColorObject->release();
 		}
 	}
 }
 static void onEditableColorPaste(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
-	auto *gs = reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
+	auto &gs = *reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
 	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
 	if (containerUI && containerUI->isContainer()) {
-		auto *colorList = clipboard::getColors(gs);
-		if (colorList == nullptr)
+		auto colorList = clipboard::getColors(gs);
+		if (colorList == common::nullRef)
 			return;
 		std::vector<ColorObject> colorObjects;
-		for (auto *colorObject: colorList->colors) {
+		for (auto *colorObject: *colorList) {
 			colorObjects.emplace_back(*colorObject);
 		}
 		containerUI->addColors(colorObjects);
-		color_list_destroy(colorList);
 		return;
 	}
 	auto colorObject = clipboard::getFirst(gs);
 	if (colorObject) {
 		dynamic_cast<IEditableColorUI *>(readonlyColorUI)->setColor(*colorObject);
-		colorObject->release();
 	}
 }
 static void releaseColorObject(ColorObject *colorObject) {

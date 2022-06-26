@@ -19,5 +19,5 @@
 #ifndef GPICK_AUTO_SAVE_H_
 #define GPICK_AUTO_SAVE_H_
 struct ColorList;
-void autoSave(ColorList *colorList);
+void autoSave(ColorList &colorList);
 #endif /* GPICK_AUTO_SAVE_H_ */

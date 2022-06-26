@@ -36,12 +36,13 @@
 #include "lua/Extensions.h"
 #include "lua/Callbacks.h"
 #include <filesystem>
-#include <stdlib.h>
+#include <cstdlib>
 #include <glib/gstdio.h>
 #include <lualib.h>
 #include <lauxlib.h>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 namespace {
 struct ConverterOptions: public Converter::Options, public IEventHandler {
 	ConverterOptions(const dynv::Map &settings):
@@ -76,7 +77,7 @@ struct GlobalState::Impl {
 	ColorNames *m_colorNames;
 	Sampler *m_sampler;
 	ScreenReader *m_screenReader;
-	ColorList *m_colorList;
+	common::Ref<ColorList> m_colorList;
 	dynv::Map m_settings;
 	lua::Script m_script;
 	Random *m_random;
@@ -93,7 +94,6 @@ struct GlobalState::Impl {
 		m_colorNames(nullptr),
 		m_sampler(nullptr),
 		m_screenReader(nullptr),
-		m_colorList(nullptr),
 		m_random(nullptr),
 		m_transformationChain(nullptr),
 		m_statusBar(nullptr),
@@ -104,8 +104,6 @@ struct GlobalState::Impl {
 		m_eventBus.unsubscribe(m_converterOptions);
 		if (m_transformationChain != nullptr)
 			delete m_transformationChain;
-		if (m_colorList != nullptr)
-			color_list_destroy(m_colorList);
 		if (m_random != nullptr)
 			random_destroy(m_random);
 		if (m_colorNames != nullptr)
@@ -171,11 +169,11 @@ struct GlobalState::Impl {
 		random_seed(m_random, &seed_value);
 		return true;
 	}
-	bool createColorList() {
-		if (m_colorList != nullptr) return false;
-		//create color list / callbacks must be defined elsewhere
-		m_colorList = color_list_new();
-		return true;
+	ColorList &initializeColorList(IPalette &palette) {
+		if (m_colorList)
+			throw std::logic_error("color list already initialized");
+		m_colorList = ColorList::newList(palette);
+		return *m_colorList;
 	}
 	bool initializeLua() {
 		lua_State *L = m_script;
@@ -259,7 +257,6 @@ struct GlobalState::Impl {
 		initializeRandomGenerator();
 		loadSettings();
 		loadColorNames();
-		createColorList();
 		initializeConverters();
 		initializeLua();
 		loadConverters();
@@ -291,8 +288,13 @@ Sampler *GlobalState::getSampler() {
 ScreenReader *GlobalState::getScreenReader() {
 	return m_impl->m_screenReader;
 }
-ColorList *GlobalState::getColorList() {
-	return m_impl->m_colorList;
+ColorList &GlobalState::colorList() {
+	if (!m_impl->m_colorList)
+		throw std::logic_error("color list not initialized");
+	return *m_impl->m_colorList;
+}
+ColorList &GlobalState::initializeColorList(IPalette &palette) {
+	return m_impl->initializeColorList(palette);
 }
 dynv::Map &GlobalState::settings() {
 	return m_impl->m_settings;

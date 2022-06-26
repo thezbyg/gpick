@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,58 +16,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_GLOBAL_STATE_H_
-#define GPICK_GLOBAL_STATE_H_
-#include "dynv/MapFwd.h"
-#include <memory>
-#include <optional>
-#include <cstdint>
-struct ColorNames;
-struct Sampler;
-struct ScreenReader;
+#pragma once
 struct ColorList;
-struct Random;
-struct Converters;
-struct IColorSource;
-struct EventBus;
-struct IPalette;
-typedef struct _GtkWidget GtkWidget;
-namespace layout {
-struct Layouts;
-}
-namespace transformation {
-struct Chain;
-}
-namespace lua {
-struct Script;
-struct Callbacks;
-}
-struct GlobalState {
-	GlobalState();
-	~GlobalState();
-	bool loadSettings();
-	bool loadAll();
-	bool writeSettings();
-	ColorNames *getColorNames();
-	Sampler *getSampler();
-	ScreenReader *getScreenReader();
-	ColorList &colorList();
-	ColorList &initializeColorList(IPalette &palette);
-	dynv::Map &settings();
-	lua::Script &script();
-	lua::Callbacks &callbacks();
-	Converters &converters();
-	Random *getRandom();
-	layout::Layouts &layouts();
-	transformation::Chain *getTransformationChain();
-	GtkWidget *getStatusBar();
-	void setStatusBar(GtkWidget *status_bar);
-	IColorSource *getCurrentColorSource();
-	void setCurrentColorSource(IColorSource *color_source);
-	std::optional<uint32_t> latinKeysGroup;
-	EventBus &eventBus();
-private:
-	struct Impl;
-	std::unique_ptr<Impl> m_impl;
+struct ColorObject;
+struct IPalette {
+	virtual ~IPalette() = default;
+	virtual void add(ColorList &colorList, ColorObject *colorObject) = 0;
+	virtual void remove(ColorList &colorList, ColorObject *colorObject) = 0;
+	virtual void removeSelected(ColorList &colorList) = 0;
+	virtual void clear(ColorList &colorList) = 0;
+	virtual void getPositions(ColorList &colorList) = 0;
+	virtual void update(ColorList &colorList) = 0;
 };
-#endif /* GPICK_GLOBAL_STATE_H_ */

@@ -35,6 +35,12 @@ struct Ref {
 		virtual ~Counter() {
 			validateRefCounterDestruction(this, m_referenceCounter);
 		}
+		Counter(const Counter &) = delete;
+		Counter &operator=(const Counter &) = delete;
+		Counter(Counter &&counter):
+			m_referenceCounter(counter.m_referenceCounter) {
+			counter.m_referenceCounter = 1;
+		}
 		T *reference() {
 			m_referenceCounter++;
 			return static_cast<T *>(this);
@@ -135,6 +141,12 @@ struct Ref {
 	}
 	uint32_t references() const {
 		return m_value ? m_value->references() : 0;
+	}
+	T *pointer() {
+		return m_value;
+	}
+	const T *pointer() const {
+		return m_value;
 	}
 	[[nodiscard]] static Ref wrap(T *value) {
 		return Ref<T>(value ? value->reference() : nullptr);

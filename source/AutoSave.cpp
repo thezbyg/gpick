@@ -23,7 +23,7 @@
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <filesystem>
 #include <iostream>
-void autoSave(ColorList *colorList) {
+void autoSave(ColorList &colorList) {
 	using namespace boost::interprocess;
 	using namespace std::filesystem;
 	try {

@@ -21,7 +21,6 @@
 #include "FileFormat.h"
 #include "ColorList.h"
 #include "ColorObject.h"
-#include "common/Scoped.h"
 #include <string_view>
 #include <sstream>
 #include <fstream>
@@ -59,14 +58,13 @@ const struct ColorAndName {
 	{ { 1.0f, 1.0f, 1.0f, 1.0f }, "White" },
 };
 BOOST_AUTO_TEST_CASE(load_0_2_6) {
-	auto *colors = color_list_new();
-	common::Scoped destroyColors(color_list_destroy, colors);
+	ColorList colors;
 	auto result = paletteFileLoad("test/palette-0.2.6.gpa", colors);
 	BOOST_REQUIRE_MESSAGE(result, result.error());
-	BOOST_REQUIRE_EQUAL(color_list_get_count(colors), 27);
+	BOOST_REQUIRE_EQUAL(colors.size(), 27);
 	std::vector<ColorAndName> loaded;
 	loaded.reserve(27);
-	for (auto *colorObject: colors->colors) {
+	for (auto *colorObject: colors) {
 		loaded.emplace_back(ColorAndName { colorObject->getColor(), colorObject->getName() });
 	}
 	for (size_t i = 0; i < loaded.size(); ++i) {
@@ -77,10 +75,9 @@ BOOST_AUTO_TEST_CASE(load_0_2_6) {
 	}
 }
 BOOST_AUTO_TEST_CASE(save) {
-	auto *colors = color_list_new();
-	common::Scoped destroyColors(color_list_destroy, colors);
+	ColorList colors;
 	for (size_t i = 0; i < sizeof(savedColors) / sizeof(savedColors[0]); ++i) {
-		color_list_add_color_object(colors, ColorObject(std::string(savedColors[i].name), savedColors[i].color), false);
+		colors.add(ColorObject(std::string(savedColors[i].name), savedColors[i].color), false);
 	}
 	std::stringstream output(std::ios::out | std::ios::binary);
 	auto result = paletteStreamSave(output, colors);
@@ -99,14 +96,13 @@ BOOST_AUTO_TEST_CASE(save) {
 	BOOST_CHECK(std::memcmp(outputData.data(), fileData.data(), size) == 0);
 }
 BOOST_AUTO_TEST_CASE(load) {
-	auto *colors = color_list_new();
-	common::Scoped destroyColors(color_list_destroy, colors);
+	ColorList colors;
 	auto result = paletteFileLoad("test/palette-0.3.gpa", colors);
 	BOOST_REQUIRE_MESSAGE(result, result.error());
-	BOOST_REQUIRE_EQUAL(color_list_get_count(colors), 27);
+	BOOST_REQUIRE_EQUAL(colors.size(), 27);
 	std::vector<ColorAndName> loaded;
 	loaded.reserve(27);
-	for (auto *colorObject: colors->colors) {
+	for (auto *colorObject: colors) {
 		loaded.emplace_back(ColorAndName { colorObject->getColor(), colorObject->getName() });
 	}
 	for (size_t i = 0; i < loaded.size(); ++i) {

@@ -481,7 +481,7 @@ bool Map::visit(std::function<bool(const Variable &value)> visitor, bool recursi
 		if (!visitor(*value))
 			return false;
 		if (std::visit(IsMap(), value->data()))
-			systems.push(&*std::get<Ref>(value->data()));
+			systems.push(std::get<Ref>(value->data()).pointer());
 	}
 	while (!systems.empty()) {
 		auto &map = *systems.front();
@@ -490,7 +490,7 @@ bool Map::visit(std::function<bool(const Variable &value)> visitor, bool recursi
 			if (!visitor(*value))
 				return false;
 			if (std::visit(IsMap(), value->data()))
-				systems.push(&*std::get<Ref>(value->data()));
+				systems.push(std::get<Ref>(value->data()).pointer());
 		}
 	}
 	return true;

@@ -106,17 +106,17 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	void addToPalette() {
 		if (!isSelected())
 			return;
-		color_list_add_color_object(gs.getColorList(), getColor(), true);
+		gs.colorList().add(getColor(), true);
 	}
 	void addAllToPalette() {
 		if (!layoutSystem)
 			return;
-		common::Guard colorListGuard(color_list_start_changes(gs.getColorList()), color_list_end_changes, gs.getColorList());
+		common::Guard colorListGuard = gs.colorList().changeGuard();
 		LayoutPreviewColorNameAssigner nameAssigner(gs);
 		for (auto &style: layoutSystem->styles()) {
 			ColorObject colorObject(style->color());
 			nameAssigner.assign(colorObject, style->label());
-			color_list_add_color_object(gs.getColorList(), colorObject, true);
+			gs.colorList().add(colorObject, true);
 		}
 	}
 	virtual void setColor(const ColorObject &colorObject) override {

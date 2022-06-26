@@ -17,131 +17,94 @@
  */
 
 #include "ColorObject.h"
-using namespace std;
-
 ColorObject::ColorObject():
-	m_refcnt(0),
 	m_name(),
 	m_color(),
 	m_position(0),
-	m_position_set(false),
+	m_positionSet(false),
 	m_selected(false),
 	m_visited(false),
-	m_visible(true)
-{
-}
-ColorObject::ColorObject(const char *name, const Color &color):
-	m_refcnt(0),
-	m_name(name),
-	m_color(color),
-	m_position(0),
-	m_position_set(false),
-	m_selected(false),
-	m_visited(false),
-	m_visible(true)
-{
+	m_visible(true) {
 }
 ColorObject::ColorObject(const Color &color):
-	m_refcnt(0),
 	m_color(color),
 	m_position(0),
-	m_position_set(false),
+	m_positionSet(false),
 	m_selected(false),
 	m_visited(false),
-	m_visible(true)
-{
+	m_visible(true) {
 }
-ColorObject::ColorObject(const std::string &name, const Color &color):
-	m_refcnt(0),
+ColorObject::ColorObject(std::string_view name, const Color &color):
 	m_name(name),
 	m_color(color),
 	m_position(0),
-	m_position_set(false),
+	m_positionSet(false),
 	m_selected(false),
 	m_visited(false),
-	m_visible(true)
-{
+	m_visible(true) {
 }
-ColorObject *ColorObject::reference()
-{
-	m_refcnt++;
-	return this;
+ColorObject::ColorObject(const ColorObject &colorObject):
+	m_name(colorObject.m_name),
+	m_color(colorObject.m_color),
+	m_position(colorObject.m_position),
+	m_positionSet(colorObject.m_positionSet),
+	m_selected(colorObject.m_selected),
+	m_visited(colorObject.m_visited),
+	m_visible(colorObject.m_visible) {
 }
-void ColorObject::release()
-{
-	if (m_refcnt == 0){
-		delete this;
-	}else{
-		m_refcnt--;
-	}
+ColorObject &ColorObject::operator=(const ColorObject &colorObject) {
+	m_name = colorObject.m_name;
+	m_color = colorObject.m_color;
+	m_position = colorObject.m_position;
+	m_positionSet = colorObject.m_positionSet;
+	m_selected = colorObject.m_selected;
+	m_visited = colorObject.m_visited;
+	m_visible = colorObject.m_visible;
+	return *this;
 }
-const Color &ColorObject::getColor() const
-{
+const Color &ColorObject::getColor() const {
 	return m_color;
 }
-void ColorObject::setColor(const Color &color)
-{
+void ColorObject::setColor(const Color &color) {
 	m_color = color;
 }
-const std::string &ColorObject::getName() const
-{
+const std::string &ColorObject::getName() const {
 	return m_name;
 }
-void ColorObject::setName(const std::string &name)
-{
+void ColorObject::setName(const std::string &name) {
 	m_name = name;
 }
-ColorObject* ColorObject::copy() const
-{
-	ColorObject *color_object = new ColorObject();
-	color_object->m_name = m_name;
-	color_object->m_color = m_color;
-	color_object->m_selected = m_selected;
-	color_object->m_visited = m_visited;
-	return color_object;
+[[nodiscard]] common::Ref<ColorObject> ColorObject::copy() const {
+	return common::Ref(new ColorObject(*this));
 }
-bool ColorObject::isSelected() const
-{
+bool ColorObject::isSelected() const {
 	return m_selected;
 }
-bool ColorObject::isVisited() const
-{
+bool ColorObject::isVisited() const {
 	return m_visited;
 }
-size_t ColorObject::getPosition() const
-{
+size_t ColorObject::getPosition() const {
 	return m_position;
 }
-bool ColorObject::isPositionSet() const
-{
-	return m_position_set;
+bool ColorObject::isPositionSet() const {
+	return m_positionSet;
 }
-bool ColorObject::isVisible() const
-{
+bool ColorObject::isVisible() const {
 	return m_visible;
 }
-void ColorObject::setPosition(size_t position)
-{
+void ColorObject::setPosition(size_t position) {
 	m_position = position;
-	m_position_set = true;
+	m_positionSet = true;
 }
-void ColorObject::resetPosition()
-{
-	m_position_set = false;
+void ColorObject::resetPosition() {
+	m_positionSet = false;
 }
-void ColorObject::setSelected(bool selected)
-{
+void ColorObject::setSelected(bool selected) {
 	m_selected = selected;
 }
-void ColorObject::setVisited(bool visited)
-{
+void ColorObject::setVisited(bool visited) {
 	m_visited = visited;
 }
-void ColorObject::setVisible(bool visible)
-{
+void ColorObject::setVisible(bool visible) {
 	m_visible = visible;
-}
-size_t ColorObject::getReferenceCount() const
-{
-	return m_refcnt;
 }

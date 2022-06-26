@@ -56,9 +56,8 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 	c.green = 0.50f;
 	c.blue = 0.25f;
 	c.alpha = 0.9f;
-	ColorObject *color_object = color_list_new_color_object(args->gs->getColorList(), &c);
-	color_object->setName(_("Test color"));
-	string text_line = converter->serialize(*color_object, position);
+	ColorObject colorObject(_("Test color"), c);
+	string text_line = converter->serialize(colorObject, position);
 	gtk_list_store_set(GTK_LIST_STORE(model), iter1,
 		CONVERTERLIST_LABEL, converter->label().c_str(),
 		CONVERTERLIST_EXAMPLE, text_line.c_str(),
@@ -68,7 +67,6 @@ static void converter_update_row(GtkTreeModel *model, GtkTreeIter *iter1, Conver
 		CONVERTERLIST_PASTE, converter->paste(),
 		CONVERTERLIST_PASTE_ENABLED, converter->hasDeserialize(),
 		-1);
-	color_object->release();
 }
 static void copy_toggled_cb(GtkCellRendererText *cell, gchar *path, ConverterArgs *args)
 {

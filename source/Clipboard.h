@@ -19,6 +19,7 @@
 #ifndef GPICK_CLIPBOARD_H_
 #define GPICK_CLIPBOARD_H_
 #include "Converters.h"
+#include "common/Ref.h"
 #include <string>
 #include <vector>
 #include <variant>
@@ -31,13 +32,13 @@ typedef struct _GtkWidget GtkWidget;
 namespace clipboard {
 void set(const std::string &value);
 using ConverterSelection = std::variant<const char *, Converter *, Converters::Type>;
-void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection converterSelection);
-void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection converterSelection);
-void set(const std::vector<ColorObject> &colorObjects, GlobalState *gs, ConverterSelection converterSelection);
-void set(const Color &color, GlobalState *gs, ConverterSelection converterSelection);
-void set(GtkWidget *paletteWidget, GlobalState *gs, ConverterSelection converterSelection);
+void set(const ColorObject *colorObject, GlobalState &gs, ConverterSelection converterSelection);
+void set(const ColorObject &colorObject, GlobalState &gs, ConverterSelection converterSelection);
+void set(const std::vector<ColorObject> &colorObjects, GlobalState &gs, ConverterSelection converterSelection);
+void set(const Color &color, GlobalState &gs, ConverterSelection converterSelection);
+void set(GtkWidget *paletteWidget, GlobalState &gs, ConverterSelection converterSelection);
 bool colorObjectAvailable();
-ColorObject *getFirst(GlobalState *gs);
-ColorList *getColors(GlobalState *gs);
+[[nodiscard]] common::Ref<ColorObject> getFirst(GlobalState &gs);
+[[nodiscard]] common::Ref<ColorList> getColors(GlobalState &gs);
 }
 #endif /* GPICK_CLIPBOARD_H_ */

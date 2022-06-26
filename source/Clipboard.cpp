@@ -44,16 +44,14 @@ static const GtkTargetEntry targets[] = {
 static const size_t targetCount = sizeof(targets) / sizeof(GtkTargetEntry);
 struct CopyPasteArgs {
 	Converter *converter;
-	ColorList *colors;
-	GlobalState *gs;
-	CopyPasteArgs(ColorList *colors, Converter *converter, GlobalState *gs):
+	ColorList colors;
+	GlobalState &gs;
+	CopyPasteArgs(ColorList &&colors, Converter *converter, GlobalState &gs):
 		converter(converter),
-		colors(colors),
+		colors(std::move(colors)),
 		gs(gs) {
 	}
 	~CopyPasteArgs() {
-		if (colors != nullptr)
-			color_list_destroy(colors);
 	}
 };
 static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targetType, CopyPasteArgs *args) {
@@ -61,12 +59,11 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 		return;
 	switch (targetType) {
 	case Target::string: {
-		const auto &colors = args->colors->colors;
 		std::stringstream text;
 		std::string textLine;
-		ConverterSerializePosition position(args->colors->colors.size());
+		ConverterSerializePosition position(args->colors.size());
 		if (position.count() > 0) {
-			for (auto &color: colors) {
+			for (auto *color: args->colors) {
 				if (position.index() + 1 == position.count())
 					position.last(true);
 				textLine = args->converter->serialize(*color, position);
@@ -84,7 +81,7 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 			gtk_selection_data_set_text(selectionData, textLine.c_str(), textLine.length());
 	} break;
 	case Target::color: {
-		auto &colorObject = args->colors->colors.front();
+		auto &colorObject = args->colors.front();
 		auto &color = colorObject->getColor();
 		guint16 dataColor[4];
 		dataColor[0] = static_cast<guint16>(color.red * 0xFFFF);
@@ -95,8 +92,8 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 	} break;
 	case Target::serializedColorObjectList: {
 		std::vector<dynv::Ref> colors;
-		colors.reserve(args->colors->colors.size());
-		for (auto &colorObject: args->colors->colors) {
+		colors.reserve(args->colors.size());
+		for (auto *colorObject: args->colors) {
 			auto color = dynv::Map::create();
 			color->set("name", colorObject->getName());
 			color->set("color", colorObject->getColor());
@@ -114,12 +111,10 @@ static void setData(GtkClipboard *, GtkSelectionData *selectionData, Target targ
 static void deleteState(GtkClipboard *, CopyPasteArgs *args) {
 	delete args;
 }
-static bool setupClipboard(const ColorObject &colorObject, Converter *converter, GlobalState *gs) {
-	auto colorList = color_list_new();
-	auto *tmp = colorObject.copy();
-	color_list_add_color_object(colorList, tmp, false);
-	tmp->release();
-	auto args = new CopyPasteArgs(colorList, converter, gs);
+static bool setupClipboard(const ColorObject &colorObject, Converter *converter, GlobalState &gs) {
+	ColorList colorList;
+	colorList.add(colorObject, false);
+	auto args = new CopyPasteArgs(std::move(colorList), converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
 			reinterpret_cast<GtkClipboardClearFunc>(deleteState), args)) {
@@ -129,8 +124,8 @@ static bool setupClipboard(const ColorObject &colorObject, Converter *converter,
 	deleteState(nullptr, args);
 	return false;
 }
-static bool setupClipboard(ColorList *colorList, Converter *converter, GlobalState *gs) {
-	auto args = new CopyPasteArgs(colorList, converter, gs);
+static bool setupClipboard(ColorList &&colorList, Converter *converter, GlobalState &gs) {
+	auto args = new CopyPasteArgs(std::move(colorList), converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
 			reinterpret_cast<GtkClipboardClearFunc>(deleteState), args)) {
@@ -140,14 +135,12 @@ static bool setupClipboard(ColorList *colorList, Converter *converter, GlobalSta
 	deleteState(nullptr, args);
 	return false;
 }
-static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Converter *converter, GlobalState *gs) {
-	auto colorList = color_list_new();
+static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Converter *converter, GlobalState &gs) {
+	ColorList colorList;
 	for (auto &colorObject: colorObjects) {
-		auto *tmp = colorObject.copy();
-		color_list_add_color_object(colorList, tmp, false);
-		tmp->release();
+		colorList.add(colorObject, false);
 	}
-	auto args = new CopyPasteArgs(colorList, converter, gs);
+	auto args = new CopyPasteArgs(std::move(colorList), converter, gs);
 	if (gtk_clipboard_set_with_data(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), targets, targetCount,
 			reinterpret_cast<GtkClipboardGetFunc>(setData),
 			reinterpret_cast<GtkClipboardClearFunc>(deleteState), args)) {
@@ -157,30 +150,30 @@ static bool setupClipboard(const std::vector<ColorObject> &colorObjects, Convert
 	deleteState(nullptr, args);
 	return false;
 }
-static Converter *getConverter(ConverterSelection converterSelection, GlobalState *gs) {
+static Converter *getConverter(ConverterSelection converterSelection, GlobalState &gs) {
 	struct GetConverter {
-		GetConverter(GlobalState *gs):
+		GetConverter(GlobalState &gs):
 			gs(gs) {
 		}
 		Converter *operator()(const char *&name) const {
-			auto converter = gs->converters().byNameOrFirstCopy(name);
+			auto converter = gs.converters().byNameOrFirstCopy(name);
 			if (converter == nullptr)
-				converter = gs->converters().firstCopyOrAny();
+				converter = gs.converters().firstCopyOrAny();
 			return converter;
 		}
 		Converter *operator()(Converter *converter) const {
 			auto result = converter;
 			if (result == nullptr)
-				result = gs->converters().firstCopyOrAny();
+				result = gs.converters().firstCopyOrAny();
 			return result;
 		}
 		Converter *operator()(Converters::Type converterType) const {
-			auto converter = gs->converters().forType(converterType);
+			auto converter = gs.converters().forType(converterType);
 			if (converter == nullptr)
-				converter = gs->converters().firstCopyOrAny();
+				converter = gs.converters().firstCopyOrAny();
 			return converter;
 		}
-		GlobalState *gs;
+		GlobalState &gs;
 	};
 	return std::visit(GetConverter(gs), converterSelection);
 }
@@ -188,40 +181,40 @@ void set(const std::string &value) {
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), value.c_str(), -1);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), value.c_str(), -1);
 }
-void set(const ColorObject *colorObject, GlobalState *gs, ConverterSelection converterSelection) {
+void set(const ColorObject *colorObject, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
 	setupClipboard(*colorObject, converter, gs);
 }
-void set(const std::vector<ColorObject> &colorObjects, GlobalState *gs, ConverterSelection converterSelection) {
+void set(const std::vector<ColorObject> &colorObjects, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
 	setupClipboard(colorObjects, converter, gs);
 }
-void set(const ColorObject &colorObject, GlobalState *gs, ConverterSelection converterSelection) {
+void set(const ColorObject &colorObject, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
 	setupClipboard(colorObject, converter, gs);
 }
 static PaletteListCallbackResult addToColorList(ColorObject *colorObject, ColorList *colorList) {
-	color_list_add_color_object(colorList, colorObject, 1);
+	colorList->add(colorObject, true);
 	return PaletteListCallbackResult::noUpdate;
 }
-void set(GtkWidget *palette_widget, GlobalState *gs, ConverterSelection converterSelection) {
+void set(GtkWidget *paletteWidget, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
 	std::stringstream text;
-	auto colorList = color_list_new();
-	palette_list_foreach_selected(palette_widget, (PaletteListCallback)addToColorList, colorList, false);
-	if (colorList->colors.empty())
+	ColorList colorList;
+	palette_list_foreach_selected(paletteWidget, (PaletteListCallback)addToColorList, &colorList, false);
+	if (colorList.empty())
 		return;
-	setupClipboard(colorList, converter, gs);
+	setupClipboard(std::move(colorList), converter, gs);
 }
-void set(const Color &color, GlobalState *gs, ConverterSelection converterSelection) {
+void set(const Color &color, GlobalState &gs, ConverterSelection converterSelection) {
 	auto converter = getConverter(converterSelection, gs);
 	if (converter == nullptr)
 		return;
@@ -262,18 +255,18 @@ bool colorObjectAvailable() {
 	g_free(availableTargets);
 	return found;
 }
-ColorObject *getFirst(GlobalState *gs) {
+[[nodiscard]] common::Ref<ColorObject> getFirst(GlobalState &gs) {
 	auto clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 	GdkAtom *availableTargets;
 	gint availableTargetCount;
 	if (!gtk_clipboard_wait_for_targets(clipboard, &availableTargets, &availableTargetCount))
-		return nullptr;
+		return common::nullRef;
 	if (availableTargetCount <= 0) {
 		g_free(availableTargets);
-		return nullptr;
+		return common::nullRef;
 	}
 	ColorObject result;
-	perMatchedTarget(availableTargets, static_cast<size_t>(availableTargetCount), [&result, clipboard, availableTargets, gs](size_t i, Target target) {
+	perMatchedTarget(availableTargets, static_cast<size_t>(availableTargetCount), [&result, clipboard, availableTargets, &gs](size_t i, Target target) {
 		auto selectionData = gtk_clipboard_wait_for_contents(clipboard, availableTargets[i]);
 		if (!selectionData)
 			return VisitResult::advance;
@@ -281,7 +274,7 @@ ColorObject *getFirst(GlobalState *gs) {
 		case Target::string: {
 			auto data = gtk_selection_data_get_data(selectionData);
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
-			if (gs->converters().deserialize(text.c_str(), result))
+			if (gs.converters().deserialize(text.c_str(), result))
 				return VisitResult::stop;
 		} break;
 		case Target::color: {
@@ -315,21 +308,21 @@ ColorObject *getFirst(GlobalState *gs) {
 		}
 		return VisitResult::advance;
 	});
-	return result.copy();
+	return common::Ref(result.copy());
 }
-ColorList *getColors(GlobalState *gs) {
+[[nodiscard]] common::Ref<ColorList> getColors(GlobalState &gs) {
 	auto clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 	GdkAtom *availableTargets;
 	gint availableTargetCount;
 	if (!gtk_clipboard_wait_for_targets(clipboard, &availableTargets, &availableTargetCount))
-		return nullptr;
+		return common::nullRef;
 	if (availableTargetCount <= 0) {
 		g_free(availableTargets);
-		return nullptr;
+		return common::nullRef;
 	}
 	bool success = false;
-	auto colorList = color_list_new();
-	perMatchedTarget(availableTargets, static_cast<size_t>(availableTargetCount), [colorList, &success, clipboard, availableTargets, gs](size_t i, Target target) {
+	auto colorList = ColorList::newList();
+	perMatchedTarget(availableTargets, static_cast<size_t>(availableTargetCount), [&colorList, &success, clipboard, availableTargets, &gs](size_t i, Target target) {
 		auto selectionData = gtk_clipboard_wait_for_contents(clipboard, availableTargets[i]);
 		if (!selectionData)
 			return VisitResult::advance;
@@ -339,8 +332,8 @@ ColorList *getColors(GlobalState *gs) {
 			auto text = std::string(reinterpret_cast<const char *>(data), reinterpret_cast<const char *>(data) + gtk_selection_data_get_length(selectionData));
 			ColorObject colorObject;
 			//TODO: multiple colors should be extracted from string, but converters do not support this right now
-			if (gs->converters().deserialize(text.c_str(), colorObject)) {
-				color_list_add_color_object(colorList, colorObject, false);
+			if (gs.converters().deserialize(text.c_str(), colorObject)) {
+				colorList->add(colorObject, false);
 				success = true;
 				return VisitResult::stop;
 			}
@@ -356,9 +349,7 @@ ColorList *getColors(GlobalState *gs) {
 			color.green = static_cast<float>(data[1] / static_cast<double>(0xFFFF));
 			color.blue = static_cast<float>(data[2] / static_cast<double>(0xFFFF));
 			color.alpha = static_cast<float>(data[3] / static_cast<double>(0xFFFF));
-			ColorObject *reference;
-			color_list_add_color_object(colorList, (reference = new ColorObject("", color)), false);
-			reference->release();
+			colorList->add(ColorObject("", color), false);
 			success = true;
 			return VisitResult::stop;
 		} break;
@@ -374,9 +365,7 @@ ColorList *getColors(GlobalState *gs) {
 				return VisitResult::advance;
 			static Color defaultColor = {};
 			for (auto &color: colors) {
-				ColorObject *reference;
-				color_list_add_color_object(colorList, (reference = new ColorObject(color->getString("name", ""), color->getColor("color", defaultColor))), false);
-				reference->release();
+				colorList->add(ColorObject(color->getString("name", ""), color->getColor("color", defaultColor)), false);
 			}
 			success = true;
 			return VisitResult::stop;
@@ -385,8 +374,7 @@ ColorList *getColors(GlobalState *gs) {
 		return VisitResult::advance;
 	});
 	if (!success) {
-		color_list_destroy(colorList);
-		return nullptr;
+		return common::nullRef;
 	}
 	return colorList;
 }
