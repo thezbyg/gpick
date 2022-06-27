@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,6 +17,7 @@
  */
 
 #include "uiDialogVariations.h"
+#include "uiDialogBase.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
@@ -46,86 +47,47 @@ protected:
 	std::string_view m_name;
 	uint32_t m_stepIndex;
 };
-struct DialogVariationsArgs {
+struct VariationsDialog: public DialogBase {
 	ColorList &selectedColorList;
-	GlobalState &gs;
-	dynv::Ref options;
-	common::Ref<ColorList> previewColorList;
-	GtkWidget *dialog, *multiplicationToggle, *linearizationToggle;
+	GtkWidget *multiplicationToggle, *linearizationToggle;
 	GtkWidget *lightnessFromSpin, *lightnessToSpin, *stepsSpin;
 	GtkWidget *saturationFromSpin, *saturationToSpin, *previewExpander;
-	DialogVariationsArgs(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
-		selectedColorList(selectedColorList),
-		gs(gs) {
-		options = gs.settings().getOrCreateMap("gpick.variations");
-		dialog = gtk_dialog_new_with_buttons(_("Variations"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
-		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-		gint table_y;
-		GtkWidget *table = gtk_table_new(5, 3, FALSE);
-		table_y = 0;
-		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Lightness:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-		lightnessFromSpin = gtk_spin_button_new_with_range(-100, 100, 0.001);
+	VariationsDialog(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
+		DialogBase(gs, "gpick.variations", _("Variations"), parent),
+		selectedColorList(selectedColorList) {
+		Grid grid(3, 5);
+		grid.addLabel(_("Lightness:"));
+		grid.add(lightnessFromSpin = gtk_spin_button_new_with_range(-100, 100, 0.001), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(lightnessFromSpin), options->getFloat("lightness_from", 1));
-		gtk_table_attach(GTK_TABLE(table), lightnessFromSpin, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 		g_signal_connect(G_OBJECT(lightnessFromSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		lightnessToSpin = gtk_spin_button_new_with_range(-100, 100, 0.001);
+		grid.add(lightnessToSpin = gtk_spin_button_new_with_range(-100, 100, 0.001), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(lightnessToSpin), options->getFloat("lightness_to", 1));
-		gtk_table_attach(GTK_TABLE(table), lightnessToSpin, 2, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(lightnessToSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Saturation:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-		saturationFromSpin = gtk_spin_button_new_with_range(-100, 100, 0.001);
+		grid.addLabel(_("Saturation:"));
+		grid.add(saturationFromSpin = gtk_spin_button_new_with_range(-100, 100, 0.001), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(saturationFromSpin), options->getFloat("saturation_from", 0));
-		gtk_table_attach(GTK_TABLE(table), saturationFromSpin, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 		g_signal_connect(G_OBJECT(saturationFromSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		saturationToSpin = gtk_spin_button_new_with_range(-100, 100, 0.001);
+		grid.add(saturationToSpin = gtk_spin_button_new_with_range(-100, 100, 0.001), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(saturationToSpin), options->getFloat("saturation_to", 1));
-		gtk_table_attach(GTK_TABLE(table), saturationToSpin, 2, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(saturationToSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Steps:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-		stepsSpin = gtk_spin_button_new_with_range(1, 255, 1);
+		grid.addLabel(_("Steps:"));
+		grid.add(stepsSpin = gtk_spin_button_new_with_range(1, 255, 1), true, 2);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(stepsSpin), options->getInt32("steps", 3));
-		gtk_table_attach(GTK_TABLE(table), stepsSpin, 1, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(stepsSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		multiplicationToggle = gtk_check_button_new_with_mnemonic(_("_Use multiplication"));
+		grid.nextColumn().add(multiplicationToggle = gtk_check_button_new_with_mnemonic(_("_Use multiplication")), true, 2);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(multiplicationToggle), options->getBool("multiplication", true));
-		gtk_table_attach(GTK_TABLE(table), multiplicationToggle, 1, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(multiplicationToggle), "toggled", G_CALLBACK(onUpdate), this);
-
-		linearizationToggle = gtk_check_button_new_with_mnemonic(_("_Linearization"));
+		grid.nextColumn().add(linearizationToggle = gtk_check_button_new_with_mnemonic(_("_Linearization")), true, 2);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(linearizationToggle), options->getBool("linearization", false));
-		gtk_table_attach(GTK_TABLE(table), linearizationToggle, 1, 4, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 		g_signal_connect(G_OBJECT(linearizationToggle), "toggled", G_CALLBACK(onUpdate), this);
-		table_y++;
-
-		gtk_table_attach(GTK_TABLE(table), previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), 0, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
-		table_y++;
-		update(true);
-		setDialogContent(dialog, table);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 3, true);
+		apply(true);
+		setContent(grid);
 	};
-	~DialogVariationsArgs() {
-		gint width, height;
-		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-		options->set("window.width", width);
-		options->set("window.height", height);
+	virtual ~VariationsDialog() {
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
-		gtk_widget_destroy(dialog);
 	}
-	void run() {
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-			update(false);
-		}
-	}
-	void update(bool preview) {
+	virtual void apply(bool preview) override {
 		if (preview)
 			previewColorList->removeAll();
 		int32_t steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(stepsSpin));
@@ -190,12 +152,10 @@ struct DialogVariationsArgs {
 			}
 		}
 	}
-	static void onUpdate(GtkWidget *, DialogVariationsArgs *args) {
-		args->update(true);
-	}
 };
 }
-void dialog_variations_show(GtkWindow *parent, ColorList &selectedColorList, GlobalState &gs) {
-	DialogVariationsArgs args(selectedColorList, gs, parent);
-	args.run();
+void dialog_variations_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs) {
+	ColorList colorList;
+	palette_list_get_selected(paletteWidget, colorList);
+	VariationsDialog(colorList, gs, parent).run();
 }

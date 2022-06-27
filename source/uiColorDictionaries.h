@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,9 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_COLOR_DICTIONARIES_H_
-#define GPICK_UI_COLOR_DICTIONARIES_H_
+#pragma once
 #include <gtk/gtk.h>
 struct GlobalState;
-void dialog_color_dictionaries_show(GtkWindow* parent, GlobalState* gs);
-#endif /* GPICK_UI_COLOR_DICTIONARIES_H_ */
+void dialog_color_dictionaries_show(GtkWindow *parent, GlobalState &gs);

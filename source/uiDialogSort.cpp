@@ -17,6 +17,7 @@
  */
 
 #include "uiDialogSort.h"
+#include "uiDialogBase.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
@@ -41,19 +42,15 @@ static const ChannelDescription channelNone = { "none" };
 static const ChannelDescription virtualChannels[] = {
 	{ "rgb_grayscale", N_("RGB Grayscale"), ColorSpace::rgb, Channel::userDefined, ChannelFlags::useConvertTo, { .convertTo = toGrayscale }, 0, 1 },
 };
-struct DialogSortArgs {
-	GtkWidget *dialog, *groupComboBox, *groupSensitivitySpin, *maxGroupsSpin, *sortComboBox, *reverseCheck, *reverseGroupsCheck, *previewExpander;
+struct SortDialog: public DialogBase {
+	GtkWidget *groupComboBox, *groupSensitivitySpin, *maxGroupsSpin, *sortComboBox, *reverseCheck, *reverseGroupsCheck, *previewExpander;
 	ColorList &selectedColors, &sortedColors;
-	common::Ref<ColorList> previewColors;
-	dynv::Ref options;
-	GlobalState &gs;
 	std::vector<const ChannelDescription *> sortChannelsInComboBox, groupChannelsInComboBox;
 	const ChannelDescription *groupChannel, *sortChannel;
-	DialogSortArgs(ColorList &selectedColors, ColorList &sortedColors, GlobalState &gs, GtkWindow *parent):
+	SortDialog(ColorList &selectedColors, ColorList &sortedColors, GlobalState &gs, GtkWindow *parent):
+		DialogBase(gs, "gpick.group_and_sort", _("Group and sort"), parent),
 		selectedColors(selectedColors),
-		sortedColors(sortedColors),
-		gs(gs) {
-		options = gs.settings().getOrCreateMap("gpick.group_and_sort");
+		sortedColors(sortedColors) {
 		groupChannel = &common::matchById(channels(), options->getString("group_type", "rgb_red"), [](std::string_view id) -> const ChannelDescription & {
 			if (id.empty() || id == "none")
 				return channelNone;
@@ -62,11 +59,6 @@ struct DialogSortArgs {
 		sortChannel = &common::matchById(channels(), options->getString("sort_type", "rgb_red"), [](std::string_view id) -> const ChannelDescription & {
 			return common::matchById(virtualChannels, id, channels()[0]);
 		});
-
-		dialog = gtk_dialog_new_with_buttons(_("Group and sort"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
-		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
 		Grid grid(2, 8);
 		grid.addLabel(_("Sort by:"));
 		grid.add(sortComboBox = gtk_combo_box_text_new(), true);
@@ -83,12 +75,12 @@ struct DialogSortArgs {
 			if (&i == sortChannel)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(sortComboBox), sortChannelsInComboBox.size() - 1);
 		}
-		g_signal_connect(G_OBJECT(sortComboBox), "changed", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(sortComboBox), "changed", G_CALLBACK(onUpdate), this);
 
 		grid.nextColumn();
 		grid.add(reverseCheck = gtk_check_button_new_with_mnemonic(_("_Reverse sort order")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseCheck), options->getBool("reverse", false));
-		g_signal_connect(G_OBJECT(reverseCheck), "toggled", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(reverseCheck), "toggled", G_CALLBACK(onUpdate), this);
 
 		grid.addLabel(_("Group by:"));
 		grid.add(groupComboBox = gtk_combo_box_text_new(), true);
@@ -109,48 +101,36 @@ struct DialogSortArgs {
 			if (&i == groupChannel)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(groupComboBox), groupChannelsInComboBox.size() - 1);
 		}
-		g_signal_connect(G_OBJECT(groupComboBox), "changed", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(groupComboBox), "changed", G_CALLBACK(onUpdate), this);
 
 		grid.addLabel(_("Maximum number of groups:"));
 		grid.add(maxGroupsSpin = gtk_spin_button_new_with_range(1, 255, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(maxGroupsSpin), options->getInt32("max_groups", 10));
-		g_signal_connect(G_OBJECT(maxGroupsSpin), "value-changed", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(maxGroupsSpin), "value-changed", G_CALLBACK(onUpdate), this);
 
 		grid.addLabel(_("Grouping sensitivity:"));
 		grid.add(groupSensitivitySpin = gtk_spin_button_new_with_range(0, 100, 0.1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(groupSensitivitySpin), options->getFloat("group_sensitivity", 50));
-		g_signal_connect(G_OBJECT(groupSensitivitySpin), "value-changed", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(groupSensitivitySpin), "value-changed", G_CALLBACK(onUpdate), this);
 
 		grid.nextColumn();
 		grid.add(reverseGroupsCheck = gtk_check_button_new_with_mnemonic(_("_Reverse group order")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(reverseGroupsCheck), options->getBool("reverse_groups", false));
-		g_signal_connect(G_OBJECT(reverseGroupsCheck), "toggled", G_CALLBACK(onChange), this);
+		g_signal_connect(G_OBJECT(reverseGroupsCheck), "toggled", G_CALLBACK(onUpdate), this);
 
-		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColors), true, 2, true);
-		update(true);
-		setDialogContent(dialog, grid);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
+		apply(true);
+		setContent(grid);
 	}
-	~DialogSortArgs() {
-		gint width, height;
-		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-		options->set("window.width", width);
-		options->set("window.height", height);
+	virtual ~SortDialog() {
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
-		gtk_widget_destroy(dialog);
-	}
-	bool run() {
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-			update(false);
-			return true;
-		}
-		return false;
 	}
 	void enableGroupInputs(bool enable) {
 		gtk_widget_set_sensitive(maxGroupsSpin, enable);
 		gtk_widget_set_sensitive(groupSensitivitySpin, enable);
 		gtk_widget_set_sensitive(reverseGroupsCheck, enable);
 	}
-	void update(bool preview) {
+	virtual void apply(bool preview) override {
 		groupChannel = groupChannelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(groupComboBox))];
 		sortChannel = sortChannelsInComboBox[gtk_combo_box_get_active(GTK_COMBO_BOX(sortComboBox))];
 		float groupSensitivity = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(groupSensitivitySpin)));
@@ -165,10 +145,10 @@ struct DialogSortArgs {
 			options->set("reverse", reverse);
 			options->set("reverse_groups", reverseGroups);
 		} else {
-			previewColors->removeAll();
+			previewColorList->removeAll();
 			enableGroupInputs(groupChannel != &channelNone);
 		}
-		ColorList &colorList = preview ? *previewColors : sortedColors;
+		ColorList &colorList = preview ? *previewColorList : sortedColors;
 		using ColorWithProperties = std::tuple<float, float, ColorObject *>;
 		std::vector<ColorWithProperties> colors;
 		colors.reserve(selectedColors.size());
@@ -218,12 +198,25 @@ struct DialogSortArgs {
 			colorList.add(colorObject);
 		}
 	}
-	static void onChange(GtkWidget *, DialogSortArgs *args) {
-		args->update(true);
-	}
 };
 }
-bool dialog_sort_show(GtkWindow *parent, ColorList *selectedColors, ColorList *sortedColors, GlobalState *gs) {
-	DialogSortArgs args(*selectedColors, *sortedColors, *gs, parent);
-	return args.run();
+void dialog_sort_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs) {
+	ColorList colorList, sortedColorList;
+	palette_list_get_selected(paletteWidget, colorList);
+	if (SortDialog(colorList, sortedColorList, gs, parent).run()) {
+		auto i = sortedColorList.begin();
+		palette_list_foreach(paletteWidget, true, [&i](ColorObject **colorObject) {
+			*colorObject = *i;
+			++i;
+			return Update::none;
+		});
+		auto selected = palette_list_get_selected(paletteWidget);
+		i = sortedColorList.begin();
+		for (auto *&colorObject: gs.colorList()) {
+			if (selected.count(colorObject) != 0) {
+				colorObject = *i;
+				++i;
+			}
+		}
+	}
 }

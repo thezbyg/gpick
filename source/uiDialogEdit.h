@@ -16,10 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_DIALOG_EDIT_H_
-#define GPICK_UI_DIALOG_EDIT_H_
+#pragma once
 #include <gtk/gtk.h>
 struct GlobalState;
-struct ColorList;
-void dialog_edit_show(GtkWindow *parent, ColorList &selectedColorList, GlobalState &gs);
-#endif /* GPICK_UI_DIALOG_EDIT_H_ */
+void dialog_edit_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs);

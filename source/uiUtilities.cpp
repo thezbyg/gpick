@@ -159,26 +159,32 @@ GtkWidget *Grid::add(GtkWidget *widget, bool expand, int width, bool verticalExp
 GtkWidget *Grid::addLabel(const char *label) {
 	return add(gtk_label_aligned_new(label, 0, 0.5f, 0, 0));
 }
-void Grid::nextColumn(int columns) {
+Grid &Grid::nextColumn(int columns) {
 	m_column += columns;
 	if (m_column >= m_columns) {
 		m_column = 0;
 		m_row++;
 	}
+	return *this;
 }
-void Grid::nextRow() {
+Grid &Grid::nextRow() {
 	m_row++;
+	m_column = 0;
+	return *this;
 }
 Grid::operator GtkWidget *() {
 	return m_grid;
 }
-void Grid::setColumn(int column) {
+Grid &Grid::setColumn(int column) {
 	m_column = column;
+	return *this;
 }
-void Grid::setRow(int row) {
+Grid &Grid::setRow(int row) {
 	m_row = row;
+	return *this;
 }
-void Grid::setColumnAndRow(int column, int row) {
+Grid &Grid::setColumnAndRow(int column, int row) {
 	m_column = column;
 	m_row = row;
+	return *this;
 }

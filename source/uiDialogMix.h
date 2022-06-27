@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,10 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_DIALOG_MIX_H_
-#define GPICK_UI_DIALOG_MIX_H_
+#pragma once
 struct GlobalState;
-struct ColorList;
 #include <gtk/gtk.h>
-void dialog_mix_show(GtkWindow *parent, ColorList &selectedColorList, GlobalState &gs);
-#endif /* GPICK_UI_DIALOG_MIX_H_ */
+void dialog_mix_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs);

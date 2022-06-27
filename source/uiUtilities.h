@@ -46,11 +46,11 @@ struct Grid {
 	Grid(int columns, int rows, int columnSpacing = 5, int rowSpacing = 5);
 	GtkWidget *add(GtkWidget *widget, bool expand = false, int width = 1, bool verticalExpand = false);
 	GtkWidget *addLabel(const char *label);
-	void nextColumn(int columns = 1);
-	void nextRow();
-	void setColumn(int column);
-	void setRow(int row);
-	void setColumnAndRow(int column, int row);
+	Grid &nextColumn(int columns = 1);
+	Grid &nextRow();
+	Grid &setColumn(int column);
+	Grid &setRow(int row);
+	Grid &setColumnAndRow(int column, int row);
 	operator GtkWidget *();
 private:
 	GtkWidget *m_grid;

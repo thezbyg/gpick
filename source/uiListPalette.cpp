@@ -52,7 +52,6 @@ enum struct Type {
 struct ListPaletteArgs;
 static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
 static void foreachItem(GtkTreeView *treeView, std::function<bool(ColorObject *)> callback);
-static void updateSelected(GtkTreeView *treeView, GlobalState &gs);
 static void updateAll(GtkTreeView *treeView, GlobalState &gs);
 static void set(GtkListStore* store, GtkTreeIter *iter, ColorObject* colorObject, ListPaletteArgs* args);
 const int scrollEdgeSize = 15; //SCROLL_EDGE_SIZE from gtktreeview.c
@@ -246,13 +245,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 			}
 			colorObject->release();
 		} else {
-			ColorList colorList;
-			foreachSelectedItem(GTK_TREE_VIEW(treeview), [&colorList](ColorObject *colorObject) {
-				colorList.add(colorObject);
-				return true;
-			});
-			dialog_edit_show(GTK_WINDOW(gtk_widget_get_toplevel(treeview)), colorList, gs);
-			updateSelected(GTK_TREE_VIEW(treeview), gs);
+			dialog_edit_show(GTK_WINDOW(gtk_widget_get_toplevel(treeview)), treeview, gs);
 		}
 	}
 	virtual void removeColors(bool selected) override {
@@ -681,9 +674,9 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 			if (path)
 				gtk_tree_path_free(path);
 		}
-	args->updateCounts();
-	return false;
-}
+		args->updateCounts();
+		return false;
+	}
 	ColorObject colorObject;
 };
 static void set(GtkListStore *store, GtkTreeIter *iter, ColorObject *colorObject, ListPaletteArgs *args) {
@@ -733,23 +726,6 @@ static void foreachSelectedItem(GtkTreeView *treeView, std::function<bool(ColorO
 		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
 		if (!callback(colorObject))
 			break;
-		i = g_list_next(i);
-	}
-	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);
-	g_list_free(list);
-}
-static void updateSelected(GtkTreeView *treeView, GlobalState &gs) {
-	auto model = gtk_tree_view_get_model(treeView);
-	auto selection = gtk_tree_view_get_selection(treeView);
-	GList *list = gtk_tree_selection_get_selected_rows(selection, nullptr);
-	GList *i = list;
-	while (i) {
-		GtkTreeIter iter;
-		gtk_tree_model_get_iter(model, &iter, reinterpret_cast<GtkTreePath *>(i->data));
-		ColorObject *colorObject;
-		gtk_tree_model_get(model, &iter, 0, &colorObject, -1);
-		std::string text = gs.converters().serialize(*colorObject, Converters::Type::colorList);
-		gtk_list_store_set(GTK_LIST_STORE(model), &iter, 1, text.c_str(), -1);
 		i = g_list_next(i);
 	}
 	g_list_foreach(list, (GFunc)gtk_tree_path_free, nullptr);

@@ -49,12 +49,10 @@ struct AutonumberDialog: public DialogBase {
 		gtk_spin_button_set_range(GTK_SPIN_BUTTON(startIndexSpin), decreasing ? selectedCount - 1 : 0, 0x7fffffff);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(startIndexSpin), options->getInt32("startindex", 1));
 		g_signal_connect(G_OBJECT(startIndexSpin), "value-changed", G_CALLBACK(onUpdate), this);
-		grid.nextColumn();
-		grid.add(decreasingToggle = gtk_check_button_new_with_mnemonic(_("_Decreasing")), true);
+		grid.nextColumn().add(decreasingToggle = gtk_check_button_new_with_mnemonic(_("_Decreasing")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(decreasingToggle), decreasing);
-		g_signal_connect(G_OBJECT(decreasingToggle), "toggled", G_CALLBACK(onUpdateStartIndex), this);
-		grid.nextColumn();
-		grid.add(appendToggle = gtk_check_button_new_with_mnemonic(_("_Append")), true);
+		g_signal_connect(G_OBJECT(decreasingToggle), "toggled", G_CALLBACK(onDecreasingChange), this);
+		grid.nextColumn().add(appendToggle = gtk_check_button_new_with_mnemonic(_("_Append")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(appendToggle), options->getBool("append", false));
 		g_signal_connect(G_OBJECT(appendToggle), "toggled", G_CALLBACK(onUpdate), this);
 		grid.addLabel(_("Sample:"));
@@ -127,7 +125,7 @@ struct AutonumberDialog: public DialogBase {
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(startIndexSpin), newIndex);
 		apply(true);
 	}
-	static void onUpdateStartIndex(GtkWidget *, AutonumberDialog *dialog) {
+	static void onDecreasingChange(GtkWidget *, AutonumberDialog *dialog) {
 		dialog->updateStartIndexRange();
 	}
 };

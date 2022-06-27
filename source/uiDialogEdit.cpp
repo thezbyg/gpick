@@ -17,6 +17,7 @@
  */
 
 #include "uiDialogEdit.h"
+#include "uiDialogBase.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
@@ -32,26 +33,19 @@
 #include <array>
 #include <algorithm>
 namespace {
-struct DialogEditArgs {
+struct EditDialog: public DialogBase {
 	ColorList &selectedColorList;
-	GlobalState &gs;
-	dynv::Ref options;
-	common::Ref<ColorList> previewColorList;
 	const ColorSpaceDescription *colorSpace;
 	struct Channel {
 		GtkWidget *label, *alignment, *adjustmentRange;
 		const ChannelDescription *channel;
 	};
 	std::array<Channel, 5> channels;
-	GtkWidget *dialog, *colorSpaceComboBox, *relativeCheck, *previewExpander;
-	DialogEditArgs(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
-		selectedColorList(selectedColorList),
-		gs(gs) {
-		options = gs.settings().getOrCreateMap("gpick.edit");
+	GtkWidget  *colorSpaceComboBox, *relativeCheck, *previewExpander;
+	EditDialog(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
+		DialogBase(gs, "gpick.edit", _("Edit colors"), parent),
+		selectedColorList(selectedColorList) {
 		colorSpace = &common::matchById(colorSpaces(), options->getString("color_space", "rgb"));
-		dialog = gtk_dialog_new_with_buttons(_("Edit colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
-		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 		Grid grid(2, 3 + channels.size());
 		grid.addLabel(_("Color space:"));
 		grid.add(colorSpaceComboBox = gtk_combo_box_text_new(), true);
@@ -61,8 +55,7 @@ struct DialogEditArgs {
 				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces().data());
 		}
 		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(onColorSpaceChange), this);
-		grid.nextColumn();
-		grid.add(relativeCheck = gtk_check_button_new_with_mnemonic(_("_Relative adjustment")), true);
+		grid.nextColumn().add(relativeCheck = gtk_check_button_new_with_mnemonic(_("_Relative adjustment")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(relativeCheck), options->getBool("relative", true));
 		g_signal_connect(G_OBJECT(relativeCheck), "toggled", G_CALLBACK(onRelativeChange), this);
 		size_t index = 0;
@@ -78,31 +71,21 @@ struct DialogEditArgs {
 			++index;
 		}
 		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
-		setDialogContent(dialog, grid);
+		setContent(grid);
 		setupChannels();
-		update(true);
+		apply(true);
 	}
-	~DialogEditArgs() {
-		gint width, height;
-		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-		options->set("window.width", width);
-		options->set("window.height", height);
+	virtual ~EditDialog() {
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
-		gtk_widget_destroy(dialog);
-	}
-	void run() {
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-			update(false);
-			options->set("color_space", colorSpace->id);
-			options->set("relative", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(relativeCheck)));
-			size_t index = 0;
-			for (auto &channel: channels) {
-				options->set(common::format("adjustment{}", index), static_cast<float>(gtk_range_get_value(GTK_RANGE(channel.adjustmentRange)) / 100));
-				++index;
-			}
+		options->set("color_space", colorSpace->id);
+		options->set("relative", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(relativeCheck)));
+		size_t index = 0;
+		for (auto &channel: channels) {
+			options->set(common::format("adjustment{}", index), static_cast<float>(gtk_range_get_value(GTK_RANGE(channel.adjustmentRange)) / 100));
+			++index;
 		}
 	}
-	void update(bool preview) {
+	virtual void apply(bool preview) override {
 		if (preview)
 			previewColorList->removeAll();
 		colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
@@ -163,23 +146,25 @@ struct DialogEditArgs {
 			gtk_widget_hide(channels[index].adjustmentRange);
 		}
 	}
-	static void onColorSpaceChange(GtkWidget *, DialogEditArgs *args) {
-		args->colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(args->colorSpaceComboBox))];
-		args->setupChannels();
-		args->update(true);
+	static void onColorSpaceChange(GtkWidget *, EditDialog *dialog) {
+		dialog->colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(dialog->colorSpaceComboBox))];
+		dialog->setupChannels();
+		dialog->apply(true);
 	}
-	static void onAdjustmentChange(GtkWidget *, DialogEditArgs *args) {
-		args->update(true);
+	static void onAdjustmentChange(GtkWidget *, EditDialog *dialog) {
+		dialog->apply(true);
 	}
-	static void onRelativeChange(GtkWidget *, DialogEditArgs *args) {
-		args->update(true);
+	static void onRelativeChange(GtkWidget *, EditDialog *dialog) {
+		dialog->apply(true);
 	}
 	static gchar *onFormat(GtkScale *, gdouble value) {
 		return g_strdup_printf("%d%%", static_cast<int>(value));
 	}
 };
 }
-void dialog_edit_show(GtkWindow *parent, ColorList &selectedColorList, GlobalState &gs) {
-	DialogEditArgs args(selectedColorList, gs, parent);
-	args.run();
+void dialog_edit_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs) {
+	ColorList colorList;
+	palette_list_get_selected(paletteWidget, colorList);
+	EditDialog(colorList, gs, parent).run();
+	palette_list_update_selected(paletteWidget, false, true);
 }

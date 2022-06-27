@@ -25,7 +25,7 @@ struct ColorList;
 struct DialogBase {
 	DialogBase(GlobalState &gs, const char *optionsKey, const char *title, GtkWindow *parent);
 	virtual ~DialogBase();
-	void run();
+	bool run();
 	virtual void apply(bool preview) = 0;
 	void setContent(GtkWidget *widget);
 	static void onUpdate(GtkWidget *, DialogBase *);

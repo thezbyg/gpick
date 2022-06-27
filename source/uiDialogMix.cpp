@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -17,6 +17,7 @@
  */
 
 #include "uiDialogMix.h"
+#include "uiDialogBase.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorList.h"
@@ -72,67 +73,36 @@ protected:
 	int m_startPercent, m_endPercent, m_steps, m_stage;
 	bool m_isNode;
 };
-struct DialogMixArgs {
+struct MixDialog: public DialogBase {
 	ColorList &selectedColorList;
-	GlobalState &gs;
-	dynv::Ref options;
-	common::Ref<ColorList> previewColorList;
-	GtkWidget *dialog, *mixTypeCombo, *mixStepsSpin, *endpointsToggle, *previewExpander;
-	DialogMixArgs(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
-		selectedColorList(selectedColorList),
-		gs(gs) {
-		options = gs.settings().getOrCreateMap("gpick.mix");
-		dialog = gtk_dialog_new_with_buttons(_("Mix colors"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
-		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
-
-		int table_y;
-		GtkWidget *table = gtk_table_new(3, 2, FALSE);
-		table_y = 0;
-
-		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-		mixTypeCombo = gtk_combo_box_text_new();
+	GtkWidget *mixTypeCombo, *mixStepsSpin, *endpointsToggle, *previewExpander;
+	MixDialog(ColorList &selectedColorList, GlobalState &gs, GtkWindow *parent):
+		DialogBase(gs, "gpick.mix", _("Mix colors"), parent),
+		selectedColorList(selectedColorList) {
+		Grid grid(2, 4);
+		grid.addLabel(_("Type:"));
+		grid.add(mixTypeCombo = gtk_combo_box_text_new(), true);
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("RGB"));
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("HSV"));
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("LAB"));
 		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("LCH"));
 		gtk_combo_box_set_active(GTK_COMBO_BOX(mixTypeCombo), options->getInt32("type", 0));
-		gtk_table_attach(GTK_TABLE(table), mixTypeCombo, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(mixTypeCombo), "changed", G_CALLBACK(onUpdate), this);
-
-		gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Steps:"), 0, 0, 0, 0), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
-		mixStepsSpin = gtk_spin_button_new_with_range(3, 255, 1);
+		grid.addLabel(_("Steps:"));
+		grid.add(mixStepsSpin = gtk_spin_button_new_with_range(3, 255, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(mixStepsSpin), options->getInt32("steps", 3));
-		gtk_table_attach(GTK_TABLE(table), mixStepsSpin, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-		table_y++;
 		g_signal_connect(G_OBJECT(mixStepsSpin), "value-changed", G_CALLBACK(onUpdate), this);
-
-		endpointsToggle = gtk_check_button_new_with_mnemonic(_("_Include Endpoints"));
+		grid.nextColumn().add(endpointsToggle = gtk_check_button_new_with_mnemonic(_("_Include Endpoints")), true);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(endpointsToggle), options->getBool("includeendpoints", true));
-		gtk_table_attach(GTK_TABLE(table), endpointsToggle, 1, 4, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 		g_signal_connect(G_OBJECT(endpointsToggle), "toggled", G_CALLBACK(onUpdate), this);
-		table_y++;
-
-		gtk_table_attach(GTK_TABLE(table), previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), 0, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 5, 5);
-		table_y++;
-		update(true);
-		setDialogContent(dialog, table);
+		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
+		apply(true);
+		setContent(grid);
 	}
-	~DialogMixArgs() {
-		gint width, height;
-		gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
-		options->set("window.width", width);
-		options->set("window.height", height);
+	virtual ~MixDialog() {
 		options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
-		gtk_widget_destroy(dialog);
 	}
-	void run() {
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
-			update(false);
-		}
-	}
-	void update(bool preview) {
+	virtual void apply(bool preview) override {
 		if (preview)
 			previewColorList->removeAll();
 		int steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(mixStepsSpin));
@@ -258,12 +228,10 @@ struct DialogMixArgs {
 		nameAssigner.assign(colorObject, step);
 		colorList.add(colorObject);
 	}
-	static void onUpdate(GtkWidget *, DialogMixArgs *args) {
-		args->update(true);
-	}
 };
 }
-void dialog_mix_show(GtkWindow *parent, ColorList &selectedColorList, GlobalState &gs) {
-	DialogMixArgs args(selectedColorList, gs, parent);
-	args.run();
+void dialog_mix_show(GtkWindow *parent, GtkWidget *paletteWidget, GlobalState &gs) {
+	ColorList colorList;
+	palette_list_get_selected(paletteWidget, colorList);
+	MixDialog(colorList, gs, parent).run();
 }

@@ -26,7 +26,7 @@ DialogBase::DialogBase(GlobalState &gs, const char *optionsKey, const char *titl
 	dialog(nullptr) {
 	options = gs.settings().getOrCreateMap(optionsKey);
 	dialog = gtk_dialog_new_with_buttons(title, parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
+	gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", 400), options->getInt32("window.height", 400));
 	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
 }
 DialogBase::~DialogBase() {
@@ -38,10 +38,12 @@ DialogBase::~DialogBase() {
 		gtk_widget_destroy(dialog);
 	}
 }
-void DialogBase::run() {
+bool DialogBase::run() {
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		apply(false);
+		return true;
 	}
+	return false;
 }
 void DialogBase::setContent(GtkWidget *widget) {
 	setDialogContent(dialog, widget);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,13 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_IMPORT_EXPORT_H_
-#define GPICK_UI_IMPORT_EXPORT_H_
+#pragma once
 #include <gtk/gtk.h>
 struct GlobalState;
 struct ColorList;
 struct ImportExportDialog {
-	ImportExportDialog(GtkWindow *parent, ColorList &colorList, GlobalState *gs);
+	ImportExportDialog(GtkWindow *parent, ColorList &colorList, GlobalState &gs);
 	~ImportExportDialog();
 	bool showImport();
 	bool showImportTextFile();
@@ -30,6 +29,5 @@ struct ImportExportDialog {
 private:
 	GtkWindow *m_parent;
 	ColorList &m_colorList;
-	GlobalState *m_gs;
+	GlobalState &m_gs;
 };
-#endif /* GPICK_UI_IMPORT_EXPORT_H_ */
