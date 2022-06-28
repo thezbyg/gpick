@@ -16,8 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_ICONTAINER_UI_H_
-#define GPICK_ICONTAINER_UI_H_
+#pragma once
 #include <vector>
 struct ColorObject;
 struct IContainerUI {
@@ -25,5 +24,5 @@ struct IContainerUI {
 	virtual void addColors(const std::vector<ColorObject> &colorObjects) = 0;
 	virtual void removeColors(bool selected) = 0;
 	virtual void editColors() = 0;
+	virtual void find() = 0;
 };
-#endif /* GPICK_ICONTAINER_UI_H_ */

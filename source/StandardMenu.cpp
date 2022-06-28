@@ -241,6 +241,12 @@ static void onEditableColorRemoveAll(GtkWidget *widget, IReadonlyColorUI *readon
 		containerUI->removeColors(false);
 	}
 }
+static void onEditableColorFind(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
+	auto *containerUI = dynamic_cast<IContainerUI *>(readonlyColorUI);
+	if (containerUI && containerUI->isContainer()) {
+		containerUI->find();
+	}
+}
 static void onEditableColorEdit(GtkWidget *widget, IReadonlyColorUI *readonlyColorUI) {
 	auto *colorObject = reinterpret_cast<ColorObject *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "color"));
 	auto &gs = *reinterpret_cast<GlobalState *>(g_object_get_data(G_OBJECT(gtk_widget_get_parent(widget)), "gs"));
@@ -358,6 +364,7 @@ void StandardMenu::contextForColorObject(ColorObject *colorObject, GlobalState *
 		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_e, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
 		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_v, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), (isContainer || hasSelection) && currentlyEditable && clipboard::colorObjectAvailable());
 		if (isContainer) {
+			appender.appendItem(_("_Find..."), GTK_STOCK_FIND, GDK_KEY_f, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorFind), hasColor);
 			appender.appendSeparator();
 			appender.appendItem(_("_Remove"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(0), G_CALLBACK(onEditableColorRemove), hasSelection && currentlyEditable);
 			appender.appendItem(_("Remove _All"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorRemoveAll), hasColor && currentlyEditable);
@@ -393,6 +400,7 @@ void StandardMenu::forInterface(GlobalState *gs, GdkEventButton *event, Interfac
 		appender.appendItem(_("_Edit..."), GTK_STOCK_EDIT, GDK_KEY_e, GdkModifierType(0), G_CALLBACK(onEditableColorEdit), hasSelection && currentlyEditable);
 		appender.appendItem(_("_Paste"), GTK_STOCK_PASTE, GDK_KEY_v, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorPaste), (hasSelection || isContainer) && currentlyEditable && clipboard::colorObjectAvailable());
 		if (isContainer) {
+			appender.appendItem(_("_Find..."), GTK_STOCK_FIND, GDK_KEY_f, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorFind), hasColor);
 			appender.appendSeparator();
 			appender.appendItem(_("_Remove"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(0), G_CALLBACK(onEditableColorRemove), hasSelection && currentlyEditable);
 			appender.appendItem(_("Remove _All"), GTK_STOCK_REMOVE, GDK_KEY_Delete, GdkModifierType(GDK_CONTROL_MASK), G_CALLBACK(onEditableColorRemoveAll), hasColor && currentlyEditable);

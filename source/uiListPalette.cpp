@@ -39,9 +39,11 @@
 #include "IDroppableColorUI.h"
 #include "IContainerUI.h"
 #include "IPalette.h"
+#include <boost/algorithm/string/find.hpp>
 #include <unordered_set>
 #include <sstream>
 #include <iomanip>
+#include <string_view>
 using namespace math;
 namespace {
 enum struct Type {
@@ -131,11 +133,10 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), col);
 		g_object_set(renderer, "editable", TRUE, nullptr);
 		g_signal_connect(renderer, "edited", G_CALLBACK(onCellEdited), store);
-
-		gtk_tree_view_set_enable_search(GTK_TREE_VIEW(treeview), false);
 		gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
 		g_object_unref(GTK_TREE_MODEL(store));
-
+		gtk_tree_view_set_enable_search(GTK_TREE_VIEW(treeview), false);
+		gtk_tree_view_set_search_equal_func(GTK_TREE_VIEW(treeview), onSearchEqual, nullptr, nullptr);
 		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 		gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 		g_signal_connect(G_OBJECT(treeview), "row-activated", G_CALLBACK(onRowActivated), this);
@@ -168,11 +169,10 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gtk_tree_view_column_pack_start(col, renderer, true);
 		gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 		gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), col);
-
-		gtk_tree_view_set_enable_search(GTK_TREE_VIEW(treeview), false);
 		gtk_tree_view_set_model(GTK_TREE_VIEW(treeview), GTK_TREE_MODEL(store));
 		g_object_unref(GTK_TREE_MODEL(store));
-
+		gtk_tree_view_set_enable_search(GTK_TREE_VIEW(treeview), false);
+		gtk_tree_view_set_search_column(GTK_TREE_VIEW(treeview), -1);
 		GtkTreeSelection *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 		gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 		g_signal_connect(G_OBJECT(treeview), "button-press-event", G_CALLBACK(onPreviewButtonPress), this);
@@ -257,6 +257,15 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		} else {
 			colorList.removeAll();
 		}
+	}
+	static gboolean startInteractiveSearch(ListPaletteArgs *args) {
+		gtk_widget_grab_focus(args->treeview);
+		gboolean result;
+		g_signal_emit_by_name(args->treeview, "start-interactive-search", &result);
+		return false;
+	}
+	virtual void find() override {
+		g_idle_add(reinterpret_cast<GSourceFunc>(startInteractiveSearch), this);
 	}
 	virtual void setColor(const ColorObject &colorObject) override {
 		foreachSelectedItem(GTK_TREE_VIEW(treeview), [&colorObject](ColorObject *old) {
@@ -676,6 +685,16 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		}
 		args->updateCounts();
 		return false;
+	}
+	static bool contains(std::string_view value, std::string_view start) {
+		if (start.length() > value.length())
+			return false;
+		return boost::ifind_first(value, start);
+	}
+	static gboolean onSearchEqual(GtkTreeModel *model, gint, const gchar *key, GtkTreeIter *iter, gpointer) {
+		gchar *code, *name;
+		gtk_tree_model_get(model, iter, 1, &code, 2, &name, -1);
+		return !(contains(code, key) || contains(name, key));
 	}
 	ColorObject colorObject;
 };

@@ -1209,6 +1209,15 @@ static void palette_popup_menu_generate(GtkWidget *widget, AppArgs *args) {
 static void palette_popup_menu_equalize(GtkWidget *widget, AppArgs *args) {
 	dialog_equalize_show(GTK_WINDOW(args->window), args->paletteWidget, *args->gs);
 }
+static gboolean startInteractiveSearch(AppArgs *args) {
+	gtk_widget_grab_focus(args->paletteWidget);
+	gboolean result;
+	g_signal_emit_by_name(args->paletteWidget, "start-interactive-search", &result);
+	return false;
+}
+static void palette_popup_menu_find(GtkWidget *widget, AppArgs *args) {
+	g_idle_add(reinterpret_cast<GSourceFunc>(startInteractiveSearch), args);
+}
 static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton *event, AppArgs *args) {
 	auto menu = gtk_menu_new();
 	GtkAccelGroup *accel_group = gtk_accel_group_new();
@@ -1238,6 +1247,11 @@ static gboolean palette_popup_menu_show(GtkWidget *widget, GdkEventButton *event
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_paste), args);
 	gtk_widget_set_sensitive(item, clipboard::colorObjectAvailable());
+	item = newMenuItem(_("_Find..."), GTK_STOCK_FIND);
+	gtk_widget_add_accelerator(item, "activate", accel_group, GDK_KEY_f, GdkModifierType(GDK_CONTROL_MASK), GTK_ACCEL_VISIBLE);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+	g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(palette_popup_menu_find), args);
+	gtk_widget_set_sensitive(item, total_count > 0);
 
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
 	item = newMenuItem (_("_Mix Colors..."), GTK_STOCK_CONVERT);
