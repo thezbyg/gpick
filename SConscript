@@ -8,7 +8,6 @@ env = GpickEnvironment(ENV = os.environ)
 vars = Variables(os.path.join(env.GetLaunchDir(), 'user-config.py'))
 vars.Add('DESTDIR', 'Directory to install under', '/usr/local')
 vars.Add('LOCALEDIR', 'Path to locale directory', '')
-vars.Add('DEBARCH', 'Debian package architecture', 'i386')
 vars.Add(BoolVariable('ENABLE_NLS', 'Compile with gettext support', True))
 vars.Add(BoolVariable('DEBUG', 'Compile with debug information', False))
 vars.Add('BUILD_TARGET', 'Build target', '')
@@ -219,59 +218,6 @@ def buildWindowsResources(env):
 		Depends(resources, 'source/winres/gpick.exe.manifest')
 	return objects
 
-def addDebianPackageAlias(env):
-	DEBNAME = "gpick"
-	DEBVERSION = str(env['GPICK_BUILD_VERSION_FULL'])
-	DEBMAINT = "Albertas Vyšniauskas <albertas.vysniauskas@gpick.org>"
-	DEBARCH = env['DEBARCH']
-	DEBDEPENDS = "libgtk2.0-0 (>= 2.24), libc6 (>= 2.13), liblua5.2-0 (>= 5.2), libcairo2 (>=1.8), libglib2.0-0 (>=2.24)"
-	DEBPRIORITY = "optional"
-	DEBSECTION = "graphics"
-	DEBDESC = "Advanced color picker"
-	DEBDESCLONG = """ Gpick is a program used to pick colors
- from anywhere on the screen, mix them to
- get new colors, generate shades and tints
- and export palettes to common file formats
- or simply copy them to the clipboard
-"""
-	DEBPACKAGEFILE = '%s_%s_%s.deb' % (DEBNAME, DEBVERSION, DEBARCH)
-	CONTROL_TEMPLATE = """Package: %s
-Version: %s
-Section: %s
-Priority: %s
-Architecture: %s
-Depends: %s
-Installed-Size: %s
-Maintainer: %s
-Description: %s
-%s"""
-	DEBCONTROLDIR = os.path.join("deb", DEBNAME, "DEBIAN")
-	DEBCONTROLFILE = os.path.join(DEBCONTROLDIR, "control")
-	DEBINSTALLDIR = os.path.join('deb' , DEBNAME, 'usr')
-	env['DESTDIR'] = DEBINSTALLDIR #redirect install location
-	def writeControlFile(target = None, source = None, env = None):
-		installedSize = 0
-		files = Glob(os.path.join('build', 'deb', DEBNAME, 'usr'))
-		for i in files:
-			installedSize += os.stat(str(i))[6]
-		installedSize = int(math.ceil(installedSize/1024))
-		controlInfo = CONTROL_TEMPLATE % (
-			DEBNAME, DEBVERSION, DEBSECTION, DEBPRIORITY, DEBARCH,
-			DEBDEPENDS, str(installedSize), DEBMAINT, DEBDESC, DEBDESCLONG)
-		f = open(str(target[0]), 'w')
-		f.write(controlInfo)
-		f.close()
-		return None
-	env.Append(BUILDERS = {
-		'DebianPackage': Builder(action = "fakeroot dpkg-deb -b %s %s" % ("$SOURCE", "$TARGET")),
-		'DebianControl': Builder(action = writeControlFile),
-	})
-	env.Alias(target = "debian", source = [
-		env.Install(dir = DEBCONTROLDIR, source = [env.Glob("deb/DEBIAN/*")]),
-		env.DebianControl(source = env.Alias('install'), target = DEBCONTROLFILE),
-		env.DebianPackage(source = env.Dir(os.path.join('deb', DEBNAME)), target = os.path.join('.', DEBPACKAGEFILE))
-	])
-
 def buildGpick(env):
 	gpick_env = env.Clone()
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
@@ -335,9 +281,6 @@ executable, tests = buildGpick(env)
 
 env.Alias(target = "build", source = [executable, env.Install('source', executable)])
 env.Alias(target = "test", source = [tests, env.Install('source', tests)])
-
-if 'debian' in COMMAND_LINE_TARGETS:
-	addDebianPackageAlias(env)
 
 if env['ENABLE_NLS']:
 	translations = env.Glob('share/locale/*/LC_MESSAGES/gpick.po')

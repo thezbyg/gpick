@@ -1,0 +1,85 @@
+trigger: none
+pr: none
+
+schedules:
+- cron: "0 0 * * *"
+  displayName: "Nightly package"
+  branches:
+    include:
+    - master
+
+jobs:
+- job: package
+  displayName: "Nightly package"
+  pool:
+    vmImage: ubuntu-latest
+  strategy:
+    maxParallel: 2
+    matrix:
+      debian_stable_amd64:
+        image: buildpack-deps:stable
+        distribution: debian
+        release: stable
+        architecture: amd64
+        lua_package: liblua5.4-dev
+      ubuntu_bionic_amd64:
+        image: buildpack-deps:focal
+        distribution: ubuntu
+        release: focal
+        architecture: amd64
+        lua_package: liblua5.3-dev
+  container:
+    image: $[ variables['image'] ]
+    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
+  steps:
+  - script: >
+      /tmp/docker exec -t -u 0 ci-container
+      sh -c "apt update && DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confold" -y install sudo"
+    displayName: "Install sudo in container"
+  - script: >
+      sudo apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends
+      gettext ragel cmake git gcc g++
+      libgtk-3-dev libboost-test-dev libexpat1-dev $(lua_package)
+      dpkg-dev python3 python3-jinja2
+    displayName: "Install dependencies"
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ ..'
+    displayName: "Configure"
+  - script: |
+      cmake --build . --config Release
+    workingDirectory: 'build'
+    displayName: "Build"
+  - script: |
+      ./build/tests --log_format=JUNIT --report_format=HRF -k tests-log.xml -e tests-report.txt --no_result_code
+    workingDirectory: ''
+    displayName: "Run tests"
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'tests-*.xml'
+    displayName: "Publish test results"
+  - bash: echo "##vso[task.setvariable variable=version;]`python3 ../.azure-pipelines/package.py version`"
+    workingDirectory: 'build'
+    displayName: "Get version"
+  - script: |
+      make install DESTDIR=./gpick_$(version)_$(architecture)/
+    workingDirectory: 'build'
+    displayName: "Install"
+  - script: |
+      python3 ../.azure-pipelines/package.py
+    workingDirectory: 'build'
+    displayName: "Generate package"
+  - task: CopyFiles@2
+    inputs:
+      contents: build/gpick_$(version)_$(architecture).deb
+      targetFolder: '$(Build.ArtifactStagingDirectory)'
+      flattenFolders: true
+    displayName: "Copy files"
+  - task: PublishPipelineArtifact@1
+    inputs:
+      artifactName: $(distribution)-$(release)
+      targetPath: $(Build.ArtifactStagingDirectory)/gpick_$(version)_$(architecture).deb
+    displayName: "Publish"
+

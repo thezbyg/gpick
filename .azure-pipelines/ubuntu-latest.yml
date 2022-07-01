@@ -2,9 +2,10 @@ trigger:
 - master
 
 jobs:
-- job: build_on_ubuntu_latest
+- job: build
+  displayName: "Build"
   strategy:
-    maxParallel: 2
+    maxParallel: 4
     matrix:
       gcc_gtk3_lua52:
         publish_prefix: gcc-gtk3-lua52

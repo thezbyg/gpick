@@ -1,6 +1,8 @@
 # Gpick - advanced color picker and palette editor.
 
-[![Build Status](https://dev.azure.com/thezbyg/Gpick/_apis/build/status/thezbyg.gpick?branchName=master)](https://dev.azure.com/thezbyg/Gpick/_build/latest?definitionId=1&branchName=master)
+<img src="wiki/images/logo.png" align="right" alt="Gpick logo" width="150" height="150" />
+
+[![Build Status](https://dev.azure.com/thezbyg/Gpick/_apis/build/status/thezbyg.gpick?branchName=master)](https://dev.azure.com/thezbyg/Gpick/_build/latest?definitionId=1&branchName=master) [![Nightly packages](wiki/images/nightly.svg)](https://dev.azure.com/thezbyg/Gpick/_build/latest?definitionId=4&branchName=master)
 
 Gpick is an application that allows you to sample any color from anywhere on the desktop, and use it to create palettes (i.e. collections of colors) for use in graphic design applications. Gpick also has other features that help in the creation of color palettes, such as:
 
@@ -8,6 +10,10 @@ Gpick is an application that allows you to sample any color from anywhere on the
 * Automatic naming of colors
 * Color scheme generator
 * Import and export from various file formats
+
+<p align="center">
+<img src="wiki/images/readme-screenshot.png" alt="Gpick screenshot" width="500" />
+</p>
 
 ## Building from source
 
