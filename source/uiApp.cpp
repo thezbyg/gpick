@@ -92,7 +92,7 @@ struct AppArgs
 	GtkWidget *statusbar;
 	GtkWidget *hpaned;
 	GtkWidget *vpaned;
-	GtkWidget *palette;
+	GtkWidget *paletteScrolledWindow;
 	uiStatusIcon* status_icon;
 	FloatingPicker floatingPicker;
 	StartupOptions startupOptions;
@@ -670,7 +670,7 @@ static void repositionViews(AppArgs* args)
 	bool primary_view = args->options->getBool("view.primary_view", true);
 	bool secondary_view = gtk_widget_get_visible(args->secondary_source_container);
 	string layout = args->options->getString("view.layout", "primary+secondary_palette");
-	GtkWidget *widgets[4] = { args->palette, args->vpaned, args->secondary_source_container, args->notebook };
+	GtkWidget *widgets[4] = { args->paletteScrolledWindow, args->vpaned, args->secondary_source_container, args->notebook };
 	for (size_t i = 0; i < sizeof(widgets) / sizeof(GtkWidget*); i++){
 		g_object_ref(widgets[i]);
 		GtkWidget *parent = gtk_widget_get_parent(widgets[i]);
@@ -682,7 +682,7 @@ static void repositionViews(AppArgs* args)
 		GtkWidget *widget;
 		bool visible;
 	}named_widgets[] = {
-		{"palette", args->palette, palette},
+		{"palette", args->paletteScrolledWindow, palette},
 		{"primary", args->notebook, primary_view},
 		{"secondary", args->secondary_source_container, secondary_view},
 	};
@@ -1633,6 +1633,26 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &returnValue)
 	gtk_widget_show_all(vbox_main);
 	app_initialize_floating_picker(args);
 	app_initialize_picker(args, notebook);
+	GtkWidget *countLabel = gtk_label_new("");
+	args->paletteWidget = palette_list_new(*args->gs, countLabel);
+	auto columnWidths = args->options->getInt32s("column_widths");
+	for (size_t i = 0; ; ++i) {
+		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(args->paletteWidget), i);
+		if (!column)
+			break;
+		if (i < columnWidths.size())
+			gtk_tree_view_column_set_fixed_width(column, columnWidths[i]);
+	}
+	gtk_widget_show(args->paletteWidget);
+	g_signal_connect(G_OBJECT(args->paletteWidget), "popup-menu", G_CALLBACK(on_palette_popup_menu), args);
+	g_signal_connect(G_OBJECT(args->paletteWidget), "button-press-event",G_CALLBACK(on_palette_button_press), args);
+	g_signal_connect(G_OBJECT(args->paletteWidget), "key_press_event", G_CALLBACK(on_palette_list_key_press), args);
+	GtkWidget *scrolledWindow = gtk_scrolled_window_new(0, 0);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolledWindow), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_shadow_type(GTK_SCROLLED_WINDOW(scrolledWindow), GTK_SHADOW_IN);
+	gtk_container_add(GTK_CONTAINER(scrolledWindow), args->paletteWidget);
+	gtk_widget_show(scrolledWindow);
+	args->paletteScrolledWindow = scrolledWindow;
 	{
 		auto generateSchemeOptions = args->gs->settings().getOrCreateMap("gpick.generate_scheme");
 		const auto &registration = args->csm["generate_scheme"];
@@ -1662,28 +1682,6 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &returnValue)
 		gtk_notebook_append_page(GTK_NOTEBOOK(notebook), widget, gtk_label_new_with_mnemonic(_("Lay_out preview")));
 		gtk_widget_show(widget);
 	}
-	GtkWidget *count_label = gtk_label_new("");
-	widget = palette_list_new(*args->gs, count_label);
-	args->paletteWidget = widget;
-	auto columnWidths = args->options->getInt32s("column_widths");
-	for (size_t i = 0; ; ++i) {
-		GtkTreeViewColumn *column = gtk_tree_view_get_column(GTK_TREE_VIEW(widget), i);
-		if (!column)
-			break;
-		if (i < columnWidths.size())
-			gtk_tree_view_column_set_fixed_width(column, columnWidths[i]);
-	}
-	gtk_widget_show(widget);
-	g_signal_connect(G_OBJECT(widget), "popup-menu", G_CALLBACK(on_palette_popup_menu), args);
-	g_signal_connect(G_OBJECT(widget), "button-press-event",G_CALLBACK(on_palette_button_press), args);
-	g_signal_connect(G_OBJECT(widget), "key_press_event", G_CALLBACK(on_palette_list_key_press), args);
-	GtkWidget *scrolled_window;
-	scrolled_window = gtk_scrolled_window_new (0,0);
-	gtk_scrolled_window_set_policy (GTK_SCROLLED_WINDOW (scrolled_window),GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-	gtk_scrolled_window_set_shadow_type (GTK_SCROLLED_WINDOW(scrolled_window), GTK_SHADOW_IN);
-	gtk_container_add(GTK_CONTAINER(scrolled_window), args->paletteWidget );
-	gtk_widget_show(scrolled_window);
-	args->palette = scrolled_window;
 	args->hpaned = hpaned;
 	args->notebook = notebook;
 	repositionViews(args);
@@ -1717,8 +1715,8 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &returnValue)
 	gtk_container_add(GTK_CONTAINER(button), newIcon("gpick", 16));
 	gtk_box_pack_end(GTK_BOX(statusbar), button, false, false, 0);
 	gtk_widget_show_all(button);
-	gtk_box_pack_end(GTK_BOX(statusbar), count_label, false, false, 0);
-	gtk_widget_show_all(count_label);
+	gtk_box_pack_end(GTK_BOX(statusbar), countLabel, false, false, 0);
+	gtk_widget_show_all(countLabel);
 	widget = newIcon(GTK_STOCK_DIALOG_WARNING, 16);
 	gtk_widget_set_tooltip_text(widget, _("File is currently in a non-native format, possible loss of precision and/or metadata."));
 	args->precision_loss_icon = widget;
