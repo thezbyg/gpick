@@ -21,12 +21,12 @@
 #include <vector>
 struct ColorObject;
 struct IDraggableColorUI {
-	virtual void dragEnd(bool move) = 0;
+	virtual void dragEnd(bool move, bool failed) = 0;
 };
 struct IDroppableColorUI {
 	virtual void setColorAt(const ColorObject &colorObject, int x, int y) = 0;
 	virtual bool testDropAt(int x, int y) = 0;
-	virtual void dropEnd(bool move) = 0;
+	virtual void dropEnd(bool move, bool self) = 0;
 };
 struct IDroppableColorsUI: IDroppableColorUI {
 	virtual void setColorsAt(const std::vector<ColorObject> &colorObjects, int x, int y) = 0;

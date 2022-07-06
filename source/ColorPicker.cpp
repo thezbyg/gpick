@@ -522,7 +522,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		virtual bool testDropAt(int x, int y) override {
 			return args.testDropAt(x, y);
 		}
-		virtual void dropEnd(bool move) override {
+		virtual void dropEnd(bool move, bool self) override {
 		}
 	private:
 		ColorPickerArgs &args;

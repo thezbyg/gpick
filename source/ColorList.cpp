@@ -84,7 +84,7 @@ void ColorList::add(const ColorObject &colorObject) {
 	m_changed = true;
 }
 void ColorList::add(ColorList &colorList) {
-	common::Guard colorListGuard = changeGuard();
+	auto guard = changeGuard();
 	for (auto *colorObject: colorList) {
 		m_colors.push_back(colorObject->reference());
 		m_palette.add(*this, colorObject);
@@ -154,8 +154,8 @@ ColorObject *&ColorList::front() {
 ColorObject *&ColorList::back() {
 	return m_colors.back();
 }
-common::Guard<void (*)(ColorList *), ColorList *> ColorList::changeGuard() {
-	return common::Guard(startChanges(), ColorList::onEndChanges, this);
+ColorList::Guard ColorList::changeGuard() {
+	return Guard(startChanges(), ColorList::onEndChanges, this);
 }
 void ColorList::onEndChanges(ColorList *colorList) {
 	colorList->endChanges();

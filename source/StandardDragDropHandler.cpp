@@ -211,15 +211,16 @@ static gboolean onDragMotion(GtkWidget *widget, GdkDragContext *context, gint x,
 }
 static gboolean onDragDrop(GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, IReadonlyColorUI *readonlyColorUI) {
 	GdkAtom target = gtk_drag_dest_find_target(widget, context, 0);
+	bool sameWidget = gtk_drag_get_source_widget(context) == widget;
 	auto *droppableColorUI = dynamic_cast<IDroppableColorUI*>(readonlyColorUI);
 	if (target != GDK_NONE) {
 		gtk_drag_get_data(widget, context, target, time);
 		if (droppableColorUI)
-			droppableColorUI->dropEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE);
+			droppableColorUI->dropEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE, sameWidget);
 		return true;
 	}
 	if (droppableColorUI)
-		droppableColorUI->dropEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE);
+		droppableColorUI->dropEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE, sameWidget);
 	return false;
 }
 static void onDragDataGet(GtkWidget *widget, GdkDragContext *context, GtkSelectionData *selectionData, Target targetType, guint time, IReadonlyColorUI *readonlyColorUI) {
@@ -342,7 +343,13 @@ static void onDragEnd(GtkWidget *widget, GdkDragContext *context, IReadonlyColor
 	}
 	auto *draggableColorUI = dynamic_cast<IDraggableColorUI*>(readonlyColorUI);
 	if (draggableColorUI)
-		draggableColorUI->dragEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE);
+		draggableColorUI->dragEnd(gdk_drag_context_get_selected_action(context) == GDK_ACTION_MOVE, false);
+}
+static gboolean onDragFailed(GtkWidget *widget, GdkDragContext *context, GtkDragResult result, IReadonlyColorUI *readonlyColorUI) {
+	auto *draggableColorUI = dynamic_cast<IDraggableColorUI*>(readonlyColorUI);
+	if (draggableColorUI)
+		draggableColorUI->dragEnd(false, true);
+	return false;
 }
 static void onStateDestroy(State *state){
 	delete state;
@@ -394,6 +401,7 @@ void StandardDragDropHandler::forWidget(GtkWidget *widget, GlobalState *gs, Inte
 		g_signal_connect_data(widget, "drag-data-get", G_CALLBACK(onDragDataGet), data, nullptr, flags);
 		g_signal_connect_data(widget, "drag-begin", G_CALLBACK(onDragBegin), data, nullptr, flags);
 		g_signal_connect_data(widget, "drag-end", G_CALLBACK(onDragEnd), data, nullptr, flags);
+		g_signal_connect_data(widget, "drag-failed", G_CALLBACK(onDragFailed), data, nullptr, flags);
 	}
 	auto *editableColorUI = dynamic_cast<IEditableColorUI *>(static_cast<IReadonlyColorUI *>(data));
 	if (options.m_allowDrop && editableColorUI) {

@@ -252,7 +252,7 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 		virtual bool testDropAt(int, int) override {
 			return args.selectMain();
 		}
-		virtual void dropEnd(bool move) override {
+		virtual void dropEnd(bool move, bool self) override {
 		}
 	private:
 		BrightnessDarknessArgs &args;

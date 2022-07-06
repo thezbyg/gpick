@@ -216,7 +216,7 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 		virtual bool testDropAt(int x, int y) override {
 			return args.select(x, y);
 		}
-		virtual void dropEnd(bool move) override {
+		virtual void dropEnd(bool move, bool self) override {
 		}
 	private:
 		LayoutPreviewArgs &args;

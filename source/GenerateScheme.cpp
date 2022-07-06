@@ -445,7 +445,7 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 			int index = gtk_color_wheel_get_at(GTK_COLOR_WHEEL(args.colorWheel), x, y);
 			return index >= 0 && index < maxColors;
 		}
-		virtual void dropEnd(bool move) override {
+		virtual void dropEnd(bool move, bool self) override {
 		}
 	private:
 		GenerateSchemeArgs &args;

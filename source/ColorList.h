@@ -71,7 +71,8 @@ struct ColorList: public common::Ref<ColorList>::Counter {
 	std::vector<ColorObject *>::const_reverse_iterator rend() const;
 	ColorObject *&front();
 	ColorObject *&back();
-	common::Guard<void (*)(ColorList *), ColorList *> changeGuard();
+	using Guard = common::Guard<void (*)(ColorList *), ColorList *>;
+	Guard changeGuard();
 	[[nodiscard]] static common::Ref<ColorList> newList();
 	[[nodiscard]] static common::Ref<ColorList> newList(IPalette &palette);
 private:

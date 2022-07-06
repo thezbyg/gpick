@@ -280,6 +280,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		setColorsAt(std::vector<ColorObject>{ colorObject }, x, y);
 	}
 	std::unordered_set<ColorObject *> droppedColors;
+	std::optional<ColorList::Guard> dropGuard, dragGuard;
 	virtual void setColorsAt(const std::vector<ColorObject> &colorObjects, int x, int y) override {
 		droppedColors.clear();
 		removeScrollTimeout();
@@ -303,7 +304,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		} else {
 			position = gtk_tree_model_iter_n_children(model, nullptr);
 		}
-		common::Guard colorListGuard = colorList.changeGuard();
+		dropGuard.emplace(std::move(colorList.changeGuard()));
 		for (auto &colorObject: colorObjects) {
 			GtkTreeIter iter;
 			if (insertIterator) {
@@ -417,7 +418,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 			scrollTimeout = 0;
 		}
 	}
-	virtual void dropEnd(bool move) override {
+	virtual void dropEnd(bool move, bool self) override {
 		countUpdateBlocked = true;
 		removeScrollTimeout();
 		auto *selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
@@ -442,12 +443,25 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 			valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(model), &iter);
 		}
 		droppedColors.clear();
-		countUpdateBlocked = false;
-		updateCounts();
+		if (self) {
+			dragGuard.emplace(std::move(*dropGuard));
+			dropGuard.reset();
+		} else {
+			dropGuard.reset();
+			countUpdateBlocked = false;
+			updateCounts();
+		}
 	}
-	virtual void dragEnd(bool move) override {
+	virtual void dragEnd(bool move, bool failed) override {
 		countUpdateBlocked = true;
 		removeScrollTimeout();
+		if (failed) {
+			draggingColors.clear();
+			countUpdateBlocked = false;
+			dragGuard.reset();
+			updateCounts();
+			return;
+		}
 		if (move) {
 			GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(treeview)));;
 			GtkTreeIter iter;
@@ -473,6 +487,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		}
 		draggingColors.clear();
 		countUpdateBlocked = false;
+		dragGuard.reset();
 		updateCounts();
 	}
 	struct SelectionBoundsArgs {
