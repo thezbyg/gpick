@@ -26,10 +26,9 @@
 #include "lua/Script.h"
 #include "lua/DynvSystem.h"
 #include "lua/Callbacks.h"
+#include "lua/Lua.h"
 #include <string>
 #include <iostream>
-#include <lualib.h>
-#include <lauxlib.h>
 using namespace std;
 static const struct{
 	const char *label;

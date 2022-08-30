@@ -19,9 +19,8 @@
 #include "ColorObject.h"
 #include "Color.h"
 #include "Script.h"
+#include "Lua.h"
 #include "../ColorObject.h"
-#include <lualib.h>
-#include <lauxlib.h>
 namespace lua
 {
 static int newColorObject(lua_State *L)

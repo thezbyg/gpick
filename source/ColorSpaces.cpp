@@ -23,7 +23,7 @@
 #include "lua/Color.h"
 #include "lua/Script.h"
 #include "lua/Callbacks.h"
-#include <lua.h>
+#include "lua/Lua.h"
 #include <iostream>
 #include <stdexcept>
 static const ColorSpaceDescription colorSpaceDescriptions[] = {

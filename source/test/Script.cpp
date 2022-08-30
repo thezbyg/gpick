@@ -18,9 +18,8 @@
 
 #include <boost/test/unit_test.hpp>
 #include "lua/Script.h"
+#include "lua/Lua.h"
 #include "common/Scoped.h"
-#include <lualib.h>
-#include <lauxlib.h>
 using namespace lua;
 static int test(lua_State *L) {
 	lua_pushstring(L, "ok");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2017, Albertas Vyšniauskas
+ * Copyright (c) 2009-2022, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,53 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Ref.h"
-#include "Lua.h"
-namespace lua
-{
-Ref::Ref():
-	m_ref(LUA_NOREF),
-	m_L(nullptr)
-{
+#ifndef GPICK_LUA_LUA_H_
+#define GPICK_LUA_LUA_H_
+extern "C" {
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 }
-Ref::Ref(lua_State *L, int index)
-{
-	lua_pushvalue(L, index);
-	m_ref = luaL_ref(L, LUA_REGISTRYINDEX);
-	m_L = L;
-}
-Ref::Ref(Ref &&ref)
-{
-	m_ref = ref.m_ref;
-	m_L = ref.m_L;
-	ref.m_ref = LUA_NOREF;
-	ref.m_L = nullptr;
-}
-Ref::~Ref()
-{
-	if (m_L && m_ref != LUA_NOREF)
-		luaL_unref(m_L, LUA_REGISTRYINDEX, m_ref);
-}
-void Ref::get()
-{
-	if (!m_L)
-		return;
-	lua_rawgeti(m_L, LUA_REGISTRYINDEX, m_ref);
-}
-lua_State *Ref::script()
-{
-	return m_L;
-}
-Ref &Ref::operator=(Ref &&ref)
-{
-	m_ref = ref.m_ref;
-	m_L = ref.m_L;
-	ref.m_ref = LUA_NOREF;
-	ref.m_L = nullptr;
-	return *this;
-}
-bool Ref::valid() const
-{
-	return m_L && m_ref != LUA_NOREF;
-}
-}
+#endif /* GPICK_LUA_LUA_H_ */

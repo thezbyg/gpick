@@ -17,9 +17,8 @@
  */
 
 #include "Color.h"
+#include "Lua.h"
 #include "../Color.h"
-#include <lualib.h>
-#include <lauxlib.h>
 namespace lua
 {
 static int newColor(lua_State *L)

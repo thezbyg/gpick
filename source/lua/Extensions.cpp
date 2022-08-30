@@ -25,14 +25,13 @@
 #include "I18N.h"
 #include "GlobalState.h"
 #include "Callbacks.h"
+#include "Lua.h"
 #include "../GlobalState.h"
 #include "../layout/Layouts.h"
 #include "../layout/Layout.h"
 #include "../Converters.h"
 #include "../Converter.h"
 #include "version/Version.h"
-#include <lualib.h>
-#include <lauxlib.h>
 namespace lua
 {
 static void checkArgumentIsFunctionOrNil(lua_State *L, int index)

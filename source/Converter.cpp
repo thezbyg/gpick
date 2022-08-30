@@ -22,10 +22,9 @@
 #include "lua/Color.h"
 #include "lua/ColorObject.h"
 #include "lua/Script.h"
+#include "lua/Lua.h"
 #include <string>
 #include <iostream>
-#include <lualib.h>
-#include <lauxlib.h>
 Converter::Options Converter::emptyOptions = {};
 Converter::Converter(const char *name, const char *label, lua::Ref &&serialize, lua::Ref &&deserialize):
 	m_name(name),

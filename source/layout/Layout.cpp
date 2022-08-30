@@ -20,9 +20,8 @@
 #include "System.h"
 #include "Style.h"
 #include "lua/Layout.h"
+#include "lua/Lua.h"
 #include <iostream>
-#include <lualib.h>
-#include <lauxlib.h>
 namespace layout {
 Layout::Layout(std::string_view name, std::string_view label, int mask, lua::Ref &&callback):
 	m_name(name),

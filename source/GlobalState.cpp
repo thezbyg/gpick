@@ -35,11 +35,10 @@
 #include "lua/Script.h"
 #include "lua/Extensions.h"
 #include "lua/Callbacks.h"
+#include "lua/Lua.h"
 #include <filesystem>
 #include <cstdlib>
 #include <glib/gstdio.h>
-#include <lualib.h>
-#include <lauxlib.h>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>

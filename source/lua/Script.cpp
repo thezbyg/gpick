@@ -17,9 +17,8 @@
  */
 
 #include "Script.h"
+#include "Lua.h"
 #include <sstream>
-#include <lualib.h>
-#include <lauxlib.h>
 #include <iostream>
 using namespace std;
 namespace lua

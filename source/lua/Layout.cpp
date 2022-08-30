@@ -19,13 +19,12 @@
 #include "Layout.h"
 #include "Script.h"
 #include "Color.h"
+#include "Lua.h"
 #include "GlobalState.h"
 #include "layout/Box.h"
 #include "layout/Layout.h"
 #include "layout/Style.h"
 #include "layout/System.h"
-#include <lualib.h>
-#include <lauxlib.h>
 #include <typeinfo>
 #include <iostream>
 namespace lua {
