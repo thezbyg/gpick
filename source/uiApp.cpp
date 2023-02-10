@@ -66,6 +66,7 @@
 #include <string.h>
 #include <string>
 #include <sstream>
+#include <list>
 #include <map>
 #include <vector>
 #include <algorithm>
