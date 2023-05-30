@@ -21,7 +21,7 @@
 #include "lua/Ref.h"
 #include "common/Scoped.h"
 #include <string>
-#include <locale>
+#include <clocale>
 struct ColorObject;
 struct Color;
 struct ConverterSerializePosition {
