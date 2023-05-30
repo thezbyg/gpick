@@ -26,6 +26,8 @@
 #include <iostream>
 #if BOOST_OS_WINDOWS != 0
 #include <windows.h>
+#elif BOOST_OS_MACOS != 0
+#include <mach-o/dyld.h>
 #else
 #include <unistd.h>
 #endif
@@ -61,6 +63,17 @@ static std::string getExecutablePath() {
 		if (length < buffer.size())
 			return std::string(buffer.begin(), buffer.begin() + length);
 		buffer.resize(buffer.size() * 2);
+	}
+}
+#elif BOOST_OS_MACOS != 0
+static std::string getExecutablePath() {
+	uint32_t bufferSize = 4096;
+	std::vector<char> buffer;
+	buffer.resize(bufferSize);
+	while (1) {
+		if (_NSGetExecutablePath(buffer.data(), &bufferSize) == 0)
+			return buffer.data();
+		buffer.resize(bufferSize);
 	}
 }
 #else
