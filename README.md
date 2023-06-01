@@ -83,3 +83,9 @@ ENABLE\_NLS - compile with gettext support. Enabled by default.
 USE\_GTK3 - use GTK3 instead of GTK2. Enabled by default.
 
 PREFER\_VERSION\_FILE - read version information from file instead of using GIT. Disabled by default. This option enables unconditional `.version` file usage. `.version` file is included in release source archives and is a simple text file containing the following information in four lines: major/minor version, revision, commit hash and commit date.
+
+LUA\_TYPE - select used Lua library type. Default is `patched-C++`. Can be set to one of the following values:
+
+ * `C++` - compiled with C++ compiler and API function symbols are mangled.
+ * `patched-C++` - compiled with C++ compiler, but API functions are defined as `extern "C"` and symbols are not mangled.
+ * `C` - compiled with C compiler (this is the default Lua library build type).

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-import os, string, sys, shutil, math
+import os, string, sys, shutil, math, SCons.Util
 from tools import *
 
 env = GpickEnvironment(ENV = os.environ)
@@ -17,6 +17,7 @@ vars.Add(BoolVariable('PREBUILD_GRAMMAR', 'Use prebuild grammar files', False))
 vars.Add(BoolVariable('USE_GTK3', 'Use GTK3 instead of GTK2', True))
 vars.Add(BoolVariable('DEV_BUILD', 'Use development flags', False))
 vars.Add(BoolVariable('PREFER_VERSION_FILE', 'Read version information from file instead of using GIT', False))
+vars.Add(EnumVariable('LUA_TYPE', 'Lua library type', 'patched-C++', allowed_values = ('C++', 'patched-C++', 'C')))
 vars.Update(env)
 
 if env['LOCALEDIR'] == '':
@@ -77,7 +78,10 @@ if not env.GetOption('clean'):
 			libs['GIO_PC'] = {'checks':{'gio-unix-2.0': '>= 2.26.0', 'gio-2.0': '>= 2.26.0'}}
 		else:
 			libs['GTK_PC'] = {'checks':{'gtk+-3.0': '>= 3.0.0'}}
-		libs['LUA_PC'] = {'checks':{'lua5.4-c++': '>= 5.4', 'lua5.3-c++': '>= 5.3', 'lua-c++': '>= 5.2', 'lua5.2-c++': '>= 5.2'}}
+		if env['LUA_TYPE'] != 'C':
+			libs['LUA_PC'] = {'checks':{'lua5.4-c++': '>= 5.4', 'lua5-c++': '>= 5.4', 'lua-c++': '>= 5.4', 'lua5.3-c++': '>= 5.3', 'lua5-c++': '>= 5.3', 'lua-c++': '>= 5.3', 'lua5.2-c++': '>= 5.2', 'lua5-c++': '>= 5.2', 'lua-c++': '>= 5.2'}}
+		else:
+			libs['LUA_PC'] = {'checks':{'lua5.4': '>= 5.4', 'lua5': '>= 5.4', 'lua': '>= 5.4', 'lua5.3': '>= 5.3', 'lua5': '>= 5.3', 'lua': '>= 5.3', 'lua5.2': '>= 5.2', 'lua5': '>= 5.2', 'lua': '>= 5.2'}}
 	env.ConfirmLibs(conf, libs)
 	env.ConfirmBoost(conf, '1.71')
 	env = conf.Finish()
@@ -155,6 +159,8 @@ def buildLayout(env):
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 		layout_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 		layout_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	if env['LUA_TYPE'] == 'C++':
+		layout_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	return layout_env.StaticObject(layout_env.Glob('source/layout/*.cpp'))
 
 def buildGtk(env):
@@ -162,12 +168,14 @@ def buildGtk(env):
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 		gtk_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 		gtk_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	if env['LUA_TYPE'] == 'C++':
+		gtk_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	return gtk_env.StaticObject(gtk_env.Glob('source/gtk/*.cpp'))
 
 def buildI18n(env):
 	i18n_env = env.Clone()
 	if not env.GetOption('clean'):
-		if i18n_env['ENABLE_NLS']:
+		if env['ENABLE_NLS']:
 			i18n_env.Append(CPPDEFINES = ['ENABLE_NLS', 'LOCALEDIR=' + i18n_env['LOCALEDIR']])
 	return i18n_env.StaticObject(i18n_env.Glob('source/i18n/*.cpp'))
 
@@ -189,8 +197,10 @@ def buildTools(env):
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 		tools_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 		tools_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
-	if tools_env['ENABLE_NLS']:
+	if env['ENABLE_NLS']:
 		tools_env.Append(CPPDEFINES = ['ENABLE_NLS'])
+	if env['LUA_TYPE'] == 'C++':
+		tools_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	return tools_env.StaticObject(tools_env.Glob('source/tools/*.cpp'))
 
 def buildLua(env):
@@ -198,6 +208,8 @@ def buildLua(env):
 	if not env.GetOption('clean') and not env['TOOLCHAIN'] == 'msvc':
 		lua_env.ParseConfig('pkg-config --cflags --libs $GTK_PC')
 		lua_env.ParseConfig('pkg-config --cflags --libs $LUA_PC')
+	if env['LUA_TYPE'] == 'C++':
+		lua_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	return lua_env.StaticObject(lua_env.Glob('source/lua/*.cpp'))
 
 def buildColorNames(env):
@@ -225,6 +237,8 @@ def buildGpick(env):
 		gpick_env.ParseConfig('pkg-config --cflags --libs $LUA_PC', None, False)
 	if env['ENABLE_NLS']:
 		gpick_env.Append(CPPDEFINES = ['ENABLE_NLS'])
+	if env['LUA_TYPE'] == 'C++':
+		gpick_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	gpick_env.Append(CPPDEFINES = ['GSEAL_ENABLE'])
 	sources = gpick_env.Glob('source/*.cpp') + gpick_env.Glob('source/transformation/*.cpp')
 
@@ -273,7 +287,7 @@ def buildGpick(env):
 	test_env = gpick_env.Clone()
 	test_env.Append(LIBS = ['boost_unit_test_framework'], CPPDEFINES = ['BOOST_TEST_DYN_LINK'])
 
-	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/' + name] for name in ['Color', 'EventBus', 'lua/Script', 'lua/Ref', 'lua/Color', 'lua/ColorObject', 'ColorList', 'ColorObject', 'FileFormat', 'ErrorCode', 'Converter', 'Converters', 'InternalConverters', 'version/Version']] + dynv_objects + text_file_parser_objects + common_objects)
+	tests = test_env.Program('tests', source = test_env.Glob('source/test/*.cpp') + [object_map['source/' + name] for name in ['Color', 'EventBus', 'lua/Script', 'lua/Ref', 'lua/Color', 'lua/ColorObject', 'ColorList', 'ColorObject', 'FileFormat', 'ErrorCode', 'Converter', 'Converters', 'InternalConverters', 'math/BinaryTreeQuantization', 'math/OctreeColorQuantization', 'version/Version']] + dynv_objects + text_file_parser_objects + common_objects)
 
 	return executable, tests
 

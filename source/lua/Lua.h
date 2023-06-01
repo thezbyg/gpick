@@ -18,9 +18,13 @@
 
 #ifndef GPICK_LUA_LUA_H_
 #define GPICK_LUA_LUA_H_
+#ifndef LUA_SYMBOLS_MANGLED
 extern "C" {
+#endif
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
+#ifndef LUA_SYMBOLS_MANGLED
 }
+#endif
 #endif /* GPICK_LUA_LUA_H_ */
