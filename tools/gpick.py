@@ -161,7 +161,7 @@ class GpickEnvironment(SConsEnvironment):
 				pass
 		if not haveVersionInfo:
 			try:
-				with open("../.version", "r", encoding = 'utf-8') as version_file:
+				with open(self.File('#.version').abspath, "r", encoding = 'utf-8') as version_file:
 					(version, revision, hash, date) = version_file.read().splitlines()
 			except:
 				print("Version file \".version\" is required when GIT can not be used to get version information.")
