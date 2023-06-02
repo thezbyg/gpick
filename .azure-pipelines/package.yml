@@ -14,7 +14,7 @@ jobs:
   pool:
     vmImage: ubuntu-latest
   strategy:
-    maxParallel: 2
+    maxParallel: 3
     matrix:
       debian_stable_amd64:
         image: buildpack-deps:stable
@@ -22,19 +22,26 @@ jobs:
         release: stable
         architecture: amd64
         lua_package: liblua5.4-dev
-      ubuntu_bionic_amd64:
+      ubuntu_focal_amd64:
         image: buildpack-deps:focal
         distribution: ubuntu
         release: focal
         architecture: amd64
         lua_package: liblua5.3-dev
+      ubuntu_jammy_amd64:
+        image: buildpack-deps:jammy
+        distribution: ubuntu
+        release: jammy
+        architecture: amd64
+        lua_package: liblua5.4-dev
   container:
     image: $[ variables['image'] ]
-    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
+    options: "--name ci-container"
   steps:
   - script: >
-      /tmp/docker exec -t -u 0 ci-container
+      docker exec --tty --user 0 ci-container
       sh -c "apt update && DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confold" -y install sudo"
+    target: host
     displayName: "Install sudo in container"
   - script: >
       sudo apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends
