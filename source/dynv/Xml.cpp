@@ -106,10 +106,10 @@ struct SerializeVisitor {
 		if (!writeListStart(stream, name, dynv::types::typeHandler<T>().name))
 			return false;
 		++indentation;
-		for (const auto &i: values) {
+		for (std::conditional_t<std::is_arithmetic_v<T>, T, const T &> i: values) {
 			if (!writeIndentation(stream, indentation))
 				return false;
-			if constexpr (std::is_same_v<std::decay_t<decltype(i)>, common::Ref<Map>>) {
+			if constexpr (std::is_same_v<T, common::Ref<Map>>) {
 				if (!writeStart(stream, "li"s, true))
 					return false;
 				++indentation;
