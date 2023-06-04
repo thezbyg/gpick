@@ -18,6 +18,7 @@
 
 #ifndef GPICK_DYNV_XML_H_
 #define GPICK_DYNV_XML_H_
+#include <cstddef>
 #include <iosfwd>
 namespace dynv {
 struct Map;

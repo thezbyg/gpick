@@ -17,7 +17,9 @@
  */
 
 #include "DynvSystem.h"
+#include "dynv/Map.h"
 #include "Lua.h"
+#include <new>
 namespace lua {
 dynv::Ref checkDynvSystem(lua_State *L, int index) {
 	void *ud = luaL_checkudata(L, index, "dynvSystem");

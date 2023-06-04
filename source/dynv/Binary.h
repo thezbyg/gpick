@@ -19,6 +19,7 @@
 #ifndef GPICK_DYNV_BINARY_H_
 #define GPICK_DYNV_BINARY_H_
 #include "Types.h"
+#include <cstdint>
 #include <iosfwd>
 #include <unordered_map>
 namespace dynv {

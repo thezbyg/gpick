@@ -17,6 +17,7 @@
  */
 
 #include "Format.h"
+#include <cstddef>
 namespace common {
 namespace detail {
 std::string format(const char *format, const Span<StringOrView> values) {

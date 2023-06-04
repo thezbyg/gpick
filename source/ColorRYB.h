@@ -19,10 +19,6 @@
 #ifndef GPICK_COLOR_RYB_H_
 #define GPICK_COLOR_RYB_H_
 #include "Color.h"
-#ifndef _MSC_VER
-#include <stdbool.h>
-#endif
-#include <stdint.h>
 double color_ryb_transform_lightness(double hue1, double hue2);
 double color_ryb_transform_hue(double hue, bool forward);
 void color_rybhue_to_rgb(double hue, Color *color);

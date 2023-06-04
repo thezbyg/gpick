@@ -20,7 +20,7 @@
 #define GPICK_COLOR_WHEEL_TYPE_H_
 
 #include "Color.h"
-#include <stdint.h>
+#include <cstdint>
 
 /** \file source/ColorWheelType.h
  * \brief Color wheel type description structure and functions

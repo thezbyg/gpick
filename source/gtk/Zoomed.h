@@ -20,7 +20,7 @@
 #define GPICK_GTK_ZOOMED_H_
 
 #include <gtk/gtk.h>
-#include <stdint.h>
+#include <cstdint>
 #include "Color.h"
 #include "math/Rectangle.h"
 #include "math/Vector.h"

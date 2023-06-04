@@ -23,6 +23,7 @@
 #include "common/Ref.h"
 #include "math/Vector.h"
 #include <string>
+#include <string_view>
 namespace layout {
 struct Box;
 struct Style: public common::Ref<Style>::Counter {

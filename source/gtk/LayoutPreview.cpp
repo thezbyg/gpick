@@ -22,6 +22,7 @@
 #include "layout/Style.h"
 #include "layout/Context.h"
 #include "transformation/Chain.h"
+#include <new>
 #include <typeinfo>
 enum {
 	COLOR_CHANGED,

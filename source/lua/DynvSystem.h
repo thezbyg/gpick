@@ -18,7 +18,7 @@
 
 #ifndef GPICK_LUA_DYNV_SYSTEM_H_
 #define GPICK_LUA_DYNV_SYSTEM_H_
-#include "dynv/Map.h"
+#include "dynv/MapFwd.h"
 struct lua_State;
 namespace lua {
 int registerDynvSystem(lua_State *L);

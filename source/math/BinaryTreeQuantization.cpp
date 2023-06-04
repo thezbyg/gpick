@@ -18,10 +18,9 @@
 
 #include "BinaryTreeQuantization.h"
 #include "Algorithms.h"
-#include <stdexcept>
-#include <cstring>
-#include <cmath>
 #include <algorithm>
+#include <cstring>
+#include <new>
 namespace math {
 template<typename T>
 using Node = typename BinaryTreeQuantization<T>::Node;

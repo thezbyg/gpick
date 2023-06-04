@@ -17,18 +17,12 @@
  */
 
 #include "uiStatusIcon.h"
-#include "gtk/Zoomed.h"
-#include "gtk/ColorWidget.h"
 #include "uiUtilities.h"
 #include "uiApp.h"
 #include "GlobalState.h"
-#include "ColorPicker.h"
 #include "FloatingPicker.h"
-#include "Converter.h"
 #include "dynv/Map.h"
 #include "I18N.h"
-#include <gdk/gdkkeysyms.h>
-using namespace math;
 
 struct uiStatusIcon
 {

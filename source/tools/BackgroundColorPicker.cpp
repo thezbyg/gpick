@@ -17,7 +17,6 @@
  */
 
 #include "BackgroundColorPicker.h"
-#include "uiListPalette.h"
 #include "uiUtilities.h"
 #include "ColorObject.h"
 #include "GlobalState.h"

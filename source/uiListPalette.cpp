@@ -17,33 +17,36 @@
  */
 
 #include "uiListPalette.h"
-#include "uiUtilities.h"
 #include "gtk/ColorCell.h"
 #include "ColorObject.h"
 #include "ColorList.h"
 #include "IColorSource.h"
 #include "GlobalState.h"
 #include "Converters.h"
-#include "Converter.h"
-#include "GlobalState.h"
 #include "EventBus.h"
 #include "uiDialogEdit.h"
 #include "uiColorInput.h"
-#include "dynv/Map.h"
 #include "I18N.h"
 #include "common/Format.h"
 #include "common/Guard.h"
+#include "common/Ref.h"
+#include "math/Algorithms.h"
 #include "StandardMenu.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
 #include "IContainerUI.h"
 #include "IPalette.h"
+#include "IEditableColorUI.h"
 #include <boost/algorithm/string/find.hpp>
-#include <unordered_set>
+#include <cstddef>
+#include <optional>
 #include <sstream>
-#include <iomanip>
+#include <string>
 #include <string_view>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 using namespace math;
 namespace {
 enum struct Type {
@@ -304,7 +307,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		} else {
 			position = gtk_tree_model_iter_n_children(model, nullptr);
 		}
-		dropGuard.emplace(std::move(colorList.changeGuard()));
+		dropGuard.emplace(colorList.changeGuard());
 		for (auto &colorObject: colorObjects) {
 			GtkTreeIter iter;
 			if (insertIterator) {

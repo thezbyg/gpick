@@ -18,13 +18,9 @@
 
 #ifndef GPICK_UI_APP_H_
 #define GPICK_UI_APP_H_
-#include "dynv/Map.h"
+#include "dynv/MapFwd.h"
 #include <string>
 #include <gtk/gtk.h>
-struct GlobalState;
-struct ColorObject;
-struct Converters;
-struct Color;
 int main_show_window(GtkWidget* window, const dynv::Ref &options);
 struct AppArgs;
 struct StartupOptions {

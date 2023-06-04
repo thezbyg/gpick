@@ -20,13 +20,14 @@
 #include "Color.h"
 #include "math/Algorithms.h"
 #include <cstring>
-#include <stdlib.h>
-#include <cstddef>
 #include <functional>
 #include <vector>
 #include <string>
-#include <iostream>
 #include <cmath>
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <utility>
 namespace text_file_parser {
 enum struct Unit {
 	unitless,

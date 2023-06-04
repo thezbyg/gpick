@@ -18,6 +18,7 @@
 
 #ifndef GPICK_COMMON_STRING_OR_VIEW_H_
 #define GPICK_COMMON_STRING_OR_VIEW_H_
+#include <cstddef>
 #include <string>
 #include <string_view>
 namespace common {

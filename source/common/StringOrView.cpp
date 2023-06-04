@@ -17,6 +17,8 @@
  */
 
 #include "StringOrView.h"
+#include <new>
+#include <utility>
 namespace common {
 StringOrView::StringOrView():
 	m_type(Type::view) {

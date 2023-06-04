@@ -19,9 +19,9 @@
 #ifdef ENABLE_NLS
 #include <libintl.h>
 #endif
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
 
 #define TO_STRING(x) #x
 #define T_(x) TO_STRING(x)
@@ -31,8 +31,8 @@ void initialize_i18n()
 #ifdef ENABLE_NLS
 	bindtextdomain("gpick", T_(LOCALEDIR));
 	char *td = textdomain("gpick");
-	if (!(td && (strcmp(td, "gpick") == 0))){
-		fprintf(stderr, "failed to load textdomain \"gpick\"\n");
+	if (!(td && (std::strcmp(td, "gpick") == 0))){
+		std::fprintf(stderr, "failed to load textdomain \"gpick\"\n");
 	}
 #endif
 }

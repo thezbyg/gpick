@@ -20,14 +20,12 @@
 #define GPICK_DYNV_VARIABLE_H_
 #include "MapFwd.h"
 #include "Color.h"
-#include "common/Ref.h"
 #include <string>
 #include <string_view>
 #include <vector>
 #include <cstdint>
 #include <variant>
 namespace dynv {
-struct Map;
 struct Variable {
 	using Data = std::variant<bool, float, int32_t, Color, std::string, Ref, std::vector<bool>, std::vector<float>, std::vector<int32_t>, std::vector<Color>, std::vector<std::string>, std::vector<Ref>>;
 	Variable(const std::string &name, bool value);

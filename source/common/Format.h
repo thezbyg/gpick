@@ -24,6 +24,7 @@
 #include <string_view>
 #include <array>
 #include <type_traits>
+#include <utility>
 namespace common {
 namespace detail {
 std::string format(const char *format, const Span<StringOrView> values);

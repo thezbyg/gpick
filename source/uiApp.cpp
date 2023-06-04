@@ -17,6 +17,7 @@
  */
 
 #include "uiApp.h"
+#include "Color.h"
 #include "ColorObject.h"
 #include "ColorList.h"
 #include "GlobalState.h"
@@ -28,10 +29,9 @@
 #include "Converters.h"
 #include "StandardMenu.h"
 #include "RegisterSources.h"
-#include "GenerateScheme.h"
 #include "ColorPicker.h"
-#include "LayoutPreview.h"
 #include "ImportExport.h"
+#include "FloatingPicker.h"
 #include "uiAbout.h"
 #include "uiListPalette.h"
 #include "uiUtilities.h"
@@ -57,22 +57,25 @@
 #include "dbus/Control.h"
 #include "dynv/Map.h"
 #include "common/Guard.h"
-#include "FileFormat.h"
+#include "common/Ref.h"
 #include "Clipboard.h"
 #include "I18N.h"
 #include "color_names/ColorNames.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
-#include <string.h>
-#include <string>
-#include <sstream>
-#include <map>
-#include <vector>
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <iostream>
-#include <filesystem>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 using namespace std;
 
 struct AppArgs
@@ -174,7 +177,7 @@ static gboolean on_window_key_press(GtkWidget *widget, GdkEventKey *event, AppAr
 	guint modifiers = gtk_accelerator_get_default_mod_mask();
 	if (event->keyval == GDK_KEY_space && (event->state & modifiers) == GDK_CONTROL_MASK) {
 		if (args->current_color_source != nullptr && IColorPicker::isColorPicker(*args->current_color_source)) {
-			auto &colorPicker = *dynamic_cast<IColorPicker *>(args->current_color_source);
+			auto &colorPicker = *static_cast<IColorPicker *>(args->current_color_source);
 			colorPicker.focusSwatch();
 			colorPicker.pick();
 			return true;
@@ -256,7 +259,7 @@ static void destroy_cb(GtkWidget *widget, AppArgs *args)
 
 static void app_update_program_name(AppArgs *args)
 {
-	stringstream program_title;
+	std::stringstream program_title;
 	if (!args->current_filename_set){
 		program_title << _("New palette");
 		if (args->precision_loss_icon)
@@ -1689,7 +1692,7 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &returnValue)
 				if (colorSource == (*i).second.get()) {
 					gtk_notebook_set_current_page(GTK_NOTEBOOK(args->notebook), tabIndex);
 					if (IColorPicker::isColorPicker(*colorSource))
-						dynamic_cast<IColorPicker *>(colorSource)->focusSwatch();
+						static_cast<IColorPicker *>(colorSource)->focusSwatch();
 					break;
 				}
 				tabIndex++;

@@ -22,7 +22,7 @@
 #include "math/Matrix.h"
 #include "math/Vector.h"
 #include <string>
-#include <stdint.h>
+#include <cstdint>
 
 /** \file source/Color.h
  * \brief Color structure and functions to convert colors from one color space to another.

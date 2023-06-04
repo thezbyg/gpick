@@ -17,7 +17,7 @@
  */
 
 #include "Random.h"
-#include <string.h>
+#include <cstring>
 
 static unsigned long random_function_znew(struct Random* r, unsigned long seed_offset)
 {

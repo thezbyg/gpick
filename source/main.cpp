@@ -22,10 +22,10 @@
 #include "uiApp.h"
 #include "I18N.h"
 #include "version/Version.h"
-#include "dynv/Map.h"
 #include <gtk/gtk.h>
 #include <string>
 #include <iostream>
+#include <clocale>
 using namespace std;
 
 static gchar **commandline_filename = nullptr;
@@ -52,7 +52,7 @@ static GOptionEntry commandline_entries[] =
 };
 int main(int argc, char **argv)
 {
-	setlocale(LC_ALL, "");
+	std::setlocale(LC_ALL, "");
 	gtk_init(&argc, &argv);
 	initialize_i18n();
 	g_set_application_name(program_name);

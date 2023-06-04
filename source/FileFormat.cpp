@@ -24,9 +24,10 @@
 #include "common/Scoped.h"
 #include "common/Result.h"
 #include "version/Version.h"
-#include <string.h>
-#include <fstream>
 #include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <vector>
 #include <boost/endian/conversion.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 

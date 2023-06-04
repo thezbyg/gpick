@@ -19,6 +19,7 @@
 #include "ColorWidget.h"
 #include "Color.h"
 #include "Shapes.h"
+#include <new>
 enum {
 	ACTIVATED, LAST_SIGNAL,
 };
