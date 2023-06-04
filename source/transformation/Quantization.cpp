@@ -22,8 +22,6 @@
 #include "uiUtilities.h"
 #include "I18N.h"
 #include <gtk/gtk.h>
-#include <math.h>
-#include <string.h>
 #include <boost/math/special_functions/round.hpp>
 namespace transformation {
 static const char *transformationId = "quantization";

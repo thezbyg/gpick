@@ -31,6 +31,7 @@
 #include "layout/Layouts.h"
 #include "transformation/Chain.h"
 #include "transformation/Factory.h"
+#include "transformation/Transformation.h"
 #include "dynv/Map.h"
 #include "lua/Script.h"
 #include "lua/Extensions.h"

@@ -26,7 +26,6 @@
 #include "version/Version.h"
 #include <string.h>
 #include <fstream>
-#include <list>
 #include <algorithm>
 #include <boost/endian/conversion.hpp>
 #include <boost/algorithm/string/predicate.hpp>

@@ -22,13 +22,13 @@
 #include "Color.h"
 #include "Paths.h"
 #include "dynv/Map.h"
-#include <string.h>
+#include <cstring>
 #include <sstream>
 #include <fstream>
 #include <functional>
-#include <list>
 #include <algorithm>
 #include <map>
+#include <vector>
 using namespace std;
 
 struct ColorNameEntry
@@ -44,7 +44,7 @@ struct ColorEntry
 const int SpaceDivisions = 8;
 struct ColorNames
 {
-	std::list<ColorNameEntry*> names;
+	std::vector<ColorNameEntry *> names;
 	std::vector<ColorEntry*> colors[SpaceDivisions][SpaceDivisions][SpaceDivisions];
 };
 ColorNames* color_names_new()
@@ -54,8 +54,8 @@ ColorNames* color_names_new()
 }
 void color_names_clear(ColorNames *color_names)
 {
-	for (auto i = color_names->names.begin(); i != color_names->names.end(); i++){
-		delete *i;
+	for (auto *name: color_names->names) {
+		delete name;
 	}
 	color_names->names.clear();
 	for (int x = 0; x < SpaceDivisions; x++){

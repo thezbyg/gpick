@@ -18,19 +18,20 @@
 
 #ifndef GPICK_TRANSFORMATION_CHAIN_H_
 #define GPICK_TRANSFORMATION_CHAIN_H_
-#include "Transformation.h"
-#include <list>
+#include <vector>
 #include <memory>
 
+struct Color;
 /** \file source/transformation/Chain.h
  * \brief Struct for transformation object list handling.
  */
 namespace transformation {
+struct Transformation;
 /** \struct Chain
  * \brief Transformation object chain management struct.
  */
 struct Chain {
-	using TransformationList = std::list<std::unique_ptr<Transformation>>;
+	using Transformations = std::vector<std::unique_ptr<Transformation>>;
 	/**
 	* Chain constructor.
 	*/
@@ -64,9 +65,9 @@ struct Chain {
 	* Get the list of transformation objects.
 	* @return Transformation object list.
 	*/
-	TransformationList &getAll();
+	Transformations &getAll();
 private:
-	TransformationList m_transformationChain;
+	Transformations m_transformationChain;
 	bool m_enabled;
 };
 }

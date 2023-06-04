@@ -20,7 +20,6 @@
 #include "ColorVisionDeficiency.h"
 #include "GammaModification.h"
 #include "Quantization.h"
-#include <string.h>
 namespace transformation {
 std::unique_ptr<Transformation> Factory::create(const std::string &type) {
 	if (type == ColorVisionDeficiency::getId())

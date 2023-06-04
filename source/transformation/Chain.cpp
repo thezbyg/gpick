@@ -17,6 +17,8 @@
  */
 
 #include "Chain.h"
+#include "Transformation.h"
+#include "Color.h"
 namespace transformation {
 Chain::Chain():
 	m_enabled(true) {
@@ -53,7 +55,7 @@ void Chain::remove(const Transformation *transformation) {
 void Chain::clear() {
 	m_transformationChain.clear();
 }
-Chain::TransformationList &Chain::getAll() {
+Chain::Transformations &Chain::getAll() {
 	return m_transformationChain;
 }
 void Chain::setEnabled(bool enabled) {

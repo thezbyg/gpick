@@ -80,7 +80,7 @@ struct AppArgs
 	GtkWidget *window;
 	std::map<std::string, std::unique_ptr<IColorSource>, std::less<>> colorSourceMap;
 	std::vector<IColorSource *> colorSourceIndex;
-	list<string> recent_files;
+	std::vector<std::string> recentFiles;
 	ColorSourceManager csm;
 	IColorSource *current_color_source;
 	std::unique_ptr<IColorSource> secondary_color_source;
@@ -110,19 +110,15 @@ struct AppArgs
 
 static void app_release(AppArgs *args);
 
-static void update_recent_file_list(AppArgs *args, const char *filename, bool move_up)
-{
-	list<string>::iterator i = std::find(args->recent_files.begin(), args->recent_files.end(), string(filename));
-	if (i == args->recent_files.end()){
-		args->recent_files.push_front(string(filename));
-		while (args->recent_files.size() > 10){
-			args->recent_files.pop_back();
-		}
-	}else{
-		if (move_up){
-			args->recent_files.erase(i);
-			args->recent_files.push_front(string(filename));
-		}
+static void updateRecentFileList(AppArgs *args, std::string_view filename, bool moveUp) {
+	auto i = std::find(args->recentFiles.begin(), args->recentFiles.end(), filename);
+	if (i == args->recentFiles.end()) {
+		args->recentFiles.emplace(args->recentFiles.begin(), filename);
+		while (args->recentFiles.size() > 10)
+			args->recentFiles.pop_back();
+	} else if (moveUp) {
+		args->recentFiles.erase(i);
+		args->recentFiles.emplace(args->recentFiles.begin(), filename);
 	}
 }
 
@@ -316,7 +312,6 @@ static void menu_file_new(GtkWidget *widget, AppArgs *args)
 
 int app_save_file(AppArgs *args, const char *filename, const char *filter)
 {
-	using namespace std::filesystem;
 	string current_filename;
 	if (filename != nullptr){
 		current_filename = filename;
@@ -351,7 +346,7 @@ int app_save_file(AppArgs *args, const char *filename, const char *filter)
 		args->current_filename = current_filename;
 		args->current_filename_set = true;
 		app_update_program_name(args);
-		update_recent_file_list(args, current_filename.c_str(), true);
+		updateRecentFileList(args, current_filename, true);
 		return 0;
 	}else{
 		app_update_program_name(args);
@@ -390,7 +385,7 @@ int app_load_file(AppArgs *args, const std::string &filename, ColorList &colorLi
 		if (!autoload){
 			args->current_filename = filename;
 			args->current_filename_set = true;
-			update_recent_file_list(args, filename.c_str(), false);
+			updateRecentFileList(args, filename, false);
 		}
 		app_update_program_name(args);
 	}else{
@@ -433,9 +428,10 @@ static void menu_file_revert(GtkWidget *widget, AppArgs *args)
 
 static void menu_file_open_last(GtkWidget *widget, AppArgs *args)
 {
-	const char *filename = args->recent_files.begin()->c_str();
-	if (app_load_file(args, filename) == 0){
-	}else{
+	if (args->recentFiles.empty())
+		return;
+	const char *filename = args->recentFiles[0].c_str();
+	if (app_load_file(args, filename) != 0) {
 		GtkWidget* message;
 		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
 		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
@@ -446,12 +442,11 @@ static void menu_file_open_last(GtkWidget *widget, AppArgs *args)
 
 static void menu_file_open_nth(GtkWidget *widget, AppArgs *args)
 {
-	list<string>::iterator i = args->recent_files.begin();
 	uintptr_t index = (uintptr_t)g_object_get_data(G_OBJECT(widget), "index");
-	std::advance(i, index);
-	const char *filename = (*i).c_str();
-	if (app_load_file(args, filename) == 0){
-	}else{
+	if (args->recentFiles.empty() || index >= args->recentFiles.size())
+		return;
+	const char *filename = args->recentFiles[index].c_str();
+	if (app_load_file(args, filename) != 0) {
 		GtkWidget* message;
 		message = gtk_message_dialog_new(GTK_WINDOW(args->window), GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, _("File could not be opened"));
 		gtk_window_set_title(GTK_WINDOW(message), _("Open"));
@@ -618,7 +613,7 @@ static void menu_file_export(GtkWidget *widget, AppArgs *args) {
 struct FileMenuItems {
 	GtkWidget *export_all;
 	GtkWidget *export_selected;
-	GtkWidget *recent_files;
+	GtkWidget *recentFiles;
 	GtkWidget *revert;
 };
 
@@ -631,26 +626,26 @@ static void menu_file_activate(GtkWidget *widget, gpointer data)
 	gtk_widget_set_sensitive(items->export_all, (total_count >= 1));
 	gtk_widget_set_sensitive(items->export_selected, (selected_count >= 1));
 	gtk_widget_set_sensitive(items->revert, args->current_filename_set);
-	if (args->recent_files.size() > 0){
+	if (!args->recentFiles.empty()) {
 		GtkMenu *menu2 = GTK_MENU(gtk_menu_new());
 		GtkWidget *item;
 		item = newMenuItem(_("Open Last File"), GTK_STOCK_OPEN);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
-		g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_open_last), args);
-		gtk_menu_shell_append (GTK_MENU_SHELL (menu2), gtk_separator_menu_item_new ());
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
+		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open_last), args);
+		gtk_menu_shell_append(GTK_MENU_SHELL(menu2), gtk_separator_menu_item_new ());
 		uintptr_t j = 0;
-		for (list<string>::iterator i = args->recent_files.begin(); i != args->recent_files.end(); i++){
-			item = gtk_menu_item_new_with_label ((*i).c_str());
-			gtk_menu_shell_append (GTK_MENU_SHELL (menu2), item);
+		for (const auto &recentFile: args->recentFiles) {
+			item = gtk_menu_item_new_with_label(recentFile.c_str());
+			gtk_menu_shell_append(GTK_MENU_SHELL(menu2), item);
 			g_object_set_data_full(G_OBJECT(item), "index", (void*)j, (GDestroyNotify)nullptr);
-			g_signal_connect (G_OBJECT (item), "activate", G_CALLBACK(menu_file_open_nth), args);
+			g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open_nth), args);
 			j++;
 		}
 		gtk_widget_show_all(GTK_WIDGET(menu2));
-		gtk_menu_item_set_submenu (GTK_MENU_ITEM (items->recent_files), GTK_WIDGET(menu2));
-		gtk_widget_set_sensitive(items->recent_files, true);
+		gtk_menu_item_set_submenu(GTK_MENU_ITEM(items->recentFiles), GTK_WIDGET(menu2));
+		gtk_widget_set_sensitive(items->recentFiles, true);
 	}else{
-		gtk_widget_set_sensitive(items->recent_files, false);
+		gtk_widget_set_sensitive(items->recentFiles, false);
 	}
 }
 
@@ -948,7 +943,7 @@ static void create_menu(GtkMenuBar *menu_bar, AppArgs *args, GtkAccelGroup *acce
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(menu_file_open), args);
 	}
 	item = gtk_menu_item_new_with_mnemonic(_("Recent _Files"));
-	items->recent_files = item;
+	items->recentFiles = item;
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
 	if (gtk_stock_lookup(GTK_STOCK_REVERT_TO_SAVED, &stock_item)){
 		item = newMenuItem(stock_item.label, stock_item.stock_id);
@@ -1724,11 +1719,7 @@ AppArgs* app_create_main(const StartupOptions &startupOptions, int &returnValue)
 		gtk_widget_show(widget);
 	gtk_box_pack_end(GTK_BOX(statusbar), widget, false, false, 0);
 	gtk_widget_show(statusbar);
-	{
-		//Load recent file list
-		auto recentFiles = args->gs->settings().getStrings("gpick.recent.files");
-		args->recent_files = std::list<std::string>(recentFiles.begin(), recentFiles.end());
-	}
+	args->recentFiles = args->gs->settings().getStrings("gpick.recent.files");
 	create_menu(GTK_MENU_BAR(menu_bar), args, accel_group);
 	gtk_widget_show_all(menu_bar);
 	args->status_icon = status_icon_new(args->window, args->gs, args->floatingPicker);
@@ -1758,8 +1749,7 @@ static void app_release(AppArgs *args) {
 }
 
 static void app_save_recent_file_list(AppArgs *args) {
-	std::vector<std::string> recentFiles(args->recent_files.begin(), args->recent_files.end());
-	args->gs->settings().set("gpick.recent.files", recentFiles);
+	args->gs->settings().set("gpick.recent.files", args->recentFiles);
 }
 
 struct FloatingPickerAction

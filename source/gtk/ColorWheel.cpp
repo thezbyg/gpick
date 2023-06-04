@@ -19,7 +19,6 @@
 #include "ColorWheel.h"
 #include "Color.h"
 #include "ColorWheelType.h"
-#include <list>
 #include <iostream>
 enum {
 	HUE_CHANGED, SATURATION_VALUE_CHANGED, LAST_SIGNAL
