@@ -113,7 +113,7 @@ struct SerializeVisitor {
 				if (!writeStart(stream, "li"s, true))
 					return false;
 				++indentation;
-				if (!types::xml::write(stream, i, indentation))
+				if (!types::xml::write(stream, T(i), indentation))
 					return false;
 				--indentation;
 				if (!writeIndentation(stream, indentation))
@@ -123,7 +123,7 @@ struct SerializeVisitor {
 			} else {
 				if (!writeStart(stream, "li"s))
 					return false;
-				if (!types::xml::write(stream, i))
+				if (!types::xml::write(stream, T(i)))
 					return false;
 				if (!writeEnd(stream, "li"s))
 					return false;
