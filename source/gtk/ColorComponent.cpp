@@ -550,51 +550,49 @@ static gboolean onDraw(GtkWidget *widget, cairo_t *cr) {
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 1);
 		cairo_stroke(cr);
-		if (ns->text[i] || ns->label[i]) {
-			PangoLayout *layout;
-			PangoFontDescription *font_description;
-			font_description = pango_font_description_new();
-			layout = pango_cairo_create_layout(cr);
-			pango_font_description_set_family(font_description, "sans");
-			pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
-			pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
-			pango_layout_set_font_description(layout, font_description);
-			pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
-			pango_layout_set_single_paragraph_mode(layout, true);
+		PangoLayout *layout;
+		PangoFontDescription *font_description;
+		font_description = pango_font_description_new();
+		layout = pango_cairo_create_layout(cr);
+		pango_font_description_set_family(font_description, "sans");
+		pango_font_description_set_weight(font_description, PANGO_WEIGHT_NORMAL);
+		pango_font_description_set_absolute_size(font_description, 12 * PANGO_SCALE);
+		pango_layout_set_font_description(layout, font_description);
+		pango_layout_set_wrap(layout, PANGO_WRAP_WORD);
+		pango_layout_set_single_paragraph_mode(layout, true);
 #if GTK_MAJOR_VERSION >= 3
-			//TODO: GTK3 font color
+		//TODO: GTK3 font color
 #else
-			gdk_cairo_set_source_color(cr, &widget->style->text[0]);
+		gdk_cairo_set_source_color(cr, &widget->style->text[0]);
 #endif
-			int width, height;
-			if (ns->text[i]) {
-				pango_layout_set_text(layout, ns->text[i], -1);
-				pango_layout_set_width(layout, 40 * PANGO_SCALE);
-				pango_layout_set_height(layout, 16 * PANGO_SCALE);
-				pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
-				pango_cairo_update_layout(cr, layout);
-				pango_layout_get_pixel_size(layout, &width, &height);
-				cairo_move_to(cr, 200 + offset_x - 5, i * 16);
-				pango_cairo_show_layout(cr, layout);
-			}
-			if (ns->label[i][0] && ns->label[i][1] && offset_x > 10) {
-				if (offset_x > 50) {
-					pango_layout_set_text(layout, ns->label[i][1], -1);
-				} else {
-					pango_layout_set_text(layout, ns->label[i][0], -1);
-				}
-				pango_layout_set_width(layout, (offset_x - 10) * PANGO_SCALE);
-				pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
-				pango_layout_set_height(layout, 16 * PANGO_SCALE);
-				pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
-				pango_cairo_update_layout(cr, layout);
-				pango_layout_get_pixel_size(layout, &width, &height);
-				cairo_move_to(cr, 5, i * 16);
-				pango_cairo_show_layout(cr, layout);
-			}
-			g_object_unref(layout);
-			pango_font_description_free(font_description);
+		int width, height;
+		if (ns->text[i]) {
+			pango_layout_set_text(layout, ns->text[i], -1);
+			pango_layout_set_width(layout, 40 * PANGO_SCALE);
+			pango_layout_set_height(layout, 16 * PANGO_SCALE);
+			pango_layout_set_alignment(layout, PANGO_ALIGN_RIGHT);
+			pango_cairo_update_layout(cr, layout);
+			pango_layout_get_pixel_size(layout, &width, &height);
+			cairo_move_to(cr, 200 + offset_x - 5, i * 16);
+			pango_cairo_show_layout(cr, layout);
 		}
+		if (ns->label[i][0] && ns->label[i][1] && offset_x > 10) {
+			if (offset_x > 50) {
+				pango_layout_set_text(layout, ns->label[i][1], -1);
+			} else {
+				pango_layout_set_text(layout, ns->label[i][0], -1);
+			}
+			pango_layout_set_width(layout, (offset_x - 10) * PANGO_SCALE);
+			pango_layout_set_ellipsize(layout, PANGO_ELLIPSIZE_END);
+			pango_layout_set_height(layout, 16 * PANGO_SCALE);
+			pango_layout_set_alignment(layout, PANGO_ALIGN_LEFT);
+			pango_cairo_update_layout(cr, layout);
+			pango_layout_get_pixel_size(layout, &width, &height);
+			cairo_move_to(cr, 5, i * 16);
+			pango_cairo_show_layout(cr, layout);
+		}
+		g_object_unref(layout);
+		pango_font_description_free(font_description);
 	}
 	return TRUE;
 }
