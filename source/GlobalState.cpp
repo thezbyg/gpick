@@ -50,9 +50,16 @@ struct ConverterOptions: public Converter::Options, public IEventHandler {
 	}
 	void update() {
 		auto options = m_settings.getMap("gpick.options");
-		upperCaseHex = options->getString("hex_case", "upper") == "upper";
-		cssPercentages = options->getBool("css_percentages", false);
-		cssAlphaPercentage = options->getBool("css_alpha_percentage", false);
+		if(options){
+			upperCaseHex = options->getString("hex_case", "upper") == "upper";
+			cssPercentages = options->getBool("css_percentages", false);
+			cssAlphaPercentage = options->getBool("css_alpha_percentage", false);
+		}
+		else{
+			upperCaseHex=true;
+			cssPercentages=false;
+			cssAlphaPercentage=false;
+		}
 	}
 	virtual ~ConverterOptions() {
 	}

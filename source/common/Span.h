@@ -19,6 +19,7 @@
 #ifndef GPICK_COMMON_SPAN_H_
 #define GPICK_COMMON_SPAN_H_
 #include <type_traits>
+#include <cstdint>
 #include <iterator>
 namespace common {
 template<typename T, typename SizeT = size_t>
