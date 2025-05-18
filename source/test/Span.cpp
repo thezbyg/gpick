@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(iteration) {
 		j++;
 		result += i;
 	}
-	BOOST_CHECK_EQUAL(j, 4);
+	BOOST_CHECK_EQUAL(j, 4u);
 	BOOST_CHECK_EQUAL(result, "test");
 }
 BOOST_AUTO_TEST_CASE(constIteration) {
@@ -40,21 +40,21 @@ BOOST_AUTO_TEST_CASE(constIteration) {
 		j++;
 		result += i;
 	}
-	BOOST_CHECK_EQUAL(j, 4);
+	BOOST_CHECK_EQUAL(j, 4u);
 	BOOST_CHECK_EQUAL(result, "test");
 }
 BOOST_AUTO_TEST_CASE(size) {
-	BOOST_CHECK_EQUAL(Span<const char>("value", 5).size(), 5);
+	BOOST_CHECK_EQUAL(Span<const char>("value", 5).size(), 5u);
 }
 BOOST_AUTO_TEST_CASE(vectorInitialization) {
 	auto span = Span<const char>("value", 5);
 	std::vector<char> value(span.begin(), span.end());
-	BOOST_CHECK_EQUAL(value.size(), 5);
+	BOOST_CHECK_EQUAL(value.size(), 5u);
 }
 BOOST_AUTO_TEST_CASE(startEndInitialization) {
 	bool bools[] = { false, true, false, true, false };
 	auto span = Span<bool>(bools, bools + 5);
-	BOOST_CHECK_EQUAL(span.size(), 5);
+	BOOST_CHECK_EQUAL(span.size(), 5u);
 }
 BOOST_AUTO_TEST_CASE(conversionToConst) {
 	int values[] = { 1, 2, 3 };

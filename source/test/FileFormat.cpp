@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(load_0_2_6) {
 	ColorList colors;
 	auto result = paletteFileLoad("test/palette-0.2.6.gpa", colors);
 	BOOST_REQUIRE_MESSAGE(result, result.error());
-	BOOST_REQUIRE_EQUAL(colors.size(), 27);
+	BOOST_REQUIRE_EQUAL(colors.size(), 27u);
 	std::vector<ColorAndName> loaded;
 	loaded.reserve(27);
 	for (auto *colorObject: colors) {
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(load) {
 	ColorList colors;
 	auto result = paletteFileLoad("test/palette-0.3.gpa", colors);
 	BOOST_REQUIRE_MESSAGE(result, result.error());
-	BOOST_REQUIRE_EQUAL(colors.size(), 27);
+	BOOST_REQUIRE_EQUAL(colors.size(), 27u);
 	std::vector<ColorAndName> loaded;
 	loaded.reserve(27);
 	for (auto *colorObject: colors) {

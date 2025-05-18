@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(maxNodes) {
 	}
 	BOOST_CHECK_PREDICATE(between<size_t>, (octree.size())(OctreeColorQuantization::maxNodesPerLevel / 2)(OctreeColorQuantization::maxNodesPerLevel));
 	octree.reduce(200);
-	BOOST_CHECK_EQUAL(octree.size(), 200);
+	BOOST_CHECK_EQUAL(octree.size(), 200u);
 }
 BOOST_AUTO_TEST_CASE(merge) {
 	OctreeColorQuantization octree1, octree2;
@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(merge) {
 	BOOST_CHECK_PREDICATE(between<size_t>, (octree2.size())(OctreeColorQuantization::maxNodesPerLevel / 2)(OctreeColorQuantization::maxNodesPerLevel));
 	octree1.reduce(100);
 	octree2.reduce(100);
-	BOOST_CHECK_EQUAL(octree1.size(), 100);
-	BOOST_CHECK_EQUAL(octree2.size(), 100);
+	BOOST_CHECK_EQUAL(octree1.size(), 100u);
+	BOOST_CHECK_EQUAL(octree2.size(), 100u);
 	OctreeColorQuantization mergedOctree;
 	octree1.visit([&](const float sum[3], size_t pixels) {
 		Color color(sum[0] / pixels, sum[1] / pixels, sum[2] / pixels, 1.0f);
@@ -90,6 +90,6 @@ BOOST_AUTO_TEST_CASE(merge) {
 		std::array<uint8_t, 3> position = { toUint8(nonLinearColor.red), toUint8(nonLinearColor.green), toUint8(nonLinearColor.blue) };
 		mergedOctree.add(color, pixels, position);
 	});
-	BOOST_CHECK_EQUAL(mergedOctree.size(), 200);
+	BOOST_CHECK_EQUAL(mergedOctree.size(), 200u);
 }
 BOOST_AUTO_TEST_SUITE_END()

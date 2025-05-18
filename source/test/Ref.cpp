@@ -33,46 +33,46 @@ struct Derived: public Base {
 };
 BOOST_AUTO_TEST_CASE(basic) {
 	common::Ref<Base> base(new Base());
-	BOOST_CHECK_EQUAL(base.references(), 1);
+	BOOST_CHECK_EQUAL(base.references(), 1u);
 	{
 		common::Ref<Base> baseRef = base;
-		BOOST_CHECK_EQUAL(base.references(), 2);
-		BOOST_CHECK_EQUAL(baseRef.references(), 2);
+		BOOST_CHECK_EQUAL(base.references(), 2u);
+		BOOST_CHECK_EQUAL(baseRef.references(), 2u);
 		BOOST_CHECK_EQUAL(base, baseRef);
 	}
-	BOOST_CHECK_EQUAL(base.references(), 1);
+	BOOST_CHECK_EQUAL(base.references(), 1u);
 }
 BOOST_AUTO_TEST_CASE(conversionToBase) {
 	common::Ref<Derived> derived(new Derived());
-	BOOST_CHECK_EQUAL(derived.references(), 1);
+	BOOST_CHECK_EQUAL(derived.references(), 1u);
 	common::Ref<Base> base(derived);
-	BOOST_CHECK_EQUAL(derived.references(), 2);
-	BOOST_CHECK_EQUAL(base.references(), 2);
+	BOOST_CHECK_EQUAL(derived.references(), 2u);
+	BOOST_CHECK_EQUAL(base.references(), 2u);
 	BOOST_CHECK_EQUAL(base, derived);
 }
 BOOST_AUTO_TEST_CASE(nullReference) {
 	common::Ref<Base> base(new Base());
 	base = common::nullRef;
 	BOOST_CHECK(!base);
-	BOOST_CHECK_EQUAL(base.references(), 0);
+	BOOST_CHECK_EQUAL(base.references(), 0u);
 }
 BOOST_AUTO_TEST_CASE(wrapUnwrap) {
 	Base *base = new Base();
 	{
 		common::Ref<Base> ref(base);
-		BOOST_CHECK_EQUAL(base->references(), 1);
+		BOOST_CHECK_EQUAL(base->references(), 1u);
 		base->reference();
-		BOOST_CHECK_EQUAL(base->references(), 2);
+		BOOST_CHECK_EQUAL(base->references(), 2u);
 	}
 	{
 		auto ref = common::wrapInRef(base);
-		BOOST_CHECK_EQUAL(base->references(), 2);
+		BOOST_CHECK_EQUAL(base->references(), 2u);
 	}
 	{
 		common::Ref<Base> ref(base);
 		Base *unwrapped = ref.unwrap();
-		BOOST_CHECK_EQUAL(ref.references(), 0);
-		BOOST_CHECK_EQUAL(unwrapped->references(), 1);
+		BOOST_CHECK_EQUAL(ref.references(), 0u);
+		BOOST_CHECK_EQUAL(unwrapped->references(), 1u);
 	}
 	delete base;
 }

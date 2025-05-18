@@ -87,31 +87,31 @@ struct Parser: public TextFile {
 BOOST_AUTO_TEST_SUITE(textFileParser)
 BOOST_AUTO_TEST_CASE(fullHex) {
 	Parser parser("color: #aabbcc");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(fullHexWithAlpha) {
 	Parser parser("color: #aabbccdd");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc, 0xdd };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(shortHex) {
 	Parser parser("color: #abc");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(shortHexWithAlpha) {
 	Parser parser("color: #abcd");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc, 0xdd };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(cssRgb) {
 	Parser parser("color: rgb(170, 187, 204)\r\ncolor: rgb(170 187 204)\r\ncolor: rgb(66.6667% 73.3333% 80%)");
-	BOOST_REQUIRE_EQUAL(parser.count(), 3);
+	BOOST_REQUIRE_EQUAL(parser.count(), 3u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	for (size_t i = 0; i < 3; ++i) {
 		BOOST_CHECK_MESSAGE(parser[i] == color, "color " << (i + 1) << " incorrect, " << parser[i] << " != " << color);
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(cssRgb) {
 }
 BOOST_AUTO_TEST_CASE(cssRgba) {
 	Parser parser("color: rgba(170, 187, 204, 0.5)\r\ncolor: rgba(170 187 204 / 0.5)\r\ncolor: rgba(170, 187, 204, 50%)\r\ncolor: rgba(170 187 204 / 50%)\r\ncolor: rgba(66.6667% 73.3333% 80% / 50%)");
-	BOOST_REQUIRE_EQUAL(parser.count(), 5);
+	BOOST_REQUIRE_EQUAL(parser.count(), 5u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	color[3] = 0.5f;
 	for (size_t i = 0; i < 5; ++i) {
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(cssRgba) {
 }
 BOOST_AUTO_TEST_CASE(cssHsl) {
 	Parser parser("color: hsl(180, 75%, 50%)\r\ncolor: hsl(180 75% 50%)\r\ncolor: hsl(180deg 75% 50%)\r\ncolor: hsl(0.5turn 75% 50%)\r\ncolor: hsl(200grad 75% 50%)\r\ncolor: hsl(3.141592rad 75% 50%)\r\n");
-	BOOST_REQUIRE_EQUAL(parser.count(), 6);
+	BOOST_REQUIRE_EQUAL(parser.count(), 6u);
 	Color color = { 0.125f, 0.875f, 0.875f, 1.0f };
 	for (size_t i = 0; i < 6; ++i) {
 		BOOST_CHECK_MESSAGE(parser[i] == color, "color " << (i + 1) << " incorrect, " << parser[i] << " != " << color);
@@ -136,7 +136,7 @@ BOOST_AUTO_TEST_CASE(cssHsl) {
 }
 BOOST_AUTO_TEST_CASE(cssHsla) {
 	Parser parser("color: hsla(180, 75%, 50%, 0.5)\r\ncolor: hsla(180 75% 50% / 0.5)\r\ncolor: hsla(180, 75%, 50%, 50%)\r\ncolor: hsla(180 75% 50% / 50%)\r\ncolor: hsla(180deg 75% 50% / 50%)\r\ncolor: hsla(0.5turn 75% 50% / 50%)\r\ncolor: hsla(200grad 75% 50% / 50%)\r\ncolor: hsla(3.141592rad 75% 50% / 50%)");
-	BOOST_REQUIRE_EQUAL(parser.count(), 8);
+	BOOST_REQUIRE_EQUAL(parser.count(), 8u);
 	Color color = { 0.125f, 0.875f, 0.875f, 0.5f };
 	for (size_t i = 0; i < 8; ++i) {
 		BOOST_CHECK_MESSAGE(parser[i] == color, "color " << (i + 1) << " incorrect, " << parser[i] << " != " << color);
@@ -144,49 +144,49 @@ BOOST_AUTO_TEST_CASE(cssHsla) {
 }
 BOOST_AUTO_TEST_CASE(intValues) {
 	Parser parser("color: 170, 187, 204");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(intValuesWithAlpha) {
 	Parser parser("color: 170, 187, 204, 221");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc, 0xdd };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(floatValuesSeparatedByComma) {
 	Parser parser("color: 0.666667, 0.733333, 0.8");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(floatValuesSeparatedBySpace) {
 	Parser parser("color: 0.666667 0.733333 0.8");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(singleLineCComments) {
 	Parser parser("//color: #ccbbaa\r\ncolor: #aabbcc");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(multiLineCComments) {
 	Parser parser("/*color: #ccbbaa\r\n*/\r\ncolor: #aabbcc");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(singleLineHashComments) {
 	Parser parser("#color: #ccbbaa\r\ncolor: #aabbcc");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0xcc };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }
 BOOST_AUTO_TEST_CASE(outOfRangeFloatValue) {
 	Parser parser("color: 0.666667 0.733333 1e1000");
-	BOOST_REQUIRE_EQUAL(parser.count(), 1);
+	BOOST_REQUIRE_EQUAL(parser.count(), 1u);
 	Color color = { 0xaa, 0xbb, 0 };
 	BOOST_CHECK_MESSAGE(parser[0] == color, parser[0] << " != " << color);
 }

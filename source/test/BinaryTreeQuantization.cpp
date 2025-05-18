@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(reduceByCount) {
 		tree.add(value * (1 / 128.0f));
 	}
 	tree.reduce(15);
-	BOOST_CHECK_EQUAL(tree.size(), 15);
+	BOOST_CHECK_EQUAL(tree.size(), 15u);
 }
 BOOST_AUTO_TEST_CASE(reduceToOneValue) {
 	BinaryTreeQuantization<float> tree;
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(reduceToOneValue) {
 		tree.add(value * (1 / 128.0f));
 	}
 	tree.reduce(1);
-	BOOST_CHECK_EQUAL(tree.size(), 1);
+	BOOST_CHECK_EQUAL(tree.size(), 1u);
 }
 BOOST_AUTO_TEST_CASE(grouping) {
 	BinaryTreeQuantization<float> tree;
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(grouping) {
 		tree.add(static_cast<float>(v + std::sin(v * math::PI * 8) * 0.05f));
 	}
 	tree.reduce(4);
-	BOOST_CHECK_EQUAL(tree.size(), 4);
+	BOOST_CHECK_EQUAL(tree.size(), 4u);
 	struct {
 		float min, max;
 	} expected[5] = {
@@ -71,9 +71,9 @@ BOOST_AUTO_TEST_CASE(minDistance) {
 	}
 	BOOST_CHECK_PREDICATE(between<size_t>, (tree.size())(BinaryTreeQuantization<float>::maxNodesPerLevel / 2)(BinaryTreeQuantization<float>::maxNodesPerLevel));
 	tree.reduceByMinDistance(1 / 16.0f);
-	BOOST_CHECK_EQUAL(tree.size(), 16);
+	BOOST_CHECK_EQUAL(tree.size(), 16u);
 	tree.reduceByMinDistance(1);
-	BOOST_CHECK_EQUAL(tree.size(), 1);
+	BOOST_CHECK_EQUAL(tree.size(), 1u);
 }
 BOOST_AUTO_TEST_CASE(minDistanceGrouping) {
 	BinaryTreeQuantization<float> tree;
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(minDistanceGrouping) {
 	tree.add(0.91f);
 	tree.add(0.92f);
 	tree.reduceByMinDistance(1 / 10.0f);
-	BOOST_CHECK_EQUAL(tree.size(), 5);
+	BOOST_CHECK_EQUAL(tree.size(), 5u);
 }
 BOOST_AUTO_TEST_CASE(minDistanceReductionToSingleValue) {
 	BinaryTreeQuantization<float> tree;
@@ -101,6 +101,6 @@ BOOST_AUTO_TEST_CASE(minDistanceReductionToSingleValue) {
 		tree.add(value * (1 / 128.0f));
 	}
 	tree.reduceByMinDistance(1);
-	BOOST_CHECK_EQUAL(tree.size(), 1);
+	BOOST_CHECK_EQUAL(tree.size(), 1u);
 }
 BOOST_AUTO_TEST_SUITE_END()

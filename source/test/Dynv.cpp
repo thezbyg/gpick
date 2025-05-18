@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(basicInt32) {
 BOOST_AUTO_TEST_CASE(basicString) {
 	Map map;
 	map.set("string", "a");
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	BOOST_CHECK(map.contains("string"));
 	BOOST_CHECK_EQUAL(map.type("string"), "string");
 	BOOST_CHECK_EQUAL(map.getString("string-", "0"), "0");
@@ -66,20 +66,20 @@ BOOST_AUTO_TEST_CASE(basicSystem) {
 	Ref innerMap(new Map());
 	map.set("map", innerMap);
 	innerMap->set("string", "a");
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	BOOST_CHECK(map.contains("map"));
 	auto returnedSystem = map.getMap("map-");
 	BOOST_CHECK(!returnedSystem);
 	returnedSystem = map.getMap("map");
 	BOOST_REQUIRE(returnedSystem);
-	BOOST_CHECK_EQUAL(returnedSystem->size(), 1);
+	BOOST_CHECK_EQUAL(returnedSystem->size(), 1u);
 }
 BOOST_AUTO_TEST_CASE(stringArray) {
 	Map map;
 	std::vector<std::string> data { "a", "b", "c" };
 	map.set("a", data);
 	auto result = map.getStrings("a");
-	BOOST_REQUIRE_EQUAL(result.size(), 3);
+	BOOST_REQUIRE_EQUAL(result.size(), 3u);
 	for (int i = 0; i < 3; i++) {
 		BOOST_CHECK_EQUAL(result[i], data[i]);
 	}
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(constStringArray) {
 	std::vector<const char *> data { "a", "b", "c" };
 	map.set("a", data);
 	auto result = map.getStrings("a");
-	BOOST_REQUIRE_EQUAL(result.size(), 3);
+	BOOST_REQUIRE_EQUAL(result.size(), 3u);
 	for (int i = 0; i < 3; i++) {
 		BOOST_CHECK_EQUAL(result[i], data[i]);
 	}
@@ -99,9 +99,9 @@ BOOST_AUTO_TEST_CASE(stringArrayOverwrite) {
 	std::vector<std::string> data { "a", "b", "c" };
 	map.set("a", data);
 	map.set("a", data);
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	auto result = map.getStrings("a");
-	BOOST_REQUIRE_EQUAL(result.size(), 3);
+	BOOST_REQUIRE_EQUAL(result.size(), 3u);
 	for (int i = 0; i < 3; i++) {
 		BOOST_CHECK_EQUAL(result[i], data[i]);
 	}
@@ -111,19 +111,19 @@ BOOST_AUTO_TEST_CASE(mapArray) {
 	std::vector<Ref> data { Ref(new Map()), Ref(new Map()), Ref(new Map()) };
 	map.set("a", data);
 	auto result = map.getMaps("a");
-	BOOST_CHECK_EQUAL(data.size(), 3);
-	BOOST_REQUIRE_EQUAL(result.size(), 3);
+	BOOST_CHECK_EQUAL(data.size(), 3u);
+	BOOST_REQUIRE_EQUAL(result.size(), 3u);
 	for (int i = 0; i < 3; i++) {
 		BOOST_CHECK_EQUAL(result[i], data[i]);
-		BOOST_CHECK_EQUAL(result[i]->references(), 3);
+		BOOST_CHECK_EQUAL(result[i]->references(), 3u);
 	}
 }
 BOOST_AUTO_TEST_CASE(noMoveOnSet) {
 	Map map;
 	std::vector<Ref> data { Ref(new Map()) };
 	map.set("a", data);
-	BOOST_CHECK_EQUAL(map.size(), 1);
-	BOOST_CHECK_EQUAL(data.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
+	BOOST_CHECK_EQUAL(data.size(), 1u);
 }
 BOOST_AUTO_TEST_CASE(xmlDeserialize) {
 	Map map;
@@ -131,10 +131,10 @@ BOOST_AUTO_TEST_CASE(xmlDeserialize) {
 	BOOST_REQUIRE(file.is_open());
 	BOOST_REQUIRE(map.deserializeXml(file));
 	file.close();
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	BOOST_REQUIRE(map.contains("test"));
 	auto values = map.getStrings("test");
-	BOOST_REQUIRE_EQUAL(values.size(), 3);
+	BOOST_REQUIRE_EQUAL(values.size(), 3u);
 	const char *data[] = { "a", "b", "c" };
 	for (int i = 0; i < 3; i++) {
 		BOOST_CHECK_EQUAL(values[i], data[i]);
@@ -157,10 +157,10 @@ BOOST_AUTO_TEST_CASE(xmlSerializeDeserialize) {
 	std::stringstream input(text);
 	Map result;
 	result.deserializeXml(input);
-	BOOST_CHECK_EQUAL(result.size(), 1);
+	BOOST_CHECK_EQUAL(result.size(), 1u);
 	BOOST_REQUIRE(result.contains("items"));
 	auto resultItems = result.getMaps("items");
-	BOOST_CHECK_EQUAL(resultItems.size(), 10);
+	BOOST_CHECK_EQUAL(resultItems.size(), 10u);
 	Color nullColor { 0 };
 	for (int i = 0; i < 10; i++) {
 		BOOST_CHECK_EQUAL(resultItems[i]->getString("name", ""), "a");
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(xmlSerializeDeserialize) {
 BOOST_AUTO_TEST_CASE(missingPathSegmentCreationOnSet) {
 	Map map;
 	map.set("values.bool", true);
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	BOOST_CHECK(map.contains("values"));
 	BOOST_CHECK(map.contains("values.bool"));
 	auto values = map.getMap("values");
@@ -181,12 +181,12 @@ BOOST_AUTO_TEST_CASE(missingPathSegmentCreationOnSet) {
 BOOST_AUTO_TEST_CASE(noMissingPathSegmentCreationOnGet) {
 	Map map;
 	map.getBool("values.bool", false);
-	BOOST_CHECK_EQUAL(map.size(), 0);
+	BOOST_CHECK_EQUAL(map.size(), 0u);
 }
 BOOST_AUTO_TEST_CASE(getOrCreateMap) {
 	Map map;
 	auto values = map.getOrCreateMap("values");
-	BOOST_CHECK_EQUAL(map.size(), 1);
+	BOOST_CHECK_EQUAL(map.size(), 1u);
 	BOOST_CHECK(map.contains("values"));
 	BOOST_REQUIRE(values);
 }
@@ -228,9 +228,9 @@ BOOST_AUTO_TEST_CASE(spans) {
 	map.set("bools", common::Span<bool>(bools, 3));
 	map.set("ints", common::Span<int>(ints, 3));
 	map.set("strings", common::Span<const char *>(strings, 3));
-	BOOST_CHECK_EQUAL(map.getBools("bools").size(), 3);
-	BOOST_CHECK_EQUAL(map.getInt32s("ints").size(), 3);
-	BOOST_CHECK_EQUAL(map.getStrings("strings").size(), 3);
+	BOOST_CHECK_EQUAL(map.getBools("bools").size(), 3u);
+	BOOST_CHECK_EQUAL(map.getInt32s("ints").size(), 3u);
+	BOOST_CHECK_EQUAL(map.getStrings("strings").size(), 3u);
 }
 static void fillTestData(Map &map) {
 	map.set("bool", true);
@@ -271,6 +271,6 @@ BOOST_AUTO_TEST_CASE(binaryDeserialize) {
 	}
 	Map resultMap;
 	BOOST_REQUIRE(resultMap.deserialize(output, valueTypeMap));
-	BOOST_CHECK_EQUAL(resultMap.size(), 4);
+	BOOST_CHECK_EQUAL(resultMap.size(), 4u);
 }
 BOOST_AUTO_TEST_SUITE_END()

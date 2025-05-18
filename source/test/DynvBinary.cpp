@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(serialize) {
 	BOOST_CHECK(write<std::string>(output, ""));
 	BOOST_CHECK(write<std::string>(output, "Test"));
 	auto length = output.str().length();
-	BOOST_CHECK_EQUAL(length, 46);
+	BOOST_CHECK_EQUAL(length, 46u);
 }
 BOOST_AUTO_TEST_CASE(deserialize) {
 	using namespace dynv::types::binary;
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(deserialize) {
 	BOOST_CHECK(write<std::string>(output, ""));
 	BOOST_CHECK(write<std::string>(output, "Test"));
 	auto length = output.str().length();
-	BOOST_CHECK_EQUAL(length, 46);
+	BOOST_CHECK_EQUAL(length, 46u);
 	BOOST_CHECK_EQUAL(read<bool>(output), true);
 	BOOST_CHECK_EQUAL(read<uint8_t>(output), 1u);
 	BOOST_CHECK_EQUAL(read<int32_t>(output), 1);
