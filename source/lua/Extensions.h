@@ -16,12 +16,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_LUA_EXTENSIONS_H_
-#define GPICK_LUA_EXTENSIONS_H_
+#pragma once
 struct lua_State;
 struct GlobalState;
-namespace lua
-{
+namespace lua {
 void registerAll(lua_State *L, GlobalState &global_state);
 }
-#endif /* GPICK_LUA_EXTENSIONS_H_ */

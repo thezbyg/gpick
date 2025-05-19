@@ -18,26 +18,13 @@
 
 #include "Callbacks.h"
 #include <utility>
-using namespace std;
-namespace lua
-{
-Callbacks::Callbacks()
-{
+namespace lua {
+Callbacks::Callbacks() {
 }
-Ref &Callbacks::optionChange()
-{
-	return m_option_change;
+Ref &Callbacks::optionChange() {
+	return m_optionChange;
 }
-void Callbacks::optionChange(Ref &&ref)
-{
-	m_option_change = move(ref);
-}
-Ref &Callbacks::componentToText()
-{
-	return m_component_to_text;
-}
-void Callbacks::componentToText(Ref &&ref)
-{
-	m_component_to_text = move(ref);
+void Callbacks::optionChange(Ref &&ref) {
+	m_optionChange = std::move(ref);
 }
 }

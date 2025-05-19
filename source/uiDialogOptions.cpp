@@ -18,6 +18,7 @@
 
 #include "uiDialogOptions.h"
 #include "uiUtilities.h"
+#include "ColorSpaces.h"
 #include "ToolColorNaming.h"
 #include "GlobalState.h"
 #include "EventBus.h"
@@ -29,21 +30,8 @@
 #include "lua/Lua.h"
 #include <string>
 #include <iostream>
-using namespace std;
-static const struct{
-	const char *label;
-	const char *setting;
-}available_color_spaces[] = {
-	{"CMYK", "picker.color_space.cmyk"},
-	{"HSL", "picker.color_space.hsl"},
-	{"HSV", "picker.color_space.hsv"},
-	{"LAB", "picker.color_space.lab"},
-	{"LCH", "picker.color_space.lch"},
-	{"RGB", "picker.color_space.rgb"},
-	{0, 0},
-};
-
-typedef struct DialogOptionsArgs{
+using namespace std::string_literals;
+struct DialogOptionsArgs {
 	GtkWidget *minimize_to_tray;
 	GtkWidget *close_to_tray;
 	GtkWidget *start_in_tray;
@@ -62,7 +50,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *zoom_size;
 	GtkWidget *imprecision_postfix;
 	GtkWidget *tool_color_naming[3];
-	GtkWidget *color_spaces[6];
+	GtkWidget *color_spaces[maxColorSpaces];
 	GtkWidget *out_of_gamut_mask;
 	GtkWidget *lab_illuminant;
 	GtkWidget *lab_observer;
@@ -72,7 +60,7 @@ typedef struct DialogOptionsArgs{
 	GtkWidget *css_alpha_percentage;
 	dynv::Ref options;
 	GlobalState* gs;
-}DialogOptionsArgs;
+};
 
 bool dialog_options_update(GlobalState *gs) {
 	if (!gs->callbacks().optionChange().valid())
@@ -86,7 +74,7 @@ bool dialog_options_update(GlobalState *gs) {
 		lua_settop(L, stack_top);
 		return true;
 	}else{
-		cerr << "optionsUpdate: " << lua_tostring(L, -1) << endl;
+		std::cerr << "optionsUpdate: " << lua_tostring(L, -1) << std::endl;
 	}
 	lua_settop(L, stack_top);
 	return false;
@@ -133,8 +121,9 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit)
 		}
 		i++;
 	}
-	for (int i = 0; available_color_spaces[i].label; i++){
-		options->set<bool>(available_color_spaces[i].setting, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->color_spaces[i])));
+	i = 0;
+	for (const auto &colorSpace: colorSpaces()) {
+		options->set<bool>("picker.color_space."s + colorSpace.id, gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->color_spaces[i++])));
 	}
 	options->set("picker.lab.illuminant", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_illuminant)));
 	options->set("picker.lab.observer", gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(args->lab_observer)));
@@ -218,16 +207,16 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
 	group = nullptr;
-	string hex_format = args->options->getString("options.hex_case", "upper");
+	std::string hexFormat = args->options->getString("options.hex_case", "upper");
 	args->hex_case[0] = widget = gtk_radio_button_new_with_mnemonic(group, _("Lower case"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
-	if (hex_format == "lower")
+	if (hexFormat == "lower")
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), true);
 	gtk_table_attach(GTK_TABLE(table), widget,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	args->hex_case[1] = widget = gtk_radio_button_new_with_mnemonic(group, _("Upper case"));
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));
-	if (hex_format == "upper")
+	if (hexFormat == "upper")
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), true);
 	gtk_table_attach(GTK_TABLE(table), widget,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
@@ -334,9 +323,10 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table = gtk_table_new(5, 3, FALSE);
 	table_y=0;
 	gtk_container_add(GTK_CONTAINER(frame), table);
-	for (int i = 0; available_color_spaces[i].label; i++){
-		args->color_spaces[i] = widget = gtk_check_button_new_with_label(available_color_spaces[i].label);
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool(available_color_spaces[i].setting, true));
+	int i = 0;
+	for (const auto &colorSpace: colorSpaces()) {
+		args->color_spaces[i++] = widget = gtk_check_button_new_with_label(colorSpace.name);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("picker.color_space."s + colorSpace.id, true));
 		gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y+1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 3, 3);
 		table_y++;
 	}
@@ -424,7 +414,7 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	group = nullptr;
 	ToolColorNamingType color_naming_type = tool_color_naming_name_to_type(args->options->getString("color_names.tool_color_naming", "automatic_name"));
 	const ToolColorNamingOption *color_naming_options = tool_color_naming_get_options();
-	int i = 0;
+	i = 0;
 	while (color_naming_options[i].name){
 		args->tool_color_naming[i] = widget = gtk_radio_button_new_with_mnemonic(group, _(color_naming_options[i].label));
 		group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(widget));

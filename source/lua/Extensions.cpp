@@ -32,16 +32,13 @@
 #include "../Converters.h"
 #include "../Converter.h"
 #include "version/Version.h"
-namespace lua
-{
-static void checkArgumentIsFunctionOrNil(lua_State *L, int index)
-{
+namespace lua {
+static void checkArgumentIsFunctionOrNil(lua_State *L, int index) {
 	auto type = lua_type(L, index);
 	bool type_matches = type == LUA_TFUNCTION || type == LUA_TNIL;
 	luaL_argcheck(L, type_matches, index, "function or nil expected");
 }
-static int addLayout(lua_State *L)
-{
+static int addLayout(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
 	const char *label = luaL_checkstring(L, 3);
 	checkArgumentIsFunctionOrNil(L, 4);
@@ -49,8 +46,7 @@ static int addLayout(lua_State *L)
 	getGlobalState(L).layouts().add(new layout::Layout(name, label, mask, Ref(L, 4)));
 	return 0;
 }
-static int addConverter(lua_State *L)
-{
+static int addConverter(lua_State *L) {
 	const char *name = luaL_checkstring(L, 2);
 	const char *label = luaL_checkstring(L, 3);
 	checkArgumentIsFunctionOrNil(L, 4);
@@ -61,23 +57,15 @@ static int addConverter(lua_State *L)
 		getGlobalState(L).converters().add(new Converter(name, label, Ref(L, 4), Ref(L, 5)));
 	return 0;
 }
-static int setOptionChangeCallback(lua_State *L)
-{
+static int setOptionChangeCallback(lua_State *L) {
 	getGlobalState(L).callbacks().optionChange(Ref(L, 2));
 	return 0;
 }
-static int setComponentToTextCallback(lua_State *L)
-{
-	getGlobalState(L).callbacks().componentToText(Ref(L, 2));
-	return 0;
-}
-static const struct luaL_Reg functions[] =
-{
-	{"addLayout", addLayout},
-	{"addConverter", addConverter},
-	{"setComponentToTextCallback", setComponentToTextCallback},
-	{"setOptionChangeCallback", setOptionChangeCallback},
-	{nullptr, nullptr}
+static const struct luaL_Reg functions[] = {
+	{ "addLayout", addLayout },
+	{ "addConverter", addConverter },
+	{ "setOptionChangeCallback", setOptionChangeCallback },
+	{ nullptr, nullptr }
 };
 static void setField(lua_State *L, const char *name, const char *value) {
 	lua_pushstring(L, value);
@@ -87,14 +75,13 @@ static void setField(lua_State *L, const char *name, unsigned long value) {
 	lua_pushinteger(L, value);
 	lua_setfield(L, -2, name);
 }
-void registerAll(lua_State *L, GlobalState &global_state)
-{
+void registerAll(lua_State *L, GlobalState &global_state) {
 	Script script(L);
 	script.registerExtension("color", registerColor);
 	script.registerExtension("colorObject", registerColorObject);
 	script.registerExtension("dynvSystem", registerDynvSystem);
 	script.registerExtension("layout", registerLayout);
-	script.registerExtension(nullptr, [](lua_State *L){
+	script.registerExtension(nullptr, [](lua_State *L) {
 		luaL_newlib(L, functions);
 		setField(L, "version", version::version);
 		setField(L, "revision", version::revision);

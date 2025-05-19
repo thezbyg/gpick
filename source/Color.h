@@ -342,6 +342,26 @@ struct Color {
 	 */
 	Color cmykToRgb() const;
 	/**
+	 * Convert RGB color space to OKLAB color space.
+	 * @return Color in OKLAB color space.
+	 */
+	Color rgbToOklab() const;
+	/**
+	 * Convert OKLAB color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color oklabToRgb() const;
+	/**
+	 * Convert RGB color space to OKLCH color space.
+	 * @return Color in OKLCH color space.
+	 */
+	Color rgbToOklch() const;
+	/**
+	 * Convert OKLCH color space to RGB color space.
+	 * @return Color in RGB color space.
+	 */
+	Color oklchToRgb() const;
+	/**
 	 * Normalize RGB color values.
 	 * @return Color with normalized RGB values.
 	 */
@@ -478,6 +498,16 @@ struct Color {
 					float y;
 					float k;
 				} cmyk;
+				struct {
+					float L;
+					float a;
+					float b;
+				} oklab;
+				struct {
+					float L;
+					float C;
+					float h;
+				} oklch;
 			};
 		};
 		struct {

@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <istream>
 #include <boost/endian/conversion.hpp>
+#include <boost/version.hpp>
 namespace dynv {
 namespace xml {
 bool serialize(std::ostream &stream, const Map &map, bool addRootElement = true, size_t indentationLevel = 1);

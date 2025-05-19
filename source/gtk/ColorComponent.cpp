@@ -113,37 +113,13 @@ static void onFinalize(GObject *color_obj) {
 	gpointer parent_class = g_type_class_peek_parent(G_OBJECT_CLASS(GTK_COLOR_COMPONENT_GET_CLASS(color_obj)));
 	G_OBJECT_CLASS(parent_class)->finalize(color_obj);
 }
-static void setupForColorSpace(GtkColorComponentPrivate *ns, ColorSpace colorSpace) {
-	ns->colorSpace = colorSpace;
-	switch (colorSpace) {
-	case ColorSpace::lab:
-		ns->channels = 4;
-		ns->range[0] = 100;
-		ns->offset[0] = 0;
-		ns->range[1] = ns->range[2] = 290;
-		ns->offset[1] = ns->offset[2] = -145;
-		ns->range[3] = 1;
-		ns->offset[3] = 0;
-		break;
-	case ColorSpace::lch:
-		ns->channels = 4;
-		ns->range[0] = 100;
-		ns->offset[0] = 0;
-		ns->range[1] = 136;
-		ns->range[2] = 360;
-		ns->offset[1] = ns->offset[2] = 0;
-		ns->range[3] = 1;
-		ns->offset[3] = 0;
-		break;
-	case ColorSpace::cmyk:
-		ns->channels = 5;
-		ns->range[0] = ns->range[1] = ns->range[2] = ns->range[3] = ns->range[4] = 1;
-		ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = ns->offset[4] = 0;
-		break;
-	default:
-		ns->channels = 4;
-		ns->range[0] = ns->range[1] = ns->range[2] = ns->range[3] = 1;
-		ns->offset[0] = ns->offset[1] = ns->offset[2] = ns->offset[3] = 0;
+static void setupForColorSpace(GtkColorComponentPrivate *ns, const ColorSpaceDescription &colorSpace) {
+	ns->colorSpace = colorSpace.type;
+	ns->channels = colorSpace.channelCount;
+	for (int i = 0; i < colorSpace.channelCount; ++i) {
+		const auto &channel = colorSpace.channels[i];
+		ns->offset[i] = channel.minValue / channel.rawScale;
+		ns->range[i] = (channel.maxValue - channel.minValue) / channel.rawScale;
 	}
 }
 GtkWidget *gtk_color_component_new(ColorSpace colorSpace) {
@@ -168,7 +144,7 @@ GtkWidget *gtk_color_component_new(ColorSpace colorSpace) {
 		ns->label[i][0] = nullptr;
 		ns->label[i][1] = nullptr;
 	}
-	setupForColorSpace(ns, colorSpace);
+	setupForColorSpace(ns, ::colorSpace(colorSpace));
 	gtk_widget_set_size_request(GTK_WIDGET(widget), 242, 16 * ns->channels);
 	return widget;
 }
@@ -245,6 +221,12 @@ void gtk_color_component_set_color(GtkColorComponent *colorComponent, const Colo
 		auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2), Color::getReference(ns->labIlluminant, ns->labObserver));
 		ns->color = ns->originalColor.rgbToLch(Color::getReference(ns->labIlluminant, ns->labObserver), Color::sRGBMatrix, adaptationMatrix);
 	} break;
+	case ColorSpace::oklab:
+		ns->color = ns->originalColor.rgbToOklab();
+		break;
+	case ColorSpace::oklch:
+		ns->color = ns->originalColor.rgbToOklch();
+		break;
 	}
 	gtk_widget_queue_draw(GTK_WIDGET(colorComponent));
 }
@@ -501,6 +483,82 @@ static gboolean onDraw(GtkWidget *widget, cairo_t *cr) {
 			}
 		}
 		break;
+	case ColorSpace::oklab:
+		steps = 100;
+		for (j = 0; j < 3; ++j) {
+			c[j] = ns->color;
+			out_of_gamut[j] = std::vector<bool>(steps + 1, false);
+			for (i = 0; i <= steps; ++i) {
+				c[j][j] = static_cast<float>((i / static_cast<float>(steps)) * ns->range[j] + ns->offset[j]);
+				rgb_points[j * (steps + 1) + i] = c[j].oklabToRgb();
+				if (rgb_points[j * (steps + 1) + i].isOutOfRgbGamut()) {
+					out_of_gamut[j][i] = true;
+				}
+				rgb_points[j * (steps + 1) + i].normalizeRgbInplace();
+			}
+		}
+		for (i = 0; i < surface_width; ++i) {
+			float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+			int index = i * steps / surface_width;
+			interpolateColors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+			interpolateColors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+			interpolateColors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+			c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
+			col_ptr = data + i * 4;
+			for (int y = 0; y < ns->channels * 16; ++y) {
+				if ((y & 0x0f) != 0x0f) {
+					col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+					col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+					col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+					col_ptr[3] = 0xff;
+				} else {
+					col_ptr[0] = 0x00;
+					col_ptr[1] = 0x00;
+					col_ptr[2] = 0x00;
+					col_ptr[3] = 0x00;
+				}
+				col_ptr += stride;
+			}
+		}
+		break;
+	case ColorSpace::oklch:
+		steps = 100;
+		for (j = 0; j < 3; ++j) {
+			c[j] = ns->color;
+			out_of_gamut[j] = std::vector<bool>(steps + 1, false);
+			for (i = 0; i <= steps; ++i) {
+				c[j][j] = static_cast<float>((i / static_cast<float>(steps)) * ns->range[j] + ns->offset[j]);
+				rgb_points[j * (steps + 1) + i] = c[j].oklchToRgb();
+				if (rgb_points[j * (steps + 1) + i].isOutOfRgbGamut()) {
+					out_of_gamut[j][i] = true;
+				}
+				rgb_points[j * (steps + 1) + i].normalizeRgbInplace();
+			}
+		}
+		for (i = 0; i < surface_width; ++i) {
+			float position = static_cast<float>(std::modf(i * static_cast<float>(steps) / surface_width, &int_part));
+			int index = i * steps / surface_width;
+			interpolateColors(&rgb_points[0 * (steps + 1) + index], &rgb_points[0 * (steps + 1) + index + 1], position, &c[0]);
+			interpolateColors(&rgb_points[1 * (steps + 1) + index], &rgb_points[1 * (steps + 1) + index + 1], position, &c[1]);
+			interpolateColors(&rgb_points[2 * (steps + 1) + index], &rgb_points[2 * (steps + 1) + index + 1], position, &c[2]);
+			c[3].rgb.red = c[3].rgb.green = c[3].rgb.blue = (float)i / (float)(surface_width - 1);
+			col_ptr = data + i * 4;
+			for (int y = 0; y < ns->channels * 16; ++y) {
+				if ((y & 0x0f) != 0x0f) {
+					col_ptr[2] = (unsigned char)(c[y / 16].rgb.red * 255);
+					col_ptr[1] = (unsigned char)(c[y / 16].rgb.green * 255);
+					col_ptr[0] = (unsigned char)(c[y / 16].rgb.blue * 255);
+					col_ptr[3] = 0xff;
+				} else {
+					col_ptr[0] = 0x00;
+					col_ptr[1] = 0x00;
+					col_ptr[2] = 0x00;
+					col_ptr[3] = 0x00;
+				}
+				col_ptr += stride;
+			}
+		}
+		break;
 	default:
 		break;
 	}
@@ -550,7 +608,7 @@ static gboolean onDraw(GtkWidget *widget, cairo_t *cr) {
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 1);
 		cairo_stroke(cr);
-		if (ns->text[i] || ns->label[i]) {
+		if (ns->text[i] || ns->label[i][0] || ns->label[i][1]) {
 			PangoLayout *layout;
 			PangoFontDescription *font_description;
 			font_description = pango_font_description_new();
@@ -614,7 +672,7 @@ ColorSpace gtk_color_component_get_color_space(GtkColorComponent *colorComponent
 }
 void gtk_color_component_set_color_space(GtkColorComponent *colorComponent, ColorSpace colorSpace) {
 	GtkColorComponentPrivate *ns = GET_PRIVATE(colorComponent);
-	setupForColorSpace(ns, colorSpace);
+	setupForColorSpace(ns, ::colorSpace(colorSpace));
 	gtk_color_component_set_color(colorComponent, ns->originalColor);
 	gtk_widget_set_size_request(GTK_WIDGET(colorComponent), 242, 16 * ns->channels);
 	gtk_widget_queue_draw(GTK_WIDGET(colorComponent));
@@ -642,6 +700,12 @@ static void updateRgbColor(GtkColorComponentPrivate *ns, Color &color) {
 		auto adaptationMatrix = Color::getChromaticAdaptationMatrix(Color::getReference(ns->labIlluminant, ns->labObserver), Color::getReference(ReferenceIlluminant::D65, ReferenceObserver::_2));
 		color = ns->color.lchToRgb(Color::getReference(ns->labIlluminant, ns->labObserver), Color::sRGBInvertedMatrix, adaptationMatrix).normalizeRgbInplace();
 	} break;
+	case ColorSpace::oklab:
+		color = ns->color.oklabToRgb().normalizeRgbInplace();
+		break;
+	case ColorSpace::oklch:
+		color = ns->color.oklchToRgb().normalizeRgbInplace();
+		break;
 	}
 }
 void gtk_color_component_get_raw_color(GtkColorComponent *colorComponent, Color &color) {

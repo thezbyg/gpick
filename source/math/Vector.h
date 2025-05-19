@@ -252,11 +252,18 @@ struct CommonVector: public VectorBase<T, N> {
 		return Vector(*this).clamp();
 	};
 	T dotProduct(const Vector &vector) const {
-		T result{};
+		T result {};
 		for (unsigned int i = 0; i < N; i++) {
 			result += this->data[i] * vector.data[i];
 		}
 		return result;
+	};
+	template<typename Modifier>
+	Vector &modifyValues(Modifier modifier) {
+		for (unsigned int i = 0; i < N; i++) {
+			this->data[i] = modifier(this->data[i]);
+		}
+		return asVector();
 	};
 protected:
 	template<typename... Args, std::enable_if_t<sizeof...(Args) == N, int> = 0>

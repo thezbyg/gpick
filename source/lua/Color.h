@@ -16,14 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_LUA_COLOR_H_
-#define GPICK_LUA_COLOR_H_
+#pragma once
 struct lua_State;
 struct Color;
-namespace lua
-{
+namespace lua {
 int registerColor(lua_State *L);
 int pushColor(lua_State *L, const Color &color);
 Color &checkColor(lua_State *L, int index);
 }
-#endif /* GPICK_LUA_COLOR_H_ */

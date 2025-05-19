@@ -24,4 +24,6 @@ enum struct ColorSpace {
 	cmyk,
 	lab,
 	lch,
+	oklab,
+	oklch,
 };

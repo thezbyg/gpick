@@ -24,7 +24,6 @@
 #include <vector>
 #include <string>
 struct Color;
-struct GlobalState;
 enum struct ColorSpaceFlags {
 	none = 0,
 	externalAlpha = 1,
@@ -50,5 +49,6 @@ struct ColorSpaceDescription {
 	bool externalAlpha() const;
 };
 common::Span<const ColorSpaceDescription> colorSpaces();
+constexpr size_t maxColorSpaces = 8;
 const ColorSpaceDescription &colorSpace(ColorSpace colorSpace);
-std::vector<std::string> toTexts(ColorSpace colorSpace, const Color &color, float alpha, GlobalState &gs);
+std::vector<std::string> toTexts(ColorSpace colorSpace, const Color &color, float alpha);

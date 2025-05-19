@@ -138,7 +138,7 @@ struct CommonMatrix {
 	Matrix operator+(const Matrix &matrix) const {
 		Matrix result(Initialize::zero);
 		for (unsigned int i = 0; i < N * N; ++i) {
-			result.flatData[i] = flatData[i] +  matrix.flatData[i];
+			result.flatData[i] = flatData[i] + matrix.flatData[i];
 		}
 		return result;
 	};

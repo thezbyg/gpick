@@ -156,6 +156,14 @@ BOOST_AUTO_TEST_CASE(lch) {
 	Color result = testColor.rgbToLchD50().lchToRgbD50();
 	BOOST_CHECK_EQUAL(result, testColor);
 }
+BOOST_AUTO_TEST_CASE(oklab) {
+	Color result = testColor.rgbToOklab().oklabToRgb();
+	BOOST_CHECK_EQUAL(result, testColor);
+}
+BOOST_AUTO_TEST_CASE(oklch) {
+	Color result = testColor.rgbToOklch().oklchToRgb();
+	BOOST_CHECK_EQUAL(result, testColor);
+}
 BOOST_AUTO_TEST_CASE(sRGBMatrix) {
 	auto result = Color(Color::sRGBInvertedMatrix * (Color::sRGBMatrix * testColor.rgbVector<double>()));
 	BOOST_CHECK_EQUAL(result, testColor);

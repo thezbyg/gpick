@@ -37,6 +37,12 @@ enum struct Channel {
 	lchLightness,
 	lchChroma,
 	lchHue,
+	oklabLightness,
+	oklabA,
+	oklabB,
+	oklchLightness,
+	oklchChroma,
+	oklchHue,
 	alpha,
 	userDefined,
 };

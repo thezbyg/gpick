@@ -16,23 +16,16 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_LUA_CALLBACKS_H_
-#define GPICK_LUA_CALLBACKS_H_
+#pragma once
 #include "Ref.h"
-namespace lua
-{
-struct Callbacks
-{
+namespace lua {
+struct Callbacks {
 	Callbacks();
 	Callbacks(const Ref &) = delete;
-	Callbacks &operator=(const Ref&) = delete;
+	Callbacks &operator=(const Ref &) = delete;
 	Ref &optionChange();
 	void optionChange(Ref &&ref);
-	Ref &componentToText();
-	void componentToText(Ref &&ref);
-	private:
-	Ref m_option_change;
-	Ref m_component_to_text;
+private:
+	Ref m_optionChange;
 };
 }
-#endif /* GPICK_LUA_CALLBACKS_H_ */

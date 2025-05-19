@@ -126,7 +126,7 @@ struct BackgroundColorPicker: public IEventHandler {
 			Color transformedColor;
 			gtk_color_component_get_transformed_color(GTK_COLOR_COMPONENT(colorComponent), transformedColor);
 			float alpha = gtk_color_component_get_alpha(GTK_COLOR_COMPONENT(colorComponent));
-			std::vector<std::string> values = toTexts(colorSpace->type, transformedColor, alpha, gs);
+			std::vector<std::string> values = toTexts(colorSpace->type, transformedColor, alpha);
 			const char *texts[5] = { 0 };
 			int j = 0;
 			for (auto &value: values) {

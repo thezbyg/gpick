@@ -136,6 +136,18 @@ static void calc(ColorSpaceSamplerArgs *args, bool preview, size_t limit)
 				t.lch.h *= 360;
 				t = t.lchToRgbD50();
 				break;
+			case 5:
+				t = values[i];
+				t.oklab.a = (t.oklab.a - 0.5f) * 0.9f;
+				t.oklab.b = (t.oklab.b - 0.5f) * 0.9f;
+				t = t.oklabToRgb();
+				break;
+			case 6:
+				t = values[i];
+				t.oklch.C *= 0.37f;
+				t.oklch.h *= 360;
+				t = t.oklchToRgb();
+				break;
 		}
 		if (args->linearization)
 			t.nonLinearRgbInplace();
@@ -226,11 +238,13 @@ void tools_color_space_sampler_show(GtkWindow* parent, GlobalState* gs)
 	table_y = 0;
 	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Color space:")), 0, 1, table_y, table_y + 1, GtkAttachOptions(GTK_FILL), GTK_FILL, 5, 5);
 	args->combo_color_space = widget = gtk_combo_box_text_new();
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("RGB"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("HSV"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("HSL"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LAB"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LCH"));
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "RGB");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "HSV");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "HSL");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "LAB");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "LCH");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "OKLAB");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "OKLCH");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), args->options->getInt32("color_space", 0));
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
 	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(update), args);

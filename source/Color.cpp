@@ -288,13 +288,13 @@ Color Color::labToLch() const {
 	} else {
 		H = std::atan2(lab.b, lab.a);
 	}
-	H *= 180.0f / math::PI;
+	H *= 180.0 / math::PI;
 	if (H < 0) H += 360;
 	if (H >= 360) H -= 360;
 	return Color(lab.L, static_cast<float>(std::sqrt(lab.a * lab.a + lab.b * lab.b)), static_cast<float>(H), alpha);
 }
 Color Color::lchToLab() const {
-	return Color(lch.L, static_cast<float>(lch.C * std::cos(lch.h * math::PI / 180.0f)), static_cast<float>(lch.C * std::sin(lch.h * math::PI / 180.0f)), alpha);
+	return Color(lch.L, static_cast<float>(lch.C * std::cos(lch.h * math::PI / 180.0)), static_cast<float>(lch.C * std::sin(lch.h * math::PI / 180.0)), alpha);
 }
 Color Color::hslToHsv() const {
 	float l = hsl.lightness * 2.0f;
@@ -429,6 +429,36 @@ Color Color::rgbToCmyk() const {
 }
 Color Color::cmykToRgb() const {
 	return cmykToCmy().cmyToRgb();
+}
+Color Color::rgbToOklab() const {
+	const Matrix3d m1 { 0.4122214708, 0.2119034982, 0.0883024619, 0.5363325363, 0.6806995451, 0.2817188376, 0.0514459929, 0.1073969566, 0.6299787005 };
+	auto lms = (linearRgb().rgbVector<double>() * m1).modifyValues([](double value) {
+		return std::cbrt(value);
+	});
+	const Matrix3d m2 { 0.2104542553, 1.9779984951, 0.0259040371, 0.7936177850, -2.4285922050, 0.7827717662, -0.0040720468, 0.4505937099, -0.8086757660 };
+	return Color(lms * m2, alpha);
+}
+Color Color::oklabToRgb() const {
+	const Matrix3d invertedM2 { 0.9999999984505200, 1.0000000088817607, 1.0000000546724108, 0.3963377921737679, -0.1055613423236563, -0.0894841820949658, 0.2158037580607588, -0.0638541747717059, -1.2914855378640917 };
+	auto lms = (rgbVector<double>() * invertedM2).modifyValues([](double value) {
+		return std::pow(value, 3);
+	});
+	const Matrix3d invertedM1 { 4.0767416613479952, -1.2684380040921766, -0.0041960865418370, -3.3077115904081937, 2.6097574006633715, -0.7034186144594496, 0.2309699287294278, -0.3413193963102196, 1.7076147009309446 };
+	return Color(lms * invertedM1, alpha).nonLinearRgb();
+}
+Color Color::rgbToOklch() const {
+	auto oklab = rgbToOklab();
+	double C = std::sqrt(oklab.oklab.a * oklab.oklab.a + oklab.oklab.b * oklab.oklab.b);
+	double H = C ? std::atan2(oklab.oklab.b, oklab.oklab.a) : 0;
+	H *= 180.0 / math::PI;
+	if (H < 0) H += 360;
+	if (H >= 360) H -= 360;
+	return Color(oklab.oklab.L, static_cast<float>(C), static_cast<float>(H), alpha);
+}
+Color Color::oklchToRgb() const {
+	double a = oklch.C ? oklch.C * std::cos((oklch.h / 180) * math::PI) : 0;
+	double b = oklch.C ? oklch.C * std::sin((oklch.h / 180) * math::PI) : 0;
+	return Color(oklch.L, static_cast<float>(a), static_cast<float>(b), alpha).oklabToRgb();
 }
 Color Color::xyzToLab(const Vector3f &referenceWhite) const {
 	float X = xyz.x / referenceWhite.x;
