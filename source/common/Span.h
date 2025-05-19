@@ -16,10 +16,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COMMON_SPAN_H_
-#define GPICK_COMMON_SPAN_H_
+#pragma once
 #include <type_traits>
 #include <iterator>
+#include <cstdint>
 namespace common {
 template<typename T, typename SizeT = size_t>
 struct Span {
@@ -164,4 +164,3 @@ private:
 	friend ConstIterator;
 };
 };
-#endif /* GPICK_COMMON_SPAN_H_ */

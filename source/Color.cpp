@@ -449,15 +449,15 @@ Color Color::oklabToRgb() const {
 Color Color::rgbToOklch() const {
 	auto oklab = rgbToOklab();
 	double C = std::sqrt(oklab.oklab.a * oklab.oklab.a + oklab.oklab.b * oklab.oklab.b);
-	double H = C ? std::atan2(oklab.oklab.b, oklab.oklab.a) : 0;
+	double H = C != 0 ? std::atan2(oklab.oklab.b, oklab.oklab.a) : 0;
 	H *= 180.0 / math::PI;
 	if (H < 0) H += 360;
 	if (H >= 360) H -= 360;
 	return Color(oklab.oklab.L, static_cast<float>(C), static_cast<float>(H), alpha);
 }
 Color Color::oklchToRgb() const {
-	double a = oklch.C ? oklch.C * std::cos((oklch.h / 180) * math::PI) : 0;
-	double b = oklch.C ? oklch.C * std::sin((oklch.h / 180) * math::PI) : 0;
+	double a = oklch.C != 0 ? oklch.C * std::cos((oklch.h / 180) * math::PI) : 0;
+	double b = oklch.C != 0 ? oklch.C * std::sin((oklch.h / 180) * math::PI) : 0;
 	return Color(oklch.L, static_cast<float>(a), static_cast<float>(b), alpha).oklabToRgb();
 }
 Color Color::xyzToLab(const Vector3f &referenceWhite) const {
