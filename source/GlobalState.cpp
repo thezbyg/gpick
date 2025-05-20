@@ -53,6 +53,7 @@ struct ConverterOptions: public Converter::Options, public IEventHandler {
 		upperCaseHex = options->getString("hex_case", "upper") == "upper";
 		cssPercentages = options->getBool("css_percentages", false);
 		cssAlphaPercentage = options->getBool("css_alpha_percentage", false);
+		cssCommaSeparators = options->getBool("css_comma_separators", false);
 	}
 	virtual ~ConverterOptions() {
 	}

@@ -43,6 +43,7 @@ struct Converter {
 		bool upperCaseHex;
 		bool cssPercentages;
 		bool cssAlphaPercentage;
+		bool cssCommaSeparators;
 	};
 	static Options emptyOptions;
 	template<typename T>

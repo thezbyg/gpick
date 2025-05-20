@@ -16,8 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_PARSER_TEXT_FILE_H_
-#define GPICK_PARSER_TEXT_FILE_H_
+#pragma once
 #include <cstddef>
 struct Color;
 namespace text_file_parser {
@@ -34,6 +33,7 @@ struct Configuration {
 	bool cssRgba;
 	bool cssHsl;
 	bool cssHsla;
+	bool cssOklch;
 	bool floatValues;
 	bool intValues;
 };
@@ -46,4 +46,3 @@ struct TextFile {
 	virtual void addColor(const Color &color) = 0;
 };
 }
-#endif /* GPICK_PARSER_TEXT_FILE_H_ */

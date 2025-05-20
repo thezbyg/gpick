@@ -16,13 +16,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COMMON_MATCH_PATTERN_H_
-#define GPICK_COMMON_MATCH_PATTERN_H_
+#pragma once
+#include <array>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <tuple>
-#include <array>
+#include <type_traits>
 namespace common {
 namespace detail {
 template<typename CharT>
@@ -153,6 +152,10 @@ template<typename T, typename Tuple, std::size_t... Is>
 bool applyOr(T value, std::size_t &position, Tuple &tuple, std::index_sequence<Is...>) {
 	return (apply(value, position, std::get<Is>(tuple)) || ...);
 }
+template<typename T, typename Tuple, std::size_t... Is>
+bool applyByIndex(std::size_t index, T value, std::size_t &position, Tuple &tuple, std::index_sequence<Is...>) {
+	return ((Is == index && apply(value, position, std::get<Is>(tuple))) || ...);
+}
 template<typename CharT>
 struct CharRangeOp {
 	CharRangeOp(CharT from, CharT to):
@@ -250,6 +253,21 @@ struct Save<std::size_t, OpT> {
 private:
 	std::size_t &m_start, &m_end;
 	OpT m_op;
+};
+template<typename SetT>
+struct Set {
+	Set(SetT &output, SetT value):
+		m_output(output),
+		m_value(value) {
+	}
+	template<typename T>
+	bool operator()(T value, std::size_t &position) const {
+		m_output = m_value;
+		return true;
+	}
+private:
+	SetT &m_output;
+	SetT m_value;
 };
 template<>
 struct Save<bool, void> {
@@ -392,6 +410,26 @@ struct Sequence {
 private:
 	std::tuple<OpTs...> m_ops;
 };
+template<typename... OpTs>
+struct Choise {
+	Choise(std::size_t &active, OpTs &&...ops):
+		m_active(active),
+		m_ops(std::forward_as_tuple(ops...)) {
+	}
+	template<typename T>
+	bool operator()(T value, std::size_t &position) const {
+		std::size_t savedPosition = position;
+		static constexpr auto size = std::tuple_size<std::tuple<OpTs...>>::value;
+		if (!applyByIndex(m_active, value, position, m_ops, std::make_index_sequence<size> {})) {
+			position = savedPosition;
+			return false;
+		}
+		return true;
+	}
+private:
+	std::size_t &m_active;
+	std::tuple<OpTs...> m_ops;
+};
 template<typename T, typename OpT>
 bool matchPattern(T value, std::size_t position, OpT op) {
 	return apply(value, position, op);
@@ -487,9 +525,17 @@ inline auto save(OpT op, std::size_t &start, std::size_t &end) {
 inline auto save(bool &visited, bool value = true) {
 	return detail::Save<bool, void>(visited, value);
 }
+template<typename T>
+inline auto set(T &output, T value) {
+	return detail::Set<T>(output, value);
+}
 template<typename... OpTs>
 inline auto sequence(OpTs... ops) {
 	return detail::Sequence<OpTs...>(std::forward<OpTs>(ops)...);
+}
+template<typename... OpTs>
+inline auto choise(std::size_t &active, OpTs... ops) {
+	return detail::Choise<OpTs...>(active, std::forward<OpTs>(ops)...);
 }
 const auto maybeSpace = zeroOrMore(whitespace);
 const auto maybeSpaceStrict = zeroOrMore(single(' '));
@@ -497,4 +543,3 @@ const auto space = oneOrMore(whitespace);
 const auto number = sequence(optional(single({'+', '-'})), opOr(sequence(oneOrMore(digit), single('.'), oneOrMore(digit)), sequence(single('.'), oneOrMore(digit)), oneOrMore(digit)), optional(sequence(single({'e', 'E'}), oneOrMore(digit))));
 }
 }
-#endif /* GPICK_COMMON_MATCH_PATTERN_H_ */

@@ -196,6 +196,9 @@ BOOST_AUTO_TEST_CASE(cssRgb) {
 		{ "rgb(rgb(32, 64, 128)", true, { 32, 64, 128, 255 } },
 		{ "rgb(12.5%, 25%, 50%)", true, { 0.125f, 0.25f, 0.5f, 1.0f } },
 		{ "rgb(50%, rgb(32, 64, 128)", true, { 32, 64, 128, 255 } },
+		{ "rgb(32 64 128)", true, { 32, 64, 128, 255 } },
+		{ "rgb(32 64 128 / 0.5)", true, { 32 / 255.0f, 64 / 255.0f, 128 / 255.0f, 0.5f } },
+		{ "rgb(32 64 128 / 50%)", true, { 32 / 255.0f, 64 / 255.0f, 128 / 255.0f, 0.5f } },
 	};
 	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i) {
 		bool good = converter->deserialize(colors[i].text, colorObject, quality);
@@ -228,6 +231,9 @@ BOOST_AUTO_TEST_CASE(cssRgba) {
 		{ "rgba(rgba(32, 64, 128, 1)", true, { 32, 64, 128, 255 } },
 		{ "rgba(12.5%, 25%, 50%, 75%)", true, { 0.125f, 0.25f, 0.5f, 0.75f } },
 		{ "rgba(50%, rgba(32, 64, 128, 1)", true, { 32, 64, 128, 255 } },
+		{ "rgba(32 64 128 / 1)", true, { 32, 64, 128, 255 } },
+		{ "rgba(32 64 128 / 0.5)", true, { 32 / 255.0f, 64 / 255.0f, 128 / 255.0f, 0.5f } },
+		{ "rgba(32 64 128 / 50%)", true, { 32 / 255.0f, 64 / 255.0f, 128 / 255.0f, 0.5f } },
 	};
 	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i) {
 		bool good = converter->deserialize(colors[i].text, colorObject, quality);
@@ -258,6 +264,9 @@ BOOST_AUTO_TEST_CASE(cssHsl) {
 		{ " hsl(180, 50%, 75%)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
 		{ "hsl(180, 50%, 75%) ", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
 		{ "hsl(hsl(180, 50%, 75%)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
+		{ "hsl(180 50% 75%)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
+		{ "hsl(180 50% 75% / 0.5)", true, { 0.625f, 0.875f, 0.875f, 0.5f } },
+		{ "hsl(180 50% 75% / 50%)", true, { 0.625f, 0.875f, 0.875f, 0.5f } },
 	};
 	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i) {
 		bool good = converter->deserialize(colors[i].text, colorObject, quality);
@@ -288,6 +297,9 @@ BOOST_AUTO_TEST_CASE(cssHsla) {
 		{ " hsla(180, 50%, 75%, 1)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
 		{ "hsla(180, 50%, 75%, 1) ", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
 		{ "hsla(hsla(180, 50%, 75%, 1)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
+		{ "hsla(180 50% 75% / 1)", true, { 0.625f, 0.875f, 0.875f, 1.0f } },
+		{ "hsla(180 50% 75% / 0.5)", true, { 0.625f, 0.875f, 0.875f, 0.5f } },
+		{ "hsla(180 50% 75% / 50%)", true, { 0.625f, 0.875f, 0.875f, 0.5f } },
 	};
 	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); ++i) {
 		bool good = converter->deserialize(colors[i].text, colorObject, quality);
@@ -486,6 +498,14 @@ BOOST_AUTO_TEST_CASE(valueRgb) {
 		{ "", false, { } },
 		{ "1,1", false, { } },
 		{ "1,1,", false, { } },
+		{ "1,1,,1", false, { } },
+		{ "1,1;1", false, { } },
+		{ "1,1 1", false, { } },
+		{ "1,1\t1", false, { } },
+		{ "1;1,1", false, { } },
+		{ "1;1 1", false, { } },
+		{ "1 1,1", false, { } },
+		{ "1 1;1", false, { } },
 		{ "0.125,0.25,0.5", true, { 0.125f, 0.25f, 0.5f, 1.0f } },
 		{ "0.125;0.25;0.5", true, { 0.125f, 0.25f, 0.5f, 1.0f } },
 		{ "0.125\t0.25\t0.5", true, { 0.125f, 0.25f, 0.5f, 1.0f } },
@@ -518,6 +538,7 @@ BOOST_AUTO_TEST_CASE(valueRgba) {
 		{ "", false, { } },
 		{ "1,1,1", false, { } },
 		{ "1,1,1,", false, { } },
+		{ "1,1,,1,", false, { } },
 		{ "0.125,0.25,0.5,0.75", true, { 0.125f, 0.25f, 0.5f, 0.75f } },
 		{ "0.125;0.25;0.5;0.75", true, { 0.125f, 0.25f, 0.5f, 0.75f } },
 		{ "0.125\t0.25\t0.5\t0.75", true, { 0.125f, 0.25f, 0.5f, 0.75f } },

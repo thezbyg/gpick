@@ -60,12 +60,26 @@ static float toQuality(size_t start, size_t end, size_t length) {
 	return 1.0f - static_cast<float>(std::atan(start) / math::PI) - static_cast<float>(std::atan(length - end) / math::PI);
 }
 inline auto numberOrPercentage(std::string_view &value, bool &percentage) {
-	return sequence(save(percentage, false), save(number, value), optional(sequence(single('%'), save(percentage))));
+	return sequence(save(percentage, false), save(number, value), optional(sequence('%', save(percentage))));
 }
 inline auto percentage(std::string_view &value) {
-	return sequence(save(number, value), single('%'));
+	return sequence(save(number, value), '%');
 }
-const auto valueSeparator = oneOrMore(single({',', ';', '\t', ' '}));
+inline auto valueFirstSeparator(size_t &active) {
+	return opOr(sequence(maybeSpace, ',', maybeSpace, set<size_t>(active, 0)), sequence(maybeSpace, ';', maybeSpace, set<size_t>(active, 1)), sequence(space, set<size_t>(active, 2u)));
+}
+inline auto valueSeparator(size_t &active) {
+	return choise(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, ';', maybeSpace), space);
+}
+inline auto cssFirstSeparator(size_t &active) {
+	return opOr(sequence(maybeSpace, ',', maybeSpace, set<size_t>(active, 0)), sequence(space, set<size_t>(active, 1)));
+}
+inline auto cssSeparator(size_t &active) {
+	return choise(active, sequence(maybeSpace, ',', maybeSpace), space);
+}
+inline auto cssAlphaSeparator(size_t &active) {
+	return choise(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, '/', maybeSpace));
+}
 static std::string webHexSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[8];
 	auto &c = colorObject.getColor();
@@ -190,23 +204,23 @@ static std::string cssRgbSerialize(const ColorObject &colorObject, const Convert
 	char result[22];
 	auto &c = colorObject.getColor();
 	if (options.cssPercentages) {
-		std::snprintf(result, sizeof(result), "rgb(%d%%, %d%%, %d%%)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue));
+		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgb(%d%%, %d%%, %d%%)" : "rgb(%d%% %d%% %d%%)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue));
 	} else {
-		std::snprintf(result, sizeof(result), "rgb(%d, %d, %d)", toInteger(c.red), toInteger(c.green), toInteger(c.blue));
+		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgb(%d, %d, %d)" : "rgb(%d %d %d)", toInteger(c.red), toInteger(c.green), toInteger(c.blue));
 	}
 	return result;
 }
 static bool cssRgbDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
-	std::string_view red, green, blue;
-	bool redPercentage = false, greenPercentage = false, bluePercentage = false;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith("rgb("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(')')), start, end))))
+	std::string_view red, green, blue, alpha;
+	bool redPercentage = false, greenPercentage = false, bluePercentage = false, alphaPercentage = false;
+	size_t start, end, variant;
+	if (!matchPattern(std::string_view(value), startWith("rgb("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), cssFirstSeparator(variant), numberOrPercentage(green, greenPercentage), cssSeparator(variant), numberOrPercentage(blue, bluePercentage), maybeSpace, optional(sequence('/', maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace)), ')'), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f) / (redPercentage ? 100.0f : 255.0f));
 	c.green = math::clamp(convert<float>(green, 0.0f) / (greenPercentage ? 100.0f : 255.0f));
 	c.blue = math::clamp(convert<float>(blue, 0.0f) / (bluePercentage ? 100.0f : 255.0f));
-	c.alpha = 1.0f;
+	c.alpha = alpha.empty() ? 1.0f : math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
 	colorObject.setColor(c);
 	quality = toQuality(start - 4, end, std::string_view(value).length());
 	return true;
@@ -216,15 +230,15 @@ static std::string cssRgbaSerialize(const ColorObject &colorObject, const Conver
 	auto &c = colorObject.getColor();
 	if (options.cssAlphaPercentage) {
 		if (options.cssPercentages) {
-			std::snprintf(result, sizeof(result), "rgba(%d%%, %d%%, %d%%, %d%%)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), toPercentage(c.alpha));
+			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d%%, %d%%, %d%%, %d%%)" : "rgba(%d%% %d%% %d%% / %d%%)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), toPercentage(c.alpha));
 		} else {
-			std::snprintf(result, sizeof(result), "rgba(%d, %d, %d, %d%%)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), toPercentage(c.alpha));
+			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d, %d, %d, %d%%)" : "rgba(%d %d %d / %d%%)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), toPercentage(c.alpha));
 		}
 	} else {
 		if (options.cssPercentages) {
-			std::snprintf(result, sizeof(result), "rgba(%d%%, %d%%, %d%%, %0.3f)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), c.alpha);
+			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d%%, %d%%, %d%%, %0.3f)" : "rgba(%d%% %d%% %d%% / %0.3f)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), c.alpha);
 		} else {
-			std::snprintf(result, sizeof(result), "rgba(%d, %d, %d, %0.3f)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), c.alpha);
+			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d, %d, %d, %0.3f)" : "rgba(%d %d %d / %0.3f)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), c.alpha);
 		}
 	}
 	return result;
@@ -232,8 +246,8 @@ static std::string cssRgbaSerialize(const ColorObject &colorObject, const Conver
 static bool cssRgbaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue, alpha;
 	bool redPercentage = false, greenPercentage = false, bluePercentage = false, alphaPercentage = false;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith("rgba("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(green, greenPercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(blue, bluePercentage), maybeSpace, single(','), maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, single(')')), start, end))))
+	size_t start, end, variant;
+	if (!matchPattern(std::string_view(value), startWith("rgba("sv, save(sequence(maybeSpace, numberOrPercentage(red, redPercentage), cssFirstSeparator(variant), numberOrPercentage(green, greenPercentage), cssSeparator(variant), numberOrPercentage(blue, bluePercentage), cssAlphaSeparator(variant), numberOrPercentage(alpha, alphaPercentage), maybeSpace, ')'), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f) / (redPercentage ? 100.0f : 255.0f));
@@ -247,19 +261,20 @@ static bool cssRgbaDeserialize(const char *value, ColorObject &colorObject, floa
 static std::string cssHslSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[21];
 	auto c = colorObject.getColor().rgbToHsl();
-	std::snprintf(result, sizeof(result), "hsl(%d, %d%%, %d%%)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness));
+	std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsl(%d, %d%%, %d%%)" : "hsl(%d %d%% %d%%)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness));
 	return result;
 }
 static bool cssHslDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
-	std::string_view hue, saturation, lightness;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith("hsl("sv, save(sequence(maybeSpace, save(number, hue), maybeSpace, single(','), maybeSpace, percentage(saturation), maybeSpace, single(','), maybeSpace, percentage(lightness), maybeSpace, single(')')), start, end))))
+	std::string_view hue, saturation, lightness, alpha;
+	size_t start, end, variant;
+	bool alphaPercentage = false;
+	if (!matchPattern(std::string_view(value), startWith("hsl("sv, save(sequence(maybeSpace, save(number, hue), cssFirstSeparator(variant), percentage(saturation), cssSeparator(variant), percentage(lightness), maybeSpace, optional(sequence('/', maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace)), ')'), start, end))))
 		return false;
 	Color c;
 	c.hsl.hue = math::clamp(convert<float>(hue, 0.0f) / 360.0f);
 	c.hsl.saturation = math::clamp(convert<float>(saturation, 0.0f) / 100.0f);
 	c.hsl.lightness = math::clamp(convert<float>(lightness, 0.0f) / 100.0f);
-	c.alpha = 1.0f;
+	c.alpha = alpha.empty() ? 1.0f : math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
 	colorObject.setColor(c.hslToRgb());
 	quality = toQuality(start - 4, end, std::string_view(value).length());
 	return true;
@@ -267,14 +282,18 @@ static bool cssHslDeserialize(const char *value, ColorObject &colorObject, float
 static std::string cssHslaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[29];
 	auto c = colorObject.getColor().rgbToHsl();
-	std::snprintf(result, sizeof(result), "hsla(%d, %d%%, %d%%, %0.3f)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness), c.alpha);
+	if (options.cssAlphaPercentage) {
+		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsla(%d, %d%%, %d%%, %d%%)" : "hsla(%d %d%% %d%% / %d%%)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness), toPercentage(c.alpha));
+	} else {
+		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsla(%d, %d%%, %d%%, %0.3f)" : "hsla(%d %d%% %d%% / %0.3f)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness), c.alpha);
+	}
 	return result;
 }
 static bool cssHslaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view hue, saturation, lightness, alpha;
 	bool alphaPercentage;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith("hsla("sv, save(sequence(maybeSpace, save(number, hue), maybeSpace, single(','), maybeSpace, percentage(saturation), maybeSpace, single(','), maybeSpace, percentage(lightness), maybeSpace, single(','), maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, single(')')), start, end))))
+	size_t start, end, variant;
+	if (!matchPattern(std::string_view(value), startWith("hsla("sv, save(sequence(maybeSpace, save(number, hue), cssFirstSeparator(variant), percentage(saturation), cssSeparator(variant), percentage(lightness), cssAlphaSeparator(variant), numberOrPercentage(alpha, alphaPercentage), maybeSpace, ')'), start, end))))
 		return false;
 	Color c;
 	c.hsl.hue = math::clamp(convert<float>(hue, 0.0f) / 360.0f);
@@ -283,6 +302,56 @@ static bool cssHslaDeserialize(const char *value, ColorObject &colorObject, floa
 	c.alpha = math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
 	colorObject.setColor(c.hslToRgb());
 	quality = toQuality(start - 5, end, std::string_view(value).length());
+	return true;
+}
+static std::string cssOklchSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+	char result[23];
+	auto c = colorObject.getColor().rgbToOklch();
+	if (options.cssPercentages) {
+		std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d)", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f));
+	} else {
+		std::snprintf(result, sizeof(result), "oklch(%0.3f %0.3f %d)", c.oklch.L, c.oklch.C, toDegrees(c.oklch.h / 360.0f));
+	}
+	return result;
+}
+static bool cssOklchDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+	std::string_view lightness, chroma, hue;
+	bool lightnessPercentage, chromaPercentage;
+	size_t start, end;
+	if (!matchPattern(std::string_view(value), startWith("oklch("sv, save(sequence(maybeSpace, numberOrPercentage(lightness, lightnessPercentage), space, numberOrPercentage(chroma, chromaPercentage), space, save(number, hue), maybeSpace, ')'), start, end))))
+		return false;
+	Color c;
+	c.oklch.L = math::clamp(convert<float>(lightness, 0.0f) / (lightnessPercentage ? 100.0f : 1.0f));
+	c.oklch.C = math::clamp(convert<float>(chroma, 0.0f) * (chromaPercentage ? 0.4f / 100.0f : 1.0f));
+	c.oklch.h = math::clamp(convert<float>(hue, 0.0f), 0.0f, 360.0f);
+	c.alpha = 1.0f;
+	colorObject.setColor(c.oklchToRgb().normalizeRgb());
+	quality = toQuality(start - 6, end, std::string_view(value).length());
+	return true;
+}
+static std::string cssOklchaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+	char result[30];
+	auto c = colorObject.getColor().rgbToOklch();
+	if (options.cssAlphaPercentage) {
+		std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d / %d%%)", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f), toPercentage(c.alpha));
+	} else {
+		std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d / %0.3f)", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f), c.alpha);
+	}
+	return result;
+}
+static bool cssOklchaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+	std::string_view lightness, chroma, hue, alpha;
+	bool lightnessPercentage, chromaPercentage, alphaPercentage;
+	size_t start, end;
+	if (!matchPattern(std::string_view(value), startWith("oklch("sv, save(sequence(maybeSpace, numberOrPercentage(lightness, lightnessPercentage), space, numberOrPercentage(chroma, chromaPercentage), space, save(number, hue), maybeSpace, '/', maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, ')'), start, end))))
+		return false;
+	Color c;
+	c.oklch.L = math::clamp(convert<float>(lightness, 0.0f) / (lightnessPercentage ? 100.0f : 1.0f));
+	c.oklch.C = math::clamp(convert<float>(chroma, 0.0f) * (chromaPercentage ? 0.4f / 100.0f : 1.0f));
+	c.oklch.h = math::clamp(convert<float>(hue, 0.0f), 0.0f, 360.0f);
+	c.alpha = math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
+	colorObject.setColor(c.oklchToRgb().normalizeRgb());
+	quality = toQuality(start - 6, end, std::string_view(value).length());
 	return true;
 }
 static std::string csvRgbSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
@@ -294,7 +363,7 @@ static std::string csvRgbSerialize(const ColorObject &colorObject, const Convert
 static bool csvRgbDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, single(','), maybeSpace, save(number, green), maybeSpace, single(','), maybeSpace, save(number, blue)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, ',', maybeSpace, save(number, green), maybeSpace, ',', maybeSpace, save(number, blue)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -314,7 +383,7 @@ static std::string csvRgbTabSerialize(const ColorObject &colorObject, const Conv
 static bool csvRgbTabDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpaceStrict, single('\t'), maybeSpaceStrict, save(number, green), maybeSpaceStrict, single('\t'), maybeSpaceStrict, save(number, blue)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpaceStrict, '\t', maybeSpaceStrict, save(number, green), maybeSpaceStrict, '\t', maybeSpaceStrict, save(number, blue)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -334,7 +403,7 @@ static std::string csvRgbSemicolonSerialize(const ColorObject &colorObject, cons
 static bool csvRgbSemicolonDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, single(';'), maybeSpace, save(number, green), maybeSpace, single(';'), maybeSpace, save(number, blue)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, ';', maybeSpace, save(number, green), maybeSpace, ';', maybeSpace, save(number, blue)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -354,7 +423,7 @@ static std::string csvRgbaSerialize(const ColorObject &colorObject, const Conver
 static bool csvRgbaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue, alpha;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, single(','), maybeSpace, save(number, green), maybeSpace, single(','), maybeSpace, save(number, blue), maybeSpace, single(','), maybeSpace, save(number, alpha)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, ',', maybeSpace, save(number, green), maybeSpace, ',', maybeSpace, save(number, blue), maybeSpace, ',', maybeSpace, save(number, alpha)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -374,7 +443,7 @@ static std::string csvRgbaTabSerialize(const ColorObject &colorObject, const Con
 static bool csvRgbaTabDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue, alpha;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpaceStrict, single('\t'), maybeSpaceStrict, save(number, green), maybeSpaceStrict, single('\t'), maybeSpaceStrict, save(number, blue), maybeSpaceStrict, single('\t'), maybeSpaceStrict, save(number, alpha)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpaceStrict, '\t', maybeSpaceStrict, save(number, green), maybeSpaceStrict, '\t', maybeSpaceStrict, save(number, blue), maybeSpaceStrict, '\t', maybeSpaceStrict, save(number, alpha)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -394,7 +463,7 @@ static std::string csvRgbaSemicolonSerialize(const ColorObject &colorObject, con
 static bool csvRgbaSemicolonDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue, alpha;
 	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, single(';'), maybeSpace, save(number, green), maybeSpace, single(';'), maybeSpace, save(number, blue), maybeSpace, single(';'), maybeSpace, save(number, alpha)), start, end))))
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), maybeSpace, ';', maybeSpace, save(number, green), maybeSpace, ';', maybeSpace, save(number, blue), maybeSpace, ';', maybeSpace, save(number, alpha)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -413,8 +482,8 @@ static std::string valueRgbSerialize(const ColorObject &colorObject, const Conve
 }
 static bool valueRgbDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), valueSeparator, save(number, green), valueSeparator, save(number, blue)), start, end))))
+	size_t start, end, variant;
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), valueFirstSeparator(variant), save(number, green), valueSeparator(variant), save(number, blue)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -433,8 +502,8 @@ static std::string valueRgbaSerialize(const ColorObject &colorObject, const Conv
 }
 static bool valueRgbaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
 	std::string_view red, green, blue, alpha;
-	size_t start, end;
-	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), valueSeparator, save(number, green), valueSeparator, save(number, blue), valueSeparator, save(number, alpha)), start, end))))
+	size_t start, end, variant;
+	if (!matchPattern(std::string_view(value), startWith(save(sequence(save(number, red), valueFirstSeparator(variant), save(number, green), valueSeparator(variant), save(number, blue), valueSeparator(variant), save(number, alpha)), start, end))))
 		return false;
 	Color c;
 	c.red = math::clamp(convert<float>(red, 0.0f));
@@ -519,6 +588,8 @@ void addInternalConverters(Converters &converters, Converter::Options &options) 
 	converters.add("color_css_rgba", _("CSS: red green blue alpha"), Serialize(cssRgbaSerialize, options), Deserialize(cssRgbaDeserialize, options));
 	converters.add("color_css_hsl", _("CSS: hue saturation lightness"), Serialize(cssHslSerialize, options), Deserialize(cssHslDeserialize, options));
 	converters.add("color_css_hsla", _("CSS: hue saturation lightness alpha"), Serialize(cssHslaSerialize, options), Deserialize(cssHslaDeserialize, options));
+	converters.add("color_css_oklch", "CSS: OKLCH", Serialize(cssOklchSerialize, options), Deserialize(cssOklchDeserialize, options));
+	converters.add("color_css_oklcha", _("CSS: OKLCH with alpha"), Serialize(cssOklchaSerialize, options), Deserialize(cssOklchaDeserialize, options));
 	converters.add("css_color_hex", "CSS(color)", Serialize(cssColorHexSerialize, options), Deserialize());
 	converters.add("css_background_color_hex", "CSS(background-color)", Serialize(cssBackgroundColorHexSerialize, options), Deserialize());
 	converters.add("css_border_color_hex", "CSS(border-color)", Serialize(cssBorderColorHexSerialize, options), Deserialize());

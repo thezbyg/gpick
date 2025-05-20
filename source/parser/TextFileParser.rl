@@ -99,26 +99,12 @@ struct FSM {
 		color.alpha = hexToInt(ts[startIndex + 3]) / 15.0f;
 		addColor(color);
 	}
-	float getPercentage(size_t index) const {
+	float getPercentage(size_t index, double unitlessMultiplier = 1.0, double percentageMultiplier = 1.0) const {
 		switch (numbersDouble[index].second) {
 		case Unit::unitless:
-			return static_cast<float>(numbersDouble[index].first);
+			return static_cast<float>(numbersDouble[index].first * unitlessMultiplier);
 		case Unit::percentage:
-			return static_cast<float>(numbersDouble[index].first * (1 / 100.0));
-		case Unit::degree:
-		case Unit::turn:
-		case Unit::radian:
-		case Unit::gradian:
-			break;
-		}
-		return 0;
-	}
-	float getPercentage(size_t index, double unitlessDivider) const {
-		switch (numbersDouble[index].second) {
-		case Unit::unitless:
-			return static_cast<float>(numbersDouble[index].first / unitlessDivider);
-		case Unit::percentage:
-			return static_cast<float>(numbersDouble[index].first * (1 / 100.0));
+			return static_cast<float>(numbersDouble[index].first * (1 / 100.0) * percentageMultiplier);
 		case Unit::degree:
 		case Unit::turn:
 		case Unit::radian:
@@ -152,19 +138,10 @@ struct FSM {
 	}
 	void colorRgb() {
 		Color color;
-		color.red = getPercentage(0, 255);
-		color.green = getPercentage(1, 255);
-		color.blue = getPercentage(2, 255);
-		color.alpha = 1;
-		numbersDouble.clear();
-		addColor(color);
-	}
-	void colorRgba() {
-		Color color;
-		color.red = getPercentage(0, 255);
-		color.green = getPercentage(1, 255);
-		color.blue = getPercentage(2, 255);
-		color.alpha = getPercentage(3);
+		color.red = getPercentage(0, 1.0 / 255);
+		color.green = getPercentage(1, 1.0 / 255);
+		color.blue = getPercentage(2, 1.0 / 255);
+		color.alpha = numbersDouble.size() == 4 ? getPercentage(3) : 1;
 		numbersDouble.clear();
 		addColor(color);
 	}
@@ -173,18 +150,18 @@ struct FSM {
 		color.hsl.hue = getDegrees(0);
 		color.hsl.saturation = getPercentage(1);
 		color.hsl.lightness = getPercentage(2);
-		color.alpha = 1;
+		color.alpha = numbersDouble.size() == 4 ? getPercentage(3) : 1;
 		numbersDouble.clear();
 		addColor(color.normalizeRgb().hslToRgb());
 	}
-	void colorHsla() {
+	void colorOklch() {
 		Color color;
-		color.hsl.hue = getDegrees(0);
-		color.hsl.saturation = getPercentage(1);
-		color.hsl.lightness = getPercentage(2);
-		color.alpha = getPercentage(3);
+		color.oklch.L = getPercentage(0);
+		color.oklch.C = getPercentage(1, 1.0, 0.4);
+		color.oklch.h = getDegrees(2) * 360.0f;
+		color.alpha = numbersDouble.size() == 4 ? getPercentage(3) : 1;
 		numbersDouble.clear();
-		addColor(color.normalizeRgb().hslToRgb());
+		addColor(color.oklchToRgb().normalizeRgb());
 	}
 	void colorValues() {
 		Color color;
@@ -247,6 +224,8 @@ struct FSM {
 	action cssRgba { configuration.cssRgba }
 	action cssHsl { configuration.cssHsl }
 	action cssHsla { configuration.cssHsla }
+	action cssOklch { configuration.cssOklch }
+	action cssOklchWithAlpha { configuration.cssOklch }
 	action intValues { configuration.intValues }
 	action floatValues { configuration.floatValues }
 	action singleLineCComments { configuration.singleLineCComments }
@@ -272,13 +251,17 @@ struct FSM {
 		( [0-9a-fA-F]{4} ) when shortHexWithAlpha { fsm.colorHexWithAlphaShort(false); };
 		( [0-9a-fA-F]{3} ) when shortHex { fsm.colorHexShort(false); };
 		( 'rgb'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* ')' ) when cssRgb { fsm.colorRgb(); };
+		( 'rgb'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssRgb { fsm.colorRgb(); };
 		( 'rgb'i '(' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssRgb { fsm.colorRgb(); };
-		( 'rgba'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgba(); };
-		( 'rgba'i '(' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgba(); };
+		( 'rgba'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgb(); };
+		( 'rgba'i '(' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssRgba { fsm.colorRgb(); };
 		( 'hsl'i '(' ws* degrees ws+ percentage ws+ percentage ws* ')' ) when cssHsl { fsm.colorHsl(); };
+		( 'hsl'i '(' ws* degrees ws+ percentage ws+ percentage ws* '/' ws* numberOrPercentage ws*')' ) when cssHsl { fsm.colorHsl(); };
 		( 'hsl'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ')' ) when cssHsl { fsm.colorHsl(); };
-		( 'hsla'i '(' ws* degrees ws+ percentage ws+ percentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsla(); };
-		( 'hsla'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsla(); };
+		( 'hsla'i '(' ws* degrees ws+ percentage ws+ percentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsl(); };
+		( 'hsla'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsl(); };
+		( 'oklch'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ degrees ws* ')' ) when cssOklch { fsm.colorOklch(); };
+		( 'oklch'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ degrees ws* '/' ws* numberOrPercentage ws* ')' ) when cssOklch { fsm.colorOklch(); };
 		( integer ws* separator ws* integer ws* separator ws* integer (ws* separator ws* integer)? ) when intValues { fsm.colorValueIntegers(); };
 		( integer ws+ integer ws+ integer (ws+ integer)? ) when intValues { fsm.colorValueIntegers(); };
 		( number ws* separator ws* number ws* separator ws* number (ws* separator ws* number)? ) when floatValues { fsm.colorValues(); };

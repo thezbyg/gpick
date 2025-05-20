@@ -78,7 +78,7 @@ struct TextParserDialog: public ToolColorNameAssigner {
 private:
 	GtkWindow *m_parent;
 	GtkWidget *m_dialog, *m_textView;
-	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_short_hex_with_alpha, *m_full_hex_with_alpha, *m_float_values, *m_int_values, *m_css_hsl, *m_css_hsla;
+	GtkWidget *m_single_line_c_comments, *m_multi_line_c_comments, *m_single_line_hash_comments, *m_css_rgb, *m_css_rgba, *m_short_hex, *m_full_hex, *m_short_hex_with_alpha, *m_full_hex_with_alpha, *m_float_values, *m_int_values, *m_css_hsl, *m_css_hsla, *m_css_oklch;
 	GtkWidget *m_preview_expander;
 	common::Ref<ColorList> m_previewColorList;
 	GlobalState *m_gs;
@@ -91,6 +91,7 @@ private:
 	bool isCssRgbaEnabled();
 	bool isCssHslEnabled();
 	bool isCssHslaEnabled();
+	bool isCssOklchEnabled();
 	bool isFullHexEnabled();
 	bool isShortHexEnabled();
 	bool isFullHexWithAlphaEnabled();
@@ -131,6 +132,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	addOption(m_css_rgba = newCheckbox("CSS rgba()", m_options->getBool("css_rgba", true)), 1, y, table);
 	addOption(m_css_hsl = newCheckbox("CSS hsl()", m_options->getBool("css_hsl", true)), 1, y, table);
 	addOption(m_css_hsla = newCheckbox("CSS hsla()", m_options->getBool("css_hsla", true)), 1, y, table);
+	addOption(m_css_oklch = newCheckbox("CSS oklch()", m_options->getBool("css_oklch", true)), 1, y, table);
 	y = 1;
 	addOption(m_full_hex = newCheckbox(_("Full hex"), m_options->getBool("full_hex", true)), 2, y, table);
 	addOption(m_full_hex_with_alpha = newCheckbox(_("Full hex with alpha"), m_options->getBool("full_hex_with_alpha", true)), 2, y, table);
@@ -139,7 +141,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	y = 1;
 	addOption(m_int_values = newCheckbox(_("Integer values"), m_options->getBool("int_values", true)), 3, y, table);
 	addOption(m_float_values = newCheckbox(_("Real values"), m_options->getBool("float_values", true)), 3, y, table);
-	y = 5;
+	y = 6;
 	g_signal_connect(G_OBJECT(m_single_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_multi_line_c_comments), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_single_line_hash_comments), "toggled", G_CALLBACK(onChange), this);
@@ -147,6 +149,7 @@ TextParserDialog::TextParserDialog(GtkWindow *parent, GlobalState *gs):
 	g_signal_connect(G_OBJECT(m_css_rgba), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_css_hsl), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_css_hsla), "toggled", G_CALLBACK(onChange), this);
+	g_signal_connect(G_OBJECT(m_css_oklch), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_full_hex), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_short_hex), "toggled", G_CALLBACK(onChange), this);
 	g_signal_connect(G_OBJECT(m_full_hex_with_alpha), "toggled", G_CALLBACK(onChange), this);
@@ -179,6 +182,7 @@ bool TextParserDialog::parse(ColorList &colorList) {
 	configuration.cssRgba = isCssRgbaEnabled();
 	configuration.cssHsl = isCssHslEnabled();
 	configuration.cssHsla = isCssHslaEnabled();
+	configuration.cssOklch = isCssOklchEnabled();
 	configuration.fullHex = isFullHexEnabled();
 	configuration.shortHex = isShortHexEnabled();
 	configuration.fullHexWithAlpha = isFullHexWithAlphaEnabled();
@@ -242,6 +246,7 @@ void TextParserDialog::saveSettings() {
 	m_options->set("css_rgba", isCssRgbaEnabled());
 	m_options->set("css_hsl", isCssHslEnabled());
 	m_options->set("css_hsla", isCssHslaEnabled());
+	m_options->set("css_oklch", isCssOklchEnabled());
 	m_options->set("full_hex", isFullHexEnabled());
 	m_options->set("short_hex", isShortHexEnabled());
 	m_options->set("full_hex_with_alpha", isFullHexWithAlphaEnabled());
@@ -274,6 +279,9 @@ bool TextParserDialog::isCssHslEnabled() {
 }
 bool TextParserDialog::isCssHslaEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_hsla));
+}
+bool TextParserDialog::isCssOklchEnabled() {
+	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_css_oklch));
 }
 bool TextParserDialog::isFullHexEnabled() {
 	return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_full_hex));

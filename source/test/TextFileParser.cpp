@@ -142,6 +142,15 @@ BOOST_AUTO_TEST_CASE(cssHsla) {
 		BOOST_CHECK_MESSAGE(parser[i] == color, "color " << (i + 1) << " incorrect, " << parser[i] << " != " << color);
 	}
 }
+BOOST_AUTO_TEST_CASE(cssOklch) {
+	Parser parser("color: oklch(0.784437 0.0306688 248.218 / 50%)\r\ncolor: oklch(78.4437% 7.6672% 248.218 / 0.5)\r\n");
+	BOOST_REQUIRE_EQUAL(parser.count(), 2u);
+	Color color = { 0xaa, 0xbb, 0xcc };
+	color[3] = 0.5f;
+	for (size_t i = 0; i < 2; ++i) {
+		BOOST_CHECK_MESSAGE(parser[i] == color, "color " << (i + 1) << " incorrect, " << parser[i] << " != " << color);
+	}
+}
 BOOST_AUTO_TEST_CASE(intValues) {
 	Parser parser("color: 170, 187, 204");
 	BOOST_REQUIRE_EQUAL(parser.count(), 1u);

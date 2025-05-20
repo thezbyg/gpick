@@ -58,6 +58,7 @@ struct DialogOptionsArgs {
 	GtkWidget *rotate_swatch_on_release;
 	GtkWidget *css_percentages;
 	GtkWidget *css_alpha_percentage;
+	GtkWidget *css_comma_separators;
 	dynv::Ref options;
 	GlobalState* gs;
 };
@@ -99,6 +100,7 @@ static void calc( DialogOptionsArgs *args, bool preview, int limit)
 		options->set("options.hex_case", "upper");
 	options->set<bool>("options.css_percentages", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->css_percentages)));
 	options->set<bool>("options.css_alpha_percentage", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->css_alpha_percentage)));
+	options->set<bool>("options.css_comma_separators", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->css_comma_separators)));
 	options->set<int32_t>("picker.refresh_rate", static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->refresh_rate))));
 	options->set<int32_t>("picker.zoom_size", static_cast<int32_t>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(args->zoom_size))));
 	options->set<bool>("picker.always_use_floating_picker", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->always_use_floating_picker)));
@@ -233,6 +235,10 @@ void dialog_options_show(GtkWindow* parent, GlobalState* gs)
 	table_y++;
 	args->css_alpha_percentage = widget = gtk_check_button_new_with_mnemonic(_("Use percentage for alpha"));
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("options.css_alpha_percentage", false));
+	gtk_table_attach(GTK_TABLE(table), widget,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
+	table_y++;
+	args->css_comma_separators = widget = gtk_check_button_new_with_mnemonic(_("Use comma separators"));
+	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), args->options->getBool("options.css_comma_separators", false));
 	gtk_table_attach(GTK_TABLE(table), widget,0,1,table_y,table_y+1,GtkAttachOptions(GTK_FILL | GTK_EXPAND),GTK_FILL,3,3);
 	table_y++;
 	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), table_m, gtk_label_new_with_mnemonic(_("_Main")));
