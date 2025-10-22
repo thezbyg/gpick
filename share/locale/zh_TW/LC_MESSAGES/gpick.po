@@ -1,0 +1,1672 @@
+# SPDX-FileCopyrightText: 2025 Kisaragi Hiu <mail@kisaragi-hiu.com>
+msgid ""
+msgstr ""
+"Project-Id-Version: gpick 0.3-58\n"
+"POT-Creation-Date: 2025-10-23 00:17+0900\n"
+"PO-Revision-Date: 2025-10-23 04:21+0900\n"
+"Last-Translator: Kisaragi Hiu <mail@kisaragi-hiu.com>\n"
+"Language-Team: Traditional Chinese <zh-l10n@lists.slat.org>\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Lokalize 25.11.70\n"
+
+#: source/BlendColors.cpp:65 source/BlendColors.cpp:67
+msgid "blend node"
+msgstr ""
+
+#: source/BlendColors.cpp:70
+msgid "blend"
+msgstr ""
+
+#: source/BlendColors.cpp:267 source/GenerateScheme.cpp:392
+msgid "_Reset"
+msgstr "重設(_R)"
+
+#: source/BlendColors.cpp:282
+msgid "Start:"
+msgstr "開始："
+
+#: source/BlendColors.cpp:288
+msgid "Middle:"
+msgstr "中間："
+
+#: source/BlendColors.cpp:294
+msgid "End:"
+msgstr "結束："
+
+#: source/BlendColors.cpp:301 source/GenerateScheme.cpp:548
+#: source/transformation/ColorVisionDeficiency.cpp:251
+#: source/uiDialogEqualize.cpp:80 source/uiDialogGenerate.cpp:101
+#: source/uiDialogMix.cpp:83
+msgid "Type:"
+msgstr "類型："
+
+#: source/BlendColors.cpp:303 source/ColorWheelType.cpp:54
+#: source/uiDialogMix.cpp:85
+msgid "RGB"
+msgstr "RGB"
+
+#: source/BlendColors.cpp:304 source/uiDialogMix.cpp:86
+msgid "HSV"
+msgstr "HSV"
+
+#: source/BlendColors.cpp:305 source/uiDialogMix.cpp:87
+msgid "LAB"
+msgstr "LAB"
+
+#: source/BlendColors.cpp:306 source/uiDialogMix.cpp:88
+msgid "LCH"
+msgstr "LCH"
+
+#: source/BlendColors.cpp:313
+msgid "Start steps:"
+msgstr "開始階數："
+
+#: source/BlendColors.cpp:320
+msgid "End steps:"
+msgstr "結束階數："
+
+#: source/BlendColors.cpp:335
+msgid "Blend colors"
+msgstr "混合色彩"
+
+#: source/BrightnessDarkness.cpp:56
+msgid "brightness darkness"
+msgstr "亮度暗度"
+
+#: source/BrightnessDarkness.cpp:275
+msgid "Brightness"
+msgstr "亮度"
+
+#: source/BrightnessDarkness.cpp:275
+msgid "Darkness"
+msgstr "暗度"
+
+#: source/BrightnessDarkness.cpp:300
+msgid "Brightness Darkness"
+msgstr "亮度暗度"
+
+#: source/Channels.cpp:23 source/ColorSpaces.cpp:26 source/Variations.cpp:62
+msgid "Red"
+msgstr "紅色"
+
+#: source/Channels.cpp:24 source/ColorSpaces.cpp:27 source/Variations.cpp:63
+msgid "Green"
+msgstr "綠色"
+
+#: source/Channels.cpp:25 source/ColorSpaces.cpp:28 source/Variations.cpp:64
+msgid "Blue"
+msgstr "藍色"
+
+#: source/Channels.cpp:26 source/Channels.cpp:29 source/Channels.cpp:41
+#: source/ColorMixer.cpp:63 source/ColorSpaces.cpp:32 source/ColorSpaces.cpp:38
+#: source/ColorSpaces.cpp:59 source/ColorSpaces.cpp:71 source/Variations.cpp:65
+msgid "Hue"
+msgstr "色相"
+
+#: source/Channels.cpp:27 source/Channels.cpp:30 source/ColorMixer.cpp:64
+#: source/ColorSpaces.cpp:33 source/ColorSpaces.cpp:39 source/Variations.cpp:66
+msgid "Saturation"
+msgstr "飽和"
+
+#: source/Channels.cpp:28 source/Channels.cpp:36 source/Channels.cpp:39
+#: source/ColorMixer.cpp:65 source/ColorSpaces.cpp:34 source/ColorSpaces.cpp:51
+#: source/ColorSpaces.cpp:57 source/ColorSpaces.cpp:63
+#: source/ColorSpaces.cpp:69 source/Variations.cpp:67
+msgid "Lightness"
+msgstr "亮度"
+
+#: source/Channels.cpp:31 source/ColorSpaces.cpp:40
+msgid "Value"
+msgstr "明度"
+
+#: source/Channels.cpp:32 source/ColorSpaces.cpp:44
+msgid "Cyan"
+msgstr "青色"
+
+#: source/Channels.cpp:33 source/ColorSpaces.cpp:45
+msgid "Magenta"
+msgstr "洋紅"
+
+#: source/Channels.cpp:34 source/ColorSpaces.cpp:46
+msgid "Yellow"
+msgstr "黃色"
+
+#: source/Channels.cpp:35 source/ColorSpaces.cpp:47
+msgid "Key"
+msgstr "鍵"
+
+#: source/Channels.cpp:40 source/ColorSpaces.cpp:58 source/ColorSpaces.cpp:70
+msgid "Chroma"
+msgstr "色度"
+
+#: source/Channels.cpp:42 source/ColorSpaces.cpp:29 source/ColorSpaces.cpp:35
+#: source/ColorSpaces.cpp:41 source/ColorSpaces.cpp:48
+#: source/ColorSpaces.cpp:54 source/ColorSpaces.cpp:60
+#: source/ColorSpaces.cpp:66 source/ColorSpaces.cpp:72
+msgid "Alpha"
+msgstr "透明度"
+
+#: source/ClosestColors.cpp:53 source/uiColorDictionaries.cpp:64
+msgid "Color dictionaries"
+msgstr "色彩字典"
+
+#: source/ClosestColors.cpp:54 source/uiApp.cpp:886 source/uiApp.cpp:1074
+msgid "Palette"
+msgstr "調色盤"
+
+#: source/ClosestColors.cpp:66
+msgid "closest color"
+msgstr "最接近的色彩"
+
+#: source/ClosestColors.cpp:176
+msgid "target"
+msgstr "目標"
+
+#: source/ClosestColors.cpp:179
+#, c++-format
+msgid "match {}"
+msgstr "符合 {}"
+
+#: source/ClosestColors.cpp:331
+msgid "Closest colors"
+msgstr "最接近的色彩"
+
+#: source/ColorMixer.cpp:59
+msgid "Normal"
+msgstr "正常"
+
+#: source/ColorMixer.cpp:60
+msgid "Multiply"
+msgstr "色彩增值"
+
+#: source/ColorMixer.cpp:61
+msgid "Add"
+msgstr "加算"
+
+#: source/ColorMixer.cpp:62
+msgid "Difference"
+msgstr "差異化"
+
+#: source/ColorMixer.cpp:77
+msgid "color mixer"
+msgstr "色彩混合器"
+
+#: source/ColorMixer.cpp:187
+msgid "secondary"
+msgstr "次要"
+
+#: source/ColorMixer.cpp:191 source/Variations.cpp:200
+#, c++-format
+msgid "primary {}"
+msgstr "主要 {}"
+
+#: source/ColorMixer.cpp:193
+#, c++-format
+msgid "result {}"
+msgstr "結果 {}"
+
+#: source/ColorMixer.cpp:391
+msgid "Opacity:"
+msgstr "不透明度："
+
+#: source/ColorMixer.cpp:404
+msgid "Color mixer"
+msgstr "色彩混合器"
+
+#: source/ColorPicker.cpp:134
+msgid "Click on swatch area to begin adding colors to palette"
+msgstr "點擊色票區域來開始將色彩加入調色盤"
+
+#: source/ColorPicker.cpp:511 source/uiConverter.cpp:133
+msgid "Copy"
+msgstr "複製"
+
+#: source/ColorPicker.cpp:514
+msgid "Paste"
+msgstr "貼上"
+
+#: source/ColorPicker.cpp:518 source/uiColorInput.cpp:225
+msgid "Edit"
+msgstr "編輯"
+
+#: source/ColorPicker.cpp:672 source/ColorPicker.cpp:968
+msgid "Sample"
+msgstr "取樣"
+
+#: source/ColorPicker.cpp:723
+msgid "Press Spacebar to sample color under mouse pointer"
+msgstr "按空白鍵來取樣滑鼠游標下的色彩"
+
+#: source/ColorPicker.cpp:819 source/uiApp.cpp:1044 source/uiDialogSort.cpp:88
+#: source/uiImportExport.cpp:85
+msgid "None"
+msgstr "無"
+
+#: source/ColorPicker.cpp:820
+msgid "Linear"
+msgstr "線性"
+
+#: source/ColorPicker.cpp:821
+msgid "Quadratic"
+msgstr "平方"
+
+#: source/ColorPicker.cpp:822
+msgid "Cubic"
+msgstr "立方"
+
+#: source/ColorPicker.cpp:823
+msgid "Exponential"
+msgstr "指數"
+
+#: source/ColorPicker.cpp:857
+msgid "Pick color"
+msgstr "挑選色彩"
+
+#: source/ColorPicker.cpp:911
+msgid "Settings"
+msgstr "設定"
+
+#: source/ColorPicker.cpp:921
+msgid "Oversample:"
+msgstr "過取樣："
+
+#: source/ColorPicker.cpp:928
+msgid "Falloff:"
+msgstr "衰落："
+
+#: source/ColorPicker.cpp:935
+msgid "Zoom:"
+msgstr "縮放："
+
+#: source/ColorPicker.cpp:947
+msgid "Info"
+msgstr "資訊"
+
+#: source/ColorPicker.cpp:956
+msgid "Color name:"
+msgstr "色彩名稱："
+
+#: source/ColorPicker.cpp:963
+msgid "Contrast:"
+msgstr "對比："
+
+#: source/ColorPicker.cpp:979
+msgid "Input"
+msgstr "輸入"
+
+#: source/ColorPicker.cpp:988 source/transformation/GammaModification.cpp:68
+#: source/transformation/Quantization.cpp:74
+msgid "Value:"
+msgstr "值："
+
+#: source/ColorPicker.cpp:995 source/uiColorInput.cpp:150
+msgid "Color:"
+msgstr "色彩："
+
+#: source/ColorPicker.cpp:1015
+msgid "Color picker"
+msgstr "色彩挑選器"
+
+#: source/ColorWheelType.cpp:55
+msgid "RYB v1"
+msgstr "RYB v1"
+
+#: source/ColorWheelType.cpp:56
+msgid "RYB v2"
+msgstr "RYB v2"
+
+#: source/GenerateScheme.cpp:47
+msgid "Complementary"
+msgstr "補色"
+
+#: source/GenerateScheme.cpp:48
+msgid "Analogous"
+msgstr "近似色"
+
+#: source/GenerateScheme.cpp:49
+msgid "Triadic"
+msgstr "三角形"
+
+#: source/GenerateScheme.cpp:50
+msgid "Split-Complementary"
+msgstr "分割補色"
+
+#: source/GenerateScheme.cpp:51
+msgid "Rectangle (tetradic)"
+msgstr "矩形"
+
+#: source/GenerateScheme.cpp:52
+msgid "Square"
+msgstr "正方形"
+
+#: source/GenerateScheme.cpp:53
+msgid "Neutral"
+msgstr "中性"
+
+#: source/GenerateScheme.cpp:54
+msgid "Clash"
+msgstr "衝突"
+
+#: source/GenerateScheme.cpp:55
+msgid "Five-Tone"
+msgstr "五色"
+
+#: source/GenerateScheme.cpp:56
+msgid "Six-Tone"
+msgstr "六色"
+
+#: source/GenerateScheme.cpp:69 source/uiDialogGenerate.cpp:82
+msgid "scheme"
+msgstr "方案"
+
+#: source/GenerateScheme.cpp:395 source/GenerateScheme.cpp:464
+msgid "_Reset scheme"
+msgstr "重設配色方案(_R)"
+
+#: source/GenerateScheme.cpp:459
+msgid "_Linked"
+msgstr "已連結(_L)"
+
+#: source/GenerateScheme.cpp:528
+msgid "Hue:"
+msgstr "色相："
+
+#: source/GenerateScheme.cpp:534 source/uiDialogVariations.cpp:66
+msgid "Saturation:"
+msgstr "飽和度："
+
+#: source/GenerateScheme.cpp:541 source/uiDialogVariations.cpp:59
+msgid "Lightness:"
+msgstr "亮度："
+
+#: source/GenerateScheme.cpp:557 source/uiDialogGenerate.cpp:109
+msgid "Color wheel:"
+msgstr "色輪："
+
+#: source/GenerateScheme.cpp:574
+msgid "Scheme generation"
+msgstr "配色方案生成"
+
+#: source/ImportExport.cpp:412
+msgid "Item size"
+msgstr "項目大小"
+
+#: source/ImportExport.cpp:416
+msgid "Background color"
+msgstr "背景色"
+
+#: source/InternalConverters.cpp:582
+msgid "Web: hex code"
+msgstr "Web: 十六進制代碼"
+
+#: source/InternalConverters.cpp:583
+msgid "Web: hex code with alpha"
+msgstr "Web: 十六進制代碼（含透明度）"
+
+#: source/InternalConverters.cpp:584
+msgid "Web: hex code (no hash symbol)"
+msgstr "Web: 十六進制代碼（無井號）"
+
+#: source/InternalConverters.cpp:585
+msgid "Web: short hex code"
+msgstr "Web: 簡短十六進制代碼"
+
+#: source/InternalConverters.cpp:586
+msgid "Web: short hex code with alpha"
+msgstr "Web: 簡短十六進制代碼（含透明度）"
+
+#: source/InternalConverters.cpp:587
+msgid "CSS: red green blue"
+msgstr "CSS: rgb() 紅綠藍"
+
+#: source/InternalConverters.cpp:588
+msgid "CSS: red green blue alpha"
+msgstr "CSS: rgba() 紅綠藍與透明度"
+
+#: source/InternalConverters.cpp:589
+msgid "CSS: hue saturation lightness"
+msgstr "CSS: hsl() 色相飽和亮度"
+
+#: source/InternalConverters.cpp:590
+msgid "CSS: hue saturation lightness alpha"
+msgstr "CSS: hsla() 色相飽和亮度與透明度"
+
+#: source/InternalConverters.cpp:592
+msgid "CSS: OKLCH with alpha"
+msgstr "CSS: OKLCH 含透明度"
+
+#: source/InternalConverters.cpp:600
+msgid "CSS block"
+msgstr "CSS 區塊"
+
+#: source/InternalConverters.cpp:601
+msgid "CSS block with alpha"
+msgstr "CSS 區塊（含透明度）"
+
+#: source/InternalConverters.cpp:603 source/InternalConverters.cpp:606
+msgid "(tab separator)"
+msgstr "（以 Tab 字元分隔）"
+
+#: source/InternalConverters.cpp:604 source/InternalConverters.cpp:607
+msgid "(semicolon separator)"
+msgstr "（以分號分隔）"
+
+#: source/InternalConverters.cpp:608
+msgid "RGB values"
+msgstr "RGB 值"
+
+#: source/InternalConverters.cpp:609
+msgid "RGBA values"
+msgstr "RGBA 值"
+
+#: source/LayoutPreview.cpp:54
+msgid "layout preview"
+msgstr "設計預覽"
+
+#: source/LayoutPreview.cpp:256
+msgid "Style item"
+msgstr "樣式項目"
+
+#: source/LayoutPreview.cpp:264
+msgid "CSS selector"
+msgstr "CSS 選擇器"
+
+#: source/LayoutPreview.cpp:278
+msgid "Assign CSS selectors"
+msgstr "指派 CSS 選擇器"
+
+#: source/LayoutPreview.cpp:372 source/LayoutPreview.cpp:401
+#: source/uiApp.cpp:573 source/uiApp.cpp:590
+msgid "File could not be saved"
+msgstr "檔案無法儲存"
+
+#: source/LayoutPreview.cpp:378 source/uiImportExport.cpp:458
+#: source/uiImportExport.cpp:515
+msgid "Export"
+msgstr "匯出"
+
+#: source/LayoutPreview.cpp:384
+msgid "Cascading Style Sheets *.css"
+msgstr "層疊樣式表 *.css"
+
+#: source/LayoutPreview.cpp:445
+msgid "Layout:"
+msgstr "設計："
+
+#: source/LayoutPreview.cpp:449
+msgid "Export CSS File"
+msgstr "匯出 CSS 檔案"
+
+#: source/LayoutPreview.cpp:450
+msgid "Export CSS file"
+msgstr "匯出 CSS 檔案"
+
+#: source/LayoutPreview.cpp:454
+msgid "_Export CSS File As..."
+msgstr "匯出 CSS 檔案為(_E)..."
+
+#: source/LayoutPreview.cpp:457
+msgid "_Assign CSS Selectors..."
+msgstr "指派 CSS 選擇器(_A)..."
+
+#: source/LayoutPreview.cpp:497
+msgid "Layout preview"
+msgstr "設計預覽"
+
+#: source/StandardMenu.cpp:151 source/uiDialogOptions.cpp:293
+#: source/uiDialogOptions.cpp:316
+msgid "_Copy to clipboard"
+msgstr "複製到剪貼簿(_C)"
+
+#: source/StandardMenu.cpp:155
+msgid "_Nearest from palette"
+msgstr "調色盤內最接近的色彩(_N)"
+
+#: source/StandardMenu.cpp:351 source/StandardMenu.cpp:387
+#: source/uiDialogOptions.cpp:289 source/uiDialogOptions.cpp:312
+msgid "_Add to palette"
+msgstr "新增到調色盤(_A)"
+
+#: source/StandardMenu.cpp:353 source/StandardMenu.cpp:389
+msgid "A_dd all to palette"
+msgstr "新增全部到調色盤(_D)"
+
+#: source/StandardMenu.cpp:363 source/StandardMenu.cpp:399
+#: source/uiApp.cpp:1232
+msgid "_Add..."
+msgstr "新增(_A)..."
+
+#: source/StandardMenu.cpp:364 source/StandardMenu.cpp:400
+#: source/uiApp.cpp:1237
+msgid "_Edit..."
+msgstr "編輯(_E)..."
+
+#: source/StandardMenu.cpp:365 source/StandardMenu.cpp:401
+#: source/uiApp.cpp:1243
+msgid "_Paste"
+msgstr "貼上(_P)"
+
+#: source/StandardMenu.cpp:367 source/StandardMenu.cpp:403
+#: source/uiApp.cpp:1248
+msgid "_Find..."
+msgstr "尋找(_F)..."
+
+#: source/StandardMenu.cpp:369 source/StandardMenu.cpp:405
+#: source/uiApp.cpp:1299
+msgid "_Remove"
+msgstr "移除(_R)"
+
+#: source/StandardMenu.cpp:370 source/StandardMenu.cpp:406
+msgid "Remove _All"
+msgstr "移除全部(_A)"
+
+#: source/ToolColorNaming.cpp:29
+msgid "_Empty"
+msgstr "空白(_E)"
+
+#: source/ToolColorNaming.cpp:30 source/uiColorInput.cpp:160
+msgid "_Automatic name"
+msgstr "自動命名(_A)"
+
+#: source/ToolColorNaming.cpp:31
+msgid "_Tool specific"
+msgstr "依工具(_T)"
+
+#: source/Variations.cpp:68
+msgid "Lightness (Lab)"
+msgstr "亮度 (Lab)"
+
+#: source/Variations.cpp:80
+msgid "variations"
+msgstr "變種"
+
+#: source/Variations.cpp:196
+msgid "all colors"
+msgstr "所有色彩"
+
+#: source/Variations.cpp:204
+#, c++-format
+msgid "result {} line {}"
+msgstr "結果 {} 行數 {}"
+
+#: source/Variations.cpp:446
+#: source/transformation/ColorVisionDeficiency.cpp:270
+#: source/uiDialogEqualize.cpp:88
+msgid "Strength:"
+msgstr "強度："
+
+#: source/Variations.cpp:459 source/uiDialogVariations.cpp:56
+msgid "Variations"
+msgstr "變種"
+
+#: source/tools/BackgroundColorPicker.cpp:154
+msgid "Background color picker"
+msgstr "背景色挑選器"
+
+#: source/tools/BackgroundColorPicker.cpp:171
+#: source/tools/BackgroundColorPicker.cpp:173
+msgid "The quick brown fox jumps over the lazy dog"
+msgstr ""
+
+#: source/tools/BackgroundColorPicker.cpp:186
+msgid "Background"
+msgstr "背景"
+
+#: source/tools/BackgroundColorPicker.cpp:186 source/tools/TextParser.cpp:123
+msgid "Text"
+msgstr "文字"
+
+#: source/tools/BackgroundColorPicker.cpp:186
+msgid "Shadow"
+msgstr "陰影"
+
+#: source/tools/BackgroundColorPicker.cpp:205
+#: source/tools/ColorSpaceSampler.cpp:239 source/uiDialogEdit.cpp:50
+#: source/uiDialogEqualize.cpp:68
+msgid "Color space:"
+msgstr "色彩空間："
+
+#: source/tools/ColorSpaceSampler.cpp:69
+msgid "color space"
+msgstr "色彩空間"
+
+#: source/tools/ColorSpaceSampler.cpp:226
+msgid "Color space sampler"
+msgstr "色彩空間取樣器"
+
+#: source/tools/ColorSpaceSampler.cpp:253 source/uiDialogVariations.cpp:80
+msgid "_Linearization"
+msgstr "線性化(_L)"
+
+#: source/tools/ColorSpaceSampler.cpp:259
+msgid "Sample count"
+msgstr "樣本數"
+
+#: source/tools/ColorSpaceSampler.cpp:260
+msgid "Minimal value"
+msgstr "最小值"
+
+#: source/tools/ColorSpaceSampler.cpp:261
+msgid "Maximal value"
+msgstr "最大值"
+
+#: source/tools/ColorSpaceSampler.cpp:265
+msgid "X axis"
+msgstr "X 軸"
+
+#: source/tools/ColorSpaceSampler.cpp:266
+msgid "Y axis"
+msgstr "Y 軸"
+
+#: source/tools/ColorSpaceSampler.cpp:267
+msgid "Z axis"
+msgstr "Z 軸"
+
+#: source/tools/ColorSpaceSampler.cpp:268
+msgid "W axis"
+msgstr "W 軸"
+
+#: source/tools/PaletteFromImage.cpp:222
+msgid "Palette from image"
+msgstr "從影像取得調色盤"
+
+#: source/tools/PaletteFromImage.cpp:228
+msgid "Image:"
+msgstr "影像："
+
+#: source/tools/PaletteFromImage.cpp:230
+msgid "Image file"
+msgstr "影像檔案"
+
+#: source/tools/PaletteFromImage.cpp:235 source/uiApp.cpp:475
+#: source/uiImportExport.cpp:325
+msgid "All files"
+msgstr "所有檔案"
+
+#: source/tools/PaletteFromImage.cpp:242
+msgid "All images"
+msgstr "所有影像"
+
+#: source/tools/PaletteFromImage.cpp:273 source/uiDialogGenerate.cpp:97
+msgid "Colors:"
+msgstr "色彩："
+
+#: source/tools/TextParser.cpp:114
+msgid "Text parser"
+msgstr "文字剖析器"
+
+#: source/tools/TextParser.cpp:127 source/uiImportExport.cpp:112
+msgid "C style single-line comments"
+msgstr "C 語言風的單行註解"
+
+#: source/tools/TextParser.cpp:128 source/uiImportExport.cpp:113
+msgid "C style multi-line comments"
+msgstr "C 語言風的多行註解"
+
+#: source/tools/TextParser.cpp:129 source/uiImportExport.cpp:114
+msgid "Hash single-line comments"
+msgstr "以井號開頭的單行註解"
+
+#: source/tools/TextParser.cpp:137 source/uiImportExport.cpp:122
+msgid "Full hex"
+msgstr "完整十六進制"
+
+#: source/tools/TextParser.cpp:138 source/uiImportExport.cpp:123
+msgid "Full hex with alpha"
+msgstr "完整十六進制（含透明度）"
+
+#: source/tools/TextParser.cpp:139 source/uiImportExport.cpp:124
+msgid "Short hex"
+msgstr "簡短十六進制"
+
+#: source/tools/TextParser.cpp:140 source/uiImportExport.cpp:125
+msgid "Short hex with alpha"
+msgstr "簡短十六進制（含透明度）"
+
+#: source/tools/TextParser.cpp:142 source/uiImportExport.cpp:127
+msgid "Integer values"
+msgstr "整數值"
+
+#: source/tools/TextParser.cpp:143 source/uiImportExport.cpp:128
+msgid "Real values"
+msgstr "實數值"
+
+#: source/tools/TextParser.cpp:224
+msgid "Parsed text color"
+msgstr "剖析的文字色彩"
+
+#: source/transformation/ColorVisionDeficiency.cpp:33
+msgid "Color vision deficiency"
+msgstr "色覺辨認障礙"
+
+#: source/transformation/ColorVisionDeficiency.cpp:230
+msgid "Protanomaly"
+msgstr "紅色弱"
+
+#: source/transformation/ColorVisionDeficiency.cpp:231
+msgid "Deuteranomaly"
+msgstr "綠色弱"
+
+#: source/transformation/ColorVisionDeficiency.cpp:232
+msgid "Tritanomaly"
+msgstr "藍色弱"
+
+#: source/transformation/ColorVisionDeficiency.cpp:233
+msgid "Protanopia"
+msgstr "紅色盲"
+
+#: source/transformation/ColorVisionDeficiency.cpp:234
+msgid "Deuteranopia"
+msgstr "綠色盲"
+
+#: source/transformation/ColorVisionDeficiency.cpp:235
+msgid "Tritanopia"
+msgstr "藍色盲"
+
+#: source/transformation/ColorVisionDeficiency.cpp:297
+msgid "Altered spectral sensitivity of red receptors"
+msgstr "紅視錐細胞對於光譜的靈敏度較低"
+
+#: source/transformation/ColorVisionDeficiency.cpp:298
+msgid "Altered spectral sensitivity of green receptors"
+msgstr "綠視錐細胞對於光譜的靈敏度較低"
+
+#: source/transformation/ColorVisionDeficiency.cpp:299
+msgid "Altered spectral sensitivity of blue receptors"
+msgstr "藍視錐細胞對於光譜的靈敏度較低"
+
+#: source/transformation/ColorVisionDeficiency.cpp:300
+msgid "Absence of red receptors"
+msgstr "缺乏紅視錐細胞"
+
+#: source/transformation/ColorVisionDeficiency.cpp:301
+msgid "Absence of green receptors"
+msgstr "缺乏綠視錐細胞"
+
+#: source/transformation/ColorVisionDeficiency.cpp:302
+msgid "Absence of blue receptors"
+msgstr "缺乏藍視錐細胞"
+
+#: source/transformation/GammaModification.cpp:31
+msgid "Gamma modification"
+msgstr "Gamma 修改"
+
+#: source/transformation/Quantization.cpp:32
+msgid "Quantization"
+msgstr "量化"
+
+#: source/transformation/Quantization.cpp:79
+msgid "Clip top-end"
+msgstr "削除頂端"
+
+#: source/uiAbout.cpp:81
+msgid "About Gpick"
+msgstr "關於 Gpick"
+
+#: source/uiAbout.cpp:95
+msgid "Hash"
+msgstr "雜湊值"
+
+#: source/uiAbout.cpp:102
+msgid "Copyright"
+msgstr "著作權"
+
+#: source/uiAbout.cpp:102
+msgid "and Gpick development team"
+msgstr "與 Gpick 開發團隊"
+
+#: source/uiAbout.cpp:114
+msgid "License"
+msgstr "授權條款"
+
+#: source/uiAbout.cpp:115
+msgid "Credits"
+msgstr "銘謝"
+
+#: source/uiAbout.cpp:116
+msgid "Expat License"
+msgstr "Expat 授權條款"
+
+#: source/uiAbout.cpp:117
+msgid "Lua License"
+msgstr "Lua 授權條款"
+
+#: source/uiApp.cpp:264
+msgid "New palette"
+msgstr "新調色盤"
+
+#: source/uiApp.cpp:270
+msgid "(Imported)"
+msgstr "（已匯入）"
+
+#: source/uiApp.cpp:425 source/uiApp.cpp:439 source/uiApp.cpp:454
+#: source/uiApp.cpp:533
+msgid "File could not be opened"
+msgstr "無法開啟檔案"
+
+#: source/uiApp.cpp:426 source/uiApp.cpp:440 source/uiApp.cpp:455
+#: source/uiApp.cpp:534
+msgid "Open"
+msgstr "開啟"
+
+#: source/uiApp.cpp:468 source/uiImportExport.cpp:314
+#: source/uiImportExport.cpp:466
+msgid "Gpick Palette (*.gpa)"
+msgstr "Gpick 調色盤 (*.gpa)"
+
+#: source/uiApp.cpp:469 source/uiImportExport.cpp:315
+#: source/uiImportExport.cpp:467
+msgid "GIMP/Inkscape Palette (*.gpl)"
+msgstr "GIMP/Inkscape 調色盤 (*.gpl)"
+
+#: source/uiApp.cpp:470 source/uiImportExport.cpp:316
+#: source/uiImportExport.cpp:469
+msgid "Adobe Swatch Exchange (*.ase)"
+msgstr "Adobe 色票交換格式 (*.ase)"
+
+#: source/uiApp.cpp:483 source/uiImportExport.cpp:333
+msgid "All supported formats"
+msgstr "所有支援的格式"
+
+#: source/uiApp.cpp:508
+msgid "Open File"
+msgstr "開啟檔案"
+
+#: source/uiApp.cpp:547 source/uiApp.cpp:574
+msgid "Save As"
+msgstr "另存為"
+
+#: source/uiApp.cpp:591
+msgid "Save"
+msgstr "儲存"
+
+#: source/uiApp.cpp:635
+msgid "Open Last File"
+msgstr "開啟上次檔案"
+
+#: source/uiApp.cpp:885
+msgid "Primary"
+msgstr "主要"
+
+#: source/uiApp.cpp:887
+msgid "Secondary"
+msgstr "次要"
+
+#: source/uiApp.cpp:948
+msgid "Recent _Files"
+msgstr "最近檔案(_F)"
+
+#: source/uiApp.cpp:973
+msgid "Ex_port..."
+msgstr "匯出(_P)..."
+
+#: source/uiApp.cpp:978
+msgid "Expo_rt Selected..."
+msgstr "匯出所選(_R)..."
+
+#: source/uiApp.cpp:983
+msgid "_Import..."
+msgstr "匯入(_I)..."
+
+#: source/uiApp.cpp:988
+msgid "Import _Text File..."
+msgstr "匯入文字檔案(_T)..."
+
+#: source/uiApp.cpp:1000
+msgid "_File"
+msgstr "檔案(_F)"
+
+#: source/uiApp.cpp:1006
+msgid "Edit _Converters..."
+msgstr "編輯轉換器(_C)..."
+
+#: source/uiApp.cpp:1009
+msgid "Display _Filters..."
+msgstr "濾色片(_F)..."
+
+#: source/uiApp.cpp:1012
+msgid "Color _Dictionaries..."
+msgstr "色彩字典(_D)..."
+
+#: source/uiApp.cpp:1021
+msgid "_Edit"
+msgstr "編輯(_E)"
+
+#: source/uiApp.cpp:1037
+msgid "_Layout"
+msgstr "設計(_L)"
+
+#: source/uiApp.cpp:1065
+msgid "_Secondary View"
+msgstr "次要檢視(_S)"
+
+#: source/uiApp.cpp:1070
+msgid "_Primary View"
+msgstr "主要檢視(_P)"
+
+#: source/uiApp.cpp:1080
+msgid "New Temporary Palette"
+msgstr "新增暫時調色盤"
+
+#: source/uiApp.cpp:1084
+msgid "_View"
+msgstr "檢視(_V)"
+
+#: source/uiApp.cpp:1088
+msgid "_Pick colors..."
+msgstr "挑選色彩(_P)..."
+
+#: source/uiApp.cpp:1093
+msgid "Palette From _Image..."
+msgstr "從影像取得調色盤(_I)..."
+
+#: source/uiApp.cpp:1096
+msgid "Color Space _Sampler..."
+msgstr "色彩空間取樣器(_S)..."
+
+#: source/uiApp.cpp:1099
+msgid "_Text Parser..."
+msgstr "文字剖析器(_T)..."
+
+#: source/uiApp.cpp:1102
+msgid "_Background Color Picker..."
+msgstr "背景色彩挑選器(_B)..."
+
+#: source/uiApp.cpp:1105
+msgid "_Tools"
+msgstr "工具(_T)"
+
+#: source/uiApp.cpp:1115
+msgid "_Help"
+msgstr "求助(_H)"
+
+#: source/uiApp.cpp:1255
+msgid "_Mix Colors..."
+msgstr "混合色彩(_M)..."
+
+#: source/uiApp.cpp:1259
+msgid "_Variations..."
+msgstr "變種(_V)..."
+
+#: source/uiApp.cpp:1263
+msgid "_Generate..."
+msgstr "生成(_G)..."
+
+#: source/uiApp.cpp:1267
+msgid "E_qualize..."
+msgstr "等化(_Q)..."
+
+#: source/uiApp.cpp:1272
+msgid "C_lear names"
+msgstr "清除名稱(_L)"
+
+#: source/uiApp.cpp:1277
+msgid "Autona_me"
+msgstr "自動命名(_M)"
+
+#: source/uiApp.cpp:1282
+msgid "Auto_number..."
+msgstr "自動編號(_N)"
+
+#: source/uiApp.cpp:1288
+msgid "R_everse"
+msgstr "反轉(_E)"
+
+#: source/uiApp.cpp:1293
+msgid "Group and _sort..."
+msgstr "分組並排序(_S)..."
+
+#: source/uiApp.cpp:1304
+msgid "Remove All"
+msgstr "移除全部"
+
+#: source/uiApp.cpp:1530
+msgid "Color pic_ker"
+msgstr "色彩挑選器(_K)"
+
+#: source/uiApp.cpp:1661
+msgid "Scheme _generation"
+msgstr "配色方案生成(_G)"
+
+#: source/uiApp.cpp:1680
+msgid "Lay_out preview"
+msgstr "設計預覽(_O)"
+
+#: source/uiApp.cpp:1712
+msgid "Pick colors (Ctrl+P)"
+msgstr "挑選色彩 (Ctrl+P)"
+
+#: source/uiApp.cpp:1719
+msgid ""
+"File is currently in a non-native format, possible loss of precision and/or "
+"metadata."
+msgstr "檔案目前為非原生格式，可能會失去準確度或中繼資料。"
+
+#: source/uiColorDictionaries.cpp:72
+msgid "Add color dictionary file"
+msgstr "新增色彩字典檔案"
+
+#: source/uiColorDictionaries.cpp:73
+msgid "Color dictionary file"
+msgstr "色彩字典檔案"
+
+#: source/uiColorDictionaries.cpp:85 source/uiColorDictionaries.cpp:93
+msgid "Built in"
+msgstr "內建"
+
+#: source/uiColorDictionaries.cpp:130
+msgid "Path"
+msgstr "路徑"
+
+#: source/uiColorDictionaries.cpp:137
+msgid "Enable"
+msgstr "啟用"
+
+#: source/uiColorInput.cpp:130
+msgid "Add color"
+msgstr "新增色彩"
+
+#: source/uiColorInput.cpp:130
+msgid "Edit color"
+msgstr "編輯色彩"
+
+#: source/uiColorInput.cpp:156 source/uiDialogAutonumber.cpp:37
+msgid "Name:"
+msgstr "名稱："
+
+#: source/uiConverter.cpp:59
+msgid "Test color"
+msgstr "測試色彩"
+
+#: source/uiConverter.cpp:118
+msgid "Function name"
+msgstr "函數名稱"
+
+#: source/uiConverter.cpp:126
+msgid "Example"
+msgstr "範例"
+
+#: source/uiConverter.cpp:141
+msgid "Paste / Edit"
+msgstr "貼上 / 編輯"
+
+#: source/uiConverter.cpp:159
+msgid "Converters"
+msgstr "轉換器"
+
+#: source/uiConverter.cpp:177
+msgid "Displays:"
+msgstr "顯示："
+
+#: source/uiConverter.cpp:183
+msgid "Color list:"
+msgstr "色彩清單："
+
+#: source/uiDialogAutonumber.cpp:33
+msgid "Autonumber colors"
+msgstr "自動編號色彩"
+
+#: source/uiDialogAutonumber.cpp:42
+msgid "Decimal places:"
+msgstr "位數："
+
+#: source/uiDialogAutonumber.cpp:47
+msgid "Starting number:"
+msgstr "起始編號："
+
+#: source/uiDialogAutonumber.cpp:52
+msgid "_Decreasing"
+msgstr "遞減(_D)"
+
+#: source/uiDialogAutonumber.cpp:55
+msgid "_Append"
+msgstr "加為後綴(_A)"
+
+#: source/uiDialogAutonumber.cpp:58
+msgid "Sample:"
+msgstr "範例："
+
+#: source/uiDialogEdit.cpp:46
+msgid "Edit colors"
+msgstr "編輯色彩"
+
+#: source/uiDialogEdit.cpp:58
+msgid "_Relative adjustment"
+msgstr "相對調整(_R)"
+
+#: source/uiDialogEqualize.cpp:47
+msgid "Average"
+msgstr "平均"
+
+#: source/uiDialogEqualize.cpp:48
+msgid "Minimum"
+msgstr "最小"
+
+#: source/uiDialogEqualize.cpp:49
+msgid "Maximum"
+msgstr "最大"
+
+#: source/uiDialogEqualize.cpp:60
+msgid "Equalize colors"
+msgstr "等化色彩"
+
+#: source/uiDialogEqualize.cpp:76
+msgid "Channel:"
+msgstr "色板："
+
+#: source/uiDialogGenerate.cpp:94
+msgid "Generate colors"
+msgstr "產生色彩"
+
+#: source/uiDialogGenerate.cpp:106 source/uiDialogGenerate.cpp:164
+msgid "Static"
+msgstr "固定"
+
+#: source/uiDialogGenerate.cpp:116
+msgid "Chaos:"
+msgstr "混沌："
+
+#: source/uiDialogGenerate.cpp:120
+msgid "Seed:"
+msgstr "種子碼："
+
+#: source/uiDialogGenerate.cpp:124
+msgid "Rotation:"
+msgstr "旋轉："
+
+#: source/uiDialogGenerate.cpp:128
+msgid "_Reverse"
+msgstr "反轉(_R)"
+
+#: source/uiDialogMix.cpp:61 source/uiDialogMix.cpp:63
+msgid "mix node"
+msgstr ""
+
+#: source/uiDialogMix.cpp:66
+msgid "mix"
+msgstr ""
+
+#: source/uiDialogMix.cpp:80
+msgid "Mix colors"
+msgstr "混合色彩"
+
+#: source/uiDialogMix.cpp:91 source/uiDialogVariations.cpp:73
+msgid "Steps:"
+msgstr "階數："
+
+#: source/uiDialogMix.cpp:95
+msgid "_Include Endpoints"
+msgstr "包含端點(_I)"
+
+#: source/uiDialogOptions.cpp:140
+msgid "Options"
+msgstr "選項"
+
+#: source/uiDialogOptions.cpp:148
+msgid "System"
+msgstr "系統"
+
+#: source/uiDialogOptions.cpp:155
+msgid "_Single instance"
+msgstr "單一實體(_S)"
+
+#: source/uiDialogOptions.cpp:159
+msgid "Save/_Restore palette"
+msgstr "儲存/還原調色盤(_R)"
+
+#: source/uiDialogOptions.cpp:163
+msgid "System tray"
+msgstr "系統匣"
+
+#: source/uiDialogOptions.cpp:170
+msgid "_Minimize to system tray"
+msgstr "最小化到系統匣(_M)"
+
+#: source/uiDialogOptions.cpp:174
+msgid "_Close to system tray"
+msgstr "關閉到系統匣(_C)"
+
+#: source/uiDialogOptions.cpp:178
+msgid "_Start in system tray"
+msgstr "啟動在系統匣中(_S)"
+
+#: source/uiDialogOptions.cpp:182
+msgid "Default drag action"
+msgstr "預設拖曳動作"
+
+#: source/uiDialogOptions.cpp:191
+msgid "M_ove"
+msgstr "移動(_O)"
+
+#: source/uiDialogOptions.cpp:197
+msgid "Cop_y"
+msgstr "複製(_Y)"
+
+#: source/uiDialogOptions.cpp:204
+msgid "Hex format"
+msgstr "十六進制格式"
+
+#: source/uiDialogOptions.cpp:213
+msgid "Lower case"
+msgstr "小寫"
+
+#: source/uiDialogOptions.cpp:219
+msgid "Upper case"
+msgstr "大寫"
+
+#: source/uiDialogOptions.cpp:225
+msgid "CSS format"
+msgstr "CSS 格式"
+
+#: source/uiDialogOptions.cpp:232
+msgid "Use percentages"
+msgstr "使用百分比"
+
+#: source/uiDialogOptions.cpp:236
+msgid "Use percentage for alpha"
+msgstr "為透明度使用百分比"
+
+#: source/uiDialogOptions.cpp:240
+msgid "Use comma separators"
+msgstr "使用逗號分隔符"
+
+#: source/uiDialogOptions.cpp:244
+msgid "_Main"
+msgstr "主要(_M)"
+
+#: source/uiDialogOptions.cpp:247
+msgid "Display"
+msgstr "顯示"
+
+#: source/uiDialogOptions.cpp:254
+msgid "_Refresh rate:"
+msgstr "更新率"
+
+#: source/uiDialogOptions.cpp:260
+msgid "_Magnified area size:"
+msgstr "放大區域大小(_M)："
+
+#: source/uiDialogOptions.cpp:266
+msgid "Picker"
+msgstr "挑選器"
+
+#: source/uiDialogOptions.cpp:273
+msgid "_Always use floating picker"
+msgstr "總是使用浮動挑選器(_A)"
+
+#: source/uiDialogOptions.cpp:277
+msgid "_Hide cursor"
+msgstr "隱藏游標(_H)"
+
+#: source/uiDialogOptions.cpp:282
+msgid "Floating picker click behaviour"
+msgstr "浮動挑選器點擊行為"
+
+#: source/uiDialogOptions.cpp:297
+msgid "A_dd to swatch"
+msgstr "新增到色票(_D)"
+
+#: source/uiDialogOptions.cpp:301
+msgid "R_otate swatch"
+msgstr "輪換色票(_O)"
+
+#: source/uiDialogOptions.cpp:305
+msgid "'Spacebar' button behaviour"
+msgstr "空白鍵行為"
+
+#: source/uiDialogOptions.cpp:320
+msgid "_Rotate swatch"
+msgstr "輪換色票(_R)"
+
+#: source/uiDialogOptions.cpp:325
+msgid "Enabled color spaces"
+msgstr "已啟用的色彩空間"
+
+#: source/uiDialogOptions.cpp:339
+msgid "Lab settings"
+msgstr "Lab 設定"
+
+#: source/uiDialogOptions.cpp:348
+msgid "_Illuminant:"
+msgstr "標準光源(_I)："
+
+#: source/uiDialogOptions.cpp:371
+msgid "_Observer:"
+msgstr "標準觀察者(_O)："
+
+#: source/uiDialogOptions.cpp:388
+msgid "Other settings"
+msgstr "其他設定"
+
+#: source/uiDialogOptions.cpp:395
+msgid "_Mask out of gamut colors"
+msgstr "遮罩超出色域的顏色(_M)"
+
+#: source/uiDialogOptions.cpp:399
+msgid "_Picker"
+msgstr "挑選器(_P)"
+
+#: source/uiDialogOptions.cpp:402
+msgid "Color name generation"
+msgstr "色彩名稱生成"
+
+#: source/uiDialogOptions.cpp:409
+msgid "_Imprecision postfix"
+msgstr "不精確度後綴(_I)"
+
+#: source/uiDialogOptions.cpp:413
+msgid "Tool color naming"
+msgstr "工具色彩命名"
+
+#: source/uiDialogOptions.cpp:433
+msgid "_Color names"
+msgstr "色彩名稱(_C)"
+
+#: source/uiDialogSort.cpp:43
+msgid "RGB Grayscale"
+msgstr "RGB 灰階"
+
+#: source/uiDialogSort.cpp:51
+msgid "Group and sort"
+msgstr "分組並排序"
+
+#: source/uiDialogSort.cpp:63
+msgid "Sort by:"
+msgstr "排序依據："
+
+#: source/uiDialogSort.cpp:81
+msgid "_Reverse sort order"
+msgstr "反轉排序方向(_R)"
+
+#: source/uiDialogSort.cpp:85
+msgid "Group by:"
+msgstr "分組依據："
+
+#: source/uiDialogSort.cpp:106
+msgid "Maximum number of groups:"
+msgstr "最大群組數："
+
+#: source/uiDialogSort.cpp:111
+msgid "Grouping sensitivity:"
+msgstr "分組靈敏度"
+
+#: source/uiDialogSort.cpp:117
+msgid "_Reverse group order"
+msgstr "反轉分組順序(_R)"
+
+#: source/uiDialogVariations.cpp:42
+msgid "variation"
+msgstr "變種"
+
+#: source/uiDialogVariations.cpp:77
+msgid "_Use multiplication"
+msgstr "使用相乘(_U)"
+
+#: source/uiImportExport.cpp:77
+msgid "Small"
+msgstr "小"
+
+#: source/uiImportExport.cpp:78
+msgid "Medium"
+msgstr "中"
+
+#: source/uiImportExport.cpp:79
+msgid "Big"
+msgstr "大"
+
+#: source/uiImportExport.cpp:80 source/uiImportExport.cpp:91
+msgid "User controllable"
+msgstr "使用者控制"
+
+#: source/uiImportExport.cpp:86
+msgid "White"
+msgstr "白色"
+
+#: source/uiImportExport.cpp:87
+msgid "Gray"
+msgstr "灰色"
+
+#: source/uiImportExport.cpp:88
+msgid "Black"
+msgstr "黑色"
+
+#: source/uiImportExport.cpp:89
+msgid "First color"
+msgstr "第一個色彩"
+
+#: source/uiImportExport.cpp:90
+msgid "Last color"
+msgstr "最後一個色彩"
+
+#: source/uiImportExport.cpp:95
+msgid "Include color names"
+msgstr "包含色彩名稱"
+
+#: source/uiImportExport.cpp:100
+msgid "Converter:"
+msgstr "轉換器："
+
+#: source/uiImportExport.cpp:101
+msgid "Item size:"
+msgstr "項目大小："
+
+#: source/uiImportExport.cpp:102
+msgid "Background:"
+msgstr "背景："
+
+#: source/uiImportExport.cpp:307 source/uiImportExport.cpp:372
+#: source/uiImportExport.cpp:386
+msgid "Import"
+msgstr "匯入"
+
+#: source/uiImportExport.cpp:317
+msgid "Text File (*.txt)"
+msgstr "文字檔案 (*.txt)"
+
+#: source/uiImportExport.cpp:318
+msgid "rgb.txt File (rgb.txt)"
+msgstr "rgb.txt 檔案 (rgb.txt)"
+
+#: source/uiImportExport.cpp:371
+msgid "File format is not supported"
+msgstr "檔案格式不支援"
+
+#: source/uiImportExport.cpp:385 source/uiImportExport.cpp:445
+msgid "File could not be imported"
+msgstr "檔案無法匯入"
+
+#: source/uiImportExport.cpp:404 source/uiImportExport.cpp:446
+msgid "Import text file"
+msgstr "匯入文字檔案"
+
+#: source/uiImportExport.cpp:468
+msgid "Alias/WaveFront Material (*.mtl)"
+msgstr "Alias/WaveFront 材質 (*.mtl)"
+
+#: source/uiImportExport.cpp:470
+msgid "Cascading Style Sheet (*.css)"
+msgstr "層疊樣式表 (*.css)"
+
+#: source/uiImportExport.cpp:471
+msgid "Hyper Text Markup Language (*.html, *.htm)"
+msgstr "超文本標示語言 (*.html, *.htm)"
+
+#: source/uiImportExport.cpp:472
+msgid "Text file (*.txt)"
+msgstr "文字檔案 (*.txt)"
+
+#: source/uiImportExport.cpp:514
+msgid "File could not be exported"
+msgstr "檔案無法匯出"
+
+#: source/uiListPalette.cpp:114 source/uiListPalette.cpp:123
+msgid "Color"
+msgstr "色彩"
+
+#: source/uiListPalette.cpp:132
+msgid "Name"
+msgstr "名稱"
+
+#: source/uiListPalette.cpp:553
+#, c++-format
+msgid "{} color"
+msgid_plural "{} colors"
+msgstr[0] "{} 個色彩"
+
+#: source/uiListPalette.cpp:557
+msgid "selected"
+msgstr "已選"
+
+#: source/uiListPalette.cpp:560
+#, c++-format
+msgid "Total {} color"
+msgid_plural "Total {} colors"
+msgstr[0] "共 {} 個色彩"
+
+#: source/uiListPalette.cpp:796
+msgid "Preview"
+msgstr "預覽"
+
+#: source/uiStatusIcon.cpp:49
+msgid "_Show Main Window"
+msgstr "顯示主視窗(_S)"
+
+#: source/uiStatusIcon.cpp:53
+msgid "_Quit"
+msgstr "退出(_Q)"
+
+#: source/uiTemporaryPalette.cpp:40
+msgid "Temporary palette"
+msgstr "暫時調色盤"
+
+#: source/uiTransformations.cpp:192
+msgid "Available filters"
+msgstr "可用濾色片"
+
+#: source/uiTransformations.cpp:195
+msgid "Active filters"
+msgstr "作用中濾色片"
+
+#: source/uiTransformations.cpp:232 source/uiTransformations.cpp:336
+msgid "No filter selected"
+msgstr "未選取濾色片"
+
+#: source/uiTransformations.cpp:284
+msgid "Display filters"
+msgstr "濾色片"
+
+#: source/uiTransformations.cpp:294
+msgid "_Enable display filters"
+msgstr "啟用濾色片(_E)"
+
+# These are displayed in a font that doesn't support Han characters, so
+# they should be left untranslated for now.
+# --Kisaragi
+#: share/gpick/layouts.lua:30
+msgid "Homepage"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "About us"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "Links to us"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "Privacy"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "Terms"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "Contact us"
+msgstr ""
+
+#: share/gpick/layouts.lua:30
+msgid "RSS"
+msgstr "RSS"
+
+#: share/gpick/layouts.lua:39
+msgid "Brightness-Darkness"
+msgstr "亮度-暗度"
+
+#: share/gpick/layouts.lua:41
+msgid "main"
+msgstr ""
+
+#: share/gpick/layouts.lua:67
+msgid "Webpage"
+msgstr "網站"
+
+#: share/gpick/layouts.lua:69 share/gpick/layouts.lua:85
+msgid "Header"
+msgstr ""
+
+#: share/gpick/layouts.lua:70
+msgid "Header text"
+msgstr ""
+
+#: share/gpick/layouts.lua:71
+msgid "Content"
+msgstr ""
+
+#: share/gpick/layouts.lua:72
+msgid "Content text"
+msgstr ""
+
+#: share/gpick/layouts.lua:73
+msgid "Sidebar"
+msgstr ""
+
+#: share/gpick/layouts.lua:74 share/gpick/layouts.lua:93
+msgid "Button"
+msgstr ""
+
+#: share/gpick/layouts.lua:75 share/gpick/layouts.lua:94
+msgid "Button (hover)"
+msgstr ""
+
+#: share/gpick/layouts.lua:76 share/gpick/layouts.lua:95
+msgid "Button text"
+msgstr ""
+
+#: share/gpick/layouts.lua:77 share/gpick/layouts.lua:96
+msgid "Button text (hover)"
+msgstr ""
+
+#: share/gpick/layouts.lua:78
+msgid "Footer"
+msgstr ""
+
+#: share/gpick/layouts.lua:90 share/gpick/layouts.lua:92
+msgid "Menu"
+msgstr "選單"
+
+#: share/gpick/layouts.lua:105 share/gpick/layouts.lua:121
+msgid "Grid"
+msgstr "網格"
+
+#: share/gpick/layouts.lua:111 share/gpick/layouts.lua:116
+#: share/gpick/layouts.lua:127 share/gpick/layouts.lua:132
+msgid "Item"
+msgstr ""
+
+#: share/gpick/layouts.lua:112 share/gpick/layouts.lua:128
+msgid "Item text"
+msgstr ""
+
+#: share/gpick/layouts.lua:137 share/gpick/layouts.lua:154
+msgid "Pie chart"
+msgstr ""
+
+#: share/gpick/layouts.lua:148 share/gpick/layouts.lua:165
+msgid "Part"
+msgstr ""
