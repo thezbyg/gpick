@@ -23,12 +23,12 @@ Gpick is an application that allows you to sample any color from anywhere on the
 
 C++17 support is required. Compilation is currently only tested on following compilers:
 
- * GCC 9.3 and 10.2.
- * Clang 11.0.
+ * GCC 13 and 14.
+ * Clang 18 and 19.
 
 ### Build dependencies
 
-CMake 3.12 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
+CMake 3.25 or newer: build process management application ([https://cmake.org/](https://cmake.org/)).
 
 SCons 3.0 or newer: a software construction tool ([http://www.scons.org](http://www.scons.org)).
 

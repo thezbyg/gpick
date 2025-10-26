@@ -71,6 +71,6 @@ jobs:
       authType: 'userAndPass'
       username: 'gpick'
       password: $(GPICK_API_KEY)
-      url: 'http://www.gpick.org/api/pushTranslation/$(version)'
+      url: 'https://www.gpick.org/api/pushTranslation/$(version)'
       remotePath: ''
 

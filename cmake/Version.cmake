@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.25)
 if (NOT PREFER_VERSION_FILE)
 	find_program(GIT_EXECUTABLE git DOC "Git version control")
 	mark_as_advanced(GIT_EXECUTABLE)

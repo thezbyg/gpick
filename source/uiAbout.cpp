@@ -107,7 +107,7 @@ void show_about_box(GtkWidget *widget)
 	gtk_label_set_markup(GTK_LABEL(copyright), tmp_string);
 	gtk_box_pack_start(GTK_BOX(vbox2), copyright, false, false, 0);
 	g_free(tmp_string);
-	GtkWidget *website = gtk_link_button_new("http://www.gpick.org/");
+	GtkWidget *website = gtk_link_button_new("https://www.gpick.org/");
 	gtk_box_pack_start(GTK_BOX(vbox2), website, false, false, 0);
 	GtkWidget *notebook = gtk_notebook_new();
 	gtk_notebook_set_scrollable(GTK_NOTEBOOK(notebook), true);
