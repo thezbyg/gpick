@@ -44,5 +44,6 @@ struct ChannelDescription {
 	bool wrap() const;
 	bool useConvertTo() const;
 };
+constexpr size_t channelCount = 26;
 common::Span<const ChannelDescription> channels();
 const ChannelDescription &channel(Channel channel);

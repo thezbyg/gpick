@@ -39,6 +39,12 @@ static const ChannelDescription channelDescriptions[] = {
 	{ "lch_lightness", N_("Lightness"), ColorSpace::lch, Channel::lchLightness, ChannelFlags::none, { 0 }, 0, 100 },
 	{ "lch_chroma", N_("Chroma"), ColorSpace::lch, Channel::lchChroma, ChannelFlags::none, { 1 }, 0, 100 },
 	{ "lch_hue", N_("Hue"), ColorSpace::lch, Channel::lchHue, ChannelFlags::wrap, { 2 }, 0, 360 },
+	{ "oklab_lightness", N_("Lightness"), ColorSpace::oklab, Channel::oklabLightness, ChannelFlags::none, { 0 }, 0, 1 },
+	{ "oklab_a", "a", ColorSpace::oklab, Channel::oklabA, ChannelFlags::none, { 1 }, -0.4f, 0.4f },
+	{ "oklab_b", "b", ColorSpace::oklab, Channel::oklabB, ChannelFlags::none, { 2 }, -0.4f, 0.4f },
+	{ "oklch_lightness", N_("Lightness"), ColorSpace::oklch, Channel::oklchLightness, ChannelFlags::none, { 0 }, 0, 1 },
+	{ "oklch_chroma", N_("Chroma"), ColorSpace::oklch, Channel::oklchChroma, ChannelFlags::none, { 1 }, 0, 0.37f },
+	{ "oklch_hue", N_("Hue"), ColorSpace::oklch, Channel::oklchHue, ChannelFlags::wrap, { 2 }, 0, 360 },
 	{ "alpha", N_("Alpha"), ColorSpace::rgb, Channel::alpha, ChannelFlags::allColorSpaces, { 3 }, 0, 1 },
 };
 common::Span<const ChannelDescription> channels() {
@@ -60,3 +66,4 @@ bool ChannelDescription::wrap() const {
 bool ChannelDescription::useConvertTo() const {
 	return (flags & ChannelFlags::useConvertTo) == ChannelFlags::useConvertTo;
 }
+static_assert(channelCount == sizeof(channelDescriptions) / sizeof(channelDescriptions[0]));

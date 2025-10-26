@@ -91,7 +91,7 @@ struct EditDialog: public DialogBase {
 		colorSpace = &colorSpaces()[gtk_combo_box_get_active(GTK_COMBO_BOX(colorSpaceComboBox))];
 		bool relative = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(relativeCheck));
 		size_t index = 0;
-		float adjustments[channels.size()];
+		float adjustments[channelCount];
 		for (auto &channel: channels) {
 			adjustments[index] = static_cast<float>(gtk_range_get_value(GTK_RANGE(channel.adjustmentRange)) / 100);
 			++index;
