@@ -22,18 +22,21 @@ jobs:
         release: stable
         architecture: amd64
         lua_package: liblua5.4-dev
-      ubuntu_focal_amd64:
-        image: buildpack-deps:focal
-        distribution: ubuntu
-        release: focal
-        architecture: amd64
-        lua_package: liblua5.3-dev
+        lua_type: C++
       ubuntu_jammy_amd64:
         image: buildpack-deps:jammy
         distribution: ubuntu
         release: jammy
         architecture: amd64
         lua_package: liblua5.4-dev
+        lua_type: patched-C++
+      ubuntu_noble_amd64:
+        image: buildpack-deps:noble
+        distribution: ubuntu
+        release: noble
+        architecture: amd64
+        lua_package: liblua5.4-dev
+        lua_type: C++
   container:
     image: $[ variables['image'] ]
     options: "--name ci-container"
@@ -52,7 +55,7 @@ jobs:
   - task: CMake@1
     inputs:
       workingDirectory: 'build'
-      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ ..'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DLUA_TYPE=$(lua_type) ..'
     displayName: "Configure"
   - script: |
       cmake --build . --config Release

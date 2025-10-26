@@ -10,24 +10,42 @@ jobs:
       gcc_gtk3_lua52:
         publish_prefix: gcc-gtk3-lua52
         lua_package: liblua5.2-dev
+        lua_type: patched-C++
         compiler: g++
         CC: gcc
         CXX: g++
       gcc_gtk3_lua53:
         publish_prefix: gcc-gtk3-lua53
         lua_package: liblua5.3-dev
+        lua_type: patched-C++
+        compiler: g++
+        CC: gcc
+        CXX: g++
+      gcc_gtk3_lua54:
+        publish_prefix: gcc-gtk3-lua54
+        lua_package: liblua5.4-dev
+        lua_type: C++
         compiler: g++
         CC: gcc
         CXX: g++
       clang_gtk3_lua52:
         publish_prefix: clang-gtk3-lua52
         lua_package: liblua5.2-dev
+        lua_type: patched-C++
         compiler: clang
         CC: clang
         CXX: clang++
       clang_gtk3_lua53:
         publish_prefix: clang-gtk3-lua53
         lua_package: liblua5.3-dev
+        lua_type: patched-C++
+        compiler: clang
+        CC: clang
+        CXX: clang++
+      clang_gtk3_lua54:
+        publish_prefix: clang-gtk3-lua54
+        lua_package: liblua5.4-dev
+        lua_type: C++
         compiler: clang
         CC: clang
         CXX: clang++
@@ -41,7 +59,7 @@ jobs:
   - task: CMake@1
     inputs:
       workingDirectory: 'build'
-      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(Build.ArtifactStagingDirectory)/ ..'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(Build.ArtifactStagingDirectory)/ -DLUA_TYPE=$(lua_type) ..'
   - script: |
       cmake --build . --config Release
     workingDirectory: 'build'
