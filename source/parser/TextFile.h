@@ -34,6 +34,7 @@ struct Configuration {
 	bool cssHsl;
 	bool cssHsla;
 	bool cssOklch;
+	bool cssOklab;
 	bool floatValues;
 	bool intValues;
 };

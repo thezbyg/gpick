@@ -228,18 +228,16 @@ static bool cssRgbDeserialize(const char *value, ColorObject &colorObject, float
 static std::string cssRgbaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[30];
 	auto &c = colorObject.getColor();
-	if (options.cssAlphaPercentage) {
-		if (options.cssPercentages) {
-			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d%%, %d%%, %d%%, %d%%)" : "rgba(%d%% %d%% %d%% / %d%%)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), toPercentage(c.alpha));
-		} else {
-			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d, %d, %d, %d%%)" : "rgba(%d %d %d / %d%%)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), toPercentage(c.alpha));
-		}
+	int offset;
+	if (options.cssPercentages) {
+		offset = std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d%%, %d%%, %d%%, " : "rgba(%d%% %d%% %d%% / ", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue));
 	} else {
-		if (options.cssPercentages) {
-			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d%%, %d%%, %d%%, %0.3f)" : "rgba(%d%% %d%% %d%% / %0.3f)", toPercentage(c.red), toPercentage(c.green), toPercentage(c.blue), c.alpha);
-		} else {
-			std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d, %d, %d, %0.3f)" : "rgba(%d %d %d / %0.3f)", toInteger(c.red), toInteger(c.green), toInteger(c.blue), c.alpha);
-		}
+		offset = std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "rgba(%d, %d, %d, " : "rgba(%d %d %d / ", toInteger(c.red), toInteger(c.green), toInteger(c.blue));
+	}
+	if (options.cssAlphaPercentage) {
+		std::snprintf(result + offset, sizeof(result) - offset, "%d%%)", toPercentage(c.alpha));
+	} else {
+		std::snprintf(result + offset, sizeof(result) - offset, "%0.3f)", c.alpha);
 	}
 	return result;
 }
@@ -282,10 +280,11 @@ static bool cssHslDeserialize(const char *value, ColorObject &colorObject, float
 static std::string cssHslaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[29];
 	auto c = colorObject.getColor().rgbToHsl();
+	int offset = std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsla(%d, %d%%, %d%%, " : "hsla(%d %d%% %d%% / ", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness));
 	if (options.cssAlphaPercentage) {
-		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsla(%d, %d%%, %d%%, %d%%)" : "hsla(%d %d%% %d%% / %d%%)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness), toPercentage(c.alpha));
+		std::snprintf(result + offset, sizeof(result) - offset, "%d%%)", toPercentage(c.alpha));
 	} else {
-		std::snprintf(result, sizeof(result), options.cssCommaSeparators ? "hsla(%d, %d%%, %d%%, %0.3f)" : "hsla(%d %d%% %d%% / %0.3f)", toDegrees(c.hsl.hue), toPercentage(c.hsl.saturation), toPercentage(c.hsl.lightness), c.alpha);
+		std::snprintf(result + offset, sizeof(result) - offset, "%0.3f)", c.alpha);
 	}
 	return result;
 }
@@ -330,12 +329,18 @@ static bool cssOklchDeserialize(const char *value, ColorObject &colorObject, flo
 	return true;
 }
 static std::string cssOklchaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
-	char result[30];
+	char result[31];
 	auto c = colorObject.getColor().rgbToOklch();
-	if (options.cssAlphaPercentage) {
-		std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d / %d%%)", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f), toPercentage(c.alpha));
+	int offset;
+	if (options.cssPercentages) {
+		offset = std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d / ", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f));
 	} else {
-		std::snprintf(result, sizeof(result), "oklch(%d%% %d%% %d / %0.3f)", toPercentage(c.oklch.L), toPercentage(c.oklch.C / 0.4f), toDegrees(c.oklch.h / 360.0f), c.alpha);
+		offset = std::snprintf(result, sizeof(result), "oklch(%0.3f %0.3f %d / ", c.oklch.L, c.oklch.C, toDegrees(c.oklch.h / 360.0f));
+	}
+	if (options.cssAlphaPercentage) {
+		std::snprintf(result + offset, sizeof(result) - offset, "%d%%)", toPercentage(c.alpha));
+	} else {
+		std::snprintf(result + offset, sizeof(result) - offset, "%0.3f)", c.alpha);
 	}
 	return result;
 }
@@ -351,6 +356,68 @@ static bool cssOklchaDeserialize(const char *value, ColorObject &colorObject, fl
 	c.oklch.h = math::clamp(convert<float>(hue, 0.0f), 0.0f, 360.0f);
 	c.alpha = math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
 	colorObject.setColor(c.oklchToRgb().normalizeRgb());
+	quality = toQuality(start - 6, end, std::string_view(value).length());
+	return true;
+}
+static std::string cssOklabSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+	char result[27];
+	auto c = colorObject.getColor().rgbToOklab();
+	if (options.cssPercentages) {
+		std::snprintf(result, sizeof(result), "oklab(%d%% %d%% %d%%)", toPercentage(c.oklab.L), toPercentage((c.oklab.a + 0.4f) * 1.25f), toPercentage((c.oklab.b + 0.4f) * 1.25f));
+	} else {
+		std::snprintf(result, sizeof(result), "oklab(%0.3f %0.3f %0.3f)", c.oklab.L, c.oklab.a, c.oklab.b);
+	}
+	return result;
+}
+static float oklabValue(float value, bool percentage) {
+	if (percentage)
+		return math::clamp(value * 0.8f / 100.0f - 0.4f, -0.4f, 0.4f);
+	else
+		return math::clamp(value, -0.4f, 0.4f);
+}
+static bool cssOklabDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+	std::string_view lightness, a, b;
+	bool lightnessPercentage, aPercentage, bPercentage;
+	size_t start, end;
+	if (!matchPattern(std::string_view(value), startWith("oklab("sv, save(sequence(maybeSpace, numberOrPercentage(lightness, lightnessPercentage), space, numberOrPercentage(a, aPercentage), space, numberOrPercentage(b, bPercentage), maybeSpace, ')'), start, end))))
+		return false;
+	Color c;
+	c.oklab.L = math::clamp(convert<float>(lightness, 0.0f) / (lightnessPercentage ? 100.0f : 1.0f));
+	c.oklab.a = oklabValue(convert<float>(a, 0.0f), aPercentage);
+	c.oklab.b = oklabValue(convert<float>(b, 0.0f), bPercentage);
+	c.alpha = 1.0f;
+	colorObject.setColor(c.oklabToRgb().normalizeRgb());
+	quality = toQuality(start - 6, end, std::string_view(value).length());
+	return true;
+}
+static std::string cssOklabaSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
+	char result[35];
+	auto c = colorObject.getColor().rgbToOklab();
+	int offset;
+	if (options.cssPercentages) {
+		offset = std::snprintf(result, sizeof(result), "oklab(%d%% %d%% %d%% / ", toPercentage(c.oklab.L), toPercentage((c.oklab.a + 0.4f) * 1.25f), toPercentage((c.oklab.b + 0.4f) * 1.25f));
+	} else {
+		offset = std::snprintf(result, sizeof(result), "oklab(%0.3f %0.3f %0.3f / ", c.oklab.L, c.oklab.a, c.oklab.b);
+	}
+	if (options.cssAlphaPercentage) {
+		std::snprintf(result + offset, sizeof(result) - offset, "%d%%)", toPercentage(c.alpha));
+	} else {
+		std::snprintf(result + offset, sizeof(result) - offset, "%0.3f)", c.alpha);
+	}
+	return result;
+}
+static bool cssOklabaDeserialize(const char *value, ColorObject &colorObject, float &quality, const Options &options) {
+	std::string_view lightness, a, b, alpha;
+	bool lightnessPercentage, aPercentage, bPercentage, alphaPercentage;
+	size_t start, end;
+	if (!matchPattern(std::string_view(value), startWith("oklab("sv, save(sequence(maybeSpace, numberOrPercentage(lightness, lightnessPercentage), space, numberOrPercentage(a, aPercentage), space, numberOrPercentage(b, bPercentage), maybeSpace, '/', maybeSpace, numberOrPercentage(alpha, alphaPercentage), maybeSpace, ')'), start, end))))
+		return false;
+	Color c;
+	c.oklab.L = math::clamp(convert<float>(lightness, 0.0f) / (lightnessPercentage ? 100.0f : 1.0f));
+	c.oklab.a = oklabValue(convert<float>(a, 0.0f), aPercentage);
+	c.oklab.b = oklabValue(convert<float>(b, 0.0f), bPercentage);
+	c.alpha = math::clamp(convert<float>(alpha, 0.0f) / (alphaPercentage ? 100.0f : 1.0f));
+	colorObject.setColor(c.oklabToRgb().normalizeRgb());
 	quality = toQuality(start - 6, end, std::string_view(value).length());
 	return true;
 }
@@ -590,6 +657,8 @@ void addInternalConverters(Converters &converters, Converter::Options &options) 
 	converters.add("color_css_hsla", _("CSS: hue saturation lightness alpha"), Serialize(cssHslaSerialize, options), Deserialize(cssHslaDeserialize, options));
 	converters.add("color_css_oklch", "CSS: OKLCH", Serialize(cssOklchSerialize, options), Deserialize(cssOklchDeserialize, options));
 	converters.add("color_css_oklcha", _("CSS: OKLCH with alpha"), Serialize(cssOklchaSerialize, options), Deserialize(cssOklchaDeserialize, options));
+	converters.add("color_css_oklab", "CSS: OKLAB", Serialize(cssOklabSerialize, options), Deserialize(cssOklabDeserialize, options));
+	converters.add("color_css_oklaba", _("CSS: OKLAB with alpha"), Serialize(cssOklabaSerialize, options), Deserialize(cssOklabaDeserialize, options));
 	converters.add("css_color_hex", "CSS(color)", Serialize(cssColorHexSerialize, options), Deserialize());
 	converters.add("css_background_color_hex", "CSS(background-color)", Serialize(cssBackgroundColorHexSerialize, options), Deserialize());
 	converters.add("css_border_color_hex", "CSS(border-color)", Serialize(cssBorderColorHexSerialize, options), Deserialize());

@@ -31,6 +31,7 @@ Configuration::Configuration(bool initialValue) {
 	cssHsl = initialValue;
 	cssHsla = initialValue;
 	cssOklch = initialValue;
+	cssOklab = initialValue;
 	floatValues = initialValue;
 	intValues = initialValue;
 }

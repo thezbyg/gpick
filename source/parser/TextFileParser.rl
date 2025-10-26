@@ -99,12 +99,12 @@ struct FSM {
 		color.alpha = hexToInt(ts[startIndex + 3]) / 15.0f;
 		addColor(color);
 	}
-	float getPercentage(size_t index, double unitlessMultiplier = 1.0, double percentageMultiplier = 1.0) const {
+	float getPercentage(size_t index, double unitlessMultiplier = 1.0, double percentageMultiplier = 1.0, double percentageOffset = 0) const {
 		switch (numbersDouble[index].second) {
 		case Unit::unitless:
 			return static_cast<float>(numbersDouble[index].first * unitlessMultiplier);
 		case Unit::percentage:
-			return static_cast<float>(numbersDouble[index].first * (1 / 100.0) * percentageMultiplier);
+			return static_cast<float>(numbersDouble[index].first * (1 / 100.0) * percentageMultiplier + percentageOffset);
 		case Unit::degree:
 		case Unit::turn:
 		case Unit::radian:
@@ -162,6 +162,15 @@ struct FSM {
 		color.alpha = numbersDouble.size() == 4 ? getPercentage(3) : 1;
 		numbersDouble.clear();
 		addColor(color.oklchToRgb().normalizeRgb());
+	}
+	void colorOklab() {
+		Color color;
+		color.oklab.L = getPercentage(0);
+		color.oklab.a = getPercentage(1, 1.0, 0.8, -0.4);
+		color.oklab.b = getPercentage(2, 1.0, 0.8, -0.4);
+		color.alpha = numbersDouble.size() == 4 ? getPercentage(3) : 1;
+		numbersDouble.clear();
+		addColor(color.oklabToRgb().normalizeRgb());
 	}
 	void colorValues() {
 		Color color;
@@ -226,6 +235,8 @@ struct FSM {
 	action cssHsla { configuration.cssHsla }
 	action cssOklch { configuration.cssOklch }
 	action cssOklchWithAlpha { configuration.cssOklch }
+	action cssOklab { configuration.cssOklab }
+	action cssOklabWithAlpha { configuration.cssOklab }
 	action intValues { configuration.intValues }
 	action floatValues { configuration.floatValues }
 	action singleLineCComments { configuration.singleLineCComments }
@@ -261,7 +272,9 @@ struct FSM {
 		( 'hsla'i '(' ws* degrees ws+ percentage ws+ percentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsl(); };
 		( 'hsla'i '(' ws* degrees ws* ',' ws* percentage ws* ',' ws* percentage ws* ',' ws* numberOrPercentage ws* ')' ) when cssHsla { fsm.colorHsl(); };
 		( 'oklch'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ degrees ws* ')' ) when cssOklch { fsm.colorOklch(); };
-		( 'oklch'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ degrees ws* '/' ws* numberOrPercentage ws* ')' ) when cssOklch { fsm.colorOklch(); };
+		( 'oklch'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ degrees ws* '/' ws* numberOrPercentage ws* ')' ) when cssOklchWithAlpha { fsm.colorOklch(); };
+		( 'oklab'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* ')' ) when cssOklab { fsm.colorOklab(); };
+		( 'oklab'i '(' ws* numberOrPercentage ws+ numberOrPercentage ws+ numberOrPercentage ws* '/' ws* numberOrPercentage ws* ')' ) when cssOklabWithAlpha { fsm.colorOklab(); };
 		( integer ws* separator ws* integer ws* separator ws* integer (ws* separator ws* integer)? ) when intValues { fsm.colorValueIntegers(); };
 		( integer ws+ integer ws+ integer (ws+ integer)? ) when intValues { fsm.colorValueIntegers(); };
 		( number ws* separator ws* number ws* separator ws* number (ws* separator ws* number)? ) when floatValues { fsm.colorValues(); };

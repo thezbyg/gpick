@@ -48,7 +48,7 @@ struct ImportExportDialogOptions {
 	Options m_options;
 	GtkWidget *m_dialog;
 	GtkWidget *m_converters, *m_itemSizes, *m_backgrounds, *m_includeColorNames;
-	GtkWidget *m_singleLineCComments, *m_multiLineCComments, *m_singleLineHashComments, *m_cssRgb, *m_cssRgba, *m_shortHex, *m_fullHex, *m_floatValues, *m_intValues, *m_fullHexWithAlpha, *m_shortHexWithAlpha, *m_cssHsl, *m_cssHsla, *m_cssOklch;
+	GtkWidget *m_singleLineCComments, *m_multiLineCComments, *m_singleLineHashComments, *m_cssRgb, *m_cssRgba, *m_shortHex, *m_fullHex, *m_floatValues, *m_intValues, *m_fullHexWithAlpha, *m_shortHexWithAlpha, *m_cssHsl, *m_cssHsla, *m_cssOklch, *m_cssOklab;
 	GlobalState &m_gs;
 	ImportExportDialogOptions(GtkWidget *dialog, GlobalState &gs):
 		m_dialog(dialog),
@@ -107,7 +107,7 @@ struct ImportExportDialogOptions {
 	void createImportTextFileOptions() {
 		m_options = Options::importTextFile;
 		int y = 0;
-		GtkWidget *table = gtk_table_new(4, 12, false);
+		GtkWidget *table = gtk_table_new(4, 15, false);
 		auto settings = m_gs.settings().getOrCreateMap("gpick.import_text_file");
 		addOption(m_singleLineCComments = newCheckbox(std::string(_("C style single-line comments")) + " (//abc)", settings->getBool("single_line_c_comments", true)), 0, y, table);
 		addOption(m_multiLineCComments = newCheckbox(std::string(_("C style multi-line comments")) + " (/*abc*/)", settings->getBool("multi_line_c_comments", true)), 0, y, table);
@@ -117,15 +117,17 @@ struct ImportExportDialogOptions {
 		addOption(m_cssRgba = newCheckbox("CSS rgba()", settings->getBool("css_rgba", true)), 1, y, table);
 		addOption(m_cssHsl = newCheckbox("CSS hsl()", settings->getBool("css_hsl", true)), 1, y, table);
 		addOption(m_cssHsla = newCheckbox("CSS hsla()", settings->getBool("css_hsla", true)), 1, y, table);
-		addOption(m_cssOklch = newCheckbox("CSS oklch()", settings->getBool("css_oklch", true)), 1, y, table);
 		y = 0;
-		addOption(m_fullHex = newCheckbox(_("Full hex"), settings->getBool("full_hex", true)), 2, y, table);
-		addOption(m_fullHexWithAlpha = newCheckbox(_("Full hex with alpha"), settings->getBool("full_hex_with_alpha", true)), 2, y, table);
-		addOption(m_shortHex = newCheckbox(_("Short hex"), settings->getBool("short_hex", true)), 2, y, table);
-		addOption(m_shortHexWithAlpha = newCheckbox(_("Short hex with alpha"), settings->getBool("short_hex_with_alpha", true)), 2, y, table);
+		addOption(m_cssOklch = newCheckbox("CSS oklch()", settings->getBool("css_oklch", true)), 2, y, table);
+		addOption(m_cssOklab = newCheckbox("CSS oklab()", settings->getBool("css_oklab", true)), 2, y, table);
 		y = 0;
-		addOption(m_intValues = newCheckbox(_("Integer values"), settings->getBool("int_values", true)), 3, y, table);
-		addOption(m_floatValues = newCheckbox(_("Real values"), settings->getBool("float_values", true)), 3, y, table);
+		addOption(m_fullHex = newCheckbox(_("Full hex"), settings->getBool("full_hex", true)), 3, y, table);
+		addOption(m_fullHexWithAlpha = newCheckbox(_("Full hex with alpha"), settings->getBool("full_hex_with_alpha", true)), 3, y, table);
+		addOption(m_shortHex = newCheckbox(_("Short hex"), settings->getBool("short_hex", true)), 3, y, table);
+		addOption(m_shortHexWithAlpha = newCheckbox(_("Short hex with alpha"), settings->getBool("short_hex_with_alpha", true)), 3, y, table);
+		y = 0;
+		addOption(m_intValues = newCheckbox(_("Integer values"), settings->getBool("int_values", true)), 4, y, table);
+		addOption(m_floatValues = newCheckbox(_("Real values"), settings->getBool("float_values", true)), 4, y, table);
 		gtk_widget_show_all(table);
 		gtk_file_chooser_set_extra_widget(GTK_FILE_CHOOSER(m_dialog), table);
 	}
@@ -195,6 +197,9 @@ struct ImportExportDialogOptions {
 	bool isCssOklchEnabled() {
 		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_cssOklch));
 	}
+	bool isCssOklabEnabled() {
+		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_cssOklab));
+	}
 	bool isFullHexEnabled() {
 		return gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_fullHex));
 	}
@@ -234,6 +239,7 @@ struct ImportExportDialogOptions {
 			importTextFile->set("css_hsl", isCssHslEnabled());
 			importTextFile->set("css_hsla", isCssHslaEnabled());
 			importTextFile->set("css_oklch", isCssOklchEnabled());
+			importTextFile->set("css_oklab", isCssOklabEnabled());
 			importTextFile->set("full_hex", isFullHexEnabled());
 			importTextFile->set("short_hex", isShortHexEnabled());
 			importTextFile->set("full_hex_with_alpha", isFullHexWithAlphaEnabled());
@@ -432,6 +438,7 @@ bool ImportExportDialog::showImportTextFile() {
 			configuration.cssHsl = importExportDialogOptions.isCssHslEnabled();
 			configuration.cssHsla = importExportDialogOptions.isCssHslaEnabled();
 			configuration.cssOklch = importExportDialogOptions.isCssOklchEnabled();
+			configuration.cssOklab = importExportDialogOptions.isCssOklabEnabled();
 			configuration.fullHex = importExportDialogOptions.isFullHexEnabled();
 			configuration.shortHex = importExportDialogOptions.isShortHexEnabled();
 			configuration.fullHexWithAlpha = importExportDialogOptions.isFullHexWithAlphaEnabled();
