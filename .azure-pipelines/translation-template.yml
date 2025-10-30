@@ -1,0 +1,45 @@
+trigger: none
+pr: none
+
+schedules:
+- cron: '0 0 * * *'
+  displayName: 'Nightly translation template'
+  branches:
+    include:
+    - master
+
+jobs:
+- job: build
+  displayName: 'Nightly translation template'
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - script: >
+      sudo apt-get update && sudo apt-get install
+      g++ git ragel gettext libgtk-3-dev liblua5.4-dev libexpat1-dev
+      libboost-test-dev
+    displayName: 'Install dependencies'
+  - checkout: self
+    fetchDepth: 250
+    displayName: 'Checkout'
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(Build.ArtifactStagingDirectory)/ -DLUA_TYPE=C++ ..'
+    displayName: 'Configure'
+  - script: |
+      cmake --build . --config Release --target template
+      version=`git describe --match="gpick-*" --match="v*" --always --long`
+      echo "##vso[task.setvariable variable=version]$version"
+    workingDirectory: 'build'
+    displayName: 'Generate translation template'
+  - task: cURLUploader@2
+    inputs:
+      files: $(System.DefaultWorkingDirectory)/build/template.pot
+      authType: 'userAndPass'
+      username: 'gpick'
+      password: $(GPICK_API_KEY)
+      url: 'https://www.gpick.org/api/pushTranslation/$(version)'
+      remotePath: ''
+      options: '--request POST'
+    displayName: 'Push translation template'

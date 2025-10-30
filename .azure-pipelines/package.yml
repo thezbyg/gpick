@@ -2,24 +2,30 @@ trigger: none
 pr: none
 
 schedules:
-- cron: "0 0 * * *"
-  displayName: "Nightly package"
+- cron: '0 0 * * *'
+  displayName: 'Nightly package'
   branches:
     include:
     - master
 
 jobs:
 - job: package
-  displayName: "Nightly package"
+  displayName: 'Nightly package'
   pool:
     vmImage: ubuntu-latest
   strategy:
-    maxParallel: 3
     matrix:
-      debian_stable_amd64:
-        image: buildpack-deps:stable
+      debian_bookworm_amd64:
+        image: buildpack-deps:bookworm
         distribution: debian
-        release: stable
+        release: bookworm
+        architecture: amd64
+        lua_package: liblua5.4-dev
+        lua_type: C++
+      debian_trixie_amd64:
+        image: buildpack-deps:trixie
+        distribution: debian
+        release: trixie
         architecture: amd64
         lua_package: liblua5.4-dev
         lua_type: C++
@@ -39,57 +45,59 @@ jobs:
         lua_type: C++
   container:
     image: $[ variables['image'] ]
-    options: "--name ci-container"
+    options: '--name ci-container'
   steps:
   - script: >
       docker exec --tty --user 0 ci-container
       sh -c "apt update && DEBIAN_FRONTEND=noninteractive apt -o Dpkg::Options::="--force-confold" -y install sudo"
     target: host
-    displayName: "Install sudo in container"
+    displayName: 'Install sudo in container'
   - script: >
       sudo apt update && sudo DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends
       gettext ragel cmake git gcc g++
       libgtk-3-dev libboost-test-dev libexpat1-dev $(lua_package)
       dpkg-dev python3 python3-jinja2
-    displayName: "Install dependencies"
+    displayName: 'Install dependencies'
+  - checkout: self
+    fetchDepth: 250
+    displayName: 'Checkout'
   - task: CMake@1
     inputs:
       workingDirectory: 'build'
       cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/ -DLUA_TYPE=$(lua_type) ..'
-    displayName: "Configure"
+    displayName: 'Configure'
   - script: |
       cmake --build . --config Release
     workingDirectory: 'build'
-    displayName: "Build"
+    displayName: 'Build'
   - script: |
       ./build/tests --log_format=JUNIT --report_format=HRF -k tests-log.xml -e tests-report.txt --no_result_code
     workingDirectory: ''
-    displayName: "Run tests"
+    displayName: 'Run tests'
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'tests-*.xml'
-    displayName: "Publish test results"
+    displayName: 'Publish test results'
   - bash: echo "##vso[task.setvariable variable=version;]`python3 ../.azure-pipelines/package.py version`"
     workingDirectory: 'build'
-    displayName: "Get version"
+    displayName: 'Get version'
   - script: |
       make install DESTDIR=./gpick_$(version)_$(architecture)/
     workingDirectory: 'build'
-    displayName: "Install"
+    displayName: 'Install'
   - script: |
       python3 ../.azure-pipelines/package.py
     workingDirectory: 'build'
-    displayName: "Generate package"
+    displayName: 'Generate package'
   - task: CopyFiles@2
     inputs:
       contents: build/gpick_$(version)_$(architecture).deb
       targetFolder: '$(Build.ArtifactStagingDirectory)'
       flattenFolders: true
-    displayName: "Copy files"
+    displayName: 'Copy files'
   - task: PublishPipelineArtifact@1
     inputs:
       artifactName: $(distribution)-$(release)
       targetPath: $(Build.ArtifactStagingDirectory)/gpick_$(version)_$(architecture).deb
-    displayName: "Publish"
-
+    displayName: 'Publish'
