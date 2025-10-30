@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 find_program(RAGEL_EXECUTABLE NAMES ragel DOC "path to the ragel executable")
 mark_as_advanced(RAGEL_EXECUTABLE)
 if (RAGEL_EXECUTABLE)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.22)
 project(gpick)
 option(ENABLE_NLS "compile with gettext support" true)
 option(USE_GTK3 "use GTK3 instead of GTK2" true)

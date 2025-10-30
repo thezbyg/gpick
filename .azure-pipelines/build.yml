@@ -1,0 +1,60 @@
+trigger:
+- master
+
+jobs:
+- job: build
+  displayName: 'Build'
+  pool:
+    vmImage: ubuntu-latest
+  strategy:
+    matrix:
+      gcc_lua54:
+        publish_prefix: gcc-lua54
+        lua_package: liblua5.4-dev
+        lua_type: C++
+        compiler: g++
+        CC: gcc
+        CXX: g++
+      clang_lua54:
+        publish_prefix: clang-lua54
+        lua_package: liblua5.4-dev
+        lua_type: C++
+        compiler: clang
+        CC: clang
+        CXX: clang++
+  steps:
+  - script: >
+      sudo apt-get update && sudo apt-get install
+      $(compiler) $(lua_package) git ragel gettext libgtk-3-dev libexpat1-dev
+      libboost-test-dev
+    displayName: 'Install dependencies'
+  - checkout: self
+    fetchDepth: 250
+    displayName: 'Checkout'
+  - task: CMake@1
+    inputs:
+      workingDirectory: 'build'
+      cmakeArgs: '-G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(Build.ArtifactStagingDirectory)/ -DLUA_TYPE=$(lua_type) ..'
+    displayName: 'Configure'
+  - script: |
+      cmake --build . --config Release
+    workingDirectory: 'build'
+    displayName: 'Build'
+  - script: |
+      ./build/tests --log_format=JUNIT --report_format=HRF -k tests-log.xml -e tests-report.txt --no_result_code
+    workingDirectory: ''
+    displayName: 'Run tests'
+  - task: PublishTestResults@2
+    inputs:
+      testResultsFormat: 'JUnit'
+      testResultsFiles: 'tests-*.xml'
+    displayName: 'Publish test results'
+  - script: |
+      cmake --build . --config Release --target install
+    workingDirectory: 'build'
+    displayName: 'Install'
+  - task: PublishPipelineArtifact@1
+    inputs:
+      artifactName: $(publish_prefix)-ubuntu-latest
+      targetPath: $(Build.ArtifactStagingDirectory)
+    displayName: 'Publish'
