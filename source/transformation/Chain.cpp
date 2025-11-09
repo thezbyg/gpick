@@ -19,46 +19,87 @@
 #include "Chain.h"
 #include "Transformation.h"
 #include "Color.h"
+#include "dynv/Map.h"
 namespace transformation {
 Chain::Chain():
 	m_enabled(true) {
 }
-void Chain::apply(const Color *input, Color *output) {
-	if (!m_enabled) {
-		*output = *input;
+Chain &Chain::operator=(const Chain &chain) {
+	m_enabled = chain.m_enabled;
+	m_transformations.reserve(chain.m_transformations.size());
+	for (const auto &transformation: chain.m_transformations) {
+		m_transformations.emplace_back(std::move(transformation->copy()));
+	}
+	return *this;
+}
+Chain &Chain::operator=(Chain &&chain) {
+	m_enabled = chain.m_enabled;
+	m_transformations = std::move(chain.m_transformations);
+	chain.m_enabled = true;
+	return *this;
+}
+Chain::operator bool() const {
+	if (!m_enabled)
+		return false;
+	return !m_transformations.empty();
+}
+Color Chain::apply(Color input) {
+	if (!m_enabled)
+		return input;
+	auto result = input;
+	for (auto &transformation: m_transformations) {
+		result = transformation->apply(result);
+	}
+	return result;
+}
+void Chain::add(std::unique_ptr<Transformation> &&transformation) {
+	m_transformations.emplace_back(std::move(transformation));
+}
+void Chain::remove(const Transformation &transformation) {
+	auto i = std::find_if(m_transformations.begin(), m_transformations.end(), [&transformation](std::unique_ptr<Transformation> &value) {
+		return value.get() == &transformation;
+	});
+	if (i == m_transformations.end())
 		return;
-	}
-	Color tmp[2];
-	Color *tmp_p[3];
-	tmp[0] = *input;
-	tmp_p[0] = &tmp[0];
-	tmp_p[1] = &tmp[1];
-	for (auto &transformation: m_transformationChain) {
-		transformation->apply(tmp_p[0], tmp_p[1]);
-		tmp_p[2] = tmp_p[0];
-		tmp_p[0] = tmp_p[1];
-		tmp_p[1] = tmp_p[2];
-	}
-	*output = *tmp_p[0];
+	m_transformations.erase(i);
 }
-void Chain::add(std::unique_ptr<Transformation> transformation) {
-	m_transformationChain.push_back(std::move(transformation));
+void Chain::move(const Transformation &transformation, size_t newIndex) {
+	auto i = std::find_if(m_transformations.begin(), m_transformations.end(), [&transformation](std::unique_ptr<Transformation> &value) {
+		return value.get() == &transformation;
+	});
+	if (i == m_transformations.end())
+		return;
+	auto currentIndex = static_cast<size_t>(std::distance(m_transformations.begin(), i));
+	if (currentIndex == newIndex)
+		return;
+	auto value = std::move(*i);
+	m_transformations.erase(i);
+	m_transformations.emplace(m_transformations.begin() + newIndex - (newIndex > currentIndex ? 1 : 0), std::move(value));
 }
-void Chain::remove(const Transformation *transformation) {
-	for (auto i = m_transformationChain.begin(), end = m_transformationChain.end(); i != end; i++) {
-		if (i->get() == transformation) {
-			m_transformationChain.erase(i);
-			return;
-		}
-	}
-}
-void Chain::clear() {
-	m_transformationChain.clear();
-}
-Chain::Transformations &Chain::getAll() {
-	return m_transformationChain;
-}
-void Chain::setEnabled(bool enabled) {
+void Chain::enable(bool enabled) {
 	m_enabled = enabled;
+}
+bool Chain::enabled() const {
+	return m_enabled;
+}
+bool Chain::Iterator::operator!=(const Iterator &iterator) const {
+	return m_index != iterator.m_index;
+}
+Chain::Iterator &Chain::Iterator::operator++() {
+	++m_index;
+	return *this;
+}
+Transformation &Chain::Iterator::operator*() {
+	return *m_chain.m_transformations[m_index];
+}
+Chain::Iterator::Iterator(Chain &chain, size_t index):
+	m_chain(chain),
+	m_index(index) {
+}
+Chain::Iterator Chain::begin() {
+	return Iterator(*this, 0);
+}
+Chain::Iterator Chain::end() {
+	return Iterator(*this, m_transformations.size());
 }
 }

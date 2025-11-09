@@ -90,14 +90,10 @@ struct BrightnessDarknessArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(GTK_WIDGET(layoutView));
 			break;
 		case EventType::colorDictionaryUpdate:
 		case EventType::optionsUpdate:
@@ -276,6 +272,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	g_signal_connect(G_OBJECT(widget), "values_changed", G_CALLBACK(BrightnessDarknessArgs::onChange), args.get());
 	gtk_box_pack_start(GTK_BOX(hbox), widget, false, false, 0);
 	args->layoutView = widget = gtk_layout_preview_new();
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layoutView), &gs.transformationChain());
 	gtk_layout_preview_set_fill(GTK_LAYOUT_PREVIEW(widget), true);
 	g_signal_connect_after(G_OBJECT(widget), "button-press-event", G_CALLBACK(onButtonPress), args.get());
 	StandardEventHandler::forWidget(widget, &args->gs, &*args->editable);
@@ -293,7 +290,6 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	args->update(false);
 	gtk_widget_show_all(hbox);
 	args->main = hbox;
-	args->setTransformationChain();
 	return args;
 }
 void registerBrightnessDarkness(ColorSourceManager &csm) {

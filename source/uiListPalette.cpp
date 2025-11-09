@@ -79,6 +79,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gs.eventBus().subscribe(EventType::optionsUpdate, *this);
 		gs.eventBus().subscribe(EventType::convertersUpdate, *this);
 		gs.eventBus().subscribe(EventType::paletteChanged, *this);
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 		if (type == Type::main || type == Type::temporary)
 			buildPalette();
 		else if (type == Type::preview)
@@ -94,6 +95,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gs.eventBus().subscribe(EventType::optionsUpdate, *this);
 		gs.eventBus().subscribe(EventType::convertersUpdate, *this);
 		gs.eventBus().subscribe(EventType::paletteChanged, *this);
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 		if (type == Type::main || type == Type::temporary)
 			buildPalette();
 		else if (type == Type::preview)
@@ -113,6 +115,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gtk_tree_view_column_set_resizable(col,1);
 		gtk_tree_view_column_set_title(col, _("Color"));
 		auto renderer = custom_cell_renderer_color_new();
+		custom_cell_renderer_color_set_transformation_chain(renderer, &gs.transformationChain());
 		gtk_tree_view_column_pack_start(col, renderer, true);
 		gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 		gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), col);
@@ -169,6 +172,7 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 		gtk_tree_view_column_set_resizable(col, 0);
 		auto renderer = custom_cell_renderer_color_new();
 		custom_cell_renderer_color_set_size(renderer, 16, 16);
+		custom_cell_renderer_color_set_transformation_chain(renderer, &gs.transformationChain());
 		gtk_tree_view_column_pack_start(col, renderer, true);
 		gtk_tree_view_column_add_attribute(col, renderer, "color", 0);
 		gtk_tree_view_append_column(GTK_TREE_VIEW(treeview), col);
@@ -571,6 +575,8 @@ struct ListPaletteArgs : public IEditableColorsUI, public IContainerUI, public I
 			updateAll(GTK_TREE_VIEW(treeview), gs);
 			break;
 		case EventType::displayFiltersUpdate:
+			gtk_widget_queue_draw(treeview);
+			break;
 		case EventType::colorDictionaryUpdate:
 		case EventType::paletteChanged:
 			break;

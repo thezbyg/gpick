@@ -16,9 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_UI_TRANSFORMATIONS_H_
-#define GPICK_UI_TRANSFORMATIONS_H_
+#pragma once
 #include <gtk/gtk.h>
 struct GlobalState;
-void dialog_transformations_show(GtkWindow* parent, GlobalState* gs);
-#endif /* GPICK_UI_TRANSFORMATIONS_H_ */
+void dialog_transformations_show(GtkWindow *parent, GlobalState &gs);

@@ -16,85 +16,39 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_TRANSFORMATION_H_
-#define GPICK_TRANSFORMATION_TRANSFORMATION_H_
+#pragma once
+#include "BaseConfiguration.h"
 #include "Color.h"
 #include "dynv/MapFwd.h"
-#include <string>
+#include "common/Span.h"
 #include <memory>
-
+#include <string_view>
 typedef struct _GtkWidget GtkWidget;
-/** \file source/transformation/Transformation.h
- * \brief Color transformation struct.
- */
-namespace transformation
-{
-/** \struct IConfiguration
- * \brief Transformation object configuration management interface.
- */
-struct IConfiguration {
-	virtual ~IConfiguration() = default;
-	virtual GtkWidget* getWidget() = 0;
-	virtual void apply(dynv::Map &options) = 0;
+namespace transformation {
+struct Transformation;
+struct IEventHandler {
+	virtual void onConfigurationChange(BaseConfiguration &configuration, Transformation &transformation) = 0;
 };
-/** \struct Transformation
- * \brief Transformation object structure.
- */
+struct Description {
+	const char *id;
+	const char *name;
+	std::unique_ptr<Transformation> (*create)();
+	std::unique_ptr<Transformation> (*createCopy)(const Transformation &);
+};
 struct Transformation {
-	protected:
-		std::string name; /**< System name */
-		std::string readable_name; /**< Human readable name */
-
-		/**
-		 * Apply transformation to color.
-		 * @param[in] input Source color in RGB color space.
-		 * @param[out] output Destination color in RGB color space.
-		 */
-		virtual void apply(Color *input, Color *output);
-	public:
-		/**
-		 * Transformation object constructor.
-		 * @param[in] name Transformation object system name.
-		 * @param[in] readable_name Transformation object human readable name.
-		 */
-		Transformation(const char *name, const char *readable_name);
-
-		/**
-		 * Transformation object destructor.
-		 */
-		virtual ~Transformation();
-
-		/**
-		 * Serialize settings into configuration system.
-		 * @param[in,out] dynv Configuration system.
-		 */
-		virtual void serialize(dynv::Map &options);
-
-		/**
-		 * Deserialize settings from configuration system.
-		 * @param[in] dynv Configuration system.
-		 */
-		virtual void deserialize(const dynv::Map &options);
-
-		/**
-		 * Get configuration for transformation object.
-		 * @return Configuration for transformation object.
-		 */
-		virtual std::unique_ptr<IConfiguration> getConfiguration();
-
-		/**
-		 * Get transformation object system name.
-		 * @return Transformation object system name.
-		 */
-		std::string getName() const;
-
-		/**
-		 * Get transformation object human readable name.
-		 * @return Transformation object human readable name.
-		 */
-		std::string getReadableName() const;
-
-	friend struct Chain;
+	Transformation();
+	virtual ~Transformation() = default;
+	virtual Color apply(Color input);
+	virtual void serialize(dynv::Map &options);
+	virtual void deserialize(const dynv::Map &options);
+	virtual std::unique_ptr<BaseConfiguration> configuration(IEventHandler &eventHandler);
+	const char *id() const;
+	const char *name() const;
+	static std::unique_ptr<Transformation> create(std::string_view id);
+	std::unique_ptr<Transformation> copy() const;
+private:
+	const Description *m_description;
+	void setDescription(const Description &description);
 };
+common::Span<const Description> descriptions();
 }
-#endif /* GPICK_TRANSFORMATION_TRANSFORMATION_H_ */

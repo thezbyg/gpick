@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2025, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,29 +16,31 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "Factory.h"
-#include "ColorVisionDeficiency.h"
-#include "GammaModification.h"
-#include "Quantization.h"
+#include "BaseConfiguration.h"
+#include "Transformation.h"
+#include <gtk/gtk.h>
 namespace transformation {
-std::unique_ptr<Transformation> Factory::create(const std::string &type) {
-	if (type == ColorVisionDeficiency::getId())
-		return std::make_unique<ColorVisionDeficiency>();
-	if (type == GammaModification::getId())
-		return std::make_unique<GammaModification>();
-	if (type == Quantization::getId())
-		return std::make_unique<Quantization>();
-	return std::unique_ptr<Transformation>();
+BaseConfiguration::BaseConfiguration(IEventHandler &eventHandler, Transformation &transformation):
+	m_eventHandler(eventHandler),
+	m_transformation(transformation),
+	m_widget(nullptr) {
 }
-std::vector<Factory::TypeInfo> Factory::getAllTypes() {
-	std::vector<TypeInfo> result;
-	result.emplace_back(ColorVisionDeficiency::getId(), ColorVisionDeficiency::getName());
-	result.emplace_back(GammaModification::getId(), GammaModification::getName());
-	result.emplace_back(Quantization::getId(), Quantization::getName());
-	return result;
+BaseConfiguration::~BaseConfiguration() {
+	if (m_widget)
+		g_object_unref(m_widget);
 }
-Factory::TypeInfo::TypeInfo(const char *id, const char *name):
-	id(id),
-	name(name) {
+GtkWidget *BaseConfiguration::widget() {
+	return m_widget;
+}
+void BaseConfiguration::setContent(GtkWidget *widget) {
+	gtk_widget_show_all(widget);
+	g_object_ref(widget);
+	m_widget = widget;
+}
+void BaseConfiguration::notifyChange() {
+	m_eventHandler.onConfigurationChange(*this, m_transformation);
+}
+void BaseConfiguration::onChange(GtkWidget *, BaseConfiguration *configuration) {
+	configuration->notifyChange();
 }
 }

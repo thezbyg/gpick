@@ -108,20 +108,16 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_color_set_transformation_chain(GTK_COLOR(targetColor), chain);
-		for (int i = 0; i < 9; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(closestColors[i]), chain);
-		}
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::colorDictionaryUpdate:
 			update();
 			break;
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(targetColor);
+			for (int i = 0; i < 9; ++i) {
+				gtk_widget_queue_draw(closestColors[i]);
+			}
 			break;
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
@@ -301,6 +297,8 @@ std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 	StandardEventHandler::forWidget(widget, &args->gs, &*args->editable);
 	StandardDragDropHandler::forWidget(widget, &args->gs, &*args->editable);
 	gtk_widget_set_size_request(widget, 30, 30);
+	auto *chain = &gs.transformationChain();
+	gtk_color_set_transformation_chain(GTK_COLOR(args->targetColor), chain);
 
 	for (int i = 0; i < 3; ++i) {
 		for (int j = 0; j < 3; ++j) {
@@ -308,6 +306,7 @@ std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
+			gtk_color_set_transformation_chain(GTK_COLOR(widget), chain);
 			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, i, i + 1, j + 1, j + 2, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
 			args->closestColors[i + j * 3] = widget;
 			g_signal_connect(G_OBJECT(widget), "activated", G_CALLBACK(ClosestColorsArgs::onColorActivate), args.get());
@@ -324,7 +323,6 @@ std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &options) {
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
-	args->setTransformationChain();
 	return args;
 }
 void registerClosestColors(ColorSourceManager &csm) {

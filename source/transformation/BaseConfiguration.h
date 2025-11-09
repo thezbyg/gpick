@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2021, Albertas Vyšniauskas
+ * Copyright (c) 2009-2025, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,36 +16,23 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_FACTORY_H_
-#define GPICK_TRANSFORMATION_FACTORY_H_
-#include <vector>
-#include <string>
-#include <memory>
-/** \file source/transformation/Factory.h
- * \brief Struct for transformation object creation.
- */
+#pragma once
+typedef struct _GtkWidget GtkWidget;
 namespace transformation {
 struct Transformation;
-/** \struct Factory
- * \brief Transformation object creation management struct.
- */
-struct Factory {
-	struct TypeInfo {
-		const char *id;
-		const char *name;
-		TypeInfo(const char *id, const char *name);
-	};
-	/**
-		 * Create new transformation object.
-		 * @param[in] type Name of transformation object type.
-		 * @return New transformation object.
-		 */
-	static std::unique_ptr<Transformation> create(const std::string &type);
-	/**
-		 * Get all transformation object types.
-		 * @return Vector of transformation object type information structures.
-		 */
-	static std::vector<TypeInfo> getAllTypes();
+struct IEventHandler;
+struct BaseConfiguration {
+	BaseConfiguration(IEventHandler &eventHandler, Transformation &transformation);
+	virtual ~BaseConfiguration();
+	GtkWidget *widget();
+	virtual void apply(Transformation &transformation) = 0;
+protected:
+	IEventHandler &m_eventHandler;
+	Transformation &m_transformation;
+	void setContent(GtkWidget *widget);
+	void notifyChange();
+	static void onChange(GtkWidget *, BaseConfiguration *configuration);
+private:
+	GtkWidget *m_widget;
 };
 }
-#endif /* GPICK_TRANSFORMATION_FACTORY_H_ */

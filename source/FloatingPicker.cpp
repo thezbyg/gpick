@@ -372,6 +372,7 @@ FloatingPickerArgs* floating_picker_new(GlobalState *gs)
 	gtk_widget_show(args->zoomed);
 	gtk_box_pack_start(GTK_BOX(vbox), args->zoomed, false, false, 0);
 	args->color_widget = gtk_color_new();
+	gtk_color_set_transformation_chain(GTK_COLOR(args->color_widget), &gs->transformationChain());
 	gtk_widget_set_size_request(GTK_WIDGET(args->color_widget), 40, 40);
 	gtk_widget_show(args->color_widget);
 	gtk_box_pack_start(GTK_BOX(vbox), args->color_widget, true, true, 0);

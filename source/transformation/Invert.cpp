@@ -18,15 +18,7 @@
 
 #include "Invert.h"
 namespace transformation {
-void Invert::apply(Color *input, Color *output) {
-	output->rgb.red = 1 - input->rgb.red;
-	output->rgb.green = 1 - input->rgb.green;
-	output->rgb.blue = 1 - input->rgb.blue;
-	output->alpha = input->alpha;
-}
-Invert::Invert():
-	Transformation("invert", "Invert") {
-}
-Invert::~Invert() {
+Color Invert::apply(Color input) {
+	return Color(1 - input.red, 1 - input.green, 1 - input.blue, input.alpha);
 }
 }

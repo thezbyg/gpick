@@ -138,6 +138,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState &gs, common::Optional
 	gtk_color_set_rounded(GTK_COLOR(widget), true);
 	gtk_color_set_hcenter(GTK_COLOR(widget), true);
 	gtk_color_set_roundness(GTK_COLOR(widget), 5);
+	gtk_color_set_transformation_chain(GTK_COLOR(widget), &gs.transformationChain());
 	gtk_widget_set_size_request(widget, 30, 30);
 	if (!newItem) {
 		gtk_color_enable_split(GTK_COLOR(widget), true);

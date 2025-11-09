@@ -21,76 +21,53 @@
 #include "dynv/Map.h"
 #include "uiUtilities.h"
 #include "I18N.h"
+#include <cmath>
 #include <gtk/gtk.h>
-#include <boost/math/special_functions/round.hpp>
 namespace transformation {
-static const char *transformationId = "quantization";
-const char *Quantization::getId() {
-	return transformationId;
-}
-const char *Quantization::getName() {
-	return _("Quantization");
-}
-void Quantization::apply(Color *input, Color *output) {
-	if (clip_top) {
-		float max_intensity = (value - 1) / value;
-		output->rgb.red = MIN(max_intensity, boost::math::round(input->rgb.red * value) / value);
-		output->rgb.green = MIN(max_intensity, boost::math::round(input->rgb.green * value) / value);
-		output->rgb.blue = MIN(max_intensity, boost::math::round(input->rgb.blue * value) / value);
-	} else {
-		float actualmax = value - 1;
-		output->rgb.red = boost::math::round(input->rgb.red * actualmax) / actualmax;
-		output->rgb.green = boost::math::round(input->rgb.green * actualmax) / actualmax;
-		output->rgb.blue = boost::math::round(input->rgb.blue * actualmax) / actualmax;
-	}
-	output->alpha = input->alpha;
+Color Quantization::apply(Color input) {
+	int multiplier = m_steps;
+	int divider = m_steps - 1;
+	if (m_linearization)
+		input.linearRgbInplace();
+	input.red = std::min<float>(std::floor(input.red * multiplier), divider) / divider;
+	input.green = std::min<float>(std::floor(input.green * multiplier), divider) / divider;
+	input.blue = std::min<float>(std::floor(input.blue * multiplier), divider) / divider;
+	if (m_linearization)
+		input.nonLinearRgbInplace();
+	input.alpha = input.alpha;
+	return input;
 }
 Quantization::Quantization():
-	Transformation(transformationId, getName()) {
-	value = 16;
-}
-Quantization::Quantization(float value_):
-	Transformation(transformationId, getName()) {
-	value = value_;
-}
-Quantization::~Quantization() {
+	m_steps(16),
+	m_linearization(false) {
 }
 void Quantization::serialize(dynv::Map &system) {
-	system.set("value", value);
-	system.set("clip-top", clip_top);
 	Transformation::serialize(system);
+	system.set("steps", m_steps);
+	system.set("linearization", m_linearization);
 }
 void Quantization::deserialize(const dynv::Map &system) {
-	value = system.getFloat("value", 16);
-	clip_top = system.getBool("clip-top", false);
+	m_steps = system.getInt32("steps", 16);
+	m_linearization = system.getBool("linearization", false);
 }
-std::unique_ptr<IConfiguration> Quantization::getConfiguration() {
-	return std::make_unique<Configuration>(*this);
+std::unique_ptr<BaseConfiguration> Quantization::configuration(IEventHandler &eventHandler) {
+	return std::make_unique<Configuration>(eventHandler, *this);
 }
-Quantization::Configuration::Configuration(Quantization &transformation) {
-	GtkWidget *table = gtk_table_new(2, 3, false);
-	GtkWidget *widget;
-	int table_y = 0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	value = widget = gtk_spin_button_new_with_range(2, 256, 1);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-	clip_top = widget = gtk_check_button_new_with_label(_("Clip top-end"));
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), transformation.clip_top);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	main = table;
-	gtk_widget_show_all(main);
-	g_object_ref(main);
+Quantization::Configuration::Configuration(IEventHandler &eventHandler, Quantization &transformation):
+	BaseConfiguration(eventHandler, transformation) {
+	Grid grid(2, 2);
+	grid.addLabel(_("Steps:"));
+	grid.add(m_steps = gtk_spin_button_new_with_range(2, 256, 1), true);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_steps), transformation.m_steps);
+	g_signal_connect(G_OBJECT(m_steps), "value-changed", G_CALLBACK(onChange), this);
+	grid.nextColumn();
+	grid.add(m_linearization = newCheckbox(_("Linearization"), transformation.m_linearization), true);
+	g_signal_connect(G_OBJECT(m_linearization), "toggled", G_CALLBACK(onChange), this);
+	setContent(grid);
 }
-Quantization::Configuration::~Configuration() {
-	g_object_unref(main);
-}
-GtkWidget *Quantization::Configuration::getWidget() {
-	return main;
-}
-void Quantization::Configuration::apply(dynv::Map &system) {
-	system.set<float>("value", static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(value))));
-	system.set<bool>("clip-top", gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(clip_top)));
+void Quantization::Configuration::apply(Transformation &transformation) {
+	auto &quantization = dynamic_cast<Quantization &>(transformation);
+	quantization.m_steps = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(m_steps));
+	quantization.m_linearization = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(m_linearization));
 }
 }

@@ -16,15 +16,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_INVERT_H_
-#define GPICK_TRANSFORMATION_INVERT_H_
+#pragma once
 #include "Transformation.h"
 namespace transformation {
 struct Invert: public Transformation {
-	Invert();
-	virtual ~Invert();
-protected:
-	virtual void apply(Color *input, Color *output);
+	virtual ~Invert() = default;
+	virtual Color apply(Color input) override;
 };
 }
-#endif /* GPICK_TRANSFORMATION_INVERT_H_ */

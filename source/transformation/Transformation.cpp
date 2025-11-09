@@ -17,29 +17,84 @@
  */
 
 #include "Transformation.h"
+#include "ColorVisionDeficiency.h"
+#include "GammaModification.h"
+#include "Quantization.h"
+#include "Invert.h"
+#include "I18N.h"
 #include "dynv/Map.h"
 namespace transformation {
-Transformation::Transformation(const char *name_, const char *readable_name_) {
-	name = name_;
-	readable_name = readable_name_;
+Transformation::Transformation():
+	m_description(nullptr) {
 }
-Transformation::~Transformation() {
+Color Transformation::apply(Color input) {
+	return input;
 }
-void Transformation::apply(Color *input, Color *output) {
-	*output = *input;
+const char *Transformation::id() const {
+	return m_description->id;
 }
-std::string Transformation::getName() const {
-	return name;
+const char *Transformation::name() const {
+	return m_description->name;
 }
-std::string Transformation::getReadableName() const {
-	return readable_name;
+void Transformation::setDescription(const Description &description) {
+	m_description = &description;
+}
+std::unique_ptr<Transformation> Transformation::create(std::string_view id) {
+	for (const auto &description: descriptions()) {
+		if (description.id == id) {
+			auto transformation = description.create();
+			transformation->setDescription(description);
+			return transformation;
+		}
+	}
+	return nullptr;
+}
+std::unique_ptr<Transformation> Transformation::copy() const {
+	return m_description->createCopy(*this);
 }
 void Transformation::serialize(dynv::Map &options) {
-	options.set("name", name);
+	options.set("name", m_description->id);
 }
 void Transformation::deserialize(const dynv::Map &options) {
 }
-std::unique_ptr<IConfiguration> Transformation::getConfiguration() {
-	return std::unique_ptr<IConfiguration>();
+std::unique_ptr<BaseConfiguration> Transformation::configuration(IEventHandler &eventHandler) {
+	return nullptr;
+}
+template<typename T>
+std::unique_ptr<Transformation> create() {
+	return std::make_unique<T>();
+}
+template<typename T>
+std::unique_ptr<Transformation> createCopy(const Transformation &transformation) {
+	return std::make_unique<T>(dynamic_cast<const T &>(transformation));
+}
+static const Description descriptionArray[] = {
+	{
+		"color_vision_deficiency",
+		_("Color vision deficiency"),
+		create<ColorVisionDeficiency>,
+		createCopy<ColorVisionDeficiency>,
+	},
+	{
+		"gamma_modification",
+		_("Gamma modification"),
+		create<GammaModification>,
+		createCopy<GammaModification>,
+	},
+	{
+		"quantization",
+		_("Quantization"),
+		create<Quantization>,
+		createCopy<Quantization>,
+	},
+	{
+		"invert",
+		_("Invert"),
+		create<Invert>,
+		createCopy<Invert>,
+	},
+};
+common::Span<const Description> descriptions() {
+	return common::Span(descriptionArray, sizeof(descriptionArray) / sizeof(descriptionArray[0]));
 }
 }

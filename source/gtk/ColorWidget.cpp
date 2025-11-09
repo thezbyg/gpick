@@ -149,9 +149,7 @@ void gtk_color_set_color(GtkColor* widget, const Color &color) {
 	GtkColorPrivate *ns = GET_PRIVATE(widget);
 	ns->color = color;
 	if (ns->transformation_chain){
-		Color c;
-		ns->transformation_chain->apply(&ns->color, &c);
-		ns->text_color = c.getContrasting();
+		ns->text_color = ns->transformation_chain->apply(ns->color).getContrasting();
 	}else{
 		ns->text_color = ns->color.getContrasting();
 	}
@@ -163,9 +161,7 @@ void gtk_color_set_color(GtkColor* widget, const Color &color, const std::string
 	if (ns->secondary_color){
 	}else{
 		if (ns->transformation_chain){
-			Color c;
-			ns->transformation_chain->apply(&ns->color, &c);
-			ns->text_color = c.getContrasting();
+			ns->text_color = ns->transformation_chain->apply(ns->color).getContrasting();
 		}else{
 			ns->text_color = ns->color.getContrasting();
 		}
@@ -185,9 +181,7 @@ void gtk_color_set_color(GtkColor* widget, const Color* color, const char* text)
 	if (ns->secondary_color){
 	}else{
 		if (ns->transformation_chain){
-			Color c;
-			ns->transformation_chain->apply(&ns->color, &c);
-			ns->text_color = c.getContrasting();
+			ns->text_color = ns->transformation_chain->apply(ns->color).getContrasting();
 		}else{
 			ns->text_color = ns->color.getContrasting();
 		}
@@ -220,9 +214,9 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 #endif
 	bool sensitive = gtk_widget_get_sensitive(widget);
 	if (ns->transformation_chain){
-		ns->transformation_chain->apply(&ns->color, &color);
+		color = ns->transformation_chain->apply(ns->color);
 		if (ns->split){
-			ns->transformation_chain->apply(&ns->split_color, &split_color);
+			split_color = ns->transformation_chain->apply(ns->split_color);
 		}
 	}else{
 		color = ns->color;
@@ -289,7 +283,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		pango_layout_set_wrap(layout, PANGO_WRAP_WORD_CHAR);
 		if (ns->transformation_chain){
 			if (ns->secondary_color){
-				ns->transformation_chain->apply(&ns->text_color, &color);
+				color = ns->transformation_chain->apply(ns->text_color);
 			}else{
 				color = ns->text_color;
 			}
@@ -345,9 +339,7 @@ void gtk_color_set_transformation_chain(GtkColor* widget, transformation::Chain 
 	ns->transformation_chain = chain;
 	if (!ns->secondary_color){
 		if (ns->transformation_chain){
-			Color c;
-			ns->transformation_chain->apply(&ns->color, &c);
-			ns->text_color = c.getContrasting();
+			ns->text_color = ns->transformation_chain->apply(ns->color).getContrasting();
 		}else{
 			ns->text_color = ns->color.getContrasting();
 		}

@@ -59,7 +59,7 @@ struct GlobalState {
 	Converters &converters();
 	Random *getRandom();
 	layout::Layouts &layouts();
-	transformation::Chain *getTransformationChain();
+	transformation::Chain &transformationChain();
 	GtkWidget *getStatusBar();
 	void setStatusBar(GtkWidget *status_bar);
 	IColorSource *getCurrentColorSource();

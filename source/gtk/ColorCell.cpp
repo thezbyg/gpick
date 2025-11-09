@@ -65,6 +65,7 @@ static void init(CustomCellRendererColor *cellrenderercolor)
 	cellrenderercolor->width = 32;
 	cellrenderercolor->height = 16;
 	cellrenderercolor->color = nullptr;
+	cellrenderercolor->transformationChain = nullptr;
 }
 static void class_init(CustomCellRendererColorClass *klass)
 {
@@ -121,6 +122,10 @@ void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint
 	cellcolor->width = width;
 	cellcolor->height = height;
 }
+void custom_cell_renderer_color_set_transformation_chain(GtkCellRenderer *cell, transformation::Chain *chain) {
+	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
+	cellcolor->transformationChain = chain;
+}
 #if GTK_MAJOR_VERSION >= 3
 static void get_preferred_width(GtkCellRenderer *cell, GtkWidget *widget, gint *minimum_size, gint *natural_size)
 {
@@ -141,6 +146,8 @@ static void render(GtkCellRenderer *cell, cairo_t *cr, GtkWidget *widget, const 
 	CustomCellRendererColor *cellcolor = CUSTOM_CELL_RENDERER_COLOR(cell);
 	cairo_rectangle(cr, cell_area->x, cell_area->y, cell_area->width, cell_area->height);
 	Color color = cellcolor->color->getColor();
+	if (cellcolor->transformationChain && *cellcolor->transformationChain)
+		color = cellcolor->transformationChain->apply(color);
 	cairo_set_source_rgb(cr, round(color.rgb.red * 255.0) / 255.0, round(color.rgb.green * 255.0) / 255.0, round(color.rgb.blue * 255.0) / 255.0);
 	cairo_fill(cr);
 }
@@ -177,6 +184,8 @@ static void render(GtkCellRenderer *cell, GdkDrawable *window, GtkWidget *widget
 	cairo_clip(cr);
 	cairo_rectangle(cr, expose_area->x, expose_area->y, expose_area->width, expose_area->height);
 	Color color = cellcolor->color->getColor();
+	if (cellcolor->transformationChain && *cellcolor->transformationChain)
+		color = cellcolor->transformationChain->apply(color);
 	cairo_set_source_rgb(cr, round(color.rgb.red * 255.0) / 255.0, round(color.rgb.green * 255.0) / 255.0, round(color.rgb.blue * 255.0) / 255.0);
 	cairo_fill(cr);
 	cairo_destroy(cr);

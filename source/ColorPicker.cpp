@@ -200,13 +200,6 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_swatch_set_transformation_chain(GTK_SWATCH(swatch_display), chain);
-		gtk_color_set_transformation_chain(GTK_COLOR(colorCode), chain);
-		gtk_color_set_transformation_chain(GTK_COLOR(contrastCheck), chain);
-		gtk_color_set_transformation_chain(GTK_COLOR(colorWidget), chain);
-	}
 	void setOptions() {
 		bool outOfGamutMask = options->getBool("out_of_gamut_mask", true);
 		int i = 0;
@@ -245,7 +238,10 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			updateColorWidget();
 			break;
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(swatch_display);
+			gtk_widget_queue_draw(colorCode);
+			gtk_widget_queue_draw(contrastCheck);
+			gtk_widget_queue_draw(colorWidget);
 			break;
 		case EventType::colorDictionaryUpdate:
 			updateDisplays(nullptr);
@@ -1007,7 +1003,11 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	args->main = main_hbox;
 	gtk_widget_show_all(main_hbox);
 	args->setOptions();
-	args->setTransformationChain();
+	auto *chain = &gs.transformationChain();
+	gtk_swatch_set_transformation_chain(GTK_SWATCH(args->swatch_display), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->colorCode), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->contrastCheck), chain);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->colorWidget), chain);
 	args->updateColorWidget();
 	return args;
 }

@@ -124,20 +124,16 @@ struct VariationsArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_color_set_transformation_chain(GTK_COLOR(allColors), chain);
-		for (int i = 0; i < Rows; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].primary), chain);
-			for (int j = 0; j < VariantWidgets; ++j) {
-				gtk_color_set_transformation_chain(GTK_COLOR(rows[i].variants[j]), chain);
-			}
-		}
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(allColors);
+			for (int i = 0; i < Rows; ++i) {
+				gtk_widget_queue_draw(rows[i].primary);
+				for (int j = 0; j < VariantWidgets; ++j) {
+					gtk_widget_queue_draw(rows[i].variants[j]);
+				}
+			}
 			break;
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
@@ -432,9 +428,15 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 			StandardDragDropHandler::forWidget(widget, &args->gs, &*args->editable[index]);
 		}
 	}
+	auto *chain = &gs.transformationChain();
+	gtk_color_set_transformation_chain(GTK_COLOR(args->allColors), chain);
 	for (int i = 0; i < Rows; ++i) {
 		args->rows[i].type = &common::matchById(types, options->getString(common::format("type{}", i), "lab_lightness"));
 		gtk_color_set_color(GTK_COLOR(args->rows[i].primary), options->getColor(common::format("color{}", i), Color(0.5f)), args->rows[i].type->symbol);
+		gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].primary), chain);
+		for (int j = 0; j < VariantWidgets; ++j) {
+			gtk_color_set_transformation_chain(GTK_COLOR(args->rows[i].variants[j]), chain);
+		}
 	}
 	gtk_color_set_color(GTK_COLOR(args->allColors), options->getColor("all_colors", Color(0.5f)));
 	hbox2 = gtk_hbox_new(false, 0);
@@ -452,7 +454,6 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
-	args->setTransformationChain();
 	return args;
 }
 void registerVariations(ColorSourceManager &csm) {

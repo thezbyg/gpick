@@ -18,71 +18,43 @@
 
 #include "GammaModification.h"
 #include "dynv/Map.h"
-#include "../uiUtilities.h"
-#include "../I18N.h"
+#include "uiUtilities.h"
+#include "I18N.h"
 #include <gtk/gtk.h>
 #include <cmath>
 namespace transformation {
-static const char *transformationId = "gamma_modification";
-const char *GammaModification::getId() {
-	return transformationId;
-}
-const char *GammaModification::getName() {
-	return _("Gamma modification");
-}
-void GammaModification::apply(Color *input, Color *output) {
-	Color linear_input, linear_output;
-	linear_input = input->linearRgb();
-	linear_output.rgb.red = std::pow(linear_input.rgb.red, value);
-	linear_output.rgb.green = std::pow(linear_input.rgb.green, value);
-	linear_output.rgb.blue = std::pow(linear_input.rgb.blue, value);
-	*output = linear_output.nonLinearRgbInplace().normalizeRgbInplace();
-	output->alpha = input->alpha;
+Color GammaModification::apply(Color input) {
+	input.linearRgbInplace();
+	input.red = std::pow(input.red, m_gamma);
+	input.green = std::pow(input.green, m_gamma);
+	input.blue = std::pow(input.blue, m_gamma);
+	input.nonLinearRgbInplace().normalizeRgbInplace();
+	return input;
 }
 GammaModification::GammaModification():
-	Transformation(transformationId, getName()) {
-	value = 1;
-}
-GammaModification::GammaModification(float value_):
-	Transformation(transformationId, getName()) {
-	value = value_;
-}
-GammaModification::~GammaModification() {
+	m_gamma(1) {
 }
 void GammaModification::serialize(dynv::Map &system) {
-	system.set("value", value);
+	system.set("gamma", m_gamma);
 	Transformation::serialize(system);
 }
 void GammaModification::deserialize(const dynv::Map &system) {
-	value = system.getFloat("value", 1);
+	m_gamma = system.getFloat("gamma", 1);
 }
-std::unique_ptr<IConfiguration> GammaModification::getConfiguration() {
-	return std::make_unique<Configuration>(*this);
+std::unique_ptr<BaseConfiguration> GammaModification::configuration(IEventHandler &eventHandler) {
+	return std::make_unique<Configuration>(eventHandler, *this);
 }
-GammaModification::Configuration::Configuration(GammaModification &transformation) {
-	GtkWidget *table = gtk_table_new(2, 2, false);
-	GtkWidget *widget;
-	int table_y = 0;
-
-	table_y = 0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Value:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	value = widget = gtk_spin_button_new_with_range(0, 100, 0.01);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), transformation.value);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-
-	main = table;
-	gtk_widget_show_all(main);
-
-	g_object_ref(main);
+GammaModification::Configuration::Configuration(IEventHandler &eventHandler, GammaModification &transformation):
+	BaseConfiguration(eventHandler, transformation) {
+	Grid grid(2, 1);
+	grid.addLabel(_("Gamma:"));
+	grid.add(m_gamma = gtk_spin_button_new_with_range(0, 100, 0.01), true);
+	gtk_spin_button_set_value(GTK_SPIN_BUTTON(m_gamma), transformation.m_gamma);
+	g_signal_connect(G_OBJECT(m_gamma), "value-changed", G_CALLBACK(onChange), this);
+	setContent(grid);
 }
-GammaModification::Configuration::~Configuration() {
-	g_object_unref(main);
-}
-GtkWidget *GammaModification::Configuration::getWidget() {
-	return main;
-}
-void GammaModification::Configuration::apply(dynv::Map &system) {
-	system.set("value", static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(value))));
+void GammaModification::Configuration::apply(Transformation &transformation) {
+	auto &gammaModification = dynamic_cast<GammaModification &>(transformation);
+	gammaModification.m_gamma = static_cast<float>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(m_gamma)));
 }
 }

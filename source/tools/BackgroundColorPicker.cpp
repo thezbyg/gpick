@@ -160,6 +160,11 @@ struct BackgroundColorPicker: public IEventHandler {
 		GtkWidget *vbox = gtk_vbox_new(false, 0);
 		layoutView = gtk_layout_preview_new();
 		gtk_layout_preview_set_fill(GTK_LAYOUT_PREVIEW(layoutView), true);
+		auto *chain = &gs.transformationChain();
+		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
+		for (auto &adjustableColor: adjustableColors) {
+			gtk_color_set_transformation_chain(GTK_COLOR(adjustableColor.colorWidget), chain);
+		}
 		layoutSystem = common::Ref<layout::System>(new layout::System());
 		backgroundStyle = common::Ref<layout::Style>(new layout::Style("background", Color(0.5f, 0.1f, 0.0f), 0));
 		textStyle = common::Ref<layout::Style>(new layout::Style("text", Color(1.0f, 1.0f, 1.0f), 0.2f));
@@ -240,13 +245,6 @@ struct BackgroundColorPicker: public IEventHandler {
 	virtual ~BackgroundColorPicker() {
 		gs.eventBus().unsubscribe(*this);
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
-		for (auto &adjustableColor: adjustableColors) {
-			gtk_color_set_transformation_chain(GTK_COLOR(adjustableColor.colorWidget), chain);
-		}
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::optionsUpdate:
@@ -256,7 +254,10 @@ struct BackgroundColorPicker: public IEventHandler {
 			}
 			break;
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(layoutView);
+			for (auto &adjustableColor: adjustableColors) {
+				gtk_widget_queue_draw(adjustableColor.colorWidget);
+			}
 			break;
 		case EventType::colorDictionaryUpdate:
 		case EventType::paletteChanged:

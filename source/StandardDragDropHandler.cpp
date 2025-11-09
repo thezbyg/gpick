@@ -309,6 +309,7 @@ static void onDragBegin(GtkWidget *widget, GdkDragContext *context, IReadonlyCol
 				auto text = converter ? converter->serialize(colorObjects[i]) : "";
 				Color color = colorObjects[i].getColor();
 				gtk_color_set_color(GTK_COLOR(colorWidget), &color, text.c_str());
+				gtk_color_set_transformation_chain(GTK_COLOR(colorWidget), &state.gs.transformationChain());
 				gtk_box_pack_start(GTK_BOX(hbox), colorWidget, true, true, 0);
 			}
 		}
@@ -328,6 +329,7 @@ static void onDragBegin(GtkWidget *widget, GdkDragContext *context, IReadonlyCol
 	auto text = state.gs.converters().serialize(colorObject, state.converterType);
 	Color color = colorObject.getColor();
 	gtk_color_set_color(GTK_COLOR(colorWidget), &color, text.c_str());
+	gtk_color_set_transformation_chain(GTK_COLOR(colorWidget), &state.gs.transformationChain());
 	gtk_drag_set_icon_widget(context, dragWindow, 0, 0);
 	gtk_widget_show_all(dragWindow);
 	state.dragWidget = dragWindow;

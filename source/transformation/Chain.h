@@ -16,59 +16,38 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_CHAIN_H_
-#define GPICK_TRANSFORMATION_CHAIN_H_
+#pragma once
 #include <vector>
 #include <memory>
-
 struct Color;
-/** \file source/transformation/Chain.h
- * \brief Struct for transformation object list handling.
- */
 namespace transformation {
 struct Transformation;
-/** \struct Chain
- * \brief Transformation object chain management struct.
- */
 struct Chain {
-	using Transformations = std::vector<std::unique_ptr<Transformation>>;
-	/**
-	* Chain constructor.
-	*/
 	Chain();
-	/**
-	* Apply transformation chain to color.
-	* @param[in] input Source color in RGB color space.
-	* @param[out] output Destination color in RGB color space.
-	*/
-	void apply(const Color *input, Color *output);
-	/**
-	* Add transformation object into the list.
-	* @param[in] transformation Transformation object.
-	*/
-	void add(std::unique_ptr<Transformation> transformation);
-	/**
-	* Remove transformation object from the list.
-	* @param[in] transformation Transformation object.
-	*/
-	void remove(const Transformation *transformation);
-	/**
-	* Clear transformation object list.
-	*/
-	void clear();
-	/**
-	* Enable/disable transformation chain.
-	* @param[in] enabled Enabled.
-	*/
-	void setEnabled(bool enabled);
-	/**
-	* Get the list of transformation objects.
-	* @return Transformation object list.
-	*/
-	Transformations &getAll();
+	Chain &operator=(const Chain &chain);
+	Chain &operator=(Chain &&chain);
+	operator bool() const;
+	Color apply(Color input);
+	void add(std::unique_ptr<Transformation> &&transformation);
+	void remove(const Transformation &transformation);
+	void move(const Transformation &transformation, size_t newIndex);
+	void enable(bool enabled);
+	bool enabled() const;
+	struct Iterator {
+		bool operator!=(const Iterator &iterator) const;
+		Iterator &operator++();
+		Transformation &operator*();
+	private:
+		Iterator(Chain &chain, size_t index);
+		Chain &m_chain;
+		size_t m_index;
+		friend struct Chain;
+	};
+	Iterator begin();
+	Iterator end();
 private:
-	Transformations m_transformationChain;
+	std::vector<std::unique_ptr<Transformation>> m_transformations;
 	bool m_enabled;
+	friend struct Iterator;
 };
 }
-#endif /* GPICK_TRANSFORMATION_CHAIN_H_ */

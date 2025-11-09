@@ -20,6 +20,7 @@
 #define GPICK_GTK_COLOR_CELL_H_
 
 #include <gtk/gtk.h>
+#include "transformation/Chain.h"
 struct ColorObject;
 
 #define CUSTOM_TYPE_CELL_RENDERER_COLOR (custom_cell_renderer_color_get_type())
@@ -35,6 +36,7 @@ struct CustomCellRendererColor
 	ColorObject *color;
 	int width;
 	int height;
+	transformation::Chain *transformationChain;
 };
 struct CustomCellRendererColorClass
 {
@@ -43,5 +45,6 @@ struct CustomCellRendererColorClass
 GType custom_cell_renderer_color_get_type();
 GtkCellRenderer *custom_cell_renderer_color_new();
 void custom_cell_renderer_color_set_size(GtkCellRenderer *cell, gint width, gint height);
+void custom_cell_renderer_color_set_transformation_chain(GtkCellRenderer *cell, transformation::Chain *chain);
 
 #endif /* GPICK_GTK_COLOR_CELL_H_ */

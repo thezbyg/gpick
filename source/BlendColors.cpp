@@ -32,6 +32,7 @@
 #include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
 #include "I18N.h"
+#include "EventBus.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
 
@@ -77,7 +78,7 @@ private:
 	int m_startPercent, m_endPercent, m_steps, m_stage;
 	bool m_isColorItem;
 };
-struct BlendColorsArgs: public IColorSource {
+struct BlendColorsArgs: public IColorSource, public IEventHandler {
 	GtkWidget *main, *mixType, *stepsSpinButton1, *stepsSpinButton2, *startColor, *middleColor, *endColor, *lastFocusedColor;
 	common::Ref<ColorList> previewColorList;
 	dynv::Ref options;
@@ -88,6 +89,7 @@ struct BlendColorsArgs: public IColorSource {
 		editables.emplace_back(*this, 0);
 		editables.emplace_back(*this, 1);
 		editables.emplace_back(*this, 2);
+		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 	}
 	virtual ~BlendColorsArgs() {
 		int steps1 = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(stepsSpinButton1));
@@ -104,6 +106,7 @@ struct BlendColorsArgs: public IColorSource {
 		gtk_color_get_color(GTK_COLOR(endColor), &color);
 		options->set("end_color", color);
 		gtk_widget_destroy(main);
+		gs.eventBus().unsubscribe(*this);
 	}
 	virtual std::string_view name() const override {
 		return "blend_colors";
@@ -114,6 +117,20 @@ struct BlendColorsArgs: public IColorSource {
 	}
 	virtual GtkWidget *getWidget() override {
 		return main;
+	}
+	virtual void onEvent(EventType eventType) override {
+		switch (eventType) {
+		case EventType::displayFiltersUpdate:
+			gtk_widget_queue_draw(GTK_WIDGET(startColor));
+			gtk_widget_queue_draw(GTK_WIDGET(middleColor));
+			gtk_widget_queue_draw(GTK_WIDGET(endColor));
+			break;
+		case EventType::colorDictionaryUpdate:
+		case EventType::optionsUpdate:
+		case EventType::convertersUpdate:
+		case EventType::paletteChanged:
+			break;
+		}
 	}
 	ColorObject colorObject;
 	void add(const Color &color, int step, BlendColorNameAssigner &nameAssigner) {
@@ -296,6 +313,9 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 0, 0);
 	StandardEventHandler::forWidget(widget, &args->gs, &args->editables[2]);
 	StandardDragDropHandler::forWidget(widget, &args->gs, &args->editables[2]);
+	gtk_color_set_transformation_chain(GTK_COLOR(args->startColor), &gs.transformationChain());
+	gtk_color_set_transformation_chain(GTK_COLOR(args->middleColor), &gs.transformationChain());
+	gtk_color_set_transformation_chain(GTK_COLOR(args->endColor), &gs.transformationChain());
 	table_y = 0;
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"), 0, 0, 0, 0), false, false, 0);

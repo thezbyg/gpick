@@ -23,16 +23,10 @@
 #include "uiUtilities.h"
 #include "I18N.h"
 #include <gtk/gtk.h>
-using namespace std;
 namespace transformation {
-static const char *transformationId = "color_vision_deficiency";
-const char *ColorVisionDeficiency::getId() {
-	return transformationId;
-}
-const char *ColorVisionDeficiency::getName() {
-	return _("Color vision deficiency");
-}
-const char *ColorVisionDeficiency::m_deficiencyTypeStrings[] = {
+namespace {
+using Type = ColorVisionDeficiency::Type;
+const char *deficiencyTypeStrings[] = {
 	"protanomaly",
 	"deuteranomaly",
 	"tritanomaly",
@@ -40,7 +34,16 @@ const char *ColorVisionDeficiency::m_deficiencyTypeStrings[] = {
 	"deuteranopia",
 	"tritanopia",
 };
-const size_t ColorVisionDeficiency::m_typeCount = sizeof(m_deficiencyTypeStrings) / sizeof(m_deficiencyTypeStrings[0]);
+const size_t typeCount = sizeof(deficiencyTypeStrings) / sizeof(deficiencyTypeStrings[0]);
+ColorVisionDeficiency::Type typeFromString(const std::string &typeString) {
+	for (size_t i = 0; i < typeCount; i++) {
+		if (typeString == deficiencyTypeStrings[i]) {
+			return static_cast<Type>(i);
+		}
+	}
+	return Type::protanomaly;
+}
+// clang-format off
 const math::Matrix3d protanomaly[11] = {
 	{ 1.000000, 0.000000, -0.000000, 0.000000, 1.000000, 0.000000, -0.000000, -0.000000, 1.000000 },
 	{ 0.856167, 0.182038, -0.038205, 0.029342, 0.955115, 0.015544, -0.002880, -0.001563, 1.004443 },
@@ -133,9 +136,37 @@ const math::Vector3d tritanopiaAbc[2] = {
 		rgbAnchor[0] * anchor[4] - rgbAnchor[1] * anchor[3],
 	},
 };
-void ColorVisionDeficiency::apply(Color *input, Color *output) {
+// clang-format on
+GtkWidget *createTypeList() {
+	GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
+	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
+	GtkWidget *widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
+	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
+	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
+	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 0, nullptr);
+	g_object_unref(GTK_TREE_MODEL(store));
+	struct {
+		const char *name;
+		Type type;
+	} types[] = {
+		{ _("Protanomaly"), Type::protanomaly },
+		{ _("Deuteranomaly"), Type::deuteranomaly },
+		{ _("Tritanomaly"), Type::tritanomaly },
+		{ _("Protanopia"), Type::protanopia },
+		{ _("Deuteranopia"), Type::deuteranopia },
+		{ _("Tritanopia"), Type::tritanopia },
+	};
+	GtkTreeIter iter1;
+	for (size_t i = 0; i < typeCount; ++i) {
+		gtk_list_store_append(store, &iter1);
+		gtk_list_store_set(store, &iter1, 0, types[i].name, 1, static_cast<int>(types[i].type), -1);
+	}
+	return widget;
+}
+}
+Color ColorVisionDeficiency::apply(Color input) {
 	Color linearInput, linearOutput;
-	linearInput = input->linearRgb();
+	linearInput = input.linearRgb();
 	math::Vector3d vi, vo1, vo2;
 	vi = linearInput.rgbVector<double>();
 	int index = static_cast<int>(std::floor(m_strength * 10));
@@ -180,116 +211,60 @@ void ColorVisionDeficiency::apply(Color *input, Color *output) {
 		linearOutput = math::mix(vi, lmsToRgb * lms, m_strength);
 		break;
 	default:
-		*output = *input;
-		return;
+		return input;
 	}
-	*output = linearOutput.nonLinearRgbInplace().normalizeRgbInplace();
-	output->alpha = input->alpha;
+	Color output = linearOutput.nonLinearRgbInplace().normalizeRgbInplace();
+	output.alpha = input.alpha;
+	return output;
 }
 ColorVisionDeficiency::ColorVisionDeficiency():
-	Transformation(transformationId, getName()),
 	m_type(Type::protanomaly),
 	m_strength(0.5f) {
 }
-ColorVisionDeficiency::ColorVisionDeficiency(Type type, float strength):
-	Transformation(transformationId, getName()),
-	m_type(type),
-	m_strength(strength) {
-}
-ColorVisionDeficiency::~ColorVisionDeficiency() {
-}
 void ColorVisionDeficiency::serialize(dynv::Map &system) {
 	system.set("strength", m_strength);
-	system.set("type", m_deficiencyTypeStrings[static_cast<int>(m_type)]);
+	system.set("type", deficiencyTypeStrings[static_cast<int>(m_type)]);
 	Transformation::serialize(system);
-}
-ColorVisionDeficiency::Type ColorVisionDeficiency::typeFromString(const std::string &typeString) {
-	for (size_t i = 0; i < m_typeCount; i++) {
-		if (typeString == m_deficiencyTypeStrings[i]) {
-			return static_cast<Type>(i);
-		}
-	}
-	return Type::protanomaly;
 }
 void ColorVisionDeficiency::deserialize(const dynv::Map &system) {
 	m_strength = system.getFloat("strength", 0.5f);
 	m_type = typeFromString(system.getString("type", "protanomaly"));
 }
-GtkWidget *ColorVisionDeficiency::createTypeList() {
-	GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
-	GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
-	GtkWidget *widget = gtk_combo_box_new_with_model(GTK_TREE_MODEL(store));
-	gtk_combo_box_set_add_tearoffs(GTK_COMBO_BOX(widget), 0);
-	gtk_cell_layout_pack_start(GTK_CELL_LAYOUT(widget), renderer, 0);
-	gtk_cell_layout_set_attributes(GTK_CELL_LAYOUT(widget), renderer, "text", 0, nullptr);
-	g_object_unref(GTK_TREE_MODEL(store));
-	struct {
-		const char *name;
-		Type type;
-	} types[] = {
-		{ _("Protanomaly"), Type::protanomaly },
-		{ _("Deuteranomaly"), Type::deuteranomaly },
-		{ _("Tritanomaly"), Type::tritanomaly },
-		{ _("Protanopia"), Type::protanopia },
-		{ _("Deuteranopia"), Type::deuteranopia },
-		{ _("Tritanopia"), Type::tritanopia },
-	};
-	GtkTreeIter iter1;
-	for (size_t i = 0; i < ColorVisionDeficiency::m_typeCount; ++i) {
-		gtk_list_store_append(store, &iter1);
-		gtk_list_store_set(store, &iter1, 0, types[i].name, 1, static_cast<int>(types[i].type), -1);
-	}
-	return widget;
+std::unique_ptr<BaseConfiguration> ColorVisionDeficiency::configuration(IEventHandler &eventHandler) {
+	return std::make_unique<Configuration>(eventHandler, *this);
 }
-std::unique_ptr<IConfiguration> ColorVisionDeficiency::getConfiguration() {
-	return std::make_unique<Configuration>(*this);
-}
-ColorVisionDeficiency::Configuration::Configuration(ColorVisionDeficiency &transformation) {
-	GtkWidget *table = gtk_table_new(2, 2, false);
-	GtkWidget *widget;
-	int table_y = 0;
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Type:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	m_type = widget = createTypeList();
+ColorVisionDeficiency::Configuration::Configuration(IEventHandler &eventHandler, ColorVisionDeficiency &transformation):
+	BaseConfiguration(eventHandler, transformation),
+	m_allowChangeNofications(false) {
+	Grid grid(2, 3);
+	grid.addLabel(_("Type:"));
+	grid.add(m_type = createTypeList(), true);
 	g_signal_connect(G_OBJECT(m_type), "changed", G_CALLBACK(onTypeComboBoxChange), this);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-	m_infoBar = widget = gtk_info_bar_new();
+	grid.nextColumn();
+	grid.add(m_infoBar = gtk_info_bar_new(), true);
 	m_infoLabel = gtk_label_new("");
 	gtk_label_set_line_wrap(GTK_LABEL(m_infoLabel), true);
 	gtk_label_set_justify(GTK_LABEL(m_infoLabel), GTK_JUSTIFY_LEFT);
 	gtk_label_set_single_line_mode(GTK_LABEL(m_infoLabel), false);
-	gtk_misc_set_alignment(GTK_MISC(m_infoLabel), 0, 0.5);
-	gtk_widget_set_size_request(m_infoLabel, 1, -1);
 	GtkWidget *contentArea = gtk_info_bar_get_content_area(GTK_INFO_BAR(m_infoBar));
 	gtk_container_add(GTK_CONTAINER(contentArea), m_infoLabel);
-	gtk_widget_show_all(m_infoBar);
-	g_signal_connect(G_OBJECT(m_infoLabel), "size-allocate", G_CALLBACK(onInfoLabelSizeAllocate), this);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-	gtk_combo_box_set_active(GTK_COMBO_BOX(m_type), static_cast<gint>(transformation.m_type));
-	gtk_table_attach(GTK_TABLE(table), gtk_label_aligned_new(_("Strength:"), 0, 0.5, 0, 0), 0, 1, table_y, table_y + 1, GTK_FILL, GTK_FILL, 5, 5);
-	m_strength = widget = gtk_hscale_new_with_range(0, 100, 1);
-	gtk_range_set_value(GTK_RANGE(widget), transformation.m_strength * 100);
-	gtk_table_attach(GTK_TABLE(table), widget, 1, 2, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GTK_FILL, 5, 0);
-	table_y++;
-	m_main = table;
-	gtk_widget_show_all(m_main);
-	g_object_ref(m_main);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(m_type), static_cast<int>(transformation.m_type));
+	grid.addLabel(_("Strength:"));
+	grid.add(m_strength = gtk_hscale_new_with_range(0, 100, 1), true);
+	gtk_range_set_value(GTK_RANGE(m_strength), transformation.m_strength * 100);
+	g_signal_connect(G_OBJECT(m_strength), "value-changed", G_CALLBACK(onChange), this);
+	setContent(grid);
+	m_allowChangeNofications = true;
 }
-ColorVisionDeficiency::Configuration::~Configuration() {
-	g_object_unref(m_main);
-}
-GtkWidget *ColorVisionDeficiency::Configuration::getWidget() {
-	return m_main;
-}
-void ColorVisionDeficiency::Configuration::apply(dynv::Map &options) {
-	options.set("strength", static_cast<float>(gtk_range_get_value(GTK_RANGE(m_strength)) / 100.0f));
+void ColorVisionDeficiency::Configuration::apply(Transformation &transformation) {
+	auto &colorVisionDeficiency = dynamic_cast<ColorVisionDeficiency &>(transformation);
+	colorVisionDeficiency.m_strength = static_cast<float>(gtk_range_get_value(GTK_RANGE(m_strength)) / 100.0f);
 	GtkTreeIter iter;
 	if (gtk_combo_box_get_active_iter(GTK_COMBO_BOX(m_type), &iter)) {
 		GtkTreeModel *model = gtk_combo_box_get_model(GTK_COMBO_BOX(m_type));
 		Type type;
 		gtk_tree_model_get(model, &iter, 1, &type, -1);
-		options.set("type", ColorVisionDeficiency::m_deficiencyTypeStrings[static_cast<size_t>(type)]);
+		colorVisionDeficiency.m_type = type;
 	}
 }
 void ColorVisionDeficiency::Configuration::onTypeComboBoxChange(GtkWidget *widget, ColorVisionDeficiency::Configuration *configuration) {
@@ -311,8 +286,7 @@ void ColorVisionDeficiency::Configuration::onTypeComboBoxChange(GtkWidget *widge
 		gtk_label_set_text(GTK_LABEL(configuration->m_infoLabel), "");
 	}
 	gtk_info_bar_set_message_type(GTK_INFO_BAR(configuration->m_infoBar), GTK_MESSAGE_INFO);
-}
-void ColorVisionDeficiency::Configuration::onInfoLabelSizeAllocate(GtkWidget *widget, GtkAllocation *allocation, ColorVisionDeficiency::Configuration *configuration) {
-	gtk_widget_set_size_request(configuration->m_infoLabel, allocation->width - 16, -1);
+	if (configuration->m_allowChangeNofications)
+		configuration->notifyChange();
 }
 }

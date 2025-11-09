@@ -16,35 +16,27 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_QUANTIZATION_H_
-#define GPICK_TRANSFORMATION_QUANTIZATION_H_
+#pragma once
 #include "Transformation.h"
 namespace transformation {
 struct Quantization;
 struct Quantization: public Transformation {
-	struct Configuration: public IConfiguration {
-		Configuration(Quantization &transformation);
-		virtual ~Configuration() override;
-		virtual GtkWidget *getWidget() override;
-		virtual void apply(dynv::Map &options) override;
+	struct Configuration: public BaseConfiguration {
+		Configuration(IEventHandler &eventHandler, Quantization &transformation);
+		virtual ~Configuration() override = default;
+		virtual void apply(Transformation &transformation) override;
 	private:
-		GtkWidget *main;
-		GtkWidget *value;
-		GtkWidget *clip_top;
+		GtkWidget *m_steps, *m_linearization;
 	};
-	static const char *getId();
-	static const char *getName();
 	Quantization();
-	Quantization(float value);
-	virtual ~Quantization() override;
+	virtual ~Quantization() = default;
 	virtual void serialize(dynv::Map &system) override;
 	virtual void deserialize(const dynv::Map &system) override;
-	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
+	virtual std::unique_ptr<BaseConfiguration> configuration(IEventHandler &eventHandler) override;
 private:
-	float value;
-	bool clip_top;
-	virtual void apply(Color *input, Color *output) override;
+	int m_steps;
+	bool m_linearization;
+	virtual Color apply(Color input) override;
 	friend struct Configuration;
 };
 }
-#endif /* TRANSFORMATION_GAMMA_MODIFICATION_H_ */

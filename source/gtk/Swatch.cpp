@@ -271,7 +271,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		if (i == ns->current_color)
 			continue;
 		if (ns->transformation_chain){
-			ns->transformation_chain->apply(&ns->color[i], &color);
+			color = ns->transformation_chain->apply(ns->color[i]);
 		}else{
 			color = ns->color[i];
 		}
@@ -280,7 +280,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 		cairo_fill(cr);
 	}
 	if (ns->transformation_chain){
-		ns->transformation_chain->apply(&ns->color[ns->current_color], &color);
+		color = ns->transformation_chain->apply(ns->color[ns->current_color]);
 	}else{
 		color = ns->color[ns->current_color];
 	}
@@ -289,7 +289,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	cairo_fill(cr);
 	//Draw center
 	if (ns->transformation_chain){
-		ns->transformation_chain->apply(&ns->color[0], &color);
+		color = ns->transformation_chain->apply(ns->color[0]);
 	}else{
 		color = ns->color[0];
 	}
@@ -301,9 +301,7 @@ static gboolean draw(GtkWidget *widget, cairo_t *cr)
 	for (int i = 1; i < 7; ++i) {
 		Color c;
 		if (ns->transformation_chain){
-			Color t;
-			ns->transformation_chain->apply(&ns->color[i], &t);
-			c = t.getContrasting();
+			c = ns->transformation_chain->apply(ns->color[i]).getContrasting();
 		}else{
 			c = ns->color[i].getContrasting();
 		}

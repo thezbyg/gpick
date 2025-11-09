@@ -16,26 +16,20 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
-#define GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_
+#pragma once
 #include "Transformation.h"
 #include <gtk/gtk.h>
 namespace transformation {
 struct ColorVisionDeficiency;
 struct ColorVisionDeficiency: public Transformation {
-	struct Configuration: public IConfiguration {
-		Configuration(ColorVisionDeficiency &transformation);
-		virtual ~Configuration() override;
-		virtual GtkWidget *getWidget() override;
-		virtual void apply(dynv::Map &options) override;
+	struct Configuration: public BaseConfiguration {
+		Configuration(IEventHandler &eventHandler, ColorVisionDeficiency &transformation);
+		virtual ~Configuration() override = default;
+		virtual void apply(Transformation &transformation) override;
 	private:
-		GtkWidget *m_main;
-		GtkWidget *m_infoBar;
-		GtkWidget *m_infoLabel;
-		GtkWidget *m_type;
-		GtkWidget *m_strength;
+		GtkWidget *m_infoBar, *m_infoLabel, *m_type, *m_strength;
+		bool m_allowChangeNofications;
 		static void onTypeComboBoxChange(GtkWidget *widget, Configuration *configuration);
-		static void onInfoLabelSizeAllocate(GtkWidget *widget, GtkAllocation *allocation, Configuration *configuration);
 	};
 	enum class Type {
 		protanomaly,
@@ -45,23 +39,15 @@ struct ColorVisionDeficiency: public Transformation {
 		deuteranopia,
 		tritanopia,
 	};
-	static const char *getId();
-	static const char *getName();
 	ColorVisionDeficiency();
-	ColorVisionDeficiency(Type type, float strength);
-	virtual ~ColorVisionDeficiency() override;
+	virtual ~ColorVisionDeficiency() = default;
 	virtual void serialize(dynv::Map &system) override;
 	virtual void deserialize(const dynv::Map &system) override;
-	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
-	Type typeFromString(const std::string &typeString);
+	virtual std::unique_ptr<BaseConfiguration> configuration(IEventHandler &eventHandler) override;
 private:
 	Type m_type;
 	float m_strength;
-	static const char *m_deficiencyTypeStrings[];
-	static const size_t m_typeCount;
-	virtual void apply(Color *input, Color *output) override;
-	static GtkWidget *createTypeList();
+	virtual Color apply(Color input) override;
 	friend struct Configuration;
 };
 }
-#endif /* GPICK_TRANSFORMATION_COLOR_VISION_DEFICIENCY_H_ */

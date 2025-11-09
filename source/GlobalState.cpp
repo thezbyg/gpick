@@ -30,7 +30,6 @@
 #include "layout/Layout.h"
 #include "layout/Layouts.h"
 #include "transformation/Chain.h"
-#include "transformation/Factory.h"
 #include "transformation/Transformation.h"
 #include "dynv/Map.h"
 #include "lua/Script.h"
@@ -85,7 +84,7 @@ struct GlobalState::Impl {
 	Converters m_converters;
 	layout::Layouts m_layouts;
 	lua::Callbacks m_callbacks;
-	transformation::Chain *m_transformationChain;
+	transformation::Chain m_transformationChain;
 	GtkWidget *m_statusBar;
 	IColorSource *m_colorSource;
 	EventBus m_eventBus;
@@ -96,15 +95,12 @@ struct GlobalState::Impl {
 		m_sampler(nullptr),
 		m_screenReader(nullptr),
 		m_random(nullptr),
-		m_transformationChain(nullptr),
 		m_statusBar(nullptr),
 		m_colorSource(nullptr),
 		m_converterOptions(m_settings) {
 	}
 	virtual ~Impl() {
 		m_eventBus.unsubscribe(m_converterOptions);
-		if (m_transformationChain != nullptr)
-			delete m_transformationChain;
 		if (m_random != nullptr)
 			random_destroy(m_random);
 		if (m_colorNames != nullptr)
@@ -231,23 +227,20 @@ struct GlobalState::Impl {
 		return true;
 	}
 	bool loadTransformationChain() {
-		if (m_transformationChain != nullptr) return false;
-		transformation::Chain *chain = new transformation::Chain();
-		chain->setEnabled(m_settings.getBool("gpick.transformations.enabled", false));
+		m_transformationChain.enable(m_settings.getBool("gpick.transformations.enabled", false));
 		auto items = m_settings.getMaps("gpick.transformations.items");
 		for (auto values: items) {
 			if (!values)
 				continue;
-			auto name = values->getString("name", "");
-			if (name.empty())
+			auto id = values->getString("name", "");
+			if (id.empty())
 				continue;
-			auto transformation = transformation::Factory::create(name);
+			auto transformation = transformation::Transformation::create(id);
 			if (!transformation)
 				continue;
 			transformation->deserialize(*values);
-			chain->add(std::move(transformation));
+			m_transformationChain.add(std::move(transformation));
 		}
-		m_transformationChain = chain;
 		return true;
 	}
 	bool loadAll() {
@@ -315,7 +308,7 @@ Converters &GlobalState::converters() {
 layout::Layouts &GlobalState::layouts() {
 	return m_impl->m_layouts;
 }
-transformation::Chain *GlobalState::getTransformationChain() {
+transformation::Chain &GlobalState::transformationChain() {
 	return m_impl->m_transformationChain;
 }
 GtkWidget *GlobalState::getStatusBar() {

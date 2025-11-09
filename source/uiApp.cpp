@@ -285,25 +285,21 @@ static void app_update_program_name(AppArgs *args)
 static void show_dialog_converter(GtkWidget *widget, AppArgs *args)
 {
 	dialog_converter_show(GTK_WINDOW(args->window), args->gs);
-	return;
 }
 
 static void show_dialog_transformations(GtkWidget *widget, AppArgs *args)
 {
-	dialog_transformations_show(GTK_WINDOW(args->window), args->gs);
-	return;
+	dialog_transformations_show(GTK_WINDOW(args->window), *args->gs);
 }
 
 static void show_dialog_options(GtkWidget *widget, AppArgs *args)
 {
 	dialog_options_show(GTK_WINDOW(args->window), args->gs);
-	return;
 }
 
 static void show_dialog_color_dictionaries(GtkWidget *widget, AppArgs *args)
 {
 	dialog_color_dictionaries_show(GTK_WINDOW(args->window), *args->gs);
-	return;
 }
 
 static void menu_file_new(GtkWidget *widget, AppArgs *args)

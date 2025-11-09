@@ -147,7 +147,7 @@ void Text::draw(Context &context, const math::Rectanglef &parentRect) {
 			pango_font_description_set_absolute_size(fontDescription, style()->fontSize() * drawRect.getHeight() * PANGO_SCALE);
 			Color color = style()->color();
 			if (context.getTransformationChain()) {
-				context.getTransformationChain()->apply(&color, &color);
+				color = context.getTransformationChain()->apply(color);
 			}
 			cairo_set_source_rgba(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0, color.alpha);
 			textOffset = style()->textOffset() * math::Vector2f(drawRect.getWidth(), drawRect.getHeight());
@@ -202,7 +202,7 @@ void Fill::draw(Context &context, const math::Rectanglef &parentRect) {
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {
-		context.getTransformationChain()->apply(&color, &color);
+		color = context.getTransformationChain()->apply(color);
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	cairo_rectangle(cr, drawRect.getX(), drawRect.getY(), drawRect.getWidth(), drawRect.getHeight());
@@ -241,7 +241,7 @@ void Circle::draw(Context &context, const math::Rectanglef &parentRect) {
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {
-		context.getTransformationChain()->apply(&color, &color);
+		color = context.getTransformationChain()->apply(color);
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	cairo_save(cr);
@@ -300,7 +300,7 @@ void Pie::draw(Context &context, const math::Rectanglef &parentRect) {
 	cairo_t *cr = context.getCairo();
 	Color color = style()->color();
 	if (context.getTransformationChain()) {
-		context.getTransformationChain()->apply(&color, &color);
+		color = context.getTransformationChain()->apply(color);
 	}
 	cairo_set_source_rgb(cr, boost::math::round(color.rgb.red * 255.0) / 255.0, boost::math::round(color.rgb.green * 255.0) / 255.0, boost::math::round(color.rgb.blue * 255.0) / 255.0);
 	cairo_save(cr);

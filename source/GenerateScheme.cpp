@@ -117,12 +117,6 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		for (int i = 0; i < maxColors; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(items[i].widget), chain);
-		}
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::optionsUpdate:
@@ -130,7 +124,9 @@ struct GenerateSchemeArgs: public IColorSource, public IEventHandler {
 			update();
 			break;
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			for (int i = 0; i < maxColors; ++i) {
+				gtk_widget_queue_draw(items[i].widget);
+			}
 			break;
 		case EventType::colorDictionaryUpdate:
 		case EventType::paletteChanged:
@@ -567,7 +563,10 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
-	args->setTransformationChain();
+	auto *chain = &gs.transformationChain();
+	for (int i = 0; i < maxColors; ++i) {
+		gtk_color_set_transformation_chain(GTK_COLOR(args->items[i].widget), chain);
+	}
 	return args;
 }
 void registerGenerateScheme(ColorSourceManager &csm) {

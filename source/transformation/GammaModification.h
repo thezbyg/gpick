@@ -16,33 +16,26 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_
-#define GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_
+#pragma once
 #include "Transformation.h"
 namespace transformation {
 struct GammaModification;
 struct GammaModification: public Transformation {
-	struct Configuration: public IConfiguration {
-		Configuration(GammaModification &transformation);
-		virtual ~Configuration() override;
-		virtual GtkWidget *getWidget() override;
-		virtual void apply(dynv::Map &options) override;
+	struct Configuration: public BaseConfiguration {
+		Configuration(IEventHandler &eventHandler, GammaModification &transformation);
+		virtual ~Configuration() override = default;
+		virtual void apply(Transformation &transformation) override;
 	private:
-		GtkWidget *main;
-		GtkWidget *value;
+		GtkWidget *m_gamma;
 	};
-	static const char *getId();
-	static const char *getName();
 	GammaModification();
-	GammaModification(float value);
-	virtual ~GammaModification() override;
+	virtual ~GammaModification() = default;
 	virtual void serialize(dynv::Map &system) override;
 	virtual void deserialize(const dynv::Map &system) override;
-	virtual std::unique_ptr<IConfiguration> getConfiguration() override;
+	virtual std::unique_ptr<BaseConfiguration> configuration(IEventHandler &eventHandler) override;
 private:
-	float value;
-	virtual void apply(Color *input, Color *output) override;
+	float m_gamma;
+	virtual Color apply(Color input) override;
 	friend struct Configuration;
 };
 }
-#endif /* GPICK_TRANSFORMATION_GAMMA_MODIFICATION_H_ */

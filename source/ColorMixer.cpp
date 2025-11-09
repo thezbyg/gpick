@@ -123,18 +123,14 @@ struct ColorMixerArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_color_set_transformation_chain(GTK_COLOR(secondaryColor), chain);
-		for (int i = 0; i < Rows; ++i) {
-			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].input), chain);
-			gtk_color_set_transformation_chain(GTK_COLOR(rows[i].output), chain);
-		}
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(secondaryColor);
+			for (int i = 0; i < Rows; ++i) {
+				gtk_widget_queue_draw(rows[i].input);
+				gtk_widget_queue_draw(rows[i].output);
+			}
 			break;
 		case EventType::colorDictionaryUpdate:
 		case EventType::optionsUpdate:
@@ -352,12 +348,15 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	StandardEventHandler::forWidget(widget, &args->gs, &*args->editable[0]);
 	StandardDragDropHandler::forWidget(widget, &args->gs, &*args->editable[0]);
 	gtk_widget_set_size_request(widget, 50, 50);
+	auto *chain = &gs.transformationChain();
+	gtk_color_set_transformation_chain(GTK_COLOR(args->secondaryColor), chain);
 	for (intptr_t i = 0; i < Rows; ++i) {
 		for (intptr_t j = 0; j < 2; ++j) {
 			widget = gtk_color_new();
 			gtk_color_set_rounded(GTK_COLOR(widget), true);
 			gtk_color_set_hcenter(GTK_COLOR(widget), true);
 			gtk_color_set_roundness(GTK_COLOR(widget), 5);
+			gtk_color_set_transformation_chain(GTK_COLOR(widget), chain);
 			gtk_table_attach(GTK_TABLE(args->colorPreviews), widget, j * 2, j * 2 + 1, i, i + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
 			if (j) {
 				args->rows[i].output = widget;
@@ -397,7 +396,6 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_widget_show_all(hbox);
 	args->update();
 	args->main = hbox;
-	args->setTransformationChain();
 	return args;
 }
 void registerColorMixer(ColorSourceManager &csm) {

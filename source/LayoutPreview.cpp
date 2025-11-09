@@ -87,14 +87,10 @@ struct LayoutPreviewArgs: public IColorSource, public IEventHandler {
 	virtual GtkWidget *getWidget() override {
 		return main;
 	}
-	void setTransformationChain() {
-		auto chain = gs.getTransformationChain();
-		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
-	}
 	virtual void onEvent(EventType eventType) override {
 		switch (eventType) {
 		case EventType::displayFiltersUpdate:
-			setTransformationChain();
+			gtk_widget_queue_draw(layoutView);
 			break;
 		case EventType::optionsUpdate:
 		case EventType::convertersUpdate:
@@ -463,6 +459,7 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	gtk_table_attach(GTK_TABLE(table), scrolled, 0, 3, table_y, table_y + 1, GtkAttachOptions(GTK_FILL | GTK_EXPAND), GtkAttachOptions(GTK_FILL | GTK_EXPAND), 0, 0);
 	gtk_scrolled_window_add_with_viewport(GTK_SCROLLED_WINDOW(scrolled), args->layoutView = gtk_layout_preview_new());
+	gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(args->layoutView), &gs.transformationChain());
 	g_signal_connect_after(G_OBJECT(args->layoutView), "button-press-event", G_CALLBACK(onButtonPress), args.get());
 	StandardEventHandler::forWidget(args->layoutView, &args->gs, &*args->editable);
 	StandardDragDropHandler::forWidget(args->layoutView, &args->gs, &*args->editable);
@@ -490,7 +487,6 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	}
 	gtk_widget_show_all(vbox);
 	args->main = vbox;
-	args->setTransformationChain();
 	return args;
 }
 void registerLayoutPreview(ColorSourceManager &csm) {
