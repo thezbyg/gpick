@@ -26,6 +26,10 @@
 #include "transformation/Chain.h"
 #include "transformation/Transformation.h"
 using namespace transformation;
+struct TransformationsArgs;
+namespace {
+static TransformationsArgs *visibleDialog = nullptr;
+}
 struct TransformationsArgs: public transformation::IEventHandler {
 	static constexpr int idColumn = 0;
 	static constexpr int pointerColumn = 0;
@@ -40,12 +44,11 @@ struct TransformationsArgs: public transformation::IEventHandler {
 		selectedTransformation(nullptr),
 		options(options),
 		gs(gs) {
-		dialog = gtk_dialog_new_with_buttons(_("Display filters"), parent, GtkDialogFlags(GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT),
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OK, GTK_RESPONSE_OK,
-			nullptr);
+		dialog = gtk_dialog_new_with_buttons(_("Display filters"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OK, GTK_RESPONSE_OK, nullptr);
 		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
 		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_OK, GTK_RESPONSE_CANCEL, -1);
+		g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(onDestroy), this);
+		g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(onResponse), this);
 		GtkWidget *vbox = gtk_vbox_new(false, 5);
 		enableToggle = gtk_check_button_new_with_mnemonic(_("_Enable display filters"));
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(enableToggle), options->getBool("enabled", false));
@@ -99,8 +102,8 @@ struct TransformationsArgs: public transformation::IEventHandler {
 			updateRow(model, iterator, transformation);
 		}
 		gtk_paned_set_position(GTK_PANED(paned), options->getInt32("paned_position", -1));
-		gtk_widget_show_all(vbox);
 		setDialogContent(dialog, vbox);
+		gtk_widget_show_all(dialog);
 	}
 	virtual ~TransformationsArgs() {
 		gint width, height;
@@ -108,14 +111,8 @@ struct TransformationsArgs: public transformation::IEventHandler {
 		options->set("window.width", width);
 		options->set("window.height", height);
 		options->set("paned_position", gtk_paned_get_position(GTK_PANED(paned)));
-		gtk_widget_destroy(dialog);
 	}
-	void run() {
-		if (gtk_dialog_run(GTK_DIALOG(dialog)) != GTK_RESPONSE_OK) {
-			gs.transformationChain() = std::move(savedChainState);
-			gs.eventBus().trigger(EventType::displayFiltersUpdate);
-			return;
-		}
+	void apply() {
 		finishConfiguration();
 		bool enabled = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(enableToggle));
 		options->set("enabled", enabled);
@@ -138,6 +135,10 @@ struct TransformationsArgs: public transformation::IEventHandler {
 			valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &iterator);
 		}
 		options->set("items", configurations);
+	}
+	void cancel() {
+		gs.transformationChain() = std::move(savedChainState);
+		gs.eventBus().trigger(EventType::displayFiltersUpdate);
 	}
 	GtkWidget *newList(bool selectionList) {
 		GtkWidget *view = gtk_tree_view_new();
@@ -306,6 +307,22 @@ struct TransformationsArgs: public transformation::IEventHandler {
 		auto *indices = gtk_tree_path_get_indices(path);
 		args->gs.transformationChain().move(*transformation, indices[0]);
 	}
+	static void onDestroy(GtkWidget *, TransformationsArgs *args) {
+		delete args;
+	}
+	static void onResponse(GtkWidget *widget, gint responseId, TransformationsArgs *args) {
+		switch (responseId) {
+		case GTK_RESPONSE_OK:
+			args->apply();
+			break;
+		case GTK_RESPONSE_DELETE_EVENT:
+		case GTK_RESPONSE_CANCEL:
+			args->cancel();
+			break;
+		}
+		gtk_widget_destroy(widget);
+		visibleDialog = nullptr;
+	}
 	virtual void onConfigurationChange(BaseConfiguration &configuration, Transformation &transformation) override {
 		configuration.apply(transformation);
 		if (gs.transformationChain().enabled())
@@ -313,6 +330,9 @@ struct TransformationsArgs: public transformation::IEventHandler {
 	}
 };
 void dialog_transformations_show(GtkWindow *parent, GlobalState &gs) {
-	TransformationsArgs dialog(parent, gs, gs.settings().getOrCreateMap("gpick.transformations"));
-	dialog.run();
+	if (visibleDialog) {
+		gtk_window_present(GTK_WINDOW(visibleDialog->dialog));
+		return;
+	}
+	visibleDialog = new TransformationsArgs(parent, gs, gs.settings().getOrCreateMap("gpick.transformations"));
 }
