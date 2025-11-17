@@ -811,7 +811,7 @@ static void view_new_temporary_palette_cb(GtkWidget *widget, AppArgs* args)
 
 static void palette_from_image_cb(GtkWidget *widget, AppArgs* args)
 {
-	tools_palette_from_image_show(GTK_WINDOW(args->window), args->gs);
+	tools_palette_from_image_show(GTK_WINDOW(args->window), *args->gs);
 }
 static void color_space_sampler_cb(GtkWidget *widget, AppArgs* args)
 {

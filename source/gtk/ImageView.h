@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2025, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -18,5 +18,18 @@
 
 #pragma once
 #include <gtk/gtk.h>
-struct GlobalState;
-void tools_palette_from_image_show(GtkWindow *parent, GlobalState &gs);
+#define GTK_TYPE_IMAGE_VIEW (gtk_image_view_get_type())
+#define GTK_IMAGE_VIEW(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GTK_TYPE_IMAGE_VIEW, GtkImageView))
+#define GTK_IMAGE_VIEW_CLASS(obj) (G_TYPE_CHECK_CLASS_CAST((obj), GTK_IMAGE_VIEW, GtkImageViewClass))
+#define GTK_IS_IMAGE_VIEW(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GTK_TYPE_IMAGE_VIEW))
+#define GTK_IS_IMAGE_VIEW_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), GTK_TYPE_IMAGE_VIEW))
+#define GTK_IMAGE_VIEW_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), GTK_TYPE_IMAGE_VIEW, GtkImageViewClass))
+struct GtkImageView {
+	GtkDrawingArea parent;
+};
+struct GtkImageViewClass {
+	GtkDrawingAreaClass parentClass;
+};
+GtkWidget *gtk_image_view_new();
+void gtk_image_view_set_image(GtkImageView *imageView, GdkPixbuf *image);
+GType gtk_image_view_get_type();

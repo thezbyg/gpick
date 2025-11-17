@@ -27,14 +27,15 @@
 #include "dynv/Map.h"
 #include "math/OctreeColorQuantization.h"
 #include "common/Guard.h"
+#include "gtk/ImageView.h"
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <thread>
 #include <mutex>
-
-struct PaletteColorNameAssigner: public ToolColorNameAssigner {
-	PaletteColorNameAssigner(GlobalState &gs):
+namespace {
+struct NameAssigner: public ToolColorNameAssigner {
+	NameAssigner(GlobalState &gs):
 		ToolColorNameAssigner(gs) {
 		m_index = 0;
 	}
@@ -53,30 +54,131 @@ protected:
 	std::string_view m_fileName;
 	int m_index;
 };
+enum struct Type {
+	image,
+	screenshot,
+};
 struct PaletteFromImageArgs {
-	GtkWidget *fileBrowser, *rangeColors, *previewExpander;
-	std::string filename, previousFilename;
+	GtkWindow *parent;
+	GtkWidget *dialog, *fileBrowser, *rangeColors, *previewExpander, *imageView, *screenshotButton;
+	std::string filename, name;
 	uint32_t numberOfColors;
 	math::OctreeColorQuantization octree;
 	common::Ref<ColorList> previewColorList;
 	dynv::Ref options;
-	GlobalState *gs;
-	static uint8_t toUint8(float value) {
+	GlobalState &gs;
+	PaletteFromImageArgs(GtkWindow *parent, GlobalState &gs):
+		parent(parent),
+		gs(gs) {
+		options = gs.settings().getOrCreateMap("gpick.tools.palette_from_image");
+		dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
+		gtk_window_set_default_size(GTK_WINDOW(dialog), options->getInt32("window.width", -1), options->getInt32("window.height", -1));
+		gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
+
+		Grid grid(2, 5);
+		grid.addLabel(_("Image:"));
+		fileBrowser = grid.add(gtk_file_chooser_button_new(_("Image file"), GTK_FILE_CHOOSER_ACTION_OPEN), true);
+		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fileBrowser), options->getString("current_folder", "").c_str());
+		g_signal_connect(G_OBJECT(fileBrowser), "file-set", G_CALLBACK(onImageSelect), this);
+		auto selectedFilter = options->getString("filter", "all_images");
+		GtkFileFilter *filter = gtk_file_filter_new();
+		gtk_file_filter_set_name(filter, _("All files"));
+		gtk_file_filter_add_pattern(filter, "*");
+		g_object_set_data_full(G_OBJECT(filter), "name", (void *)"all_files", GDestroyNotify(nullptr));
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fileBrowser), filter);
+		if ("all_files" == selectedFilter)
+			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(fileBrowser), filter);
+		GtkFileFilter *allImageFilter = gtk_file_filter_new();
+		gtk_file_filter_set_name(allImageFilter, _("All images"));
+		g_object_set_data_full(G_OBJECT(allImageFilter), "name", (void *)"all_images", GDestroyNotify(nullptr));
+		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fileBrowser), allImageFilter);
+		if ("all_images" == selectedFilter)
+			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(fileBrowser), allImageFilter);
+		std::stringstream ss;
+		GSList *formats = gdk_pixbuf_get_formats();
+		for (auto *i = formats; i; i = g_slist_next(i)) {
+			GdkPixbufFormat *format = static_cast<GdkPixbufFormat *>(g_slist_nth_data(i, 0));
+			filter = gtk_file_filter_new();
+			gtk_file_filter_set_name(filter, gdk_pixbuf_format_get_description(format));
+			gchar **extensions = gdk_pixbuf_format_get_extensions(format);
+			if (extensions) {
+				for (int j = 0; extensions[j]; j++) {
+					ss.str("");
+					ss << "*." << extensions[j];
+					auto pattern = ss.str();
+					gtk_file_filter_add_pattern(filter, pattern.c_str());
+					gtk_file_filter_add_pattern(allImageFilter, pattern.c_str());
+				}
+				g_strfreev(extensions);
+			}
+			g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(nullptr));
+			gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(fileBrowser), filter);
+			if (gdk_pixbuf_format_get_name(format) == selectedFilter)
+				gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(fileBrowser), filter);
+		}
+		if (formats)
+			g_slist_free(formats);
+		grid.nextColumn();
+		grid.add(screenshotButton = gtk_button_new_with_label(_("Take a screenshot")));
+		g_signal_connect(G_OBJECT(screenshotButton), "clicked", G_CALLBACK(onScreenshot), this);
+		grid.add(imageView = gtk_image_view_new(), true, 2);
+		gtk_widget_set_size_request(GTK_WIDGET(imageView), 320, 240);
+		grid.addLabel(_("Colors:"));
+		rangeColors = grid.add(gtk_spin_button_new_with_range(1, 1000, 1), true);
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(rangeColors), options->getInt32("colors", 3));
+		g_signal_connect(G_OBJECT(rangeColors), "value-changed", G_CALLBACK(onUpdate), this);
+		previewExpander = grid.add(palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
+		gtk_widget_show_all(grid);
+		setDialogContent(dialog, grid);
+		g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(onDestroy), this);
+		g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(onResponse), this);
+		gtk_widget_show(dialog);
+	}
+	inline uint8_t toUint8(float value) {
 		return static_cast<uint8_t>(std::max(std::min(static_cast<int>(value * 256), 255), 0));
 	}
-	void processImage() {
-		previousFilename = filename;
-		octree.clear();
-		GError *error = nullptr;
-		GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file(filename.c_str(), &error);
-		if (error) {
-			std::cout << error->message << '\n';
-			g_error_free(error);
-			return;
+	void processImage(Type type) {
+		GdkPixbuf *pixbuf = nullptr;
+		if (type == Type::screenshot) {
+			name = _("screenshot");
+			GdkScreen *screen;
+			GdkModifierType state;
+			int x, y;
+			gdk_display_get_pointer(gdk_display_get_default(), &screen, &x, &y, &state);
+			GdkRectangle monitorGeometry;
+			gdk_screen_get_monitor_geometry(screen, gdk_screen_get_monitor_at_point(screen, x, y), &monitorGeometry);
+			pixbuf = gdk_pixbuf_get_from_window(gdk_screen_get_root_window(screen), monitorGeometry.x, monitorGeometry.y, monitorGeometry.width, monitorGeometry.height);
+		} else {
+			if (gchar *newFilename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(fileBrowser)); newFilename) {
+				filename = newFilename;
+				name = g_path_get_basename(newFilename);
+				g_free(newFilename);
+			} else {
+				filename.clear();
+				name.clear();
+			}
+			GError *error = nullptr;
+			pixbuf = gdk_pixbuf_new_from_file(filename.c_str(), &error);
+			if (error) {
+				std::cout << error->message << '\n';
+				g_error_free(error);
+				return;
+			}
 		}
-		int channels = gdk_pixbuf_get_n_channels(pixbuf);
+		octree.clear();
 		int width = gdk_pixbuf_get_width(pixbuf);
 		int height = gdk_pixbuf_get_height(pixbuf);
+		if (width > 320 || height > 240) {
+			double scale = std::min(320 / static_cast<double>(width), 240 / static_cast<double>(height));
+			GdkPixbuf *scaledPixbuf = gdk_pixbuf_scale_simple(pixbuf, static_cast<int>(width * scale), static_cast<int>(height * scale), GDK_INTERP_BILINEAR);
+			if (scaledPixbuf) {
+				gtk_image_view_set_image(GTK_IMAGE_VIEW(imageView), scaledPixbuf);
+				g_object_unref(scaledPixbuf);
+			}
+		} else {
+			gtk_image_view_set_image(GTK_IMAGE_VIEW(imageView), pixbuf);
+		}
+		int channels = gdk_pixbuf_get_n_channels(pixbuf);
 		int stride = gdk_pixbuf_get_rowstride(pixbuf);
 		guchar *imageData = gdk_pixbuf_get_pixels(pixbuf);
 		if (width * height < (1 << 16) || std::max(1u, std::thread::hardware_concurrency()) == 1) {
@@ -146,11 +248,8 @@ struct PaletteFromImageArgs {
 	}
 	void update(bool preview) {
 		int index = 0;
-		gchar *name = g_path_get_basename(filename.c_str());
-		PaletteColorNameAssigner nameAssigner(*gs);
-		if (!filename.empty() && previousFilename != filename)
-			processImage();
-		ColorList &colorList = preview ? *previewColorList : gs->colorList();
+		NameAssigner nameAssigner(gs);
+		ColorList &colorList = preview ? *previewColorList : gs.colorList();
 		math::OctreeColorQuantization reducedOctree(octree);
 		reducedOctree.reduce(numberOfColors);
 		common::Guard colorListGuard = colorList.changeGuard();
@@ -163,45 +262,56 @@ struct PaletteFromImageArgs {
 			index++;
 		});
 	}
-	void getSettings() {
-		gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(fileBrowser));
-		if (filename) {
-			this->filename = filename;
-			g_free(filename);
-		} else {
-			this->filename.clear();
-		}
+	void getSettings(bool save) {
 		numberOfColors = static_cast<int>(gtk_spin_button_get_value(GTK_SPIN_BUTTON(rangeColors)));
-	}
-	void saveSettings() {
-		options->set("colors", static_cast<int32_t>(numberOfColors));
-		gchar *currentFolder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(fileBrowser));
-		if (currentFolder) {
-			options->set("current_folder", currentFolder);
-			g_free(currentFolder);
+		if (save) {
+			options->set("colors", static_cast<int32_t>(numberOfColors));
+			gchar *currentFolder = gtk_file_chooser_get_current_folder(GTK_FILE_CHOOSER(fileBrowser));
+			if (currentFolder) {
+				options->set("current_folder", currentFolder);
+				g_free(currentFolder);
+			}
+			GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(fileBrowser));
+			if (filter) {
+				const char *filterName = static_cast<const char *>(g_object_get_data(G_OBJECT(filter), "name"));
+				options->set("filter", filterName);
+			}
+			gint width, height;
+			gtk_window_get_size(GTK_WINDOW(dialog), &width, &height);
+			options->set("window.width", width);
+			options->set("window.height", height);
+			options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(previewExpander)));
 		}
-		GtkFileFilter *filter = gtk_file_chooser_get_filter(GTK_FILE_CHOOSER(fileBrowser));
-		if (filter) {
-			const char *filterName = static_cast<const char *>(g_object_get_data(G_OBJECT(filter), "name"));
-			options->set("filter", filterName);
-		}
 	}
-	static void onUpdate(GtkWidget *widget, PaletteFromImageArgs *args) {
+	static void onUpdate(GtkWidget *, PaletteFromImageArgs *args) {
 		args->previewColorList->removeAll();
-		args->getSettings();
+		args->getSettings(false);
 		args->update(true);
 	}
-	static void onDestroy(GtkWidget *widget, PaletteFromImageArgs *args) {
+	static void onImageSelect(GtkWidget *, PaletteFromImageArgs *args) {
+		args->previewColorList->removeAll();
+		args->getSettings(false);
+		args->processImage(Type::image);
+		args->update(true);
+	}
+	static gboolean onScreenshotTimeout(PaletteFromImageArgs *args) {
+		args->previewColorList->removeAll();
+		args->getSettings(false);
+		args->processImage(Type::screenshot);
+		args->update(true);
+		gtk_window_deiconify(args->parent);
+		gtk_window_present(GTK_WINDOW(args->dialog));
+		return false;
+	}
+	static void onScreenshot(GtkWidget *, PaletteFromImageArgs *args) {
+		gtk_window_iconify(args->parent);
+		g_timeout_add(250, G_SOURCE_FUNC(onScreenshotTimeout), args);
+	}
+	static void onDestroy(GtkWidget *, PaletteFromImageArgs *args) {
 		delete args;
 	}
 	static void onResponse(GtkWidget *widget, gint responseId, PaletteFromImageArgs *args) {
-		args->getSettings();
-		args->saveSettings();
-		gint width, height;
-		gtk_window_get_size(GTK_WINDOW(widget), &width, &height);
-		args->options->set("window.width", width);
-		args->options->set("window.height", height);
-		args->options->set<bool>("show_preview", gtk_expander_get_expanded(GTK_EXPANDER(args->previewExpander)));
+		args->getSettings(true);
 		switch (responseId) {
 		case GTK_RESPONSE_APPLY:
 			args->update(false);
@@ -214,70 +324,7 @@ struct PaletteFromImageArgs {
 		}
 	}
 };
-void tools_palette_from_image_show(GtkWindow *parent, GlobalState *gs) {
-	PaletteFromImageArgs *args = new PaletteFromImageArgs;
-	args->previousFilename = "";
-	args->gs = gs;
-	args->options = args->gs->settings().getOrCreateMap("gpick.tools.palette_from_image");
-	GtkWidget *dialog = gtk_dialog_new_with_buttons(_("Palette from image"), parent, GtkDialogFlags(GTK_DIALOG_DESTROY_WITH_PARENT), GTK_STOCK_CLOSE, GTK_RESPONSE_CLOSE, GTK_STOCK_ADD, GTK_RESPONSE_APPLY, nullptr);
-	gtk_window_set_default_size(GTK_WINDOW(dialog), args->options->getInt32("window.width", -1),
-		args->options->getInt32("window.height", -1));
-	gtk_dialog_set_alternative_button_order(GTK_DIALOG(dialog), GTK_RESPONSE_APPLY, GTK_RESPONSE_CLOSE, -1);
-
-	Grid grid(2, 3);
-	grid.addLabel(_("Image:"));
-	GtkWidget *widget;
-	args->fileBrowser = widget = grid.add(gtk_file_chooser_button_new(_("Image file"), GTK_FILE_CHOOSER_ACTION_OPEN), true);
-	gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(widget), args->options->getString("current_folder", "").c_str());
-	g_signal_connect(G_OBJECT(widget), "file-set", G_CALLBACK(PaletteFromImageArgs::onUpdate), args);
-	auto selectedFilter = args->options->getString("filter", "all_images");
-	GtkFileFilter *filter = gtk_file_filter_new();
-	gtk_file_filter_set_name(filter, _("All files"));
-	gtk_file_filter_add_pattern(filter, "*");
-	g_object_set_data_full(G_OBJECT(filter), "name", (void *)"all_files", GDestroyNotify(nullptr));
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
-	if ("all_files" == selectedFilter)
-		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
-	GtkFileFilter *allImageFilter = gtk_file_filter_new();
-	gtk_file_filter_set_name(allImageFilter, _("All images"));
-	g_object_set_data_full(G_OBJECT(allImageFilter), "name", (void *)"all_images", GDestroyNotify(nullptr));
-	gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), allImageFilter);
-	if ("all_images" == selectedFilter)
-		gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), allImageFilter);
-	std::stringstream ss;
-	GSList *formats = gdk_pixbuf_get_formats();
-	GSList *i = formats;
-	while (i) {
-		GdkPixbufFormat *format = static_cast<GdkPixbufFormat *>(g_slist_nth_data(i, 0));
-		filter = gtk_file_filter_new();
-		gtk_file_filter_set_name(filter, gdk_pixbuf_format_get_description(format));
-		gchar **extensions = gdk_pixbuf_format_get_extensions(format);
-		if (extensions) {
-			for (int j = 0; extensions[j]; j++) {
-				ss.str("");
-				ss << "*." << extensions[j];
-				auto pattern = ss.str();
-				gtk_file_filter_add_pattern(filter, pattern.c_str());
-				gtk_file_filter_add_pattern(allImageFilter, pattern.c_str());
-			}
-			g_strfreev(extensions);
-		}
-		g_object_set_data_full(G_OBJECT(filter), "name", gdk_pixbuf_format_get_name(format), GDestroyNotify(nullptr));
-		gtk_file_chooser_add_filter(GTK_FILE_CHOOSER(widget), filter);
-		if (gdk_pixbuf_format_get_name(format) == selectedFilter)
-			gtk_file_chooser_set_filter(GTK_FILE_CHOOSER(widget), filter);
-		i = g_slist_next(i);
-	}
-	if (formats)
-		g_slist_free(formats);
-	grid.addLabel(_("Colors:"));
-	args->rangeColors = widget = grid.add(gtk_spin_button_new_with_range(1, 1000, 1), true);
-	gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), args->options->getInt32("colors", 3));
-	g_signal_connect(G_OBJECT(widget), "value-changed", G_CALLBACK(PaletteFromImageArgs::onUpdate), args);
-	args->previewExpander = grid.add(palette_list_preview_new(*gs, true, args->options->getBool("show_preview", true), args->previewColorList), true, 2, true);
-	gtk_widget_show_all(grid);
-	setDialogContent(dialog, grid);
-	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(PaletteFromImageArgs::onDestroy), args);
-	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(PaletteFromImageArgs::onResponse), args);
-	gtk_widget_show(dialog);
+}
+void tools_palette_from_image_show(GtkWindow *parent, GlobalState &gs) {
+	new PaletteFromImageArgs(parent, gs);
 }
