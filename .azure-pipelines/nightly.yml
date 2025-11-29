@@ -1,9 +1,16 @@
 trigger: none
 pr: none
 
+schedules:
+- cron: '0 0 * * *'
+  displayName: 'Nightly package'
+  branches:
+    include:
+    - master
+
 jobs:
 - job: package
-  displayName: 'Release package'
+  displayName: 'Nightly package'
   pool:
     vmImage: ubuntu-latest
   strategy:
@@ -100,7 +107,7 @@ jobs:
       authType: 'userAndPass'
       username: 'gpick'
       password: $(GPICK_API_KEY)
-      url: 'https://www.gpick.org/api/pushRelease/$(distribution)_$(release)_$(architecture)_$(version)/gpick.deb'
+      url: 'https://www.gpick.org/api/pushNightly/$(distribution)_$(release)_$(architecture)_$(version)/gpick.deb'
       remotePath: ''
       options: '--request POST'
     displayName: 'Push package'
