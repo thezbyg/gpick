@@ -48,7 +48,7 @@ struct ConverterOptions: public Converter::Options, public IEventHandler {
 		m_settings(settings) {
 	}
 	void update() {
-		auto options = m_settings.getMap("gpick.options");
+		auto options = m_settings.getOrEmptyMap("gpick.options");
 		upperCaseHex = options->getString("hex_case", "upper") == "upper";
 		cssPercentages = options->getBool("css_percentages", false);
 		cssAlphaPercentage = options->getBool("css_alpha_percentage", false);

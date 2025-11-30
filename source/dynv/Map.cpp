@@ -118,9 +118,6 @@ std::vector<Color> Map::getColors(const std::string &name) const {
 std::vector<std::string> Map::getStrings(const std::string &name) const {
 	return getVector<std::string>(*this, name);
 }
-Ref Map::getMap(const std::string &name) {
-	return get<Ref>(*this, name);
-}
 Ref Map::getOrCreateMap(const std::string &name) {
 	bool valid;
 	std::string fieldName;
@@ -141,8 +138,14 @@ Ref Map::getOrCreateMap(const std::string &name) {
 	}
 	return std::get<Ref>(data);
 }
-const Ref Map::getMap(const std::string &name) const {
+Ref Map::getMap(const std::string &name) const {
 	return get<Ref>(*this, name);
+}
+Ref Map::getOrEmptyMap(const std::string &name) const {
+	auto result = get<Ref>(*this, name);
+	if (!result)
+		return create();
+	return result;
 }
 std::vector<Ref> Map::getMaps(const std::string &name) {
 	bool valid;

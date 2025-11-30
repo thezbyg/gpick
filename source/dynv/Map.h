@@ -56,9 +56,9 @@ struct Map: public common::Ref<Map>::Counter {
 	std::vector<int32_t> getInt32s(const std::string &name) const;
 	std::vector<Color> getColors(const std::string &name) const;
 	std::vector<std::string> getStrings(const std::string &name) const;
-	Ref getMap(const std::string &name);
 	std::vector<Ref> getMaps(const std::string &name);
-	const Ref getMap(const std::string &name) const;
+	Ref getMap(const std::string &name) const;
+	Ref getOrEmptyMap(const std::string &name) const;
 	std::vector<Ref> getMaps(const std::string &name) const;
 	Ref getOrCreateMap(const std::string &name);
 	std::vector<Ref> getOrCreateMaps(const std::string &name);
