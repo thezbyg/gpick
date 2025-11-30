@@ -156,10 +156,12 @@ struct BackgroundColorPicker: public IEventHandler {
 		gtk_window_set_destroy_with_parent(window, true);
 		gtk_window_set_skip_taskbar_hint(window, true);
 		gtk_window_set_skip_pager_hint(window, true);
+		gtk_window_set_type_hint(window, GDK_WINDOW_TYPE_HINT_DIALOG);
 		gtk_window_set_default_size(window, options->getInt32("window.width", 600), options->getInt32("window.height", 600));
 		GtkWidget *vbox = gtk_vbox_new(false, 0);
 		layoutView = gtk_layout_preview_new();
 		gtk_layout_preview_set_fill(GTK_LAYOUT_PREVIEW(layoutView), true);
+		gtk_widget_set_can_focus(layoutView, false);
 		auto *chain = &gs.transformationChain();
 		gtk_layout_preview_set_transformation_chain(GTK_LAYOUT_PREVIEW(layoutView), chain);
 		for (auto &adjustableColor: adjustableColors) {

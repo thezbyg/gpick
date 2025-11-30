@@ -42,6 +42,7 @@ struct TemporaryPalette: public IPalette {
 		gtk_window_set_destroy_with_parent(window, true);
 		gtk_window_set_skip_taskbar_hint(window, true);
 		gtk_window_set_skip_pager_hint(window, true);
+		gtk_window_set_type_hint(window, GDK_WINDOW_TYPE_HINT_DIALOG);
 		gtk_window_set_default_size(window, options->getInt32("window.width", -1), options->getInt32("window.height", -1));
 		GtkWidget *informationLabel = gtk_label_new("");
 #if GTK_MAJOR_VERSION >= 3
