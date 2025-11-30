@@ -82,10 +82,10 @@ struct MixDialog: public DialogBase {
 		Grid grid(2, 4);
 		grid.addLabel(_("Type:"));
 		grid.add(mixTypeCombo = gtk_combo_box_text_new(), true);
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("RGB"));
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("HSV"));
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("LAB"));
-		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), _("LCH"));
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), "RGB");
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), "HSV");
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), "LAB");
+		gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(mixTypeCombo), "LCH");
 		gtk_combo_box_set_active(GTK_COMBO_BOX(mixTypeCombo), options->getInt32("type", 0));
 		g_signal_connect(G_OBJECT(mixTypeCombo), "changed", G_CALLBACK(onUpdate), this);
 		grid.addLabel(_("Steps:"));

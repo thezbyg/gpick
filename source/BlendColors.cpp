@@ -320,10 +320,10 @@ static std::unique_ptr<IColorSource> build(GlobalState &gs, const dynv::Ref &opt
 	GtkWidget *vbox = gtk_vbox_new(false, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), gtk_label_aligned_new(_("Type:"), 0, 0, 0, 0), false, false, 0);
 	args->mixType = widget = gtk_combo_box_text_new();
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("RGB"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("HSV"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LAB"));
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), _("LCH"));
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "RGB");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "HSV");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "LAB");
+	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(widget), "LCH");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), args->options->getInt32("type", 0));
 	gtk_box_pack_start(GTK_BOX(vbox), widget, false, false, 0);
 	g_signal_connect(G_OBJECT(widget), "changed", G_CALLBACK(BlendColorsArgs::onChange), args.get());

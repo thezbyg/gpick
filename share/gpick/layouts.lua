@@ -27,7 +27,7 @@ local addButtons = function(container, buttons, percentage, buttonStyle, textSty
 	local padding = size / 8
 	local styleCount = #buttonStyle
 	local styleTextCount = #textStyle
-	local texts = {_("Homepage"), _("About us"), _("Links to us"), _("Privacy"), _("Terms"), _("Contact us"), _("RSS")}
+	local texts = {_("Homepage"), _("About us"), _("Links to us"), _("Privacy"), _("Terms"), _("Contact us"), "RSS"}
 	for i = 0, buttons - 1 do
 		local button = layout:newFill("button", padding, i * size + padding, 1 - padding * 2, size - padding, buttonStyle[i % styleCount + 1])
 		button:add(makeHelper(layout:newText("button_text", 0.25, 0.7, 0.5, 0.25, textStyle[i % styleTextCount + 1], buttonStyle[i % styleCount + 1]:label())))
