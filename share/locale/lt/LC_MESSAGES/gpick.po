@@ -33,9 +33,6 @@ msgstr "Į_kelti visas į paletę"
 msgid "A_dd to swatch"
 msgstr "Į_kelti į mėginį"
 
-msgid "A_dd..."
-msgstr "Pri_dėti..."
-
 msgid "About Gpick"
 msgstr "Apie Gpick"
 
@@ -111,8 +108,14 @@ msgstr "Galimi filtrai"
 msgid "Average"
 msgstr "Vidurkis"
 
+msgid "Background"
+msgstr "Fonas"
+
 msgid "Background color"
 msgstr "Fono spalva"
+
+msgid "Background color picker"
+msgstr "Fono spalvos rinkyklė"
 
 msgid "Background:"
 msgstr "Fonas:"
@@ -137,9 +140,6 @@ msgstr "Šviesumas, tamsumas"
 
 msgid "Brightness-Darkness"
 msgstr "Šviesumas-Tamsumas"
-
-msgid "Built in"
-msgstr "Integruotas"
 
 msgid "Button"
 msgstr "Mygtukas"
@@ -170,6 +170,12 @@ msgstr "CSS formatas"
 
 msgid "CSS selector"
 msgstr "CSS selectorius"
+
+msgid "CSS: OKLAB with alpha"
+msgstr "CSS OKLAB su alfa"
+
+msgid "CSS: OKLCH with alpha"
+msgstr "CSS OKLCH su alfa"
 
 msgid "CSS: hue saturation lightness"
 msgstr "CSS: atspalvis įsotinimas šviesumas"
@@ -206,9 +212,6 @@ msgstr "Nedarna"
 
 msgid "Click on swatch area to begin adding colors to palette"
 msgstr "Paspauskite mėginio plote norėdami pradėti spalvų rinkimą į paletę"
-
-msgid "Clip top-end"
-msgstr "Apkirpti viršutinę dalį"
 
 msgid "Closest colors"
 msgstr "Artimiausios spalvos"
@@ -293,6 +296,9 @@ msgstr "Kopijavimas"
 
 msgid "Copyright"
 msgstr "Autorinės teisės"
+
+msgid "Count"
+msgstr "Kiekis"
 
 msgid "Credits"
 msgstr "Padėkos"
@@ -435,6 +441,9 @@ msgstr "GIMP/Inkscape paletė (*.gpl)"
 msgid "Gamma modification"
 msgstr "Gamos pakeitimas"
 
+msgid "Gamma:"
+msgstr "Gama:"
+
 msgid "Generate colors"
 msgstr "Generuoti spalvas"
 
@@ -447,11 +456,8 @@ msgstr "Pilka"
 msgid "Green"
 msgstr "Žalia"
 
-msgid "Grid (4x3)"
-msgstr "Tinklas (4x3)"
-
-msgid "Grid (5x4)"
-msgstr "Tinklas (5x4)"
+msgid "Grid"
+msgstr "Tinklas"
 
 msgid "Group and _sort..."
 msgstr "_Grupavimas ir rūšiavimas..."
@@ -459,26 +465,11 @@ msgstr "_Grupavimas ir rūšiavimas..."
 msgid "Group and sort"
 msgstr "Grupuoti ir rūšiuoti"
 
-msgid "Group type:"
-msgstr "Grupavimo tipas:"
+msgid "Group by:"
+msgstr "Grupuoti pagal:"
 
 msgid "Grouping sensitivity:"
 msgstr "Grupavimo jautrumas:"
-
-msgid "HSL"
-msgstr "HSL"
-
-msgid "HSL Hue"
-msgstr "HSL Atspalvis"
-
-msgid "HSL Lightness"
-msgstr "HSL Šviesumas"
-
-msgid "HSL Saturation"
-msgstr "HSL Įsotinimas"
-
-msgid "HSV"
-msgstr "HSV"
 
 msgid "Hash"
 msgstr "Kodas"
@@ -534,6 +525,9 @@ msgstr "Įvestis"
 msgid "Integer values"
 msgstr "Sveikieji skaičiai"
 
+msgid "Invert"
+msgstr "Invertuoti"
+
 msgid "Item"
 msgstr "Elementas"
 
@@ -548,30 +542,6 @@ msgstr "Laukelio tekstas"
 
 msgid "Key"
 msgstr "Juoda"
-
-msgid "LAB"
-msgstr "LAB"
-
-msgid "LCH"
-msgstr "LCH"
-
-msgid "LCh Chroma"
-msgstr "LCh Chroma"
-
-msgid "LCh Hue"
-msgstr "LCh Atspalvis"
-
-msgid "LCh Lightness"
-msgstr "LCh Šviesumas"
-
-msgid "Lab A"
-msgstr "Lab A"
-
-msgid "Lab B"
-msgstr "Lab B"
-
-msgid "Lab Lightness"
-msgstr "Lab Šviesumas"
 
 msgid "Lab settings"
 msgstr "Lab nustatymai"
@@ -603,6 +573,9 @@ msgstr "Šviesumas:"
 msgid "Linear"
 msgstr "Tiesinis"
 
+msgid "Linearization"
+msgstr "Tiesinimas"
+
 msgid "Links to us"
 msgstr "Nuorodos"
 
@@ -633,6 +606,15 @@ msgstr "Vidutinis"
 msgid "Menu"
 msgstr "Meniu"
 
+msgid "Meodai All Names"
+msgstr "Meodai visi pavadinimai"
+
+msgid "Meodai Best of Names"
+msgstr "Meodai geriausi pavadinimai"
+
+msgid "Meodai Short Names"
+msgstr "Meodai trumpi pavadinimai"
+
 msgid "Middle:"
 msgstr "Vidurys:"
 
@@ -656,6 +638,9 @@ msgstr "Pavadinimas:"
 
 msgid "Neutral"
 msgstr "Neutralus"
+
+msgid "New Temporary Palette"
+msgstr "Nauja Laikina Paletė"
 
 msgid "New palette"
 msgstr "Nauja paletė"
@@ -702,6 +687,9 @@ msgstr "Paletė iš paveikslėlio"
 msgid "Parsed text color"
 msgstr "Išanalizuota teksto slapva"
 
+msgid "Part"
+msgstr "Dalis"
+
 msgid "Paste"
 msgstr "Įdėjimas"
 
@@ -719,6 +707,9 @@ msgstr "Rinkti spalvas (Vald+P)"
 
 msgid "Picker"
 msgstr "Rinkėjas"
+
+msgid "Pie chart"
+msgstr "Skritulinė diagrama"
 
 msgid "Press Spacebar to sample color under mouse pointer"
 msgstr "Paspauskite Tarpą norėdami gauti spalvą esančią po pelės kursoriu"
@@ -744,35 +735,14 @@ msgstr "Kvardatinis"
 msgid "Quantization"
 msgstr "Kvantavimas"
 
-msgid "RGB"
-msgstr "RGB"
-
-msgid "RGB Blue"
-msgstr "RGB Mėlyna"
-
 msgid "RGB Grayscale"
 msgstr "RGB Pustonis"
-
-msgid "RGB Green"
-msgstr "RGB Žalia"
-
-msgid "RGB Red"
-msgstr "RGB Raudona"
 
 msgid "RGB values"
 msgstr "RGB reikšmės"
 
 msgid "RGBA values"
 msgstr "RGBA reikšmės"
-
-msgid "RSS"
-msgstr "RSS"
-
-msgid "RYB v1"
-msgstr "RYB v1"
-
-msgid "RYB v2"
-msgstr "RYB v2"
 
 msgid "R_everse"
 msgstr "_Atvirkščiai"
@@ -791,6 +761,9 @@ msgstr "Keturkampis (tetrada)"
 
 msgid "Red"
 msgstr "Raudona"
+
+msgid "Remove All"
+msgstr "Pašalinti Visas"
 
 msgid "Remove _All"
 msgstr "Pašalinti _visas"
@@ -837,6 +810,9 @@ msgstr "Sėkla:"
 msgid "Settings"
 msgstr "Nustatymai"
 
+msgid "Shadow"
+msgstr "Šešėlis"
+
 msgid "Short hex"
 msgstr "Trumpas šešioliktainis"
 
@@ -852,8 +828,8 @@ msgstr "Šeši tonai"
 msgid "Small"
 msgstr "Mažas"
 
-msgid "Sort type:"
-msgstr "Rūšiavimo tipas:"
+msgid "Sort by:"
+msgstr "Rikiuoti pagal:"
 
 msgid "Split-Complementary"
 msgstr "Perskirtas papildantis"
@@ -888,6 +864,12 @@ msgstr "Sistema"
 msgid "System tray"
 msgstr "Sisteminis dėklas"
 
+msgid "Take a screenshot"
+msgstr "Padaryti ekrano nuotrauką"
+
+msgid "Temporary palette"
+msgstr "Laikina paletė"
+
 msgid "Terms"
 msgstr "Sąlygos"
 
@@ -912,11 +894,12 @@ msgstr "Greita ruda lapė šoka per tingų šunį"
 msgid "Tool color naming"
 msgstr "Įrankių spalvų pavadinimai"
 
+#, c++-format
 msgid "Total {} color"
 msgid_plural "Total {} colors"
-msgstr[0] "Viso %d spalva"
-msgstr[1] "Viso %d spalvos"
-msgstr[2] "Viso %d spalvų"
+msgstr[0] "Viso {} spalva"
+msgstr[1] "Viso {} spalvos"
+msgstr[2] "Viso {} spalvų"
 
 msgid "Triadic"
 msgstr "Triada"
@@ -932,6 +915,9 @@ msgstr "Tipas:"
 
 msgid "Upper case"
 msgstr "Viršutinis registras"
+
+msgid "Use comma separators"
+msgstr "Naudoti kablelius atskyrimui"
 
 msgid "Use percentage for alpha"
 msgstr "Naudoti procentą alfa kanalui"
@@ -978,6 +964,9 @@ msgstr "Balta"
 msgid "X axis"
 msgstr "X ašis"
 
+msgid "XKCD Color Name Survey"
+msgstr "XKCD spalvų pavadinimų apklausa"
+
 msgid "Y axis"
 msgstr "Y ašis"
 
@@ -993,6 +982,9 @@ msgstr "Priartinimas:"
 msgid "_Add to palette"
 msgstr "_Įkelti į paletę"
 
+msgid "_Add..."
+msgstr "_Pridėti..."
+
 msgid "_Always use floating picker"
 msgstr "_Visada naudoti slankųjį rinkėją"
 
@@ -1004,6 +996,9 @@ msgstr "_Priskirti CSS selektorius..."
 
 msgid "_Automatic name"
 msgstr "_Automatinis pavadinimas"
+
+msgid "_Background Color Picker..."
+msgstr "_Fono Spalvos Rinkyklė..."
 
 msgid "_Close to system tray"
 msgstr "_Uždaryti į sisteminį dėklą"
@@ -1023,6 +1018,9 @@ msgstr "_Keisti"
 msgid "_Edit..."
 msgstr "_Keisti..."
 
+msgid "_Editor"
+msgstr "_Redaktorius"
+
 msgid "_Empty"
 msgstr "_Tuščia"
 
@@ -1034,6 +1032,9 @@ msgstr "_Eksportuoti CSS failą kaip..."
 
 msgid "_File"
 msgstr "_Failas"
+
+msgid "_Find..."
+msgstr "_Rasti..."
 
 msgid "_Generate..."
 msgstr "_Generuoti..."
@@ -1122,8 +1123,8 @@ msgstr "_Atvirkščiai"
 msgid "_Reverse group order"
 msgstr "_Atvirkščia grupių tvarka"
 
-msgid "_Reverse order inside groups"
-msgstr "_Atvirkščia tvarka grupėse"
+msgid "_Reverse sort order"
+msgstr "_Atvirkščia rikiavimo tvarka"
 
 msgid "_Rotate swatch"
 msgstr "_Pasukti mėginį"
@@ -1188,6 +1189,7 @@ msgstr "išdėstymo peržiūra"
 msgid "main"
 msgstr "pagrindinis"
 
+#, c++-format
 msgid "match {}"
 msgstr "atitikmuo {}"
 
@@ -1197,12 +1199,15 @@ msgstr "maišymas"
 msgid "mix node"
 msgstr "maišymo mazgas"
 
+#, c++-format
 msgid "primary {}"
 msgstr "pirminė {}"
 
+#, c++-format
 msgid "result {}"
 msgstr "rezultatas {}"
 
+#, c++-format
 msgid "result {} line {}"
 msgstr "rezultatas {} eilutėje {}"
 
@@ -1211,6 +1216,9 @@ msgstr "rgb.txt failas (*.txt)"
 
 msgid "scheme"
 msgstr "schema"
+
+msgid "screenshot"
+msgstr "ekrano nuotrauka"
 
 msgid "secondary"
 msgstr "antrinė"
@@ -1227,8 +1235,9 @@ msgstr "pokyčiai"
 msgid "variations"
 msgstr "pokyčiai"
 
+#, c++-format
 msgid "{} color"
 msgid_plural "{} colors"
 msgstr[0] "{} spalva"
-msgstr[1] "%d spalvos"
-msgstr[2] "%d spalvų"
+msgstr[1] "{} spalvos"
+msgstr[2] "{} spalvų"
