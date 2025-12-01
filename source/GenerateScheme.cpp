@@ -37,7 +37,7 @@
 #include "IDroppableColorUI.h"
 #include "IMenuExtension.h"
 #include "EventBus.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "common/Guard.h"
 #include <gdk/gdkkeysyms.h>
 #include <sstream>
@@ -66,7 +66,7 @@ struct GenerateSchemeColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << _("scheme") << " " << _(generate_scheme_get_scheme_type(m_schemeType)->name) << " #" << m_ident << "[" << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << "]";
+		m_stream << _("scheme") << " " << _(generate_scheme_get_scheme_type(m_schemeType)->name) << " #" << m_ident << "[" << m_gs.names().get(colorObject.getColor()) << "]";
 		return m_stream.str();
 	}
 protected:

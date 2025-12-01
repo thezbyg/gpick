@@ -16,9 +16,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_TOOL_COLOR_NAMING_H_
-#define GPICK_TOOL_COLOR_NAMING_H_
-
+#pragma once
 #include <string>
 struct GlobalState;
 struct Color;
@@ -29,26 +27,19 @@ enum ToolColorNamingType {
 	TOOL_COLOR_NAMING_AUTOMATIC_NAME,
 	TOOL_COLOR_NAMING_TOOL_SPECIFIC,
 };
-typedef struct ToolColorNamingOption{
+struct ToolColorNamingOption {
 	ToolColorNamingType type;
 	const char *name;
 	const char *label;
-}ToolColorNamingOption;
-
-const ToolColorNamingOption* tool_color_naming_get_options();
-ToolColorNamingType tool_color_naming_name_to_type(const std::string &name);
-
-struct ToolColorNameAssigner
-{
-	protected:
-		ToolColorNamingType m_color_naming_type;
-		GlobalState &m_gs;
-		bool m_imprecision_postfix;
-	public:
-		ToolColorNameAssigner(GlobalState &gs);
-		virtual ~ToolColorNameAssigner();
-		void assign(ColorObject &colorObject);
-		virtual std::string getToolSpecificName(const ColorObject &colorObject) = 0;
 };
-
-#endif /* GPICK_TOOL_COLOR_NAMING_H_ */
+const ToolColorNamingOption *tool_color_naming_get_options();
+ToolColorNamingType tool_color_naming_name_to_type(const std::string &name);
+struct ToolColorNameAssigner {
+	ToolColorNameAssigner(GlobalState &gs);
+	virtual ~ToolColorNameAssigner();
+	void assign(ColorObject &colorObject);
+	virtual std::string getToolSpecificName(const ColorObject &colorObject) = 0;
+protected:
+	ToolColorNamingType m_type;
+	GlobalState &m_gs;
+};

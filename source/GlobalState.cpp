@@ -23,7 +23,7 @@
 #include "Converter.h"
 #include "InternalConverters.h"
 #include "Random.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "Sampler.h"
 #include "ColorList.h"
 #include "EventBus.h"
@@ -74,7 +74,6 @@ private:
 }
 struct GlobalState::Impl {
 	GlobalState *m_decl;
-	ColorNames *m_colorNames;
 	Sampler *m_sampler;
 	ScreenReader *m_screenReader;
 	common::Ref<ColorList> m_colorList;
@@ -89,22 +88,21 @@ struct GlobalState::Impl {
 	IColorSource *m_colorSource;
 	EventBus m_eventBus;
 	ConverterOptions m_converterOptions;
+	Names m_names;
 	Impl(GlobalState *decl):
 		m_decl(decl),
-		m_colorNames(nullptr),
 		m_sampler(nullptr),
 		m_screenReader(nullptr),
 		m_random(nullptr),
 		m_statusBar(nullptr),
 		m_colorSource(nullptr),
-		m_converterOptions(m_settings) {
+		m_converterOptions(m_settings),
+		m_names(m_eventBus, m_settings) {
 	}
 	virtual ~Impl() {
 		m_eventBus.unsubscribe(m_converterOptions);
 		if (m_random != nullptr)
 			random_destroy(m_random);
-		if (m_colorNames != nullptr)
-			color_names_destroy(m_colorNames);
 		if (m_sampler != nullptr)
 			sampler_destroy(m_sampler);
 		if (m_screenReader != nullptr)
@@ -152,13 +150,6 @@ struct GlobalState::Impl {
 			return;
 		}
 		newFile.close();
-	}
-	bool loadColorNames() {
-		if (m_colorNames != nullptr) return false;
-		m_colorNames = color_names_new();
-		auto options = m_settings.getOrCreateMap("gpick");
-		color_names_load(m_colorNames, *options);
-		return true;
 	}
 	bool initializeRandomGenerator() {
 		m_random = random_new("SHR3");
@@ -250,7 +241,7 @@ struct GlobalState::Impl {
 		m_sampler = sampler_new(m_screenReader);
 		initializeRandomGenerator();
 		loadSettings();
-		loadColorNames();
+		m_names.load();
 		initializeConverters();
 		initializeLua();
 		loadConverters();
@@ -273,8 +264,8 @@ bool GlobalState::loadAll() {
 bool GlobalState::writeSettings() {
 	return m_impl->writeSettings();
 }
-ColorNames *GlobalState::getColorNames() {
-	return m_impl->m_colorNames;
+Names &GlobalState::names() {
+	return m_impl->m_names;
 }
 Sampler *GlobalState::getSampler() {
 	return m_impl->m_sampler;

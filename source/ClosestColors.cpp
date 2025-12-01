@@ -28,7 +28,7 @@
 #include "gtk/ColorWidget.h"
 #include "dynv/Map.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
@@ -63,7 +63,7 @@ struct ClosestColorsColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << " " << _("closest color") << " " << m_ident;
+		m_stream << m_gs.names().get(colorObject.getColor()) << " " << _("closest color") << " " << m_ident;
 		return m_stream.str();
 	}
 protected:
@@ -76,14 +76,14 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 	dynv::Ref options;
 	GlobalState &gs;
 	const Type *type;
-	ColorNames *paletteColorNames;
+	Names paletteNames;
 	ClosestColorsArgs(GlobalState &gs, const dynv::Ref &options):
 		options(options),
 		gs(gs),
 		type(nullptr),
+		paletteNames(gs.eventBus(), gs.settings()),
 		editable(*this) {
 		statusBar = gs.getStatusBar();
-		paletteColorNames = color_names_new();
 		gs.eventBus().subscribe(EventType::displayFiltersUpdate, *this);
 		gs.eventBus().subscribe(EventType::colorDictionaryUpdate, *this);
 		gs.eventBus().subscribe(EventType::paletteChanged, *this);
@@ -93,7 +93,6 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
 		options->set("color", color);
 		options->set("type", type->id);
-		color_names_destroy(paletteColorNames);
 		gtk_widget_destroy(main);
 		gs.eventBus().unsubscribe(*this);
 	}
@@ -177,19 +176,19 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		}
 		return "unknown";
 	}
+	std::vector<std::pair<const char *, Color>> closest;
 	void update() {
 		Color color;
 		gtk_color_get_color(GTK_COLOR(targetColor), &color);
-		std::vector<std::pair<const char *, Color>> colors;
 		if (type->colorSource == ColorSource::palette) {
-			color_names_find_nearest(paletteColorNames, color, 9, colors);
+			paletteNames.findNearest(color, 9, closest);
 		} else {
-			color_names_find_nearest(gs.getColorNames(), color, 9, colors);
+			gs.names().findNearest(color, 9, closest);
 		}
 		for (size_t i = 0; i < 9; ++i) {
-			if (i < colors.size()) {
-				colors[i].second.alpha = color.alpha;
-				gtk_color_set_color(GTK_COLOR(closestColors[i]), &colors[i].second, colors[i].first);
+			if (i < closest.size()) {
+				closest[i].second.alpha = color.alpha;
+				gtk_color_set_color(GTK_COLOR(closestColors[i]), &closest[i].second, closest[i].first);
 				gtk_widget_set_sensitive(closestColors[i], true);
 			} else {
 				gtk_widget_set_sensitive(closestColors[i], false);
@@ -197,8 +196,8 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		}
 	}
 	void updatePaletteColorNames() {
-		color_names_clear(paletteColorNames);
-		color_names_load_from_list(paletteColorNames, gs.colorList());
+		paletteNames.clear();
+		paletteNames.loadFromList(gs.colorList());
 	}
 	bool isEditable() {
 		return lastFocusedColor == targetColor;
@@ -215,7 +214,7 @@ struct ClosestColorsArgs: public IColorSource, public IEventHandler {
 		if (type->colorSource == ColorSource::palette) {
 			updatePaletteColorNames();
 		} else {
-			color_names_clear(paletteColorNames);
+			paletteNames.clear();
 		}
 	}
 	static void onTypeChange(GtkWidget *widget, ClosestColorsArgs *args) {

@@ -23,7 +23,7 @@
 #include "Converter.h"
 #include "dynv/Map.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "uiUtilities.h"
@@ -51,7 +51,7 @@ struct LayoutPreviewColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << _("layout preview") << " " << m_ident << " [" << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << "]";
+		m_stream << _("layout preview") << " " << m_ident << " [" << m_gs.names().get(colorObject.getColor()) << "]";
 		return m_stream.str();
 	}
 protected:

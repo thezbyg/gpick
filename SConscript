@@ -212,9 +212,6 @@ def buildLua(env):
 		lua_env.Append(CPPDEFINES = ['LUA_SYMBOLS_MANGLED'])
 	return lua_env.StaticObject(lua_env.Glob('source/lua/*.cpp'))
 
-def buildColorNames(env):
-	return env.StaticObject(env.Glob('source/color_names/*.cpp'))
-
 def buildMath(env):
 	return env.StaticObject(env.Glob('source/math/*.cpp'))
 
@@ -250,7 +247,6 @@ def buildGpick(env):
 	objects += buildDbus(env)
 	objects += buildTools(env)
 	objects += buildLua(env)
-	objects += buildColorNames(env)
 	objects += buildMath(env)
 
 	if env['TOOLCHAIN'] == 'msvc':

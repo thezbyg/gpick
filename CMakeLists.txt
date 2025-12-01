@@ -14,7 +14,6 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 file(GLOB SOURCES
 	source/*.cpp source/*.h
-	source/color_names/*.cpp source/color_names/*.h
 	source/dbus/*.cpp source/dbus/*.h source/dbus/*.c
 	source/gtk/*.cpp source/gtk/*.h
 	source/i18n/*.cpp source/i18n/*.h

@@ -69,16 +69,16 @@ inline auto valueFirstSeparator(size_t &active) {
 	return opOr(sequence(maybeSpace, ',', maybeSpace, set<size_t>(active, 0)), sequence(maybeSpace, ';', maybeSpace, set<size_t>(active, 1)), sequence(space, set<size_t>(active, 2u)));
 }
 inline auto valueSeparator(size_t &active) {
-	return choise(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, ';', maybeSpace), space);
+	return choice(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, ';', maybeSpace), space);
 }
 inline auto cssFirstSeparator(size_t &active) {
 	return opOr(sequence(maybeSpace, ',', maybeSpace, set<size_t>(active, 0)), sequence(space, set<size_t>(active, 1)));
 }
 inline auto cssSeparator(size_t &active) {
-	return choise(active, sequence(maybeSpace, ',', maybeSpace), space);
+	return choice(active, sequence(maybeSpace, ',', maybeSpace), space);
 }
 inline auto cssAlphaSeparator(size_t &active) {
-	return choise(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, '/', maybeSpace));
+	return choice(active, sequence(maybeSpace, ',', maybeSpace), sequence(maybeSpace, '/', maybeSpace));
 }
 static std::string webHexSerialize(const ColorObject &colorObject, const ConverterSerializePosition &position, const Options &options) {
 	char result[8];

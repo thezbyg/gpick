@@ -28,7 +28,7 @@
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "EventBus.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "layout/Layout.h"
 #include "layout/Layouts.h"
 #include "layout/Style.h"
@@ -53,7 +53,7 @@ struct BrightnessDarknessColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << " " << _("brightness darkness") << " " << m_ident;
+		m_stream << m_gs.names().get(colorObject.getColor()) << " " << _("brightness darkness") << " " << m_ident;
 		return m_stream.str();
 	}
 protected:

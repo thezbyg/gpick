@@ -22,7 +22,7 @@
 #include <memory>
 #include <optional>
 #include <cstdint>
-struct ColorNames;
+struct Names;
 struct Sampler;
 struct ScreenReader;
 struct ColorList;
@@ -48,7 +48,7 @@ struct GlobalState {
 	bool loadSettings();
 	bool loadAll();
 	bool writeSettings();
-	ColorNames *getColorNames();
+	Names &names();
 	Sampler *getSampler();
 	ScreenReader *getScreenReader();
 	ColorList &colorList();

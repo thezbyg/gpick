@@ -411,8 +411,8 @@ private:
 	std::tuple<OpTs...> m_ops;
 };
 template<typename... OpTs>
-struct Choise {
-	Choise(std::size_t &active, OpTs &&...ops):
+struct Choice {
+	Choice(std::size_t &active, OpTs &&...ops):
 		m_active(active),
 		m_ops(std::forward_as_tuple(ops...)) {
 	}
@@ -534,8 +534,8 @@ inline auto sequence(OpTs... ops) {
 	return detail::Sequence<OpTs...>(std::forward<OpTs>(ops)...);
 }
 template<typename... OpTs>
-inline auto choise(std::size_t &active, OpTs... ops) {
-	return detail::Choise<OpTs...>(active, std::forward<OpTs>(ops)...);
+inline auto choice(std::size_t &active, OpTs... ops) {
+	return detail::Choice<OpTs...>(active, std::forward<OpTs>(ops)...);
 }
 const auto maybeSpace = zeroOrMore(whitespace);
 const auto maybeSpaceStrict = zeroOrMore(single(' '));

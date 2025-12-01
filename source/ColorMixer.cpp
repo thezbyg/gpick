@@ -28,7 +28,7 @@
 #include "dynv/Map.h"
 #include "I18N.h"
 #include "EventBus.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
 #include "IMenuExtension.h"
@@ -74,7 +74,7 @@ struct ColorMixerColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << " " << _("color mixer") << " " << m_ident;
+		m_stream << m_gs.names().get(colorObject.getColor()) << " " << _("color mixer") << " " << m_ident;
 		return m_stream.str();
 	}
 protected:

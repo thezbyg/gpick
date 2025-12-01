@@ -1,0 +1,952 @@
+# Source: http://xkcd.com/color/rgb.txt
+# License: http://creativecommons.org/publicdomain/zero/1.0/
+#
+acc2d9 Cloudy blue
+56ae57 Dark pastel green
+b2996e Dust
+a8ff04 Electric lime
+69d84f Fresh green
+894585 Light eggplant
+70b23f Nasty green
+d4ffff Really light blue
+65ab7c Tea
+952e8f Warm purple
+fcfc81 Yellowish tan
+a5a391 Cement
+388004 Dark grass green
+4c9085 Dusty teal
+5e9b8a Grey teal
+efb435 Macaroni and cheese
+d99b82 Pinkish tan
+0a5f38 Spruce
+0c06f7 Strong blue
+61de2a Toxic green
+3778bf Windows blue
+2242c7 Blue blue
+533cc6 Blue with a hint of purple
+9bb53c Booger
+05ffa6 Bright sea green
+1f6357 Dark green blue
+017374 Deep turquoise
+0cb577 Green teal
+ff0789 Strong pink
+afa88b Bland
+08787f Deep aqua
+dd85d7 Lavender pink
+a6c875 Light moss green
+a7ffb5 Light seafoam green
+c2b709 Olive yellow
+e78ea5 Pig pink
+966ebd Deep lilac
+ccad60 Desert
+ac86a8 Dusty lavender
+947e94 Purpley grey
+983fb2 Purply
+ff63e9 Candy pink
+b2fba5 Light pastel green
+63b365 Boring green
+8ee53f Kiwi green
+b7e1a1 Light grey green
+ff6f52 Orange pink
+bdf8a3 Tea green
+d3b683 Very light brown
+fffcc4 Egg shell
+430541 Eggplant purple
+ffb2d0 Powder pink
+997570 Reddish grey
+ad900d Baby shit brown
+c48efd Liliac
+507b9c Stormy blue
+7d7103 Ugly brown
+fffd78 Custard
+da467d Darkish pink
+410200 Deep brown
+c9d179 Greenish beige
+fffa86 Manilla
+5684ae Off blue
+6b7c85 Battleship grey
+6f6c0a Browny green
+7e4071 Bruise
+009337 Kelley green
+d0e429 Sickly yellow
+fff917 Sunny yellow
+1d5dec Azul
+054907 Darkgreen
+b5ce08 Green/yellow
+8fb67b Lichen
+c8ffb0 Light light green
+fdde6c Pale gold
+ffdf22 Sun yellow
+a9be70 Tan green
+6832e3 Burple
+fdb147 Butterscotch
+c7ac7d Toupe
+fff39a Dark cream
+850e04 Indian red
+efc0fe Light lavendar
+40fd14 Poison green
+b6c406 Baby puke green
+9dff00 Bright yellow green
+3c4142 Charcoal grey
+f2ab15 Squash
+ac4f06 Cinnamon
+c4fe82 Light pea green
+2cfa1f Radioactive green
+9a6200 Raw sienna
+ca9bf7 Baby purple
+875f42 Cocoa
+3a2efe Light royal blue
+fd8d49 Orangeish
+8b3103 Rust brown
+cba560 Sand brown
+698339 Swamp
+0cdc73 Tealish green
+b75203 Burnt siena
+7f8f4e Camo
+26538d Dusk blue
+63a950 Fern
+c87f89 Old rose
+b1fc99 Pale light green
+ff9a8a Peachy pink
+f6688e Rosy pink
+76fda8 Light bluish green
+53fe5c Light bright green
+4efd54 Light neon green
+a0febf Light seafoam
+7bf2da Tiffany blue
+bcf5a6 Washed out green
+ca6b02 Browny orange
+107ab0 Nice blue
+2138ab Sapphire
+719f91 Greyish teal
+fdb915 Orangey yellow
+fefcaf Parchment
+fcf679 Straw
+1d0200 Very dark brown
+cb6843 Terracota
+31668a Ugly blue
+247afd Clear blue
+ffffb6 Creme
+90fda9 Foam green
+86a17d Grey/green
+fddc5c Light gold
+78d1b6 Seafoam blue
+13bbaf Topaz
+fb5ffc Violet pink
+20f986 Wintergreen
+ffe36e Yellow tan
+9d0759 Dark fuchsia
+3a18b1 Indigo blue
+c2ff89 Light yellowish green
+d767ad Pale magenta
+720058 Rich purple
+ffda03 Sunflower yellow
+01c08d Green/blue
+ac7434 Leather
+014600 Racing green
+9900fa Vivid purple
+02066f Dark royal blue
+8e7618 Hazel
+d1768f Muted pink
+96b403 Booger green
+fdff63 Canary
+95a3a6 Cool grey
+7f684e Dark taupe
+751973 Darkish purple
+089404 True green
+ff6163 Coral pink
+598556 Dark sage
+214761 Dark slate blue
+3c73a8 Flat blue
+ba9e88 Mushroom
+021bf9 Rich blue
+734a65 Dirty purple
+23c48b Greenblue
+8fae22 Icky green
+e6f2a2 Light khaki
+4b57db Warm blue
+d90166 Dark hot pink
+015482 Deep sea blue
+9d0216 Carmine
+728f02 Dark yellow green
+ffe5ad Pale peach
+4e0550 Plum purple
+f9bc08 Golden rod
+ff073a Neon red
+c77986 Old pink
+d6fffe Very pale blue
+fe4b03 Blood orange
+fd5956 Grapefruit
+fce166 Sand yellow
+b2713d Clay brown
+1f3b4d Dark blue grey
+699d4c Flat green
+56fca2 Light green blue
+fb5581 Warm pink
+3e82fc Dodger blue
+a0bf16 Gross green
+d6fffa Ice
+4f738e Metallic blue
+ffb19a Pale salmon
+5c8b15 Sap green
+54ac68 Algae
+89a0b0 Bluey grey
+7ea07a Greeny grey
+1bfc06 Highlighter green
+cafffb Light light blue
+b6ffbb Light mint
+a75e09 Raw umber
+152eff Vivid blue
+8d5eb7 Deep lavender
+5f9e8f Dull teal
+63f7b4 Light greenish blue
+606602 Mud green
+fc86aa Pinky
+8c0034 Red wine
+758000 Shit green
+ab7e4c Tan brown
+030764 Darkblue
+fe86a4 Rosa
+d5174e Lipstick
+fed0fc Pale mauve
+680018 Claret
+fedf08 Dandelion
+fe420f Orangered
+6f7c00 Poop green
+ca0147 Ruby
+1b2431 Dark
+00fbb0 Greenish turquoise
+db5856 Pastel red
+ddd618 Piss yellow
+41fdfe Bright cyan
+cf524e Dark coral
+21c36f Algae green
+a90308 Darkish red
+6e1005 Reddy brown
+fe828c Blush pink
+4b6113 Camouflage green
+4da409 Lawn green
+beae8a Putty
+0339f8 Vibrant blue
+a88f59 Dark sand
+5d21d0 Purple/blue
+feb209 Saffron
+4e518b Twilight
+964e02 Warm brown
+85a3b2 Bluegrey
+ff69af Bubble gum pink
+c3fbf4 Duck egg blue
+2afeb7 Greenish cyan
+005f6a Petrol
+0c1793 Royal
+ffff81 Butter
+f0833a Dusty orange
+f1f33f Off yellow
+b1d27b Pale olive green
+fc824a Orangish
+71aa34 Leaf
+b7c9e2 Light blue grey
+4b0101 Dried blood
+a552e6 Lightish purple
+af2f0d Rusty red
+8b88f8 Lavender blue
+9af764 Light grass green
+a6fbb2 Light mint green
+ffc512 Sunflower
+750851 Velvet
+c14a09 Brick orange
+fe2f4a Lightish red
+0203e2 Pure blue
+0a437a Twilight blue
+a50055 Violet red
+ae8b0c Yellowy brown
+fd798f Carnation
+bfac05 Muddy yellow
+3eaf76 Dark seafoam green
+c74767 Deep rose
+b9484e Dusty red
+647d8e Grey/blue
+bffe28 Lemon lime
+d725de Purple/pink
+b29705 Brown yellow
+673a3f Purple brown
+a87dc2 Wisteria
+fafe4b Banana yellow
+c0022f Lipstick red
+0e87cc Water blue
+8d8468 Brown grey
+ad03de Vibrant purple
+8cff9e Baby green
+94ac02 Barf green
+c4fff7 Eggshell blue
+fdee73 Sandy yellow
+33b864 Cool green
+fff9d0 Pale
+758da3 Blue/grey
+f504c9 Hot magenta
+77a1b5 Greyblue
+8756e4 Purpley
+889717 Baby shit green
+c27e79 Brownish pink
+017371 Dark aquamarine
+9f8303 Diarrhea
+f7d560 Light mustard
+bdf6fe Pale sky blue
+75b84f Turtle green
+9cbb04 Bright olive
+29465b Dark grey blue
+696006 Greeny brown
+adf802 Lemon green
+c1c6fc Light periwinkle
+35ad6b Seaweed green
+fffd37 Sunshine yellow
+a442a0 Ugly purple
+f36196 Medium pink
+947706 Puke brown
+fff4f2 Very light pink
+1e9167 Viridian
+b5c306 Bile
+feff7f Faded yellow
+cffdbc Very pale green
+0add08 Vibrant green
+87fd05 Bright lime
+1ef876 Spearmint
+7bfdc7 Light aquamarine
+bcecac Light sage
+bbf90f Yellowgreen
+ab9004 Baby poo
+1fb57a Dark seafoam
+00555a Deep teal
+a484ac Heather
+c45508 Rust orange
+3f829d Dirty blue
+548d44 Fern green
+c95efb Bright lilac
+3ae57f Weird green
+016795 Peacock blue
+87a922 Avocado green
+f0944d Faded orange
+5d1451 Grape purple
+25ff29 Hot green
+d0fe1d Lime yellow
+ffa62b Mango
+01b44c Shamrock
+ff6cb5 Bubblegum
+6b4247 Purplish brown
+c7c10c Vomit yellow
+b7fffa Pale cyan
+aeff6e Key lime
+ec2d01 Tomato red
+76ff7b Lightgreen
+730039 Merlot
+040348 Night blue
+df4ec8 Purpleish pink
+6ecb3c Apple
+8f9805 Baby poop green
+5edc1f Green apple
+d94ff5 Heliotrope
+c8fd3d Yellow/green
+070d0d Almost black
+4984b8 Cool blue
+51b73b Leafy green
+ac7e04 Mustard brown
+4e5481 Dusk
+876e4b Dull brown
+58bc08 Frog green
+2fef10 Vivid green
+2dfe54 Bright light green
+0aff02 Fluro green
+9cef43 Kiwi
+18d17b Seaweed
+35530a Navy green
+1805db Ultramarine blue
+6258c4 Iris
+ff964f Pastel orange
+ffab0f Yellowish orange
+8f8ce7 Perrywinkle
+24bca8 Tealish
+3f012c Dark plum
+cbf85f Pear
+ff724c Pinkish orange
+280137 Midnight purple
+b36ff6 Light urple
+48c072 Dark mint
+bccb7a Greenish tan
+a8415b Light burgundy
+06b1c4 Turquoise blue
+cd7584 Ugly pink
+f1da7a Sandy
+ff0490 Electric pink
+805b87 Muted purple
+50a747 Mid green
+a8a495 Greyish
+cfff04 Neon yellow
+ffff7e Banana
+ff7fa7 Carnation pink
+ef4026 Tomato
+3c9992 Sea
+886806 Muddy brown
+04f489 Turquoise green
+fef69e Buff
+cfaf7b Fawn
+3b719f Muted blue
+fdc1c5 Pale rose
+20c073 Dark mint green
+9b5fc0 Amethyst
+0f9b8e Blue/green
+742802 Chestnut
+9db92c Sick green
+a4bf20 Pea
+cd5909 Rusty orange
+ada587 Stone
+be013c Rose red
+b8ffeb Pale aqua
+dc4d01 Deep orange
+a2653e Earth
+638b27 Mossy green
+419c03 Grassy green
+b1ff65 Pale lime green
+9dbcd4 Light grey blue
+fdfdfe Pale grey
+77ab56 Asparagus
+464196 Blueberry
+990147 Purple red
+befd73 Pale lime
+32bf84 Greenish teal
+af6f09 Caramel
+a0025c Deep magenta
+ffd8b1 Light peach
+7f4e1e Milk chocolate
+bf9b0c Ocher
+6ba353 Off green
+f075e6 Purply pink
+7bc8f6 Lightblue
+475f94 Dusky blue
+f5bf03 Golden
+fffeb6 Light beige
+fffd74 Butter yellow
+895b7b Dusky purple
+436bad French blue
+d0c101 Ugly yellow
+c6f808 Greeny yellow
+f43605 Orangish red
+02c14d Shamrock green
+b25f03 Orangish brown
+2a7e19 Tree green
+490648 Deep violet
+536267 Gunmetal
+5a06ef Blue/purple
+cf0234 Cherry
+c4a661 Sandy brown
+978a84 Warm grey
+1f0954 Dark indigo
+03012d Midnight
+2bb179 Bluey green
+c3909b Grey pink
+a66fb5 Soft purple
+770001 Blood
+922b05 Brown red
+7d7f7c Medium grey
+990f4b Berry
+8f7303 Poo
+c83cb9 Purpley pink
+fea993 Light salmon
+acbb0d Snot
+c071fe Easter purple
+ccfd7f Light yellow green
+00022e Dark navy blue
+828344 Drab
+ffc5cb Light rose
+ab1239 Rouge
+b0054b Purplish red
+99cc04 Slime green
+937c00 Baby poop
+019529 Irish green
+ef1de7 Pink/purple
+000435 Dark navy
+42b395 Greeny blue
+9d5783 Light plum
+c8aca9 Pinkish grey
+c87606 Dirty orange
+aa2704 Rust red
+e4cbff Pale lilac
+fa4224 Orangey red
+0804f9 Primary blue
+5cb200 Kermit green
+76424e Brownish purple
+6c7a0e Murky green
+fbdd7e Wheat
+2a0134 Very dark purple
+044a05 Bottle green
+fd4659 Watermelon
+0d75f8 Deep sky blue
+fe0002 Fire engine red
+cb9d06 Yellow ochre
+fb7d07 Pumpkin orange
+b9cc81 Pale olive
+edc8ff Light lilac
+61e160 Lightish green
+8ab8fe Carolina blue
+920a4e Mulberry
+fe02a2 Shocking pink
+9a3001 Auburn
+65fe08 Bright lime green
+befdb7 Celadon
+b17261 Pinkish brown
+885f01 Poo brown
+02ccfe Bright sky blue
+c1fd95 Celery
+836539 Dirt brown
+fb2943 Strawberry
+84b701 Dark lime
+b66325 Copper
+7f5112 Medium brown
+5fa052 Muted green
+6dedfd Robin's egg
+0bf9ea Bright aqua
+c760ff Bright lavender
+ffffcb Ivory
+f6cefc Very light purple
+155084 Light navy
+f5054f Pink red
+645403 Olive brown
+7a5901 Poop brown
+a8b504 Mustard green
+3d9973 Ocean green
+000133 Very dark blue
+76a973 Dusty green
+2e5a88 Light navy blue
+0bf77d Minty green
+bd6c48 Adobe
+ac1db8 Barney
+2baf6a Jade green
+26f7fd Bright light blue
+aefd6c Light lime
+9b8f55 Dark khaki
+ffad01 Orange yellow
+c69c04 Ocre
+f4d054 Maize
+de9dac Faded pink
+05480d British racing green
+c9ae74 Sandstone
+60460f Mud brown
+98f6b0 Light sea green
+8af1fe Robin egg blue
+2ee8bb Aqua marine
+11875d Dark sea green
+fdb0c0 Soft pink
+b16002 Orangey brown
+f7022a Cherry red
+d5ab09 Burnt yellow
+86775f Brownish grey
+c69f59 Camel
+7a687f Purplish grey
+042e60 Marine
+c88d94 Greyish pink
+a5fbd5 Pale turquoise
+fffe71 Pastel yellow
+6241c7 Bluey purple
+fffe40 Canary yellow
+d3494e Faded red
+985e2b Sepia
+a6814c Coffee
+ff08e8 Bright magenta
+9d7651 Mocha
+feffca Ecru
+98568d Purpleish
+9e003a Cranberry
+287c37 Darkish green
+b96902 Brown orange
+ba6873 Dusky rose
+ff7855 Melon
+94b21c Sickly green
+c5c9c7 Silver
+661aee Purply blue
+6140ef Purpleish blue
+9be5aa Hospital green
+7b5804 Shit brown
+276ab3 Mid blue
+feb308 Amber
+8cfd7e Easter green
+6488ea Soft blue
+056eee Cerulean blue
+b27a01 Golden brown
+0ffef9 Bright turquoise
+fa2a55 Red pink
+820747 Red purple
+7a6a4f Greyish brown
+f4320c Vermillion
+a13905 Russet
+6f828a Steel grey
+a55af4 Lighter purple
+ad0afd Bright violet
+004577 Prussian blue
+658d6d Slate green
+ca7b80 Dirty pink
+005249 Dark blue green
+2b5d34 Pine
+bff128 Yellowy green
+b59410 Dark gold
+2976bb Bluish
+014182 Darkish blue
+bb3f3f Dull red
+fc2647 Pinky red
+a87900 Bronze
+82cbb2 Pale teal
+667c3e Military green
+fe46a5 Barbie pink
+fe83cc Bubblegum pink
+94a617 Pea soup green
+a88905 Dark mustard
+7f5f00 Shit
+9e43a2 Medium purple
+062e03 Very dark green
+8a6e45 Dirt
+cc7a8b Dusky pink
+9e0168 Red violet
+fdff38 Lemon yellow
+c0fa8b Pistachio
+eedc5b Dull yellow
+7ebd01 Dark lime green
+3b5b92 Denim blue
+01889f Teal blue
+3d7afd Lightish blue
+5f34e7 Purpley blue
+6d5acf Light indigo
+748500 Swamp green
+706c11 Brown green
+3c0008 Dark maroon
+cb00f5 Hot purple
+002d04 Dark forest green
+658cbb Faded blue
+749551 Drab green
+b9ff66 Light lime green
+9dc100 Snot green
+faee66 Yellowish
+7efbb3 Light blue green
+7b002c Bordeaux
+c292a1 Light mauve
+017b92 Ocean
+fcc006 Marigold
+657432 Muddy green
+d8863b Dull orange
+738595 Steel
+aa23ff Electric purple
+08ff08 Fluorescent green
+9b7a01 Yellowish brown
+f29e8e Blush
+6fc276 Soft green
+ff5b00 Bright orange
+fdff52 Lemon
+866f85 Purple grey
+8ffe09 Acid green
+eecffe Pale lavender
+510ac9 Violet blue
+4f9153 Light forest green
+9f2305 Burnt red
+728639 Khaki green
+de0c62 Cerise
+916e99 Faded purple
+ffb16d Apricot
+3c4d03 Dark olive green
+7f7053 Grey brown
+77926f Green grey
+010fcc True blue
+ceaefa Pale violet
+8f99fb Periwinkle blue
+c6fcff Light sky blue
+5539cc Blurple
+544e03 Green brown
+017a79 Bluegreen
+01f9c6 Bright teal
+c9b003 Brownish yellow
+929901 Pea soup
+0b5509 Forest
+a00498 Barney purple
+2000b1 Ultramarine
+94568c Purplish
+c2be0e Puke yellow
+748b97 Bluish grey
+665fd1 Dark periwinkle
+9c6da5 Dark lilac
+c44240 Reddish
+a24857 Light maroon
+825f87 Dusty purple
+c9643b Terra cotta
+90b134 Avocado
+01386a Marine blue
+25a36f Teal green
+59656d Slate grey
+75fd63 Lighter green
+21fc0d Electric green
+5a86ad Dusty blue
+fec615 Golden yellow
+fffd01 Bright yellow
+dfc5fe Light lavender
+b26400 Umber
+7f5e00 Poop
+de7e5d Dark peach
+048243 Jungle green
+ffffd4 Eggshell
+3b638c Denim
+b79400 Yellow brown
+84597e Dull purple
+411900 Chocolate brown
+7b0323 Wine red
+04d9ff Neon blue
+667e2c Dirty green
+fbeeac Light tan
+d7fffe Ice blue
+4e7496 Cadet blue
+874c62 Dark mauve
+d5ffff Very light blue
+826d8c Grey purple
+ffbacd Pastel pink
+d1ffbd Very light green
+448ee4 Dark sky blue
+05472a Evergreen
+d5869d Dull pink
+3d0734 Aubergine
+4a0100 Mahogany
+f8481c Reddish orange
+02590f Deep green
+89a203 Vomit green
+e03fd8 Purple pink
+d58a94 Dusty pink
+7bb274 Faded green
+526525 Camo green
+c94cbe Pinky purple
+db4bda Pink purple
+9e3623 Brownish red
+b5485d Dark rose
+735c12 Mud
+9c6d57 Brownish
+028f1e Emerald green
+b1916e Pale brown
+49759c Dull blue
+a0450e Burnt umber
+39ad48 Medium green
+b66a50 Clay
+8cffdb Light aqua
+a4be5c Light olive green
+cb7723 Brownish orange
+05696b Dark aqua
+ce5dae Purplish pink
+c85a53 Dark salmon
+96ae8d Greenish grey
+1fa774 Jade
+7a9703 Ugly green
+ac9362 Dark beige
+01a049 Emerald
+d9544d Pale red
+fa5ff7 Light magenta
+82cafc Sky
+acfffc Light cyan
+fcb001 Yellow orange
+910951 Reddish purple
+fe2c54 Reddish pink
+c875c4 Orchid
+cdc50a Dirty yellow
+fd411e Orange red
+9a0200 Deep red
+be6400 Orange brown
+030aa7 Cobalt blue
+fe019a Neon pink
+f7879a Rose pink
+887191 Greyish purple
+b00149 Raspberry
+12e193 Aqua green
+fe7b7c Salmon pink
+ff9408 Tangerine
+6a6e09 Brownish green
+8b2e16 Red brown
+696112 Greenish brown
+e17701 Pumpkin
+0a481e Pine green
+343837 Charcoal
+ffb7ce Baby pink
+6a79f7 Cornflower
+5d06e9 Blue violet
+3d1c02 Chocolate
+82a67d Greyish green
+be0119 Scarlet
+c9ff27 Green yellow
+373e02 Dark olive
+a9561e Sienna
+caa0ff Pastel purple
+ca6641 Terracotta
+02d8e9 Aqua blue
+88b378 Sage green
+980002 Blood red
+cb0162 Deep pink
+5cac2d Grass
+769958 Moss
+a2bffe Pastel blue
+10a674 Bluish green
+06b48b Green blue
+af884a Dark tan
+0b8b87 Greenish blue
+ffa756 Pale orange
+a2a415 Vomit
+154406 Forrest green
+856798 Dark lavender
+34013f Dark violet
+632de9 Purple blue
+0a888a Dark cyan
+6f7632 Olive drab
+d46a7e Pinkish
+1e488f Cobalt
+bc13fe Neon purple
+7ef4cc Light turquoise
+76cd26 Apple green
+74a662 Dull green
+80013f Wine
+b1d1fc Powder blue
+ffffe4 Off white
+0652ff Electric blue
+045c5a Dark turquoise
+5729ce Blue purple
+069af3 Azure
+ff000d Bright red
+f10c45 Pinkish red
+5170d7 Cornflower blue
+acbf69 Light olive
+6c3461 Grape
+5e819d Greyish blue
+601ef9 Purplish blue
+b0dd16 Yellowish green
+cdfd02 Greenish yellow
+2c6fbb Medium blue
+c0737a Dusty rose
+d6b4fc Light violet
+020035 Midnight blue
+703be7 Bluish purple
+fd3c06 Red orange
+960056 Dark magenta
+40a368 Greenish
+03719c Ocean blue
+fc5a50 Coral
+ffffc2 Cream
+7f2b0a Reddish brown
+b04e0f Burnt sienna
+a03623 Brick
+87ae73 Sage
+789b73 Grey green
+ffffff White
+98eff9 Robin's egg blue
+658b38 Moss green
+5a7d9a Steel blue
+380835 Eggplant
+fffe7a Light yellow
+5ca904 Leaf green
+d8dcd6 Light grey
+a5a502 Puke
+d648d7 Pinkish purple
+047495 Sea blue
+b790d4 Pale purple
+5b7c99 Slate blue
+607c8e Blue grey
+0b4008 Hunter green
+ed0dd9 Fuchsia
+8c000f Crimson
+ffff84 Pale yellow
+bf9005 Ochre
+d2bd0a Mustard yellow
+ff474c Light red
+0485d1 Cerulean
+ffcfdc Pale pink
+040273 Deep blue
+a83c09 Rust
+90e4c1 Light teal
+516572 Slate
+fac205 Goldenrod
+d5b60a Dark yellow
+363737 Dark grey
+4b5d16 Army green
+6b8ba4 Grey blue
+80f9ad Seafoam
+a57e52 Puce
+a9f971 Spring green
+c65102 Dark orange
+e2ca76 Sand
+b0ff9d Pastel green
+9ffeb0 Mint
+fdaa48 Light orange
+fe01b1 Bright pink
+c1f80a Chartreuse
+36013f Deep purple
+341c02 Dark brown
+b9a281 Taupe
+8eab12 Pea green
+9aae07 Puke green
+02ab2e Kelly green
+7af9ab Seafoam green
+137e6d Blue green
+aaa662 Khaki
+610023 Burgundy
+014d4e Dark teal
+8f1402 Brick red
+4b006e Royal purple
+580f41 Plum
+8fff9f Mint green
+dbb40c Gold
+a2cffe Baby blue
+c0fb2d Yellow green
+be03fd Bright purple
+840000 Dark red
+d0fefe Pale blue
+3f9b0b Grass green
+01153e Navy
+04d8b2 Aquamarine
+c04e01 Burnt orange
+0cff0c Neon green
+0165fc Bright blue
+cf6275 Rose
+ffd1df Light pink
+ceb301 Mustard
+380282 Indigo
+aaff32 Lime
+53fca1 Sea green
+8e82fe Periwinkle
+cb416b Dark pink
+677a04 Olive green
+ffb07c Peach
+c7fdb5 Pale green
+ad8150 Light brown
+ff028d Hot pink
+000000 Black
+cea2fd Lilac
+001146 Navy blue
+0504aa Royal blue
+e6daa6 Beige
+ff796c Salmon
+6e750e Olive
+650021 Maroon
+01ff07 Bright green
+35063e Dark purple
+ae7181 Mauve
+06470c Forest green
+13eac9 Aqua
+00ffff Cyan
+d1b26f Tan
+00035b Dark blue
+c79fef Lavender
+06c2ac Turquoise
+033500 Dark green
+9a0eea Violet
+bf77f6 Light purple
+89fe05 Lime green
+929591 Grey
+75bbfd Sky blue
+ffff14 Yellow
+c20078 Magenta
+96f97b Light green
+f97306 Orange
+029386 Teal
+95d0fc Light blue
+e50000 Red
+653700 Brown
+ff81c0 Pink
+0343df Blue
+15b01a Green
+7e1e9c Purple

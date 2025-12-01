@@ -26,7 +26,7 @@
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
 #include "ColorList.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "gtk/ColorWidget.h"
 #include "StandardEventHandler.h"
 #include "StandardDragDropHandler.h"
@@ -147,7 +147,7 @@ struct BlendColorsArgs: public IColorSource, public IEventHandler {
 		gtk_color_get_color(GTK_COLOR(lastFocusedColor), &color);
 		colorObject.setColor(color);
 		BlendColorNameAssigner nameAssigner(gs);
-		auto name = color_names_get(gs.getColorNames(), &color, false);
+		auto name = gs.names().get(color);
 		nameAssigner.setNames(name, name);
 		nameAssigner.assign(colorObject);
 		return colorObject;
@@ -199,8 +199,8 @@ struct BlendColorsArgs: public IColorSource, public IEventHandler {
 				gtk_color_get_color(GTK_COLOR(middleColor), &a);
 				gtk_color_get_color(GTK_COLOR(endColor), &b);
 			}
-			auto startName = color_names_get(gs.getColorNames(), &a, false);
-			auto endName = color_names_get(gs.getColorNames(), &b, false);
+			auto startName = gs.names().get(a);
+			auto endName = gs.names().get(b);
 			nameAssigner.setNames(startName, endName);
 			nameAssigner.setStepsAndStage(steps, stage);
 			int i = stage;

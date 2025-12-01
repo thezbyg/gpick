@@ -39,7 +39,7 @@
 #include "StandardDragDropHandler.h"
 #include "IDroppableColorUI.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "ScreenReader.h"
 #include "Sampler.h"
 #include "EventBus.h"
@@ -253,20 +253,20 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 	ColorObject *getActive() {
 		Color color;
 		gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
-		std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		std::string name = gs.names().get(color);
 		return new ColorObject(name, color);
 	}
 	void getActive(ColorObject &colorObject) {
 		Color color;
 		gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
-		std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		std::string name = gs.names().get(color);
 		colorObject.setName(name);
 		colorObject.setColor(color);
 	}
 	void getColor(int index, ColorObject &colorObject) {
 		Color color;
 		gtk_swatch_get_color(GTK_SWATCH(swatch_display), index, &color);
-		std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		std::string name = gs.names().get(color);
 		colorObject.setName(name);
 		colorObject.setColor(color);
 	}
@@ -274,13 +274,13 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		gs.colorList().add(colorObject);
 	}
 	void addToPalette(const Color &color) {
-		auto name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		auto name = gs.names().get(color);
 		auto colorObject = new ColorObject(name, color);
 		addToPalette(colorObject);
 		colorObject->release();
 	}
 	void copy(const Color &color) {
-		auto name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		auto name = gs.names().get(color);
 		auto colorObject = new ColorObject(name, color);
 		clipboard::set(colorObject, gs, Converters::Type::copy);
 		colorObject->release();
@@ -313,7 +313,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		Color color;
 		gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
 		colorObject.setColor(color);
-		std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		std::string name = gs.names().get(color);
 		colorObject.setName(name);
 		return colorObject;
 	}
@@ -323,7 +323,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		Color color;
 		gtk_swatch_get_color(GTK_SWATCH(swatch_display), index + 1, &color);
 		colorObject.setColor(color);
-		std::string name = color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+		std::string name = gs.names().get(color);
 		colorObject.setName(name);
 		return colorObject;
 	}
@@ -373,7 +373,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 			updateComponentText(GTK_COLOR_COMPONENT(controls[i]));
 			++i;
 		}
-		std::string name = color_names_get(gs.getColorNames(), &c, true);
+		std::string name = gs.names().get(c);
 		gtk_entry_set_text(GTK_ENTRY(colorName), name.c_str());
 		gtk_color_get_color(GTK_COLOR(contrastCheck), &c2);
 		gtk_color_set_text_color(GTK_COLOR(contrastCheck), &c);
@@ -543,7 +543,7 @@ struct ColorPickerArgs: public IColorPicker, public IEventHandler {
 		if (options->getBool("sampler.add_to_palette", true)) {
 			Color color;
 			gtk_swatch_get_active_color(GTK_SWATCH(swatch_display), &color);
-			ColorObject colorObject(color_names_get(gs.getColorNames(), &color, gs.settings().getBool("gpick.color_names.imprecision_postfix", false)), color);
+			ColorObject colorObject(gs.names().get(color), color);
 			gs.colorList().add(colorObject);
 		}
 		if (options->getBool("sampler.copy_to_clipboard", true)) {

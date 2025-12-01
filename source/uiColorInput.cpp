@@ -28,8 +28,7 @@
 #include "gtk/ColorWidget.h"
 #include "ColorObject.h"
 #include "ColorSpaces.h"
-#include "color_names/ColorNames.h"
-#include "common/Unused.h"
+#include "Names.h"
 #include <boost/container/static_vector.hpp>
 #include <array>
 #include <string>
@@ -190,7 +189,7 @@ int dialog_color_input_show(GtkWindow *parent, GlobalState &gs, common::Optional
 	if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_OK) {
 		if (editableName) {
 			if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(args->automaticName))) {
-				std::string name = color_names_get(gs.getColorNames(), &args->colorObject->getColor(), gs.settings().getBool("gpick.color_names.imprecision_postfix", false));
+				std::string name = gs.names().get(args->colorObject->getColor());
 				args->colorObject->setName(name);
 			} else {
 				args->colorObject->setName(gtk_entry_get_text(GTK_ENTRY(args->nameInput)));

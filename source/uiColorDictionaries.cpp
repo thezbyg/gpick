@@ -23,39 +23,36 @@
 #include "GlobalState.h"
 #include "EventBus.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "common/Ref.h"
-#include <vector>
+#include <boost/container/static_vector.hpp>
+#include <algorithm>
 #include <string>
 #include <string_view>
-#include <algorithm>
+#include <vector>
+#include <unordered_set>
 #include <gdk/gdkkeysyms.h>
 namespace {
 enum struct Column : int {
-	path = 0,
-	builtIn,
+	label = 0,
 	enable,
+	internal,
+	count,
 	pointer,
 	nColumns
 };
 struct ColorDictionary: public common::Ref<ColorDictionary>::Counter {
-	ColorDictionary(std::string_view path, bool builtIn, bool enable):
-		path(path),
-		builtIn(builtIn),
+	ColorDictionary(std::string_view label, const Names::InternalDescription *internal, bool enable):
+		label(label),
+		internal(internal),
 		enable(enable) {
 	}
 	virtual ~ColorDictionary() {
 	}
-	std::string path;
-	bool builtIn, enable;
+	std::string label;
+	const Names::InternalDescription *internal;
 	size_t index;
-	bool operator==(const ColorDictionary &colorDictionary) const {
-		if (this == &colorDictionary)
-			return true;
-		if (path == colorDictionary.path && builtIn == colorDictionary.builtIn && enable == colorDictionary.enable)
-			return true;
-		return false;
-	}
+	bool enable;
 };
 struct ColorDictionariesDialog: public DialogBase {
 	GtkWidget *dictionaryList, *fileBrowser;
@@ -73,24 +70,38 @@ struct ColorDictionariesDialog: public DialogBase {
 		grid.add(fileBrowser = gtk_file_chooser_button_new(_("Color dictionary file"), GTK_FILE_CHOOSER_ACTION_OPEN), true);
 		gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(fileBrowser), options->getString("current_folder", "").c_str());
 		g_signal_connect(G_OBJECT(fileBrowser), "file-set", G_CALLBACK(onAddFile), this);
-		bool builtInFound = false;
-		auto items = options->getMaps("items");
-		for (auto item: items) {
-			std::string path = item->getString("path", "");
-			bool enable = item->getBool("enable", false);
-			bool builtIn = item->getBool("built_in", false);
-			if (builtIn) {
-				if (path == "built_in_0") {
-					builtInFound = true;
-					path = _("Built in");
+		if (!options->contains("items")) {
+			bool first = true;
+			for (const auto &description: Names::internalNames()) {
+				colorDictionaries.emplace_back(new ColorDictionary(_(description.name), &description, first));
+				first = false;
+			}
+		} else {
+			std::unordered_set<std::string> usedInternals;
+			for (auto item: options->getMaps("items")) {
+				std::string path = item->getString("path", "");
+				bool enable = item->getBool("enable", false);
+				bool internal = item->getBool("built_in", false);
+				if (internal) {
+					usedInternals.emplace(path);
+					for (const auto &description: Names::internalNames()) {
+						if (description.id == path)
+							colorDictionaries.emplace_back(new ColorDictionary(_(description.name), &description, enable));
+					}
+					if (path == "built_in_0") {
+						const auto &description = Names::internalNames()[0];
+						colorDictionaries.emplace_back(new ColorDictionary(_(description.name), &description, enable));
+						usedInternals.emplace(description.id);
+					}
 				} else {
-					continue;
+					colorDictionaries.emplace_back(new ColorDictionary(path, nullptr, enable));
 				}
 			}
-			colorDictionaries.emplace_back(new ColorDictionary(path, builtIn, enable));
+			for (const auto &description: Names::internalNames()) {
+				if (usedInternals.find(description.id) == usedInternals.end())
+					colorDictionaries.emplace_back(new ColorDictionary(_(description.name), &description, false));
+			}
 		}
-		if (!builtInFound)
-			colorDictionaries.emplace_back(new ColorDictionary(_("Built in"), true, true));
 		GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(dictionaryList));
 		for (auto &dictionary: colorDictionaries) {
 			GtkTreeIter iter;
@@ -106,24 +117,23 @@ struct ColorDictionariesDialog: public DialogBase {
 		reorder();
 		for (auto &dictionary: colorDictionaries) {
 			auto item = dynv::Map::create();
-			if (dictionary->builtIn) {
-				item->set("path", "built_in_0");
+			if (dictionary->internal) {
+				item->set("path", dictionary->internal->id);
 			} else {
-				item->set("path", dictionary->path);
+				item->set("path", dictionary->label);
 			}
 			item->set("enable", dictionary->enable);
-			item->set("built_in", dictionary->builtIn);
+			item->set("built_in", dictionary->internal != nullptr);
 			items.push_back(item);
 		}
 		options->set("items", items);
-		color_names_clear(gs.getColorNames());
-		color_names_load(gs.getColorNames(), *options);
+		gs.names().load();
 		gs.eventBus().trigger(EventType::colorDictionaryUpdate);
 	}
 	GtkWidget *newList() {
 		GtkWidget *view = gtk_tree_view_new();
 		gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(view), true);
-		GtkListStore *store = gtk_list_store_new(static_cast<int>(Column::nColumns), G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_POINTER);
+		GtkListStore *store = gtk_list_store_new(static_cast<int>(Column::nColumns), G_TYPE_STRING, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_INT, G_TYPE_POINTER);
 		GtkTreeViewColumn *col = gtk_tree_view_column_new();
 		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
 		gtk_tree_view_column_set_resizable(col, true);
@@ -131,7 +141,16 @@ struct ColorDictionariesDialog: public DialogBase {
 		GtkCellRenderer *renderer = gtk_cell_renderer_text_new();
 		gtk_tree_view_column_pack_start(col, renderer, true);
 		gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
-		gtk_tree_view_column_add_attribute(col, renderer, "text", static_cast<int>(Column::path));
+		gtk_tree_view_column_add_attribute(col, renderer, "text", static_cast<int>(Column::label));
+		col = gtk_tree_view_column_new();
+		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_AUTOSIZE);
+		gtk_tree_view_column_set_resizable(col, true);
+		gtk_tree_view_column_set_title(col, _("Count"));
+		renderer = gtk_cell_renderer_text_new();
+		gtk_tree_view_column_pack_start(col, renderer, true);
+		gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+		gtk_tree_view_column_add_attribute(col, renderer, "text", static_cast<int>(Column::count));
+		gtk_tree_view_column_add_attribute(col, renderer, "visible", static_cast<int>(Column::internal));
 		col = gtk_tree_view_column_new();
 		gtk_tree_view_column_set_sizing(col, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 		gtk_tree_view_column_set_title(col, _("Enable"));
@@ -163,10 +182,13 @@ struct ColorDictionariesDialog: public DialogBase {
 		});
 	}
 	void updateRow(GtkTreeModel *model, GtkTreeIter &iter, common::Ref<ColorDictionary> &colorDictionary) {
+		bool internal = colorDictionary->internal != nullptr;
+		int count = internal ? colorDictionary->internal->count : 0;
 		gtk_list_store_set(GTK_LIST_STORE(model), &iter,
-			Column::path, colorDictionary->path.c_str(),
+			Column::label, colorDictionary->label.c_str(),
 			Column::enable, colorDictionary->enable,
-			Column::builtIn, colorDictionary->builtIn,
+			Column::internal, internal,
+			Column::count, count,
 			Column::pointer, colorDictionary.pointer(),
 			-1);
 	}
@@ -184,7 +206,7 @@ struct ColorDictionariesDialog: public DialogBase {
 	void addFile() {
 		gchar *filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(fileBrowser));
 		if (filename) {
-			auto colorDictionary = common::Ref(new ColorDictionary(filename, false, true));
+			auto colorDictionary = common::Ref(new ColorDictionary(filename, nullptr, true));
 			colorDictionaries.push_back(colorDictionary);
 			g_free(filename);
 			GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(dictionaryList));
@@ -217,7 +239,7 @@ struct ColorDictionariesDialog: public DialogBase {
 					if (gtk_tree_model_get_iter(GTK_TREE_MODEL(store), &iter, path)) {
 						ColorDictionary *dictionary = nullptr;
 						gtk_tree_model_get(GTK_TREE_MODEL(store), &iter, static_cast<int>(Column::pointer), &dictionary, -1);
-						if (!dictionary->builtIn) {
+						if (!dictionary->internal) {
 							removeItems.push_back(rowReference);
 							referenceInserted = true;
 							colorDictionaries.erase(std::find_if(colorDictionaries.begin(), colorDictionaries.end(), [dictionary](const common::Ref<ColorDictionary> &i) {

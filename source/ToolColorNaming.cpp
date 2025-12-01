@@ -20,60 +20,42 @@
 #include "GlobalState.h"
 #include "dynv/Map.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "ColorObject.h"
 #include <string>
-using namespace std;
-
 const ToolColorNamingOption options[] = {
-	{TOOL_COLOR_NAMING_EMPTY, "empty", N_("_Empty")},
-	{TOOL_COLOR_NAMING_AUTOMATIC_NAME, "automatic_name", N_("_Automatic name")},
-	{TOOL_COLOR_NAMING_TOOL_SPECIFIC, "tool_specific", N_("_Tool specific")},
-	{TOOL_COLOR_NAMING_UNKNOWN, 0, 0},
+	{ TOOL_COLOR_NAMING_EMPTY, "empty", N_("_Empty") },
+	{ TOOL_COLOR_NAMING_AUTOMATIC_NAME, "automatic_name", N_("_Automatic name") },
+	{ TOOL_COLOR_NAMING_TOOL_SPECIFIC, "tool_specific", N_("_Tool specific") },
+	{ TOOL_COLOR_NAMING_UNKNOWN, 0, 0 },
 };
-const ToolColorNamingOption* tool_color_naming_get_options()
-{
+const ToolColorNamingOption *tool_color_naming_get_options() {
 	return options;
 }
-ToolColorNamingType tool_color_naming_name_to_type(const std::string &name)
-{
-	string n = name;
-	int i = 0;
-	while (options[i].name){
-		if (n.compare(options[i].name) == 0){
-			return options[i].type;
-		}
-		i++;
+ToolColorNamingType tool_color_naming_name_to_type(const std::string &name) {
+	for (const auto &option: options) {
+		if (name == option.name)
+			return option.type;
 	}
 	return TOOL_COLOR_NAMING_UNKNOWN;
 }
 ToolColorNameAssigner::ToolColorNameAssigner(GlobalState &gs):
-	m_gs(gs)
-{
-	m_color_naming_type = tool_color_naming_name_to_type(m_gs.settings().getString("gpick.color_names.tool_color_naming", "automatic_name"));
-	if (m_color_naming_type == TOOL_COLOR_NAMING_AUTOMATIC_NAME){
-		m_imprecision_postfix = m_gs.settings().getBool("gpick.color_names.imprecision_postfix", false);
-	}else{
-		m_imprecision_postfix = false;
-	}
+	m_gs(gs) {
+	m_type = tool_color_naming_name_to_type(m_gs.settings().getString("gpick.color_names.tool_color_naming", "automatic_name"));
 }
-ToolColorNameAssigner::~ToolColorNameAssigner()
-{
+ToolColorNameAssigner::~ToolColorNameAssigner() {
 }
 void ToolColorNameAssigner::assign(ColorObject &colorObject) {
-	string name;
-	switch (m_color_naming_type){
-		case TOOL_COLOR_NAMING_UNKNOWN:
-		case TOOL_COLOR_NAMING_EMPTY:
-			colorObject.setName("");
-			break;
-		case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
-			name = color_names_get(m_gs.getColorNames(), &colorObject.getColor(), m_imprecision_postfix);
-			colorObject.setName(name);
-			break;
-		case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
-			name = getToolSpecificName(colorObject);
-			colorObject.setName(name);
-			break;
+	switch (m_type) {
+	case TOOL_COLOR_NAMING_UNKNOWN:
+	case TOOL_COLOR_NAMING_EMPTY:
+		colorObject.setName("");
+		break;
+	case TOOL_COLOR_NAMING_AUTOMATIC_NAME:
+		colorObject.setName(m_gs.names().get(colorObject.getColor()));
+		break;
+	case TOOL_COLOR_NAMING_TOOL_SPECIFIC:
+		colorObject.setName(getToolSpecificName(colorObject));
+		break;
 	}
 }

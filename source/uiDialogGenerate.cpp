@@ -25,7 +25,7 @@
 #include "dynv/Map.h"
 #include "GlobalState.h"
 #include "ToolColorNaming.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "ColorRYB.h"
 #include "Noise.h"
 #include "GenerateScheme.h"
@@ -79,7 +79,7 @@ struct GenerateColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << _("scheme") << " " << m_schemeName << " #" << m_index << "[" << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false) << "]";
+		m_stream << _("scheme") << " " << m_schemeName << " #" << m_index << "[" << m_gs.names().get(colorObject.getColor()) << "]";
 		return m_stream.str();
 	}
 protected:

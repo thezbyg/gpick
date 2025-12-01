@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009-2016, Albertas Vyšniauskas
+ * Copyright (c) 2009-2025, Albertas Vyšniauskas
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -16,20 +16,44 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GPICK_COLOR_NAMES_COLOR_NAMES_H_
-#define GPICK_COLOR_NAMES_COLOR_NAMES_H_
+#pragma once
 #include "Color.h"
+#include "EventBus.h"
 #include "dynv/MapFwd.h"
+#include "common/Span.h"
 #include <string>
 #include <vector>
-struct ColorNames;
 struct ColorList;
-ColorNames *color_names_new();
-void color_names_clear(ColorNames *color_names);
-void color_names_load(ColorNames *color_names, const dynv::Map &params);
-void color_names_load_from_list(ColorNames *color_names, const ColorList &colorList);
-int color_names_load_from_file(ColorNames *color_names, const std::string &filename);
-void color_names_destroy(ColorNames *color_names);
-std::string color_names_get(ColorNames *color_names, const Color *color, bool imprecision_postfix);
-void color_names_find_nearest(ColorNames *color_names, const Color &color, size_t count, std::vector<std::pair<const char*, Color>> &colors);
-#endif /* GPICK_COLOR_NAMES_COLOR_NAMES_H_ */
+struct Names: public IEventHandler {
+	static constexpr int spaceDivisions = 8;
+	struct InternalDescription {
+		const char *id;
+		const char *name;
+		size_t count;
+	};
+	static common::Span<const InternalDescription> internalNames();
+	static constexpr size_t maxInternal = 4;
+	Names(EventBus &eventBus, const dynv::Map &settings);
+	virtual ~Names();
+	std::string get(const Color &color) const;
+	void findNearest(const Color &color, size_t count, std::vector<std::pair<const char *, Color>> &colors);
+	bool loadFromFile(const std::string &filename);
+	void loadFromList(const ColorList &colorList);
+	void load();
+	void clear();
+private:
+	struct Entry {
+		std::string name;
+		Color color, originalColor;
+	};
+	EventBus &m_eventBus;
+	const dynv::Map &m_settings;
+	std::vector<Entry> m_entries[spaceDivisions][spaceDivisions][spaceDivisions];
+	bool m_imprecisionSuffix;
+	virtual void onEvent(EventType eventType) override;
+	void getXyz(const Color &color, int *x1, int *y1, int *z1, int *x2, int *y2, int *z2) const;
+	std::vector<Entry> &getEntryVector(const Color &color);
+	bool loadInternal(const InternalDescription &description);
+	template<typename OnColor, typename OnExpansion>
+	void iterate(const Color &color, OnColor onColor, OnExpansion onExpansion) const;
+};

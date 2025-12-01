@@ -32,7 +32,7 @@
 #include "ToolColorNaming.h"
 #include "ScreenReader.h"
 #include "Sampler.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include "common/SetOnScopeEnd.h"
 #include <gdk/gdkkeysyms.h>
 #include <string>
@@ -65,7 +65,7 @@ struct PickerColorNameAssigner: public ToolColorNameAssigner {
 	}
 	virtual std::string getToolSpecificName(const ColorObject &colorObject) override {
 		m_stream.str("");
-		m_stream << color_names_get(m_gs.getColorNames(), &colorObject.getColor(), false);
+		m_stream << m_gs.names().get(colorObject.getColor());
 		return m_stream.str();
 	}
 protected:

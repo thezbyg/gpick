@@ -60,7 +60,7 @@
 #include "common/Ref.h"
 #include "Clipboard.h"
 #include "I18N.h"
-#include "color_names/ColorNames.h"
+#include "Names.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <algorithm>
@@ -1129,11 +1129,10 @@ static void palette_popup_menu_clear_names(GtkWidget *widget, AppArgs *args) {
 	});
 }
 static void palette_popup_menu_auto_name(GtkWidget *widget, AppArgs *args) {
-	auto *colorNames = args->gs->getColorNames();
-	bool imprecisionPostfix = args->gs->settings().getBool("gpick.color_names.imprecision_postfix", false);
-	palette_list_foreach(args->paletteWidget, true, [imprecisionPostfix, colorNames](ColorObject *colorObject) {
+	auto &names = args->gs->names();
+	palette_list_foreach(args->paletteWidget, true, [&names](ColorObject *colorObject) {
 		Color color = colorObject->getColor();
-		colorObject->setName(color_names_get(colorNames, &color, imprecisionPostfix));
+		colorObject->setName(names.get(color));
 		return Update::name;
 	});
 }
