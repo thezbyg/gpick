@@ -72,11 +72,11 @@ struct EqualizeDialog: public DialogBase {
 			if (&i == colorSpace)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(colorSpaceComboBox), &i - colorSpaces().data());
 		}
-		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(EqualizeDialog::onColorSpaceChange), this);
+		g_signal_connect(G_OBJECT(colorSpaceComboBox), "changed", G_CALLBACK(onColorSpaceChange), this);
 		grid.addLabel(_("Channel:"));
 		grid.add(channelComboBox = gtk_combo_box_text_new(), true);
 		buildChannelComboBox();
-		g_signal_connect(G_OBJECT(channelComboBox), "changed", G_CALLBACK(EqualizeDialog::onChannelChange), this);
+		g_signal_connect(G_OBJECT(channelComboBox), "changed", G_CALLBACK(onChannelChange), this);
 		grid.addLabel(_("Type:"));
 		grid.add(typeComboBox = gtk_combo_box_text_new(), true);
 		for (const auto &i: types) {
@@ -84,11 +84,11 @@ struct EqualizeDialog: public DialogBase {
 			if (&i == type)
 				gtk_combo_box_set_active(GTK_COMBO_BOX(typeComboBox), &i - types);
 		}
-		g_signal_connect(G_OBJECT(typeComboBox), "changed", G_CALLBACK(EqualizeDialog::onTypeChange), this);
+		g_signal_connect(G_OBJECT(typeComboBox), "changed", G_CALLBACK(onTypeChange), this);
 		grid.addLabel(_("Strength:"));
 		grid.add(strengthSpinButton = gtk_spin_button_new_with_range(0, 100, 1), true);
 		gtk_spin_button_set_value(GTK_SPIN_BUTTON(strengthSpinButton), options->getFloat("strength", 1) * 100);
-		g_signal_connect(G_OBJECT(strengthSpinButton), "value-changed", G_CALLBACK(EqualizeDialog::onStrengthUpdate), this);
+		g_signal_connect(G_OBJECT(strengthSpinButton), "value-changed", G_CALLBACK(onStrengthUpdate), this);
 		grid.add(previewExpander = palette_list_preview_new(gs, true, options->getBool("show_preview", true), previewColorList), true, 2, true);
 		apply(true);
 		setContent(grid);

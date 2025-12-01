@@ -185,7 +185,7 @@ struct BackgroundColorPicker: public IEventHandler {
 		layoutSystem->addStyle(backgroundStyle);
 		layoutSystem->addStyle(textStyle);
 		layoutSystem->addStyle(shadowStyle);
-		g_signal_connect(G_OBJECT(window), "size-allocate", G_CALLBACK(BackgroundColorPicker::onLayoutResize), this);
+		g_signal_connect(G_OBJECT(window), "size-allocate", G_CALLBACK(onLayoutResize), this);
 		gtk_layout_preview_set_system(GTK_LAYOUT_PREVIEW(layoutView), layoutSystem);
 		gtk_box_pack_start(GTK_BOX(vbox), layoutView, true, true, 0);
 		Grid grid(adjustableColorCount * 2, 3);
@@ -217,21 +217,21 @@ struct BackgroundColorPicker: public IEventHandler {
 					gtk_combo_box_set_active(GTK_COMBO_BOX(adjustableColor.colorSpaceComboBox), &i - colorSpaces().data());
 			}
 			g_object_set_data(G_OBJECT(adjustableColor.colorSpaceComboBox), "adjustableColor", &adjustableColor);
-			g_signal_connect(G_OBJECT(adjustableColor.colorSpaceComboBox), "changed", G_CALLBACK(BackgroundColorPicker::onColorSpaceChange), this);
+			g_signal_connect(G_OBJECT(adjustableColor.colorSpaceComboBox), "changed", G_CALLBACK(onColorSpaceChange), this);
 			grid.setColumnAndRow(i * 2, 2);
 			grid.add(adjustableColor.colorComponent = gtk_color_component_new(ColorSpace::rgb), true, 2, false);
 			updateColorSpace(adjustableColor);
 			g_object_set_data(G_OBJECT(adjustableColor.colorComponent), "adjustableColor", &adjustableColor);
-			g_signal_connect(G_OBJECT(adjustableColor.colorComponent), "color-changed", G_CALLBACK(BackgroundColorPicker::onComponentChangeValue), this);
-			g_signal_connect(G_OBJECT(adjustableColor.colorComponent), "input-clicked", G_CALLBACK(BackgroundColorPicker::onComponentInputClicked), this);
+			g_signal_connect(G_OBJECT(adjustableColor.colorComponent), "color-changed", G_CALLBACK(onComponentChangeValue), this);
+			g_signal_connect(G_OBJECT(adjustableColor.colorComponent), "input-clicked", G_CALLBACK(onComponentInputClicked), this);
 			adjustableColor.update(adjustableColor.options->getColor("color", Color(1.0f - 0.5f * i, 0.8f - 0.4f * i, 0.1f, 1.0f - 0.8f * (i / 2))), Mask::all);
 		}
 		gtk_box_pack_start(GTK_BOX(vbox), grid, false, false, 5);
 		gtk_container_add(GTK_CONTAINER(window), vbox);
-		g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(BackgroundColorPicker::onDestroy), this);
-		g_signal_connect(G_OBJECT(window), "window-state-event", G_CALLBACK(BackgroundColorPicker::onWindowStateEvent), this);
-		g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(BackgroundColorPicker::onConfigureEvent), this);
-		g_signal_connect(G_OBJECT(window), "key-press-event", G_CALLBACK(BackgroundColorPicker::onKeyPress), this);
+		g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(onDestroy), this);
+		g_signal_connect(G_OBJECT(window), "window-state-event", G_CALLBACK(onWindowStateEvent), this);
+		g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(onConfigureEvent), this);
+		g_signal_connect(G_OBJECT(window), "key-press-event", G_CALLBACK(onKeyPress), this);
 		gtk_widget_realize(GTK_WIDGET(window));
 		if (options->getBool("window.fullscreen", false)) {
 			gtk_window_set_transient_for(window, nullptr);

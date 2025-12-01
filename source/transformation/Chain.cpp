@@ -28,7 +28,7 @@ Chain &Chain::operator=(const Chain &chain) {
 	m_enabled = chain.m_enabled;
 	m_transformations.reserve(chain.m_transformations.size());
 	for (const auto &transformation: chain.m_transformations) {
-		m_transformations.emplace_back(std::move(transformation->copy()));
+		m_transformations.emplace_back(transformation->copy());
 	}
 	return *this;
 }

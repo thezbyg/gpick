@@ -68,8 +68,8 @@ struct TemporaryPalette: public IPalette {
 		gtk_box_pack_start(GTK_BOX(vbox), scrolledWindow, true, true, 0);
 		gtk_box_pack_start(GTK_BOX(vbox), informationLabel, false, false, 5);
 		gtk_container_add(GTK_CONTAINER(window), vbox);
-		g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(TemporaryPalette::onDestroy), this);
-		g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(TemporaryPalette::onConfigureEvent), this);
+		g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(onDestroy), this);
+		g_signal_connect(G_OBJECT(window), "configure-event", G_CALLBACK(onConfigureEvent), this);
 		gtk_widget_show_all(GTK_WIDGET(window));
 	}
 	virtual ~TemporaryPalette() {
